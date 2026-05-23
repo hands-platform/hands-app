@@ -28,6 +28,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const riskFlags = bookingRiskFlags(booking);
   const riskSummary = riskLevel(riskFlags);
   const liveSignals = liveServiceSignals(booking);
+  const dispatchSteps = dispatchChecklist(booking);
 
   return (
     <>
@@ -133,6 +134,33 @@ export default async function BookingDetailPage({ params }: PageProps) {
         ) : (
           <p className="muted">No active risk flags. Continue normal monitoring from the timeline.</p>
         )}
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Dispatch checklist</h2>
+            <p className="muted">Operator-facing next steps for this booking. These are guidance cards, not hidden automation.</p>
+          </div>
+          <span className={`pill ${dispatchSteps.some((step) => step.priority === 'Now') ? 'pill-warn' : 'pill-success'}`}>
+            {dispatchSteps.filter((step) => step.priority === 'Now').length} urgent
+          </span>
+        </div>
+        <div className="dispatch-checklist">
+          {dispatchSteps.map((step) => (
+            <div className={`dispatch-step-card dispatch-${step.priority.toLowerCase()}`} key={step.title}>
+              <div>
+                <span className={`pill ${step.tone}`}>{step.priority}</span>
+                <h3>{step.title}</h3>
+                <p>{step.detail}</p>
+                <small>{step.owner}</small>
+              </div>
+              {step.actionHref && (
+                <ActionLink href={step.actionHref} label={step.actionLabel ?? 'Open'} />
+              )}
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card ops-command-center" style={{ marginBottom: 16 }}>
@@ -268,6 +296,22 @@ export default async function BookingDetailPage({ params }: PageProps) {
   );
 }
 
+function ActionLink({ href, label }: { href: string; label: string }) {
+  if (href.startsWith('/')) {
+    return (
+      <Link className="text-link" href={href}>
+        {label}
+      </Link>
+    );
+  }
+
+  return (
+    <a className="text-link" href={href}>
+      {label}
+    </a>
+  );
+}
+
 function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
     <div className="card">
@@ -327,6 +371,16 @@ type RiskFlag = {
   title: string;
   detail: string;
   action: string;
+};
+
+type DispatchStep = {
+  priority: 'Now' | 'Watch' | 'Done';
+  title: string;
+  detail: string;
+  owner: string;
+  tone: string;
+  actionHref?: string;
+  actionLabel?: string;
 };
 
 function RiskItem({ flag }: { flag: RiskFlag }) {
@@ -543,6 +597,153 @@ function riskToneClass(severity: RiskFlag['severity']) {
   return 'pill-info';
 }
 
+function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
+  const steps: DispatchStep[] = [];
+  const flags = bookingRiskFlags(booking);
+  const provider = booking.selectedProvider ?? booking.preferredProvider;
+  const providerPhone = provider?.user?.phone;
+  const paymentHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : undefined;
+  const activeWithLocationNeed = ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
+
+  if (booking.status === 'CANCELLED' && booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)) {
+    steps.push({
+      priority: 'Now',
+      title: 'Resolve cancelled payment',
+      detail: `Booking is cancelled but payment is still ${booking.payment.status}. Release the hold or refund before closing.`,
+      owner: 'Payments operator',
+      tone: 'pill-danger',
+      actionHref: paymentHref,
+      actionLabel: 'Open payment',
+    });
+  }
+
+  if (booking.status === 'COMPLETED' && booking.payment?.status === 'AUTHORIZED') {
+    steps.push({
+      priority: 'Now',
+      title: 'Capture completed service',
+      detail: 'Service is complete while payment is still authorized. Capture it unless a dispute is active.',
+      owner: 'Payments operator',
+      tone: 'pill-danger',
+      actionHref: paymentHref,
+      actionLabel: 'Capture payment',
+    });
+  }
+
+  if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && isPreferredAwaitingDecision(booking)) {
+    steps.push({
+      priority: 'Now',
+      title: 'Preferred provider response',
+      detail: `${providerName(booking.preferredProvider)} has the first response window. Contact them if the customer is waiting too long.`,
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
+      actionLabel: 'Call provider',
+    });
+  }
+
+  if (booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0) {
+    steps.push({
+      priority: 'Watch',
+      title: 'Supply watch',
+      detail: 'No provider has joined yet. Keep provider availability and notification delivery visible.',
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      actionHref: '/providers',
+      actionLabel: 'Open providers',
+    });
+  }
+
+  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+    steps.push({
+      priority: 'Now',
+      title: 'Recover chat room',
+      detail: 'Provider is selected but no chat room exists. This can block service coordination.',
+      owner: 'Support operator',
+      tone: 'pill-danger',
+    });
+  }
+
+  if (activeWithLocationNeed && !latestProviderLocation(booking)) {
+    steps.push({
+      priority: 'Now',
+      title: 'Request provider location',
+      detail: 'The provider has not shared a saved service pin for this active booking.',
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
+      actionLabel: 'Call provider',
+    });
+  }
+
+  if (activeWithLocationNeed && latestProviderLocation(booking) && latestProviderLocationFreshness(booking) !== 'recent') {
+    steps.push({
+      priority: 'Watch',
+      title: 'Refresh stale location',
+      detail: `${providerLocationMetricHelper(booking)}. Ask the provider to share current location again if the customer asks.`,
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
+      actionLabel: 'Call provider',
+    });
+  }
+
+  if (booking.chatRoom && (booking.chatRoom.messages?.length ?? 0) === 0 && ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+    steps.push({
+      priority: 'Watch',
+      title: 'First chat contact',
+      detail: 'Chat is ready but quiet. Monitor for first contact if the customer reports uncertainty.',
+      owner: 'Customer support',
+      tone: 'pill-info',
+    });
+  }
+
+  if (booking.selectedProvider) {
+    steps.push({
+      priority: 'Done',
+      title: 'Provider handoff locked',
+      detail: `${providerName(booking.selectedProvider)} is the current final provider for this booking.`,
+      owner: 'Dispatch operator',
+      tone: 'pill-success',
+      actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
+      actionLabel: 'Call provider',
+    });
+  }
+
+  if (booking.chatRoom) {
+    steps.push({
+      priority: 'Done',
+      title: 'Chat room ready',
+      detail: `Room ${booking.chatRoom.id} has ${booking.chatRoom.messages?.length ?? 0} message(s).`,
+      owner: 'Customer support',
+      tone: 'pill-success',
+    });
+  }
+
+  if (booking.payment) {
+    steps.push({
+      priority: isTerminalPayment(booking.payment.status) ? 'Done' : 'Watch',
+      title: 'Payment state',
+      detail: paymentHint(booking),
+      owner: 'Payments operator',
+      tone: isTerminalPayment(booking.payment.status) ? 'pill-success' : 'pill-info',
+      actionHref: paymentHref,
+      actionLabel: 'Open payment',
+    });
+  }
+
+  if (steps.length === 0 || (flags.length === 0 && steps.every((step) => step.priority === 'Done'))) {
+    steps.push({
+      priority: 'Done',
+      title: 'Normal monitoring',
+      detail: 'No urgent operator action is active. Keep this booking visible until the next status transition.',
+      owner: 'Operations',
+      tone: 'pill-success',
+    });
+  }
+
+  return steps;
+}
+
 function liveServiceSignals(booking: AdminBookingDetail) {
   const latest = latestProviderLocation(booking);
   const freshness = latestProviderLocationFreshness(booking);
@@ -703,6 +904,32 @@ function providerDecisionLabel(booking: AdminBookingDetail) {
     return `${booking.participants?.length ?? 0} backup ready`;
   }
   return 'Waiting';
+}
+
+function preferredParticipantState(booking: AdminBookingDetail) {
+  const preferredProviderId = booking.preferredProvider?.id;
+  if (!preferredProviderId) {
+    return null;
+  }
+
+  return (
+    (booking.participants ?? []).find(
+      (participant) => participant.providerProfile?.id === preferredProviderId,
+    ) ?? null
+  );
+}
+
+function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
+  if (!booking.preferredProvider) {
+    return false;
+  }
+
+  const participant = preferredParticipantState(booking);
+  if (!participant) {
+    return true;
+  }
+
+  return !['ACCEPTED', 'SELECTED', 'REJECTED'].includes(participant.status);
 }
 
 function latestProviderLocation(booking: AdminBookingDetail) {
