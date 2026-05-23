@@ -91,7 +91,7 @@ $env:GEOAPIFY_API_KEY="your-geoapify-key"
 Supabase values used by Auth now and direct database/storage later:
 
 ```dotenv
-SUPABASE_URL=
+SUPABASE_URL=https://adzpstrkpzwpukuboxzj.supabase.co
 SUPABASE_ANON_KEY=
 SUPABASE_JWT_SECRET=
 SUPABASE_JWT_AUDIENCE=authenticated
@@ -109,7 +109,7 @@ Switch mobile OTP to Supabase only after Supabase Phone Auth and the API JWT sec
 
 ```dotenv
 AUTH_BACKEND=supabase
-SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_URL=https://adzpstrkpzwpukuboxzj.supabase.co
 SUPABASE_ANON_KEY=<anon-key>
 SUPABASE_JWT_SECRET=<project-jwt-secret>
 SUPABASE_JWT_AUDIENCE=authenticated

@@ -41,7 +41,11 @@ const registrationItems = [
     consolePath: 'Supabase Dashboard > Project Settings > API and Authentication > Providers > Phone',
     env: [
       envItem('AUTH_BACKEND', 'supabase', env.AUTH_BACKEND === 'supabase'),
-      envItem('SUPABASE_URL', 'https://<project-ref>.supabase.co', isHttpsUrl(env.SUPABASE_URL)),
+      envItem(
+        'SUPABASE_URL',
+        'https://adzpstrkpzwpukuboxzj.supabase.co',
+        env.SUPABASE_URL === 'https://adzpstrkpzwpukuboxzj.supabase.co',
+      ),
       envItem('SUPABASE_ANON_KEY', '<anon-public-key>', hasValue(env.SUPABASE_ANON_KEY)),
       envItem('SUPABASE_JWT_SECRET', '<project-jwt-secret>', isSecretLikeValue(env.SUPABASE_JWT_SECRET)),
       envItem(

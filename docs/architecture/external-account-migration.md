@@ -68,9 +68,13 @@ git push -u origin develop
 
 ### 3. Supabase
 
+Current project:
+
+- Project name: `hands-staging`
+- Project URL: `https://adzpstrkpzwpukuboxzj.supabase.co`
+
 Need from operator:
 
-- Supabase project URL
 - anon public key
 - JWT secret
 - service role key
