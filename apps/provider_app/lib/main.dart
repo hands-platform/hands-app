@@ -1732,6 +1732,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   double? customerLng;
   double? lastSharedLat;
   double? lastSharedLng;
+  DateTime? lastSharedAt;
   bool loading = false;
 
   @override
@@ -1863,6 +1864,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() {
         lastSharedLat = asNum(location['lat'])?.toDouble();
         lastSharedLng = asNum(location['lng'])?.toDouble();
+        lastSharedAt = DateTime.now();
         statusMessage =
             'Your current location was shared with the customer at ${formatCoordinate(lastSharedLat)} / ${formatCoordinate(lastSharedLng)}.';
       });
@@ -1923,6 +1925,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               customerLongitude: customerLng,
               latitude: lastSharedLat,
               longitude: lastSharedLng,
+              lastSharedAt: lastSharedAt,
             ),
             const SizedBox(height: 8),
             FilledButton.tonalIcon(
@@ -2021,16 +2024,20 @@ class ProviderLocationPreviewCard extends StatelessWidget {
     required this.customerLongitude,
     required this.latitude,
     required this.longitude,
+    required this.lastSharedAt,
   });
 
   final double? customerLatitude;
   final double? customerLongitude;
   final double? latitude;
   final double? longitude;
+  final DateTime? lastSharedAt;
 
   @override
   Widget build(BuildContext context) {
     final hasLocation = latitude != null && longitude != null;
+    final statusColor =
+        hasLocation ? const Color(0xFF5E8E4A) : Colors.black54;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -2054,12 +2061,32 @@ class ProviderLocationPreviewCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ProviderStatusChip(
+                  label: hasLocation
+                      ? 'Shared ${formatProviderSharedAt(lastSharedAt)}'
+                      : 'Not shared yet',
+                  color: statusColor,
+                ),
+                if (hasLocation)
+                  ProviderStatusChip(
+                    label:
+                        'Lat ${formatCoordinate(latitude)} / Lng ${formatCoordinate(longitude)}',
+                    color: Colors.black87,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
             Text(
               buildProviderLocationSummary(
                 customerLatitude: customerLatitude,
                 customerLongitude: customerLongitude,
                 providerLatitude: latitude,
                 providerLongitude: longitude,
+                lastSharedAt: lastSharedAt,
               ),
               style: Theme.of(context)
                   .textTheme
@@ -2068,6 +2095,36 @@ class ProviderLocationPreviewCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class ProviderStatusChip extends StatelessWidget {
+  const ProviderStatusChip({
+    super.key,
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }
@@ -2331,6 +2388,7 @@ String buildProviderLocationSummary({
   required double? customerLongitude,
   required double? providerLatitude,
   required double? providerLongitude,
+  required DateTime? lastSharedAt,
 }) {
   if (providerLatitude == null || providerLongitude == null) {
     return 'Share your current pin once so the customer can see your last known location.';
@@ -2345,7 +2403,24 @@ String buildProviderLocationSummary({
   final distanceText = distance == null
       ? ''
       : '\nApprox. distance to guest: ${formatDistance(distance)}';
-  return 'Last shared pin: ${formatCoordinate(providerLatitude)}, ${formatCoordinate(providerLongitude)}$distanceText';
+  return 'Customers see this saved pin, not continuous tracking. Last shared ${formatProviderSharedAt(lastSharedAt)}.$distanceText';
+}
+
+String formatProviderSharedAt(DateTime? value) {
+  if (value == null) {
+    return 'just now';
+  }
+  final diff = DateTime.now().difference(value);
+  if (diff.inMinutes < 1) {
+    return 'just now';
+  }
+  if (diff.inMinutes < 60) {
+    return '${diff.inMinutes}m ago';
+  }
+  if (diff.inHours < 24) {
+    return '${diff.inHours}h ago';
+  }
+  return '${diff.inDays}d ago';
 }
 
 String formatDistance(double meters) {
