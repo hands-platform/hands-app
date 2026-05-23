@@ -24,7 +24,7 @@ export class FilesService {
     this.validateUploadRequest(user, { ...input, providerVerificationId });
 
     const extension = extensionForContentType(input.contentType);
-    const key = `${input.purpose}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${extension}`;
+    const key = `${input.visibility.toLowerCase()}/${input.purpose}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${extension}`;
     const bucket = this.s3.bucketForVisibility(input.visibility);
 
     const file = await this.prisma.fileAsset.create({

@@ -21,68 +21,91 @@ const adminAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: adminPhone, otp, role: 'ADMIN' }),
 });
 
-const uploadContract = await postJson('/files/presign', providerAuth.accessToken, {
-  contentType: 'image/png',
+const verification = await uploadAndRead({
+  accessToken: providerAuth.accessToken,
+  readAccessToken: adminAuth.accessToken,
   visibility: 'PRIVATE',
   purpose: 'provider-verification',
 });
-
-if (uploadContract.storageMode === 'placeholder' || uploadContract.upload.url.startsWith('/')) {
-  throw new Error(
-    'Storage smoke requires real S3-compatible storage settings. Fill S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, and S3_SECRET_KEY.',
-  );
-}
-
-const uploadResponse = await fetch(uploadContract.upload.url, {
-  method: uploadContract.upload.method,
-  headers: uploadContract.upload.headers,
-  body: samplePng,
+const profileImage = await uploadAndRead({
+  accessToken: providerAuth.accessToken,
+  readAccessToken: providerAuth.accessToken,
+  visibility: 'PUBLIC',
+  purpose: 'profile-image',
 });
-if (!uploadResponse.ok) {
-  throw new Error(
-    `Storage PUT failed: ${uploadResponse.status} ${await uploadResponse.text().catch(() => '')}`,
-  );
-}
-
-const completedFile = await postJson(`/files/${uploadContract.file.id}/complete`, providerAuth.accessToken, {
-  sizeBytes: samplePng.length,
-});
-if (completedFile.uploadStatus !== 'UPLOADED' || completedFile.sizeBytes !== samplePng.length) {
-  throw new Error(`File completion mismatch: ${JSON.stringify(completedFile)}`);
-}
-
-const readContract = await getJson(`/files/${uploadContract.file.id}/read-url`, adminAuth.accessToken);
-if (readContract.storageMode === 'placeholder' || readContract.read.url.startsWith('/')) {
-  throw new Error(`Read URL stayed in placeholder mode: ${JSON.stringify(readContract)}`);
-}
-
-const readResponse = await fetch(readContract.read.url);
-const readBytes = Buffer.from(await readResponse.arrayBuffer());
-if (!readResponse.ok || readBytes.length !== samplePng.length) {
-  throw new Error(
-    `Storage GET failed or size mismatch: ${JSON.stringify({
-      status: readResponse.status,
-      expectedBytes: samplePng.length,
-      actualBytes: readBytes.length,
-    })}`,
-  );
-}
 
 console.log(
   JSON.stringify(
     {
       ok: true,
-      storageMode: uploadContract.storageMode,
-      fileId: uploadContract.file.id,
-      key: uploadContract.file.key,
-      uploadStatus: completedFile.uploadStatus,
-      bytesUploaded: samplePng.length,
-      bytesRead: readBytes.length,
+      storageMode: verification.storageMode,
+      verification,
+      profileImage,
     },
     null,
     2,
   ),
 );
+
+async function uploadAndRead({ accessToken, readAccessToken, visibility, purpose }) {
+  const uploadContract = await postJson('/files/presign', accessToken, {
+    contentType: 'image/png',
+    visibility,
+    purpose,
+  });
+
+  if (uploadContract.storageMode === 'placeholder' || uploadContract.upload.url.startsWith('/')) {
+    throw new Error(
+      'Storage smoke requires real S3-compatible storage settings. Fill S3_ENDPOINT, S3_BUCKET, S3_ACCESS_KEY, and S3_SECRET_KEY.',
+    );
+  }
+
+  const uploadResponse = await fetch(uploadContract.upload.url, {
+    method: uploadContract.upload.method,
+    headers: uploadContract.upload.headers,
+    body: samplePng,
+  });
+  if (!uploadResponse.ok) {
+    throw new Error(
+      `Storage PUT failed for ${purpose}: ${uploadResponse.status} ${await uploadResponse.text().catch(() => '')}`,
+    );
+  }
+
+  const completedFile = await postJson(`/files/${uploadContract.file.id}/complete`, accessToken, {
+    sizeBytes: samplePng.length,
+  });
+  if (completedFile.uploadStatus !== 'UPLOADED' || completedFile.sizeBytes !== samplePng.length) {
+    throw new Error(`File completion mismatch for ${purpose}: ${JSON.stringify(completedFile)}`);
+  }
+
+  const readContract = await getJson(`/files/${uploadContract.file.id}/read-url`, readAccessToken);
+  if (readContract.storageMode === 'placeholder' || readContract.read.url.startsWith('/')) {
+    throw new Error(`Read URL stayed in placeholder mode for ${purpose}: ${JSON.stringify(readContract)}`);
+  }
+
+  const readResponse = await fetch(readContract.read.url);
+  const readBytes = Buffer.from(await readResponse.arrayBuffer());
+  if (!readResponse.ok || readBytes.length !== samplePng.length) {
+    throw new Error(
+      `Storage GET failed or size mismatch for ${purpose}: ${JSON.stringify({
+        status: readResponse.status,
+        expectedBytes: samplePng.length,
+        actualBytes: readBytes.length,
+      })}`,
+    );
+  }
+
+  return {
+    storageMode: uploadContract.storageMode,
+    readMode: readContract.storageMode,
+    fileId: uploadContract.file.id,
+    key: uploadContract.file.key,
+    url: completedFile.url ?? uploadContract.file.url ?? null,
+    uploadStatus: completedFile.uploadStatus,
+    bytesUploaded: samplePng.length,
+    bytesRead: readBytes.length,
+  };
+}
 
 async function request(path, options = {}) {
   const { retryRateLimit = true, ...fetchOptions } = options;
