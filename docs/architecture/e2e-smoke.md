@@ -26,7 +26,7 @@
 ## Command
 
 ```powershell
-$env:API_BASE_URL='http://localhost:3000/api'
+$env:API_BASE_URL='http://localhost:3100/api'
 node infra/scripts/api-smoke.mjs
 ```
 

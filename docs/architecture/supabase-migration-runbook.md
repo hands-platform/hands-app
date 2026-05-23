@@ -31,7 +31,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 Existing local run flags still apply:
 
 ```powershell
---dart-define=API_BASE_URL=http://10.0.2.2:3000/api
+--dart-define=API_BASE_URL=http://10.0.2.2:3100/api
 --dart-define=SOCKET_BASE_URL=http://10.0.2.2:3000
 --dart-define=MAPTILER_API_KEY=your-maptiler-key
 --dart-define=GEOAPIFY_API_KEY=your-geoapify-key
@@ -85,7 +85,7 @@ Mobile sessions are persisted with `flutter_secure_storage` after OTP verificati
 After the API is running with the same `SUPABASE_JWT_SECRET`, run this smoke test to verify that Supabase-style access tokens are accepted by protected Nest routes:
 
 ```powershell
-$env:API_BASE_URL="http://localhost:3000/api"
+$env:API_BASE_URL="http://localhost:3100/api"
 $env:SUPABASE_JWT_SECRET="your-project-jwt-secret"
 $env:SUPABASE_JWT_AUDIENCE="authenticated"
 npm.cmd run auth:supabase-smoke

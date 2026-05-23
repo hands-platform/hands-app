@@ -1,6 +1,6 @@
 import { createHmac, randomUUID } from 'node:crypto';
 
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
+const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3100/api';
 const jwtSecret = process.env.SUPABASE_JWT_SECRET;
 const jwtAudience = process.env.SUPABASE_JWT_AUDIENCE ?? 'authenticated';
 

@@ -1,4 +1,4 @@
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
+const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3100/api';
 
 async function request(path, options = {}) {
   const { retryRateLimit = true, ...fetchOptions } = options;
