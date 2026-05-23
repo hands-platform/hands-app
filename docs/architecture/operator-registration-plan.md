@@ -99,7 +99,7 @@ Purpose:
 Register:
 
 - Supabase project named `HANDS Staging`
-- Phone Auth with Vietnam-capable SMS
+- Phone Auth with Vonage SMS, deferred until OTP E2E setup
 - Project URL
 - anon key
 - JWT secret
@@ -220,7 +220,7 @@ npm.cmd run external:check:production
 Purpose:
 
 - Real phone OTP delivery in Vietnam.
-- This can be handled by Supabase Phone Auth SMS or a backend SMS provider.
+- This is planned with Vonage and deferred until the OTP E2E pass.
 
 Set only if the backend SMS provider is used:
 

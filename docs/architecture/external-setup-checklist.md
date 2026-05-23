@@ -375,15 +375,17 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-23:
 - Supabase SQL bundle: applied successfully to `hands-staging`
 - Supabase REST/storage verification: passing with service role
 - API Supabase auth smoke: passing locally
-- Mobile auth switch: still `AUTH_BACKEND=nest` locally until Supabase Phone Auth/SMS is configured
+- Supabase Phone Auth/SMS: deferred
+- Planned SMS provider: Vonage
+- Mobile auth switch: still `AUTH_BACKEND=nest` locally until Vonage + Supabase Phone Auth E2E is configured
 - Local MinIO storage: ready for MVP
-- Production SMS provider: not selected
+- Production SMS provider: Vonage planned, credentials not filled
 - MoMo / VNPay merchant credentials: not filled
 - Production S3 or Cloudflare R2: not filled, local MinIO is enough for MVP
 
 Phase-specific external checks currently block only on missing external console values:
 
-- `supabase-auth`: Phone Auth/SMS E2E not yet performed
+- `supabase-auth`: deferred until Vonage credentials and Supabase Phone Auth are ready
 - `maps`: `MAPTILER_API_KEY`, `GEOAPIFY_API_KEY`
 - `payments`: `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY`, `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`
 
@@ -397,7 +399,7 @@ The next external setup items to complete are:
 ## Recommended Fill Order
 
 1. Supabase project URL / anon key / JWT secret
-2. Supabase Phone Auth SMS configuration
+2. Supabase Phone Auth SMS configuration with Vonage
 3. MapTiler and Geoapify keys
 4. MoMo and VNPay credentials
 5. Storage / CDN credentials

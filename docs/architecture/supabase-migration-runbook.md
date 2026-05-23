@@ -190,7 +190,8 @@ Current `hands-staging` status:
 - REST table access: verified with service role
 - Storage buckets: `hands-public`, `hands-private`
 - Local API Supabase auth smoke: passing
-- Mobile OTP switch: waiting for Supabase Phone Auth/SMS configuration
+- Mobile OTP switch: waiting for deferred Supabase Phone Auth/SMS configuration
+- Planned SMS provider: Vonage
 
 Rollback during staging is simple: create a fresh staging Supabase project and rerun the generated bundle. Do not run destructive SQL against production-like data until backup/restore has been tested.
 

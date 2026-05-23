@@ -56,7 +56,7 @@ const registrationItems = [
     ],
     setup: [
       'Create a staging project named HANDS.',
-      'Enable Phone Auth and configure a Vietnam-capable SMS provider.',
+      'Keep Phone Auth/SMS deferred until Vonage credentials are ready for OTP E2E.',
       'Run npm.cmd run supabase:sql:pack, then paste infra/supabase/.generated/hands-staging-setup.sql into the SQL editor.',
       'Keep the service role key only in the API environment.',
     ],
@@ -175,16 +175,20 @@ const registrationItems = [
   {
     order: 9,
     category: 'SMS',
-    account: 'Vietnam-capable SMS provider',
-    purpose: 'Real OTP delivery if not handled fully through Supabase Phone Auth.',
-    consolePath: 'Chosen SMS vendor console',
+    account: 'Vonage SMS provider',
+    purpose: 'Real OTP delivery for Supabase Phone Auth or backend OTP after deferred SMS setup.',
+    consolePath: 'Vonage Dashboard',
     env: [
-      envItem('SMS_PROVIDER', '<provider-name>', hasValue(env.SMS_PROVIDER)),
+      envItem('SMS_PROVIDER', 'vonage', String(env.SMS_PROVIDER ?? '').toLowerCase() === 'vonage'),
       envItem('SMS_API_URL', 'https://<sms-provider-api>', hasValue(env.SMS_API_URL)),
       envItem('SMS_API_KEY', '<sms-api-key>', hasValue(env.SMS_API_KEY)),
       envItem('SMS_SENDER_ID', 'HANDS', hasValue(env.SMS_SENDER_ID)),
     ],
-    setup: ['Confirm Vietnam delivery rates and sender ID rules.', 'Define OTP resend and abuse limits.'],
+    setup: [
+      'Create Vonage credentials under administration@hands.vn when SMS E2E starts.',
+      'Confirm Vietnam delivery rates and sender ID rules.',
+      'Define OTP resend and abuse limits.',
+    ],
     verify: ['npm.cmd run external:check:production'],
   },
   {

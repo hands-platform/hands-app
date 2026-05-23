@@ -78,11 +78,13 @@ Current project:
 - Storage buckets verified: `hands-public`, `hands-private`
 - Supabase JWT secret verified against the anon token
 - Local API Supabase auth smoke test passed
+- Phone Auth/SMS setup deferred
+- Planned SMS provider for Supabase Phone Auth: Vonage
 
 Need from operator:
 
-- confirmation that Phone Auth is enabled
-- confirmation of the SMS provider used for Vietnam OTP
+- Vonage credentials when Phone Auth E2E starts
+- confirmation that Phone Auth is enabled after Vonage is configured
 
 Verification:
 
@@ -162,11 +164,12 @@ Planned callback domains:
 
 ### 9. SMS
 
-If Supabase Phone Auth does not fully handle Vietnam OTP, choose a backend SMS provider.
+Planned provider: Vonage.
+
+Phone Auth/SMS E2E is intentionally deferred. Keep local auth on `AUTH_BACKEND=nest` and `SMS_PROVIDER=dev` until Vonage credentials are ready and OTP delivery is tested.
 
 Need from operator:
 
-- provider name
 - API URL
 - API key
 - sender ID rules for `HANDS`
