@@ -45,7 +45,8 @@ const setupOrder = [
     id: 'supabase',
     title: 'Supabase Auth and database',
     phase: 'Staging foundation',
-    operatorAction: 'Create HANDS Staging, run the generated SQL bundle, then fill Supabase env values.',
+    operatorAction:
+      'Keep Supabase staging values in local secrets, but leave Phone Auth deferred until Vonage E2E.',
     exitCriteria: 'Supabase SQL applies cleanly and auth smoke passes with the project JWT secret.',
     purpose: 'Required before Firebase-free production login and direct client data access.',
     env: [
@@ -56,9 +57,10 @@ const setupOrder = [
       'SUPABASE_SERVICE_ROLE_KEY',
     ],
     notes: [
-      'Create one Supabase project for HANDS staging first.',
+      'HANDS staging Supabase has been created with the business account.',
+      'The generated SQL bundle has been applied successfully.',
       'Use infra/env/hands-staging.env.example as the operator fill-in checklist.',
-      'Set AUTH_BACKEND=supabase only when Supabase Phone Auth is ready to test.',
+      'Keep AUTH_BACKEND=nest locally until Vonage and Supabase Phone Auth are ready to test.',
       'Copy the project URL and anon key from Supabase project settings.',
       'Set the JWT secret on the API so access tokens can be verified server-side.',
       'Keep the service role key server-side only; it is used by admin operations to sync approved provider roles.',
@@ -77,11 +79,12 @@ const setupOrder = [
     id: 'maps',
     title: 'MapTiler and Geoapify',
     phase: 'Location E2E',
-    operatorAction: 'Register low-cost map and geocoding keys for customer location selection.',
+    operatorAction: 'Use the configured low-cost map/geocoding keys and verify address search before E2E.',
     exitCriteria: 'Customer app can search an address, move the pin, and load nearby providers.',
     purpose: 'Required for customer address search, map pin confirmation, and nearby provider display.',
     env: ['MAPTILER_API_KEY', 'GEOAPIFY_API_KEY'],
     notes: [
+      'MapTiler and Geoapify keys are configured locally in ignored environment files.',
       'Use MapTiler only for map tiles.',
       'Use Geoapify only for geocoding/search.',
       'No routing, directions, or realtime streaming API is needed for MVP cost control.',
@@ -111,8 +114,8 @@ const setupOrder = [
     id: 'notifications',
     title: 'SMS and OS push',
     phase: 'Messaging E2E',
-    operatorAction: 'Keep dev OTP locally, then choose production SMS and OS push providers.',
-    exitCriteria: 'OTP delivery and production push provider strategy are confirmed.',
+    operatorAction: 'Keep dev OTP locally; configure Vonage and OneSignal only when those E2E passes start.',
+    exitCriteria: 'Vonage OTP delivery and production push provider strategy are confirmed.',
     purpose: 'Required before real OTP delivery and native push notifications.',
     env: [
       'SMS_PROVIDER',
@@ -124,7 +127,7 @@ const setupOrder = [
     ],
     notes: [
       'Local OTP can stay on SMS_PROVIDER=dev.',
-      'Production OTP needs a Vietnam-capable SMS vendor.',
+      'Production OTP is planned with Vonage, but Supabase Phone Auth is intentionally deferred.',
       'Firebase Messaging has been removed; keep PUSH_PROVIDER=in_app_only locally until OneSignal is ready.',
       'OneSignal REST API keys are server-side only and must not be copied into Flutter or browser code.',
     ],
@@ -238,7 +241,8 @@ export default async function SetupPage() {
           <h2>Migration runway</h2>
           <p className="muted">
             HANDS is moving from local MVP stability to Supabase-backed staging without breaking the mobile
-            booking flow.
+            booking flow. Current local auth remains Nest/dev OTP until Vonage Phone Auth is deliberately
+            tested.
           </p>
           <div className="setup-stage-list">
             {groupStatuses.map((item, index) => (

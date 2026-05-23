@@ -50,7 +50,10 @@ C:\dev\massage-vn-workspace\repo\infra\setup\.generated\hands-external-registrat
 - Android upload signing: ready locally for customer and provider apps
 - Release APK build: verified for customer and provider apps
 - Local storage: ready through MinIO-compatible S3 settings
-- External production-like registrations: pending
+- GitHub business repository: moved to `hands-platform/hands-app`
+- Supabase staging: created and SQL applied
+- MapTiler and Geoapify: configured locally and verified
+- External production-like registrations still pending: Vonage Phone Auth, OneSignal, MoMo/VNPay, production storage/CDN
 
 ## Registration Order
 
@@ -96,14 +99,18 @@ Purpose:
 - PostgreSQL schema and RLS baseline
 - Storage-ready project for later file migration
 
-Register:
+Registered:
 
-- Supabase project named `HANDS Staging`
-- Phone Auth with Vonage SMS, deferred until OTP E2E setup
+- Supabase project named `hands-staging`
 - Project URL
 - anon key
 - JWT secret
 - service role key
+- generated SQL bundle applied
+
+Deferred:
+
+- Phone Auth with Vonage SMS, until OTP E2E setup
 
 Set:
 
@@ -126,6 +133,8 @@ npm.cmd run external:check:supabase
 npm.cmd run auth:supabase-smoke
 ```
 
+Do not enable `AUTH_BACKEND=supabase` for normal app testing until Vonage Phone Auth is configured and verified.
+
 ### 2. MapTiler And Geoapify
 
 Purpose:
@@ -134,7 +143,7 @@ Purpose:
 - Geoapify handles address search/geocoding.
 - No Google Maps, Directions API, Routing API, or realtime route streaming for MVP.
 
-Register:
+Registered:
 
 - MapTiler API key: completed for staging/local development
 - Geoapify API key: completed for staging/local development

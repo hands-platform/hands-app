@@ -29,6 +29,7 @@ C:\dev\massage-vn-workspace\repo\infra\env\hands-staging.env.example
 - DNS permission: operator can add and delete records directly
 - GitHub organization target: `hands-platform`
 - GitHub repository target: `https://github.com/hands-platform/hands-app`
+- Current GitHub migration status: connected and pushed from local `develop`
 - Service area: all Vietnam, starting with local MVP flows around Ho Chi Minh City
 - Customer app languages planned later: Vietnamese, English, Korean, Chinese, Japanese
 - Provider app language planned later: Vietnamese
@@ -381,6 +382,7 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-23:
 - Geoapify API key: configured locally in ignored `.env`; geocoding verification passing
 - Supabase URL / anon key / JWT secret / service role key: configured locally in ignored `.env`
 - Supabase SQL bundle: applied successfully to `hands-staging`
+- Supabase Phone Auth provider screen: do not fill yet; Vonage OTP is deferred
 - Supabase REST/storage verification: passing with service role
 - API Supabase auth smoke: passing locally
 - Supabase Phone Auth/SMS: deferred
