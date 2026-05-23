@@ -27,6 +27,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const addressLine = addressLabel(booking.address);
   const riskFlags = bookingRiskFlags(booking);
   const riskSummary = riskLevel(riskFlags);
+  const liveSignals = liveServiceSignals(booking);
 
   return (
     <>
@@ -132,6 +133,25 @@ export default async function BookingDetailPage({ params }: PageProps) {
         ) : (
           <p className="muted">No active risk flags. Continue normal monitoring from the timeline.</p>
         )}
+      </section>
+
+      <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+        <div>
+          <h2>Live service board</h2>
+          <p className="muted">
+            Last-known location monitoring only. HANDS does not use routing, directions, or continuous GPS streaming in
+            the MVP.
+          </p>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          {liveSignals.map((signal) => (
+            <div className="ops-signal-card" key={signal.label}>
+              <span className={`pill ${signal.tone}`}>{signal.label}</span>
+              <strong>{signal.value}</strong>
+              <p className="muted">{signal.helper}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="detail-grid">
@@ -523,6 +543,66 @@ function riskToneClass(severity: RiskFlag['severity']) {
   return 'pill-info';
 }
 
+function liveServiceSignals(booking: AdminBookingDetail) {
+  const latest = latestProviderLocation(booking);
+  const freshness = latestProviderLocationFreshness(booking);
+  const customerPin = coordinateLabel(booking.lat, booking.lng);
+  const providerPin = latest ? coordinateLabel(latest.lat, latest.lng) : 'No provider pin';
+  const distanceMeters = latest ? approximateDistanceMeters(booking.lat, booking.lng, latest.lat, latest.lng) : null;
+  const provider = booking.selectedProvider ?? booking.preferredProvider;
+
+  return [
+    {
+      label: 'Customer pin',
+      value: customerPin,
+      helper: addressLabel(booking.address),
+      tone: booking.lat && booking.lng ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Provider pin',
+      value: providerPin,
+      helper: latest ? providerLocationMetricHelper(booking) : 'Ask provider to share current location from chat.',
+      tone:
+        freshness === 'recent'
+          ? 'pill-success'
+          : freshness === 'stale'
+            ? 'pill-warn'
+            : freshness === 'expired'
+              ? 'pill-info'
+              : 'pill-danger',
+    },
+    {
+      label: 'Approx. gap',
+      value: distanceMeters === null ? 'Unknown' : distanceLabel(Math.round(distanceMeters / 100) * 100),
+      helper: 'Calculated from saved pins. It is not a route or ETA.',
+      tone: distanceMeters === null ? 'pill-info' : distanceMeters > 5000 ? 'pill-warn' : 'pill-success',
+    },
+    {
+      label: 'Service contact',
+      value: provider?.user?.phone ?? 'No provider phone',
+      helper: provider ? `${providerName(provider)} is the current handoff provider.` : 'No provider assigned yet.',
+      tone: provider ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Chat',
+      value: booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} message(s)` : 'Not ready',
+      helper: booking.chatRoom ? `Room ${booking.chatRoom.id}` : 'Chat opens after provider selection/service start.',
+      tone: booking.chatRoom ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Payment',
+      value: booking.payment?.status ?? 'NONE',
+      helper: paymentHint(booking),
+      tone:
+        booking.payment?.status === 'AUTHORIZED'
+          ? 'pill-warn'
+          : isTerminalPayment(booking.payment?.status)
+            ? 'pill-success'
+            : 'pill-info',
+    },
+  ];
+}
+
 function isTerminalPayment(status?: string) {
   return status === 'CAPTURED' || status === 'REFUNDED' || status === 'RELEASED';
 }
@@ -735,6 +815,33 @@ function distanceLabel(distance?: number | null) {
     return `${(distance / 1000).toFixed(1)} km`;
   }
   return `${distance} m`;
+}
+
+function approximateDistanceMeters(
+  startLat?: string | number | null,
+  startLng?: string | number | null,
+  endLat?: string | number | null,
+  endLng?: string | number | null,
+) {
+  const lat1 = Number(startLat);
+  const lng1 = Number(startLng);
+  const lat2 = Number(endLat);
+  const lng2 = Number(endLng);
+  if (![lat1, lng1, lat2, lng2].every(Number.isFinite)) {
+    return null;
+  }
+
+  const earthRadius = 6371000;
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
 }
 
 function money(amount?: number, currency = 'VND') {
