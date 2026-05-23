@@ -3496,8 +3496,9 @@ class _NearbyProvidersMapState extends State<NearbyProvidersMap> {
       }
       final isRecent = provider['isRecentLocation'] != false;
       final displayName = provider['displayName'] as String? ?? 'Provider';
-      final updatedAt =
-          formatLastLocation(provider['currentLocationUpdatedAt']);
+      final locationLabel = providerLocationFreshnessLabel(provider)
+          .replaceFirst('Location ', '')
+          .replaceFirst('Last updated ', 'Updated ');
       await map.addCircle(CircleOptions(
         geometry: point,
         circleColor: isRecent ? '#2563EB' : '#9CA3AF',
@@ -3507,7 +3508,7 @@ class _NearbyProvidersMapState extends State<NearbyProvidersMap> {
       ));
       await map.addSymbol(SymbolOptions(
         geometry: point,
-        textField: '$displayName\n$updatedAt',
+        textField: '$displayName\n$locationLabel',
         textColor: '#111827',
         textSize: 11,
         textHaloColor: '#FFFFFF',
