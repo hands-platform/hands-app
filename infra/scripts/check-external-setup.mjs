@@ -215,30 +215,14 @@ addPhaseRequired(
 addRecommended(
   'storage',
   'S3-compatible storage',
-  allHaveValue([
-    'STORAGE_PROVIDER',
-    'S3_ENDPOINT',
-    'S3_REGION',
-    'S3_BUCKET',
-    'S3_ACCESS_KEY',
-    'S3_SECRET_KEY',
-    'S3_PUBLIC_BASE_URL',
-  ]),
-  'Local MinIO is enough for MVP; fill STORAGE_PROVIDER plus production storage/CDN values before launch.',
+  storageConfigured(),
+  'Local MinIO is enough for MVP; for staging fill S3_ENDPOINT, S3_REGION, access keys, public base URL, and either S3_BUCKET or both S3_PRIVATE_BUCKET/S3_PUBLIC_BUCKET.',
 );
 addPhaseRequired(
   'storage',
   'production file storage',
-  allHaveValue([
-    'STORAGE_PROVIDER',
-    'S3_ENDPOINT',
-    'S3_REGION',
-    'S3_BUCKET',
-    'S3_ACCESS_KEY',
-    'S3_SECRET_KEY',
-    'S3_PUBLIC_BASE_URL',
-  ]),
-  'Fill production S3/Supabase Storage/R2 values before production-like storage E2E.',
+  storageConfigured(),
+  'Fill production S3/Supabase Storage/R2 values before production-like storage E2E. Prefer separate private/public buckets.',
   ['storage', 'production'],
 );
 
@@ -328,6 +312,20 @@ function pathExists(key) {
 
 function allHaveExistingPath(keys) {
   return keys.every(pathExists);
+}
+
+function storageConfigured() {
+  return (
+    allHaveValue([
+      'STORAGE_PROVIDER',
+      'S3_ENDPOINT',
+      'S3_REGION',
+      'S3_ACCESS_KEY',
+      'S3_SECRET_KEY',
+      'S3_PUBLIC_BASE_URL',
+    ]) &&
+    (hasValue('S3_BUCKET') || allHaveValue(['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET']))
+  );
 }
 
 function parseEnv(source) {

@@ -162,8 +162,8 @@ function Invoke-Check {
 
 function Invoke-SmokeWithApi {
   param(
-    [string]$ApiBaseUrl = "http://localhost:3000/api",
-    [string]$SocketBaseUrl = "http://localhost:3000",
+    [string]$ApiBaseUrl = "http://localhost:3100/api",
+    [string]$SocketBaseUrl = "http://localhost:3100",
     [switch]$IncludeSupabaseAuthSmoke
   )
 

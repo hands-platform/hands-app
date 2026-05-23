@@ -28,7 +28,14 @@ This explicit completion step prevents an admin from treating an empty presigned
 
 ## Storage Providers
 
-Set `STORAGE_PROVIDER`, `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY`, and `S3_SECRET_KEY` to enable SigV4 presigned PUT/GET URLs. `S3_PUBLIC_BASE_URL` can point at a CDN or public bucket domain for public assets.
+Set `STORAGE_PROVIDER`, `S3_ENDPOINT`, `S3_REGION`, bucket values, `S3_ACCESS_KEY`, and `S3_SECRET_KEY` to enable SigV4 presigned PUT/GET URLs. `S3_PUBLIC_BASE_URL` can point at a CDN or public bucket domain for public assets.
+
+The simplest local mode uses one bucket through `S3_BUCKET`. Staging and production should prefer separate buckets:
+
+- `S3_PRIVATE_BUCKET` for provider verification and private moderation files.
+- `S3_PUBLIC_BUCKET` for provider profile/gallery media.
+
+If the split bucket values are not set, the API falls back to `S3_BUCKET` for backwards-compatible local MinIO flows.
 
 Local development defaults to MinIO:
 
@@ -37,6 +44,8 @@ STORAGE_PROVIDER=s3-compatible
 S3_ENDPOINT=http://localhost:9000
 S3_REGION=auto
 S3_BUCKET=massage-vn
+S3_PRIVATE_BUCKET=
+S3_PUBLIC_BUCKET=
 S3_ACCESS_KEY=minioadmin
 S3_SECRET_KEY=minioadmin
 S3_PUBLIC_BASE_URL=http://localhost:9000/massage-vn
@@ -48,10 +57,12 @@ Supabase Storage can be used through its S3-compatible endpoint without changing
 STORAGE_PROVIDER=supabase-storage-s3
 S3_ENDPOINT=https://<project-ref>.storage.supabase.co/storage/v1/s3
 S3_REGION=auto
-S3_BUCKET=hands-files
+S3_BUCKET=
+S3_PRIVATE_BUCKET=hands-private
+S3_PUBLIC_BUCKET=hands-public
 S3_ACCESS_KEY=<supabase-storage-access-key>
 S3_SECRET_KEY=<supabase-storage-secret-key>
-S3_PUBLIC_BASE_URL=https://<project-ref>.supabase.co/storage/v1/object/public/hands-files
+S3_PUBLIC_BASE_URL=https://<project-ref>.supabase.co/storage/v1/object/public/hands-public
 ```
 
 Confirm the exact Supabase S3 endpoint and access keys in the Supabase dashboard before production use. Keep these credentials server-side only.
@@ -71,5 +82,14 @@ If using the Supabase dashboard SQL editor, paste `hands-core-schema.sql` first,
 - owner/admin RLS policies for direct client access in a later migration phase.
 
 Private files are read through `GET /api/files/:id/read-url`, which checks that the requester is an admin or the owning provider before returning a short-lived signed GET URL.
+
+Run a real storage upload/read smoke after setting S3-compatible credentials:
+
+```powershell
+cd C:\dev\massage-vn-workspace\repo
+npm.cmd run storage:smoke
+```
+
+The smoke creates a provider verification upload contract, uploads a tiny PNG through the presigned PUT URL, marks the file `UPLOADED`, and confirms the admin signed GET URL can read the same bytes back.
 
 If storage variables are missing, the API deliberately falls back to placeholder URLs so local MVP flows remain usable.

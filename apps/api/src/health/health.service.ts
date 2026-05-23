@@ -97,8 +97,15 @@ export class HealthService {
   }
 
   private storageStatus() {
-    const required = ['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'];
-    const missing = required.filter((key) => !this.config.get<string>(key));
+    const required = ['S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'];
+    const bucketConfigured = Boolean(
+      this.config.get<string>('S3_BUCKET') ||
+        (this.config.get<string>('S3_PRIVATE_BUCKET') && this.config.get<string>('S3_PUBLIC_BUCKET')),
+    );
+    const missing = [
+      ...required.filter((key) => !this.config.get<string>(key)),
+      bucketConfigured ? null : 'S3_BUCKET or S3_PRIVATE_BUCKET+S3_PUBLIC_BUCKET',
+    ].filter((key): key is string => Boolean(key));
     const provider = this.config.get<string>('STORAGE_PROVIDER')?.trim() || 's3-compatible';
     const mode =
       missing.length > 0
@@ -118,9 +125,14 @@ export class HealthService {
 
   private storageExternalReadiness() {
     const storage = this.storageStatus();
-    const configured = ['S3_ENDPOINT', 'S3_BUCKET', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'].filter((key) =>
-      this.config.get<string>(key),
-    );
+    const configured = [
+      'S3_ENDPOINT',
+      'S3_BUCKET',
+      'S3_PRIVATE_BUCKET',
+      'S3_PUBLIC_BUCKET',
+      'S3_ACCESS_KEY',
+      'S3_SECRET_KEY',
+    ].filter((key) => this.config.get<string>(key));
     if (this.config.get<string>('S3_REGION')) {
       configured.push('S3_REGION');
     }

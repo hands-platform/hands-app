@@ -25,6 +25,7 @@ export class FilesService {
 
     const extension = extensionForContentType(input.contentType);
     const key = `${input.purpose}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${extension}`;
+    const bucket = this.s3.bucketForVisibility(input.visibility);
 
     const file = await this.prisma.fileAsset.create({
       data: {
@@ -37,7 +38,7 @@ export class FilesService {
         url: input.visibility === FileVisibility.PUBLIC ? this.s3.publicUrl(key) : null,
       },
     });
-    const presignedPutUrl = this.s3.presign({ method: 'PUT', key, expiresInSeconds: 900 });
+    const presignedPutUrl = this.s3.presign({ method: 'PUT', key, bucket, expiresInSeconds: 900 });
 
     return {
       file,
@@ -77,7 +78,12 @@ export class FilesService {
       throw new ForbiddenException('You do not have access to this file');
     }
 
-    const presignedGetUrl = this.s3.presign({ method: 'GET', key: file.key, expiresInSeconds: 300 });
+    const presignedGetUrl = this.s3.presign({
+      method: 'GET',
+      key: file.key,
+      bucket: this.s3.bucketForVisibility(file.visibility),
+      expiresInSeconds: 300,
+    });
     return {
       file,
       read: { method: 'GET', url: presignedGetUrl ?? `/storage-read-placeholder/${file.key}` },

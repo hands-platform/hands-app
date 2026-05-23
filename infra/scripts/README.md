@@ -4,6 +4,7 @@ Operational scripts:
 
 - `start-hands-local.ps1`, `stop-hands-local.ps1`, and `status-hands-local.ps1` manage the local HANDS API/Admin dev servers on ports 3100 and 3101. The stop script also removes lingering HANDS Node listeners that can keep ports occupied after a parent shell exits.
 - `api-smoke.mjs` runs the end-to-end MVP API flow against a running API.
+- `storage-smoke.mjs` verifies real S3-compatible storage by presigning a provider verification upload, PUT-ing a tiny PNG, completing the file record, and reading it back through an admin signed URL.
 - `check-env.mjs` validates required and recommended environment variables.
 - `external-registration-pack.mjs` prints or writes the external account/key registration pack for HANDS.
 - `setup-doctor.mjs` runs the external setup preflight and regenerates operator handoff files.

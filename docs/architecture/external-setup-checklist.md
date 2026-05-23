@@ -211,6 +211,8 @@ STORAGE_PROVIDER=s3-compatible
 S3_ENDPOINT=
 S3_REGION=
 S3_BUCKET=
+S3_PRIVATE_BUCKET=
+S3_PUBLIC_BUCKET=
 S3_ACCESS_KEY=
 S3_SECRET_KEY=
 S3_PUBLIC_BASE_URL=
@@ -222,16 +224,19 @@ Supabase Storage S3 example:
 STORAGE_PROVIDER=supabase-storage-s3
 S3_ENDPOINT=https://<project-ref>.storage.supabase.co/storage/v1/s3
 S3_REGION=auto
-S3_BUCKET=hands-files
+S3_BUCKET=
+S3_PRIVATE_BUCKET=hands-private
+S3_PUBLIC_BUCKET=hands-public
 S3_ACCESS_KEY=
 S3_SECRET_KEY=
-S3_PUBLIC_BASE_URL=https://<project-ref>.supabase.co/storage/v1/object/public/hands-files
+S3_PUBLIC_BASE_URL=https://<project-ref>.supabase.co/storage/v1/object/public/hands-public
 ```
 
 Rules:
 
 - Provider verification files stay private.
 - Public provider profile media can be served through CDN.
+- Prefer separate `hands-private` and `hands-public` buckets for Supabase Storage so verification files can never be exposed through the public media URL.
 - Never commit uploaded files or service account credentials.
 - Supabase projects should use the generated staging SQL bundle so schema, buckets, and RLS policies are applied in the expected order.
 
@@ -246,6 +251,14 @@ Then paste this generated file into the Supabase SQL Editor:
 
 ```text
 C:\dev\massage-vn-workspace\repo\infra\supabase\.generated\hands-staging-setup.sql
+```
+
+After S3-compatible storage credentials are filled, run a real upload/read smoke:
+
+```powershell
+cd C:\dev\massage-vn-workspace\repo
+npm.cmd run external:check:storage
+npm.cmd run storage:smoke
 ```
 
 ## 6. Domains / Deployment

@@ -136,7 +136,9 @@ const registrationItems = [
         hasValue(env.S3_ENDPOINT),
       ),
       envItem('S3_REGION', 'auto', hasValue(env.S3_REGION)),
-      envItem('S3_BUCKET', '<bucket-name>', hasValue(env.S3_BUCKET)),
+      envItem('S3_BUCKET', '<single-bucket-fallback-for-local-or-r2>', hasValue(env.S3_BUCKET)),
+      envItem('S3_PRIVATE_BUCKET', 'hands-private', hasValue(env.S3_PRIVATE_BUCKET)),
+      envItem('S3_PUBLIC_BUCKET', 'hands-public', hasValue(env.S3_PUBLIC_BUCKET)),
       envItem('S3_ACCESS_KEY', '<storage-access-key>', hasValue(env.S3_ACCESS_KEY)),
       envItem('S3_SECRET_KEY', '<storage-secret-key>', hasValue(env.S3_SECRET_KEY)),
       envItem('S3_PUBLIC_BASE_URL', '<public-cdn-or-bucket-url>', hasValue(env.S3_PUBLIC_BASE_URL)),
@@ -144,9 +146,11 @@ const registrationItems = [
     setup: [
       'Keep verification files private.',
       'Serve approved provider public media through CDN/public bucket URL.',
+      'For Supabase Storage, prefer S3_PRIVATE_BUCKET=hands-private and S3_PUBLIC_BUCKET=hands-public instead of placing private verification files in a public bucket.',
     ],
     verify: [
       'npm.cmd run external:check:storage',
+      'npm.cmd run storage:smoke',
       'powershell -ExecutionPolicy Bypass -File .\\infra\\scripts\\verify-local.ps1 -WithServices',
     ],
   },

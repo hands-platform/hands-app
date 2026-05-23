@@ -40,4 +40,5 @@ npm.cmd run external:check:supabase
 npm.cmd run external:check:maps
 npm.cmd run external:check:payments
 npm.cmd run external:check:storage
+npm.cmd run storage:smoke
 ```

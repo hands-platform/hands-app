@@ -5,6 +5,7 @@ import { createHmac, createHash } from 'crypto';
 type PresignInput = {
   method: 'GET' | 'PUT';
   key: string;
+  bucket?: string;
   expiresInSeconds?: number;
 };
 
@@ -17,7 +18,7 @@ export class S3PresignService {
   isConfigured() {
     return Boolean(
       this.config.get<string>('S3_ENDPOINT') &&
-      this.config.get<string>('S3_BUCKET') &&
+      this.hasBucketConfiguration() &&
       this.config.get<string>('S3_ACCESS_KEY') &&
       this.config.get<string>('S3_SECRET_KEY'),
     );
@@ -52,13 +53,23 @@ export class S3PresignService {
     return `${publicBaseUrl.replace(/\/$/, '')}/${encodePath(key)}`;
   }
 
+  bucketForVisibility(visibility: 'PUBLIC' | 'PRIVATE') {
+    if (visibility === 'PUBLIC') {
+      return this.config.get<string>('S3_PUBLIC_BUCKET')?.trim() || this.defaultBucket();
+    }
+    return this.config.get<string>('S3_PRIVATE_BUCKET')?.trim() || this.defaultBucket();
+  }
+
   presign(input: PresignInput) {
     if (!this.isConfigured()) {
       return null;
     }
 
     const endpoint = new URL(this.config.getOrThrow<string>('S3_ENDPOINT'));
-    const bucket = this.config.getOrThrow<string>('S3_BUCKET');
+    const bucket = input.bucket ?? this.defaultBucket();
+    if (!bucket) {
+      return null;
+    }
     const accessKey = this.config.getOrThrow<string>('S3_ACCESS_KEY');
     const secretKey = this.config.getOrThrow<string>('S3_SECRET_KEY');
     const region = this.config.get<string>('S3_REGION') ?? 'auto';
@@ -92,6 +103,18 @@ export class S3PresignService {
     query.set('X-Amz-Signature', hmacHex(signingKey, stringToSign));
 
     return `${endpoint.origin}${objectPath}?${query.toString()}`;
+  }
+
+  private defaultBucket() {
+    return this.config.get<string>('S3_BUCKET')?.trim();
+  }
+
+  private hasBucketConfiguration() {
+    return Boolean(
+      this.defaultBucket() ||
+        (this.config.get<string>('S3_PRIVATE_BUCKET')?.trim() &&
+          this.config.get<string>('S3_PUBLIC_BUCKET')?.trim()),
+    );
   }
 }
 

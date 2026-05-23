@@ -254,7 +254,7 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api'}</p>
+      <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3100/api'}</p>
     </>
   );
 }

@@ -15,6 +15,7 @@
     "external:check:maps": "node infra/scripts/check-external-setup.mjs --phase=maps && node infra/scripts/check-map-services.mjs",
     "external:check:payments": "node infra/scripts/check-external-setup.mjs --phase=payments",
     "external:check:storage": "node infra/scripts/check-external-setup.mjs --phase=storage",
+    "storage:smoke": "node infra/scripts/storage-smoke.mjs",
     "external:check:production": "node infra/scripts/check-external-setup.mjs --phase=production",
     "external:check:strict": "node infra/scripts/check-external-setup.mjs --strict",
     "external:pack": "node infra/scripts/external-registration-pack.mjs",

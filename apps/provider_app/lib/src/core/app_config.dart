@@ -23,12 +23,12 @@ class AppConfig {
 
   static const apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000/api',
+    defaultValue: 'http://localhost:3100/api',
   );
 
   static const socketBaseUrl = String.fromEnvironment(
     'SOCKET_BASE_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'http://localhost:3100',
   );
 
   static const supabaseUrl = String.fromEnvironment(
