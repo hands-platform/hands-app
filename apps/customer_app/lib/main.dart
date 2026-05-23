@@ -612,9 +612,7 @@ class ProviderListCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isRecentLocation
-                          ? 'Location ${formatLastLocation(provider['currentLocationUpdatedAt'])}'
-                          : 'Last location not recent',
+                      providerLocationFreshnessLabel(provider),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: isRecentLocation
                                 ? Colors.black54
@@ -3124,6 +3122,7 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
   }
 
   Future<void> selectSearchResult(AddressSearchResult result) async {
+    FocusScope.of(context).unfocus();
     final point = LatLng(result.latitude, result.longitude);
     setState(() {
       selectedPoint = point;
@@ -3154,6 +3153,7 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
   }
 
   void confirmSelection() {
+    FocusScope.of(context).unfocus();
     Navigator.of(context).pop(
       SelectedCustomerLocation(
         latitude: selectedPoint.latitude,
@@ -3232,11 +3232,21 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
                                     child: CircularProgressIndicator(
                                         strokeWidth: 2)),
                               )
-                            : IconButton(
-                                onPressed: () =>
-                                    unawaited(useCurrentLocation()),
-                                icon: const Icon(Icons.my_location_outlined),
-                              ),
+                            : searchController.text.isNotEmpty
+                                ? IconButton(
+                                    onPressed: () {
+                                      debounce?.cancel();
+                                      searchController.clear();
+                                      setState(() => searchResults = []);
+                                    },
+                                    icon: const Icon(Icons.close),
+                                  )
+                                : IconButton(
+                                    onPressed: () =>
+                                        unawaited(useCurrentLocation()),
+                                    icon:
+                                        const Icon(Icons.my_location_outlined),
+                                  ),
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
@@ -4755,6 +4765,17 @@ String formatLastLocation(dynamic value) {
     return '${difference.inHours}h ago';
   }
   return '${difference.inDays}d ago';
+}
+
+String providerLocationFreshnessLabel(Map<String, dynamic> provider) {
+  final ageLabel = formatLastLocation(provider['currentLocationUpdatedAt']);
+  if (ageLabel == 'not shared yet') {
+    return 'Location not shared yet';
+  }
+  if (provider['isRecentLocation'] == false) {
+    return 'Last updated $ageLabel';
+  }
+  return 'Location $ageLabel';
 }
 
 class CustomerLocationSnapshot {
