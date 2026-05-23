@@ -72,12 +72,15 @@ Current project:
 
 - Project name: `hands-staging`
 - Project URL: `https://adzpstrkpzwpukuboxzj.supabase.co`
+- SQL bundle applied successfully
+- PostgREST role grant patch applied successfully
+- Remote REST table access verified with service role
+- Storage buckets verified: `hands-public`, `hands-private`
+- Supabase JWT secret verified against the anon token
+- Local API Supabase auth smoke test passed
 
 Need from operator:
 
-- anon public key
-- JWT secret
-- service role key
 - confirmation that Phone Auth is enabled
 - confirmation of the SMS provider used for Vietnam OTP
 

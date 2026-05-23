@@ -371,8 +371,11 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-23:
 - Push provider mode: `PUSH_PROVIDER=in_app_only` locally
 - MapTiler API key: pending
 - Geoapify API key: pending
-- Supabase URL / anon key / JWT secret: pending for real Supabase OTP
-- Mobile auth switch: still `AUTH_BACKEND=nest` locally until Supabase Phone Auth is configured
+- Supabase URL / anon key / JWT secret / service role key: configured locally in ignored `.env`
+- Supabase SQL bundle: applied successfully to `hands-staging`
+- Supabase REST/storage verification: passing with service role
+- API Supabase auth smoke: passing locally
+- Mobile auth switch: still `AUTH_BACKEND=nest` locally until Supabase Phone Auth/SMS is configured
 - Local MinIO storage: ready for MVP
 - Production SMS provider: not selected
 - MoMo / VNPay merchant credentials: not filled
@@ -380,13 +383,12 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-23:
 
 Phase-specific external checks currently block only on missing external console values:
 
-- `supabase-auth`: `AUTH_BACKEND=supabase`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET`
+- `supabase-auth`: Phone Auth/SMS E2E not yet performed
 - `maps`: `MAPTILER_API_KEY`, `GEOAPIFY_API_KEY`
 - `payments`: `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY`, `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`
 
 The next external setup items to complete are:
 
-- Supabase URL / anon key / JWT secret for real OTP migration
 - MapTiler API key
 - Geoapify API key
 - production push provider decision

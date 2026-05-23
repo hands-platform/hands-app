@@ -182,6 +182,16 @@ This is a drift guard for the migration draft; it does not replace running the S
 10. Run `npm.cmd run external:check:supabase`.
 11. Start the API with `SUPABASE_JWT_SECRET` and run `npm.cmd run auth:supabase-smoke`.
 
+Current `hands-staging` status:
+
+- Project URL: `https://adzpstrkpzwpukuboxzj.supabase.co`
+- SQL bundle: applied
+- PostgREST grants patch: applied
+- REST table access: verified with service role
+- Storage buckets: `hands-public`, `hands-private`
+- Local API Supabase auth smoke: passing
+- Mobile OTP switch: waiting for Supabase Phone Auth/SMS configuration
+
 Rollback during staging is simple: create a fresh staging Supabase project and rerun the generated bundle. Do not run destructive SQL against production-like data until backup/restore has been tested.
 
 ## Safe Migration Order
