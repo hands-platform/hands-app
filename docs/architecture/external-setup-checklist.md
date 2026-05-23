@@ -28,6 +28,7 @@ C:\dev\massage-vn-workspace\repo\infra\env\hands-staging.env.example
 - Registrar/DNS provider: PA Vietnam, `https://www.pavietnam.vn`
 - DNS permission: operator can add and delete records directly
 - GitHub organization target: `hands-platform`
+- GitHub repository target: `https://github.com/hands-platform/hands-app`
 - Service area: all Vietnam, starting with local MVP flows around Ho Chi Minh City
 - Customer app languages planned later: Vietnamese, English, Korean, Chinese, Japanese
 - Provider app language planned later: Vietnamese

@@ -54,17 +54,15 @@ Current plan:
 
 - Account type: GitHub Organization
 - Organization owner/name: `hands-platform`
+- Repository: `hands-app`
+- Repository URL: `https://github.com/hands-platform/hands-app`
 - Organization should be created and controlled by `administration@hands.vn`
-
-Need from operator:
-
-- Target repository name and URL after the organization/repository is created.
 
 Current dev remote can stay until the new repository exists. After migration:
 
 ```powershell
 cd C:\dev\massage-vn-workspace\repo
-git remote set-url origin https://github.com/hands-platform/<new-repo>.git
+git remote set-url origin https://github.com/hands-platform/hands-app.git
 git push -u origin develop
 ```
 

@@ -68,7 +68,7 @@ Use:
 
 Register or transfer:
 
-- GitHub organization/repository: `hands-platform`
+- GitHub organization/repository: `hands-platform/hands-app`
 - Supabase
 - MapTiler
 - Geoapify
