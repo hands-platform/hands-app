@@ -25,6 +25,12 @@ The generated bundle applies files in this order:
 
 `location-schema.sql` is intentionally excluded from the bundle. It is an early standalone draft; the current core schema already includes `provider_locations`, `customer_selected_locations`, and `nearby_providers`.
 
+If the generated SQL was applied before PostgREST role grants were added and REST requests return `42501 permission denied for table`, apply this one-time patch in the Supabase SQL Editor:
+
+```text
+C:\dev\massage-vn-workspace\repo\infra\supabase\patches\2026-05-23-postgrest-role-grants.sql
+```
+
 ## After Applying SQL
 
 Set these values in the API environment:

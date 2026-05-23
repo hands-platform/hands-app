@@ -120,6 +120,12 @@ C:\dev\massage-vn-workspace\repo\infra\supabase\.generated\hands-staging-setup.s
 
 Paste that bundle into the Supabase SQL Editor for the HANDS staging project. The bundle includes `hands-core-schema.sql` first and `storage-schema.sql` second. It intentionally excludes `location-schema.sql` because that file is a standalone early draft; the current core schema already includes `provider_locations`, `customer_selected_locations`, and `nearby_providers`.
 
+If the SQL bundle was applied before PostgREST role grants were added and REST requests return `42501 permission denied for table`, apply this patch once:
+
+```text
+C:\dev\massage-vn-workspace\repo\infra\supabase\patches\2026-05-23-postgrest-role-grants.sql
+```
+
 The schema includes:
 
 - `profiles`
