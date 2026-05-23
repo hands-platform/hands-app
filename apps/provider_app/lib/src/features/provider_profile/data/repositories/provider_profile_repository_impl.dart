@@ -19,7 +19,12 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
   @override
   Future<void> goOnline() async {
     await _api.postJson('/provider/online', {});
-    await updateLocation();
+    try {
+      await updateLocation();
+    } catch (_) {
+      await _api.postJson('/provider/offline', {});
+      rethrow;
+    }
   }
 
   @override
