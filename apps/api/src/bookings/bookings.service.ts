@@ -560,6 +560,7 @@ export class BookingsService {
           data: { bookingId, chatRoomId: updated.chatRoom?.id },
         });
       }
+      this.matchingGateway.emitServiceStarted(bookingId, updated);
       return updated;
     }
     return this.updateStatus(bookingId, status);

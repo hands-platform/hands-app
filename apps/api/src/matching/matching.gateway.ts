@@ -72,6 +72,10 @@ export class MatchingGateway implements OnGatewayConnection {
     this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('service.completed', payload);
   }
 
+  emitServiceStarted(bookingId: string, payload: unknown) {
+    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('service.started', payload);
+  }
+
   private async canAccessBookingRoom(bookingId: string, userId: string, roles: Role[]) {
     if (roles.includes(Role.ADMIN)) {
       return true;

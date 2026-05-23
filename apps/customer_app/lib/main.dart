@@ -2165,6 +2165,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
   Map<String, dynamic>? booking;
   late final RealtimeSocket _socket;
   Map<String, dynamic>? latestProviderLocation;
+  String? statusMessage;
   String? error;
   bool loading = false;
 
@@ -2185,12 +2186,12 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
   @override
   void dispose() {
     timer?.cancel();
-    _socket.offEvent('provider.location.updated');
+    detachRealtimeListeners();
     super.dispose();
   }
 
   void attachRealtimeListeners() {
-    _socket.offEvent('provider.location.updated');
+    detachRealtimeListeners();
     _socket.onEvent('provider.location.updated', (payload) {
       final activeBookingId = booking?['id'];
       if (!mounted ||
@@ -2203,6 +2204,39 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
             Map<String, dynamic>.from(payload.cast<String, dynamic>());
       });
     });
+
+    final eventMessages = <String, String>{
+      'provider.joined': 'A backup therapist joined this request.',
+      'booking.matched': 'Your therapist confirmed the booking.',
+      'booking.opened': 'The request is still open for therapist responses.',
+      'booking.expired': 'This booking expired or was cancelled.',
+      'service.started': 'Service started. Chat is now available.',
+      'service.completed': 'Service completed. You can review the booking.',
+    };
+
+    for (final entry in eventMessages.entries) {
+      _socket.onEvent(entry.key, (payload) {
+        if (!mounted) {
+          return;
+        }
+        setState(() => statusMessage = entry.value);
+        unawaited(refreshBooking(showLoading: false));
+      });
+    }
+  }
+
+  void detachRealtimeListeners() {
+    for (final event in [
+      'provider.location.updated',
+      'provider.joined',
+      'booking.matched',
+      'booking.opened',
+      'booking.expired',
+      'service.started',
+      'service.completed',
+    ]) {
+      _socket.offEvent(event);
+    }
   }
 
   Future<void> refreshBooking({bool showLoading = true}) async {
@@ -2233,6 +2267,18 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
         setState(() => loading = false);
       }
     }
+  }
+
+  Future<void> openChatRoom(String chatRoomId) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          initialChatRoomId: chatRoomId,
+          initialBookingId: booking?['id']?.toString(),
+        ),
+      ),
+    );
+    await refreshBooking(showLoading: false);
   }
 
   Future<void> cancelBooking() async {
@@ -2317,6 +2363,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     final fallbackCount = alternativeParticipants.length;
     final customerPoint = deriveBookingLatLng(currentBooking);
     final providerPoint = deriveRealtimeLatLng(latestProviderLocation);
+    final chatRoom = asMap(currentBooking?['chatRoom']);
+    final chatRoomId = chatRoom?['id']?.toString();
     final timeLeft = formatRemainingTime(expiresAt);
     final waitingHeadline = status == 'OPEN_MATCHING'
         ? '${providerDisplayName(currentBooking)} confirmation pending'
@@ -2405,6 +2453,10 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           if (error != null) ...[
                             const SizedBox(height: 12),
                             ErrorPanel(text: error!),
+                          ],
+                          if (statusMessage != null) ...[
+                            const SizedBox(height: 12),
+                            InfoBanner(text: statusMessage!),
                           ],
                           const SizedBox(height: 12),
                           if (service != null)
@@ -2500,6 +2552,15 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                                 ? 'Your chosen therapist gets the first response window. If they take too long, other nearby therapists can appear below.'
                                 : 'Your therapist is confirmed. Keep this page open until service start, or move to Chat when the room is ready.',
                           ),
+                          if (chatRoomId != null) ...[
+                            const SizedBox(height: 12),
+                            FilledButton.icon(
+                              onPressed:
+                                  loading ? null : () => openChatRoom(chatRoomId),
+                              icon: const Icon(Icons.chat_bubble_outline),
+                              label: Text(chatActionLabel(status)),
+                            ),
+                          ],
                           const SizedBox(height: 18),
                           BookingSectionCard(
                             title: 'Therapist location',
@@ -4403,7 +4464,14 @@ String customerBookingNextAction(Map<String, dynamic> booking) {
 }
 
 class ChatScreen extends ConsumerStatefulWidget {
-  const ChatScreen({super.key});
+  const ChatScreen({
+    super.key,
+    this.initialChatRoomId,
+    this.initialBookingId,
+  });
+
+  final String? initialChatRoomId;
+  final String? initialBookingId;
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -4422,6 +4490,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   void initState() {
     super.initState();
     _socket = ref.read(realtimeSocketProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final initialRoomId = widget.initialChatRoomId;
+      if (initialRoomId != null && initialRoomId.isNotEmpty) {
+        unawaited(loadChatRoom(
+          initialRoomId,
+          bookingId: widget.initialBookingId,
+        ));
+      }
+    });
   }
 
   @override
@@ -4497,13 +4574,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() => statusMessage = 'Chat room is not ready yet.');
       return;
     }
+    await loadChatRoom(roomId, bookingId: booking?['id']?.toString());
+  }
+
+  Future<void> loadChatRoom(String roomId, {String? bookingId}) async {
     ref.read(customerRepositoryProvider).joinChat(roomId);
     final loadedMessages =
         await ref.read(customerRepositoryProvider).listChatMessages(roomId);
     setState(() {
       chatRoomId = roomId;
       messages = loadedMessages;
-      statusMessage = 'Chat is ready for booking ${booking?['id']}.';
+      statusMessage = bookingId == null
+          ? 'Chat is ready.'
+          : 'Chat is ready for booking $bookingId.';
     });
     attachChatListener();
   }
@@ -5137,6 +5220,14 @@ String waitingSignalLabel(String status, int fallbackCount) {
     return 'Options open';
   }
   return 'Pending';
+}
+
+String chatActionLabel(String status) {
+  return switch (status) {
+    'IN_SERVICE' => 'Open service chat',
+    'COMPLETED' => 'Open chat history',
+    _ => 'Open chat room',
+  };
 }
 
 String shortCode(Object? value) {

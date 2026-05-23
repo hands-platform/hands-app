@@ -141,6 +141,14 @@ try {
   const matchedPayload = await bookingMatched;
   const chatRoomId = matchedPayload.booking.chatRoom.id;
 
+  const serviceStarted = waitForEvent(
+    customerSocket,
+    'service.started',
+    (payload) => payload?.id === booking.id || payload?.bookingId === booking.id,
+  );
+  await postJson(`/provider/bookings/${booking.id}/start`, providerAuth.accessToken);
+  const serviceStartedPayload = await serviceStarted;
+
   const providerLocationUpdated = waitForEvent(
     customerSocket,
     'provider.location.updated',
@@ -171,6 +179,7 @@ try {
     openedEvent: openedPayload.status,
     joinedEvent: 'provider.joined',
     matchedEvent: matchedPayload.status,
+    serviceStartedEvent: serviceStartedPayload.status,
     locationEvent: {
       lat: locationPayload.lat,
       lng: locationPayload.lng,
