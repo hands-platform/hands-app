@@ -19,6 +19,20 @@ export async function refundBookingPayment(formData: FormData) {
   await runPaymentAction(formData, 'refund');
 }
 
+export async function addBookingOpsNote(formData: FormData) {
+  const bookingId = String(formData.get('bookingId') ?? '');
+  const note = String(formData.get('note') ?? '');
+  const preset = String(formData.get('preset') ?? '');
+  if (!bookingId || (!note.trim() && !preset.trim())) {
+    return;
+  }
+
+  await adminPost(`/admin/bookings/${bookingId}/ops-note`, { note, preset }, null);
+  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath('/bookings');
+  revalidatePath('/audit-log');
+}
+
 async function runPaymentAction(formData: FormData, action: 'sync' | 'capture' | 'release' | 'refund') {
   const bookingId = String(formData.get('bookingId'));
   const paymentId = String(formData.get('paymentId'));

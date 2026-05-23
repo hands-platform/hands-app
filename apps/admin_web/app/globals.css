@@ -112,6 +112,44 @@ a {
   justify-content: flex-end;
 }
 
+.ops-note-panel {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.8fr);
+}
+
+.ops-note-history {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  max-height: 240px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.ops-note-history p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ops-note-form {
+  display: grid;
+  gap: 10px;
+}
+
+.ops-note-form textarea {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+  font: inherit;
+  min-height: 122px;
+  padding: 10px;
+  resize: vertical;
+}
+
 .ops-signal-card {
   display: grid;
   gap: 8px;
@@ -572,8 +610,10 @@ button:disabled {
 
   .toolbar,
   .monitor-meta,
-  .ops-command-center {
+  .ops-command-center,
+  .ops-note-panel {
     display: grid;
+    grid-template-columns: 1fr;
   }
 
   .ops-command-center .actions {

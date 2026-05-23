@@ -1,7 +1,13 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AdminBookingDetail, AdminChatMessage, AdminLocationSnapshot, adminGet } from '../../../lib/admin-api';
-import { captureBookingPayment, refundBookingPayment, releaseBookingPayment, syncBookingPayment } from './actions';
+import {
+  addBookingOpsNote,
+  captureBookingPayment,
+  refundBookingPayment,
+  releaseBookingPayment,
+  syncBookingPayment,
+} from './actions';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -161,6 +167,46 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card ops-note-panel" style={{ marginBottom: 16 }}>
+        <div>
+          <h2>Operator notes</h2>
+          <p className="muted">
+            Add internal handling notes for support handoff. Notes are appended to the booking and mirrored to the audit log.
+          </p>
+          <div className="ops-note-history">
+            {booking.notes?.trim() ? (
+              booking.notes
+                .trim()
+                .split('\n')
+                .slice(-6)
+                .map((note) => <p key={note}>{note}</p>)
+            ) : (
+              <p className="muted">No internal notes yet.</p>
+            )}
+          </div>
+        </div>
+        <form action={addBookingOpsNote} className="ops-note-form">
+          <input type="hidden" name="bookingId" value={booking.id} />
+          <textarea
+            aria-label="Operator note"
+            name="note"
+            placeholder="Example: Called provider, confirmed arrival in 15 minutes."
+          />
+          <div className="actions">
+            <button type="submit">Add note</button>
+            <button name="preset" type="submit" value="Customer contacted and updated about the booking status.">
+              Customer contacted
+            </button>
+            <button name="preset" type="submit" value="Provider contacted and asked to confirm location/status.">
+              Provider contacted
+            </button>
+            <button name="preset" type="submit" value="Payment reviewed by operations.">
+              Payment reviewed
+            </button>
+          </div>
+        </form>
       </section>
 
       <section className="card ops-command-center" style={{ marginBottom: 16 }}>

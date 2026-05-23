@@ -75,7 +75,7 @@ export default async function AuditLogPage() {
                   <div className="muted">{log.target}</div>
                 </td>
                 <td>
-                  <a className="pill pill-info" href={relatedBoardHref(log.action)}>
+                  <a className="pill pill-info" href={relatedBoardHref(log.action, log.target)}>
                     {relatedBoardLabel(log.action)}
                   </a>
                   <div className="muted" style={{ marginTop: 6 }}>
@@ -194,6 +194,10 @@ function signalClass(action: string) {
 }
 
 function humanizeAction(action: string) {
+  if (action === 'booking.ops_note.add') {
+    return 'Booking / Operator note added';
+  }
+
   return action
     .split('.')
     .map((part) => part.replace(/[-_]/g, ' '))
@@ -223,15 +227,16 @@ function metadataPreview(metadata: unknown) {
   }
 }
 
-function relatedBoardHref(action: string) {
+function relatedBoardHref(action: string, target?: string) {
+  const targetId = target?.split(':')[1];
   if (action.startsWith('booking.')) {
-    return '/bookings';
+    return targetId ? `/bookings/${targetId}` : '/bookings';
   }
   if (action.startsWith('payment.')) {
-    return '/payments';
+    return targetId ? `/payments#payment-${targetId}` : '/payments';
   }
   if (action.startsWith('refund.')) {
-    return '/refunds';
+    return targetId ? `/refunds#refund-${targetId}` : '/refunds';
   }
   if (action.startsWith('notification.')) {
     return '/notifications';
@@ -288,6 +293,9 @@ function relativeTime(value: string) {
 }
 
 function opsHint(action: string, target: string) {
+  if (action === 'booking.ops_note.add') {
+    return 'Internal operator note was added to the booking handoff trail.';
+  }
   if (action.startsWith('booking.')) {
     return 'Trace booking state changes and verify customer/provider handoff.';
   }
@@ -304,6 +312,9 @@ function opsHint(action: string, target: string) {
 }
 
 function opsDetail(action: string) {
+  if (action === 'booking.ops_note.add') {
+    return 'Use the note to understand customer/provider contact history before taking the next action.';
+  }
   if (action.endsWith('.refund')) {
     return 'Refund actions should line up with booking cancellation or service failure notes.';
   }

@@ -57,6 +57,15 @@ export class AdminController {
     return this.admin.getBookingDetail(id);
   }
 
+  @Post('bookings/:id/ops-note')
+  addBookingOpsNote(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: { note?: string; preset?: string },
+  ) {
+    return this.admin.addBookingOpsNote(user.id, id, body);
+  }
+
   @Get('payments')
   payments() {
     return this.admin.listPayments();

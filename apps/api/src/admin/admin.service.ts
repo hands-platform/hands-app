@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PayoutBatchStatus, Prisma, ReviewStatus, VerificationStatus } from '@prisma/client';
 import { SupabaseAdminService } from '../auth/supabase-admin.service';
 import { EarningsService } from '../earnings/earnings.service';
@@ -205,6 +205,35 @@ export class AdminService {
         },
       },
     });
+  }
+
+  async addBookingOpsNote(actorId: string, bookingId: string, input: { note?: string; preset?: string }) {
+    const note = normalizeNullable(input.note);
+    const preset = normalizeNullable(input.preset);
+    const content = note ?? preset;
+    if (!content) {
+      throw new BadRequestException('Operation note is required');
+    }
+
+    const booking = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      select: { id: true, notes: true, status: true },
+    });
+    const entry = `[${new Date().toISOString()}] ${content}`;
+    const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+    const updated = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { notes },
+    });
+
+    await this.writeAudit(actorId, 'booking.ops_note.add', `booking:${bookingId}`, {
+      bookingId,
+      status: booking.status,
+      note: content,
+      preset,
+    });
+
+    return updated;
   }
 
   listPayments() {
@@ -429,4 +458,9 @@ export class AdminService {
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function normalizeNullable(value?: string | null) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
 }
