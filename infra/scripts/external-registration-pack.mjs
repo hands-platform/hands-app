@@ -55,7 +55,7 @@ const registrationItems = [
       ),
     ],
     setup: [
-      'Create a staging project named HANDS.',
+      'Use organization/workspace name HANDS and project name hands-staging.',
       'Keep Phone Auth/SMS deferred until Vonage credentials are ready for OTP E2E.',
       'Run npm.cmd run supabase:sql:pack, then paste infra/supabase/.generated/hands-staging-setup.sql into the SQL editor.',
       'Keep the service role key only in the API environment.',

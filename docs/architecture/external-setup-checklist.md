@@ -159,7 +159,7 @@ Decision still needed:
 
 Supabase Auth setup:
 
-1. Create or open the HANDS Supabase project.
+1. Create or open the Supabase organization/workspace `HANDS` and project `hands-staging`.
 2. Enable Phone provider in Authentication.
 3. Configure the SMS provider supported by Supabase for Vietnam delivery.
 4. Copy `Project URL`, `anon public`, and the JWT secret into the local `.env`.

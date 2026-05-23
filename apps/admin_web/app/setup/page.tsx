@@ -57,7 +57,7 @@ const setupOrder = [
       'SUPABASE_SERVICE_ROLE_KEY',
     ],
     notes: [
-      'HANDS staging Supabase has been created with the business account.',
+      'Supabase organization/workspace is HANDS and the staging project is hands-staging.',
       'The generated SQL bundle has been applied successfully.',
       'Use infra/env/hands-staging.env.example as the operator fill-in checklist.',
       'Keep AUTH_BACKEND=nest locally until Vonage and Supabase Phone Auth are ready to test.',
