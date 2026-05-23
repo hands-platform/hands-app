@@ -268,6 +268,18 @@ a {
   border-color: #fecaca;
 }
 
+.provider-file-row {
+  border-bottom: 1px solid #edf2e8;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+}
+
+.provider-file-row:last-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
 .stack {
   display: grid;
   gap: 10px;

@@ -138,6 +138,17 @@ const verificationUpload = await postJson('/files/presign', providerAuth.accessT
   visibility: 'PRIVATE',
   purpose: 'provider-verification',
 });
+const completedVerificationUpload = await postJson(
+  `/files/${verificationUpload.file.id}/complete`,
+  providerAuth.accessToken,
+  { sizeBytes: 2048 },
+);
+if (
+  completedVerificationUpload.uploadStatus !== 'UPLOADED' ||
+  completedVerificationUpload.sizeBytes !== 2048
+) {
+  throw new Error(`Verification upload was not marked complete: ${JSON.stringify(completedVerificationUpload)}`);
+}
 await postJson('/provider/verification/submit', providerAuth.accessToken, {
   fileIds: [verificationUpload.file.id],
 });
@@ -504,6 +515,7 @@ console.log({
   refundId: refund?.refunds?.at(-1)?.id ?? null,
   refundCount: adminRefunds.length,
   verificationFileId: verificationUpload.file.id,
+  verificationUploadStatus: completedVerificationUpload.uploadStatus,
   verificationReadStorageMode: verificationReadUrl.storageMode,
   customerNotifications: notifications.length,
   retryAccepted,

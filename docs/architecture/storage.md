@@ -4,16 +4,27 @@
 
 The API exposes `POST /api/files/presign` to create a `FileAsset` record and return an upload contract:
 
-- `file` - database record with key, content type, visibility, and CDN/private metadata.
+- `file` - database record with key, content type, purpose, visibility, owner, and CDN/private metadata.
 - `upload.method` - currently `PUT`.
 - `upload.url` - S3/R2-compatible presigned PUT URL when storage env vars are configured.
 - `upload.headers` - client must send matching `content-type`.
 - `storageMode` - `s3-compatible-presigned`, `supabase-storage-s3`, or `placeholder`.
 
+The created record starts with `uploadStatus=PENDING`. After the app uploads the bytes to the returned PUT URL, it must call `POST /api/files/:id/complete` with an optional `sizeBytes` value. The API then marks the asset as `UPLOADED`, stores `uploadedAt`, and shows the result in admin provider verification views.
+
+This explicit completion step prevents an admin from treating an empty presigned contract as a finished verification document.
+
 ## Visibility
 
 - `PRIVATE` - provider verification IDs, passports, private moderation materials.
 - `PUBLIC` - provider gallery/profile media intended for CDN.
+
+## Purposes
+
+- `PROVIDER_VERIFICATION` - private ID, certificate, selfie, and work-permit files.
+- `PROVIDER_GALLERY` - public profile/gallery media.
+- `CHAT_ATTACHMENT` - private chat files.
+- `PROFILE_IMAGE` - public profile avatar media.
 
 ## Storage Providers
 

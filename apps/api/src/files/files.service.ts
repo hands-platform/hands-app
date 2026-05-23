@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { FileVisibility, Role } from '@prisma/client';
+import { FilePurpose, FileUploadStatus, FileVisibility, Role } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,7 +30,9 @@ export class FilesService {
       data: {
         key,
         contentType: input.contentType,
+        purpose: toFilePurpose(input.purpose),
         visibility: input.visibility,
+        ownerUserId: user.id,
         providerVerificationId,
         url: input.visibility === FileVisibility.PUBLIC ? this.s3.publicUrl(key) : null,
       },
@@ -83,6 +85,34 @@ export class FilesService {
     };
   }
 
+  async completeUpload(user: AuthenticatedUser, fileId: string, input: { sizeBytes?: number }) {
+    const file = await this.prisma.fileAsset.findUnique({
+      where: { id: fileId },
+      include: { providerVerification: { include: { providerProfile: true } } },
+    });
+    if (!file) {
+      throw new NotFoundException('File not found');
+    }
+
+    if (!this.canManageFile(user, file)) {
+      throw new ForbiddenException('You do not have access to this file');
+    }
+
+    const sizeBytes = Number(input.sizeBytes ?? 0);
+    if (input.sizeBytes !== undefined && (!Number.isInteger(sizeBytes) || sizeBytes < 0)) {
+      throw new BadRequestException('sizeBytes must be a non-negative integer');
+    }
+
+    return this.prisma.fileAsset.update({
+      where: { id: fileId },
+      data: {
+        uploadStatus: FileUploadStatus.UPLOADED,
+        uploadedAt: new Date(),
+        sizeBytes: input.sizeBytes === undefined ? undefined : sizeBytes,
+      },
+    });
+  }
+
   private async resolveProviderVerificationId(user: AuthenticatedUser, input: PresignInput) {
     if (input.purpose !== 'provider-verification') {
       return input.providerVerificationId;
@@ -125,7 +155,49 @@ export class FilesService {
         throw new BadRequestException('providerVerificationId is required for provider verification files');
       }
     }
+
+    if (['provider-gallery', 'profile-image'].includes(input.purpose)) {
+      if (!user.roles.includes(Role.PROVIDER) && !user.roles.includes(Role.ADMIN)) {
+        throw new BadRequestException('Provider media uploads require provider or admin role');
+      }
+      if (input.visibility !== FileVisibility.PUBLIC) {
+        throw new BadRequestException('Provider gallery and profile images must be public');
+      }
+    }
+
+    if (input.purpose === 'chat-attachment') {
+      if (input.visibility !== FileVisibility.PRIVATE) {
+        throw new BadRequestException('Chat attachments must be private in the MVP');
+      }
+    }
   }
+
+  private canManageFile(
+    user: AuthenticatedUser,
+    file: {
+      ownerUserId: string | null;
+      providerVerification?: { providerProfile: { userId: string } } | null;
+    },
+  ) {
+    return (
+      user.roles.includes(Role.ADMIN) ||
+      file.ownerUserId === user.id ||
+      (user.roles.includes(Role.PROVIDER) && file.providerVerification?.providerProfile.userId === user.id)
+    );
+  }
+}
+
+function toFilePurpose(purpose: PresignInput['purpose']) {
+  if (purpose === 'provider-gallery') {
+    return FilePurpose.PROVIDER_GALLERY;
+  }
+  if (purpose === 'chat-attachment') {
+    return FilePurpose.CHAT_ATTACHMENT;
+  }
+  if (purpose === 'profile-image') {
+    return FilePurpose.PROFILE_IMAGE;
+  }
+  return FilePurpose.PROVIDER_VERIFICATION;
 }
 
 function extensionForContentType(contentType: string) {

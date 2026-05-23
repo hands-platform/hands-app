@@ -27,6 +27,15 @@ export class FilesController {
     return this.files.createPresignedUpload(user, body);
   }
 
+  @Post(':id/complete')
+  completeUpload(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') fileId: string,
+    @Body() body: { sizeBytes?: number },
+  ) {
+    return this.files.completeUpload(user, fileId, body ?? {});
+  }
+
   @Get(':id/read-url')
   createReadUrl(@CurrentUser() user: AuthenticatedUser, @Param('id') fileId: string) {
     return this.files.createReadUrl(user, fileId);

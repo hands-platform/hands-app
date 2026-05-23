@@ -15,6 +15,8 @@ const enumChecks = [
   { prisma: 'ReviewStatus', sql: 'review_status' },
   { prisma: 'EarningStatus', sql: 'earning_status' },
   { prisma: 'PayoutBatchStatus', sql: 'payout_batch_status' },
+  { prisma: 'FilePurpose', sql: 'file_purpose' },
+  { prisma: 'FileUploadStatus', sql: 'file_upload_status' },
 ];
 
 const requiredTables = [
@@ -69,6 +71,24 @@ if (!/create\s+policy\s+"messages participants insert"/i.test(supabaseSchema)) {
 
 if (!/create\s+or\s+replace\s+function\s+public\.nearby_providers/i.test(supabaseSchema)) {
   failures.push('Supabase core schema is missing nearby_providers radius search function.');
+}
+
+const requiredFileSchemaFragments = [
+  { label: 'files purpose enum column', pattern: /purpose\s+public\.file_purpose\s+not\s+null/i },
+  {
+    label: 'files upload status enum column',
+    pattern: /upload_status\s+public\.file_upload_status\s+not\s+null/i,
+  },
+  { label: 'files uploaded_at column', pattern: /uploaded_at\s+timestamptz/i },
+  { label: 'files size_bytes column', pattern: /size_bytes\s+integer/i },
+  { label: 'files owner purpose index', pattern: /files_owner_purpose_idx/i },
+  { label: 'files visibility purpose index', pattern: /files_visibility_purpose_idx/i },
+];
+
+for (const fragment of requiredFileSchemaFragments) {
+  if (!fragment.pattern.test(supabaseSchema)) {
+    failures.push(`Supabase core schema is missing ${fragment.label}.`);
+  }
 }
 
 if (failures.length > 0) {

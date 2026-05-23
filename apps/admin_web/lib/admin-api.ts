@@ -21,7 +21,17 @@ export type AdminProvider = {
     submittedAt?: string | null;
     reviewedAt?: string | null;
     rejectionReason?: string | null;
-    files?: Array<{ id: string; key: string; contentType: string; visibility: string; url?: string | null }>;
+    files?: Array<{
+      id: string;
+      key: string;
+      contentType: string;
+      purpose?: string;
+      visibility: string;
+      uploadStatus?: string;
+      uploadedAt?: string | null;
+      sizeBytes?: number | null;
+      url?: string | null;
+    }>;
   } | null;
   services?: Array<{ service?: { name: string } }>;
   user?: {

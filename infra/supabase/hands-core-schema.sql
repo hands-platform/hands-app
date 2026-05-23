@@ -106,6 +106,25 @@ exception
   when duplicate_object then null;
 end $$;
 
+do $$
+begin
+  create type public.file_purpose as enum (
+    'PROVIDER_VERIFICATION',
+    'PROVIDER_GALLERY',
+    'CHAT_ATTACHMENT',
+    'PROFILE_IMAGE'
+  );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.file_upload_status as enum ('PENDING', 'UPLOADED', 'FAILED');
+exception
+  when duplicate_object then null;
+end $$;
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role public.user_role not null default 'CUSTOMER',
@@ -332,8 +351,11 @@ create table if not exists public.files (
   bucket text not null,
   path text not null,
   visibility public.file_visibility not null default 'PRIVATE',
-  purpose text,
+  purpose public.file_purpose not null default 'PROVIDER_VERIFICATION',
+  upload_status public.file_upload_status not null default 'PENDING',
   content_type text,
+  uploaded_at timestamptz,
+  size_bytes integer check (size_bytes is null or size_bytes >= 0),
   created_at timestamptz not null default now(),
   unique (bucket, path)
 );
@@ -404,6 +426,8 @@ create index if not exists push_devices_user_idx on public.push_devices(user_id,
 create index if not exists notification_deliveries_notification_idx
   on public.notification_deliveries(notification_id, attempted_at desc);
 create index if not exists files_owner_idx on public.files(owner_id, created_at desc);
+create index if not exists files_owner_purpose_idx on public.files(owner_id, purpose, created_at desc);
+create index if not exists files_visibility_purpose_idx on public.files(visibility, purpose, created_at desc);
 create index if not exists location_snapshots_provider_idx on public.location_snapshots(provider_id, recorded_at desc);
 create index if not exists refunds_booking_idx on public.refunds(booking_id, created_at desc);
 create index if not exists admin_audit_logs_created_idx on public.admin_audit_logs(created_at desc);

@@ -118,16 +118,32 @@ export default async function ProvidersPage() {
                 <td>
                   {provider.verification?.files?.length
                     ? provider.verification.files.map((file) => (
-                        <p key={file.id} className="muted">
-                          {file.contentType} /{' '}
-                          {fileReadUrls.get(file.id) ? (
-                            <a href={fileReadUrls.get(file.id)} target="_blank" rel="noreferrer">
-                              {file.key}
-                            </a>
-                          ) : (
-                            file.key
-                          )}
-                        </p>
+                        <div key={file.id} className="provider-file-row">
+                          <div className="participant-list" style={{ marginBottom: 6 }}>
+                            <span className="pill pill-info">{file.purpose ?? 'PROVIDER_VERIFICATION'}</span>
+                            <span
+                              className={`pill ${
+                                file.uploadStatus === 'UPLOADED' ? 'pill-success' : 'pill-warn'
+                              }`}
+                            >
+                              {file.uploadStatus ?? 'PENDING'}
+                            </span>
+                          </div>
+                          <p className="muted">
+                            {file.contentType}
+                            {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
+                            {file.uploadedAt ? ` / uploaded ${new Date(file.uploadedAt).toLocaleString()}` : ''}
+                          </p>
+                          <p className="muted">
+                            {fileReadUrls.get(file.id) ? (
+                              <a href={fileReadUrls.get(file.id)} target="_blank" rel="noreferrer">
+                                {file.key}
+                              </a>
+                            ) : (
+                              file.key
+                            )}
+                          </p>
+                        </div>
                       ))
                     : 'None'}
                 </td>
@@ -381,4 +397,14 @@ function providerLocationAgeLabel(value?: string | null) {
 
   const ageHours = Math.round(ageMinutes / 60);
   return `Updated ${ageHours}h ago.`;
+}
+
+function formatBytes(value: number) {
+  if (value < 1024) {
+    return `${value} B`;
+  }
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }

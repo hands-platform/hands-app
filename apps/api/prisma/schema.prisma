@@ -68,6 +68,19 @@ enum FileVisibility {
   PRIVATE
 }
 
+enum FilePurpose {
+  PROVIDER_VERIFICATION
+  PROVIDER_GALLERY
+  CHAT_ATTACHMENT
+  PROFILE_IMAGE
+}
+
+enum FileUploadStatus {
+  PENDING
+  UPLOADED
+  FAILED
+}
+
 enum ReviewStatus {
   PUBLISHED
   HIDDEN
@@ -118,6 +131,7 @@ model User {
   chatMessages    ChatMessage[]
   auditLogs        AdminAuditLog[]  @relation("AdminActor")
   bookingOpsTasks  BookingOpsTask[] @relation("BookingOpsTaskActor")
+  fileAssets       FileAsset[]      @relation("FileAssetOwner")
 }
 
 model CustomerProfile {
@@ -399,10 +413,19 @@ model FileAsset {
   key                    String                @unique
   url                    String?
   contentType            String
+  purpose                FilePurpose           @default(PROVIDER_VERIFICATION)
   visibility             FileVisibility
+  uploadStatus           FileUploadStatus      @default(PENDING)
+  uploadedAt             DateTime?
+  sizeBytes              Int?
+  ownerUserId            String?
+  owner                  User?                 @relation("FileAssetOwner", fields: [ownerUserId], references: [id])
   providerVerificationId String?
   providerVerification   ProviderVerification? @relation(fields: [providerVerificationId], references: [id])
   createdAt              DateTime              @default(now())
+
+  @@index([ownerUserId, purpose, createdAt])
+  @@index([visibility, purpose, createdAt])
 }
 
 model LocationSnapshot {
