@@ -197,6 +197,9 @@ function humanizeAction(action: string) {
   if (action === 'booking.ops_note.add') {
     return 'Booking / Operator note added';
   }
+  if (action === 'booking.ops_task.update') {
+    return 'Booking / Ops status updated';
+  }
 
   return action
     .split('.')
@@ -296,6 +299,9 @@ function opsHint(action: string, target: string) {
   if (action === 'booking.ops_note.add') {
     return 'Internal operator note was added to the booking handoff trail.';
   }
+  if (action === 'booking.ops_task.update') {
+    return 'Structured booking handling status was updated by an operator.';
+  }
   if (action.startsWith('booking.')) {
     return 'Trace booking state changes and verify customer/provider handoff.';
   }
@@ -314,6 +320,9 @@ function opsHint(action: string, target: string) {
 function opsDetail(action: string) {
   if (action === 'booking.ops_note.add') {
     return 'Use the note to understand customer/provider contact history before taking the next action.';
+  }
+  if (action === 'booking.ops_task.update') {
+    return 'Use the status to see which handoff checks are done, pending, or blocked.';
   }
   if (action.endsWith('.refund')) {
     return 'Refund actions should line up with booking cancellation or service failure notes.';

@@ -7,6 +7,7 @@ import {
   refundBookingPayment,
   releaseBookingPayment,
   syncBookingPayment,
+  updateBookingOpsTask,
 } from './actions';
 
 type PageProps = {
@@ -35,6 +36,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const riskSummary = riskLevel(riskFlags);
   const liveSignals = liveServiceSignals(booking);
   const dispatchSteps = dispatchChecklist(booking);
+  const opsTaskCards = bookingOpsTaskCards(booking);
 
   return (
     <>
@@ -164,6 +166,38 @@ export default async function BookingDetailPage({ params }: PageProps) {
               {step.actionHref && (
                 <ActionLink href={step.actionHref} label={step.actionLabel ?? 'Open'} />
               )}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Structured ops status</h2>
+            <p className="muted">
+              Track concrete handling steps separately from free-text notes. These statuses are saved per booking.
+            </p>
+          </div>
+          <span className={`pill ${opsTaskCards.every((task) => task.status === 'DONE') ? 'pill-success' : 'pill-info'}`}>
+            {opsTaskCards.filter((task) => task.status === 'DONE').length}/{opsTaskCards.length} done
+          </span>
+        </div>
+        <div className="ops-task-grid">
+          {opsTaskCards.map((task) => (
+            <div className={`ops-task-card ops-task-${task.status.toLowerCase()}`} key={task.type}>
+              <div>
+                <span className={`pill ${opsTaskTone(task.status)}`}>{task.status}</span>
+                <h3>{task.label}</h3>
+                <p>{task.helper}</p>
+                <small>{task.updatedBy}</small>
+                {task.note && <small className="ops-task-note">Note: {task.note}</small>}
+              </div>
+              <div className="ops-task-actions">
+                <OpsTaskAction bookingId={booking.id} type={task.type} status="DONE" label="Mark done" />
+                <OpsTaskAction bookingId={booking.id} type={task.type} status="BLOCKED" label="Blocked" />
+                <OpsTaskAction bookingId={booking.id} type={task.type} status="PENDING" label="Reset" />
+              </div>
             </div>
           ))}
         </div>
@@ -339,6 +373,27 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
     </>
+  );
+}
+
+function OpsTaskAction({
+  bookingId,
+  type,
+  status,
+  label,
+}: {
+  bookingId: string;
+  type: string;
+  status: string;
+  label: string;
+}) {
+  return (
+    <form action={updateBookingOpsTask}>
+      <input type="hidden" name="bookingId" value={bookingId} />
+      <input type="hidden" name="type" value={type} />
+      <input type="hidden" name="status" value={status} />
+      <button type="submit">{label}</button>
+    </form>
   );
 }
 
@@ -788,6 +843,54 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
   }
 
   return steps;
+}
+
+function bookingOpsTaskCards(booking: AdminBookingDetail) {
+  const taskByType = new Map((booking.opsTasks ?? []).map((task) => [task.type, task]));
+  const definitions = [
+    {
+      type: 'CUSTOMER_CONTACTED',
+      label: 'Customer contacted',
+      helper: 'Confirm the guest has been updated when waiting, switching provider, cancelling, or resolving payment.',
+    },
+    {
+      type: 'PROVIDER_CONTACTED',
+      label: 'Provider contacted',
+      helper: 'Confirm the therapist has been reached for response, location, arrival, or service progress.',
+    },
+    {
+      type: 'LOCATION_CHECKED',
+      label: 'Location checked',
+      helper: 'Confirm saved customer/provider pins are reasonable. No route or continuous tracking is used.',
+    },
+    {
+      type: 'PAYMENT_REVIEWED',
+      label: 'Payment reviewed',
+      helper: 'Confirm authorization, capture, release, cash fallback, or refund path before closing.',
+    },
+  ];
+
+  return definitions.map((definition) => {
+    const task = taskByType.get(definition.type);
+    return {
+      ...definition,
+      status: task?.status ?? 'PENDING',
+      note: task?.note?.trim() ? task.note.trim() : null,
+      updatedBy: task
+        ? `Updated ${formatDate(task.updatedAt)} by ${task.actor?.fullName ?? task.actor?.phone ?? 'Admin'}`
+        : 'Not checked yet',
+    };
+  });
+}
+
+function opsTaskTone(status: string) {
+  if (status === 'DONE') {
+    return 'pill-success';
+  }
+  if (status === 'BLOCKED') {
+    return 'pill-danger';
+  }
+  return 'pill-warn';
 }
 
 function liveServiceSignals(booking: AdminBookingDetail) {

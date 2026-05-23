@@ -33,6 +33,21 @@ export async function addBookingOpsNote(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function updateBookingOpsTask(formData: FormData) {
+  const bookingId = String(formData.get('bookingId') ?? '');
+  const type = String(formData.get('type') ?? '');
+  const status = String(formData.get('status') ?? '');
+  const note = String(formData.get('note') ?? '');
+  if (!bookingId || !type || !status) {
+    return;
+  }
+
+  await adminPost(`/admin/bookings/${bookingId}/ops-task`, { type, status, note }, null);
+  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath('/bookings');
+  revalidatePath('/audit-log');
+}
+
 async function runPaymentAction(formData: FormData, action: 'sync' | 'capture' | 'release' | 'refund') {
   const bookingId = String(formData.get('bookingId'));
   const paymentId = String(formData.get('paymentId'));

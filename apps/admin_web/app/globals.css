@@ -213,6 +213,61 @@ a {
   border-left-color: #16a34a;
 }
 
+.ops-task-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.ops-task-card {
+  align-content: space-between;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-height: 220px;
+  padding: 14px;
+}
+
+.ops-task-card h3,
+.ops-task-card p {
+  margin: 10px 0 0;
+}
+
+.ops-task-card small {
+  color: #64748b;
+  display: block;
+  font-weight: 700;
+  margin-top: 10px;
+}
+
+.ops-task-note {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(103, 145, 82, 0.2);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.ops-task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ops-task-pending {
+  background: #fffbeb;
+}
+
+.ops-task-done {
+  background: #f0fdf4;
+}
+
+.ops-task-blocked {
+  background: #fff7f7;
+  border-color: #fecaca;
+}
+
 .stack {
   display: grid;
   gap: 10px;
@@ -631,6 +686,10 @@ button:disabled {
   }
 
   .dispatch-checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-task-grid {
     grid-template-columns: 1fr;
   }
 

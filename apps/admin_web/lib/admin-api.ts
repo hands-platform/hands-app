@@ -128,6 +128,17 @@ export type AdminBookingDetail = AdminBooking & {
   review?: AdminReview | null;
   earning?: AdminEarning | null;
   snapshots?: AdminLocationSnapshot[];
+  opsTasks?: AdminBookingOpsTask[];
+};
+
+export type AdminBookingOpsTask = {
+  id: string;
+  bookingId: string;
+  type: string;
+  status: string;
+  note?: string | null;
+  updatedAt: string;
+  actor?: { phone?: string; fullName?: string | null };
 };
 
 export type AdminLocationSnapshot = {

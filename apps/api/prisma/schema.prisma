@@ -89,6 +89,19 @@ enum PayoutBatchStatus {
   CANCELLED
 }
 
+enum BookingOpsTaskType {
+  CUSTOMER_CONTACTED
+  PROVIDER_CONTACTED
+  LOCATION_CHECKED
+  PAYMENT_REVIEWED
+}
+
+enum BookingOpsTaskStatus {
+  PENDING
+  DONE
+  BLOCKED
+}
+
 model User {
   id              String           @id @default(cuid())
   supabaseUserId  String?          @unique
@@ -104,6 +117,7 @@ model User {
   pushDevices     PushDevice[]
   chatMessages    ChatMessage[]
   auditLogs        AdminAuditLog[]  @relation("AdminActor")
+  bookingOpsTasks  BookingOpsTask[] @relation("BookingOpsTaskActor")
 }
 
 model CustomerProfile {
@@ -215,6 +229,24 @@ model Booking {
   refunds            Refund[]
   snapshots          LocationSnapshot[]
   earning            ProviderEarning?
+  opsTasks           BookingOpsTask[]
+}
+
+model BookingOpsTask {
+  id        String               @id @default(cuid())
+  bookingId String
+  type      BookingOpsTaskType
+  status    BookingOpsTaskStatus @default(PENDING)
+  note      String?
+  actorId   String
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  booking   Booking              @relation(fields: [bookingId], references: [id])
+  actor     User                 @relation("BookingOpsTaskActor", fields: [actorId], references: [id])
+
+  @@unique([bookingId, type])
+  @@index([bookingId, status])
+  @@index([actorId, updatedAt])
 }
 
 model BookingService {

@@ -1,5 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { PayoutBatchStatus, Prisma, ReviewStatus, VerificationStatus } from '@prisma/client';
+import {
+  BookingOpsTaskStatus,
+  BookingOpsTaskType,
+  PayoutBatchStatus,
+  Prisma,
+  ReviewStatus,
+  VerificationStatus,
+} from '@prisma/client';
 import { SupabaseAdminService } from '../auth/supabase-admin.service';
 import { EarningsService } from '../earnings/earnings.service';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -193,6 +200,7 @@ export class AdminService {
         refunds: true,
         review: true,
         earning: true,
+        opsTasks: { orderBy: { updatedAt: 'desc' }, include: { actor: { select: { phone: true, fullName: true } } } },
         snapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
         chatRoom: {
           include: {
@@ -234,6 +242,46 @@ export class AdminService {
     });
 
     return updated;
+  }
+
+  async updateBookingOpsTask(
+    actorId: string,
+    bookingId: string,
+    input: { type: BookingOpsTaskType; status: BookingOpsTaskStatus; note?: string },
+  ) {
+    if (!Object.values(BookingOpsTaskType).includes(input.type)) {
+      throw new BadRequestException('Invalid operation task type');
+    }
+    if (!Object.values(BookingOpsTaskStatus).includes(input.status)) {
+      throw new BadRequestException('Invalid operation task status');
+    }
+
+    const note = normalizeNullable(input.note);
+    const task = await this.prisma.bookingOpsTask.upsert({
+      where: { bookingId_type: { bookingId, type: input.type } },
+      update: {
+        status: input.status,
+        note,
+        actorId,
+      },
+      create: {
+        bookingId,
+        type: input.type,
+        status: input.status,
+        note,
+        actorId,
+      },
+      include: { actor: { select: { phone: true, fullName: true } } },
+    });
+
+    await this.writeAudit(actorId, 'booking.ops_task.update', `booking:${bookingId}`, {
+      bookingId,
+      type: input.type,
+      status: input.status,
+      note,
+    });
+
+    return task;
   }
 
   listPayments() {
