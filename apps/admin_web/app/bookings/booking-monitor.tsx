@@ -10,6 +10,9 @@ type Props = {
 };
 
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+const STALE_LOCATION_MINUTES = 30;
+const EXPIRED_LOCATION_HOURS = 24;
 const displayTimeZone = 'Asia/Bangkok';
 const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   dateStyle: 'medium',
@@ -219,9 +222,13 @@ export function BookingMonitor({ bookings }: Props) {
                         : 'Preferred provider not set'}
                     </div>
                     <div className="muted">{selectionPathLabel(booking)}</div>
+                    <div className="muted">{bookingLocationSignalLabel(booking, currentTimeMs)}</div>
                     <div className="participant-list" style={{ marginTop: 8 }}>
                       <span className={`pill ${selectionToneClass(booking)}`}>{selectionLabel(booking)}</span>
                       {booking.chatRoom && <span className="pill pill-success">Chat ready</span>}
+                      <span className={`pill ${bookingLocationToneClass(booking, currentTimeMs)}`}>
+                        {bookingLocationPillLabel(booking, currentTimeMs)}
+                      </span>
                     </div>
                     <div className="participant-list" style={{ marginTop: 8 }}>
                       {booking.preferredProvider && (
@@ -396,10 +403,17 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
     flags.push({ severity: 'high', title: 'Matched without chat' });
   }
   if (
-    ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
+    locationRequiredStatuses.has(booking.status) &&
     !hasProviderLocation(booking)
   ) {
     flags.push({ severity: 'medium', title: 'No provider location signal' });
+  }
+  if (
+    locationRequiredStatuses.has(booking.status) &&
+    hasProviderLocation(booking) &&
+    providerLocationFreshness(booking, nowMs) !== 'recent'
+  ) {
+    flags.push({ severity: 'medium', title: 'Provider location is stale' });
   }
   if (
     booking.chatRoom &&
@@ -429,12 +443,10 @@ function riskLevel(flags: BookingRiskFlag[]) {
 }
 
 function hasProviderLocation(booking: AdminBooking) {
-  if (booking.selectedProvider?.currentLat && booking.selectedProvider?.currentLng) {
+  if (hasProviderCoordinate(booking.selectedProvider)) {
     return true;
   }
-  return (booking.participants ?? []).some(
-    (participant) => participant.providerProfile?.currentLat && participant.providerProfile?.currentLng,
-  );
+  return (booking.participants ?? []).some((participant) => hasProviderCoordinate(participant.providerProfile));
 }
 
 function nextAction(booking: AdminBooking) {
@@ -671,4 +683,108 @@ function preferredProviderStateLabel(booking: AdminBooking) {
     return 'confirmed';
   }
   return 'pending';
+}
+
+function bookingLocationSignalLabel(booking: AdminBooking, nowMs: number) {
+  const provider = providerWithLocation(booking);
+  if (!provider) {
+    return 'Provider location: not shared yet';
+  }
+
+  const updatedAt = provider.currentLocationUpdatedAt;
+  if (!updatedAt) {
+    return 'Provider location: saved pin without timestamp';
+  }
+
+  const age = locationAgeLabel(updatedAt, nowMs);
+  return `Provider location: ${age}`;
+}
+
+function bookingLocationPillLabel(booking: AdminBooking, nowMs: number) {
+  const freshness = providerLocationFreshness(booking, nowMs);
+  if (freshness === 'recent') {
+    return 'Location recent';
+  }
+  if (freshness === 'stale') {
+    return 'Location stale';
+  }
+  if (freshness === 'expired') {
+    return 'Location too old';
+  }
+  return 'No location';
+}
+
+function bookingLocationToneClass(booking: AdminBooking, nowMs: number) {
+  const freshness = providerLocationFreshness(booking, nowMs);
+  if (freshness === 'recent') {
+    return 'pill-success';
+  }
+  if (freshness === 'stale') {
+    return 'pill-warn';
+  }
+  if (freshness === 'expired') {
+    return 'pill-info';
+  }
+  return 'pill-neutral';
+}
+
+function providerLocationFreshness(booking: AdminBooking, nowMs: number): 'recent' | 'stale' | 'expired' | 'missing' {
+  const provider = providerWithLocation(booking);
+  if (!provider?.currentLocationUpdatedAt) {
+    return 'missing';
+  }
+
+  const updatedAt = new Date(provider.currentLocationUpdatedAt).getTime();
+  if (!Number.isFinite(updatedAt)) {
+    return 'missing';
+  }
+
+  const reference = nowMs > 0 ? nowMs : Date.now();
+  const ageMs = reference - updatedAt;
+  if (ageMs > EXPIRED_LOCATION_HOURS * 60 * 60_000) {
+    return 'expired';
+  }
+  if (ageMs > STALE_LOCATION_MINUTES * 60_000) {
+    return 'stale';
+  }
+  return 'recent';
+}
+
+function providerWithLocation(booking: AdminBooking) {
+  if (hasProviderCoordinate(booking.selectedProvider)) {
+    return booking.selectedProvider;
+  }
+
+  return (booking.participants ?? [])
+    .map((participant) => participant.providerProfile)
+    .find((provider) => hasProviderCoordinate(provider));
+}
+
+function hasProviderCoordinate(provider?: { currentLat?: string | number | null; currentLng?: string | number | null } | null) {
+  if (!provider || provider.currentLat === null || provider.currentLat === undefined) {
+    return false;
+  }
+  if (provider.currentLng === null || provider.currentLng === undefined) {
+    return false;
+  }
+  return Number.isFinite(Number(provider.currentLat)) && Number.isFinite(Number(provider.currentLng));
+}
+
+function locationAgeLabel(value: string, nowMs: number) {
+  const updatedAt = new Date(value).getTime();
+  if (!Number.isFinite(updatedAt)) {
+    return 'invalid timestamp';
+  }
+
+  const reference = nowMs > 0 ? nowMs : Date.now();
+  const ageMinutes = Math.max(0, Math.round((reference - updatedAt) / 60_000));
+  if (ageMinutes < 1) {
+    return 'updated just now';
+  }
+  if (ageMinutes < 60) {
+    return `updated ${ageMinutes}m ago`;
+  }
+
+  const ageHours = Math.round(ageMinutes / 60);
+  return `updated ${ageHours}h ago`;
 }

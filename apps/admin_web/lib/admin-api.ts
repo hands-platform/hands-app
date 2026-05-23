@@ -70,6 +70,9 @@ export type AdminBooking = {
     id?: string;
     displayName?: string | null;
     status?: string;
+    currentLat?: string | number | null;
+    currentLng?: string | number | null;
+    currentLocationUpdatedAt?: string | null;
     user?: { phone?: string; fullName?: string | null };
   };
   participants?: Array<{
@@ -86,6 +89,7 @@ export type AdminBooking = {
       user?: { fullName?: string | null; phone?: string };
       currentLat?: string | number | null;
       currentLng?: string | number | null;
+      currentLocationUpdatedAt?: string | null;
       locationSnapshots?: AdminLocationSnapshot[];
     };
   }>;
@@ -111,6 +115,7 @@ export type AdminBooking = {
     user?: { phone?: string; fullName?: string | null };
     currentLat?: string | number | null;
     currentLng?: string | number | null;
+    currentLocationUpdatedAt?: string | null;
     locationSnapshots?: AdminLocationSnapshot[];
   };
   chatRoom?: { id: string; messages?: AdminChatMessage[] } | null;

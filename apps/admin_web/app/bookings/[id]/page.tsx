@@ -7,6 +7,9 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
+const STALE_LOCATION_MINUTES = 30;
+const EXPIRED_LOCATION_HOURS = 24;
+
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
   const booking = await adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null);
@@ -58,6 +61,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <MetricCard label="Payment" value={booking.payment?.status ?? 'NONE'} helper={paymentHint(booking)} />
         <MetricCard label="Providers" value={`${booking.participants?.length ?? 0} joined`} helper={providerHint(booking)} />
         <MetricCard label="Chat" value={booking.chatRoom ? 'Ready' : 'Not ready'} helper={`${messages.length} message(s)`} />
+        <MetricCard label="Location" value={providerLocationMetricValue(booking)} helper={providerLocationMetricHelper(booking)} />
         <MetricCard label="Risk" value={riskSummary.label} helper={riskSummary.helper} />
       </section>
 
@@ -171,6 +175,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Final phone" value={finalProvider?.user?.phone ?? 'No phone'} />
           <InfoRow label="Latest provider pin" value={latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet'} />
           <InfoRow label="Latest pin time" value={latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared'} />
+          <InfoRow label="Location freshness" value={providerLocationMetricHelper(booking)} />
         </div>
       </section>
 
@@ -367,8 +372,15 @@ function opsBadges(booking: AdminBookingDetail) {
   if (booking.chatRoom) {
     badges.push({ label: 'Chat ready', tone: 'pill-info' });
   }
-  if (latestProviderLocation(booking)) {
-    badges.push({ label: 'Location signal', tone: 'pill-info' });
+  const locationFreshness = latestProviderLocationFreshness(booking);
+  if (locationFreshness === 'recent') {
+    badges.push({ label: 'Location recent', tone: 'pill-success' });
+  }
+  if (locationFreshness === 'stale') {
+    badges.push({ label: 'Location stale', tone: 'pill-warn' });
+  }
+  if (locationFreshness === 'expired') {
+    badges.push({ label: 'Location too old', tone: 'pill-info' });
   }
   if (badges.length === 0) {
     badges.push({ label: 'Monitor', tone: 'pill-neutral' });
@@ -446,6 +458,15 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
       title: 'No provider location signal',
       detail: `Booking is ${status}, but the provider has not shared a live pin.`,
       action: 'Ask the provider to share current location from the Provider app.',
+    });
+  }
+
+  if (activeWithLocationNeed && latestProviderLocation(booking) && latestProviderLocationFreshness(booking) !== 'recent') {
+    flags.push({
+      severity: 'medium',
+      title: 'Provider location is stale',
+      detail: `The latest provider pin is ${providerLocationMetricHelper(booking).toLowerCase()}.`,
+      action: 'Ask the provider to share location again from the Provider app.',
     });
   }
 
@@ -615,6 +636,64 @@ function latestProviderLocation(booking: AdminBookingDetail) {
     .filter(Boolean) as AdminLocationSnapshot[];
 
   return participantLocations.sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())[0] ?? null;
+}
+
+function latestProviderLocationFreshness(booking: AdminBookingDetail) {
+  const latest = latestProviderLocation(booking);
+  if (!latest?.recordedAt) {
+    return 'missing';
+  }
+
+  const recordedAt = new Date(latest.recordedAt).getTime();
+  if (!Number.isFinite(recordedAt)) {
+    return 'missing';
+  }
+
+  const ageMs = Date.now() - recordedAt;
+  if (ageMs > EXPIRED_LOCATION_HOURS * 60 * 60_000) {
+    return 'expired';
+  }
+  if (ageMs > STALE_LOCATION_MINUTES * 60_000) {
+    return 'stale';
+  }
+  return 'recent';
+}
+
+function providerLocationMetricValue(booking: AdminBookingDetail) {
+  const freshness = latestProviderLocationFreshness(booking);
+  if (freshness === 'recent') {
+    return 'Recent';
+  }
+  if (freshness === 'stale') {
+    return 'Stale';
+  }
+  if (freshness === 'expired') {
+    return 'Too old';
+  }
+  return 'Missing';
+}
+
+function providerLocationMetricHelper(booking: AdminBookingDetail) {
+  const latest = latestProviderLocation(booking);
+  if (!latest?.recordedAt) {
+    return 'No provider location shared yet';
+  }
+
+  const recordedAt = new Date(latest.recordedAt).getTime();
+  if (!Number.isFinite(recordedAt)) {
+    return 'Provider location timestamp is invalid';
+  }
+
+  const ageMinutes = Math.max(0, Math.round((Date.now() - recordedAt) / 60_000));
+  if (ageMinutes < 1) {
+    return 'Updated just now';
+  }
+  if (ageMinutes < 60) {
+    return `Updated ${ageMinutes}m ago`;
+  }
+
+  const ageHours = Math.round(ageMinutes / 60);
+  return `Updated ${ageHours}h ago`;
 }
 
 function locationTrail(booking: AdminBookingDetail) {
