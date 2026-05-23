@@ -5,6 +5,11 @@ abstract class ProviderVerificationRepository {
     String contentType = 'image/jpeg',
   });
 
+  Future<Map<String, dynamic>> uploadVerificationFile({
+    required List<int> bytes,
+    required String contentType,
+  });
+
   Future<Map<String, dynamic>> submitVerification({
     List<String> fileIds = const [],
   });

@@ -150,6 +150,16 @@ class ProviderRepository {
     );
   }
 
+  Future<Map<String, dynamic>> uploadVerificationFile({
+    required List<int> bytes,
+    required String contentType,
+  }) async {
+    return _verificationRepository.uploadVerificationFile(
+      bytes: bytes,
+      contentType: contentType,
+    );
+  }
+
   Future<Map<String, dynamic>> submitVerification(
       {List<String> fileIds = const []}) async {
     return _verificationRepository.submitVerification(fileIds: fileIds);

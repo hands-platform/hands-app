@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'src/app_state.dart';
@@ -2036,8 +2037,7 @@ class ProviderLocationPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasLocation = latitude != null && longitude != null;
-    final statusColor =
-        hasLocation ? const Color(0xFF5E8E4A) : Colors.black54;
+    final statusColor = hasLocation ? const Color(0xFF5E8E4A) : Colors.black54;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -2459,11 +2459,126 @@ double? approximateDistanceMeters(
 
 double _degreesToRadians(double degrees) => degrees * math.pi / 180;
 
-class ProfileScreen extends ConsumerWidget {
+class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  late Future<Map<String, dynamic>> _verificationFuture;
+  final List<String> _uploadedFileIds = [];
+  bool _isUploading = false;
+  bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificationFuture = ref.read(providerRepositoryProvider).verification();
+  }
+
+  void _refreshVerification() {
+    setState(() {
+      _verificationFuture = ref.read(providerRepositoryProvider).verification();
+    });
+  }
+
+  Future<void> _pickAndUploadVerificationFile() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 2400,
+    );
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      _isUploading = true;
+    });
+    try {
+      final bytes = await image.readAsBytes();
+      final contentType =
+          image.mimeType ?? guessImageContentTypeFromName(image.name);
+      final completedFile = await ref
+          .read(providerRepositoryProvider)
+          .uploadVerificationFile(bytes: bytes, contentType: contentType);
+      final fileId = completedFile['id']?.toString();
+      if (fileId != null && fileId.isNotEmpty) {
+        _uploadedFileIds.add(fileId);
+      }
+      _refreshVerification();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Verification file uploaded: ${image.name}')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Upload failed: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _submitVerification(List<dynamic> existingFiles) async {
+    final uploadedExistingIds = existingFiles
+        .whereType<Map>()
+        .where((file) => file['uploadStatus']?.toString() == 'UPLOADED')
+        .map((file) => file['id']?.toString())
+        .whereType<String>()
+        .toList();
+    final fileIds = <String>{...uploadedExistingIds, ..._uploadedFileIds}
+        .where((id) => id.isNotEmpty)
+        .toList();
+
+    if (fileIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Upload at least one verification file first.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+    try {
+      await ref
+          .read(providerRepositoryProvider)
+          .submitVerification(fileIds: fileIds);
+      _uploadedFileIds.clear();
+      _refreshVerification();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Verification submitted')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Submit failed: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
     return SafeArea(
       child: ListView(
@@ -2482,7 +2597,7 @@ class ProfileScreen extends ConsumerWidget {
             const InfoCard(text: 'Login first to manage verification.')
           else
             FutureBuilder<Map<String, dynamic>>(
-              future: ref.read(providerRepositoryProvider).verification(),
+              future: _verificationFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -2508,39 +2623,58 @@ class ProfileScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 12),
+                    if (snapshot.hasError) ...[
+                      ErrorCard(
+                          text: 'Verification load failed: ${snapshot.error}'),
+                      const SizedBox(height: 12),
+                    ],
                     FilledButton.tonalIcon(
-                      onPressed: () async {
-                        final upload = await ref
-                            .read(providerRepositoryProvider)
-                            .createVerificationUpload();
-                        final file = upload['file'] as Map<String, dynamic>?;
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Upload contract created for ${file?['key'] ?? 'file'}')),
-                          );
-                        }
-                      },
+                      onPressed:
+                          _isUploading ? null : _pickAndUploadVerificationFile,
                       icon: const Icon(Icons.file_upload_outlined),
-                      label: const Text('Create verification upload'),
+                      label: Text(_isUploading
+                          ? 'Uploading verification file...'
+                          : 'Upload verification photo'),
                     ),
                     const SizedBox(height: 8),
                     FilledButton.icon(
-                      onPressed: () async {
-                        await ref
-                            .read(providerRepositoryProvider)
-                            .submitVerification();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Verification submitted')),
-                          );
-                        }
-                      },
+                      onPressed: _isSubmitting || _isUploading
+                          ? null
+                          : () => _submitVerification(files),
                       icon: const Icon(Icons.send_outlined),
-                      label: const Text('Submit for review'),
+                      label: Text(_isSubmitting
+                          ? 'Submitting...'
+                          : 'Submit uploaded files for review'),
                     ),
+                    const SizedBox(height: 12),
+                    if (files.isEmpty)
+                      const InfoCard(
+                        text:
+                            'Upload one private verification photo, then submit it for admin review.',
+                      )
+                    else
+                      ...files.map((file) {
+                        final item = asMap(file) ?? <String, dynamic>{};
+                        final key =
+                            item['key']?.toString() ?? 'verification file';
+                        final status =
+                            item['uploadStatus']?.toString() ?? 'PENDING';
+                        final size = asNum(item['sizeBytes'])?.toInt();
+                        final uploadedAt = item['uploadedAt']?.toString();
+                        return Card(
+                          child: ListTile(
+                            leading: Icon(status == 'UPLOADED'
+                                ? Icons.check_circle_outline
+                                : Icons.pending_outlined),
+                            title: Text(key),
+                            subtitle: Text([
+                              status,
+                              if (size != null) '${(size / 1024).ceil()} KB',
+                              if (uploadedAt != null) uploadedAt,
+                            ].join(' · ')),
+                          ),
+                        );
+                      }),
                     const SizedBox(height: 12),
                     for (final item in [
                       'Massage menu',
@@ -2579,6 +2713,17 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+String guessImageContentTypeFromName(String name) {
+  final lowerName = name.toLowerCase();
+  if (lowerName.endsWith('.png')) {
+    return 'image/png';
+  }
+  if (lowerName.endsWith('.webp')) {
+    return 'image/webp';
+  }
+  return 'image/jpeg';
 }
 
 class ProviderMvpScreen extends StatelessWidget {
