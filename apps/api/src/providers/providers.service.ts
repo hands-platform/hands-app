@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { FileVisibility, ProviderStatus, VerificationStatus } from '@prisma/client';
+import { FilePurpose, FileUploadStatus, FileVisibility, ProviderStatus, VerificationStatus } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
@@ -30,7 +30,22 @@ export class ProvidersService {
         verification: { status: VerificationStatus.APPROVED },
       },
       include: {
-        user: { select: { fullName: true, phone: true } },
+        user: {
+          select: {
+            fullName: true,
+            phone: true,
+            fileAssets: {
+              where: {
+                purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+                visibility: FileVisibility.PUBLIC,
+                uploadStatus: FileUploadStatus.UPLOADED,
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 6,
+              select: { id: true, url: true, key: true, purpose: true, contentType: true },
+            },
+          },
+        },
         services: { include: { service: true } },
         reviews: { select: { rating: true }, take: 20, orderBy: { createdAt: 'desc' } },
       },
@@ -45,6 +60,7 @@ export class ProvidersService {
         const currentLocationUpdatedAt = provider.currentLocationUpdatedAt?.toISOString() ?? null;
         return {
           ...provider,
+          ...publicProviderMedia(provider),
           currentLocationUpdatedAt,
           distanceMeters,
           isRecentLocation: provider.currentLocationUpdatedAt
@@ -56,16 +72,31 @@ export class ProvidersService {
       .sort((a, b) => a.distanceMeters - b.distanceMeters || a.status.localeCompare(b.status));
   }
 
-  getDetail(id: string) {
-    return this.prisma.providerProfile.findUniqueOrThrow({
+  async getDetail(id: string) {
+    const provider = await this.prisma.providerProfile.findUniqueOrThrow({
       where: { id },
       include: {
-        user: { select: { fullName: true } },
+        user: {
+          select: {
+            fullName: true,
+            fileAssets: {
+              where: {
+                purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+                visibility: FileVisibility.PUBLIC,
+                uploadStatus: FileUploadStatus.UPLOADED,
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 6,
+              select: { id: true, url: true, key: true, purpose: true, contentType: true },
+            },
+          },
+        },
         verification: { select: { status: true } },
         services: { include: { service: true } },
         reviews: { take: 10, orderBy: { createdAt: 'desc' } },
       },
     });
+    return { ...provider, ...publicProviderMedia(provider) };
   }
 
   async updateProfile(userId: string | undefined, input: { displayName?: string; bio?: string }) {
@@ -186,4 +217,27 @@ function assertVietnamCoordinate(lat: number, lng: number, message: string) {
 
 function isVietnamCoordinate(lat: number, lng: number) {
   return lat >= 8.0 && lat <= 24.0 && lng >= 102.0 && lng <= 110.0;
+}
+
+function publicProviderMedia(provider: {
+  user?: {
+    fileAssets?: Array<{
+      url: string | null;
+      purpose: FilePurpose;
+    }>;
+  } | null;
+}) {
+  const media = provider.user?.fileAssets ?? [];
+  const profileImage =
+    media.find((file) => file.purpose === FilePurpose.PROFILE_IMAGE && file.url)?.url ??
+    media.find((file) => file.url)?.url ??
+    null;
+  const galleryImageUrls = media
+    .filter((file) => file.url)
+    .map((file) => file.url as string);
+
+  return {
+    profileImageUrl: profileImage,
+    galleryImageUrls,
+  };
 }

@@ -2469,6 +2469,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late Future<Map<String, dynamic>> _verificationFuture;
   final List<String> _uploadedFileIds = [];
+  bool _isUploadingProfileImage = false;
   bool _isUploading = false;
   bool _isSubmitting = false;
 
@@ -2524,6 +2525,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       if (mounted) {
         setState(() {
           _isUploading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _pickAndUploadProfileImage() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1600,
+    );
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingProfileImage = true;
+    });
+    try {
+      final bytes = await image.readAsBytes();
+      final contentType =
+          image.mimeType ?? guessImageContentTypeFromName(image.name);
+      await ref
+          .read(providerRepositoryProvider)
+          .uploadProfileImage(bytes: bytes, contentType: contentType);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile image uploaded: ${image.name}')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile image upload failed: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingProfileImage = false;
         });
       }
     }
@@ -2593,6 +2634,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
+          if (auth != null) ...[
+            FilledButton.tonalIcon(
+              onPressed:
+                  _isUploadingProfileImage ? null : _pickAndUploadProfileImage,
+              icon: const Icon(Icons.image_outlined),
+              label: Text(_isUploadingProfileImage
+                  ? 'Uploading profile image...'
+                  : 'Upload public profile image'),
+            ),
+            const SizedBox(height: 12),
+          ],
           if (auth == null)
             const InfoCard(text: 'Login first to manage verification.')
           else

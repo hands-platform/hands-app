@@ -2,6 +2,7 @@ import '../../../../core/api_client.dart';
 import '../../../../core/realtime_socket.dart';
 import '../../../map/data/datasources/provider_device_location_datasource.dart';
 import '../../domain/repositories/provider_profile_repository.dart';
+import 'package:http/http.dart' as http;
 
 class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
   const ProviderProfileRepositoryImpl({
@@ -56,6 +57,52 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
+  @override
+  Future<Map<String, dynamic>> uploadProfileImage({
+    required List<int> bytes,
+    required String contentType,
+  }) async {
+    final uploadContract = await _api.postJson('/files/presign', {
+      'contentType': contentType,
+      'visibility': 'PUBLIC',
+      'purpose': 'profile-image',
+    });
+    final contract = _asMap(uploadContract);
+    final file = _asMap(contract?['file']);
+    final upload = _asMap(contract?['upload']);
+    final fileId = file?['id']?.toString();
+    final uploadUrl = upload?['url']?.toString();
+    final method = upload?['method']?.toString().toUpperCase() ?? 'PUT';
+    final headers = _stringHeaders(upload?['headers']);
+
+    if (fileId == null || fileId.isEmpty) {
+      throw StateError('Profile image upload did not return a file id.');
+    }
+    if (uploadUrl == null || uploadUrl.isEmpty || uploadUrl.startsWith('/')) {
+      throw StateError(
+          'Storage upload URL is not configured. Run local storage or set S3/R2 env values.');
+    }
+    if (method != 'PUT') {
+      throw StateError('Unsupported upload method: $method');
+    }
+
+    final response = await http.put(
+      Uri.parse(uploadUrl),
+      headers: headers,
+      body: bytes,
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError('Profile image upload failed (${response.statusCode}).');
+    }
+
+    final completed = await _api.postJson('/files/$fileId/complete', {
+      'sizeBytes': bytes.length,
+    });
+    return completed is Map<String, dynamic>
+        ? completed
+        : <String, dynamic>{'id': fileId};
+  }
+
   Future<Map<String, double?>> _resolveProviderLocation({
     double? lat,
     double? lng,
@@ -93,4 +140,22 @@ num? _asNum(dynamic value) {
     return num.tryParse(value);
   }
   return null;
+}
+
+Map<String, dynamic>? _asMap(dynamic value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  if (value is Map) {
+    return Map<String, dynamic>.from(value);
+  }
+  return null;
+}
+
+Map<String, String> _stringHeaders(dynamic value) {
+  final map = _asMap(value);
+  if (map == null) {
+    return const <String, String>{};
+  }
+  return map.map((key, value) => MapEntry(key.toString(), value.toString()));
 }

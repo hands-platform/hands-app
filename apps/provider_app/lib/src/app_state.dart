@@ -83,6 +83,16 @@ class ProviderRepository {
     return _profileRepository.providerMe();
   }
 
+  Future<Map<String, dynamic>> uploadProfileImage({
+    required List<int> bytes,
+    required String contentType,
+  }) async {
+    return _profileRepository.uploadProfileImage(
+      bytes: bytes,
+      contentType: contentType,
+    );
+  }
+
   Future<List<dynamic>> openBookings() async {
     return _bookingRepository.openBookings();
   }

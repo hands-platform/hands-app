@@ -265,7 +265,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       customerLng = selected.longitude;
       customerAddress = selected.addressText;
       customerLocationIsDemo = false;
-      notice = 'Service location selected. Nearby providers are now sorted from this pin.';
+      notice =
+          'Service location selected. Nearby providers are now sorted from this pin.';
       error = null;
     });
 
@@ -671,7 +672,11 @@ class ProviderListCard extends StatelessWidget {
             children: [
               Stack(
                 children: [
-                  ProviderThumbnail(name: displayName, size: 118),
+                  ProviderThumbnail(
+                    name: displayName,
+                    size: 118,
+                    imageUrl: providerProfileImageUrl(provider),
+                  ),
                   Positioned(
                     left: 8,
                     top: 8,
@@ -951,8 +956,12 @@ class ProviderDetailPage extends StatelessWidget {
                         ),
                       ),
                       Center(
-                          child:
-                              ProviderThumbnail(name: displayName, size: 210)),
+                        child: ProviderThumbnail(
+                          name: displayName,
+                          size: 210,
+                          imageUrl: providerProfileImageUrl(detail),
+                        ),
+                      ),
                       Positioned(
                         right: 20,
                         bottom: 20,
@@ -1821,7 +1830,8 @@ class _BookingConfirmationPageState
                       ProviderThumbnail(
                           name:
                               provider['displayName'] as String? ?? 'Provider',
-                          size: 72),
+                          size: 72,
+                          imageUrl: providerProfileImageUrl(provider)),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -2555,8 +2565,9 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           if (chatRoomId != null) ...[
                             const SizedBox(height: 12),
                             FilledButton.icon(
-                              onPressed:
-                                  loading ? null : () => openChatRoom(chatRoomId),
+                              onPressed: loading
+                                  ? null
+                                  : () => openChatRoom(chatRoomId),
                               icon: const Icon(Icons.chat_bubble_outline),
                               label: Text(chatActionLabel(status)),
                             ),
@@ -3877,10 +3888,12 @@ class ProviderThumbnail extends StatelessWidget {
     super.key,
     required this.name,
     required this.size,
+    this.imageUrl,
   });
 
   final String name;
   final double size;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -3900,17 +3913,58 @@ class ProviderThumbnail extends StatelessWidget {
         height: size,
         color: const Color(0xFFE8E1D3),
         alignment: Alignment.center,
-        child: Text(
-          initials,
-          style: TextStyle(
-            fontSize: size * 0.28,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF5E8E4A),
-          ),
-        ),
+        child: imageUrl == null || imageUrl!.isEmpty
+            ? ProviderInitials(initials: initials, size: size)
+            : Image.network(
+                imageUrl!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    ProviderInitials(initials: initials, size: size),
+              ),
       ),
     );
   }
+}
+
+class ProviderInitials extends StatelessWidget {
+  const ProviderInitials({
+    super.key,
+    required this.initials,
+    required this.size,
+  });
+
+  final String initials;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      initials,
+      style: TextStyle(
+        fontSize: size * 0.28,
+        fontWeight: FontWeight.w800,
+        color: const Color(0xFF5E8E4A),
+      ),
+    );
+  }
+}
+
+String? providerProfileImageUrl(Map<String, dynamic> provider) {
+  final direct = provider['profileImageUrl']?.toString();
+  if (direct != null && direct.isNotEmpty) {
+    return direct;
+  }
+
+  final gallery = provider['galleryImageUrls'];
+  if (gallery is List && gallery.isNotEmpty) {
+    final first = gallery.first?.toString();
+    if (first != null && first.isNotEmpty) {
+      return first;
+    }
+  }
+  return null;
 }
 
 class ProvidersScreen extends ConsumerStatefulWidget {
@@ -4408,7 +4462,10 @@ class CustomerBookingHistoryCard extends StatelessWidget {
               children: [
                 ProviderThumbnail(
                     name: provider?['displayName'] as String? ?? 'HANDS',
-                    size: 52),
+                    size: 52,
+                    imageUrl: provider == null
+                        ? null
+                        : providerProfileImageUrl(provider)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
