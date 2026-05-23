@@ -369,8 +369,8 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-23:
 - Docker host port binding guard: enabled in `infra/scripts/verify-local.ps1`
 - OS-level push provider: OneSignal server adapter is implemented, production account values still pending
 - Push provider mode: `PUSH_PROVIDER=in_app_only` locally
-- MapTiler API key: pending
-- Geoapify API key: pending
+- MapTiler API key: configured locally in ignored `.env`; style API verification passing
+- Geoapify API key: configured locally in ignored `.env`; geocoding verification passing
 - Supabase URL / anon key / JWT secret / service role key: configured locally in ignored `.env`
 - Supabase SQL bundle: applied successfully to `hands-staging`
 - Supabase REST/storage verification: passing with service role
@@ -386,21 +386,21 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-23:
 Phase-specific external checks currently block only on missing external console values:
 
 - `supabase-auth`: deferred until Vonage credentials and Supabase Phone Auth are ready
-- `maps`: `MAPTILER_API_KEY`, `GEOAPIFY_API_KEY`
+- `maps`: ready locally with MapTiler and Geoapify keys
 - `payments`: `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY`, `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`
 
 The next external setup items to complete are:
 
-- MapTiler API key
-- Geoapify API key
 - production push provider decision
 - OneSignal app ID and REST API key, only when OS push E2E starts
+- Vonage credentials, only when Supabase Phone Auth/SMS E2E starts
+- MoMo and VNPay merchant credentials, only when payment E2E starts
 
 ## Recommended Fill Order
 
 1. Supabase project URL / anon key / JWT secret
-2. Supabase Phone Auth SMS configuration with Vonage
-3. MapTiler and Geoapify keys
+2. MapTiler and Geoapify keys
+3. Supabase Phone Auth SMS configuration with Vonage
 4. MoMo and VNPay credentials
 5. Storage / CDN credentials
 6. Production push provider

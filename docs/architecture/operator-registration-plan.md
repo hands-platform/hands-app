@@ -136,8 +136,8 @@ Purpose:
 
 Register:
 
-- MapTiler API key
-- Geoapify API key
+- MapTiler API key: completed for staging/local development
+- Geoapify API key: completed for staging/local development
 
 Set:
 
@@ -145,6 +145,8 @@ Set:
 MAPTILER_API_KEY=
 GEOAPIFY_API_KEY=
 ```
+
+Keep the real values only in ignored local env files or the external secret store; never commit them.
 
 Verify:
 

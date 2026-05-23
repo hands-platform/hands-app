@@ -156,19 +156,19 @@ addRecommended(
   'sms',
   'SMS_PROVIDER',
   hasValue('SMS_PROVIDER'),
-  'Use SMS_PROVIDER=dev locally; choose a real SMS provider before launch.',
+  'Use SMS_PROVIDER=dev locally; configure Vonage only when Supabase Phone Auth/SMS E2E starts.',
 );
 addRecommended(
   'sms',
   'SMS_API_URL',
   hasValue('SMS_API_URL'),
-  'Set the production SMS API URL before real OTP launch.',
+  'Deferred: fill the Vonage/Supabase Phone Auth SMS values before real OTP launch.',
 );
 addRecommended(
   'sms',
   'SMS_API_KEY',
   hasValue('SMS_API_KEY'),
-  'Set the production SMS API key before real OTP launch.',
+  'Deferred: fill the Vonage/Supabase Phone Auth SMS secret before real OTP launch.',
 );
 
 addRecommended(

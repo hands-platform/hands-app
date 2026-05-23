@@ -96,10 +96,15 @@ npm.cmd run auth:supabase-smoke
 
 ### 4. MapTiler
 
-Need from operator:
+Status:
 
-- MapTiler API key created under `administration@hands.vn`
-- Any allowed domain/package restrictions configured in MapTiler, if used
+- API key created under `administration@hands.vn`
+- Local ignored `.env` configured
+- Style API verification passing
+
+Need from operator later:
+
+- Any allowed domain/package restrictions configured in MapTiler before production release, if used
 
 Verification:
 
@@ -109,10 +114,15 @@ npm.cmd run external:check:maps
 
 ### 5. Geoapify
 
-Need from operator:
+Status:
 
-- Geoapify API key created under `administration@hands.vn`
-- Any allowed domain/package restrictions configured in Geoapify, if used
+- API key created under `administration@hands.vn`
+- Local ignored `.env` configured
+- Address geocoding verification passing
+
+Need from operator later:
+
+- Any allowed domain/package restrictions configured in Geoapify before production release, if used
 
 Verification:
 
