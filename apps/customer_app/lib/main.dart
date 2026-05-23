@@ -17,6 +17,9 @@ const double demoCustomerLng = 106.7009;
 const String demoCustomerCity = 'Ho Chi Minh City';
 const String demoCustomerAddress = 'District 1, Ho Chi Minh City, Vietnam';
 
+final selectedCustomerLocationProvider =
+    StateProvider<SelectedCustomerLocation?>((ref) => null);
+
 class CustomerApp extends StatelessWidget {
   const CustomerApp({super.key});
 
@@ -88,6 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Map<String, dynamic>? activeBooking;
   double? customerLat;
   double? customerLng;
+  String customerAddress = demoCustomerAddress;
   bool customerLocationIsDemo = false;
   bool loading = false;
   bool otpRequested = false;
@@ -186,7 +190,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
     try {
       final repository = ref.read(customerRepositoryProvider);
-      final location = await resolveCustomerLocation(ref);
+      final location = await resolveDiscoveryLocation(ref);
       final activeLat = location.latitude;
       final activeLng = location.longitude;
       final results = await Future.wait([
@@ -203,6 +207,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         activeBooking = booking;
         customerLat = activeLat;
         customerLng = activeLng;
+        customerAddress = location.addressText ?? customerAddress;
         customerLocationIsDemo = location.isDemoLocation;
         notice = location.isDemoLocation
             ? 'Using demo Ho Chi Minh City location for discovery only. Confirm your exact service pin before booking.'
@@ -240,6 +245,49 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
+  Future<void> openCustomerLocationSelector() async {
+    final selected = await Navigator.of(context).push<SelectedCustomerLocation>(
+      MaterialPageRoute(
+        builder: (context) => LocationSelectionPage(
+          initialLatitude: customerLat ?? demoCustomerLat,
+          initialLongitude: customerLng ?? demoCustomerLng,
+          initialAddress: customerAddress,
+        ),
+      ),
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+
+    ref.read(selectedCustomerLocationProvider.notifier).state = selected;
+    setState(() {
+      customerLat = selected.latitude;
+      customerLng = selected.longitude;
+      customerAddress = selected.addressText;
+      customerLocationIsDemo = false;
+      notice = 'Service location selected. Nearby providers are now sorted from this pin.';
+      error = null;
+    });
+
+    try {
+      await ref.read(customerRepositoryProvider).saveSelectedLocation(
+            lat: selected.latitude,
+            lng: selected.longitude,
+            addressText: selected.addressText,
+          );
+    } catch (_) {
+      // Location selection should still work locally if the optional save call fails.
+    }
+
+    await loadHome();
+    if (mounted) {
+      setState(() {
+        notice =
+            'Service location selected. Nearby providers are now sorted from this pin.';
+      });
+    }
+  }
+
   Future<void> openProviderDetail(Map<String, dynamic> provider) async {
     final providerId = provider['id'] as String?;
     if (providerId == null) {
@@ -262,6 +310,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   selectedService: service,
                   initialCustomerLat: customerLat,
                   initialCustomerLng: customerLng,
+                  initialCustomerAddress: customerAddress,
                   initialCustomerLocationIsDemo: customerLocationIsDemo,
                   onConfirm: ({
                     required customerName,
@@ -337,9 +386,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             children: [
               const Icon(Icons.arrow_back_outlined),
               const SizedBox(width: 10),
-              Text(demoCustomerCity,
-                  style: Theme.of(context).textTheme.titleLarge),
-              const Spacer(),
+              Expanded(
+                child: Text(
+                  locationTitle(customerAddress, customerLocationIsDemo),
+                  style: Theme.of(context).textTheme.titleLarge,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               const Icon(Icons.favorite_border),
             ],
           ),
@@ -387,6 +441,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
             const SizedBox(height: 16),
+            CustomerLocationContextCard(
+              addressText: customerAddress,
+              latitude: customerLat,
+              longitude: customerLng,
+              isDemoLocation: customerLocationIsDemo,
+              onChooseLocation: openCustomerLocationSelector,
+            ),
+            const SizedBox(height: 16),
             const FilterChipRow(),
             const SizedBox(height: 16),
             if (providers.isEmpty)
@@ -400,6 +462,81 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+class CustomerLocationContextCard extends StatelessWidget {
+  const CustomerLocationContextCard({
+    super.key,
+    required this.addressText,
+    required this.latitude,
+    required this.longitude,
+    required this.isDemoLocation,
+    required this.onChooseLocation,
+  });
+
+  final String addressText;
+  final double? latitude;
+  final double? longitude;
+  final bool isDemoLocation;
+  final VoidCallback onChooseLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final title = isDemoLocation ? 'Demo discovery pin' : 'Service location';
+    final subtitle = isDemoLocation
+        ? 'Choose the real service location before booking.'
+        : addressText;
+
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.pin_drop_outlined, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleMedium
+                        ?.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                TextButton.icon(
+                  onPressed: onChooseLocation,
+                  icon: const Icon(Icons.map_outlined, size: 18),
+                  label: const Text('Choose'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodyMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '${formatCoordinate(latitude)}, ${formatCoordinate(longitude)}',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.black54),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1311,6 +1448,7 @@ class BookingConfirmationPage extends ConsumerStatefulWidget {
     required this.selectedService,
     this.initialCustomerLat,
     this.initialCustomerLng,
+    this.initialCustomerAddress,
     this.initialCustomerLocationIsDemo = false,
     required this.onConfirm,
   });
@@ -1319,6 +1457,7 @@ class BookingConfirmationPage extends ConsumerStatefulWidget {
   final Map<String, dynamic> selectedService;
   final double? initialCustomerLat;
   final double? initialCustomerLng;
+  final String? initialCustomerAddress;
   final bool initialCustomerLocationIsDemo;
   final Future<Map<String, dynamic>> Function({
     required String customerName,
@@ -1356,6 +1495,10 @@ class _BookingConfirmationPageState
     super.initState();
     customerLat = widget.initialCustomerLat;
     customerLng = widget.initialCustomerLng;
+    final initialAddress = widget.initialCustomerAddress?.trim();
+    if (initialAddress != null && initialAddress.isNotEmpty) {
+      addressController.text = initialAddress;
+    }
     locationConfirmed = customerLat != null &&
         customerLng != null &&
         !widget.initialCustomerLocationIsDemo;
@@ -1387,6 +1530,7 @@ class _BookingConfirmationPageState
       setState(() {
         customerLat = location.latitude;
         customerLng = location.longitude;
+        addressController.text = location.addressText ?? addressController.text;
         locationConfirmed = !location.isDemoLocation;
         locationMessage = location.isDemoLocation
             ? 'GPS is unavailable or outside Vietnam. Choose the service pin on the map before booking.'
@@ -1433,6 +1577,7 @@ class _BookingConfirmationPageState
       locationMessage = 'Service location confirmed.';
       error = null;
     });
+    ref.read(selectedCustomerLocationProvider.notifier).state = selected;
   }
 
   Future<void> confirmBooking() async {
@@ -3636,6 +3781,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
   List<dynamic> providers = [];
   double? customerLat;
   double? customerLng;
+  String customerAddress = demoCustomerAddress;
   bool customerLocationIsDemo = false;
   bool loading = false;
   String? error;
@@ -3658,7 +3804,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
       error = null;
     });
     try {
-      final location = await resolveCustomerLocation(ref);
+      final location = await resolveDiscoveryLocation(ref);
       final items = await ref.read(customerRepositoryProvider).nearbyProviders(
             lat: location.latitude,
             lng: location.longitude,
@@ -3670,6 +3816,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         providers = items;
         customerLat = location.latitude;
         customerLng = location.longitude;
+        customerAddress = location.addressText ?? customerAddress;
         customerLocationIsDemo = location.isDemoLocation;
         notice = location.isDemoLocation
             ? 'Using demo Ho Chi Minh City location for nearby provider discovery.'
@@ -3684,6 +3831,49 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
       if (mounted) {
         setState(() => loading = false);
       }
+    }
+  }
+
+  Future<void> openCustomerLocationSelector() async {
+    final selected = await Navigator.of(context).push<SelectedCustomerLocation>(
+      MaterialPageRoute(
+        builder: (context) => LocationSelectionPage(
+          initialLatitude: customerLat ?? demoCustomerLat,
+          initialLongitude: customerLng ?? demoCustomerLng,
+          initialAddress: customerAddress,
+        ),
+      ),
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+
+    ref.read(selectedCustomerLocationProvider.notifier).state = selected;
+    setState(() {
+      customerLat = selected.latitude;
+      customerLng = selected.longitude;
+      customerAddress = selected.addressText;
+      customerLocationIsDemo = false;
+      notice = 'Service location selected. Refreshing nearby therapists.';
+      error = null;
+    });
+
+    try {
+      await ref.read(customerRepositoryProvider).saveSelectedLocation(
+            lat: selected.latitude,
+            lng: selected.longitude,
+            addressText: selected.addressText,
+          );
+    } catch (_) {
+      // Keep the map selection active even if the optional location save fails.
+    }
+
+    await loadProviders();
+    if (mounted) {
+      setState(() {
+        notice =
+            'Service location selected. Nearby therapists are sorted from this pin.';
+      });
     }
   }
 
@@ -3735,6 +3925,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
                   selectedService: service,
                   initialCustomerLat: customerLat,
                   initialCustomerLng: customerLng,
+                  initialCustomerAddress: customerAddress,
                   initialCustomerLocationIsDemo: customerLocationIsDemo,
                   onConfirm: ({
                     required customerName,
@@ -3789,6 +3980,16 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
+          if (auth != null) ...[
+            CustomerLocationContextCard(
+              addressText: customerAddress,
+              latitude: customerLat,
+              longitude: customerLng,
+              isDemoLocation: customerLocationIsDemo,
+              onChooseLocation: openCustomerLocationSelector,
+            ),
+            const SizedBox(height: 16),
+          ],
           FilledButton.icon(
             onPressed: auth == null ? signInAndLoad : loadProviders,
             icon: const Icon(Icons.search),
@@ -4714,13 +4915,41 @@ Future<CustomerLocationSnapshot> resolveCustomerLocation(WidgetRef ref) async {
   final lat = position?.latitude;
   final lng = position?.longitude;
   if (lat != null && lng != null && isVietnamCoordinate(lat, lng)) {
-    return CustomerLocationSnapshot(latitude: lat, longitude: lng);
+    return CustomerLocationSnapshot(
+      latitude: lat,
+      longitude: lng,
+      addressText: 'Current GPS location',
+    );
   }
   return const CustomerLocationSnapshot(
     latitude: demoCustomerLat,
     longitude: demoCustomerLng,
+    addressText: demoCustomerAddress,
     isDemoLocation: true,
   );
+}
+
+Future<CustomerLocationSnapshot> resolveDiscoveryLocation(WidgetRef ref) async {
+  final selected = ref.read(selectedCustomerLocationProvider);
+  if (selected != null) {
+    return CustomerLocationSnapshot(
+      latitude: selected.latitude,
+      longitude: selected.longitude,
+      addressText: selected.addressText,
+    );
+  }
+  return resolveCustomerLocation(ref);
+}
+
+String locationTitle(String addressText, bool isDemoLocation) {
+  if (isDemoLocation) {
+    return demoCustomerCity;
+  }
+  final first = addressText.split(',').first.trim();
+  if (first.isEmpty || first.startsWith('Map pin:')) {
+    return 'Selected location';
+  }
+  return first;
 }
 
 bool isVietnamCoordinate(double lat, double lng) {
@@ -4783,11 +5012,13 @@ class CustomerLocationSnapshot {
   const CustomerLocationSnapshot({
     required this.latitude,
     required this.longitude,
+    this.addressText,
     this.isDemoLocation = false,
   });
 
   final double latitude;
   final double longitude;
+  final String? addressText;
   final bool isDemoLocation;
 }
 
