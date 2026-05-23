@@ -22,6 +22,33 @@ function Test-HttpOk {
   }
 }
 
+function Import-DotEnvIfPresent {
+  param([string]$Root)
+
+  $envPath = Join-Path $Root ".env"
+  if (-not (Test-Path $envPath)) {
+    return
+  }
+
+  Get-Content $envPath | ForEach-Object {
+    $line = $_.Trim()
+    if (-not $line -or $line.StartsWith("#")) {
+      return
+    }
+
+    $separatorIndex = $line.IndexOf("=")
+    if ($separatorIndex -lt 1) {
+      return
+    }
+
+    $key = $line.Substring(0, $separatorIndex).Trim()
+    $value = $line.Substring($separatorIndex + 1).Trim().Trim("'").Trim('"')
+    if (-not [Environment]::GetEnvironmentVariable($key, "Process")) {
+      [Environment]::SetEnvironmentVariable($key, $value, "Process")
+    }
+  }
+}
+
 function Get-RunningEmulatorSerial {
   $deviceLines = (& $adbPath devices) | Select-Object -Skip 1
   foreach ($line in $deviceLines) {
@@ -69,6 +96,8 @@ if (-not (Test-Path $emulatorPath)) {
 if (-not (Test-HttpOk -Url "http://localhost:$ApiPort/api/health")) {
   throw "HANDS API is not responding on http://localhost:$ApiPort/api/health. Start local services first with start-hands-local.ps1."
 }
+
+Import-DotEnvIfPresent -Root $RepoRoot
 
 $appDir = switch ($App) {
   "customer" { Join-Path $RepoRoot "apps\customer_app" }
