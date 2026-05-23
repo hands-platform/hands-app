@@ -163,9 +163,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       if (session != null) {
         attachRealtimeListeners();
         await goOnline();
-        await ref
-            .read(providerLocationHeartbeatProvider)
-            .start(runImmediately: false);
+        await startLocationHeartbeatAfterOnline();
         await loadOpenBookings(showLoading: false);
       }
     } catch (exception) {
@@ -191,9 +189,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
           await ref.read(registerCurrentDevicePushTokenProvider).call();
       attachRealtimeListeners();
       await goOnline();
-      await ref
-          .read(providerLocationHeartbeatProvider)
-          .start(runImmediately: false);
+      await startLocationHeartbeatAfterOnline();
       await loadOpenBookings();
       if (mounted) {
         setState(() => statusMessage = pushResult.message);
@@ -247,9 +243,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
           await ref.read(registerCurrentDevicePushTokenProvider).call();
       attachRealtimeListeners();
       await goOnline();
-      await ref
-          .read(providerLocationHeartbeatProvider)
-          .start(runImmediately: false);
+      await startLocationHeartbeatAfterOnline();
       await loadOpenBookings();
       if (mounted) {
         setState(() => statusMessage = pushResult.message);
@@ -269,6 +263,12 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       isOnline = true;
       statusMessage = 'You are online and visible for direct booking requests.';
     });
+  }
+
+  Future<void> startLocationHeartbeatAfterOnline() async {
+    final heartbeat = ref.read(providerLocationHeartbeatProvider);
+    await heartbeat.start(runImmediately: false);
+    heartbeat.recordSuccessfulUpdate();
   }
 
   Future<void> loadOpenBookings({bool showLoading = true}) async {
@@ -368,6 +368,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final heartbeatSnapshot =
+        ref.watch(providerLocationHeartbeatStatusProvider).valueOrNull ??
+            ref.read(providerLocationHeartbeatProvider).snapshot;
     final bookingItems = openBookings.whereType<Map<String, dynamic>>().toList()
       ..sort((left, right) {
         final leftScore = providerRequestPriority(left, auth?.userId);
@@ -411,6 +414,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
           ProviderStatusPanel(
             isSignedIn: auth != null,
             isOnline: isOnline,
+            heartbeatSnapshot: heartbeatSnapshot,
             loading: loading,
             onGoOnline: auth == null
                 ? null
@@ -421,9 +425,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                     });
                     try {
                       await goOnline();
-                      await ref
-                          .read(providerLocationHeartbeatProvider)
-                          .start(runImmediately: false);
+                      await startLocationHeartbeatAfterOnline();
                       await loadOpenBookings();
                     } catch (exception) {
                       setState(() => error = '$exception');
@@ -644,12 +646,14 @@ class ProviderStatusPanel extends StatelessWidget {
     super.key,
     required this.isSignedIn,
     required this.isOnline,
+    required this.heartbeatSnapshot,
     required this.loading,
     required this.onGoOnline,
   });
 
   final bool isSignedIn;
   final bool isOnline;
+  final ProviderLocationHeartbeatSnapshot heartbeatSnapshot;
   final bool loading;
   final VoidCallback? onGoOnline;
 
@@ -676,9 +680,19 @@ class ProviderStatusPanel extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleMedium),
                   Text(
                     isOnline
-                        ? 'Your last known location is saved and refreshed while the app is open.'
+                        ? providerLocationHeartbeatLabel(heartbeatSnapshot)
                         : 'Go online to receive direct booking requests.',
                   ),
+                  if (isOnline && heartbeatSnapshot.lastError != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Last saved location remains visible to customers.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.error,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1017,6 +1031,35 @@ String formatRelativeMoment(dynamic value) {
     return 'Updated ${diff.inHours}h ago';
   }
   return 'Updated ${diff.inDays}d ago';
+}
+
+String providerLocationHeartbeatLabel(
+    ProviderLocationHeartbeatSnapshot snapshot) {
+  if (snapshot.lastError != null) {
+    final retryLabel = formatNextLocationRefresh(snapshot.nextUpdateAt);
+    return 'Location refresh failed. $retryLabel';
+  }
+  final lastSuccess = snapshot.lastSuccessAt;
+  if (lastSuccess == null) {
+    return snapshot.active
+        ? 'Sharing location now. Auto-refresh runs every 10 minutes.'
+        : 'Your last known location is saved when you go online.';
+  }
+  return '${formatRelativeMoment(lastSuccess.toIso8601String())}. ${formatNextLocationRefresh(snapshot.nextUpdateAt)}';
+}
+
+String formatNextLocationRefresh(DateTime? value) {
+  if (value == null) {
+    return 'Next refresh starts after going online.';
+  }
+  final diff = value.difference(DateTime.now());
+  if (diff.inSeconds <= 0) {
+    return 'Next refresh is due now.';
+  }
+  if (diff.inMinutes < 1) {
+    return 'Next refresh in under 1m.';
+  }
+  return 'Next refresh in ${diff.inMinutes}m.';
 }
 
 String formatScheduleMoment(dynamic value) {

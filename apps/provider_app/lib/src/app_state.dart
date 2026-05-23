@@ -19,6 +19,7 @@ export 'features/auth/presentation/providers/auth_providers.dart';
 export 'features/booking/presentation/providers/booking_providers.dart';
 export 'features/chat/presentation/providers/chat_providers.dart';
 export 'features/earnings/presentation/providers/earnings_providers.dart';
+export 'features/map/domain/services/provider_location_heartbeat.dart';
 export 'features/map/presentation/providers/map_providers.dart';
 export 'features/notification/presentation/providers/notification_providers.dart';
 export 'features/provider_profile/presentation/providers/provider_profile_providers.dart';
@@ -42,6 +43,12 @@ final providerLocationHeartbeatProvider =
   });
   ref.onDispose(heartbeat.dispose);
   return heartbeat;
+});
+
+final providerLocationHeartbeatStatusProvider =
+    StreamProvider<ProviderLocationHeartbeatSnapshot>((ref) {
+  final heartbeat = ref.watch(providerLocationHeartbeatProvider);
+  return heartbeat.snapshots;
 });
 
 class ProviderRepository {
