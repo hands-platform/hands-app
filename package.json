@@ -12,7 +12,7 @@
     "env:check": "node infra/scripts/check-env.mjs",
     "external:check": "node infra/scripts/check-external-setup.mjs",
     "external:check:supabase": "node infra/scripts/check-external-setup.mjs --phase=supabase-auth",
-    "external:check:maps": "node infra/scripts/check-external-setup.mjs --phase=maps",
+    "external:check:maps": "node infra/scripts/check-external-setup.mjs --phase=maps && node infra/scripts/check-map-services.mjs",
     "external:check:payments": "node infra/scripts/check-external-setup.mjs --phase=payments",
     "external:check:storage": "node infra/scripts/check-external-setup.mjs --phase=storage",
     "external:check:production": "node infra/scripts/check-external-setup.mjs --phase=production",

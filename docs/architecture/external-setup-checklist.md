@@ -88,6 +88,14 @@ $env:MAPTILER_API_KEY="your-maptiler-key"
 $env:GEOAPIFY_API_KEY="your-geoapify-key"
 ```
 
+The mobile helper scripts also load these values from the ignored root `.env`, so a normal local run does not need repeated manual exports.
+
+Verify that both keys exist and the external APIs are reachable:
+
+```powershell
+npm.cmd run external:check:maps
+```
+
 Supabase values used by Auth now and direct database/storage later:
 
 ```dotenv
