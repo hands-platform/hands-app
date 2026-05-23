@@ -2,6 +2,10 @@ import { AdminProvider, adminGet } from '../../lib/admin-api';
 import { approveProvider, enablePushDevice, rejectProvider, syncSupabaseProviderRole } from './actions';
 
 type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
+type ProviderLocationState = 'recent' | 'stale' | 'expired' | 'missing';
+
+const STALE_LOCATION_MINUTES = 30;
+const EXPIRED_LOCATION_HOURS = 24;
 
 export default async function ProvidersPage() {
   const providers = sortProviders(await adminGet<AdminProvider[]>('/admin/providers', []));
@@ -36,6 +40,7 @@ export default async function ProvidersPage() {
               <th>Provider</th>
               <th>Status</th>
               <th>Ops readiness</th>
+              <th>Location</th>
               <th>Push Devices</th>
               <th>Files</th>
               <th>Services</th>
@@ -77,6 +82,9 @@ export default async function ProvidersPage() {
                     </span>
                   </div>
                   <p className="muted">{providerActionHint(provider)}</p>
+                </td>
+                <td>
+                  <ProviderLocationCell provider={provider} />
                 </td>
                 <td>
                   {provider.user?.pushDevices?.length
@@ -152,7 +160,7 @@ export default async function ProvidersPage() {
             ))}
             {providers.length === 0 && (
               <tr>
-                <td colSpan={7}>No providers loaded. Start the API and seed data to populate this table.</td>
+                <td colSpan={8}>No providers loaded. Start the API and seed data to populate this table.</td>
               </tr>
             )}
           </tbody>
@@ -185,12 +193,45 @@ function hasHealthyPush(provider: AdminProvider) {
   return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
 }
 
+function ProviderLocationCell({ provider }: { provider: AdminProvider }) {
+  const status = providerLocationStatus(provider);
+  const hasCoordinate = hasProviderCoordinate(provider);
+
+  return (
+    <div>
+      <div className="participant-list" style={{ marginBottom: 8 }}>
+        <span className={`pill ${providerLocationPillClass(status)}`}>{providerLocationLabel(status)}</span>
+      </div>
+      <p className="muted" style={{ marginBottom: 4 }}>
+        {providerLocationAgeLabel(provider.currentLocationUpdatedAt)}
+      </p>
+      {hasCoordinate ? (
+        <p className="muted">
+          {Number(provider.currentLat).toFixed(4)}, {Number(provider.currentLng).toFixed(4)}
+        </p>
+      ) : (
+        <p className="muted">No saved coordinates yet.</p>
+      )}
+    </div>
+  );
+}
+
 function providerActionHint(provider: AdminProvider) {
   if (provider.verification?.status !== 'APPROVED') {
     return 'Review verification before this therapist can safely take customer requests.';
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Therapist is approved but not currently online for direct or backup requests.';
+  }
+  const locationState = providerLocationStatus(provider);
+  if (locationState === 'missing') {
+    return 'Therapist is online, but no location has been saved yet. Ask them to reopen the Provider app.';
+  }
+  if (locationState === 'expired') {
+    return 'Therapist has an old saved location. They should go online again before dispatch.';
+  }
+  if (locationState === 'stale') {
+    return 'Therapist is live, but the last location is older than 30 minutes. Confirm before dispatch.';
   }
   if (!hasHealthyPush(provider)) {
     return 'Therapist is live, but push registration should be checked before relying on alerts.';
@@ -204,6 +245,10 @@ function providerActionHint(provider: AdminProvider) {
 function buildProviderSummary(providers: AdminProvider[]) {
   const approved = providers.filter((provider) => provider.verification?.status === 'APPROVED').length;
   const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
+  const recentLocation = providers.filter((provider) => providerLocationStatus(provider) === 'recent').length;
+  const staleLocation = providers.filter((provider) =>
+    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider)),
+  ).length;
   const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
   const pushDisabled = providers.filter((provider) =>
     (provider.user?.pushDevices ?? []).some((device) => !device.enabled),
@@ -212,6 +257,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
     (provider) =>
       provider.verification?.status === 'APPROVED' &&
       provider.status === 'ONLINE_AVAILABLE' &&
+      providerLocationStatus(provider) === 'recent' &&
       hasHealthyPush(provider),
   ).length;
 
@@ -219,6 +265,8 @@ function buildProviderSummary(providers: AdminProvider[]) {
     ['Total therapists', providers.length.toString()],
     ['Approved', approved.toString()],
     ['Online now', online.toString()],
+    ['Recent location', recentLocation.toString()],
+    ['Location needs review', staleLocation.toString()],
     ['Push ready', pushReady.toString()],
     ['Push needs review', pushDisabled.toString()],
     ['Ready for dispatch', readyNow.toString()],
@@ -243,6 +291,7 @@ function providerPriority(provider: AdminProvider) {
   if (
     provider.verification?.status === 'APPROVED' &&
     provider.status === 'ONLINE_AVAILABLE' &&
+    providerLocationStatus(provider) === 'recent' &&
     hasHealthyPush(provider)
   ) {
     return 4;
@@ -254,4 +303,82 @@ function providerPriority(provider: AdminProvider) {
     return 2;
   }
   return 1;
+}
+
+function providerLocationStatus(provider: AdminProvider): ProviderLocationState {
+  if (!hasProviderCoordinate(provider) || !provider.currentLocationUpdatedAt) {
+    return 'missing';
+  }
+
+  const updatedAt = new Date(provider.currentLocationUpdatedAt).getTime();
+  if (!Number.isFinite(updatedAt)) {
+    return 'missing';
+  }
+
+  const ageMs = Date.now() - updatedAt;
+  if (ageMs > EXPIRED_LOCATION_HOURS * 60 * 60_000) {
+    return 'expired';
+  }
+  if (ageMs > STALE_LOCATION_MINUTES * 60_000) {
+    return 'stale';
+  }
+  return 'recent';
+}
+
+function hasProviderCoordinate(provider: AdminProvider) {
+  if (provider.currentLat === null || provider.currentLat === undefined) {
+    return false;
+  }
+  if (provider.currentLng === null || provider.currentLng === undefined) {
+    return false;
+  }
+  return Number.isFinite(Number(provider.currentLat)) && Number.isFinite(Number(provider.currentLng));
+}
+
+function providerLocationLabel(status: ProviderLocationState) {
+  if (status === 'recent') {
+    return 'Location recent';
+  }
+  if (status === 'stale') {
+    return 'Location stale';
+  }
+  if (status === 'expired') {
+    return 'Too old';
+  }
+  return 'No location';
+}
+
+function providerLocationPillClass(status: ProviderLocationState) {
+  if (status === 'recent') {
+    return 'pill-success';
+  }
+  if (status === 'stale') {
+    return 'pill-warn';
+  }
+  if (status === 'expired') {
+    return 'pill-info';
+  }
+  return 'pill-neutral';
+}
+
+function providerLocationAgeLabel(value?: string | null) {
+  if (!value) {
+    return 'Provider app has not shared a location.';
+  }
+
+  const updatedAt = new Date(value).getTime();
+  if (!Number.isFinite(updatedAt)) {
+    return 'Saved location time is invalid.';
+  }
+
+  const ageMinutes = Math.max(0, Math.round((Date.now() - updatedAt) / 60_000));
+  if (ageMinutes < 1) {
+    return 'Updated just now.';
+  }
+  if (ageMinutes < 60) {
+    return `Updated ${ageMinutes}m ago.`;
+  }
+
+  const ageHours = Math.round(ageMinutes / 60);
+  return `Updated ${ageHours}h ago.`;
 }

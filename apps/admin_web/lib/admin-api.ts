@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api';
+const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3100/api';
 
 export type AdminUser = {
   id: string;
@@ -12,6 +12,9 @@ export type AdminProvider = {
   id: string;
   displayName: string;
   status: string;
+  currentLat?: string | number | null;
+  currentLng?: string | number | null;
+  currentLocationUpdatedAt?: string | null;
   verification?: {
     id: string;
     status: string;
