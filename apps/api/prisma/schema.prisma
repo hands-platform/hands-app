@@ -33,11 +33,77 @@ enum ProviderStatus {
   ONLINE_AVAILABLE_SOON
 }
 
+enum ProviderLevel {
+  LEVEL_1_SIGNUP
+  LEVEL_2_ACTIVE
+  LEVEL_3_PAYOUT_ENABLED
+  LEVEL_4_TRUSTED
+}
+
 enum VerificationStatus {
   DRAFT
   SUBMITTED
   APPROVED
   REJECTED
+}
+
+enum ProviderKycStatus {
+  DRAFT
+  PENDING
+  APPROVED
+  REJECTED
+  BLOCKED
+}
+
+enum ProviderDocumentType {
+  CCCD_FRONT
+  CCCD_BACK
+  SELFIE
+  PROFILE_PHOTO
+  WORK_PHOTO
+  BANK_QR
+}
+
+enum ProviderDocumentStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum ProviderBankAccountStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  DISABLED
+}
+
+enum ProviderTaxProfileStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum TaxPolicyStatus {
+  DRAFT
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum TaxRuleScope {
+  DEFAULT
+  SERVICE_TYPE
+  AMOUNT_BAND
+}
+
+enum ProviderAgreementType {
+  TERMS
+  PRIVACY
+  LOCATION
+  PAYOUT
+  TAX
 }
 
 enum ParticipantStatus {
@@ -116,56 +182,215 @@ enum BookingOpsTaskStatus {
 }
 
 model User {
-  id              String           @id @default(cuid())
-  supabaseUserId  String?          @unique
-  phone           String           @unique
-  email           String?
-  fullName        String?
-  roles           Role[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  customerProfile CustomerProfile?
-  providerProfile ProviderProfile?
-  notifications   Notification[]
-  pushDevices     PushDevice[]
-  chatMessages    ChatMessage[]
-  auditLogs        AdminAuditLog[]  @relation("AdminActor")
-  bookingOpsTasks  BookingOpsTask[] @relation("BookingOpsTaskActor")
-  fileAssets       FileAsset[]      @relation("FileAssetOwner")
+  id                       String                    @id @default(cuid())
+  supabaseUserId           String?                   @unique
+  phone                    String                    @unique
+  email                    String?
+  fullName                 String?
+  roles                    Role[]
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  customerProfile          CustomerProfile?
+  providerProfile          ProviderProfile?
+  notifications            Notification[]
+  pushDevices              PushDevice[]
+  chatMessages             ChatMessage[]
+  auditLogs                AdminAuditLog[]           @relation("AdminActor")
+  bookingOpsTasks          BookingOpsTask[]          @relation("BookingOpsTaskActor")
+  fileAssets               FileAsset[]               @relation("FileAssetOwner")
+  taxPolicyVersions        TaxPolicyVersion[]        @relation("TaxPolicyAuthor")
+  providerVerificationLogs ProviderVerificationLog[] @relation("ProviderVerificationLogActor")
 }
 
 model CustomerProfile {
-  id        String    @id @default(cuid())
-  userId    String    @unique
-  user      User      @relation(fields: [userId], references: [id])
-  addresses Json?
-  bookings  Booking[]
-  reviews   Review[]
+  id                String                     @id @default(cuid())
+  userId            String                     @unique
+  user              User                       @relation(fields: [userId], references: [id])
+  addresses         Json?
+  bookings          Booking[]
+  reviews           Review[]
   selectedLocations CustomerSelectedLocation[]
 }
 
 model ProviderProfile {
-  id                 String                  @id @default(cuid())
-  userId             String                  @unique
-  user               User                    @relation(fields: [userId], references: [id])
-  displayName        String
-  bio                String?
-  status             ProviderStatus          @default(OFFLINE)
-  ratingAvg          Decimal                 @default(0) @db.Decimal(3, 2)
-  reviewCount        Int                     @default(0)
-  currentLat         Decimal?                @db.Decimal(10, 7)
-  currentLng         Decimal?                @db.Decimal(10, 7)
+  id                       String                    @id @default(cuid())
+  userId                   String                    @unique
+  user                     User                      @relation(fields: [userId], references: [id])
+  displayName              String
+  legalName                String?
+  dateOfBirth              DateTime?
+  gender                   String?
+  facebookId               String?
+  activityNickname         String?
+  bio                      String?
+  residentialAddress       String?
+  city                     String?
+  serviceArea              Json?
+  level                    ProviderLevel             @default(LEVEL_1_SIGNUP)
+  status                   ProviderStatus            @default(OFFLINE)
+  ratingAvg                Decimal                   @default(0) @db.Decimal(3, 2)
+  reviewCount              Int                       @default(0)
+  currentLat               Decimal?                  @db.Decimal(10, 7)
+  currentLng               Decimal?                  @db.Decimal(10, 7)
   currentLocationUpdatedAt DateTime?
-  nextAvailableAt    DateTime?
-  verification       ProviderVerification?
-  services           ProviderService[]
-  participants       BookingParticipant[]
-  preferredBookings  Booking[]               @relation("PreferredProvider")
-  selectedBookings   Booking[]               @relation("SelectedProvider")
-  locationSnapshots  LocationSnapshot[]
-  reviews            Review[]
-  earnings           ProviderEarning[]
-  payoutBatches      ProviderPayoutBatch[]
+  nextAvailableAt          DateTime?
+  blockedAt                DateTime?
+  blockedReason            String?
+  trustedAt                DateTime?
+  deletedAt                DateTime?
+  updatedAt                DateTime                  @default(now()) @updatedAt
+  verification             ProviderVerification?
+  kyc                      ProviderKyc?
+  documents                ProviderDocument[]
+  bankAccounts             ProviderBankAccount[]
+  taxProfile               ProviderTaxProfile?
+  taxLogs                  ProviderTaxLog[]
+  agreements               ProviderAgreement[]
+  verificationLogs         ProviderVerificationLog[]
+  sessions                 ProviderSession[]
+  devices                  ProviderDevice[]
+  services                 ProviderService[]
+  participants             BookingParticipant[]
+  preferredBookings        Booking[]                 @relation("PreferredProvider")
+  selectedBookings         Booking[]                 @relation("SelectedProvider")
+  locationSnapshots        LocationSnapshot[]
+  reviews                  Review[]
+  earnings                 ProviderEarning[]
+  payoutBatches            ProviderPayoutBatch[]
+}
+
+model ProviderKyc {
+  id                String            @id @default(cuid())
+  providerProfileId String            @unique
+  cccdNumberHash    String?
+  cccdNumberLast4   String?
+  status            ProviderKycStatus @default(DRAFT)
+  submittedAt       DateTime?
+  reviewedAt        DateTime?
+  rejectionReason   String?
+  blockedAt         DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  providerProfile   ProviderProfile   @relation(fields: [providerProfileId], references: [id])
+}
+
+model ProviderDocument {
+  id                String                 @id @default(cuid())
+  providerProfileId String
+  fileAssetId       String                 @unique
+  type              ProviderDocumentType
+  status            ProviderDocumentStatus @default(PENDING_REVIEW)
+  reviewedAt        DateTime?
+  rejectionReason   String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  deletedAt         DateTime?
+  providerProfile   ProviderProfile        @relation(fields: [providerProfileId], references: [id])
+  fileAsset         FileAsset              @relation(fields: [fileAssetId], references: [id])
+
+  @@index([providerProfileId, type, status])
+}
+
+model ProviderBankAccount {
+  id                  String                    @id @default(cuid())
+  providerProfileId   String
+  bankName            String
+  accountNumberMasked String?
+  accountNumberLast4  String?
+  accountHolderName   String
+  qrBankingInfo       Json?
+  status              ProviderBankAccountStatus @default(PENDING_REVIEW)
+  isPrimary           Boolean                   @default(false)
+  reviewedAt          DateTime?
+  rejectionReason     String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  deletedAt           DateTime?
+  providerProfile     ProviderProfile           @relation(fields: [providerProfileId], references: [id])
+
+  @@index([providerProfileId, status])
+}
+
+model ProviderTaxProfile {
+  id                String                   @id @default(cuid())
+  providerProfileId String                   @unique
+  taxCodeHash       String?
+  taxCodeLast4      String?
+  legalName         String
+  registeredAddress String
+  status            ProviderTaxProfileStatus @default(PENDING_REVIEW)
+  approvedAt        DateTime?
+  rejectionReason   String?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  providerProfile   ProviderProfile          @relation(fields: [providerProfileId], references: [id])
+  taxLogs           ProviderTaxLog[]
+}
+
+model ProviderAgreement {
+  id                String                @id @default(cuid())
+  providerProfileId String
+  type              ProviderAgreementType
+  version           String
+  acceptedAt        DateTime              @default(now())
+  ipAddress         String?
+  deviceId          String?
+  createdAt         DateTime              @default(now())
+  providerProfile   ProviderProfile       @relation(fields: [providerProfileId], references: [id])
+
+  @@unique([providerProfileId, type, version])
+  @@index([providerProfileId, type, acceptedAt])
+}
+
+model ProviderVerificationLog {
+  id                String          @id @default(cuid())
+  providerProfileId String
+  actorId           String?
+  action            String
+  fromStatus        String?
+  toStatus          String?
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id])
+  actor             User?           @relation("ProviderVerificationLogActor", fields: [actorId], references: [id])
+
+  @@index([providerProfileId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model ProviderSession {
+  id                String          @id @default(cuid())
+  providerProfileId String
+  deviceId          String?
+  ipAddress         String?
+  appVersion        String?
+  loggedInAt        DateTime        @default(now())
+  lastSeenAt        DateTime        @default(now())
+  suspicious        Boolean         @default(false)
+  suspiciousReason  String?
+  createdAt         DateTime        @default(now())
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id])
+
+  @@index([providerProfileId, lastSeenAt])
+  @@index([deviceId])
+}
+
+model ProviderDevice {
+  id                String          @id @default(cuid())
+  providerProfileId String
+  deviceId          String
+  platform          String?
+  appVersion        String?
+  enabled           Boolean         @default(true)
+  lastSeenAt        DateTime?
+  blockedAt         DateTime?
+  blockReason       String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id])
+
+  @@unique([providerProfileId, deviceId])
+  @@index([providerProfileId, enabled])
 }
 
 model CustomerSelectedLocation {
@@ -215,35 +440,36 @@ model ProviderService {
 }
 
 model Booking {
-  id                 String                @id @default(cuid())
-  customerProfileId  String
+  id                  String               @id @default(cuid())
+  customerProfileId   String
   preferredProviderId String?
-  selectedProviderId String?
-  status             BookingStatus         @default(CREATED)
-  scheduledStartAt   DateTime
-  scheduledEndAt     DateTime
-  address            Json
-  lat                Decimal               @db.Decimal(10, 7)
-  lng                Decimal               @db.Decimal(10, 7)
-  notes              String?
-  travelBufferMin    Int                   @default(30)
-  earlyAcceptMin     Int                   @default(20)
-  openedAt           DateTime?
-  expiresAt          DateTime?
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
-  customerProfile    CustomerProfile       @relation(fields: [customerProfileId], references: [id])
-  preferredProvider  ProviderProfile?      @relation("PreferredProvider", fields: [preferredProviderId], references: [id])
-  selectedProvider   ProviderProfile?      @relation("SelectedProvider", fields: [selectedProviderId], references: [id])
-  services           BookingService[]
-  participants       BookingParticipant[]
-  chatRoom           ChatRoom?
-  payment            Payment?
-  review             Review?
-  refunds            Refund[]
-  snapshots          LocationSnapshot[]
-  earning            ProviderEarning?
-  opsTasks           BookingOpsTask[]
+  selectedProviderId  String?
+  status              BookingStatus        @default(CREATED)
+  scheduledStartAt    DateTime
+  scheduledEndAt      DateTime
+  address             Json
+  lat                 Decimal              @db.Decimal(10, 7)
+  lng                 Decimal              @db.Decimal(10, 7)
+  notes               String?
+  travelBufferMin     Int                  @default(30)
+  earlyAcceptMin      Int                  @default(20)
+  openedAt            DateTime?
+  expiresAt           DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  customerProfile     CustomerProfile      @relation(fields: [customerProfileId], references: [id])
+  preferredProvider   ProviderProfile?     @relation("PreferredProvider", fields: [preferredProviderId], references: [id])
+  selectedProvider    ProviderProfile?     @relation("SelectedProvider", fields: [selectedProviderId], references: [id])
+  services            BookingService[]
+  participants        BookingParticipant[]
+  chatRoom            ChatRoom?
+  payment             Payment?
+  review              Review?
+  refunds             Refund[]
+  snapshots           LocationSnapshot[]
+  earning             ProviderEarning?
+  taxLogs             ProviderTaxLog[]
+  opsTasks            BookingOpsTask[]
 }
 
 model BookingOpsTask {
@@ -274,16 +500,16 @@ model BookingService {
 }
 
 model BookingParticipant {
-  id                String            @id @default(cuid())
-  bookingId         String
-  providerProfileId String
-  status            ParticipantStatus @default(JOINED)
-  distanceMeters    Int?
+  id                   String            @id @default(cuid())
+  bookingId            String
+  providerProfileId    String
+  status               ParticipantStatus @default(JOINED)
+  distanceMeters       Int?
   providerStatusAtJoin ProviderStatus?
-  joinedAt          DateTime          @default(now())
-  respondedAt       DateTime?
-  booking           Booking           @relation(fields: [bookingId], references: [id])
-  providerProfile   ProviderProfile   @relation(fields: [providerProfileId], references: [id])
+  joinedAt             DateTime          @default(now())
+  respondedAt          DateTime?
+  booking              Booking           @relation(fields: [bookingId], references: [id])
+  providerProfile      ProviderProfile   @relation(fields: [providerProfileId], references: [id])
 
   @@unique([bookingId, providerProfileId])
 }
@@ -297,27 +523,27 @@ model ChatRoom {
 }
 
 model ChatMessage {
-  id         String    @id @default(cuid())
-  chatRoomId String
-  senderId   String
-  body       String
+  id          String   @id @default(cuid())
+  chatRoomId  String
+  senderId    String
+  body        String
   attachments Json?
-  createdAt  DateTime  @default(now())
-  chatRoom   ChatRoom  @relation(fields: [chatRoomId], references: [id])
-  sender     User      @relation(fields: [senderId], references: [id])
+  createdAt   DateTime @default(now())
+  chatRoom    ChatRoom @relation(fields: [chatRoomId], references: [id])
+  sender      User     @relation(fields: [senderId], references: [id])
 }
 
 model Payment {
-  id        String        @id @default(cuid())
-  bookingId String        @unique
-  method    PaymentMethod
-  status    PaymentStatus @default(PENDING)
-  amount    Int
-  currency  String        @default("VND")
+  id          String        @id @default(cuid())
+  bookingId   String        @unique
+  method      PaymentMethod
+  status      PaymentStatus @default(PENDING)
+  amount      Int
+  currency    String        @default("VND")
   providerRef String?       @unique
-  rawMeta   Json?
-  booking   Booking       @relation(fields: [bookingId], references: [id])
-  refunds   Refund[]
+  rawMeta     Json?
+  booking     Booking       @relation(fields: [bookingId], references: [id])
+  refunds     Refund[]
 }
 
 model Review {
@@ -338,23 +564,24 @@ model Review {
 }
 
 model ProviderEarning {
-  id                String          @id @default(cuid())
+  id                String               @id @default(cuid())
   providerProfileId String
-  bookingId         String          @unique
+  bookingId         String               @unique
   grossAmount       Int
   platformFee       Int
-  tipAmount         Int             @default(0)
+  tipAmount         Int                  @default(0)
   netAmount         Int
-  currency          String          @default("VND")
-  status            EarningStatus   @default(PENDING)
+  currency          String               @default("VND")
+  status            EarningStatus        @default(PENDING)
   availableAt       DateTime?
   paidAt            DateTime?
   payoutBatchId     String?
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id])
-  booking           Booking         @relation(fields: [bookingId], references: [id])
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  providerProfile   ProviderProfile      @relation(fields: [providerProfileId], references: [id])
+  booking           Booking              @relation(fields: [bookingId], references: [id])
   payoutBatch       ProviderPayoutBatch? @relation(fields: [payoutBatchId], references: [id])
+  taxLogs           ProviderTaxLog[]
 }
 
 model ProviderPayoutBatch {
@@ -369,30 +596,104 @@ model ProviderPayoutBatch {
   paidAt            DateTime?
   providerProfile   ProviderProfile   @relation(fields: [providerProfileId], references: [id])
   earnings          ProviderEarning[]
+  withholdingLogs   WithholdingLog[]
+}
+
+model TaxPolicyVersion {
+  id            String           @id @default(cuid())
+  name          String
+  status        TaxPolicyStatus  @default(DRAFT)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  notes         String?
+  createdById   String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  createdBy     User?            @relation("TaxPolicyAuthor", fields: [createdById], references: [id])
+  rules         TaxRule[]
+  taxLogs       ProviderTaxLog[]
+
+  @@index([status, effectiveFrom])
+}
+
+model TaxRule {
+  id              String           @id @default(cuid())
+  policyVersionId String
+  scope           TaxRuleScope     @default(DEFAULT)
+  serviceType     String?
+  minGrossAmount  Int?
+  maxGrossAmount  Int?
+  rateBps         Int              @default(0)
+  fixedAmount     Int              @default(0)
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  policyVersion   TaxPolicyVersion @relation(fields: [policyVersionId], references: [id])
+
+  @@index([policyVersionId, scope, active])
+}
+
+model ProviderTaxLog {
+  id                String              @id @default(cuid())
+  providerProfileId String
+  bookingId         String?
+  earningId         String?
+  taxProfileId      String?
+  policyVersionId   String?
+  grossAmount       Int
+  taxableAmount     Int
+  withholdingAmount Int
+  currency          String              @default("VND")
+  ruleSnapshot      Json?
+  createdAt         DateTime            @default(now())
+  providerProfile   ProviderProfile     @relation(fields: [providerProfileId], references: [id])
+  booking           Booking?            @relation(fields: [bookingId], references: [id])
+  earning           ProviderEarning?    @relation(fields: [earningId], references: [id])
+  taxProfile        ProviderTaxProfile? @relation(fields: [taxProfileId], references: [id])
+  policyVersion     TaxPolicyVersion?   @relation(fields: [policyVersionId], references: [id])
+  withholdingLogs   WithholdingLog[]
+
+  @@index([providerProfileId, createdAt])
+  @@index([bookingId])
+  @@index([earningId])
+}
+
+model WithholdingLog {
+  id               String               @id @default(cuid())
+  providerTaxLogId String
+  payoutBatchId    String?
+  amount           Int
+  status           String               @default("PENDING")
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+  providerTaxLog   ProviderTaxLog       @relation(fields: [providerTaxLogId], references: [id])
+  payoutBatch      ProviderPayoutBatch? @relation(fields: [payoutBatchId], references: [id])
+
+  @@index([payoutBatchId, status])
 }
 
 model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String
-  title     String
-  body      String
-  data      Json?
-  readAt    DateTime?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id])
+  id         String                 @id @default(cuid())
+  userId     String
+  type       String
+  title      String
+  body       String
+  data       Json?
+  readAt     DateTime?
+  createdAt  DateTime               @default(now())
+  user       User                   @relation(fields: [userId], references: [id])
   deliveries NotificationDelivery[]
 }
 
 model PushDevice {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  platform  String
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
+  id         String                 @id @default(cuid())
+  userId     String
+  token      String                 @unique
+  platform   String
+  enabled    Boolean                @default(true)
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+  user       User                   @relation(fields: [userId], references: [id])
   deliveries NotificationDelivery[]
 }
 
@@ -422,6 +723,7 @@ model FileAsset {
   owner                  User?                 @relation("FileAssetOwner", fields: [ownerUserId], references: [id])
   providerVerificationId String?
   providerVerification   ProviderVerification? @relation(fields: [providerVerificationId], references: [id])
+  providerDocument       ProviderDocument?
   createdAt              DateTime              @default(now())
 
   @@index([ownerUserId, purpose, createdAt])
@@ -429,22 +731,22 @@ model FileAsset {
 }
 
 model LocationSnapshot {
-  id                String           @id @default(cuid())
+  id                String          @id @default(cuid())
   bookingId         String?
   providerProfileId String
-  lat               Decimal          @db.Decimal(10, 7)
-  lng               Decimal          @db.Decimal(10, 7)
-  recordedAt        DateTime         @default(now())
-  booking           Booking?         @relation(fields: [bookingId], references: [id])
-  providerProfile   ProviderProfile  @relation(fields: [providerProfileId], references: [id])
+  lat               Decimal         @db.Decimal(10, 7)
+  lng               Decimal         @db.Decimal(10, 7)
+  recordedAt        DateTime        @default(now())
+  booking           Booking?        @relation(fields: [bookingId], references: [id])
+  providerProfile   ProviderProfile @relation(fields: [providerProfileId], references: [id])
 }
 
 model Coupon {
-  id          String   @id @default(cuid())
-  code        String   @unique
+  id          String    @id @default(cuid())
+  code        String    @unique
   description String?
   discount    Json
-  active      Boolean  @default(true)
+  active      Boolean   @default(true)
   startsAt    DateTime?
   endsAt      DateTime?
 }

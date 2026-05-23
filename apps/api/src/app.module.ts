@@ -14,6 +14,7 @@ import { MatchingModule } from './matching/matching.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ProviderOnboardingModule } from './provider-onboarding/provider-onboarding.module';
 import { ProvidersModule } from './providers/providers.module';
 import { RedisModule } from './redis/redis.module';
 import { ServicesModule } from './services/services.module';
@@ -37,6 +38,7 @@ import { UsersModule } from './users/users.module';
     UsersModule,
     CustomersModule,
     ProvidersModule,
+    ProviderOnboardingModule,
     ServicesModule,
     BookingsModule,
     MatchingModule,

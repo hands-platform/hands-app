@@ -759,6 +759,400 @@ create policy "admin settings admin only"
   using (public.is_admin())
   with check (public.is_admin());
 
+-- Provider onboarding extension: KYC, tax, payout gating, agreements, and device security.
+-- This section is additive so the NestJS API can keep existing MVP flows while Supabase
+-- becomes the source for provider onboarding data.
+
+do $$
+begin
+  create type public.provider_level as enum (
+    'LEVEL_1_SIGNUP',
+    'LEVEL_2_ACTIVE',
+    'LEVEL_3_PAYOUT_ENABLED',
+    'LEVEL_4_TRUSTED'
+  );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.provider_kyc_status as enum ('DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'BLOCKED');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.provider_document_type as enum (
+    'CCCD_FRONT',
+    'CCCD_BACK',
+    'SELFIE',
+    'PROFILE_PHOTO',
+    'WORK_PHOTO',
+    'BANK_QR'
+  );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.provider_document_status as enum ('PENDING_REVIEW', 'APPROVED', 'REJECTED');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.provider_bank_account_status as enum (
+    'DRAFT',
+    'PENDING_REVIEW',
+    'APPROVED',
+    'REJECTED',
+    'DISABLED'
+  );
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.provider_tax_profile_status as enum ('DRAFT', 'PENDING_REVIEW', 'APPROVED', 'REJECTED');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.tax_policy_status as enum ('DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.tax_rule_scope as enum ('DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND');
+exception
+  when duplicate_object then null;
+end $$;
+
+do $$
+begin
+  create type public.provider_agreement_type as enum ('TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX');
+exception
+  when duplicate_object then null;
+end $$;
+
+alter table public.providers
+  add column if not exists level public.provider_level not null default 'LEVEL_1_SIGNUP',
+  add column if not exists blocked_at timestamptz,
+  add column if not exists blocked_reason text,
+  add column if not exists trusted_at timestamptz,
+  add column if not exists deleted_at timestamptz;
+
+create table if not exists public.provider_profiles (
+  provider_id uuid primary key references public.providers(id) on delete cascade,
+  legal_name text,
+  date_of_birth date,
+  gender text,
+  phone text,
+  facebook_id text,
+  activity_nickname text,
+  residential_address text,
+  city text,
+  service_area jsonb,
+  experience text,
+  specialties text[],
+  languages text[],
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.provider_kyc (
+  provider_id uuid primary key references public.providers(id) on delete cascade,
+  cccd_number_hash text,
+  cccd_number_last4 text,
+  status public.provider_kyc_status not null default 'DRAFT',
+  submitted_at timestamptz,
+  reviewed_at timestamptz,
+  rejection_reason text,
+  blocked_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.provider_documents (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.providers(id) on delete cascade,
+  file_id uuid references public.files(id) on delete set null,
+  type public.provider_document_type not null,
+  status public.provider_document_status not null default 'PENDING_REVIEW',
+  reviewed_at timestamptz,
+  rejection_reason text,
+  deleted_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.provider_bank_accounts (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.providers(id) on delete cascade,
+  bank_name text not null,
+  account_number_masked text,
+  account_number_last4 text,
+  account_holder_name text not null,
+  qr_banking_info jsonb,
+  status public.provider_bank_account_status not null default 'PENDING_REVIEW',
+  is_primary boolean not null default false,
+  reviewed_at timestamptz,
+  rejection_reason text,
+  deleted_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.provider_tax_profiles (
+  provider_id uuid primary key references public.providers(id) on delete cascade,
+  tax_code_hash text,
+  tax_code_last4 text,
+  legal_name text not null,
+  registered_address text not null,
+  status public.provider_tax_profile_status not null default 'PENDING_REVIEW',
+  approved_at timestamptz,
+  rejection_reason text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.tax_policy_versions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  status public.tax_policy_status not null default 'DRAFT',
+  effective_from timestamptz not null,
+  effective_to timestamptz,
+  notes text,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.tax_rules (
+  id uuid primary key default gen_random_uuid(),
+  policy_version_id uuid not null references public.tax_policy_versions(id) on delete cascade,
+  scope public.tax_rule_scope not null default 'DEFAULT',
+  service_type text,
+  min_gross_amount integer,
+  max_gross_amount integer,
+  rate_bps integer not null default 0 check (rate_bps between 0 and 10000),
+  fixed_amount integer not null default 0 check (fixed_amount >= 0),
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.provider_tax_logs (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.providers(id) on delete cascade,
+  booking_id uuid references public.bookings(id) on delete set null,
+  earning_id uuid references public.provider_earnings(id) on delete set null,
+  tax_profile_id uuid references public.provider_tax_profiles(provider_id) on delete set null,
+  policy_version_id uuid references public.tax_policy_versions(id) on delete set null,
+  gross_amount integer not null,
+  taxable_amount integer not null,
+  withholding_amount integer not null,
+  currency text not null default 'VND',
+  rule_snapshot jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.withholding_logs (
+  id uuid primary key default gen_random_uuid(),
+  provider_tax_log_id uuid not null references public.provider_tax_logs(id) on delete cascade,
+  payout_batch_id uuid references public.provider_payout_batches(id) on delete set null,
+  amount integer not null,
+  status text not null default 'PENDING',
+  metadata jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.provider_payouts (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.providers(id) on delete cascade,
+  payout_batch_id uuid references public.provider_payout_batches(id) on delete set null,
+  requested_amount integer not null,
+  withholding_amount integer not null default 0,
+  final_amount integer not null,
+  status text not null default 'REQUESTED',
+  requested_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  reviewed_by uuid references public.profiles(id) on delete set null,
+  notes text
+);
+
+create table if not exists public.provider_agreements (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.providers(id) on delete cascade,
+  type public.provider_agreement_type not null,
+  version text not null,
+  accepted_at timestamptz not null default now(),
+  ip_address text,
+  device_id text,
+  unique (provider_id, type, version)
+);
+
+create table if not exists public.provider_verification_logs (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.providers(id) on delete cascade,
+  actor_id uuid references public.profiles(id) on delete set null,
+  action text not null,
+  from_status text,
+  to_status text,
+  metadata jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.provider_sessions (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.providers(id) on delete cascade,
+  device_id text,
+  ip_address text,
+  app_version text,
+  logged_in_at timestamptz not null default now(),
+  last_seen_at timestamptz not null default now(),
+  suspicious boolean not null default false,
+  suspicious_reason text
+);
+
+create table if not exists public.provider_devices (
+  id uuid primary key default gen_random_uuid(),
+  provider_id uuid not null references public.providers(id) on delete cascade,
+  device_id text not null,
+  platform text,
+  app_version text,
+  enabled boolean not null default true,
+  last_seen_at timestamptz,
+  blocked_at timestamptz,
+  block_reason text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider_id, device_id)
+);
+
+create index if not exists provider_documents_provider_idx on public.provider_documents(provider_id, type, status);
+create index if not exists provider_bank_accounts_provider_idx on public.provider_bank_accounts(provider_id, status);
+create index if not exists tax_policy_versions_active_idx on public.tax_policy_versions(status, effective_from desc);
+create index if not exists tax_rules_policy_idx on public.tax_rules(policy_version_id, scope, active);
+create index if not exists provider_tax_logs_provider_idx on public.provider_tax_logs(provider_id, created_at desc);
+create index if not exists withholding_logs_payout_idx on public.withholding_logs(payout_batch_id, status);
+create index if not exists provider_payouts_provider_idx on public.provider_payouts(provider_id, requested_at desc);
+create index if not exists provider_sessions_provider_idx on public.provider_sessions(provider_id, last_seen_at desc);
+create index if not exists provider_devices_provider_idx on public.provider_devices(provider_id, enabled);
+
+alter table public.provider_profiles enable row level security;
+alter table public.provider_kyc enable row level security;
+alter table public.provider_documents enable row level security;
+alter table public.provider_bank_accounts enable row level security;
+alter table public.provider_tax_profiles enable row level security;
+alter table public.tax_policy_versions enable row level security;
+alter table public.tax_rules enable row level security;
+alter table public.provider_tax_logs enable row level security;
+alter table public.withholding_logs enable row level security;
+alter table public.provider_payouts enable row level security;
+alter table public.provider_agreements enable row level security;
+alter table public.provider_verification_logs enable row level security;
+alter table public.provider_sessions enable row level security;
+alter table public.provider_devices enable row level security;
+
+drop policy if exists "provider onboarding owner or admin read" on public.provider_profiles;
+create policy "provider onboarding owner or admin read"
+  on public.provider_profiles for select
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider onboarding owner write" on public.provider_profiles;
+create policy "provider onboarding owner write"
+  on public.provider_profiles for all
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin())
+  with check (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider kyc owner or admin read" on public.provider_kyc;
+create policy "provider kyc owner or admin read"
+  on public.provider_kyc for select
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider kyc owner submit" on public.provider_kyc;
+create policy "provider kyc owner submit"
+  on public.provider_kyc for insert
+  with check (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider docs owner or admin" on public.provider_documents;
+create policy "provider docs owner or admin"
+  on public.provider_documents for all
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin())
+  with check (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider bank owner or admin" on public.provider_bank_accounts;
+create policy "provider bank owner or admin"
+  on public.provider_bank_accounts for all
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin())
+  with check (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider tax profile owner or admin" on public.provider_tax_profiles;
+create policy "provider tax profile owner or admin"
+  on public.provider_tax_profiles for all
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin())
+  with check (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "tax policies admin only" on public.tax_policy_versions;
+create policy "tax policies admin only"
+  on public.tax_policy_versions for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "tax rules admin only" on public.tax_rules;
+create policy "tax rules admin only"
+  on public.tax_rules for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "provider tax logs owner or admin read" on public.provider_tax_logs;
+create policy "provider tax logs owner or admin read"
+  on public.provider_tax_logs for select
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "withholding logs admin only" on public.withholding_logs;
+create policy "withholding logs admin only"
+  on public.withholding_logs for all
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "provider payouts owner or admin read" on public.provider_payouts;
+create policy "provider payouts owner or admin read"
+  on public.provider_payouts for select
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider agreements owner or admin" on public.provider_agreements;
+create policy "provider agreements owner or admin"
+  on public.provider_agreements for all
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin())
+  with check (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider verification logs admin read" on public.provider_verification_logs;
+create policy "provider verification logs admin read"
+  on public.provider_verification_logs for select
+  using (public.is_admin());
+
+drop policy if exists "provider sessions owner or admin read" on public.provider_sessions;
+create policy "provider sessions owner or admin read"
+  on public.provider_sessions for select
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
+drop policy if exists "provider devices owner or admin" on public.provider_devices;
+create policy "provider devices owner or admin"
+  on public.provider_devices for all
+  using (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin())
+  with check (provider_id in (select id from public.providers where user_id = auth.uid()) or public.is_admin());
+
 -- PostgREST role grants.
 -- RLS policies above still decide row-level access; these grants only allow
 -- Supabase API roles to reach the tables/functions protected by those policies.

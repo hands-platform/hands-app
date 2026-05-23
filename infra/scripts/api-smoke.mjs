@@ -147,7 +147,9 @@ if (
   completedVerificationUpload.uploadStatus !== 'UPLOADED' ||
   completedVerificationUpload.sizeBytes !== 2048
 ) {
-  throw new Error(`Verification upload was not marked complete: ${JSON.stringify(completedVerificationUpload)}`);
+  throw new Error(
+    `Verification upload was not marked complete: ${JSON.stringify(completedVerificationUpload)}`,
+  );
 }
 await postJson('/provider/verification/submit', providerAuth.accessToken, {
   fileIds: [verificationUpload.file.id],
@@ -170,6 +172,18 @@ const verificationReadUrl = await getJson(
   `/files/${verificationUpload.file.id}/read-url`,
   adminAuth.accessToken,
 );
+const providerOnboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
+if (
+  providerOnboarding.providerProfileId !== providerAuth.user.providerProfile.id ||
+  !providerOnboarding.payoutGate ||
+  !Array.isArray(providerOnboarding.nextRequiredActions)
+) {
+  throw new Error(`Provider onboarding snapshot is incomplete: ${JSON.stringify(providerOnboarding)}`);
+}
+const taxPolicyVersions = await getJson('/admin/tax-policy-versions', adminAuth.accessToken);
+if (!Array.isArray(taxPolicyVersions)) {
+  throw new Error(`Tax policy version list did not return an array: ${JSON.stringify(taxPolicyVersions)}`);
+}
 
 await postJson('/provider/online', providerAuth.accessToken);
 await postJson('/provider/online', backupProviderAuth.accessToken);
@@ -517,6 +531,8 @@ console.log({
   verificationFileId: verificationUpload.file.id,
   verificationUploadStatus: completedVerificationUpload.uploadStatus,
   verificationReadStorageMode: verificationReadUrl.storageMode,
+  providerOnboardingLevel: providerOnboarding.level,
+  taxPolicyVersionCount: taxPolicyVersions.length,
   customerNotifications: notifications.length,
   retryAccepted,
   retryBeforeDeliveryCount,

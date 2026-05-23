@@ -1,0 +1,83 @@
+# Provider Onboarding, KYC, Tax, and Payout Architecture
+
+HANDS provider onboarding is split into small domains so legal, tax, payout, and verification rules can change without rewriting booking or chat flows.
+
+## Goals
+
+- Register Vietnam-based providers such as massage therapists, drivers, and freelancers.
+- Keep existing booking, matching, chat, and provider verification flows working while onboarding becomes richer.
+- Move toward Supabase Auth, PostgreSQL, Storage, and Realtime without letting screens call Supabase directly.
+- Avoid hardcoded tax rates, payout rules, or legal versions in mobile code.
+
+## Domain Boundaries
+
+| Domain        | Responsibility                                                             | Main Tables                                                                             |
+| ------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Provider core | Public/provider identity, activity name, city, service area, level, status | `ProviderProfile`                                                                       |
+| KYC           | CCCD/CMND hash, review state, resubmission state                           | `ProviderKyc`                                                                           |
+| Documents     | Typed uploaded files for CCCD front/back, selfie, work photos, bank QR     | `ProviderDocument`, `FileAsset`                                                         |
+| Bank accounts | Masked account data, QR banking metadata, admin review                     | `ProviderBankAccount`                                                                   |
+| Tax           | Provider MST/tax profile, versioned policy rules, withholding logs         | `ProviderTaxProfile`, `TaxPolicyVersion`, `TaxRule`, `ProviderTaxLog`, `WithholdingLog` |
+| Agreements    | Terms, privacy, location, payout, and tax policy consent versions          | `ProviderAgreement`                                                                     |
+| Security      | Device, session, IP, app version, suspicious activity hooks                | `ProviderDevice`, `ProviderSession`                                                     |
+| Admin ops     | KYC, bank, tax, payout approval and audit trail                            | `ProviderVerificationLog`, `AdminAuditLog`                                              |
+
+## Provider Levels
+
+| Level                    | Meaning                                  | Gate                                                                           |
+| ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------ |
+| `LEVEL_1_SIGNUP`         | Can sign up and create the basic profile | Phone/auth plus basic profile                                                  |
+| `LEVEL_2_ACTIVE`         | Can receive and complete jobs            | KYC approved and approved bank account                                         |
+| `LEVEL_3_PAYOUT_ENABLED` | Can request payouts                      | First completed service, tax profile, residential address, required agreements |
+| `LEVEL_4_TRUSTED`        | Trusted badge                            | Admin career/profile review                                                    |
+
+Tax fields are intentionally not required during signup. They appear when the provider has earned money and tries to withdraw.
+
+## Tax Policy Rule
+
+Tax calculation must read an active `TaxPolicyVersion` and matching `TaxRule`.
+
+Rules may target:
+
+- `DEFAULT`
+- `SERVICE_TYPE`
+- `AMOUNT_BAND`
+
+Each rule stores `rateBps` and optional `fixedAmount`. The code stores the policy/rule snapshot used for each calculation in `ProviderTaxLog.ruleSnapshot`, so later policy changes do not rewrite history.
+
+## API Foundation
+
+Provider routes:
+
+- `GET /provider/onboarding`
+- `PATCH /provider/onboarding/basic-profile`
+- `POST /provider/onboarding/kyc/submit`
+- `POST /provider/onboarding/bank-accounts`
+- `POST /provider/onboarding/tax-profile`
+- `POST /provider/onboarding/agreements`
+
+Admin tax policy routes:
+
+- `GET /admin/tax-policy-versions`
+- `POST /admin/tax-policy-versions`
+- `PATCH /admin/tax-policy-versions/:id`
+- `POST /admin/tax-policy-versions/:id/rules`
+
+Existing routes such as `GET /provider/verification` and `POST /provider/verification/submit` remain active until the mobile onboarding UI fully moves to the richer KYC model.
+
+## Supabase/RLS Direction
+
+Supabase should mirror these domains with RLS:
+
+- Providers can read/write only their own onboarding records.
+- Admins can read and review all provider onboarding records.
+- Private documents are visible only to the owner provider and admins.
+- Tax policy versions and rules are writable by admins only and readable by admins/API service role.
+
+## Production Hardening
+
+- Do not store raw CCCD, tax codes, or bank account numbers in plain text.
+- Use hashing for lookup/matching and encryption or a vault for values that must be recoverable.
+- Add malware scanning/moderation before KYC approval.
+- Add admin review queues for KYC, bank, tax profile, and trusted badge.
+- Add one-way audit logs for every approval, rejection, block, and payout action.
