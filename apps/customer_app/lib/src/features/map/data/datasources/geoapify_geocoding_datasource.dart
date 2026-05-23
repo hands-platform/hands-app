@@ -5,9 +5,11 @@ import 'package:http/http.dart' as http;
 import '../../domain/entities/address_search_result.dart';
 
 class GeoapifyGeocodingDataSource {
-  GeoapifyGeocodingDataSource({required this.apiKey});
+  GeoapifyGeocodingDataSource({required this.apiKey, http.Client? client})
+      : _client = client ?? http.Client();
 
   final String apiKey;
+  final http.Client _client;
   final Map<String, List<AddressSearchResult>> _cache = {};
 
   Future<List<AddressSearchResult>> search(String query) async {
@@ -29,7 +31,7 @@ class GeoapifyGeocodingDataSource {
       'limit': '6',
       'apiKey': apiKey,
     });
-    final response = await http.get(uri);
+    final response = await _client.get(uri);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Address search failed (${response.statusCode}).');
     }
