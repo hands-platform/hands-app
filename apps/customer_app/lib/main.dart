@@ -2564,28 +2564,12 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           const SizedBox(height: 18),
                           BookingSectionCard(
                             title: 'Therapist location',
-                            child: latestProviderLocation == null
-                                ? const Text(
-                                    'The therapist\'s last shared pin will appear here after they share location.')
-                                : Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text('Therapist\'s last shared pin'),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'Lat ${formatCoordinate(asDouble(latestProviderLocation?['lat']))} | Lng ${formatCoordinate(asDouble(latestProviderLocation?['lng']))}',
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Updated ${latestProviderLocation?['recordedAt']?.toString() ?? 'just now'}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(color: Colors.black54),
-                                      ),
-                                    ],
-                                  ),
+                            child: LiveLocationDetails(
+                              customerPoint: customerPoint,
+                              providerLocation: latestProviderLocation,
+                              emptyText:
+                                  'The therapist\'s last shared pin will appear here after they share location.',
+                            ),
                           ),
                           const SizedBox(height: 18),
                           if (preferredProvider != null) ...[
@@ -3209,6 +3193,104 @@ class _LocationMapSurfaceState extends State<LocationMapSurface> {
       customerLabel: widget.customerLabel,
       providerLabel: widget.providerLabel,
       showProviderMarker: widget.fallbackShowProviderMarker,
+    );
+  }
+}
+
+class LiveLocationDetails extends StatelessWidget {
+  const LiveLocationDetails({
+    super.key,
+    required this.customerPoint,
+    required this.providerLocation,
+    required this.emptyText,
+  });
+
+  final LatLng? customerPoint;
+  final Map<String, dynamic>? providerLocation;
+  final String emptyText;
+
+  @override
+  Widget build(BuildContext context) {
+    final providerPoint = deriveRealtimeLatLng(providerLocation);
+    final hasProviderPoint = providerPoint != null;
+    final recordedAt = providerLocation?['recordedAt'];
+    final statusColor = providerLocationStatusColor(recordedAt);
+    final statusLabel = providerLocationStatusLabel(recordedAt);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: SizedBox(
+            height: 180,
+            child: LocationMapSurface(
+              customerPoint: customerPoint,
+              providerPoint: providerPoint,
+              customerLabel: 'Customer',
+              providerLabel: 'Therapist',
+              fallbackShowProviderMarker: hasProviderPoint,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            LocationStatusChip(
+              label: hasProviderPoint ? statusLabel : 'Waiting for location',
+              color: hasProviderPoint ? statusColor : Colors.black54,
+            ),
+            if (hasProviderPoint)
+              LocationStatusChip(
+                label:
+                    'Lat ${formatCoordinate(providerPoint.latitude)} / Lng ${formatCoordinate(providerPoint.longitude)}',
+                color: Colors.black87,
+              ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          hasProviderPoint
+              ? 'Last shared ${formatLastLocation(recordedAt)}. Customers see the last saved location, not continuous tracking.'
+              : emptyText,
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(color: Colors.black54),
+        ),
+      ],
+    );
+  }
+}
+
+class LocationStatusChip extends StatelessWidget {
+  const LocationStatusChip({
+    super.key,
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.30)),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+      ),
     );
   }
 }
@@ -4481,6 +4563,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   late final RealtimeSocket _socket;
   final messageController = TextEditingController();
   List<dynamic> messages = [];
+  Map<String, dynamic>? activeBooking;
+  Map<String, dynamic>? latestProviderLocation;
   String? chatRoomId;
   String? statusMessage;
   String? error;
@@ -4504,6 +4588,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void dispose() {
     _socket.offEvent('chat.message.created');
+    _socket.offEvent('provider.location.updated');
     messageController.dispose();
     super.dispose();
   }
@@ -4517,6 +4602,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() {
         messages = [...messages, payload];
         statusMessage = 'New message received.';
+      });
+    });
+  }
+
+  void attachLocationListener(String? bookingId) {
+    _socket.offEvent('provider.location.updated');
+    if (bookingId == null || bookingId.isEmpty) {
+      return;
+    }
+    ref.read(customerRepositoryProvider).joinBookingRoom(bookingId);
+    _socket.onEvent('provider.location.updated', (payload) {
+      if (!mounted ||
+          payload is! Map ||
+          payload['bookingId']?.toString() != bookingId) {
+        return;
+      }
+      setState(() {
+        latestProviderLocation =
+            Map<String, dynamic>.from(payload.cast<String, dynamic>());
+        statusMessage = 'Therapist location updated.';
       });
     });
   }
@@ -4574,21 +4679,36 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() => statusMessage = 'Chat room is not ready yet.');
       return;
     }
-    await loadChatRoom(roomId, bookingId: booking?['id']?.toString());
+    await loadChatRoom(
+      roomId,
+      bookingId: booking?['id']?.toString(),
+      booking: booking,
+    );
   }
 
-  Future<void> loadChatRoom(String roomId, {String? bookingId}) async {
+  Future<void> loadChatRoom(
+    String roomId, {
+    String? bookingId,
+    Map<String, dynamic>? booking,
+  }) async {
     ref.read(customerRepositoryProvider).joinChat(roomId);
+    final bookingContext = booking ??
+        (bookingId == null
+            ? null
+            : await ref.read(customerRepositoryProvider).getBooking(bookingId));
     final loadedMessages =
         await ref.read(customerRepositoryProvider).listChatMessages(roomId);
     setState(() {
       chatRoomId = roomId;
+      activeBooking = bookingContext;
+      latestProviderLocation = null;
       messages = loadedMessages;
       statusMessage = bookingId == null
           ? 'Chat is ready.'
           : 'Chat is ready for booking $bookingId.';
     });
     attachChatListener();
+    attachLocationListener(bookingId);
   }
 
   Future<void> sendMessage() async {
@@ -4644,6 +4764,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             Text('Room $chatRoomId',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
+            BookingSectionCard(
+              title: 'Live service location',
+              child: LiveLocationDetails(
+                customerPoint: deriveBookingLatLng(activeBooking),
+                providerLocation: latestProviderLocation,
+                emptyText:
+                    'Therapist location appears here after the provider shares their current pin.',
+              ),
+            ),
+            const SizedBox(height: 12),
             if (messages.isEmpty)
               const EmptyPanel(
                   text:
@@ -5078,6 +5208,38 @@ String formatLastLocation(dynamic value) {
     return '${difference.inHours}h ago';
   }
   return '${difference.inDays}d ago';
+}
+
+String providerLocationStatusLabel(dynamic value) {
+  final raw = value?.toString();
+  final date = raw == null ? null : DateTime.tryParse(raw)?.toLocal();
+  if (date == null) {
+    return 'Location not shared';
+  }
+  final difference = DateTime.now().difference(date);
+  if (difference.inMinutes < 30) {
+    return 'Recent location';
+  }
+  if (difference.inHours < 24) {
+    return 'Last location not recent';
+  }
+  return 'Old saved location';
+}
+
+Color providerLocationStatusColor(dynamic value) {
+  final raw = value?.toString();
+  final date = raw == null ? null : DateTime.tryParse(raw)?.toLocal();
+  if (date == null) {
+    return Colors.black54;
+  }
+  final difference = DateTime.now().difference(date);
+  if (difference.inMinutes < 30) {
+    return const Color(0xFF5E8E4A);
+  }
+  if (difference.inHours < 24) {
+    return const Color(0xFF9A6A18);
+  }
+  return Colors.black54;
 }
 
 String providerLocationFreshnessLabel(Map<String, dynamic> provider) {
