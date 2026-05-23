@@ -1,8 +1,15 @@
 import { createHmac, randomUUID } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3100/api';
-const jwtSecret = process.env.SUPABASE_JWT_SECRET;
-const jwtAudience = process.env.SUPABASE_JWT_AUDIENCE ?? 'authenticated';
+const envFile = process.argv.find((arg) => arg.startsWith('--env='))?.slice('--env='.length) ?? '.env';
+const envPath = resolve(envFile);
+const fileEnv = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : {};
+const env = { ...fileEnv, ...process.env };
+
+const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3100/api';
+const jwtSecret = env.SUPABASE_JWT_SECRET;
+const jwtAudience = env.SUPABASE_JWT_AUDIENCE ?? 'authenticated';
 
 if (!jwtSecret) {
   throw new Error('SUPABASE_JWT_SECRET is required for the Supabase auth smoke test.');
@@ -129,4 +136,25 @@ function signSupabaseToken(payload) {
 
 function base64Url(value) {
   return Buffer.from(value).toString('base64url');
+}
+
+function parseEnv(source) {
+  const entries = {};
+  for (const rawLine of source.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) {
+      continue;
+    }
+    const index = line.indexOf('=');
+    if (index === -1) {
+      continue;
+    }
+    const key = line.slice(0, index).trim();
+    const value = line
+      .slice(index + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, '');
+    entries[key] = value;
+  }
+  return entries;
 }
