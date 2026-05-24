@@ -368,6 +368,14 @@ export class ProviderOnboardingService {
     const existing = await this.prisma.providerKyc.findUnique({
       where: { providerProfileId },
     });
+    if (status === ProviderKycStatus.APPROVED) {
+      const missingRequiredDocuments = await this.findMissingApprovedKycDocumentTypes(providerProfileId);
+      if (missingRequiredDocuments.length > 0) {
+        throw new BadRequestException(
+          `Cannot approve KYC before required documents are approved: ${missingRequiredDocuments.join(', ')}`,
+        );
+      }
+    }
     const kyc = await this.prisma.providerKyc.upsert({
       where: { providerProfileId },
       update: {
@@ -465,6 +473,7 @@ export class ProviderOnboardingService {
         reason,
       },
     );
+    await this.refreshProviderLevel(document.providerProfileId);
     return { ok: true, document };
   }
 
@@ -800,6 +809,19 @@ export class ProviderOnboardingService {
       where: { id: providerProfileId },
       data: { level },
     });
+  }
+
+  private async findMissingApprovedKycDocumentTypes(providerProfileId: string) {
+    const approvedDocuments = await this.prisma.providerDocument.findMany({
+      where: {
+        providerProfileId,
+        type: { in: [...REQUIRED_KYC_DOCUMENT_TYPES] },
+        status: ProviderDocumentStatus.APPROVED,
+      },
+      select: { type: true },
+    });
+    const approvedTypes = new Set(approvedDocuments.map((document) => document.type));
+    return REQUIRED_KYC_DOCUMENT_TYPES.filter((type) => !approvedTypes.has(type));
   }
 
   private recommendedLevel(input: {

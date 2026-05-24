@@ -202,6 +202,29 @@ await expectRequestFailure(
     }),
   400,
 );
+const pendingKycDocumentUploads = [];
+for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
+  const upload = await postJson('/files/presign', kycNegativeProviderAuth.accessToken, {
+    contentType: 'image/jpeg',
+    visibility: 'PRIVATE',
+    purpose: `provider-kyc-pending-${type.toLowerCase()}`,
+  });
+  await postJson(`/files/${upload.file.id}/complete`, kycNegativeProviderAuth.accessToken, { sizeBytes: 1024 });
+  pendingKycDocumentUploads.push({ fileId: upload.file.id, type });
+}
+await postJson('/provider/onboarding/kyc/submit', kycNegativeProviderAuth.accessToken, {
+  cccdNumber: '000000000000',
+  documents: pendingKycDocumentUploads,
+});
+await expectRequestFailure(
+  'KYC approve before required documents are approved',
+  () =>
+    postJson(
+      `/admin/providers/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`,
+      adminAuth.accessToken,
+    ),
+  400,
+);
 const kycDocumentUploads = [];
 for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
   const upload = await postJson('/files/presign', providerAuth.accessToken, {
@@ -216,6 +239,15 @@ await postJson('/provider/onboarding/kyc/submit', providerAuth.accessToken, {
   cccdNumber: '000000000000',
   documents: kycDocumentUploads,
 });
+const kycSubmittedOnboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
+for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
+  const document = kycSubmittedOnboarding.documents.find(
+    (item) => item.type === type && item.status !== 'APPROVED',
+  );
+  if (document) {
+    await postJson(`/admin/provider-documents/${document.id}/approve`, adminAuth.accessToken);
+  }
+}
 await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
 const onboardingBankAccount = await postJson('/provider/onboarding/bank-accounts', providerAuth.accessToken, {
   bankName: 'Vietcombank',

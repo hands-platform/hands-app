@@ -70,6 +70,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
 
   const primaryBank = provider.bankAccounts?.[0];
   const reviewChecklist = buildReviewChecklist(provider);
+  const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
 
   return (
     <>
@@ -205,7 +206,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div className="actions" style={{ marginTop: 12 }}>
             <form action={approveProviderKyc}>
               <input type="hidden" name="providerId" value={provider.id} />
-              <button type="submit" disabled={provider.kyc?.status === 'APPROVED'}>
+              <button type="submit" disabled={provider.kyc?.status === 'APPROVED' || !canApproveKyc}>
                 Approve KYC
               </button>
             </form>
@@ -221,6 +222,11 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               </button>
             </form>
           </div>
+          {!canApproveKyc ? (
+            <p className="muted" style={{ marginTop: 10 }}>
+              Approve the required CCCD front, CCCD back, and selfie documents before approving KYC.
+            </p>
+          ) : null}
         </div>
 
         <div className="card">
@@ -427,13 +433,7 @@ function InfoLine({ label, value }: { label: string; value?: string | null }) {
 }
 
 function buildReviewChecklist(provider: ProviderDetail) {
-  const requiredDocuments = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
-  const approvedDocuments = new Set(
-    (provider.documents ?? [])
-      .filter((document) => document.status === 'APPROVED')
-      .map((document) => document.type),
-  );
-  const missingDocuments = requiredDocuments.filter((type) => !approvedDocuments.has(type));
+  const missingDocuments = missingApprovedRequiredKycDocuments(provider);
   const primaryBank = provider.bankAccounts?.[0];
   const hasRecentLocation = locationAgeMinutes(provider.currentLocationUpdatedAt) <= 30;
   const hasPushDevice = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
@@ -511,6 +511,20 @@ function buildReviewChecklist(provider: ProviderDetail) {
     blockers: items.filter((item) => !item.ok).length,
     ready: items.every((item) => item.ok),
   };
+}
+
+function hasApprovedRequiredKycDocuments(provider: ProviderDetail) {
+  return missingApprovedRequiredKycDocuments(provider).length === 0;
+}
+
+function missingApprovedRequiredKycDocuments(provider: ProviderDetail) {
+  const requiredDocuments = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
+  const approvedDocuments = new Set(
+    (provider.documents ?? [])
+      .filter((document) => document.status === 'APPROVED')
+      .map((document) => document.type),
+  );
+  return requiredDocuments.filter((type) => !approvedDocuments.has(type));
 }
 
 function formatDate(value?: string | null) {
