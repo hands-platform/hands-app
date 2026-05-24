@@ -55,6 +55,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   );
 
   const primaryBank = provider.bankAccounts?.[0];
+  const reviewChecklist = buildReviewChecklist(provider);
 
   return (
     <>
@@ -95,6 +96,32 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <StatusCard label="Provider status" value={provider.status} />
         <StatusCard label="KYC" value={provider.kyc?.status ?? 'DRAFT'} />
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Approval checklist</h2>
+            <p className="muted">
+              Review these gates before approving the provider or relying on this therapist for dispatch.
+            </p>
+          </div>
+          <span className={`pill ${reviewChecklist.ready ? 'pill-success' : 'pill-warn'}`}>
+            {reviewChecklist.ready ? 'Ready for approval' : `${reviewChecklist.blockers} blocker(s)`}
+          </span>
+        </div>
+        <div className="setup-stage-list">
+          {reviewChecklist.items.map((item) => (
+            <div className="setup-stage-item" key={item.label}>
+              <span>{item.status}</span>
+              <div>
+                <strong>{item.label}</strong>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.ok ? 'OK' : 'Check'}</small>
+            </div>
+          ))}
+        </div>
       </div>
 
       <section className="detail-grid">
@@ -324,9 +351,103 @@ function InfoLine({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
+function buildReviewChecklist(provider: ProviderDetail) {
+  const requiredDocuments = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
+  const approvedDocuments = new Set(
+    (provider.documents ?? [])
+      .filter((document) => document.status === 'APPROVED')
+      .map((document) => document.type),
+  );
+  const missingDocuments = requiredDocuments.filter((type) => !approvedDocuments.has(type));
+  const primaryBank = provider.bankAccounts?.[0];
+  const hasRecentLocation = locationAgeMinutes(provider.currentLocationUpdatedAt) <= 30;
+  const hasPushDevice = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
+  const hasBasicProfile = Boolean(
+    provider.displayName?.trim() &&
+    provider.legalName?.trim() &&
+    provider.user?.phone?.trim() &&
+    provider.residentialAddress?.trim(),
+  );
+
+  const items = [
+    {
+      label: 'Basic provider identity',
+      ok: hasBasicProfile,
+      status: hasBasicProfile ? 'Complete' : 'Missing',
+      detail: hasBasicProfile
+        ? 'Display name, legal name, phone, and address are saved.'
+        : 'Confirm display name, legal name, phone, and residential address.',
+    },
+    {
+      label: 'KYC status',
+      ok: provider.kyc?.status === 'APPROVED',
+      status: provider.kyc?.status ?? 'DRAFT',
+      detail:
+        provider.kyc?.status === 'APPROVED'
+          ? 'KYC has been approved.'
+          : 'Approve CCCD/CMND and selfie review before Level 2 activity.',
+    },
+    {
+      label: 'Required KYC documents',
+      ok: missingDocuments.length === 0,
+      status: missingDocuments.length === 0 ? 'Complete' : 'Missing',
+      detail:
+        missingDocuments.length === 0
+          ? 'CCCD front, CCCD back, and selfie are approved.'
+          : `Missing or unapproved: ${missingDocuments.join(', ')}.`,
+    },
+    {
+      label: 'Bank account',
+      ok: primaryBank?.status === 'APPROVED',
+      status: primaryBank?.status ?? 'MISSING',
+      detail: primaryBank
+        ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'}`
+        : 'Provider has not submitted a payout account.',
+    },
+    {
+      label: 'Tax and payout gate',
+      ok: provider.taxProfile?.status === 'APPROVED' || (provider.earnings ?? []).length === 0,
+      status: provider.taxProfile?.status ?? 'DEFERRED',
+      detail:
+        provider.taxProfile?.status === 'APPROVED'
+          ? 'Tax profile has been approved.'
+          : 'Tax profile can stay deferred until first completed service, then blocks payout.',
+    },
+    {
+      label: 'Location freshness',
+      ok: hasRecentLocation,
+      status: hasRecentLocation ? 'RECENT' : 'STALE',
+      detail: provider.currentLocationUpdatedAt
+        ? `Last shared at ${formatDate(provider.currentLocationUpdatedAt)}.`
+        : 'Provider app has not shared a location.',
+    },
+    {
+      label: 'Push device',
+      ok: hasPushDevice,
+      status: hasPushDevice ? 'READY' : 'MISSING',
+      detail: hasPushDevice
+        ? 'At least one enabled device token exists.'
+        : 'Ask provider to open the app so alerts can register.',
+    },
+  ];
+
+  return {
+    items,
+    blockers: items.filter((item) => !item.ok).length,
+    ready: items.every((item) => item.ok),
+  };
+}
+
 function formatDate(value?: string | null) {
   if (!value) return 'Missing';
   return new Date(value).toLocaleString();
+}
+
+function locationAgeMinutes(value?: string | null) {
+  if (!value) return Number.POSITIVE_INFINITY;
+  const updatedAt = new Date(value).getTime();
+  if (!Number.isFinite(updatedAt)) return Number.POSITIVE_INFINITY;
+  return Math.max(0, Math.round((Date.now() - updatedAt) / 60_000));
 }
 
 function formatCurrency(value?: number | null) {
