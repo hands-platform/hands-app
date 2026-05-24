@@ -71,6 +71,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const primaryBank = provider.bankAccounts?.[0];
   const reviewChecklist = buildReviewChecklist(provider);
   const opsSummary = buildProviderOpsSummary(provider);
+  const levelPlan = buildProviderLevelPlan(provider);
+  const resubmissionPlan = buildProviderResubmissionPlan(provider);
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
 
   return (
@@ -167,6 +169,69 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               <small>{item.ok ? 'OK' : 'Check'}</small>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Provider level path</h2>
+            <p className="muted">
+              Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and Level 4 trust badge gates.
+            </p>
+          </div>
+          <span className="pill pill-info">{levelPlan.currentLevel}</span>
+        </div>
+        <div className="setup-stage-list">
+          {levelPlan.items.map((item) => (
+            <div className="setup-stage-item" key={item.level}>
+              <span>{item.status}</span>
+              <div>
+                <strong>{item.level}</strong>
+                <p className="muted">{item.detail}</p>
+                <p className="muted">{item.operatorAction}</p>
+              </div>
+              <small>{item.ready ? 'Clear' : item.blocked ? 'Blocked' : 'Next'}</small>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Resubmission guidance</h2>
+            <p className="muted">
+              Use this when a provider asks what to fix after rejection. Keep the message specific and auditable.
+            </p>
+          </div>
+          <span className={`pill ${resubmissionPlan.items.length ? 'pill-danger' : 'pill-success'}`}>
+            {resubmissionPlan.items.length} item(s)
+          </span>
+        </div>
+        <div className="setup-stage-list">
+          {resubmissionPlan.items.length ? (
+            resubmissionPlan.items.map((item) => (
+              <div className="setup-stage-item" key={item.target}>
+                <span>{item.status}</span>
+                <div>
+                  <strong>{item.target}</strong>
+                  <p className="muted">{item.reason}</p>
+                  <p className="muted">{item.providerInstruction}</p>
+                </div>
+                <small>{item.operatorAction}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>CLEAR</span>
+              <div>
+                <strong>No resubmission request needed</strong>
+                <p className="muted">There are no rejected provider documents, bank accounts, KYC, or tax profiles.</p>
+              </div>
+              <small>OK</small>
+            </div>
+          )}
         </div>
       </div>
 
@@ -575,6 +640,205 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
     cards,
     ready: cards.every((card) => card.tone === 'done' || card.status === 'DEFERRED'),
   };
+}
+
+type ProviderLevelPathItem = {
+  level: string;
+  status: string;
+  detail: string;
+  operatorAction: string;
+  ready: boolean;
+  blocked: boolean;
+};
+
+function buildProviderLevelPlan(provider: ProviderDetail) {
+  const primaryBank = provider.bankAccounts?.[0];
+  const hasBasicProfile = Boolean(
+    provider.displayName?.trim() &&
+    provider.legalName?.trim() &&
+    provider.user?.phone?.trim() &&
+    provider.residentialAddress?.trim(),
+  );
+  const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
+  const kycReady = provider.kyc?.status === 'APPROVED' && requiredDocumentsReady;
+  const bankReady = primaryBank?.status === 'APPROVED';
+  const hasCompletedService = (provider.earnings ?? []).length > 0;
+  const taxReady = provider.taxProfile?.status === 'APPROVED';
+  const agreementCount = provider.agreements?.length ?? 0;
+  const payoutAgreementsReady = agreementCount >= 5;
+  const hasAddress = Boolean(provider.residentialAddress?.trim());
+  const verificationReady = provider.verification?.status === 'APPROVED';
+  const trustedReady = provider.level === 'LEVEL_4_TRUSTED';
+
+  const level2Ready = hasBasicProfile && kycReady && bankReady && verificationReady;
+  const level3Ready = level2Ready && hasCompletedService && taxReady && payoutAgreementsReady && hasAddress;
+
+  const items: ProviderLevelPathItem[] = [
+    {
+      level: 'LEVEL 1 - Signup possible',
+      status: hasBasicProfile ? 'READY' : 'PROFILE',
+      detail: hasBasicProfile
+        ? 'Phone, display name, legal name, and residential address are present.'
+        : 'The provider can sign up, but basic profile data is incomplete.',
+      operatorAction: hasBasicProfile
+        ? 'Continue identity and payout review.'
+        : 'Ask provider to complete basic profile in the Provider app.',
+      ready: hasBasicProfile,
+      blocked: !hasBasicProfile,
+    },
+    {
+      level: 'LEVEL 2 - Activity possible',
+      status: level2Ready ? 'READY' : 'REVIEW',
+      detail: level2Ready
+        ? 'KYC, required documents, primary bank account, and provider verification are approved.'
+        : level2Blockers({ hasBasicProfile, kycReady, requiredDocumentsReady, bankReady, verificationReady }).join(' '),
+      operatorAction: level2Ready
+        ? 'Provider can receive direct booking and backup matching work.'
+        : 'Clear these items before relying on the provider for customer requests.',
+      ready: level2Ready,
+      blocked: !level2Ready,
+    },
+    {
+      level: 'LEVEL 3 - Payout possible',
+      status: level3Ready ? 'READY' : hasCompletedService ? 'BLOCKED' : 'DEFERRED',
+      detail: level3Ready
+        ? 'First service, tax profile, address, bank, and required agreements are complete.'
+        : hasCompletedService
+          ? level3Blockers({ taxReady, payoutAgreementsReady, agreementCount, hasAddress, bankReady }).join(' ')
+          : 'Do not force tax setup before the first completed service. It should appear before withdrawal.',
+      operatorAction: level3Ready
+        ? 'Payout can be approved when an eligible batch exists.'
+        : hasCompletedService
+          ? 'Resolve payout blockers before approving withdrawal.'
+          : 'Keep this deferred until the provider earns revenue.',
+      ready: level3Ready,
+      blocked: hasCompletedService && !level3Ready,
+    },
+    {
+      level: 'LEVEL 4 - Trust badge',
+      status: trustedReady ? 'TRUSTED' : level3Ready ? 'OPTIONAL' : 'LOCKED',
+      detail: trustedReady
+        ? 'Provider has the trusted badge level.'
+        : level3Ready
+          ? 'Provider is eligible for manual trust review after service quality checks.'
+          : 'Trust badge should wait until payout-level compliance and service quality are proven.',
+      operatorAction: trustedReady
+        ? 'Monitor reviews and reports.'
+        : level3Ready
+          ? 'Review experience evidence, service photos, reports, and customer reviews.'
+          : 'No trust badge action yet.',
+      ready: trustedReady,
+      blocked: false,
+    },
+  ];
+
+  return {
+    currentLevel: provider.level ?? 'LEVEL_1_SIGNUP',
+    items,
+  };
+}
+
+function level2Blockers(input: {
+  hasBasicProfile: boolean;
+  kycReady: boolean;
+  requiredDocumentsReady: boolean;
+  bankReady: boolean;
+  verificationReady: boolean;
+}) {
+  const blockers: string[] = [];
+  if (!input.hasBasicProfile) blockers.push('Basic profile is incomplete.');
+  if (!input.requiredDocumentsReady) blockers.push('Required CCCD/selfie documents are not all approved.');
+  if (!input.kycReady) blockers.push('KYC is not approved.');
+  if (!input.bankReady) blockers.push('Primary bank account is not approved.');
+  if (!input.verificationReady) blockers.push('Provider verification is not approved.');
+  return blockers.length ? blockers : ['Activity gate needs operator refresh.'];
+}
+
+function level3Blockers(input: {
+  taxReady: boolean;
+  payoutAgreementsReady: boolean;
+  agreementCount: number;
+  hasAddress: boolean;
+  bankReady: boolean;
+}) {
+  const blockers: string[] = [];
+  if (!input.bankReady) blockers.push('Approved bank account is required.');
+  if (!input.taxReady) blockers.push('Approved tax profile is required after first completed service.');
+  if (!input.payoutAgreementsReady) blockers.push(`Required agreements are ${input.agreementCount}/5.`);
+  if (!input.hasAddress) blockers.push('Residential address is required for tax/payout records.');
+  return blockers.length ? blockers : ['Payout gate needs operator refresh.'];
+}
+
+type ProviderResubmissionItem = {
+  target: string;
+  status: string;
+  reason: string;
+  providerInstruction: string;
+  operatorAction: string;
+};
+
+function buildProviderResubmissionPlan(provider: ProviderDetail) {
+  const items: ProviderResubmissionItem[] = [];
+
+  if (provider.kyc?.status === 'REJECTED') {
+    items.push({
+      target: 'KYC identity review',
+      status: 'REJECTED',
+      reason: provider.kyc.rejectionReason ?? 'No rejection reason was saved.',
+      providerInstruction: 'Ask the provider to check CCCD/CMND number, legal name, and selfie match before resubmitting.',
+      operatorAction: 'KYC',
+    });
+  }
+
+  for (const document of provider.documents ?? []) {
+    if (document.status !== 'REJECTED') continue;
+    items.push({
+      target: providerDocumentLabel(document.type),
+      status: 'REJECTED',
+      reason: document.rejectionReason ?? 'No document rejection reason was saved.',
+      providerInstruction: providerDocumentResubmissionInstruction(document.type),
+      operatorAction: 'Doc',
+    });
+  }
+
+  for (const bankAccount of provider.bankAccounts ?? []) {
+    if (bankAccount.status !== 'REJECTED') continue;
+    items.push({
+      target: `${bankAccount.bankName} bank account`,
+      status: 'REJECTED',
+      reason: bankAccount.rejectionReason ?? 'No bank rejection reason was saved.',
+      providerInstruction: 'Ask for a new account with matching legal holder name, valid bank name, and readable QR if used.',
+      operatorAction: 'Bank',
+    });
+  }
+
+  if (provider.taxProfile?.status === 'REJECTED') {
+    items.push({
+      target: 'Freelancer tax profile',
+      status: 'REJECTED',
+      reason: provider.taxProfile.rejectionReason ?? 'No tax rejection reason was saved.',
+      providerInstruction: 'Ask for the correct MST/tax code, legal name, and registered address before payout unlock.',
+      operatorAction: 'Tax',
+    });
+  }
+
+  return { items };
+}
+
+function providerDocumentResubmissionInstruction(type?: string | null) {
+  if (type === 'CCCD_FRONT') {
+    return 'Ask for a clear front-side CCCD/CMND image with readable number, full name, and no glare.';
+  }
+  if (type === 'CCCD_BACK') {
+    return 'Ask for a clear back-side CCCD/CMND image with all corners visible and no cropping.';
+  }
+  if (type === 'SELFIE') {
+    return 'Ask for a live selfie that clearly matches the submitted identity document.';
+  }
+  if (type === 'BANK_QR') {
+    return 'Ask for a readable bank QR image, but still verify the typed bank account fields.';
+  }
+  return 'Ask the provider to upload a clearer replacement image for review.';
 }
 
 function payoutBlockers(provider: ProviderDetail) {
