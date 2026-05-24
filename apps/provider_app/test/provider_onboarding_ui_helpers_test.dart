@@ -41,4 +41,13 @@ void main() {
     expect(reviewReason({'rejectionReason': '   '}), isNull);
     expect(reviewReason(null), isNull);
   });
+
+  test('labels provider onboarding history actions', () {
+    expect(providerLogActionLabel('basic_profile.update'),
+        'Basic profile updated');
+    expect(providerLogActionLabel('bank_account.submit'),
+        'Bank account submitted');
+    expect(providerLogActionLabel('unknown.custom_action'),
+        'Unknown Custom Action');
+  });
 }

@@ -2983,6 +2983,10 @@ class _ProviderOnboardingCard extends StatelessWidget {
         .toList();
     final bankAccounts = asList(snapshot['bankAccounts']);
     final documents = asList(snapshot['documents']);
+    final recentLogs = asList(snapshot['recentVerificationLogs'])
+        .map(asMap)
+        .whereType<Map<String, dynamic>>()
+        .toList();
     final requiredKycTypes = requiredKycDocumentTypesFromSnapshot(snapshot);
     final payoutGate = asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
     final payoutMissing = asMap(payoutGate['missing']) ?? <String, dynamic>{};
@@ -3215,12 +3219,111 @@ class _ProviderOnboardingCard extends StatelessWidget {
               complete: recommended == 'LEVEL_4_TRUSTED',
               icon: Icons.workspace_premium_outlined,
             ),
+            if (recentLogs.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              _OnboardingHistoryList(logs: recentLogs),
+            ],
             if (isSaving) ...[
               const SizedBox(height: 12),
               const LinearProgressIndicator(),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _OnboardingHistoryList extends StatelessWidget {
+  const _OnboardingHistoryList({required this.logs});
+
+  final List<Map<String, dynamic>> logs;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.history_outlined, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Recent review activity',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final log in logs.take(5)) ...[
+            _OnboardingHistoryRow(log: log),
+            if (log != logs.take(5).last)
+              Divider(color: colorScheme.outlineVariant),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OnboardingHistoryRow extends StatelessWidget {
+  const _OnboardingHistoryRow({required this.log});
+
+  final Map<String, dynamic> log;
+
+  @override
+  Widget build(BuildContext context) {
+    final action = log['action']?.toString() ?? 'event';
+    final fromStatus = log['fromStatus']?.toString();
+    final toStatus = log['toStatus']?.toString();
+    final actor = asMap(log['actor']);
+    final actorName = actor?['fullName']?.toString().trim().isNotEmpty == true
+        ? actor!['fullName'].toString()
+        : actor?['phone']?.toString();
+    final statusText = fromStatus == null && toStatus == null
+        ? 'Recorded'
+        : '${fromStatus ?? 'New'} -> ${toStatus ?? 'Updated'}';
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 3),
+            child: Icon(Icons.circle, size: 10),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  providerLogActionLabel(action),
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 2),
+                Text(statusText),
+                Text(
+                  [
+                    formatRelativeMoment(log['createdAt']),
+                    if (actorName != null) 'by $actorName',
+                  ].join(' / '),
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -3406,6 +3509,39 @@ String _readableAction(String value) {
       .map((part) =>
           part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
       .join(' ');
+}
+
+String providerLogActionLabel(String value) {
+  switch (value) {
+    case 'basic_profile.update':
+      return 'Basic profile updated';
+    case 'kyc.submit':
+      return 'KYC submitted';
+    case 'kyc.approved':
+      return 'KYC approved';
+    case 'kyc.rejected':
+      return 'KYC rejected';
+    case 'document.approved':
+      return 'Document approved';
+    case 'document.rejected':
+      return 'Document rejected';
+    case 'bank_account.submit':
+      return 'Bank account submitted';
+    case 'bank_account.approved':
+      return 'Bank account approved';
+    case 'bank_account.rejected':
+      return 'Bank account rejected';
+    case 'tax_profile.submit':
+      return 'Tax profile submitted';
+    case 'tax_profile.approved':
+      return 'Tax profile approved';
+    case 'tax_profile.rejected':
+      return 'Tax profile rejected';
+    case 'agreement.accept':
+      return 'Agreement accepted';
+    default:
+      return _readableAction(value.replaceAll('.', '_'));
+  }
 }
 
 String guessImageContentTypeFromName(String name) {

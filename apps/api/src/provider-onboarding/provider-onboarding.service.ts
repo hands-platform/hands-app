@@ -84,6 +84,7 @@ export class ProviderOnboardingService {
       bankAccounts: provider.bankAccounts,
       taxProfile: provider.taxProfile,
       agreements: provider.agreements,
+      recentVerificationLogs: provider.verificationLogs,
       completedBookingCount,
       payoutGate: {
         canWithdraw,
@@ -143,6 +144,17 @@ export class ProviderOnboardingService {
         residentialAddress: normalizeString(input.residentialAddress),
         city: normalizeString(input.city),
         serviceArea: input.serviceArea === undefined ? undefined : toJson(input.serviceArea),
+      },
+    });
+    await this.prisma.providerVerificationLog.create({
+      data: {
+        providerProfileId: provider.id,
+        action: 'basic_profile.update',
+        toStatus: 'UPDATED',
+        metadata: toJson({
+          hasAddress: Boolean(updated.residentialAddress?.trim()),
+          city: updated.city,
+        }),
       },
     });
     return { ok: true, provider: updated };
@@ -247,6 +259,18 @@ export class ProviderOnboardingService {
         isPrimary: true,
       },
     });
+    await this.prisma.providerVerificationLog.create({
+      data: {
+        providerProfileId: provider.id,
+        action: 'bank_account.submit',
+        toStatus: account.status,
+        metadata: toJson({
+          bankAccountId: account.id,
+          bankName,
+          accountNumberLast4: account.accountNumberLast4,
+        }),
+      },
+    });
     return { ok: true, bankAccount: account };
   }
 
@@ -281,6 +305,18 @@ export class ProviderOnboardingService {
         status: input.status ?? ProviderTaxProfileStatus.PENDING_REVIEW,
       },
     });
+    await this.prisma.providerVerificationLog.create({
+      data: {
+        providerProfileId: provider.id,
+        action: 'tax_profile.submit',
+        fromStatus: provider.taxProfile?.status,
+        toStatus: taxProfile.status,
+        metadata: toJson({
+          taxProfileId: taxProfile.id,
+          taxCodeLast4: taxProfile.taxCodeLast4,
+        }),
+      },
+    });
     return { ok: true, taxProfile };
   }
 
@@ -309,6 +345,18 @@ export class ProviderOnboardingService {
         version,
         ipAddress: normalizeString(input.ipAddress),
         deviceId: normalizeString(input.deviceId),
+      },
+    });
+    await this.prisma.providerVerificationLog.create({
+      data: {
+        providerProfileId: provider.id,
+        action: 'agreement.accept',
+        toStatus: type,
+        metadata: toJson({
+          type,
+          version,
+          deviceId: normalizeString(input.deviceId),
+        }),
       },
     });
     return { ok: true, agreement };
@@ -698,6 +746,11 @@ export class ProviderOnboardingService {
         bankAccounts: { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }] },
         taxProfile: true,
         agreements: { orderBy: { acceptedAt: 'desc' } },
+        verificationLogs: {
+          orderBy: { createdAt: 'desc' },
+          take: 12,
+          include: { actor: { select: { phone: true, fullName: true } } },
+        },
       },
     });
     if (!provider) {
