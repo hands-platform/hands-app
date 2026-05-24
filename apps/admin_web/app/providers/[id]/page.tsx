@@ -70,6 +70,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
 
   const primaryBank = provider.bankAccounts?.[0];
   const reviewChecklist = buildReviewChecklist(provider);
+  const opsSummary = buildProviderOpsSummary(provider);
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
 
   return (
@@ -115,6 +116,32 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <StatusCard label="Provider status" value={provider.status} />
         <StatusCard label="KYC" value={provider.kyc?.status ?? 'DRAFT'} />
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Provider ops command center</h2>
+            <p className="muted">
+              One-page operating view for dispatch, payout, risk, and the next admin action.
+            </p>
+          </div>
+          <span className={`pill ${opsSummary.ready ? 'pill-success' : 'pill-warn'}`}>
+            {opsSummary.ready ? 'Operational' : 'Needs operator attention'}
+          </span>
+        </div>
+        <div className="ops-task-grid">
+          {opsSummary.cards.map((card) => (
+            <div className={`ops-task-card ${cardClass(card.tone)}`} key={card.title}>
+              <div>
+                <span className={`pill ${pillClass(card.tone)}`}>{card.status}</span>
+                <h3>{card.title}</h3>
+                <p className="muted">{card.detail}</p>
+              </div>
+              <small>{card.action}</small>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -436,6 +463,225 @@ function InfoLine({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
+type ProviderOpsCard = {
+  title: string;
+  status: string;
+  detail: string;
+  action: string;
+  tone: 'done' | 'pending' | 'blocked';
+};
+
+function buildProviderOpsSummary(provider: ProviderDetail) {
+  const primaryBank = provider.bankAccounts?.[0];
+  const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
+  const hasRecentLocation = locationMinutes <= 30;
+  const hasEnabledPush = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
+  const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
+  const hasCompletedService = (provider.earnings ?? []).length > 0;
+  const agreementsAccepted = provider.agreements?.length ?? 0;
+  const payoutAgreementsReady = agreementsAccepted >= 5;
+  const nextAction = nextProviderAction(provider);
+  const payoutReady =
+    hasCompletedService &&
+    primaryBank?.status === 'APPROVED' &&
+    provider.taxProfile?.status === 'APPROVED' &&
+    Boolean(provider.residentialAddress?.trim()) &&
+    payoutAgreementsReady;
+
+  const cards: ProviderOpsCard[] = [
+    {
+      title: 'Dispatch readiness',
+      status:
+        provider.verification?.status === 'APPROVED' &&
+        provider.status === 'ONLINE_AVAILABLE' &&
+        hasRecentLocation &&
+        hasEnabledPush
+          ? 'READY'
+          : 'CHECK',
+      detail:
+        provider.verification?.status !== 'APPROVED'
+          ? 'Provider verification is not approved yet.'
+          : provider.status !== 'ONLINE_AVAILABLE'
+            ? 'Provider is approved but not online for direct booking or backup matching.'
+            : !hasRecentLocation
+              ? `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`
+              : !hasEnabledPush
+                ? 'No enabled push device is registered for request alerts.'
+                : 'Provider can receive customer direct requests and backup matching alerts.',
+      action:
+        provider.verification?.status !== 'APPROVED'
+          ? 'Finish verification review first.'
+          : provider.status !== 'ONLINE_AVAILABLE'
+            ? 'Ask provider to open the app and go online.'
+            : !hasRecentLocation
+              ? 'Ask provider to refresh location.'
+              : !hasEnabledPush
+                ? 'Ask provider to reopen the app and register alerts.'
+                : 'No dispatch blocker.',
+      tone:
+        provider.verification?.status === 'APPROVED' &&
+        provider.status === 'ONLINE_AVAILABLE' &&
+        hasRecentLocation &&
+        hasEnabledPush
+          ? 'done'
+          : provider.verification?.status !== 'APPROVED'
+            ? 'blocked'
+            : 'pending',
+    },
+    {
+      title: 'Identity and documents',
+      status: provider.kyc?.status === 'APPROVED' && requiredDocumentsReady ? 'APPROVED' : 'REVIEW',
+      detail:
+        provider.kyc?.status === 'APPROVED' && requiredDocumentsReady
+          ? 'KYC and required CCCD/selfie documents are approved.'
+          : requiredDocumentsReady
+            ? `Required documents are approved, KYC status is ${provider.kyc?.status ?? 'DRAFT'}.`
+            : `Missing or unapproved documents: ${missingApprovedRequiredKycDocuments(provider)
+                .map(providerDocumentLabel)
+                .join(', ')}.`,
+      action:
+        provider.kyc?.status === 'APPROVED' && requiredDocumentsReady
+          ? 'Identity gate is clear.'
+          : requiredDocumentsReady
+            ? 'Approve or reject KYC below.'
+            : 'Review each typed document below.',
+      tone: provider.kyc?.status === 'APPROVED' && requiredDocumentsReady ? 'done' : 'blocked',
+    },
+    {
+      title: 'Payout readiness',
+      status: payoutReady ? 'UNLOCKED' : hasCompletedService ? 'BLOCKED' : 'DEFERRED',
+      detail: payoutReady
+        ? 'Provider has completed service, approved bank, approved tax profile, address, and agreements.'
+        : hasCompletedService
+          ? payoutBlockers(provider).join(' ')
+          : 'Tax profile and full payout gate stay deferred until the first completed service.',
+      action: payoutReady
+        ? 'Provider can request payout when earnings are available.'
+        : hasCompletedService
+          ? 'Clear payout blockers before approving withdrawal.'
+          : 'No action until first completed service.',
+      tone: payoutReady ? 'done' : hasCompletedService ? 'blocked' : 'pending',
+    },
+    {
+      title: 'Next admin action',
+      status: nextAction.status,
+      detail: nextAction.detail,
+      action: nextAction.action,
+      tone: nextAction.tone,
+    },
+  ];
+
+  return {
+    cards,
+    ready: cards.every((card) => card.tone === 'done' || card.status === 'DEFERRED'),
+  };
+}
+
+function payoutBlockers(provider: ProviderDetail) {
+  const blockers: string[] = [];
+  const primaryBank = provider.bankAccounts?.[0];
+  const agreementsAccepted = provider.agreements?.length ?? 0;
+
+  if (primaryBank?.status !== 'APPROVED') {
+    blockers.push(`Bank ${primaryBank?.status ?? 'MISSING'}.`);
+  }
+  if (provider.taxProfile?.status !== 'APPROVED') {
+    blockers.push(`Tax ${provider.taxProfile?.status ?? 'MISSING'}.`);
+  }
+  if (!provider.residentialAddress?.trim()) {
+    blockers.push('Residential address missing.');
+  }
+  if (agreementsAccepted < 5) {
+    blockers.push(`Agreements ${agreementsAccepted}/5.`);
+  }
+  return blockers.length ? blockers : ['Payout gate needs admin refresh.'];
+}
+
+function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
+  if (!provider.displayName?.trim() || !provider.legalName?.trim() || !provider.residentialAddress?.trim()) {
+    return {
+      title: 'Next admin action',
+      status: 'PROFILE',
+      detail: 'Basic identity, public display name, or residential address is incomplete.',
+      action: 'Ask provider to complete profile in the Provider app.',
+      tone: 'blocked',
+    };
+  }
+  if (!hasApprovedRequiredKycDocuments(provider)) {
+    return {
+      title: 'Next admin action',
+      status: 'DOCUMENTS',
+      detail: 'At least one required KYC document is still missing, pending, or rejected.',
+      action: 'Approve/reject typed documents before KYC approval.',
+      tone: 'blocked',
+    };
+  }
+  if (provider.kyc?.status !== 'APPROVED') {
+    return {
+      title: 'Next admin action',
+      status: 'KYC',
+      detail: `KYC status is ${provider.kyc?.status ?? 'DRAFT'}.`,
+      action: 'Approve or reject KYC after reviewing the ID fields.',
+      tone: 'blocked',
+    };
+  }
+  if (provider.bankAccounts?.[0]?.status !== 'APPROVED') {
+    return {
+      title: 'Next admin action',
+      status: 'BANK',
+      detail: `Primary bank account is ${provider.bankAccounts?.[0]?.status ?? 'missing'}.`,
+      action: 'Approve or reject the bank account with a clear reason.',
+      tone: 'blocked',
+    };
+  }
+  if ((provider.earnings ?? []).length > 0 && provider.taxProfile?.status !== 'APPROVED') {
+    return {
+      title: 'Next admin action',
+      status: 'TAX',
+      detail: `Provider has earnings, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
+      action: 'Approve or reject tax profile before withdrawal.',
+      tone: 'blocked',
+    };
+  }
+  if (locationAgeMinutes(provider.currentLocationUpdatedAt) > 30) {
+    return {
+      title: 'Next admin action',
+      status: 'LOCATION',
+      detail: `Location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`,
+      action: 'Ask provider to open the app and refresh location.',
+      tone: 'pending',
+    };
+  }
+  if (!(provider.user?.pushDevices ?? []).some((device) => device.enabled)) {
+    return {
+      title: 'Next admin action',
+      status: 'PUSH',
+      detail: 'Provider has no enabled push device.',
+      action: 'Ask provider to reopen app and re-register alerts.',
+      tone: 'pending',
+    };
+  }
+  return {
+    title: 'Next admin action',
+    status: 'CLEAR',
+    detail: 'No immediate onboarding or dispatch blocker is visible.',
+    action: 'Monitor direct booking performance.',
+    tone: 'done',
+  };
+}
+
+function pillClass(tone: ProviderOpsCard['tone']) {
+  if (tone === 'done') return 'pill-success';
+  if (tone === 'blocked') return 'pill-danger';
+  return 'pill-warn';
+}
+
+function cardClass(tone: ProviderOpsCard['tone']) {
+  if (tone === 'done') return 'ops-task-done';
+  if (tone === 'blocked') return 'ops-task-blocked';
+  return 'ops-task-pending';
+}
+
 function buildReviewChecklist(provider: ProviderDetail) {
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
   const primaryBank = provider.bankAccounts?.[0];
@@ -541,6 +787,15 @@ function locationAgeMinutes(value?: string | null) {
   const updatedAt = new Date(value).getTime();
   if (!Number.isFinite(updatedAt)) return Number.POSITIVE_INFINITY;
   return Math.max(0, Math.round((Date.now() - updatedAt) / 60_000));
+}
+
+function locationAgeLabel(value?: string | null) {
+  if (!value) return 'missing';
+  const minutes = locationAgeMinutes(value);
+  if (!Number.isFinite(minutes)) return 'invalid';
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m old`;
+  return `${Math.round(minutes / 60)}h old`;
 }
 
 function formatCurrency(value?: number | null) {
