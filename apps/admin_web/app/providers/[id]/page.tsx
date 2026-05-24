@@ -145,6 +145,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </p>
           <p className="muted">Submitted: {formatDate(provider.kyc?.submittedAt)}</p>
           <p className="muted">Reviewed: {formatDate(provider.kyc?.reviewedAt)}</p>
+          {provider.kyc?.rejectionReason ? (
+            <p className="muted">Rejection reason: {provider.kyc.rejectionReason}</p>
+          ) : null}
           <div className="actions" style={{ marginTop: 12 }}>
             <form action={approveProviderKyc}>
               <input type="hidden" name="providerId" value={provider.id} />
@@ -177,6 +180,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                   {document.fileAsset?.contentType ?? 'Unknown type'}
                   {document.fileAsset?.uploadedAt ? ` / ${formatDate(document.fileAsset.uploadedAt)}` : ''}
                 </p>
+                {document.rejectionReason ? (
+                  <p className="muted">Rejection reason: {document.rejectionReason}</p>
+                ) : null}
                 <p className="muted">
                   {document.fileAsset?.id && readUrls.get(document.fileAsset.id) ? (
                     <a
@@ -228,6 +234,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               />
               <InfoLine label="Holder" value={primaryBank.accountHolderName} />
               <InfoLine label="Status" value={primaryBank.status} />
+              <InfoLine label="Rejection reason" value={primaryBank.rejectionReason} />
               <div className="actions" style={{ marginTop: 12 }}>
                 <form action={approveProviderBankAccount}>
                   <input type="hidden" name="bankAccountId" value={primaryBank.id} />
@@ -257,6 +264,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               <InfoLine label="Legal name" value={provider.taxProfile.legalName} />
               <InfoLine label="Tax code" value={`****${provider.taxProfile.taxCodeLast4 ?? '----'}`} />
               <InfoLine label="Registered address" value={provider.taxProfile.registeredAddress} />
+              <InfoLine label="Rejection reason" value={provider.taxProfile.rejectionReason} />
               <div className="actions" style={{ marginTop: 12 }}>
                 <form action={approveProviderTaxProfile}>
                   <input type="hidden" name="providerId" value={provider.id} />

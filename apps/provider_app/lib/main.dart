@@ -1339,7 +1339,7 @@ class OpenBookingCard extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 2),
                       Text(
-                        '$customerName${customerPhone == null ? '' : ' • $customerPhone'}',
+                        '$customerName${customerPhone == null ? '' : ' - $customerPhone'}',
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
@@ -2906,7 +2906,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               status,
                               if (size != null) '${(size / 1024).ceil()} KB',
                               if (uploadedAt != null) uploadedAt,
-                            ].join(' · ')),
+                            ].join(' / ')),
                           ),
                         );
                       }),
@@ -3001,6 +3001,15 @@ class _ProviderOnboardingCard extends StatelessWidget {
         : asMap(bankAccounts.first)?['status']?.toString();
     final taxStatus = taxProfile?['status']?.toString();
     final addressText = basicProfile['residentialAddress']?.toString();
+    final primaryBank = bankAccounts.isEmpty ? null : asMap(bankAccounts.first);
+    final kycRejectionReason = reviewReason(kyc) ?? reviewReason(verification);
+    final bankRejectionReason = reviewReason(primaryBank);
+    final taxRejectionReason = reviewReason(taxProfile);
+    final rejectedDocuments = documents
+        .map(asMap)
+        .whereType<Map<String, dynamic>>()
+        .where((document) => document['status']?.toString() == 'REJECTED')
+        .toList();
     final submittedKycRequiredCount = documents
         .map(asMap)
         .whereType<Map<String, dynamic>>()
@@ -3069,15 +3078,54 @@ class _ProviderOnboardingCard extends StatelessWidget {
                     final item = asMap(document) ?? <String, dynamic>{};
                     final type = item['type']?.toString() ?? 'DOCUMENT';
                     final status = item['status']?.toString() ?? 'PENDING';
+                    final rejected = status == 'REJECTED';
                     return Chip(
-                      label:
-                          Text('${providerDocumentTypeLabel(type)}: $status'),
+                      backgroundColor: rejected
+                          ? Theme.of(context).colorScheme.errorContainer
+                          : null,
+                      label: Text(
+                        '${providerDocumentTypeLabel(type)}: $status',
+                      ),
                     );
                   }).toList(),
                 ),
               ),
             ],
             const SizedBox(height: 12),
+            if (kycRejectionReason != null) ...[
+              _ReviewAlert(
+                title: 'KYC needs updates',
+                detail: kycRejectionReason,
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (rejectedDocuments.isNotEmpty) ...[
+              _ReviewAlert(
+                title: 'Rejected document(s)',
+                detail: rejectedDocuments.map((document) {
+                  final type =
+                      providerDocumentTypeLabel(document['type'].toString());
+                  final reason =
+                      reviewReason(document) ?? 'Upload a clearer image.';
+                  return '$type: $reason';
+                }).join('\n'),
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (bankRejectionReason != null) ...[
+              _ReviewAlert(
+                title: 'Bank account needs updates',
+                detail: bankRejectionReason,
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (taxRejectionReason != null) ...[
+              _ReviewAlert(
+                title: 'Tax profile needs updates',
+                detail: taxRejectionReason,
+              ),
+              const SizedBox(height: 8),
+            ],
             if (nextActions.isEmpty)
               const InfoCard(text: 'All current onboarding gates are clear.')
             else
@@ -3109,8 +3157,11 @@ class _ProviderOnboardingCard extends StatelessWidget {
                       : 'Upload documents first',
               complete: kycStatus == 'APPROVED',
               icon: Icons.verified_user_outlined,
-              actionLabel:
-                  kycDocumentsReady ? 'Submit KYC' : 'Open KYC checklist',
+              actionLabel: kycStatus == 'REJECTED'
+                  ? 'Resubmit KYC'
+                  : kycDocumentsReady
+                      ? 'Submit KYC'
+                      : 'Open KYC checklist',
               onPressed: isSaving ? null : onSubmitKyc,
             ),
             _OnboardingStepCard(
@@ -3122,9 +3173,11 @@ class _ProviderOnboardingCard extends StatelessWidget {
               status: bankStatus == 'APPROVED' ? 'Approved' : 'Required',
               complete: bankStatus == 'APPROVED',
               icon: Icons.account_balance_outlined,
-              actionLabel: bankStatus == null
-                  ? 'Add bank account'
-                  : 'Update bank account',
+              actionLabel: bankStatus == 'REJECTED'
+                  ? 'Resubmit bank'
+                  : bankStatus == null
+                      ? 'Add bank account'
+                      : 'Update bank account',
               onPressed: isSaving ? null : onAddBankAccount,
             ),
             _OnboardingStepCard(
@@ -3142,9 +3195,11 @@ class _ProviderOnboardingCard extends StatelessWidget {
               icon: Icons.payments_outlined,
               actionLabel: completedBookingCount == 0
                   ? 'Review terms'
-                  : taxStatus == 'APPROVED'
-                      ? 'Review terms'
-                      : 'Add tax profile',
+                  : taxStatus == 'REJECTED'
+                      ? 'Resubmit tax'
+                      : taxStatus == 'APPROVED'
+                          ? 'Review terms'
+                          : 'Add tax profile',
               onPressed: isSaving
                   ? null
                   : completedBookingCount == 0 || taxStatus == 'APPROVED'
@@ -3193,6 +3248,46 @@ class _OnboardingPill extends StatelessWidget {
     return Chip(
       backgroundColor: color,
       label: Text('$label: $value'),
+    );
+  }
+}
+
+class _ReviewAlert extends StatelessWidget {
+  const _ReviewAlert({
+    required this.title,
+    required this.detail,
+  });
+
+  final String title;
+  final String detail;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colorScheme.error),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.report_problem_outlined, color: colorScheme.error),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(detail),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -3398,6 +3493,11 @@ Map<String, dynamic>? asMap(dynamic value) {
 
 List<dynamic> asList(dynamic value) {
   return value is List<dynamic> ? value : const [];
+}
+
+String? reviewReason(Map<String, dynamic>? value) {
+  final reason = value?['rejectionReason']?.toString().trim();
+  return reason == null || reason.isEmpty ? null : reason;
 }
 
 List<String> requiredKycDocumentTypesFromSnapshot(
