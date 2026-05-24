@@ -432,7 +432,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                       await startLocationHeartbeatAfterOnline();
                       await loadOpenBookings();
                     } catch (exception) {
-                      setState(() => error = providerAppErrorMessage(exception));
+                      setState(
+                          () => error = providerAppErrorMessage(exception));
                     } finally {
                       if (mounted) {
                         setState(() => loading = false);
@@ -2636,6 +2637,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final input = await showProviderAgreementsSheet(
       context,
       accepted: asList(snapshot['agreements']),
+      requiredTypes: requiredPayoutAgreementTypesFromSnapshot(snapshot),
+      version: providerAgreementVersionFromSnapshot(snapshot),
     );
     if (input == null) return;
     return _runOnboardingAction('Required agreements accepted', () async {

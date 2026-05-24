@@ -274,6 +274,12 @@ List<String> requiredPayoutAgreementTypesFromSnapshot(
       : values;
 }
 
+String providerAgreementVersionFromSnapshot(Map<String, dynamic> snapshot) {
+  final requirements = _asMap(snapshot['requirements']);
+  final version = requirements?['agreementVersion']?.toString().trim();
+  return version == null || version.isEmpty ? 'current' : version;
+}
+
 String _readableAction(String value) {
   return value
       .split('_')

@@ -74,6 +74,7 @@ Current policy constants:
 - Required KYC documents: `CCCD_FRONT`, `CCCD_BACK`, `SELFIE`
 - Optional provider documents: `PROFILE_PHOTO`, `WORK_PHOTO`, `BANK_QR`
 - Required payout agreements: `TERMS`, `PRIVACY`, `LOCATION`, `PAYOUT`, `TAX`
+- Provider agreement version: `PROVIDER_AGREEMENT_VERSION` from the API environment
 - Provider level requirement copy for Level 1 to Level 4
 
 `GET /provider/onboarding` returns these requirements in the snapshot so mobile screens can progressively move away from hardcoded onboarding gates. The API also rejects KYC submission if required identity documents are missing, so client-side checks are not the only protection.

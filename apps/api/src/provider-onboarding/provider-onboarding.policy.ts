@@ -20,6 +20,8 @@ export const REQUIRED_PAYOUT_AGREEMENTS = [
   ProviderAgreementType.TAX,
 ] as const;
 
+export const PROVIDER_AGREEMENT_VERSION = process.env.PROVIDER_AGREEMENT_VERSION?.trim() || '2026-05';
+
 export const PROVIDER_LEVEL_REQUIREMENTS = {
   [ProviderLevel.LEVEL_1_SIGNUP]: ['Phone login linked', 'Basic public profile started'],
   [ProviderLevel.LEVEL_2_ACTIVE]: ['KYC or legacy verification approved', 'Bank account approved'],

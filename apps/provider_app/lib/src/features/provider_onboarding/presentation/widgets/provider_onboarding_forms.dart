@@ -165,12 +165,18 @@ Future<ProviderTaxProfileInput?> showProviderTaxProfileSheet(
 Future<ProviderAgreementsInput?> showProviderAgreementsSheet(
   BuildContext context, {
   List<dynamic> accepted = const [],
+  List<String> requiredTypes = providerAgreementTypes,
+  required String version,
 }) {
   return showModalBottomSheet<ProviderAgreementsInput>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => _AgreementsForm(accepted: accepted),
+    builder: (context) => _AgreementsForm(
+      accepted: accepted,
+      requiredTypes: requiredTypes,
+      version: version,
+    ),
   );
 }
 
@@ -545,9 +551,15 @@ class _TaxProfileFormState extends State<_TaxProfileForm> {
 }
 
 class _AgreementsForm extends StatefulWidget {
-  const _AgreementsForm({required this.accepted});
+  const _AgreementsForm({
+    required this.accepted,
+    required this.requiredTypes,
+    required this.version,
+  });
 
   final List<dynamic> accepted;
+  final List<String> requiredTypes;
+  final String version;
 
   @override
   State<_AgreementsForm> createState() => _AgreementsFormState();
@@ -562,7 +574,7 @@ class _AgreementsFormState extends State<_AgreementsForm> {
   @override
   void initState() {
     super.initState();
-    version = TextEditingController(text: '2026-05');
+    version = TextEditingController(text: widget.version);
     deviceId = TextEditingController();
     final acceptedTypes = widget.accepted
         .whereType<Map>()
@@ -570,7 +582,7 @@ class _AgreementsFormState extends State<_AgreementsForm> {
         .whereType<String>()
         .toSet();
     selected = {
-      for (final type in providerAgreementTypes)
+      for (final type in widget.requiredTypes)
         type: !acceptedTypes.contains(type),
     };
   }
@@ -599,7 +611,7 @@ class _AgreementsFormState extends State<_AgreementsForm> {
               hint: 'Optional',
             ),
             const SizedBox(height: 8),
-            for (final type in providerAgreementTypes)
+            for (final type in widget.requiredTypes)
               CheckboxListTile(
                 value: selected[type] ?? false,
                 onChanged: (value) => setState(() {
@@ -628,7 +640,7 @@ class _AgreementsFormState extends State<_AgreementsForm> {
                 Navigator.of(context).pop(
                   ProviderAgreementsInput(
                     types: chosen,
-                    version: _fallback(version.text, '2026-05'),
+                    version: _fallback(version.text, widget.version),
                     deviceId: deviceId.text.trim(),
                   ),
                 );

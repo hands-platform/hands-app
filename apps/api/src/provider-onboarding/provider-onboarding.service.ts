@@ -19,6 +19,7 @@ import { createHash } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   OPTIONAL_PROVIDER_DOCUMENT_TYPES,
+  PROVIDER_AGREEMENT_VERSION,
   PROVIDER_LEVEL_REQUIREMENTS,
   REQUIRED_KYC_DOCUMENT_TYPES,
   REQUIRED_PAYOUT_AGREEMENTS,
@@ -100,6 +101,7 @@ export class ProviderOnboardingService {
         requiredKycDocumentTypes: REQUIRED_KYC_DOCUMENT_TYPES,
         optionalProviderDocumentTypes: OPTIONAL_PROVIDER_DOCUMENT_TYPES,
         requiredPayoutAgreements: REQUIRED_PAYOUT_AGREEMENTS,
+        agreementVersion: PROVIDER_AGREEMENT_VERSION,
         providerLevelRequirements: PROVIDER_LEVEL_REQUIREMENTS,
       },
       nextRequiredActions: this.nextRequiredActions({
@@ -236,9 +238,7 @@ export class ProviderOnboardingService {
     return { ok: true, kyc };
   }
 
-  private assertUniqueKycDocumentPayload(
-    documents: Array<{ fileId: string; type: ProviderDocumentType }>,
-  ) {
+  private assertUniqueKycDocumentPayload(documents: Array<{ fileId: string; type: ProviderDocumentType }>) {
     const seenTypes = new Set<ProviderDocumentType>();
     const seenFileIds = new Set<string>();
     for (const document of documents) {
@@ -707,10 +707,8 @@ export class ProviderOnboardingService {
       {
         scope: input.scope ?? existing.scope,
         serviceType: input.serviceType === undefined ? existing.serviceType : input.serviceType,
-        minGrossAmount:
-          input.minGrossAmount === undefined ? existing.minGrossAmount : input.minGrossAmount,
-        maxGrossAmount:
-          input.maxGrossAmount === undefined ? existing.maxGrossAmount : input.maxGrossAmount,
+        minGrossAmount: input.minGrossAmount === undefined ? existing.minGrossAmount : input.minGrossAmount,
+        maxGrossAmount: input.maxGrossAmount === undefined ? existing.maxGrossAmount : input.maxGrossAmount,
         rateBps: input.rateBps ?? existing.rateBps,
         fixedAmount: input.fixedAmount ?? existing.fixedAmount,
         active: input.active ?? existing.active,

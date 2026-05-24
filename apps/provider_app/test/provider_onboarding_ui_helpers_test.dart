@@ -9,6 +9,7 @@ void main() {
       'requirements': {
         'requiredKycDocumentTypes': ['CCCD_FRONT', 'SELFIE'],
         'requiredPayoutAgreements': ['TERMS', 'TAX'],
+        'agreementVersion': 'hands-provider-2026-06',
       },
     };
 
@@ -20,6 +21,8 @@ void main() {
       'TERMS',
       'TAX',
     ]);
+    expect(providerAgreementVersionFromSnapshot(snapshot),
+        'hands-provider-2026-06');
   });
 
   test('falls back to default onboarding requirements', () {
@@ -35,6 +38,7 @@ void main() {
       'PAYOUT',
       'TAX',
     ]);
+    expect(providerAgreementVersionFromSnapshot({}), 'current');
   });
 
   test('normalizes rejected review reasons', () {
