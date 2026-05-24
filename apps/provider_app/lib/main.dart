@@ -9,6 +9,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'src/app_state.dart';
 import 'src/core/app_config.dart';
 import 'src/core/realtime_socket.dart';
+import 'src/features/provider_onboarding/presentation/widgets/provider_onboarding_forms.dart';
 
 void main() {
   runApp(const ProviderScope(child: ProviderApp()));
@@ -2524,65 +2525,78 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
-  Future<void> _fillDemoBasicProfile() {
+  Future<void> _editBasicProfile(Map<String, dynamic> snapshot) async {
+    final input = await showProviderBasicProfileSheet(
+      context,
+      initial: asMap(snapshot['basicProfile']) ?? <String, dynamic>{},
+    );
+    if (input == null) return;
     return _runOnboardingAction('Basic profile saved', () async {
-      await ref.read(providerRepositoryProvider).updateOnboardingBasicProfile({
-        'legalName': 'Demo Provider',
-        'dateOfBirth': '1995-01-01',
-        'gender': 'female',
-        'facebookId': 'demo.provider',
-        'displayName': 'Linh Wellness',
-        'activityNickname': 'Linh',
-        'bio': 'Verified provider available for home massage in Vietnam.',
-        'residentialAddress': 'District 1, Ho Chi Minh City, Vietnam',
-        'city': 'Ho Chi Minh City',
-        'serviceArea': {
-          'country': 'VN',
-          'cities': ['Ho Chi Minh City'],
-        },
-      });
+      await ref
+          .read(providerRepositoryProvider)
+          .updateOnboardingBasicProfile(input.toJson());
     });
   }
 
-  Future<void> _submitDemoKyc() {
+  Future<void> _submitKycFromForm() async {
+    final input = await showProviderKycSheet(context);
+    if (input == null) return;
     return _runOnboardingAction('KYC request submitted for admin review',
         () async {
       await ref
           .read(providerRepositoryProvider)
-          .submitOnboardingKyc(cccdNumber: '000000000000');
+          .submitOnboardingKyc(cccdNumber: input.cccdNumber);
       _refreshVerification();
     });
   }
 
-  Future<void> _addDemoBankAccount() {
+  Future<void> _addBankAccountFromForm(Map<String, dynamic> snapshot) async {
+    final bankAccounts = asList(snapshot['bankAccounts']);
+    final input = await showProviderBankAccountSheet(
+      context,
+      initial: bankAccounts.isEmpty
+          ? <String, dynamic>{}
+          : asMap(bankAccounts.first) ?? <String, dynamic>{},
+    );
+    if (input == null) return;
     return _runOnboardingAction('Bank account submitted for review', () async {
       await ref.read(providerRepositoryProvider).createOnboardingBankAccount(
-        bankName: 'Vietcombank',
-        accountNumber: '000012345678',
-        accountHolderName: 'Demo Provider',
-        qrBankingInfo: const {'provider': 'vietqr', 'enabled': true},
-      );
-    });
-  }
-
-  Future<void> _addDemoTaxProfile() {
-    return _runOnboardingAction('Tax profile submitted for review', () async {
-      await ref.read(providerRepositoryProvider).upsertOnboardingTaxProfile(
-            taxCode: '0000000000',
-            legalName: 'Demo Provider',
-            registeredAddress: 'District 1, Ho Chi Minh City, Vietnam',
+            bankName: input.bankName,
+            accountNumber: input.accountNumber,
+            accountHolderName: input.accountHolderName,
+            qrBankingInfo: input.qrBankingInfo,
           );
     });
   }
 
-  Future<void> _acceptRequiredAgreements() {
-    const requiredTypes = ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX'];
+  Future<void> _addTaxProfileFromForm(Map<String, dynamic> snapshot) async {
+    final input = await showProviderTaxProfileSheet(
+      context,
+      initial: asMap(snapshot['taxProfile']) ?? <String, dynamic>{},
+      basicProfile: asMap(snapshot['basicProfile']) ?? <String, dynamic>{},
+    );
+    if (input == null) return;
+    return _runOnboardingAction('Tax profile submitted for review', () async {
+      await ref.read(providerRepositoryProvider).upsertOnboardingTaxProfile(
+            taxCode: input.taxCode,
+            legalName: input.legalName,
+            registeredAddress: input.registeredAddress,
+          );
+    });
+  }
+
+  Future<void> _acceptAgreementsFromForm(Map<String, dynamic> snapshot) async {
+    final input = await showProviderAgreementsSheet(
+      context,
+      accepted: asList(snapshot['agreements']),
+    );
+    if (input == null) return;
     return _runOnboardingAction('Required agreements accepted', () async {
-      for (final type in requiredTypes) {
+      for (final type in input.types) {
         await ref.read(providerRepositoryProvider).acceptOnboardingAgreement(
               type: type,
-              version: '2026-05',
-              deviceId: 'provider-demo-device',
+              version: input.version,
+              deviceId: input.deviceId.isEmpty ? null : input.deviceId,
             );
       }
     });
@@ -2749,11 +2763,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   error: snapshot.error,
                   isSaving: _isSavingOnboarding,
                   onRefresh: _refreshOnboarding,
-                  onFillBasicProfile: _fillDemoBasicProfile,
-                  onSubmitKyc: _submitDemoKyc,
-                  onAddBankAccount: _addDemoBankAccount,
-                  onAddTaxProfile: _addDemoTaxProfile,
-                  onAcceptAgreements: _acceptRequiredAgreements,
+                  onFillBasicProfile: () =>
+                      _editBasicProfile(snapshot.data ?? <String, dynamic>{}),
+                  onSubmitKyc: _submitKycFromForm,
+                  onAddBankAccount: () => _addBankAccountFromForm(
+                      snapshot.data ?? <String, dynamic>{}),
+                  onAddTaxProfile: () => _addTaxProfileFromForm(
+                      snapshot.data ?? <String, dynamic>{}),
+                  onAcceptAgreements: () => _acceptAgreementsFromForm(
+                      snapshot.data ?? <String, dynamic>{}),
                 );
               },
             ),
@@ -3028,7 +3046,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
                 FilledButton.tonalIcon(
                   onPressed: isSaving ? null : onFillBasicProfile,
                   icon: const Icon(Icons.badge_outlined),
-                  label: const Text('Save demo profile'),
+                  label: const Text('Edit profile'),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: isSaving ? null : onSubmitKyc,
@@ -3038,17 +3056,17 @@ class _ProviderOnboardingCard extends StatelessWidget {
                 FilledButton.tonalIcon(
                   onPressed: isSaving ? null : onAddBankAccount,
                   icon: const Icon(Icons.account_balance_outlined),
-                  label: const Text('Add bank'),
+                  label: const Text('Add bank account'),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: isSaving ? null : onAddTaxProfile,
                   icon: const Icon(Icons.receipt_long_outlined),
-                  label: const Text('Add tax'),
+                  label: const Text('Add tax profile'),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: isSaving ? null : onAcceptAgreements,
                   icon: const Icon(Icons.assignment_turned_in_outlined),
-                  label: const Text('Accept terms'),
+                  label: const Text('Review terms'),
                 ),
               ],
             ),
