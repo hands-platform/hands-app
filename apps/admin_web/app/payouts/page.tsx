@@ -4,6 +4,8 @@ import { markPayoutFailed, markPayoutPaid, markPayoutProcessing, updatePayoutTra
 export default async function PayoutsPage() {
   const batches = sortBatches(await adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []));
   const summary = buildSummary(batches);
+  const commandSignals = buildPayoutCommandSignals(batches);
+  const payoutLanes = buildPayoutLanes(batches);
 
   return (
     <>
@@ -38,6 +40,79 @@ export default async function PayoutsPage() {
           <h2>{formatMoney(summary.withholdingAmount, summary.currency)}</h2>
         </div>
       </section>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payout command queue</h2>
+            <p className="muted">
+              Finance-first view for review money, active transfers, payout holds, and reconciliation warnings.
+            </p>
+          </div>
+          <a className="text-link" href="/earnings">
+            Review earnings queue
+          </a>
+        </div>
+        <div className="ops-task-grid">
+          {commandSignals.map((signal) => (
+            <div className={`ops-task-card ${signal.className}`} key={signal.title}>
+              <div>
+                <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
+                <h3>{signal.title}</h3>
+                <p className="muted">{signal.detail}</p>
+              </div>
+              <small>{signal.action}</small>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payout status lanes</h2>
+            <p className="muted">
+              Work from blocked and failed lanes first, then draft review, processing confirmation, and paid reconciliation.
+            </p>
+          </div>
+          <span className="pill pill-info">{batches.length} batch(es)</span>
+        </div>
+        <div className="detail-grid" style={{ marginTop: 16 }}>
+          {payoutLanes.map((lane) => (
+            <div key={lane.title}>
+              <div className="risk-watch-header">
+                <h3>{lane.title}</h3>
+                <span className={`pill ${lane.pillClass}`}>{lane.batches.length}</span>
+              </div>
+              {lane.batches.length ? (
+                <div className="setup-stage-list">
+                  {lane.batches.slice(0, 4).map((batch) => (
+                    <div className="setup-stage-item" key={`${lane.title}-${batch.id}`}>
+                      <span>{shortId(batch.id)}</span>
+                      <div>
+                        <strong>
+                          {batch.providerProfile?.displayName ??
+                            batch.providerProfile?.user?.phone ??
+                            'Unknown provider'}
+                        </strong>
+                        <p className="muted">
+                          {formatMoney(batch.totalNetAmount, batch.currency)} / {batch.earnings?.length ?? 0} earning(s)
+                        </p>
+                        <p className="muted">{opsHint(batch)}</p>
+                      </div>
+                      <a className="text-link" href={`#${batch.id}`}>
+                        Row
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted">{lane.emptyText}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="card">
         <div className="toolbar">
@@ -256,6 +331,119 @@ function buildSummary(batches: AdminPayoutBatch[]) {
     withholdingAmount: batches.reduce((sum, batch) => sum + batchWithholdingAmount(batch), 0),
     currency,
   };
+}
+
+type PayoutCommandSignal = {
+  title: string;
+  status: string;
+  detail: string;
+  action: string;
+  className: string;
+  pillClass: string;
+};
+
+type PayoutLane = {
+  title: string;
+  batches: AdminPayoutBatch[];
+  pillClass: string;
+  emptyText: string;
+};
+
+function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSignal[] {
+  const needsReview = batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED');
+  const processing = batches.filter((batch) => batch.status === 'PROCESSING');
+  const held = batches.filter((batch) => Boolean(activePayoutHold(batch)));
+  const missingTransferRef = batches.filter((batch) => batch.status === 'PAID' && !batch.transferRef);
+  const missingEarnings = batches.filter((batch) => !batch.earnings?.length);
+  const pendingWithholding = batches.filter((batch) =>
+    (batch.withholdingLogs ?? []).some((log) => log.status !== 'PAID'),
+  );
+  const reconciliationWarnings = missingTransferRef.length + missingEarnings.length + pendingWithholding.length;
+  const currency = batches[0]?.currency ?? 'VND';
+
+  return [
+    {
+      title: 'Review amount',
+      status: `${needsReview.length} BATCH(ES)`,
+      detail: formatMoney(needsReview.reduce((sum, batch) => sum + batch.totalNetAmount, 0), currency),
+      action: needsReview.length
+        ? 'Check failed and draft batches before starting bank transfer.'
+        : 'No batch currently needs finance review.',
+      className: needsReview.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: needsReview.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Banking in motion',
+      status: `${processing.length} PROCESSING`,
+      detail: formatMoney(processing.reduce((sum, batch) => sum + batch.totalNetAmount, 0), currency),
+      action: processing.length
+        ? 'Confirm transfer results, then mark paid or failed.'
+        : 'No payout is currently in banking transfer.',
+      className: processing.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: processing.length ? 'pill-info' : 'pill-success',
+    },
+    {
+      title: 'Payout holds',
+      status: `${held.length} HELD`,
+      detail: held.length
+        ? held.map((batch) => activePayoutHold(batch)?.reason ?? 'Active hold').slice(0, 2).join(' ')
+        : 'No active payout hold on listed batches.',
+      action: held.length ? 'Open provider risk before attempting payout.' : 'No risk hold action.',
+      className: held.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: held.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Reconciliation',
+      status: `${reconciliationWarnings} CHECK`,
+      detail: `${missingTransferRef.length} paid missing ref, ${pendingWithholding.length} tax open, ${missingEarnings.length} empty batch.`,
+      action: reconciliationWarnings
+        ? 'Fix references, withholding status, or empty batch records.'
+        : 'Paid batch references and tax logs look consistent.',
+      className: reconciliationWarnings ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: reconciliationWarnings ? 'pill-danger' : 'pill-success',
+    },
+  ];
+}
+
+function buildPayoutLanes(batches: AdminPayoutBatch[]): PayoutLane[] {
+  return [
+    {
+      title: 'Blocked by hold',
+      batches: batches.filter((batch) => Boolean(activePayoutHold(batch))),
+      pillClass: 'pill-danger',
+      emptyText: 'No active payout hold in the current payout list.',
+    },
+    {
+      title: 'Failed recovery',
+      batches: batches.filter((batch) => batch.status === 'FAILED'),
+      pillClass: 'pill-warn',
+      emptyText: 'No failed batch needs recovery.',
+    },
+    {
+      title: 'Draft review',
+      batches: batches.filter((batch) => batch.status === 'DRAFT' && !activePayoutHold(batch)),
+      pillClass: 'pill-warn',
+      emptyText: 'No draft batch is waiting for review.',
+    },
+    {
+      title: 'Processing confirmation',
+      batches: batches.filter((batch) => batch.status === 'PROCESSING' && !activePayoutHold(batch)),
+      pillClass: 'pill-info',
+      emptyText: 'No bank transfer is currently in progress.',
+    },
+    {
+      title: 'Paid reconciliation',
+      batches: batches.filter((batch) => batch.status === 'PAID'),
+      pillClass: 'pill-success',
+      emptyText: 'No paid batch is available for reconciliation yet.',
+    },
+    {
+      title: 'Cancelled archive',
+      batches: batches.filter((batch) => batch.status === 'CANCELLED'),
+      pillClass: 'pill-neutral',
+      emptyText: 'No cancelled payout batch is in the current list.',
+    },
+  ];
 }
 
 function batchWithholdingAmount(batch: AdminPayoutBatch) {
