@@ -79,7 +79,11 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </form>
           <form action={rejectProvider}>
             <input type="hidden" name="providerId" value={provider.id} />
-            <input type="hidden" name="reason" value="Rejected from provider detail review" />
+            <input
+              name="reason"
+              placeholder="Provider rejection reason"
+              defaultValue="Rejected from provider detail review"
+            />
             <button type="submit">Reject provider</button>
           </form>
           <form action={syncSupabaseProviderRole}>
@@ -157,7 +161,11 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             </form>
             <form action={rejectProviderKyc}>
               <input type="hidden" name="providerId" value={provider.id} />
-              <input type="hidden" name="reason" value="KYC rejected from provider detail review" />
+              <input
+                name="reason"
+                placeholder="KYC rejection reason"
+                defaultValue="KYC rejected from provider detail review"
+              />
               <button type="submit" disabled={!provider.kyc || provider.kyc.status === 'REJECTED'}>
                 Reject KYC
               </button>
@@ -207,9 +215,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                   <form action={rejectProviderDocument}>
                     <input type="hidden" name="documentId" value={document.id} />
                     <input
-                      type="hidden"
                       name="reason"
-                      value="Provider document rejected from detail review"
+                      placeholder="Document rejection reason"
+                      defaultValue="Provider document rejected from detail review"
                     />
                     <button type="submit" disabled={document.status === 'REJECTED'}>
                       Reject doc
@@ -244,7 +252,11 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 </form>
                 <form action={rejectProviderBankAccount}>
                   <input type="hidden" name="bankAccountId" value={primaryBank.id} />
-                  <input type="hidden" name="reason" value="Bank rejected from provider detail review" />
+                  <input
+                    name="reason"
+                    placeholder="Bank rejection reason"
+                    defaultValue="Bank rejected from provider detail review"
+                  />
                   <button type="submit" disabled={primaryBank.status === 'REJECTED'}>
                     Reject bank
                   </button>
@@ -274,7 +286,11 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 </form>
                 <form action={rejectProviderTaxProfile}>
                   <input type="hidden" name="providerId" value={provider.id} />
-                  <input type="hidden" name="reason" value="Tax profile rejected from detail review" />
+                  <input
+                    name="reason"
+                    placeholder="Tax rejection reason"
+                    defaultValue="Tax profile rejected from detail review"
+                  />
                   <button type="submit" disabled={provider.taxProfile.status === 'REJECTED'}>
                     Reject tax
                   </button>
