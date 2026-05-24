@@ -2471,6 +2471,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late Future<Map<String, dynamic>> _verificationFuture;
   late Future<Map<String, dynamic>> _onboardingFuture;
   final List<String> _uploadedFileIds = [];
+  final Map<String, String> _uploadedOnboardingDocumentIds = {};
   bool _isUploadingProfileImage = false;
   bool _isUploading = false;
   bool _isSubmitting = false;
@@ -2541,11 +2542,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   Future<void> _submitKycFromForm() async {
     final input = await showProviderKycSheet(context);
     if (input == null) return;
+    final documents = _uploadedOnboardingDocumentIds.entries
+        .map((entry) => {'type': entry.key, 'fileId': entry.value})
+        .toList();
     return _runOnboardingAction('KYC request submitted for admin review',
         () async {
-      await ref
-          .read(providerRepositoryProvider)
-          .submitOnboardingKyc(cccdNumber: input.cccdNumber);
+      await ref.read(providerRepositoryProvider).submitOnboardingKyc(
+            cccdNumber: input.cccdNumber,
+            documents: documents,
+          );
+      _uploadedOnboardingDocumentIds.clear();
       _refreshVerification();
     });
   }
@@ -2602,7 +2608,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
+  Future<String?> _selectProviderDocumentType() {
+    const documentTypes = [
+      'CCCD_FRONT',
+      'CCCD_BACK',
+      'SELFIE',
+      'WORK_PHOTO',
+      'BANK_QR',
+    ];
+    return showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          children: [
+            Text(
+              'Document type',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Choose what this upload represents. Admin review and KYC checks use this type.',
+            ),
+            const SizedBox(height: 12),
+            for (final type in documentTypes)
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.description_outlined),
+                title: Text(_providerDocumentTypeLabel(type)),
+                subtitle: Text(type),
+                onTap: () => Navigator.of(context).pop(type),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickAndUploadVerificationFile() async {
+    final documentType = await _selectProviderDocumentType();
+    if (documentType == null) {
+      return;
+    }
     final image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
@@ -2625,11 +2674,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final fileId = completedFile['id']?.toString();
       if (fileId != null && fileId.isNotEmpty) {
         _uploadedFileIds.add(fileId);
+        _uploadedOnboardingDocumentIds[documentType] = fileId;
       }
       _refreshVerification();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Verification file uploaded: ${image.name}')),
+          SnackBar(
+            content: Text(
+              '${_providerDocumentTypeLabel(documentType)} uploaded: ${image.name}',
+            ),
+          ),
         );
       }
     } catch (error) {
@@ -2827,8 +2881,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       icon: const Icon(Icons.file_upload_outlined),
                       label: Text(_isUploading
                           ? 'Uploading verification file...'
-                          : 'Upload verification photo'),
+                          : 'Upload typed verification photo'),
                     ),
+                    if (_uploadedOnboardingDocumentIds.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      InfoCard(
+                        text:
+                            'Ready for KYC: ${_uploadedOnboardingDocumentIds.keys.map(_providerDocumentTypeLabel).join(', ')}',
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     FilledButton.icon(
                       onPressed: _isSubmitting || _isUploading
@@ -3161,6 +3222,25 @@ String guessImageContentTypeFromName(String name) {
     return 'image/webp';
   }
   return 'image/jpeg';
+}
+
+String _providerDocumentTypeLabel(String type) {
+  switch (type) {
+    case 'CCCD_FRONT':
+      return 'CCCD front image';
+    case 'CCCD_BACK':
+      return 'CCCD back image';
+    case 'SELFIE':
+      return 'Selfie verification';
+    case 'PROFILE_PHOTO':
+      return 'Profile photo';
+    case 'WORK_PHOTO':
+      return 'Work photo';
+    case 'BANK_QR':
+      return 'Bank QR image';
+    default:
+      return type;
+  }
 }
 
 class ProviderMvpScreen extends StatelessWidget {
