@@ -22,12 +22,14 @@ import {
 
 type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
 type ProviderLocationState = 'recent' | 'stale' | 'expired' | 'missing';
+type ProviderSecurityState = 'clear' | 'blocked' | 'suspicious' | 'shared' | 'missing';
 type ProviderFilters = {
   q: string;
   verification: string;
   providerStatus: string;
   kyc: string;
   location: string;
+  security: string;
   readiness: string;
   review: string;
 };
@@ -110,6 +112,17 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </select>
           </label>
           <label>
+            Security
+            <select name="security" defaultValue={filters.security}>
+              <option value="">All</option>
+              <option value="blocked">Blocked device</option>
+              <option value="suspicious">Suspicious session</option>
+              <option value="shared">Shared device</option>
+              <option value="missing">No app device</option>
+              <option value="clear">Clear</option>
+            </select>
+          </label>
+          <label>
             Readiness
             <select name="readiness" defaultValue={filters.readiness}>
               <option value="">All</option>
@@ -127,6 +140,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="documents">Document review</option>
               <option value="bank">Bank payout review</option>
               <option value="tax">Tax profile review</option>
+              <option value="security">Device/session risk</option>
               <option value="location">Location freshness</option>
               <option value="push">Push alert readiness</option>
             </select>
@@ -232,6 +246,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <th>Onboarding</th>
               <th>Ops readiness</th>
               <th>Location</th>
+              <th>Device Risk</th>
               <th>Push Devices</th>
               <th>Files</th>
               <th>Services</th>
@@ -286,6 +301,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 </td>
                 <td>
                   <ProviderLocationCell provider={provider} />
+                </td>
+                <td>
+                  <ProviderSecurityCell provider={provider} />
                 </td>
                 <td>
                   {provider.user?.pushDevices?.length
@@ -388,7 +406,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             ))}
             {providers.length === 0 && (
               <tr>
-                <td colSpan={9}>No providers loaded. Start the API and seed data to populate this table.</td>
+                <td colSpan={10}>No providers loaded. Start the API and seed data to populate this table.</td>
               </tr>
             )}
           </tbody>
@@ -679,6 +697,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   const completedServiceSignal = provider.level === 'LEVEL_3_PAYOUT_ENABLED' || provider.level === 'LEVEL_4_TRUSTED';
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const locationState = providerLocationStatus(provider);
+  const securityState = providerSecurityStatus(provider);
 
   if (!provider.displayName?.trim() || !provider.legalName?.trim() || !provider.residentialAddress?.trim()) {
     return {
@@ -741,6 +760,27 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
       operatorAction: 'Ask provider to accept missing payout/tax/location agreements.',
       tone: 'blocked',
       priority: 70,
+    };
+  }
+  if (securityState === 'blocked') {
+    return {
+      status: 'DEVICE',
+      detail: 'At least one provider app device is blocked.',
+      operatorAction: 'Open provider detail and decide whether to unblock or keep the device blocked.',
+      tone: 'blocked',
+      priority: 68,
+    };
+  }
+  if (securityState === 'suspicious' || securityState === 'shared') {
+    return {
+      status: 'SECURITY',
+      detail:
+        securityState === 'shared'
+          ? 'A device appears on more than one provider profile.'
+          : 'Recent provider session has a suspicious risk flag.',
+      operatorAction: 'Review device/session history before relying on this provider for dispatch.',
+      tone: 'blocked',
+      priority: 67,
     };
   }
   if (locationState !== 'recent') {
@@ -822,6 +862,39 @@ function ProviderLocationCell({ provider }: { provider: AdminProvider }) {
   );
 }
 
+function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
+  const status = providerSecurityStatus(provider);
+  const blockedDevices = (provider.devices ?? []).filter((device) => Boolean(device.blockedAt));
+  const suspiciousSessions = (provider.sessions ?? []).filter((session) => session.suspicious);
+  const sharedDevices = sharedDeviceIds(provider);
+  const latestDevice = provider.devices?.[0];
+  const latestSession = provider.sessions?.[0];
+
+  return (
+    <div>
+      <div className="participant-list" style={{ marginBottom: 8 }}>
+        <span className={`pill ${providerSecurityPillClass(status)}`}>{providerSecurityLabel(status)}</span>
+      </div>
+      <p className="muted" style={{ marginBottom: 4 }}>
+        {latestDevice
+          ? `Last app device: ${maskToken(latestDevice.deviceId)} / ${latestDevice.platform ?? 'unknown'}`
+          : 'No provider app device recorded yet.'}
+      </p>
+      {latestSession ? (
+        <p className="muted" style={{ marginBottom: 4 }}>
+          Last session: {latestSession.ipAddress ?? 'no IP'} / {formatDate(latestSession.lastSeenAt)}
+        </p>
+      ) : null}
+      {blockedDevices.length ? <p className="muted">{blockedDevices.length} blocked device(s)</p> : null}
+      {suspiciousSessions.length ? <p className="muted">{suspiciousSessions.length} suspicious session(s)</p> : null}
+      {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
+      <Link className="text-link" href={`/providers/${provider.id}`}>
+        Review security
+      </Link>
+    </div>
+  );
+}
+
 function providerActionHint(provider: AdminProvider) {
   if (provider.verification?.status !== 'APPROVED') {
     return 'Review verification before this therapist can safely take customer requests.';
@@ -841,6 +914,10 @@ function providerActionHint(provider: AdminProvider) {
   }
   if (!hasHealthyPush(provider)) {
     return 'Therapist is live, but push registration should be checked before relying on alerts.';
+  }
+  const securityState = providerSecurityStatus(provider);
+  if (securityState !== 'clear') {
+    return 'Therapist has a device/session security item. Review it before dispatching high-risk bookings.';
   }
   if (!provider.user?.supabaseUserId) {
     return 'Therapist is operational in Nest auth. Supabase role sync will become available after Supabase OTP login links this phone.';
@@ -863,11 +940,15 @@ function buildProviderSummary(providers: AdminProvider[]) {
   const pushDisabled = providers.filter((provider) =>
     (provider.user?.pushDevices ?? []).some((device) => !device.enabled),
   ).length;
+  const deviceRisk = providers.filter((provider) =>
+    ['blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+  ).length;
   const readyNow = providers.filter(
     (provider) =>
       provider.verification?.status === 'APPROVED' &&
       provider.status === 'ONLINE_AVAILABLE' &&
       providerLocationStatus(provider) === 'recent' &&
+      providerSecurityStatus(provider) === 'clear' &&
       hasHealthyPush(provider),
   ).length;
 
@@ -879,6 +960,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
     ['Location needs review', staleLocation.toString()],
     ['Push ready', pushReady.toString()],
     ['Push needs review', pushDisabled.toString()],
+    ['Device risk', deviceRisk.toString()],
     ['Ready for dispatch', readyNow.toString()],
   ] as const;
 }
@@ -900,11 +982,15 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider)),
   ).length;
   const pushNeedsReview = providers.filter((provider) => !hasHealthyPush(provider)).length;
+  const securityNeedsReview = providers.filter((provider) =>
+    ['blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+  ).length;
   const readyForDispatch = providers.filter(
     (provider) =>
       provider.verification?.status === 'APPROVED' &&
       provider.status === 'ONLINE_AVAILABLE' &&
       providerLocationStatus(provider) === 'recent' &&
+      providerSecurityStatus(provider) === 'clear' &&
       hasHealthyPush(provider),
   ).length;
 
@@ -932,6 +1018,12 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       count: taxNeedsReview,
       href: '/providers?review=tax',
       detail: 'Freelance tax profiles should be approved only after MST and registered address are checked.',
+    },
+    {
+      label: 'Device/session risk',
+      count: securityNeedsReview,
+      href: '/providers?review=security',
+      detail: 'Blocked, shared, or suspicious provider app devices need operator review.',
     },
     {
       label: 'Location freshness',
@@ -990,6 +1082,16 @@ function providerReviewIssues(provider: AdminProvider) {
   if (locationState !== 'recent') {
     issues.push({ label: `location ${locationState}`, severity: locationState === 'missing' ? 'high' : 'medium' });
   }
+  const securityState = providerSecurityStatus(provider);
+  if (securityState === 'blocked') {
+    issues.push({ label: 'device blocked', severity: 'high' });
+  } else if (securityState === 'suspicious') {
+    issues.push({ label: 'session suspicious', severity: 'high' });
+  } else if (securityState === 'shared') {
+    issues.push({ label: 'shared device', severity: 'high' });
+  } else if (securityState === 'missing') {
+    issues.push({ label: 'device missing', severity: 'medium' });
+  }
   if (!hasHealthyPush(provider)) {
     issues.push({ label: 'push missing', severity: 'medium' });
   }
@@ -1021,6 +1123,7 @@ function buildProviderFilters(params: Record<string, string | string[] | undefin
     providerStatus: readParam(params.providerStatus),
     kyc: readParam(params.kyc),
     location: readParam(params.location),
+    security: readParam(params.security),
     readiness: readParam(params.readiness),
     review: readParam(params.review),
   };
@@ -1047,6 +1150,9 @@ function filterProviders(providers: AdminProvider[], filters: ProviderFilters) {
       return false;
     }
     if (filters.location && providerLocationStatus(provider) !== filters.location) {
+      return false;
+    }
+    if (filters.security && providerSecurityStatus(provider) !== filters.security) {
       return false;
     }
     if (filters.readiness && providerReadiness(provider) !== filters.readiness) {
@@ -1076,6 +1182,9 @@ function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
   if (review === 'tax') {
     return ['PENDING_REVIEW', 'REJECTED'].includes(provider.taxProfile?.status ?? 'MISSING');
   }
+  if (review === 'security') {
+    return ['blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider));
+  }
   if (review === 'location') {
     return ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider));
   }
@@ -1094,6 +1203,8 @@ function providerSearchText(provider: AdminProvider) {
     provider.residentialAddress,
     provider.user?.fullName,
     provider.user?.phone,
+    provider.devices?.map((device) => device.deviceId).join(' '),
+    provider.sessions?.map((session) => `${session.deviceId ?? ''} ${session.ipAddress ?? ''}`).join(' '),
     provider.services?.map((item) => item.service?.name).join(' '),
   ]
     .filter(Boolean)
@@ -1106,6 +1217,7 @@ function providerReadiness(provider: AdminProvider) {
     provider.verification?.status === 'APPROVED' &&
     provider.status === 'ONLINE_AVAILABLE' &&
     providerLocationStatus(provider) === 'recent' &&
+    providerSecurityStatus(provider) === 'clear' &&
     hasHealthyPush(provider)
   ) {
     return 'ready';
@@ -1120,10 +1232,14 @@ function providerReadiness(provider: AdminProvider) {
 }
 
 function providerPriority(provider: AdminProvider) {
+  if (['blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))) {
+    return 0;
+  }
   if (
     provider.verification?.status === 'APPROVED' &&
     provider.status === 'ONLINE_AVAILABLE' &&
     providerLocationStatus(provider) === 'recent' &&
+    providerSecurityStatus(provider) === 'clear' &&
     hasHealthyPush(provider)
   ) {
     return 4;
@@ -1135,6 +1251,40 @@ function providerPriority(provider: AdminProvider) {
     return 2;
   }
   return 1;
+}
+
+function providerSecurityStatus(provider: AdminProvider): ProviderSecurityState {
+  if ((provider.devices ?? []).some((device) => Boolean(device.blockedAt))) {
+    return 'blocked';
+  }
+  if ((provider.sessions ?? []).some((session) => session.suspicious)) {
+    return 'suspicious';
+  }
+  if (sharedDeviceIds(provider).size > 0) {
+    return 'shared';
+  }
+  if (!(provider.devices ?? []).length && !(provider.sessions ?? []).length) {
+    return 'missing';
+  }
+  return 'clear';
+}
+
+function sharedDeviceIds(provider: AdminProvider) {
+  return new Set((provider.sharedDeviceMatches ?? []).map((match) => match.deviceId).filter(Boolean));
+}
+
+function providerSecurityLabel(status: ProviderSecurityState) {
+  if (status === 'blocked') return 'Device blocked';
+  if (status === 'suspicious') return 'Suspicious session';
+  if (status === 'shared') return 'Shared device';
+  if (status === 'missing') return 'No app device';
+  return 'Security clear';
+}
+
+function providerSecurityPillClass(status: ProviderSecurityState) {
+  if (status === 'clear') return 'pill-success';
+  if (status === 'missing') return 'pill-neutral';
+  return 'pill-danger';
 }
 
 function providerLocationStatus(provider: AdminProvider): ProviderLocationState {
@@ -1223,4 +1373,15 @@ function formatBytes(value: number) {
     return `${(value / 1024).toFixed(1)} KB`;
   }
   return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(value?: string | null) {
+  if (!value) {
+    return 'not recorded';
+  }
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return 'invalid time';
+  }
+  return new Date(timestamp).toLocaleString();
 }

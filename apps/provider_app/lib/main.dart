@@ -172,7 +172,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       }
     } catch (exception) {
       if (mounted) {
-        setState(() => error = '$exception');
+        setState(() => error = providerAppErrorMessage(exception));
       }
     } finally {
       if (mounted) {
@@ -199,7 +199,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         setState(() => statusMessage = pushResult.message);
       }
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -224,7 +224,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
             : 'OTP requested for ${result.phone}. Local dev OTP: ${result.devOtp}.';
       });
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -253,7 +253,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         setState(() => statusMessage = pushResult.message);
       }
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -287,7 +287,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
           await ref.read(providerRepositoryProvider).requestBookings();
       setState(() => openBookings = bookings);
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted && showLoading) {
         setState(() => loading = false);
@@ -311,7 +311,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       });
       await loadOpenBookings();
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -340,7 +340,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
           : 'You declined the booking request.');
       await loadOpenBookings();
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -361,7 +361,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
           () => statusMessage = 'Service started. The chat room is now live.');
       await loadOpenBookings();
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -432,7 +432,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                       await startLocationHeartbeatAfterOnline();
                       await loadOpenBookings();
                     } catch (exception) {
-                      setState(() => error = '$exception');
+                      setState(() => error = providerAppErrorMessage(exception));
                     } finally {
                       if (mounted) {
                         setState(() => loading = false);
@@ -450,7 +450,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
           ],
           if (error != null) ...[
             const SizedBox(height: 12),
-            ErrorCard(text: error!),
+            ProviderErrorCard(text: error!),
           ],
           const SizedBox(height: 20),
           if (auth == null)
@@ -3733,6 +3733,60 @@ class InfoCard extends StatelessWidget {
   }
 }
 
+class ProviderErrorCard extends StatelessWidget {
+  const ProviderErrorCard({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isProviderDeviceBlockedMessage(text)) {
+      return ErrorCard(text: text);
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    return Card(
+      color: colorScheme.errorContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.phonelink_lock_outlined, color: colorScheme.error),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Device blocked by admin',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: colorScheme.onErrorContainer,
+                          fontWeight: FontWeight.w800,
+                        ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    text,
+                    style: TextStyle(color: colorScheme.onErrorContainer),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Do not create a new account. Contact HANDS operations so this device can be reviewed or unblocked.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onErrorContainer,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ErrorCard extends StatelessWidget {
   const ErrorCard({super.key, required this.text});
 
@@ -3750,4 +3804,23 @@ class ErrorCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String providerAppErrorMessage(Object error) {
+  final raw = error.toString();
+  final normalized = raw
+      .replaceFirst('Bad state: ', '')
+      .replaceFirst('Exception: ', '')
+      .trim();
+  if (isProviderDeviceBlockedMessage(normalized)) {
+    return normalized.replaceFirst(
+      'This device is blocked by admin review',
+      'This device is blocked by HANDS admin review',
+    );
+  }
+  return normalized;
+}
+
+bool isProviderDeviceBlockedMessage(String value) {
+  return value.toLowerCase().contains('device is blocked');
 }
