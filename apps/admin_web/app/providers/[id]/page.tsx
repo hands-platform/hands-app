@@ -85,6 +85,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const levelPlan = buildProviderLevelPlan(provider);
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
+  const payoutHold = activePayoutHold(provider);
 
   return (
     <>
@@ -150,6 +151,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <StatusCard label="KYC" value={provider.kyc?.status ?? 'DRAFT'} />
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
         <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
+        <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -367,6 +369,64 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <button type="submit">Create report</button>
           </div>
         </form>
+        <div className="ops-task-card ops-task-pending" style={{ marginBottom: 16 }}>
+          <div className="risk-watch-header">
+            <div>
+              <h3>Manual sanction</h3>
+              <p className="muted">
+                Use this for immediate operating controls when a report is not yet required.
+              </p>
+            </div>
+            <span className={`pill ${payoutHold ? 'pill-danger' : 'pill-success'}`}>
+              {payoutHold ? 'Payout locked' : 'No payout hold'}
+            </span>
+          </div>
+          {payoutHold ? (
+            <div className="setup-stage-item" style={{ marginBottom: 12 }}>
+              <span>ACTIVE</span>
+              <div>
+                <strong>{payoutHold.type}</strong>
+                <p className="muted">{payoutHold.reason}</p>
+                <p className="muted">
+                  Started {formatDate(payoutHold.startsAt)} / expires {formatDate(payoutHold.expiresAt)}
+                </p>
+              </div>
+              <small>{shortRiskId(payoutHold.id)}</small>
+            </div>
+          ) : null}
+          <form className="form-grid" action={createProviderSanction}>
+            <input type="hidden" name="providerProfileId" value={provider.id} />
+            <label>
+              Sanction type
+              <select name="type" defaultValue="PAYOUT_HOLD">
+                <option value="WARNING">Warning</option>
+                <option value="PAYOUT_HOLD">Payout hold</option>
+                <option value="ACCOUNT_BLOCK">Account block</option>
+                <option value="TRUST_BADGE_REMOVAL">Trust badge removal</option>
+              </select>
+            </label>
+            <label>
+              Expires at
+              <input name="expiresAt" type="datetime-local" />
+            </label>
+            <label className="full-span">
+              Reason
+              <input
+                name="reason"
+                placeholder="Clear operator reason, visible in audit and payout controls"
+                required
+                minLength={12}
+                maxLength={500}
+              />
+            </label>
+            <div className="actions full-span">
+              <button type="submit">Apply manual sanction</button>
+              <Link className="text-link" href="/payouts">
+                Open payouts
+              </Link>
+            </div>
+          </form>
+        </div>
         <div className="detail-grid">
           <div>
             <h3>Recent reports</h3>
@@ -849,12 +909,14 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const payoutAgreementsReady = agreementsAccepted >= 5;
   const nextAction = nextProviderAction(provider);
+  const payoutHold = activePayoutHold(provider);
   const payoutReady =
     hasCompletedService &&
     primaryBank?.status === 'APPROVED' &&
     provider.taxProfile?.status === 'APPROVED' &&
     Boolean(provider.residentialAddress?.trim()) &&
-    payoutAgreementsReady;
+    payoutAgreementsReady &&
+    !payoutHold;
   const accountClear = !provider.blockedAt;
 
   const cards: ProviderOpsCard[] = [
@@ -925,18 +987,22 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
     },
     {
       title: 'Payout readiness',
-      status: payoutReady ? 'UNLOCKED' : hasCompletedService ? 'BLOCKED' : 'DEFERRED',
-      detail: payoutReady
-        ? 'Provider has completed service, approved bank, approved tax profile, address, and agreements.'
-        : hasCompletedService
-          ? payoutBlockers(provider).join(' ')
-          : 'Tax profile and full payout gate stay deferred until the first completed service.',
-      action: payoutReady
-        ? 'Provider can request payout when earnings are available.'
-        : hasCompletedService
-          ? 'Clear payout blockers before approving withdrawal.'
-          : 'No action until first completed service.',
-      tone: payoutReady ? 'done' : hasCompletedService ? 'blocked' : 'pending',
+      status: payoutHold ? 'HELD' : payoutReady ? 'UNLOCKED' : hasCompletedService ? 'BLOCKED' : 'DEFERRED',
+      detail: payoutHold
+        ? `Active payout hold: ${payoutHold.reason}`
+        : payoutReady
+          ? 'Provider has completed service, approved bank, approved tax profile, address, and agreements.'
+          : hasCompletedService
+            ? payoutBlockers(provider).join(' ')
+            : 'Tax profile and full payout gate stay deferred until the first completed service.',
+      action: payoutHold
+        ? 'Lift the sanction only after finance/risk follow-up is resolved.'
+        : payoutReady
+          ? 'Provider can request payout when earnings are available.'
+          : hasCompletedService
+            ? 'Clear payout blockers before approving withdrawal.'
+            : 'No action until first completed service.',
+      tone: payoutReady ? 'done' : hasCompletedService || payoutHold ? 'blocked' : 'pending',
     },
     {
       title: 'Next admin action',
@@ -1250,7 +1316,11 @@ function payoutBlockers(provider: ProviderDetail) {
   const blockers: string[] = [];
   const primaryBank = provider.bankAccounts?.[0];
   const agreementsAccepted = provider.agreements?.length ?? 0;
+  const payoutHold = activePayoutHold(provider);
 
+  if (payoutHold) {
+    blockers.push(`Active payout hold: ${payoutHold.reason}.`);
+  }
   if (primaryBank?.status !== 'APPROVED') {
     blockers.push(`Bank ${primaryBank?.status ?? 'MISSING'}.`);
   }
@@ -1267,12 +1337,22 @@ function payoutBlockers(provider: ProviderDetail) {
 }
 
 function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
+  const payoutHold = activePayoutHold(provider);
   if (provider.blockedAt) {
     return {
       title: 'Next admin action',
       status: 'ACCOUNT',
       detail: `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`,
       action: 'Unblock only after the recorded account-level issue is resolved.',
+      tone: 'blocked',
+    };
+  }
+  if (payoutHold) {
+    return {
+      title: 'Next admin action',
+      status: 'PAYOUT HOLD',
+      detail: `Finance is locked by active payout hold: ${payoutHold.reason}`,
+      action: 'Review risk notes and lift the sanction only when payout can safely resume.',
       tone: 'blocked',
     };
   }
@@ -1508,6 +1588,20 @@ function statusTransition(log: NonNullable<ProviderDetail['verificationLogs']>[n
     return `${log.fromStatus ?? 'New'} -> ${log.toStatus ?? 'Unknown'}`;
   }
   return 'Decision recorded';
+}
+
+function activePayoutHold(provider: ProviderDetail) {
+  const now = Date.now();
+  return (provider.sanctions ?? []).find((sanction) => {
+    if (sanction.type !== 'PAYOUT_HOLD' || sanction.status !== 'ACTIVE') {
+      return false;
+    }
+    if (!sanction.expiresAt) {
+      return true;
+    }
+    const expiresAt = Date.parse(sanction.expiresAt);
+    return Number.isFinite(expiresAt) && expiresAt > now;
+  });
 }
 
 function metadataPreview(metadata?: unknown) {
