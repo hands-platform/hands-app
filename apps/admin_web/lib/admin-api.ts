@@ -317,6 +317,30 @@ export type AdminCoupon = {
   endsAt?: string | null;
 };
 
+export type AdminTaxPolicyVersion = {
+  id: string;
+  name: string;
+  status: string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  notes?: string | null;
+  createdAt?: string;
+  rules?: AdminTaxRule[];
+};
+
+export type AdminTaxRule = {
+  id: string;
+  policyVersionId: string;
+  scope: string;
+  serviceType?: string | null;
+  minGrossAmount?: number | null;
+  maxGrossAmount?: number | null;
+  rateBps: number;
+  fixedAmount: number;
+  active: boolean;
+  createdAt?: string;
+};
+
 export type AdminAuditLog = {
   id: string;
   action: string;

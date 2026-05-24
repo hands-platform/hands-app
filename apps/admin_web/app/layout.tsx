@@ -10,6 +10,7 @@ const links = [
   ['/refunds', 'Refunds'],
   ['/earnings', 'Earnings'],
   ['/payouts', 'Payouts'],
+  ['/tax-policy', 'Tax Policy'],
   ['/reviews', 'Reviews'],
   ['/notifications', 'Notifications'],
   ['/coupons', 'Coupons'],
