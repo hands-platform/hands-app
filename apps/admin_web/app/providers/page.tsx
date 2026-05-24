@@ -486,6 +486,8 @@ function ProviderOnboardingCell({
   const missingAgreements = 5 - (provider.agreements?.length ?? 0);
   const documents = provider.documents ?? [];
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
+  const taxNeedsReview = providerTaxNeedsReview(provider);
+  const taxStatus = provider.taxProfile?.status ?? (taxNeedsReview ? 'MISSING' : 'DEFERRED');
 
   return (
     <div>
@@ -497,11 +499,7 @@ function ProviderOnboardingCell({
         <span className={`pill ${primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-neutral'}`}>
           Bank {primaryBank?.status ?? 'MISSING'}
         </span>
-        <span
-          className={`pill ${provider.taxProfile?.status === 'APPROVED' ? 'pill-success' : 'pill-neutral'}`}
-        >
-          Tax {provider.taxProfile?.status ?? 'MISSING'}
-        </span>
+        <span className={`pill ${providerTaxPillClass(provider)}`}>Tax {taxStatus}</span>
       </div>
       <p className="muted" style={{ marginBottom: 8 }}>
         {provider.legalName ? `Legal: ${provider.legalName}` : 'Legal name not saved'}
@@ -1063,9 +1061,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
   const bankNeedsReview = providers.filter((provider) =>
     (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
   ).length;
-  const taxNeedsReview = providers.filter((provider) =>
-    ['PENDING_REVIEW', 'REJECTED'].includes(provider.taxProfile?.status ?? 'MISSING'),
-  ).length;
+  const taxNeedsReview = providers.filter(providerTaxNeedsReview).length;
   const locationNeedsReview = providers.filter((provider) =>
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider)),
   ).length;
@@ -1156,6 +1152,27 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
   return { items, totalOpen };
 }
 
+function providerTaxNeedsReview(provider: AdminProvider) {
+  const taxStatus = provider.taxProfile?.status ?? 'MISSING';
+  if (['PENDING_REVIEW', 'REJECTED'].includes(taxStatus)) {
+    return true;
+  }
+
+  const payoutLevelReached =
+    provider.level === 'LEVEL_3_PAYOUT_ENABLED' || provider.level === 'LEVEL_4_TRUSTED';
+  return payoutLevelReached && taxStatus !== 'APPROVED';
+}
+
+function providerTaxPillClass(provider: AdminProvider) {
+  if (provider.taxProfile?.status === 'APPROVED') {
+    return 'pill-success';
+  }
+  if (providerTaxNeedsReview(provider)) {
+    return provider.taxProfile?.status === 'REJECTED' ? 'pill-danger' : 'pill-warn';
+  }
+  return 'pill-neutral';
+}
+
 function providerReviewIssues(provider: AdminProvider) {
   const issues: Array<{ label: string; severity: 'high' | 'medium' }> = [];
   const kycStatus = provider.kyc?.status ?? 'MISSING';
@@ -1182,7 +1199,7 @@ function providerReviewIssues(provider: AdminProvider) {
       severity: bankStatus === 'REJECTED' ? 'high' : 'medium',
     });
   }
-  if (taxStatus !== 'APPROVED') {
+  if (providerTaxNeedsReview(provider)) {
     issues.push({ label: `tax ${taxStatus}`, severity: taxStatus === 'REJECTED' ? 'high' : 'medium' });
   }
   const locationState = providerLocationStatus(provider);
@@ -1427,7 +1444,7 @@ function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
     );
   }
   if (review === 'tax') {
-    return ['PENDING_REVIEW', 'REJECTED'].includes(provider.taxProfile?.status ?? 'MISSING');
+    return providerTaxNeedsReview(provider);
   }
   if (review === 'security') {
     return ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider));
