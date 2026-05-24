@@ -180,14 +180,43 @@ export default async function DashboardPage() {
         </div>
         <div className="ops-task-grid">
           {commandSignals.map((signal) => (
-            <Link className={`ops-task-card ${signal.className}`} href={signal.href} key={signal.title}>
+            <div className={`ops-task-card ${signal.className}`} key={signal.title}>
               <div>
                 <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
                 <h3>{signal.title}</h3>
                 <p className="muted">{signal.detail}</p>
+                <div className="ops-task-breakdown">
+                  {signal.breakdown.map((item) => {
+                    const content = (
+                      <>
+                        <span>{item.label}</span>
+                        <strong>{item.value}</strong>
+                      </>
+                    );
+
+                    return item.href ? (
+                      <Link
+                        className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
+                        href={item.href}
+                        key={`${signal.title}-${item.label}`}
+                      >
+                        {content}
+                      </Link>
+                    ) : (
+                      <div
+                        className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
+                        key={`${signal.title}-${item.label}`}
+                      >
+                        {content}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-              <small>{signal.action}</small>
-            </Link>
+              <Link className="ops-task-card-action" href={signal.href}>
+                {signal.action}
+              </Link>
+            </div>
           ))}
         </div>
       </section>
@@ -389,6 +418,12 @@ type DashboardCommandSignal = {
   href: string;
   className: string;
   pillClass: string;
+  breakdown: Array<{
+    label: string;
+    value: string;
+    tone: 'ok' | 'info' | 'warn' | 'danger';
+    href?: string;
+  }>;
 };
 
 function buildDashboardCommandSignals(input: {
@@ -404,6 +439,25 @@ function buildDashboardCommandSignals(input: {
   const staleOpenMatching = openMatching.filter((booking) =>
     booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false,
   );
+  const quietChatRooms = input.bookings.filter(
+    (booking) =>
+      booking.chatRoom &&
+      (booking.chatRoom.messages?.length ?? 0) === 0 &&
+      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  );
+  const matchedWithoutChat = input.bookings.filter(
+    (booking) => booking.status === 'MATCHED' && !booking.chatRoom,
+  );
+  const submittedVerification = input.providers.filter(
+    (provider) => provider.verification?.status === 'SUBMITTED',
+  );
+  const submittedKyc = input.providers.filter((provider) => provider.kyc?.status === 'SUBMITTED');
+  const openProviderReports = input.providers.filter((provider) =>
+    (provider.reports ?? []).some((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)),
+  );
+  const activeProviderSanctions = input.providers.filter((provider) =>
+    (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE'),
+  );
   const providerReviews = input.providers.filter(
     (provider) =>
       provider.verification?.status === 'SUBMITTED' ||
@@ -411,15 +465,22 @@ function buildDashboardCommandSignals(input: {
       (provider.reports ?? []).some((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)) ||
       (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE'),
   );
-  const paymentReviews =
-    input.payments.filter(
-      (payment) =>
-        (payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED') ||
-        (payment.status === 'AUTHORIZED' && !payment.providerRef),
-    ).length + input.refunds.filter((refund) => refund.status !== 'COMPLETED').length;
+  const completedAuthorized = input.payments.filter(
+    (payment) => payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED',
+  );
+  const missingGatewayRef = input.payments.filter(
+    (payment) => payment.status === 'AUTHORIZED' && !payment.providerRef,
+  );
+  const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
+  const paymentReviews = completedAuthorized.length + missingGatewayRef.length + openRefunds.length;
   const payoutHolds = input.payoutBatches.filter((batch) => Boolean(activePayoutHold(batch)));
   const payoutReviews = input.payoutBatches.filter((batch) =>
     ['DRAFT', 'FAILED', 'PROCESSING'].includes(batch.status),
+  );
+  const failedPayouts = input.payoutBatches.filter((batch) => batch.status === 'FAILED');
+  const processingPayouts = input.payoutBatches.filter((batch) => batch.status === 'PROCESSING');
+  const disabledPushProviders = input.providers.filter(
+    (provider) => (provider.user?.pushDevices ?? []).filter((device) => device.enabled === false).length > 0,
   );
   const failedNotifications = input.notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
@@ -447,6 +508,32 @@ function buildDashboardCommandSignals(input: {
         : openMatching.length
           ? 'pill-warn'
           : 'pill-success',
+      breakdown: [
+        {
+          label: 'Open matching',
+          value: openMatching.length.toString(),
+          tone: openMatching.length ? 'warn' : 'ok',
+          href: '/bookings',
+        },
+        {
+          label: 'Expired windows',
+          value: staleOpenMatching.length.toString(),
+          tone: staleOpenMatching.length ? 'danger' : 'ok',
+          href: '/bookings',
+        },
+        {
+          label: 'Quiet chats',
+          value: quietChatRooms.length.toString(),
+          tone: quietChatRooms.length ? 'info' : 'ok',
+          href: '/bookings',
+        },
+        {
+          label: 'Matched no chat',
+          value: matchedWithoutChat.length.toString(),
+          tone: matchedWithoutChat.length ? 'danger' : 'ok',
+          href: '/bookings',
+        },
+      ],
     },
     {
       title: 'Provider lane',
@@ -458,6 +545,32 @@ function buildDashboardCommandSignals(input: {
       href: '/providers',
       className: providerReviews.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: providerReviews.length ? 'pill-warn' : 'pill-success',
+      breakdown: [
+        {
+          label: 'Verification',
+          value: submittedVerification.length.toString(),
+          tone: submittedVerification.length ? 'warn' : 'ok',
+          href: '/providers',
+        },
+        {
+          label: 'KYC',
+          value: submittedKyc.length.toString(),
+          tone: submittedKyc.length ? 'warn' : 'ok',
+          href: '/providers',
+        },
+        {
+          label: 'Risk reports',
+          value: openProviderReports.length.toString(),
+          tone: openProviderReports.length ? 'danger' : 'ok',
+          href: '/provider-risk',
+        },
+        {
+          label: 'Active sanctions',
+          value: activeProviderSanctions.length.toString(),
+          tone: activeProviderSanctions.length ? 'danger' : 'ok',
+          href: '/provider-risk',
+        },
+      ],
     },
     {
       title: 'Payment lane',
@@ -469,6 +582,26 @@ function buildDashboardCommandSignals(input: {
       href: '/payments',
       className: paymentReviews ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: paymentReviews ? 'pill-danger' : 'pill-success',
+      breakdown: [
+        {
+          label: 'Capture review',
+          value: completedAuthorized.length.toString(),
+          tone: completedAuthorized.length ? 'danger' : 'ok',
+          href: '/payments',
+        },
+        {
+          label: 'Missing refs',
+          value: missingGatewayRef.length.toString(),
+          tone: missingGatewayRef.length ? 'warn' : 'ok',
+          href: '/payments',
+        },
+        {
+          label: 'Open refunds',
+          value: openRefunds.length.toString(),
+          tone: openRefunds.length ? 'warn' : 'ok',
+          href: '/refunds',
+        },
+      ],
     },
     {
       title: 'Payout lane',
@@ -490,6 +623,32 @@ function buildDashboardCommandSignals(input: {
         : payoutReviews.length || setupBlocked
           ? 'pill-warn'
           : 'pill-success',
+      breakdown: [
+        {
+          label: 'Payout holds',
+          value: payoutHolds.length.toString(),
+          tone: payoutHolds.length ? 'danger' : 'ok',
+          href: '/payouts',
+        },
+        {
+          label: 'Failed',
+          value: failedPayouts.length.toString(),
+          tone: failedPayouts.length ? 'danger' : 'ok',
+          href: '/payouts',
+        },
+        {
+          label: 'Processing',
+          value: processingPayouts.length.toString(),
+          tone: processingPayouts.length ? 'info' : 'ok',
+          href: '/payouts',
+        },
+        {
+          label: 'Available',
+          value: money(input.earnings.availableNetAmount, input.earnings.currency),
+          tone: input.earnings.availableNetAmount > 0 ? 'warn' : 'ok',
+          href: '/earnings',
+        },
+      ],
     },
     {
       title: 'Notification lane',
@@ -501,6 +660,20 @@ function buildDashboardCommandSignals(input: {
       href: '/notifications',
       className: failedNotifications.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: failedNotifications.length ? 'pill-warn' : 'pill-success',
+      breakdown: [
+        {
+          label: 'Failed sends',
+          value: failedNotifications.length.toString(),
+          tone: failedNotifications.length ? 'warn' : 'ok',
+          href: '/notifications',
+        },
+        {
+          label: 'Disabled devices',
+          value: disabledPushProviders.length.toString(),
+          tone: disabledPushProviders.length ? 'info' : 'ok',
+          href: '/providers',
+        },
+      ],
     },
   ];
 }
