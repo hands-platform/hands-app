@@ -9,6 +9,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'src/app_state.dart';
 import 'src/core/app_config.dart';
 import 'src/core/realtime_socket.dart';
+import 'src/features/provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
 import 'src/features/provider_onboarding/presentation/widgets/provider_onboarding_forms.dart';
 
 void main() {
@@ -2539,7 +2540,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
-  Future<void> _submitKycFromForm() async {
+  Future<void> _submitKycFromForm(Map<String, dynamic> snapshot) async {
+    final existingDocumentTypes = asList(snapshot['documents'])
+        .map(asMap)
+        .whereType<Map<String, dynamic>>()
+        .map((document) => document['type']?.toString())
+        .whereType<String>()
+        .toSet();
+    final readyDocumentTypes = {
+      ...existingDocumentTypes,
+      ..._uploadedOnboardingDocumentIds.keys,
+    };
+    final missingTypes = requiredProviderDocumentTypes
+        .where((type) => !readyDocumentTypes.contains(type))
+        .toList();
+    if (missingTypes.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Upload required KYC photos first: ${missingTypes.map(providerDocumentTypeLabel).join(', ')}',
+          ),
+        ),
+      );
+      return;
+    }
+
     final input = await showProviderKycSheet(context);
     if (input == null) return;
     final documents = _uploadedOnboardingDocumentIds.entries
@@ -2608,50 +2633,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     });
   }
 
-  Future<String?> _selectProviderDocumentType() {
-    const documentTypes = [
-      'CCCD_FRONT',
-      'CCCD_BACK',
-      'SELFIE',
-      'WORK_PHOTO',
-      'BANK_QR',
-    ];
-    return showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-          children: [
-            Text(
-              'Document type',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Choose what this upload represents. Admin review and KYC checks use this type.',
-            ),
-            const SizedBox(height: 12),
-            for (final type in documentTypes)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.description_outlined),
-                title: Text(_providerDocumentTypeLabel(type)),
-                subtitle: Text(type),
-                onTap: () => Navigator.of(context).pop(type),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickAndUploadVerificationFile() async {
-    final documentType = await _selectProviderDocumentType();
-    if (documentType == null) {
-      return;
-    }
+  Future<void> _pickAndUploadVerificationFile(String documentType) async {
     final image = await ImagePicker().pickImage(
       source: ImageSource.gallery,
       imageQuality: 85,
@@ -2681,7 +2663,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${_providerDocumentTypeLabel(documentType)} uploaded: ${image.name}',
+              '${providerDocumentTypeLabel(documentType)} uploaded: ${image.name}',
             ),
           ),
         );
@@ -2819,7 +2801,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   onRefresh: _refreshOnboarding,
                   onFillBasicProfile: () =>
                       _editBasicProfile(snapshot.data ?? <String, dynamic>{}),
-                  onSubmitKyc: _submitKycFromForm,
+                  onSubmitKyc: () =>
+                      _submitKycFromForm(snapshot.data ?? <String, dynamic>{}),
                   onAddBankAccount: () => _addBankAccountFromForm(
                       snapshot.data ?? <String, dynamic>{}),
                   onAddTaxProfile: () => _addTaxProfileFromForm(
@@ -2875,19 +2858,16 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           text: 'Verification load failed: ${snapshot.error}'),
                       const SizedBox(height: 12),
                     ],
-                    FilledButton.tonalIcon(
-                      onPressed:
-                          _isUploading ? null : _pickAndUploadVerificationFile,
-                      icon: const Icon(Icons.file_upload_outlined),
-                      label: Text(_isUploading
-                          ? 'Uploading verification file...'
-                          : 'Upload typed verification photo'),
+                    ProviderDocumentUploadSlots(
+                      uploadedDocumentIds: _uploadedOnboardingDocumentIds,
+                      isUploading: _isUploading,
+                      onUpload: _pickAndUploadVerificationFile,
                     ),
                     if (_uploadedOnboardingDocumentIds.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       InfoCard(
                         text:
-                            'Ready for KYC: ${_uploadedOnboardingDocumentIds.keys.map(_providerDocumentTypeLabel).join(', ')}',
+                            'Ready for KYC: ${_uploadedOnboardingDocumentIds.keys.map(providerDocumentTypeLabel).join(', ')}',
                       ),
                     ],
                     const SizedBox(height: 8),
@@ -3001,6 +2981,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
         .map((action) => action.toString())
         .toList();
     final bankAccounts = asList(snapshot['bankAccounts']);
+    final documents = asList(snapshot['documents']);
     final agreements = asList(snapshot['agreements']);
     final payoutGate = asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
     final payoutMissing = asMap(payoutGate['missing']) ?? <String, dynamic>{};
@@ -3075,6 +3056,24 @@ class _ProviderOnboardingCard extends StatelessWidget {
               detail: kycStatus ?? 'Not submitted',
               complete: kycStatus == 'APPROVED',
             ),
+            if (documents.isNotEmpty) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: documents.map((document) {
+                    final item = asMap(document) ?? <String, dynamic>{};
+                    final type = item['type']?.toString() ?? 'DOCUMENT';
+                    final status = item['status']?.toString() ?? 'PENDING';
+                    return Chip(
+                      label:
+                          Text('${providerDocumentTypeLabel(type)}: $status'),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
             _OnboardingGateRow(
               title: 'Bank account',
               detail: bankStatus ?? 'Not submitted',
@@ -3222,25 +3221,6 @@ String guessImageContentTypeFromName(String name) {
     return 'image/webp';
   }
   return 'image/jpeg';
-}
-
-String _providerDocumentTypeLabel(String type) {
-  switch (type) {
-    case 'CCCD_FRONT':
-      return 'CCCD front image';
-    case 'CCCD_BACK':
-      return 'CCCD back image';
-    case 'SELFIE':
-      return 'Selfie verification';
-    case 'PROFILE_PHOTO':
-      return 'Profile photo';
-    case 'WORK_PHOTO':
-      return 'Work photo';
-    case 'BANK_QR':
-      return 'Bank QR image';
-    default:
-      return type;
-  }
 }
 
 class ProviderMvpScreen extends StatelessWidget {
