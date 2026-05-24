@@ -68,6 +68,18 @@ void main() {
       providerDocumentStatusLabel('REJECTED'),
       'Rejected. Upload a clearer replacement image.',
     );
+    expect(
+      providerDocumentSlotStatusLabel(
+        type: 'CCCD_FRONT',
+        uploaded: true,
+        submittedDocument: const {'status': 'REJECTED'},
+      ),
+      'Replacement attached. Submit KYC to send it for review.',
+    );
+    expect(
+      providerDocumentSlotActionHint(uploaded: false, status: 'REJECTED'),
+      'Next: tap Replace and upload a clearer photo.',
+    );
     expect(providerDocumentTypeStep('BANK_QR'), 'Optional');
   });
 
@@ -103,6 +115,39 @@ void main() {
     ]);
 
     expect(documentsByType['CCCD_FRONT']?['status'], 'APPROVED');
+  });
+
+  test('summarizes rejected required KYC documents that need replacement', () {
+    final summaries = providerRejectedKycDocumentSummaries(
+      submittedDocuments: const [
+        {
+          'type': 'CCCD_FRONT',
+          'status': 'REJECTED',
+          'rejectionReason': 'Text is blurry',
+        },
+        {'type': 'CCCD_BACK', 'status': 'PENDING_REVIEW'},
+        {'type': 'SELFIE', 'status': 'APPROVED'},
+        {'type': 'WORK_PHOTO', 'status': 'REJECTED'},
+      ],
+      uploadedDocumentIds: const {},
+    );
+
+    expect(summaries, ['CCCD front side: Text is blurry']);
+  });
+
+  test('does not summarize rejected KYC document after replacement upload', () {
+    final summaries = providerRejectedKycDocumentSummaries(
+      submittedDocuments: const [
+        {
+          'type': 'CCCD_FRONT',
+          'status': 'REJECTED',
+          'rejectionReason': 'Text is blurry',
+        },
+      ],
+      uploadedDocumentIds: const {'CCCD_FRONT': 'new-file-id'},
+    );
+
+    expect(summaries, isEmpty);
   });
 
   test('prioritizes basic profile before other onboarding gates', () {

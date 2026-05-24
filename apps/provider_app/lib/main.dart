@@ -2558,10 +2558,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         .where((type) => !readyDocumentTypes.contains(type))
         .toList();
     if (missingTypes.isNotEmpty) {
+      final rejectedSummaries = providerRejectedKycDocumentSummaries(
+        submittedDocuments: asList(snapshot['documents']),
+        uploadedDocumentIds: _uploadedOnboardingDocumentIds,
+        requiredTypes: requiredTypes,
+      );
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Upload required KYC photos first: ${missingTypes.map(providerDocumentTypeLabel).join(', ')}',
+            rejectedSummaries.isNotEmpty
+                ? 'Replace rejected KYC photo(s): ${rejectedSummaries.join('; ')}'
+                : 'Upload required KYC photos first: ${missingTypes.map(providerDocumentTypeLabel).join(', ')}',
           ),
         ),
       );
@@ -3024,6 +3031,11 @@ class _ProviderOnboardingCard extends StatelessWidget {
         .whereType<Map<String, dynamic>>()
         .where((document) => document['status']?.toString() == 'REJECTED')
         .toList();
+    final rejectedRequiredSummaries = providerRejectedKycDocumentSummaries(
+      submittedDocuments: documents,
+      uploadedDocumentIds: const {},
+      requiredTypes: requiredKycTypes,
+    );
     final submittedKycRequiredCount = documents
         .map(asMap)
         .whereType<Map<String, dynamic>>()
@@ -3135,13 +3147,15 @@ class _ProviderOnboardingCard extends StatelessWidget {
             if (rejectedDocuments.isNotEmpty) ...[
               _ReviewAlert(
                 title: 'Rejected document(s)',
-                detail: rejectedDocuments.map((document) {
-                  final type =
-                      providerDocumentTypeLabel(document['type'].toString());
-                  final reason =
-                      reviewReason(document) ?? 'Upload a clearer image.';
-                  return '$type: $reason';
-                }).join('\n'),
+                detail: rejectedRequiredSummaries.isNotEmpty
+                    ? '${rejectedRequiredSummaries.join('\n')}\n\nOpen the KYC checklist and replace each rejected required photo.'
+                    : rejectedDocuments.map((document) {
+                        final type = providerDocumentTypeLabel(
+                            document['type'].toString());
+                        final reason =
+                            reviewReason(document) ?? 'Upload a clearer image.';
+                        return '$type: $reason';
+                      }).join('\n'),
               ),
               const SizedBox(height: 8),
             ],
@@ -3174,8 +3188,9 @@ class _ProviderOnboardingCard extends StatelessWidget {
             _OnboardingStepCard(
               step: '2',
               title: 'KYC verification',
-              detail:
-                  '$submittedKycRequiredCount of ${requiredKycTypes.length} required photos ready. Status: ${kycStatus ?? 'Not submitted'}.',
+              detail: rejectedRequiredSummaries.isNotEmpty
+                  ? 'Replace ${rejectedRequiredSummaries.length} rejected required photo(s), then resubmit KYC.'
+                  : '$submittedKycRequiredCount of ${requiredKycTypes.length} required photos ready. Status: ${kycStatus ?? 'Not submitted'}.',
               status: kycStatus == 'APPROVED'
                   ? 'Approved'
                   : kycDocumentsReady

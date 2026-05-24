@@ -29,6 +29,10 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
   Widget build(BuildContext context) {
     final submittedByType =
         providerDocumentSlotDocumentsByType(submittedDocuments);
+    final rejectedRequired = providerRejectedKycDocumentSummaries(
+      submittedDocuments: submittedDocuments,
+      uploadedDocumentIds: uploadedDocumentIds,
+    );
 
     final missingRequired = requiredProviderDocumentTypes
         .where((type) => !isProviderKycDocumentReady(
@@ -51,10 +55,19 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              missingRequired.isEmpty
-                  ? 'Required identity photos are ready for KYC submission.'
-                  : 'Upload the CCCD/CMND front, back, and selfie before submitting KYC.',
+              rejectedRequired.isNotEmpty
+                  ? 'Some required identity photos were rejected. Replace each rejected item, then resubmit KYC.'
+                  : missingRequired.isEmpty
+                      ? 'Required identity photos are ready for KYC submission.'
+                      : 'Upload the CCCD/CMND front, back, and selfie before submitting KYC.',
             ),
+            if (rejectedRequired.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                rejectedRequired.join('\n'),
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
             const SizedBox(height: 12),
             for (final type in requiredProviderDocumentTypes) ...[
               _DocumentSlot(
@@ -113,13 +126,16 @@ class _DocumentSlot extends StatelessWidget {
     final rejected = status == 'REJECTED';
     final approved = status == 'APPROVED';
     final pending = status == 'PENDING_REVIEW';
-    final rejectionReason =
-        submittedDocument?['rejectionReason']?.toString().trim();
-    final statusLabel = uploaded
-        ? 'New image attached. Submit KYC to send it for review.'
-        : status == null
-            ? providerDocumentTypeDescription(type)
-            : providerDocumentStatusLabel(status);
+    final rejectionReason = providerDocumentRejectionReason(submittedDocument);
+    final statusLabel = providerDocumentSlotStatusLabel(
+      type: type,
+      uploaded: uploaded,
+      submittedDocument: submittedDocument,
+    );
+    final actionHint = providerDocumentSlotActionHint(
+      uploaded: uploaded,
+      status: status,
+    );
     final activeColor = rejected ? colorScheme.error : colorScheme.primary;
 
     return Container(
@@ -159,10 +175,21 @@ class _DocumentSlot extends StatelessWidget {
                   statusLabel,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
+                if (actionHint != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    actionHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: rejected
+                              ? colorScheme.error
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
                 if (rejectionReason != null && rejectionReason.isNotEmpty) ...[
                   const SizedBox(height: 2),
                   Text(
-                    'Admin note: $rejectionReason',
+                    'Reason: $rejectionReason',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.error,
                         ),
@@ -237,6 +264,71 @@ String providerDocumentStatusLabel(String status) {
     default:
       return status;
   }
+}
+
+String providerDocumentSlotStatusLabel({
+  required String type,
+  required bool uploaded,
+  required Map<String, dynamic>? submittedDocument,
+}) {
+  if (uploaded) {
+    return 'Replacement attached. Submit KYC to send it for review.';
+  }
+  final status = submittedDocument?['status']?.toString();
+  if (status == null) {
+    return providerDocumentTypeDescription(type);
+  }
+  return providerDocumentStatusLabel(status);
+}
+
+String? providerDocumentSlotActionHint({
+  required bool uploaded,
+  required String? status,
+}) {
+  if (uploaded) {
+    return 'Next: press Submit KYC so admin can review the new image.';
+  }
+  if (status == 'REJECTED') {
+    return 'Next: tap Replace and upload a clearer photo.';
+  }
+  return null;
+}
+
+String? providerDocumentRejectionReason(Map<String, dynamic>? document) {
+  final reason = document?['rejectionReason']?.toString().trim();
+  return reason == null || reason.isEmpty ? null : reason;
+}
+
+List<String> providerRejectedKycDocumentSummaries({
+  required List<dynamic> submittedDocuments,
+  required Map<String, String> uploadedDocumentIds,
+  List<String> requiredTypes = requiredProviderDocumentTypes,
+}) {
+  final summaries = <String>[];
+  for (final type in requiredTypes) {
+    if (isProviderKycDocumentReady(
+      type: type,
+      uploadedDocumentIds: uploadedDocumentIds,
+      submittedDocuments: submittedDocuments,
+    )) {
+      continue;
+    }
+    final rejectedDocument = submittedDocuments
+        .map(_asMap)
+        .whereType<Map<String, dynamic>>()
+        .where((document) =>
+            document['type']?.toString() == type &&
+            document['status']?.toString() == 'REJECTED')
+        .cast<Map<String, dynamic>?>()
+        .firstWhere((document) => document != null, orElse: () => null);
+    if (rejectedDocument == null) {
+      continue;
+    }
+    final reason = providerDocumentRejectionReason(rejectedDocument) ??
+        'Upload a clearer replacement image.';
+    summaries.add('${providerDocumentTypeLabel(type)}: $reason');
+  }
+  return summaries;
 }
 
 Map<String, dynamic>? _asMap(dynamic value) {
