@@ -364,7 +364,13 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </form>
                     <form action={rejectProvider}>
                       <input type="hidden" name="providerId" value={provider.id} />
-                      <input type="hidden" name="reason" value="Rejected from admin dashboard" />
+                      <input
+                        name="reason"
+                        placeholder="Provider rejection reason"
+                        required
+                        minLength={12}
+                        maxLength={500}
+                      />
                       <button type="submit">Reject</button>
                     </form>
                     <form action={syncSupabaseProviderRole}>
@@ -483,9 +489,11 @@ function ProviderOnboardingCell({
                   <input type="hidden" name="providerId" value={provider.id} />
                   <input type="hidden" name="documentId" value={document.id} />
                   <input
-                    type="hidden"
                     name="reason"
-                    value="Provider document rejected from admin dashboard"
+                    placeholder="Document rejection reason"
+                    required
+                    minLength={12}
+                    maxLength={500}
                   />
                   <button type="submit" disabled={document.status === 'REJECTED'}>
                     Reject doc
@@ -509,7 +517,13 @@ function ProviderOnboardingCell({
         </form>
         <form action={rejectProviderKyc}>
           <input type="hidden" name="providerId" value={provider.id} />
-          <input type="hidden" name="reason" value="KYC rejected from admin dashboard" />
+          <input
+            name="reason"
+            placeholder="KYC rejection reason"
+            required
+            minLength={12}
+            maxLength={500}
+          />
           <button type="submit" disabled={!provider.kyc || provider.kyc.status === 'REJECTED'}>
             Reject KYC
           </button>
@@ -526,7 +540,13 @@ function ProviderOnboardingCell({
             <form action={rejectProviderBankAccount}>
               <input type="hidden" name="providerId" value={provider.id} />
               <input type="hidden" name="bankAccountId" value={primaryBank.id} />
-              <input type="hidden" name="reason" value="Bank account rejected from admin dashboard" />
+              <input
+                name="reason"
+                placeholder="Bank rejection reason"
+                required
+                minLength={12}
+                maxLength={500}
+              />
               <button type="submit" disabled={primaryBank.status === 'REJECTED'}>
                 Reject bank
               </button>
@@ -543,7 +563,13 @@ function ProviderOnboardingCell({
             </form>
             <form action={rejectProviderTaxProfile}>
               <input type="hidden" name="providerId" value={provider.id} />
-              <input type="hidden" name="reason" value="Tax profile rejected from admin dashboard" />
+              <input
+                name="reason"
+                placeholder="Tax rejection reason"
+                required
+                minLength={12}
+                maxLength={500}
+              />
               <button type="submit" disabled={provider.taxProfile.status === 'REJECTED'}>
                 Reject tax
               </button>

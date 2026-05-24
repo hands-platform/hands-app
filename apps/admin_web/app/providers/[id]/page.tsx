@@ -100,7 +100,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <input
               name="reason"
               placeholder="Provider rejection reason"
-              defaultValue="Rejected from provider detail review"
+              required
+              minLength={12}
+              maxLength={500}
             />
             <button type="submit">Reject provider</button>
           </form>
@@ -307,7 +309,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               <input
                 name="reason"
                 placeholder="KYC rejection reason"
-                defaultValue="KYC rejected from provider detail review"
+                required
+                minLength={12}
+                maxLength={500}
               />
               <button type="submit" disabled={!provider.kyc || provider.kyc.status === 'REJECTED'}>
                 Reject KYC
@@ -368,7 +372,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                     <input
                       name="reason"
                       placeholder="Document rejection reason"
-                      defaultValue="Provider document rejected from detail review"
+                      required
+                      minLength={12}
+                      maxLength={500}
                     />
                     <button type="submit" disabled={document.status === 'REJECTED'}>
                       Reject doc
@@ -408,7 +414,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                   <input
                     name="reason"
                     placeholder="Bank rejection reason"
-                    defaultValue="Bank rejected from provider detail review"
+                    required
+                    minLength={12}
+                    maxLength={500}
                   />
                   <button type="submit" disabled={primaryBank.status === 'REJECTED'}>
                     Reject bank
@@ -442,7 +450,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                   <input
                     name="reason"
                     placeholder="Tax rejection reason"
-                    defaultValue="Tax profile rejected from detail review"
+                    required
+                    minLength={12}
+                    maxLength={500}
                   />
                   <button type="submit" disabled={provider.taxProfile.status === 'REJECTED'}>
                     Reject tax
