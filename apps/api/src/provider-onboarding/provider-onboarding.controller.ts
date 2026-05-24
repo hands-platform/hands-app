@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nest
 import {
   ProviderAgreementType,
   ProviderBankAccountStatus,
+  ProviderDocumentStatus,
   ProviderKycStatus,
   ProviderTaxProfileStatus,
   Role,
@@ -176,6 +177,27 @@ export class ProviderOnboardingController {
     @Body() body: { reason?: string },
   ) {
     return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.REJECTED, body.reason);
+  }
+
+  @Post('admin/provider-documents/:id/approve')
+  @Roles(Role.ADMIN)
+  approveProviderDocument(@CurrentUser() user: AuthenticatedUser, @Param('id') documentId: string) {
+    return this.onboarding.reviewProviderDocument(user.id, documentId, ProviderDocumentStatus.APPROVED);
+  }
+
+  @Post('admin/provider-documents/:id/reject')
+  @Roles(Role.ADMIN)
+  rejectProviderDocument(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') documentId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.onboarding.reviewProviderDocument(
+      user.id,
+      documentId,
+      ProviderDocumentStatus.REJECTED,
+      body.reason,
+    );
   }
 
   @Post('admin/provider-bank-accounts/:id/approve')

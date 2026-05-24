@@ -2,11 +2,13 @@ import { AdminProvider, adminGet } from '../../lib/admin-api';
 import {
   approveProvider,
   approveProviderBankAccount,
+  approveProviderDocument,
   approveProviderKyc,
   approveProviderTaxProfile,
   enablePushDevice,
   rejectProvider,
   rejectProviderBankAccount,
+  rejectProviderDocument,
   rejectProviderKyc,
   rejectProviderTaxProfile,
   syncSupabaseProviderRole,
@@ -23,7 +25,11 @@ export default async function ProvidersPage() {
   const fileReadUrls = new Map<string, string>();
   await Promise.all(
     providers.flatMap((provider) =>
-      (provider.verification?.files ?? []).map(async (file) => {
+      [
+        ...(provider.verification?.files ?? []),
+        ...(provider.documents ?? []).map((document) => document.fileAsset).filter(Boolean),
+      ].map(async (file) => {
+        if (!file?.id) return;
         const result = await adminGet<{ read?: { url?: string } }>(`/files/${file.id}/read-url`, {});
         if (result.read?.url) {
           fileReadUrls.set(file.id, result.read.url);
@@ -73,7 +79,7 @@ export default async function ProvidersPage() {
                   </p>
                 </td>
                 <td>
-                  <ProviderOnboardingCell provider={provider} />
+                  <ProviderOnboardingCell provider={provider} fileReadUrls={fileReadUrls} />
                 </td>
                 <td>
                   <div className="participant-list" style={{ marginBottom: 8 }}>
@@ -203,9 +209,16 @@ export default async function ProvidersPage() {
   );
 }
 
-function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
+function ProviderOnboardingCell({
+  provider,
+  fileReadUrls,
+}: {
+  provider: AdminProvider;
+  fileReadUrls: Map<string, string>;
+}) {
   const primaryBank = provider.bankAccounts?.[0];
   const missingAgreements = 5 - (provider.agreements?.length ?? 0);
+  const documents = provider.documents ?? [];
 
   return (
     <div>
@@ -242,6 +255,62 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
           Tax code ****{provider.taxProfile.taxCodeLast4 ?? '----'} / {provider.taxProfile.registeredAddress}
         </p>
       ) : null}
+      {documents.length ? (
+        <div style={{ marginBottom: 10 }}>
+          <p className="muted" style={{ marginBottom: 6 }}>
+            Typed documents
+          </p>
+          {documents.map((document) => (
+            <div key={document.id} className="provider-file-row">
+              <div className="participant-list" style={{ marginBottom: 6 }}>
+                <span className="pill pill-info">{document.type}</span>
+                <span className={`pill ${document.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
+                  {document.status}
+                </span>
+              </div>
+              <p className="muted" style={{ marginBottom: 6 }}>
+                {document.fileAsset?.contentType ?? 'unknown file'}
+                {document.fileAsset?.sizeBytes ? ` / ${formatBytes(document.fileAsset.sizeBytes)}` : ''}
+                {document.fileAsset?.uploadedAt
+                  ? ` / uploaded ${new Date(document.fileAsset.uploadedAt).toLocaleString()}`
+                  : ''}
+              </p>
+              <p className="muted" style={{ marginBottom: 6 }}>
+                {document.fileAsset?.id && fileReadUrls.get(document.fileAsset.id) ? (
+                  <a href={fileReadUrls.get(document.fileAsset.id)} target="_blank" rel="noreferrer">
+                    {document.fileAsset.key}
+                  </a>
+                ) : (
+                  (document.fileAsset?.key ?? 'No file key')
+                )}
+              </p>
+              <div className="actions">
+                <form action={approveProviderDocument}>
+                  <input type="hidden" name="documentId" value={document.id} />
+                  <button type="submit" disabled={document.status === 'APPROVED'}>
+                    Approve doc
+                  </button>
+                </form>
+                <form action={rejectProviderDocument}>
+                  <input type="hidden" name="documentId" value={document.id} />
+                  <input
+                    type="hidden"
+                    name="reason"
+                    value="Provider document rejected from admin dashboard"
+                  />
+                  <button type="submit" disabled={document.status === 'REJECTED'}>
+                    Reject doc
+                  </button>
+                </form>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="muted" style={{ marginBottom: 8 }}>
+          No typed KYC documents yet.
+        </p>
+      )}
       <div className="actions">
         <form action={approveProviderKyc}>
           <input type="hidden" name="providerId" value={provider.id} />

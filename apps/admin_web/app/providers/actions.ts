@@ -45,6 +45,21 @@ export async function rejectProviderKyc(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function approveProviderDocument(formData: FormData) {
+  const documentId = String(formData.get('documentId'));
+  await adminPost(`/admin/provider-documents/${documentId}/approve`, {}, null);
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}
+
+export async function rejectProviderDocument(formData: FormData) {
+  const documentId = String(formData.get('documentId'));
+  const reason = String(formData.get('reason') || 'Provider document rejected by admin');
+  await adminPost(`/admin/provider-documents/${documentId}/reject`, { reason }, null);
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}
+
 export async function approveProviderBankAccount(formData: FormData) {
   const bankAccountId = String(formData.get('bankAccountId'));
   await adminPost(`/admin/provider-bank-accounts/${bankAccountId}/approve`, {}, null);

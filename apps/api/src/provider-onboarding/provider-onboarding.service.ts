@@ -296,12 +296,7 @@ export class ProviderOnboardingService {
     return { ok: true, agreement };
   }
 
-  async reviewKyc(
-    actorId: string,
-    providerProfileId: string,
-    status: ProviderKycStatus,
-    reason?: string,
-  ) {
+  async reviewKyc(actorId: string, providerProfileId: string, status: ProviderKycStatus, reason?: string) {
     const existing = await this.prisma.providerKyc.findUnique({
       where: { providerProfileId },
     });
@@ -356,6 +351,53 @@ export class ProviderOnboardingService {
     });
     await this.refreshProviderLevel(providerProfileId);
     return { ok: true, kyc };
+  }
+
+  async reviewProviderDocument(
+    actorId: string,
+    documentId: string,
+    status: ProviderDocumentStatus,
+    reason?: string,
+  ) {
+    const existing = await this.prisma.providerDocument.findUniqueOrThrow({
+      where: { id: documentId },
+    });
+    const document = await this.prisma.providerDocument.update({
+      where: { id: documentId },
+      data: {
+        status,
+        reviewedAt: new Date(),
+        rejectionReason: status === ProviderDocumentStatus.APPROVED ? null : normalizeString(reason),
+      },
+      include: { fileAsset: true },
+    });
+
+    await this.prisma.providerVerificationLog.create({
+      data: {
+        providerProfileId: document.providerProfileId,
+        actorId,
+        action: `document.${status.toLowerCase()}`,
+        fromStatus: existing.status,
+        toStatus: status,
+        metadata: toJson({
+          documentId,
+          type: document.type,
+          fileAssetId: document.fileAssetId,
+          reason,
+        }),
+      },
+    });
+    await this.writeAudit(
+      actorId,
+      `provider_document.${status.toLowerCase()}`,
+      `provider:${document.providerProfileId}`,
+      {
+        documentId,
+        type: document.type,
+        reason,
+      },
+    );
+    return { ok: true, document };
   }
 
   async reviewBankAccount(
