@@ -4,7 +4,6 @@ import {
   EarningStatus,
   PayoutBatchStatus,
   Prisma,
-  ProviderAgreementType,
   ProviderBankAccountStatus,
   ProviderSanctionStatus,
   ProviderSanctionType,
@@ -13,15 +12,9 @@ import {
   TaxRuleScope,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 
 const DEFAULT_PLATFORM_FEE_RATE = 0.2;
-const REQUIRED_PAYOUT_AGREEMENTS = [
-  ProviderAgreementType.TERMS,
-  ProviderAgreementType.PRIVACY,
-  ProviderAgreementType.LOCATION,
-  ProviderAgreementType.PAYOUT,
-  ProviderAgreementType.TAX,
-];
 
 type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
 type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
@@ -294,10 +287,7 @@ export class EarningsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
-      if (
-        nextStatus === PayoutBatchStatus.PROCESSING ||
-        nextStatus === PayoutBatchStatus.PAID
-      ) {
+      if (nextStatus === PayoutBatchStatus.PROCESSING || nextStatus === PayoutBatchStatus.PAID) {
         await this.ensureNoActivePayoutHold(tx, existing.providerProfileId);
       }
       const paidAt = nextStatus === PayoutBatchStatus.PAID ? (existing.paidAt ?? new Date()) : undefined;
@@ -472,10 +462,7 @@ export class EarningsService {
     };
   }
 
-  private async activePayoutHoldForProvider(
-    client: PrismaService | TxClient,
-    providerProfileId: string,
-  ) {
+  private async activePayoutHoldForProvider(client: PrismaService | TxClient, providerProfileId: string) {
     return client.providerSanction.findFirst({
       where: activePayoutHoldWhere(providerProfileId),
       orderBy: { startsAt: 'desc' },
@@ -485,9 +472,7 @@ export class EarningsService {
   private async ensureNoActivePayoutHold(client: TxClient, providerProfileId: string) {
     const payoutHold = await this.activePayoutHoldForProvider(client, providerProfileId);
     if (payoutHold) {
-      throw new BadRequestException(
-        `Provider payout is blocked by active sanction: ${payoutHold.reason}`,
-      );
+      throw new BadRequestException(`Provider payout is blocked by active sanction: ${payoutHold.reason}`);
     }
   }
 
