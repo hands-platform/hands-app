@@ -24,20 +24,21 @@ HANDS provider onboarding is split into small domains so legal, tax, payout, and
 
 ## Provider Levels
 
-| Level                    | Meaning                                  | Gate                                                                           |
-| ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------ |
-| `LEVEL_1_SIGNUP`         | Can sign up and create the basic profile | Phone/auth plus basic profile                                                  |
-| `LEVEL_2_ACTIVE`         | Can receive and complete jobs            | KYC approved and approved bank account                                         |
-| `LEVEL_3_PAYOUT_ENABLED` | Can request payouts                      | First completed service, tax profile, residential address, required agreements |
-| `LEVEL_4_TRUSTED`        | Trusted badge                            | Admin career/profile review                                                    |
+| Level                    | Meaning                                  | Gate                                                                        |
+| ------------------------ | ---------------------------------------- | --------------------------------------------------------------------------- |
+| `LEVEL_1_SIGNUP`         | Can sign up and create the basic profile | Phone/auth plus basic profile                                               |
+| `LEVEL_2_ACTIVE`         | Can receive and complete jobs            | KYC approved and approved bank account                                      |
+| `LEVEL_3_PAYOUT_ENABLED` | Can request payouts                      | First earned revenue, tax profile, residential address, required agreements |
+| `LEVEL_4_TRUSTED`        | Trusted badge                            | Admin career/profile review                                                 |
 
-Tax fields are intentionally not required during signup. They appear when the provider has earned money and tries to withdraw.
+Tax fields are intentionally not required during signup. They appear when the provider earns revenue for the first time, not before the first job. This keeps signup light while still moving tax and settlement compliance forward as soon as money exists.
 
 The onboarding snapshot follows the same staged rule. Before the first completed service,
 `payoutGate.missing` should only report `firstCompletedService`. Tax profile,
 residential address, and payout/tax agreement gaps stay deferred in the API payload so
-the Provider app does not pressure new signups to complete withdrawal-only paperwork too
-early. After the first completed service, those payout requirements become active gates.
+the Provider app does not pressure new signups to complete revenue paperwork too early.
+After the first completed service or first earned revenue, tax/profile/address/agreement
+requirements become active gates for payout and settlement readiness.
 
 ## Tax Policy Rule
 
@@ -50,6 +51,11 @@ Rules may target:
 - `AMOUNT_BAND`
 
 Each rule stores `rateBps` and optional `fixedAmount`. The code stores the policy/rule snapshot used for each calculation in `ProviderTaxLog.ruleSnapshot`, so later policy changes do not rewrite history.
+
+Tax and platform-fee policies must exist before the first booking is completed, even when
+the provider has not submitted a tax profile yet. If tax profile data is missing, the
+system can request it after first revenue while preserving the policy version that was
+active for that booking.
 
 ## API Foundation
 

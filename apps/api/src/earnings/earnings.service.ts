@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import {
   BookingStatus,
   EarningStatus,
+  PaymentMethod,
   PayoutBatchStatus,
   Prisma,
   ProviderBankAccountStatus,
@@ -15,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 
 const DEFAULT_PLATFORM_FEE_RATE = 0.2;
+const PROVIDER_WALLET_BLOCK_REASON = '수수료에대한 정산이 되지 않아 예약을 받을수 없습니다';
 
 type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
 type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
@@ -61,7 +63,13 @@ export class EarningsService {
         serviceTypes,
         occurredAt: booking.updatedAt ?? new Date(),
       });
-      const netAmount = grossAmount - platformFee - tax.withholdingAmount + tipAmount;
+      const netAmount = this.calculateProviderWalletDelta({
+        paymentMethod: booking.payment?.method,
+        grossAmount,
+        platformFee,
+        withholdingAmount: tax.withholdingAmount,
+        tipAmount,
+      });
       const earning = await tx.providerEarning.upsert({
         where: { bookingId },
         update: {
@@ -99,7 +107,10 @@ export class EarningsService {
       return null;
     }
 
-    const earning = await this.prisma.providerEarning.findUnique({ where: { bookingId } });
+    const earning = await this.prisma.providerEarning.findUnique({
+      where: { bookingId },
+      include: { booking: { include: { payment: true } } },
+    });
     if (!earning) {
       return null;
     }
@@ -108,7 +119,13 @@ export class EarningsService {
       where: { bookingId },
       data: {
         tipAmount,
-        netAmount: earning.grossAmount - earning.platformFee - earning.withholdingAmount + tipAmount,
+        netAmount: this.calculateProviderWalletDelta({
+          paymentMethod: earning.booking.payment?.method,
+          grossAmount: earning.grossAmount,
+          platformFee: earning.platformFee,
+          withholdingAmount: earning.withholdingAmount,
+          tipAmount,
+        }),
       },
     });
   }
@@ -136,8 +153,12 @@ export class EarningsService {
       this.summaryWhere({ providerProfileId: provider.id }),
       this.activePayoutHoldForProvider(this.prisma, provider.id),
     ]);
+    const walletBalance = summary.pendingNetAmount + summary.availableNetAmount;
     return {
       ...summary,
+      walletBalance,
+      walletBlocked: walletBalance < 0,
+      walletBlockReason: walletBalance < 0 ? PROVIDER_WALLET_BLOCK_REASON : null,
       payoutBlocked: Boolean(payoutHold),
       payoutHold,
     };
@@ -401,6 +422,20 @@ export class EarningsService {
       paidNetAmount: paid._sum.netAmount ?? 0,
       currency: 'VND',
     };
+  }
+
+  private calculateProviderWalletDelta(input: {
+    paymentMethod?: PaymentMethod | null;
+    grossAmount: number;
+    platformFee: number;
+    withholdingAmount: number;
+    tipAmount: number;
+  }) {
+    if (input.paymentMethod === PaymentMethod.CASH) {
+      return -(input.platformFee + input.withholdingAmount);
+    }
+
+    return input.grossAmount - input.platformFee - input.withholdingAmount + input.tipAmount;
   }
 
   private async requireProviderProfile(userId: string) {

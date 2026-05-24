@@ -95,6 +95,12 @@ const kycNegativeProviderAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: kycNegativeProviderPhone, otp: '123456', role: 'PROVIDER' }),
 });
 
+const walletDebtProviderPhone = `+848${String(Date.now()).slice(-8)}`;
+const walletDebtProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: walletDebtProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
 const adminAuth = await request('/auth/verify-otp', {
   method: 'POST',
   body: JSON.stringify({ phone: '+84900000099', otp: '123456', role: 'ADMIN' }),
@@ -490,6 +496,7 @@ await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
 
 await postJson('/provider/online', providerAuth.accessToken);
 await postJson('/provider/online', backupProviderAuth.accessToken);
+await postJson('/provider/online', walletDebtProviderAuth.accessToken);
 
 await postJson('/provider/location', providerAuth.accessToken, {
   lat: 10.7769,
@@ -545,7 +552,7 @@ const booking = await postJson('/customer/bookings', customerAuth.accessToken, {
   address: { line1: 'District 1, Ho Chi Minh City' },
   lat: 10.7769,
   lng: 106.7009,
-  paymentMethod: 'CASH',
+  paymentMethod: 'MOMO',
 });
 
 const hybridBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
@@ -629,6 +636,46 @@ const hybridMatched = await postJson(
   },
 );
 
+const walletDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  providerId: walletDebtProviderAuth.user.providerProfile.id,
+  scheduledStartAt: new Date(Date.now() + 135 * 60_000).toISOString(),
+  address: { line1: 'Negative wallet source smoke flow' },
+  lat: 10.7783,
+  lng: 106.6994,
+  paymentMethod: 'CASH',
+});
+const blockedDirectBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  providerId: walletDebtProviderAuth.user.providerProfile.id,
+  scheduledStartAt: new Date(Date.now() + 150 * 60_000).toISOString(),
+  address: { line1: 'Negative wallet acceptance smoke flow' },
+  lat: 10.7783,
+  lng: 106.6994,
+  paymentMethod: 'CASH',
+});
+await postJson(`/provider/bookings/${walletDebtBooking.id}/accept`, walletDebtProviderAuth.accessToken);
+await postJson(`/provider/bookings/${walletDebtBooking.id}/complete`, walletDebtProviderAuth.accessToken);
+const walletDebtProviderEarningsSummary = await getJson(
+  '/provider/earnings/summary',
+  walletDebtProviderAuth.accessToken,
+);
+if (
+  walletDebtProviderEarningsSummary.walletBalance >= 0 ||
+  walletDebtProviderEarningsSummary.walletBlocked !== true
+) {
+  throw new Error(
+    `Cash booking did not create a negative provider wallet: ${JSON.stringify(
+      walletDebtProviderEarningsSummary,
+    )}`,
+  );
+}
+await expectRequestFailure(
+  'Negative provider wallet blocks direct booking acceptance',
+  () => postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken),
+  400,
+);
+
 const matched = await postJson(`/customer/bookings/${booking.id}/select-provider`, customerAuth.accessToken, {
   providerId: providerAuth.user.providerProfile.id,
 });
@@ -666,6 +713,11 @@ if (
 }
 if (providerEarningsSummary.withholdingAmount <= 0) {
   throw new Error(`Earnings summary did not include withholding: ${JSON.stringify(providerEarningsSummary)}`);
+}
+if (providerEarningsSummary.walletBlocked === true || providerEarningsSummary.walletBalance <= 0) {
+  throw new Error(
+    `Online payment earning should keep provider wallet positive: ${JSON.stringify(providerEarningsSummary)}`,
+  );
 }
 const existingPayoutHolds = await getJson('/admin/provider-sanctions', adminAuth.accessToken);
 for (const sanction of existingPayoutHolds.filter(
@@ -818,8 +870,8 @@ const syncedMomo = momoPayment
 const releasedMomo = momoPayment
   ? await postJson(`/admin/payments/${momoPayment.id}/release`, adminAuth.accessToken)
   : null;
-const capturedCash = payment
-  ? await postJson(`/admin/payments/${payment.id}/capture`, adminAuth.accessToken)
+const capturedCash = couponPayment
+  ? await postJson(`/admin/payments/${couponPayment.id}/capture`, adminAuth.accessToken)
   : null;
 const refund = payment ? await postJson(`/admin/payments/${payment.id}/refund`, adminAuth.accessToken) : null;
 const adminRefunds = await getJson('/admin/refunds', adminAuth.accessToken);

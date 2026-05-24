@@ -250,9 +250,9 @@ List<ProviderOnboardingLevelMilestone> providerLevelMilestonesFromSnapshot(
       level: 'LEVEL_3_PAYOUT_ENABLED',
       title: 'Level 3 - withdrawal enabled',
       detail: canWithdraw
-          ? 'First service, tax profile, address, and agreements are complete.'
+          ? 'First revenue, tax profile, address, and agreements are complete.'
           : completedBookingCount == 0
-              ? 'Withdrawal unlock starts after the first completed service.'
+              ? 'Tax and settlement setup starts after the first earned revenue.'
               : taxApproved
                   ? 'Finish address and payout/tax agreements before withdrawal.'
                   : 'Submit MST/tax profile after earnings exist, then wait for admin approval.',
@@ -297,7 +297,7 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
       label: 'First completed service',
       detail: completedBookingCount > 0
           ? '$completedBookingCount completed service(s) recorded.'
-          : 'Complete the first customer booking before withdrawal unlocks.',
+          : 'Complete the first customer booking before tax and settlement setup starts.',
       complete: payoutMissing['firstCompletedService'] != true &&
           completedBookingCount > 0,
     ),
@@ -326,7 +326,7 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
     ProviderOnboardingGateItem(
       label: 'Payout agreements',
       detail: !payoutSetupStarted
-          ? 'Payout and tax agreements are deferred until first completed service.'
+          ? 'Payout and tax agreements are deferred until first earned revenue.'
           : missingAgreements.isEmpty
               ? 'All required agreements are accepted.'
               : '$acceptedAgreementCount of ${requiredAgreements.length} accepted. Missing: ${missingAgreements.map(_agreementLabel).join(', ')}.',
@@ -419,7 +419,7 @@ String providerTaxProfileStepDetail({
   required int missingAgreementCount,
 }) {
   if (completedBookingCount == 0) {
-    return 'Tax and payout agreements are requested after the first completed service.';
+    return 'Tax and payout agreements are requested after the first earned revenue.';
   }
   if (status == 'REJECTED') {
     final reason = rejectionReason?.trim();

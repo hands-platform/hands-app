@@ -75,7 +75,7 @@ void main() {
         status: null,
         missingAgreementCount: 5,
       ),
-      'Tax and payout agreements are requested after the first completed service.',
+      'Tax and payout agreements are requested after the first earned revenue.',
     );
   });
 
@@ -101,7 +101,7 @@ void main() {
     expect(lockedItems[1].detail, contains('deferred until revenue exists'));
     expect(lockedItems[2].detail, contains('after revenue exists'));
     expect(lockedItems.last.detail,
-        contains('deferred until first completed service'));
+        contains('deferred until first earned revenue'));
 
     final readyItems = providerPayoutGateItemsFromSnapshot({
       'completedBookingCount': 2,

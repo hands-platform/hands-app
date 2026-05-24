@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   BookingStatus,
+  EarningStatus,
   ParticipantStatus,
   PaymentMethod,
   PaymentStatus,
@@ -13,6 +14,8 @@ import { MatchingService } from '../matching/matching.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
+
+const PROVIDER_WALLET_BLOCK_REASON = '수수료에대한 정산이 되지 않아 예약을 받을수 없습니다';
 
 @Injectable()
 export class BookingsService {
@@ -55,6 +58,9 @@ export class BookingsService {
           include: { user: true },
         })
       : null;
+    if (preferredProvider) {
+      await this.ensureProviderWalletCanAccept(preferredProvider.id);
+    }
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
     const scheduledStartAt = new Date(input.scheduledStartAt);
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + service.durationMin * 60_000);
@@ -201,7 +207,9 @@ export class BookingsService {
   }
 
   async getCustomerBooking(id: string, customerUserId: string) {
-    const customer = await this.prisma.customerProfile.findUniqueOrThrow({ where: { userId: customerUserId } });
+    const customer = await this.prisma.customerProfile.findUniqueOrThrow({
+      where: { userId: customerUserId },
+    });
     return this.prisma.booking.findFirstOrThrow({
       where: { id, customerProfileId: customer.id },
       include: {
@@ -215,7 +223,9 @@ export class BookingsService {
   }
 
   async listCustomerBookings(customerUserId: string) {
-    const customer = await this.prisma.customerProfile.findUniqueOrThrow({ where: { userId: customerUserId } });
+    const customer = await this.prisma.customerProfile.findUniqueOrThrow({
+      where: { userId: customerUserId },
+    });
     return this.prisma.booking.findMany({
       where: { customerProfileId: customer.id },
       include: {
@@ -232,7 +242,9 @@ export class BookingsService {
   }
 
   async cancelCustomerBooking(bookingId: string, customerUserId: string) {
-    const customer = await this.prisma.customerProfile.findUniqueOrThrow({ where: { userId: customerUserId } });
+    const customer = await this.prisma.customerProfile.findUniqueOrThrow({
+      where: { userId: customerUserId },
+    });
     const booking = await this.prisma.booking.findFirstOrThrow({
       where: { id: bookingId, customerProfileId: customer.id },
       include: {
@@ -376,6 +388,7 @@ export class BookingsService {
     if (booking.status !== BookingStatus.OPEN_MATCHING) {
       throw new BadRequestException('Booking is not open for matching');
     }
+    await this.ensureProviderWalletCanAccept(provider.id);
 
     const participant = await this.prisma.bookingParticipant.upsert({
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
@@ -404,7 +417,9 @@ export class BookingsService {
   }
 
   async selectProvider(bookingId: string, customerUserId: string, providerId: string) {
-    const customer = await this.prisma.customerProfile.findUniqueOrThrow({ where: { userId: customerUserId } });
+    const customer = await this.prisma.customerProfile.findUniqueOrThrow({
+      where: { userId: customerUserId },
+    });
     const ownedBooking = await this.prisma.booking.findFirst({
       where: { id: bookingId, customerProfileId: customer.id, status: BookingStatus.OPEN_MATCHING },
     });
@@ -459,6 +474,9 @@ export class BookingsService {
 
   async updateParticipant(bookingId: string, providerUserId: string | undefined, status: ParticipantStatus) {
     const provider = await this.requireProvider(providerUserId);
+    if (status === ParticipantStatus.ACCEPTED) {
+      await this.ensureProviderWalletCanAccept(provider.id);
+    }
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
       include: { customerProfile: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
@@ -516,7 +534,10 @@ export class BookingsService {
         });
         const result = this.matching.openBooking({ booking: updated });
         await this.matching.registerActiveBooking(bookingId, result);
-        await this.matching.scheduleBookingTimeout(bookingId, updated.expiresAt ?? new Date(Date.now() + 10 * 60_000));
+        await this.matching.scheduleBookingTimeout(
+          bookingId,
+          updated.expiresAt ?? new Date(Date.now() + 10 * 60_000),
+        );
         this.matchingGateway.emitBookingOpened(bookingId, result);
         return updated;
       }
@@ -526,6 +547,20 @@ export class BookingsService {
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
       data: { status, respondedAt: new Date() },
     });
+  }
+
+  private async ensureProviderWalletCanAccept(providerProfileId: string) {
+    const wallet = await this.prisma.providerEarning.aggregate({
+      where: {
+        providerProfileId,
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+      },
+      _sum: { netAmount: true },
+    });
+    if ((wallet._sum.netAmount ?? 0) < 0) {
+      throw new BadRequestException(PROVIDER_WALLET_BLOCK_REASON);
+    }
   }
 
   updateStatus(bookingId: string, status: BookingStatus) {

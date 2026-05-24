@@ -8,6 +8,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import 'src/app_state.dart';
 import 'src/core/app_config.dart';
+import 'src/core/api_client.dart';
 import 'src/core/realtime_socket.dart';
 import 'src/features/provider_onboarding/presentation/provider_onboarding_status.dart';
 import 'src/features/provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
@@ -4018,6 +4019,16 @@ class ErrorCard extends StatelessWidget {
 }
 
 String providerAppErrorMessage(Object error) {
+  if (error is ApiException) {
+    final message = error.body['message'];
+    if (message is String && message.trim().isNotEmpty) {
+      return message.trim();
+    }
+    final apiError = error.body['error'];
+    if (apiError is String && apiError.trim().isNotEmpty) {
+      return apiError.trim();
+    }
+  }
   final raw = error.toString();
   final normalized = raw
       .replaceFirst('Bad state: ', '')

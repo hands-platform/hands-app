@@ -25,6 +25,12 @@ Each adapter supports:
 6. If booking expires before match, the timeout processor calls `PaymentsService.release`.
 7. If service completes, booking completion captures the payment in the current skeleton.
 
+For cash bookings, the provider receives the customer payment directly. HANDS therefore
+records platform fee and withholding as a provider wallet debt instead of treating the
+full booking amount as money owed to the provider. A negative provider wallet blocks new
+booking acceptance until the provider settles the fee with HANDS or the balance is offset
+against later online-payment payouts.
+
 ## Callback Routes
 
 ```http

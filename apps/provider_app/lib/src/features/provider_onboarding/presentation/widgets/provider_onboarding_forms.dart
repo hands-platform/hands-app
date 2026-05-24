@@ -827,5 +827,5 @@ String taxProfileFormDescription({
   if (status == 'APPROVED') {
     return 'This tax profile is approved. Update only if the provider tax details change.';
   }
-  return 'Tax profile is required after the first completed service and before withdrawal. Rates are managed by admin policy.';
+  return 'Tax profile is requested after the first revenue is earned. Rates are managed by admin policy.';
 }

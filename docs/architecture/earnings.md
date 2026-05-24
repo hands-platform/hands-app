@@ -16,9 +16,13 @@ The MVP creates a provider earning record when the selected provider completes a
 
 - `grossAmount`: captured payment amount, falling back to booking service totals.
 - `platformFee`: 20% of gross amount for the MVP.
+- `withholdingAmount`: calculated from the active versioned tax policy.
 - `tipAmount`: review tip amount, applied after the customer submits a review.
-- `netAmount`: `grossAmount - platformFee + tipAmount`.
+- `netAmount` for MoMo/VNPay: `grossAmount - platformFee - withholdingAmount + tipAmount`.
+- `netAmount` for cash: `-(platformFee + withholdingAmount)` because the provider already received the customer cash directly.
 - `availableAt`: 24 hours after completion for MVP payout review.
+
+Cash bookings therefore create a company receivable instead of a provider payout. The provider wallet can go negative when cash-service platform fees or tax withholding have not been settled.
 
 ## Statuses
 
@@ -29,6 +33,22 @@ The MVP creates a provider earning record when the selected provider completes a
 
 Admin refunds cancel unpaid earnings and set their net amount to zero. If an earning is already paid, the MVP preserves it and records the skip reason in the audit log.
 
+## Provider Wallet Guard
+
+For the MVP, `ProviderEarning.netAmount` is also the provider wallet delta:
+
+- Positive delta: HANDS owes money to the provider.
+- Negative delta: the provider owes HANDS fees/tax from cash bookings.
+
+If the unsettled wallet balance is negative, the API blocks joining or accepting new bookings with:
+
+`수수료에대한 정산이 되지 않아 예약을 받을수 없습니다`
+
+This supports two later settlement paths without changing booking flow:
+
+- Provider transfers the owed fee/tax amount directly to HANDS.
+- HANDS offsets the negative balance against later positive online-payment payouts.
+
 ## Payout Batches
 
 `ProviderPayoutBatch` groups one provider's unpaid positive earnings into a single payout record. The MVP marks the batch as `PAID` immediately and links included earnings through `payoutBatchId`.
@@ -38,6 +58,8 @@ This keeps the current product simple while preserving the later path for bank t
 ## Next Production Work
 
 - Move the fee rate into a versioned platform policy table.
+- Add explicit wallet ledger entries for provider deposits and admin adjustments.
+- Add provider-facing repayment instructions for negative cash fee balances.
 - Add provider payout account verification.
 - Add real bank transfer execution and failure retry.
 - Add paid-earning reversal entries for post-payout refunds and disputes.
