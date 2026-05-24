@@ -5,6 +5,7 @@ import {
   AdminExternalReadiness,
   AdminNotification,
   AdminPayment,
+  AdminPayoutBatch,
   AdminProvider,
   AdminRefund,
   apiGet,
@@ -28,7 +29,7 @@ type OpsQueueItem = {
 };
 
 export default async function DashboardPage() {
-  const [providers, bookings, payments, earnings, refunds, notifications, externalReadiness] =
+  const [providers, bookings, payments, earnings, refunds, notifications, payoutBatches, externalReadiness] =
     await Promise.all([
       adminGet<AdminProvider[]>('/admin/providers', []),
       adminGet<AdminBooking[]>('/admin/bookings', []),
@@ -47,6 +48,7 @@ export default async function DashboardPage() {
       }),
       adminGet<AdminRefund[]>('/admin/refunds', []),
       adminGet<AdminNotification[]>('/admin/notifications', []),
+      adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
       apiGet<AdminExternalReadiness>('/health/external', {
         ok: false,
         timestamp: new Date(0).toISOString(),
@@ -54,12 +56,30 @@ export default async function DashboardPage() {
       }),
     ]);
 
-  const queue = buildOpsQueue({ providers, bookings, payments, refunds, notifications, earnings });
+  const queue = buildOpsQueue({
+    providers,
+    bookings,
+    payments,
+    refunds,
+    notifications,
+    earnings,
+    payoutBatches,
+  });
+  const commandSignals = buildDashboardCommandSignals({
+    providers,
+    bookings,
+    payments,
+    refunds,
+    notifications,
+    earnings,
+    payoutBatches,
+  });
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
   const pendingVerification = providers.filter((provider) => provider.verification?.status === 'SUBMITTED');
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
+  const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
 
   const metrics = [
     [
@@ -88,6 +108,11 @@ export default async function DashboardPage() {
       'Available payout',
       money(earnings.availableNetAmount, earnings.currency),
       'Provider earnings ready for payout batching.',
+    ],
+    [
+      'Open payout batches',
+      activePayoutBatches.length.toString(),
+      'Draft, processing, failed, or held payout batches needing finance visibility.',
     ],
     [
       'Action queue',
@@ -136,6 +161,35 @@ export default async function DashboardPage() {
             <p className="muted">{helper}</p>
           </div>
         ))}
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Today command lanes</h2>
+            <p className="muted">
+              High-level routing for the operating day: dispatch, provider onboarding, payments, payouts, and
+              setup.
+            </p>
+          </div>
+          <span
+            className={`signal ${queue.some((item) => item.severity === 'high') ? 'signal-warn' : 'signal-ok'}`}
+          >
+            {queue.some((item) => item.severity === 'high') ? 'High priority open' : 'Stable'}
+          </span>
+        </div>
+        <div className="ops-task-grid">
+          {commandSignals.map((signal) => (
+            <Link className={`ops-task-card ${signal.className}`} href={signal.href} key={signal.title}>
+              <div>
+                <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
+                <h3>{signal.title}</h3>
+                <p className="muted">{signal.detail}</p>
+              </div>
+              <small>{signal.action}</small>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="detail-grid" style={{ marginTop: 20 }}>
@@ -327,6 +381,130 @@ function InfoRow({ label, value, detail }: { label: string; value: string; detai
   );
 }
 
+type DashboardCommandSignal = {
+  title: string;
+  status: string;
+  detail: string;
+  action: string;
+  href: string;
+  className: string;
+  pillClass: string;
+};
+
+function buildDashboardCommandSignals(input: {
+  providers: AdminProvider[];
+  bookings: AdminBooking[];
+  payments: AdminPayment[];
+  refunds: AdminRefund[];
+  notifications: AdminNotification[];
+  earnings: AdminEarningSummary;
+  payoutBatches: AdminPayoutBatch[];
+}): DashboardCommandSignal[] {
+  const openMatching = input.bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const staleOpenMatching = openMatching.filter((booking) =>
+    booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false,
+  );
+  const providerReviews = input.providers.filter(
+    (provider) =>
+      provider.verification?.status === 'SUBMITTED' ||
+      provider.kyc?.status === 'SUBMITTED' ||
+      (provider.reports ?? []).some((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)) ||
+      (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE'),
+  );
+  const paymentReviews =
+    input.payments.filter(
+      (payment) =>
+        (payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED') ||
+        (payment.status === 'AUTHORIZED' && !payment.providerRef),
+    ).length + input.refunds.filter((refund) => refund.status !== 'COMPLETED').length;
+  const payoutHolds = input.payoutBatches.filter((batch) => Boolean(activePayoutHold(batch)));
+  const payoutReviews = input.payoutBatches.filter((batch) =>
+    ['DRAFT', 'FAILED', 'PROCESSING'].includes(batch.status),
+  );
+  const failedNotifications = input.notifications.filter((notification) =>
+    (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
+  );
+  const setupBlocked = input.earnings.availableNetAmount > 0 && payoutReviews.length === 0;
+
+  return [
+    {
+      title: 'Dispatch lane',
+      status: staleOpenMatching.length
+        ? `${staleOpenMatching.length} EXPIRED`
+        : `${openMatching.length} OPEN`,
+      detail: staleOpenMatching.length
+        ? 'Some open matching windows are expired and need operator review.'
+        : 'Monitor open matching, quiet chat rooms, and provider assignment.',
+      action: 'Open booking monitor',
+      href: '/bookings',
+      className: staleOpenMatching.length
+        ? 'ops-task-blocked'
+        : openMatching.length
+          ? 'ops-task-pending'
+          : 'ops-task-done',
+      pillClass: staleOpenMatching.length
+        ? 'pill-danger'
+        : openMatching.length
+          ? 'pill-warn'
+          : 'pill-success',
+    },
+    {
+      title: 'Provider lane',
+      status: `${providerReviews.length} REVIEW`,
+      detail: providerReviews.length
+        ? 'Provider verification, risk reports, sanctions, or KYC needs admin attention.'
+        : 'No provider review blocker in the current snapshot.',
+      action: 'Open providers',
+      href: '/providers',
+      className: providerReviews.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: providerReviews.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Payment lane',
+      status: `${paymentReviews} REVIEW`,
+      detail: paymentReviews
+        ? 'Payment holds, missing refs, completed-service captures, or refunds need review.'
+        : 'Payment and refund queues are quiet.',
+      action: 'Open payments',
+      href: '/payments',
+      className: paymentReviews ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: paymentReviews ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Payout lane',
+      status: payoutHolds.length ? `${payoutHolds.length} HELD` : `${payoutReviews.length} OPEN`,
+      detail: payoutHolds.length
+        ? 'One or more payout batches are blocked by active provider sanctions.'
+        : payoutReviews.length
+          ? 'Draft, failed, or processing payout batches are waiting for finance movement.'
+          : `${money(input.earnings.availableNetAmount, input.earnings.currency)} available from earnings.`,
+      action: 'Open payouts',
+      href: '/payouts',
+      className: payoutHolds.length
+        ? 'ops-task-blocked'
+        : payoutReviews.length || setupBlocked
+          ? 'ops-task-pending'
+          : 'ops-task-done',
+      pillClass: payoutHolds.length
+        ? 'pill-danger'
+        : payoutReviews.length || setupBlocked
+          ? 'pill-warn'
+          : 'pill-success',
+    },
+    {
+      title: 'Notification lane',
+      status: `${failedNotifications.length} FAILED`,
+      detail: failedNotifications.length
+        ? 'Retry failed notifications or inspect disabled devices before live operation.'
+        : 'No failed delivery in the current notification window.',
+      action: 'Open notifications',
+      href: '/notifications',
+      className: failedNotifications.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: failedNotifications.length ? 'pill-warn' : 'pill-success',
+    },
+  ];
+}
+
 function buildOpsQueue(input: {
   providers: AdminProvider[];
   bookings: AdminBooking[];
@@ -334,6 +512,7 @@ function buildOpsQueue(input: {
   refunds: AdminRefund[];
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
+  payoutBatches: AdminPayoutBatch[];
 }) {
   const items: OpsQueueItem[] = [];
 
@@ -403,6 +582,34 @@ function buildOpsQueue(input: {
         severity: 'low',
       });
     }
+    const openReports = (provider.reports ?? []).filter((report) =>
+      ['OPEN', 'INVESTIGATING'].includes(report.status),
+    );
+    if (openReports.length > 0) {
+      items.push({
+        area: 'Provider',
+        href: `/providers/${provider.id}`,
+        label: 'Provider risk report open',
+        detail: `${provider.displayName} has ${openReports.length} open report(s).`,
+        severity: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity))
+          ? 'high'
+          : 'medium',
+      });
+    }
+    const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
+    if (activeSanctions.length > 0) {
+      items.push({
+        area: 'Provider',
+        href: `/providers/${provider.id}`,
+        label: 'Provider active sanction',
+        detail: `${provider.displayName} has ${activeSanctions.length} active sanction(s).`,
+        severity: activeSanctions.some(
+          (sanction) => sanction.type === 'PAYOUT_HOLD' || sanction.type === 'ACCOUNT_BLOCK',
+        )
+          ? 'high'
+          : 'medium',
+      });
+    }
   }
 
   for (const notification of input.notifications) {
@@ -426,6 +633,35 @@ function buildOpsQueue(input: {
       detail: `${money(input.earnings.availableNetAmount, input.earnings.currency)} available for batching.`,
       severity: 'low',
     });
+  }
+
+  for (const batch of input.payoutBatches) {
+    const payoutHold = activePayoutHold(batch);
+    if (payoutHold) {
+      items.push({
+        area: 'Payout',
+        href: `/payouts#${batch.id}`,
+        label: 'Payout batch blocked by hold',
+        detail: `${batch.providerProfile?.displayName ?? 'Provider'} - ${payoutHold.reason}`,
+        severity: 'high',
+      });
+    } else if (batch.status === 'FAILED') {
+      items.push({
+        area: 'Payout',
+        href: `/payouts#${batch.id}`,
+        label: 'Failed payout needs recovery',
+        detail: `${money(batch.totalNetAmount, batch.currency)} for ${batch.providerProfile?.displayName ?? 'provider'}`,
+        severity: 'high',
+      });
+    } else if (batch.status === 'PROCESSING') {
+      items.push({
+        area: 'Payout',
+        href: `/payouts#${batch.id}`,
+        label: 'Payout transfer in progress',
+        detail: `${money(batch.totalNetAmount, batch.currency)} needs bank confirmation.`,
+        severity: 'medium',
+      });
+    }
   }
 
   return items.sort((left, right) => severityScore(right.severity) - severityScore(left.severity));
@@ -465,6 +701,12 @@ function bookingFlags(booking: AdminBooking) {
   }
 
   return flags;
+}
+
+function activePayoutHold(batch: AdminPayoutBatch) {
+  return batch.providerProfile?.sanctions?.find(
+    (sanction) => sanction.type === 'PAYOUT_HOLD' && sanction.status === 'ACTIVE',
+  );
 }
 
 function severityScore(severity: OpsQueueItem['severity']) {
