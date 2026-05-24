@@ -62,6 +62,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const summary = buildProviderSummary(providers);
   const reviewQueue = buildProviderReviewQueue(providers);
   const priorityLane = buildProviderPriorityLane(providers);
+  const activeFilters = buildProviderActiveFilters(filters);
 
   return (
     <>
@@ -160,6 +161,23 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               Showing {providers.length} of {allProviders.length} therapists
             </span>
           </div>
+          {activeFilters.length > 0 ? (
+            <div className="full-span">
+              <div className="participant-list">
+                <span className="pill pill-info">Active filters</span>
+                {activeFilters.map((filter) => (
+                  <span className="pill pill-warn" key={`${filter.kind}-${filter.value}`}>
+                    {filter.label}
+                  </span>
+                ))}
+              </div>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {activeFilters.map((filter) => filter.description).join(' ')}
+              </p>
+            </div>
+          ) : (
+            <p className="muted full-span">No provider filter is active. Showing the full operator queue.</p>
+          )}
         </form>
       </div>
       <div className="grid" style={{ marginBottom: 16 }}>
@@ -447,7 +465,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             ))}
             {providers.length === 0 && (
               <tr>
-                <td colSpan={10}>No providers loaded. Start the API and seed data to populate this table.</td>
+                <td colSpan={10}>{emptyProviderMessage(activeFilters)}</td>
               </tr>
             )}
           </tbody>
@@ -1238,6 +1256,119 @@ function buildProviderFilters(params: Record<string, string | string[] | undefin
     readiness: readParam(params.readiness),
     review: readParam(params.review),
   };
+}
+
+function buildProviderActiveFilters(filters: ProviderFilters) {
+  return [
+    filters.q
+      ? {
+          kind: 'search',
+          value: filters.q,
+          label: `Search: ${filters.q}`,
+          description: 'Provider list is narrowed by name, phone, location, service, or risk text.',
+        }
+      : null,
+    filters.verification
+      ? {
+          kind: 'verification',
+          value: filters.verification,
+          label: `Verification: ${filters.verification}`,
+          description: providerFilterDescription('verification', filters.verification),
+        }
+      : null,
+    filters.providerStatus
+      ? {
+          kind: 'providerStatus',
+          value: filters.providerStatus,
+          label: `Status: ${filters.providerStatus}`,
+          description: providerFilterDescription('providerStatus', filters.providerStatus),
+        }
+      : null,
+    filters.kyc
+      ? {
+          kind: 'kyc',
+          value: filters.kyc,
+          label: `KYC: ${filters.kyc}`,
+          description: providerFilterDescription('kyc', filters.kyc),
+        }
+      : null,
+    filters.location
+      ? {
+          kind: 'location',
+          value: filters.location,
+          label: `Location: ${filters.location}`,
+          description: providerFilterDescription('location', filters.location),
+        }
+      : null,
+    filters.security
+      ? {
+          kind: 'security',
+          value: filters.security,
+          label: `Security: ${filters.security}`,
+          description: providerFilterDescription('security', filters.security),
+        }
+      : null,
+    filters.readiness
+      ? {
+          kind: 'readiness',
+          value: filters.readiness,
+          label: `Readiness: ${filters.readiness}`,
+          description: providerFilterDescription('readiness', filters.readiness),
+        }
+      : null,
+    filters.review
+      ? {
+          kind: 'review',
+          value: filters.review,
+          label: `Review: ${filters.review}`,
+          description: providerFilterDescription('review', filters.review),
+        }
+      : null,
+  ].filter(Boolean) as Array<{ kind: string; value: string; label: string; description: string }>;
+}
+
+function providerFilterDescription(kind: string, value: string) {
+  if (kind === 'verification' && value === 'SUBMITTED') {
+    return 'Submitted identity files are waiting for admin approval or rejection.';
+  }
+  if (kind === 'verification' && value === 'APPROVED') {
+    return 'Approved providers can progress toward dispatch if other readiness checks pass.';
+  }
+  if (kind === 'verification' && value === 'BLOCKED') {
+    return 'Blocked provider accounts cannot receive customer requests.';
+  }
+  if (kind === 'providerStatus') {
+    return 'Provider availability is narrowed to the selected online/offline state.';
+  }
+  if (kind === 'kyc') {
+    return 'KYC review is narrowed to the selected identity state.';
+  }
+  if (kind === 'location') {
+    return 'Location freshness is narrowed so dispatch can check stale or missing provider pins.';
+  }
+  if (kind === 'security') {
+    return 'Security review is narrowed to device, session, or account risk state.';
+  }
+  if (kind === 'readiness') {
+    return 'Readiness shows whether a provider can safely appear in customer discovery and dispatch.';
+  }
+  if (kind === 'review' && value === 'push') {
+    return 'Push readiness highlights providers whose devices cannot reliably receive booking alerts.';
+  }
+  if (kind === 'review' && value === 'risk') {
+    return 'Risk review highlights providers with open reports or active sanctions.';
+  }
+  if (kind === 'review') {
+    return 'Review queue focuses the table on one operational approval lane.';
+  }
+  return 'Provider list is narrowed by the active filter.';
+}
+
+function emptyProviderMessage(activeFilters: Array<{ description: string }>) {
+  if (activeFilters.length === 0) {
+    return 'No providers loaded. Start the API and seed data to populate this table.';
+  }
+  return 'No providers match the active filters. Clear filters or switch to another review lane.';
 }
 
 function readParam(value: string | string[] | undefined) {

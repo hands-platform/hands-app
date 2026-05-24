@@ -1,10 +1,5 @@
 import Link from 'next/link';
-import {
-  AdminProvider,
-  AdminProviderReport,
-  AdminProviderSanction,
-  adminGet,
-} from '../../lib/admin-api';
+import { AdminProvider, AdminProviderReport, AdminProviderSanction, adminGet } from '../../lib/admin-api';
 import {
   createProviderReport,
   createProviderSanction,
@@ -23,6 +18,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
   ]);
   const visibleReports = filterReports(reports, filters);
   const visibleSanctions = filterSanctions(sanctions, filters);
+  const activeFilters = buildRiskActiveFilters(filters);
   const providerOptions = providers.map((provider) => ({
     id: provider.id,
     label: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
@@ -47,6 +43,24 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
       </div>
 
       <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header" style={{ marginBottom: 12 }}>
+          <div>
+            <h2>Risk operation filters</h2>
+            <p className="muted">
+              Dashboard links land here with the exact investigation lane already selected.
+            </p>
+            {activeFilters.length > 0 ? (
+              <p className="muted">
+                Active queue: {activeFilters.map((filter) => filter.description).join(' ')}
+              </p>
+            ) : (
+              <p className="muted">No risk filter is active. Showing every report and sanction lane.</p>
+            )}
+          </div>
+          <span className={`pill ${activeFilters.length ? 'pill-warn' : 'pill-success'}`}>
+            Showing {visibleReports.length} report(s), {visibleSanctions.length} sanction(s)
+          </span>
+        </div>
         <form className="form-grid" action="/provider-risk">
           <label>
             Search
@@ -87,6 +101,16 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
               Clear filters
             </Link>
           </div>
+          {activeFilters.length > 0 ? (
+            <div className="participant-list full-span">
+              <span className="pill pill-info">Active filters</span>
+              {activeFilters.map((filter) => (
+                <span className="pill pill-warn" key={`${filter.kind}-${filter.value}`}>
+                  {filter.label}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </form>
       </section>
 
@@ -94,7 +118,9 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
         <div className="risk-watch-header">
           <div>
             <h2>Create provider report</h2>
-            <p className="muted">Use this for customer complaints, staff findings, payout risks, or safety notes.</p>
+            <p className="muted">
+              Use this for customer complaints, staff findings, payout risks, or safety notes.
+            </p>
           </div>
         </div>
         <form className="form-grid" action={createProviderReport}>
@@ -141,7 +167,10 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           </label>
           <label className="full-span">
             Details
-            <textarea name="details" placeholder="Evidence, timeline, customer/provider statements, next step" />
+            <textarea
+              name="details"
+              placeholder="Evidence, timeline, customer/provider statements, next step"
+            />
           </label>
           <div className="actions full-span">
             <button type="submit">Create report</button>
@@ -153,7 +182,9 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
         <div className="risk-watch-header">
           <div>
             <h2>Reports</h2>
-            <p className="muted">Open and investigating reports should be cleared before provider trust upgrades.</p>
+            <p className="muted">
+              Open and investigating reports should be cleared before provider trust upgrades.
+            </p>
           </div>
           <span className="pill pill-info">{visibleReports.length} shown</span>
         </div>
@@ -203,13 +234,22 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                   <form className="actions" action={createProviderSanction}>
                     <input type="hidden" name="providerProfileId" value={report.providerProfileId} />
                     <input type="hidden" name="reportId" value={report.id} />
-                    <select name="type" defaultValue={report.severity === 'CRITICAL' ? 'ACCOUNT_BLOCK' : 'WARNING'}>
+                    <select
+                      name="type"
+                      defaultValue={report.severity === 'CRITICAL' ? 'ACCOUNT_BLOCK' : 'WARNING'}
+                    >
                       <option value="WARNING">Warning</option>
                       <option value="PAYOUT_HOLD">Payout hold</option>
                       <option value="ACCOUNT_BLOCK">Account block</option>
                       <option value="TRUST_BADGE_REMOVAL">Trust badge removal</option>
                     </select>
-                    <input name="reason" placeholder="Sanction reason" required minLength={12} maxLength={500} />
+                    <input
+                      name="reason"
+                      placeholder="Sanction reason"
+                      required
+                      minLength={12}
+                      maxLength={500}
+                    />
                     <button type="submit">Apply</button>
                   </form>
                 </td>
@@ -237,7 +277,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             ))}
             {!visibleReports.length ? (
               <tr>
-                <td colSpan={5}>No provider reports match the current filters.</td>
+                <td colSpan={5}>{emptyRiskMessage('report', activeFilters)}</td>
               </tr>
             ) : null}
           </tbody>
@@ -248,7 +288,9 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
         <div className="risk-watch-header">
           <div>
             <h2>Sanctions</h2>
-            <p className="muted">Active sanctions are operational controls. Lift them only with a clear audit trail.</p>
+            <p className="muted">
+              Active sanctions are operational controls. Lift them only with a clear audit trail.
+            </p>
           </div>
           <span className="pill pill-info">{visibleSanctions.length} shown</span>
         </div>
@@ -317,7 +359,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             ))}
             {!visibleSanctions.length ? (
               <tr>
-                <td colSpan={5}>No provider sanctions match the current filters.</td>
+                <td colSpan={5}>{emptyRiskMessage('sanction', activeFilters)}</td>
               </tr>
             ) : null}
           </tbody>
@@ -336,14 +378,75 @@ function buildFilters(params: Record<string, string | string[] | undefined>) {
   };
 }
 
+function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
+  return [
+    filters.q
+      ? {
+          kind: 'search',
+          value: filters.q,
+          label: `Search: ${filters.q}`,
+          description: 'Risk rows are narrowed by provider, phone, category, reason, or report text.',
+        }
+      : null,
+    filters.status
+      ? {
+          kind: 'status',
+          value: filters.status,
+          label: `Report: ${filters.status}`,
+          description: riskFilterDescription('status', filters.status),
+        }
+      : null,
+    filters.severity
+      ? {
+          kind: 'severity',
+          value: filters.severity,
+          label: `Severity: ${filters.severity}`,
+          description: riskFilterDescription('severity', filters.severity),
+        }
+      : null,
+    filters.sanction
+      ? {
+          kind: 'sanction',
+          value: filters.sanction,
+          label: `Sanction: ${filters.sanction}`,
+          description: riskFilterDescription('sanction', filters.sanction),
+        }
+      : null,
+  ].filter(Boolean) as Array<{ kind: string; value: string; label: string; description: string }>;
+}
+
+function riskFilterDescription(kind: string, value: string) {
+  if (kind === 'status' && value === 'OPEN') {
+    return 'Open reports need triage before provider trust or payout decisions.';
+  }
+  if (kind === 'status' && value === 'INVESTIGATING') {
+    return 'Investigating reports need evidence, customer notes, or staff follow-up.';
+  }
+  if (kind === 'severity') {
+    return `${value.toLowerCase()} severity reports are prioritized for safety review.`;
+  }
+  if (kind === 'sanction' && value === 'ACTIVE') {
+    return 'Active sanctions are live operating controls and should be lifted only with a clear audit trail.';
+  }
+  if (kind === 'sanction') {
+    return 'Sanctions are narrowed to the selected lifecycle state.';
+  }
+  return 'Risk board is narrowed by the active filter.';
+}
+
+function emptyRiskMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
+  const subject = kind === 'report' ? 'provider reports' : 'provider sanctions';
+  if (activeFilters.length === 0) {
+    return `No ${subject} loaded yet.`;
+  }
+  return `No ${subject} match the active filters. Clear filters or switch investigation lane.`;
+}
+
 function readParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
 }
 
-function filterReports(
-  reports: AdminProviderReport[],
-  filters: ReturnType<typeof buildFilters>,
-) {
+function filterReports(reports: AdminProviderReport[], filters: ReturnType<typeof buildFilters>) {
   return reports.filter((report) => {
     if (filters.status && report.status !== filters.status) return false;
     if (filters.severity && report.severity !== filters.severity) return false;
@@ -352,10 +455,7 @@ function filterReports(
   });
 }
 
-function filterSanctions(
-  sanctions: AdminProviderSanction[],
-  filters: ReturnType<typeof buildFilters>,
-) {
+function filterSanctions(sanctions: AdminProviderSanction[], filters: ReturnType<typeof buildFilters>) {
   return sanctions.filter((sanction) => {
     if (filters.sanction && sanction.status !== filters.sanction) return false;
     if (filters.q && !sanctionSearchText(sanction).includes(filters.q)) return false;
@@ -369,8 +469,14 @@ function buildRiskSummary(
   providers: AdminProvider[],
 ) {
   return [
-    ['Open reports', reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)).length.toString()],
-    ['Critical / high', reports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity)).length.toString()],
+    [
+      'Open reports',
+      reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)).length.toString(),
+    ],
+    [
+      'Critical / high',
+      reports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity)).length.toString(),
+    ],
     ['Active sanctions', sanctions.filter((sanction) => sanction.status === 'ACTIVE').length.toString()],
     ['Blocked accounts', providers.filter((provider) => provider.blockedAt).length.toString()],
   ] as const;

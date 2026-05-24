@@ -86,6 +86,7 @@ export function BookingMonitor({ bookings }: Props) {
     }
     return orderedBookings.filter((booking) => activeStatuses.has(booking.status));
   }, [orderedBookings, view]);
+  const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
 
   useEffect(() => {
     const mountedAt = new Date();
@@ -152,26 +153,34 @@ export function BookingMonitor({ bookings }: Props) {
         <span suppressHydrationWarning>Last refresh {hasMounted ? lastRefreshLabel : 'pending'}</span>
       </div>
 
-      <div className="actions" style={{ marginTop: 16 }}>
-        <button type="button" onClick={() => setView('active')} disabled={view === 'active'}>
-          Active only
-        </button>
-        <button type="button" onClick={() => setView('chat')} disabled={view === 'chat'}>
-          Chat live
-        </button>
-        <button type="button" onClick={() => setView('all')} disabled={view === 'all'}>
-          All bookings
-        </button>
-      </div>
-
-      <div className="monitor-meta">
-        <span>
-          Showing {visibleBookings.length} of {orderedBookings.length} bookings
-        </span>
-        <span>
-          {view === 'active' ? 'Dispatch focus' : view === 'chat' ? 'Live service focus' : 'Full history'}
-        </span>
-      </div>
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operation filters</h2>
+            <p className="muted">
+              Active queue: <strong>{activeView.label}</strong> - {activeView.description}
+            </p>
+          </div>
+          <span className={`pill ${view === 'all' ? 'pill-success' : 'pill-warn'}`}>
+            Showing {visibleBookings.length} of {orderedBookings.length}
+          </span>
+        </div>
+        <div className="participant-list">
+          {bookingViewOptions.map((option) => (
+            <button
+              key={option.view}
+              type="button"
+              onClick={() => setView(option.view)}
+              disabled={view === option.view}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <p className="muted" style={{ marginTop: 8 }}>
+          {activeView.operatorHint}
+        </p>
+      </section>
 
       <section className="card" style={{ marginTop: 16 }}>
         <table className="table">
@@ -299,9 +308,7 @@ export function BookingMonitor({ bookings }: Props) {
             })}
             {visibleBookings.length === 0 && (
               <tr>
-                <td colSpan={7}>
-                  No bookings loaded. Start the API and run the smoke flow to populate this table.
-                </td>
+                <td colSpan={7}>{emptyBookingMessage(view)}</td>
               </tr>
             )}
           </tbody>
@@ -310,6 +317,34 @@ export function BookingMonitor({ bookings }: Props) {
     </>
   );
 }
+
+const bookingViewOptions: Array<{
+  view: 'active' | 'chat' | 'all';
+  label: string;
+  description: string;
+  operatorHint: string;
+}> = [
+  {
+    view: 'active',
+    label: 'Active only',
+    description: 'live dispatch work across matching, arrival, and in-service states.',
+    operatorHint:
+      'Use this during operations to catch stalled matching, missing location, or unresolved payment risk.',
+  },
+  {
+    view: 'chat',
+    label: 'Chat live',
+    description: 'bookings where customer/provider communication is already available.',
+    operatorHint:
+      'Use this to inspect service handoff quality, quiet chats, and route/location expectations.',
+  },
+  {
+    view: 'all',
+    label: 'All bookings',
+    description: 'full booking history for investigation, finance follow-up, and audit review.',
+    operatorHint: 'Use this when you need cancelled, completed, refunded, or old matching records.',
+  },
+];
 
 function bookingPriority(booking: AdminBooking) {
   if (booking.status === 'IN_SERVICE') {
@@ -325,6 +360,16 @@ function bookingPriority(booking: AdminBooking) {
     return 2;
   }
   return 1;
+}
+
+function emptyBookingMessage(view: 'active' | 'chat' | 'all') {
+  if (view === 'active') {
+    return 'No active bookings match this queue. Dispatch is clear right now.';
+  }
+  if (view === 'chat') {
+    return 'No chat-live bookings match this queue. No active customer/provider conversation needs review.';
+  }
+  return 'No bookings loaded. Start the API and run the smoke flow to populate this table.';
 }
 
 function bookingTimestamp(booking: AdminBooking) {
@@ -402,10 +447,7 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
     flags.push({ severity: 'high', title: 'Matched without chat' });
   }
-  if (
-    locationRequiredStatuses.has(booking.status) &&
-    !hasProviderLocation(booking)
-  ) {
+  if (locationRequiredStatuses.has(booking.status) && !hasProviderLocation(booking)) {
     flags.push({ severity: 'medium', title: 'No provider location signal' });
   }
   if (
@@ -446,7 +488,9 @@ function hasProviderLocation(booking: AdminBooking) {
   if (hasProviderCoordinate(booking.selectedProvider)) {
     return true;
   }
-  return (booking.participants ?? []).some((participant) => hasProviderCoordinate(participant.providerProfile));
+  return (booking.participants ?? []).some((participant) =>
+    hasProviderCoordinate(participant.providerProfile),
+  );
 }
 
 function nextAction(booking: AdminBooking) {
@@ -728,7 +772,10 @@ function bookingLocationToneClass(booking: AdminBooking, nowMs: number) {
   return 'pill-neutral';
 }
 
-function providerLocationFreshness(booking: AdminBooking, nowMs: number): 'recent' | 'stale' | 'expired' | 'missing' {
+function providerLocationFreshness(
+  booking: AdminBooking,
+  nowMs: number,
+): 'recent' | 'stale' | 'expired' | 'missing' {
   const provider = providerWithLocation(booking);
   if (!provider?.currentLocationUpdatedAt) {
     return 'missing';
@@ -760,7 +807,9 @@ function providerWithLocation(booking: AdminBooking) {
     .find((provider) => hasProviderCoordinate(provider));
 }
 
-function hasProviderCoordinate(provider?: { currentLat?: string | number | null; currentLng?: string | number | null } | null) {
+function hasProviderCoordinate(
+  provider?: { currentLat?: string | number | null; currentLng?: string | number | null } | null,
+) {
   if (!provider || provider.currentLat === null || provider.currentLat === undefined) {
     return false;
   }
