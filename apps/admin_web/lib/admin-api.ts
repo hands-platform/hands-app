@@ -13,6 +13,7 @@ export type AdminProvider = {
   displayName: string;
   level?: string;
   legalName?: string | null;
+  bio?: string | null;
   residentialAddress?: string | null;
   city?: string | null;
   status: string;

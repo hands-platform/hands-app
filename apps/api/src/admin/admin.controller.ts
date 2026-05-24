@@ -30,6 +30,11 @@ export class AdminController {
     return this.admin.listProviders();
   }
 
+  @Get('providers/:id')
+  providerDetail(@Param('id') providerProfileId: string) {
+    return this.admin.getProviderDetail(providerProfileId);
+  }
+
   @Post('push-devices/:id/enable')
   enablePushDevice(@CurrentUser() user: AuthenticatedUser, @Param('id') pushDeviceId: string) {
     return this.admin.enablePushDevice(user.id, pushDeviceId);

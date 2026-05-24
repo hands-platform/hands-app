@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { AdminProvider, adminGet } from '../../lib/admin-api';
 import {
   approveProvider,
@@ -68,7 +69,12 @@ export default async function ProvidersPage() {
           <tbody>
             {providers.map((provider) => (
               <tr key={provider.id}>
-                <td>{provider.displayName || provider.user?.fullName || provider.user?.phone}</td>
+                <td>
+                  <Link className="text-link" href={`/providers/${provider.id}`}>
+                    {provider.displayName || provider.user?.fullName || provider.user?.phone}
+                  </Link>
+                  <p className="muted">{provider.user?.phone ?? provider.id}</p>
+                </td>
                 <td>
                   {provider.verification?.status ?? 'DRAFT'}
                   {provider.verification?.rejectionReason ? (
@@ -193,6 +199,9 @@ export default async function ProvidersPage() {
                         Sync Supabase role
                       </button>
                     </form>
+                    <Link className="text-link" href={`/providers/${provider.id}`}>
+                      Open detail
+                    </Link>
                   </div>
                 </td>
               </tr>

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
@@ -55,6 +55,41 @@ export class AdminService {
         services: { include: { service: true } },
       },
     });
+  }
+
+  async getProviderDetail(providerProfileId: string) {
+    const provider = await this.prisma.providerProfile.findUnique({
+      where: { id: providerProfileId },
+      include: {
+        user: {
+          include: {
+            pushDevices: {
+              orderBy: { createdAt: 'desc' },
+              include: {
+                deliveries: {
+                  orderBy: { attemptedAt: 'desc' },
+                  take: 5,
+                },
+              },
+            },
+          },
+        },
+        verification: { include: { files: true } },
+        kyc: true,
+        documents: { include: { fileAsset: true }, orderBy: { createdAt: 'desc' } },
+        bankAccounts: { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }] },
+        taxProfile: true,
+        agreements: { orderBy: { acceptedAt: 'desc' } },
+        services: { include: { service: true } },
+        locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
+        earnings: { orderBy: { createdAt: 'desc' }, take: 10 },
+        payoutBatches: { orderBy: { createdAt: 'desc' }, take: 10 },
+      },
+    });
+    if (!provider) {
+      throw new NotFoundException('Provider not found');
+    }
+    return provider;
   }
 
   async enablePushDevice(actorId: string, pushDeviceId: string) {
