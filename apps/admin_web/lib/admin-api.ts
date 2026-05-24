@@ -22,6 +22,10 @@ export type AdminProvider = {
   facebookId?: string | null;
   activityNickname?: string | null;
   bio?: string | null;
+  experienceYears?: number | null;
+  specialties?: unknown;
+  languages?: unknown;
+  serviceStyle?: string | null;
   residentialAddress?: string | null;
   city?: string | null;
   serviceArea?: unknown;

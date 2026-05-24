@@ -176,6 +176,10 @@ async function main() {
         create: {
           displayName: 'Linh Wellness',
           bio: 'Verified provider available for home massage in Ho Chi Minh City.',
+          experienceYears: 4,
+          specialties: ['Foot massage', 'Swedish massage', 'Deep tissue'],
+          languages: ['vi', 'en'],
+          serviceStyle: 'Quiet, professional home massage with clear arrival communication.',
           status: ProviderStatus.ONLINE_AVAILABLE,
           currentLat: 10.7769,
           currentLng: 106.7009,
@@ -191,6 +195,20 @@ async function main() {
     },
     include: { providerProfile: true },
   });
+
+  if (provider.providerProfile) {
+    await prisma.providerProfile.update({
+      where: { id: provider.providerProfile.id },
+      data: {
+        displayName: 'Linh Wellness',
+        bio: 'Verified provider available for home massage in Ho Chi Minh City.',
+        experienceYears: 4,
+        specialties: ['Foot massage', 'Swedish massage', 'Deep tissue'],
+        languages: ['vi', 'en'],
+        serviceStyle: 'Quiet, professional home massage with clear arrival communication.',
+      },
+    });
+  }
 
   const admin = await prisma.user.upsert({
     where: { phone: '+84900000099' },

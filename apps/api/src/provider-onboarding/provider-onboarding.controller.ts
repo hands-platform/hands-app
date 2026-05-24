@@ -40,6 +40,10 @@ export class ProviderOnboardingController {
       displayName?: string;
       activityNickname?: string;
       bio?: string;
+      experienceYears?: number;
+      specialties?: unknown;
+      languages?: unknown;
+      serviceStyle?: string;
       residentialAddress?: string;
       city?: string;
       serviceArea?: unknown;

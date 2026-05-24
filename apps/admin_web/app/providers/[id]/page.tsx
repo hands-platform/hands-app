@@ -814,6 +814,17 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <InfoLine label="Display name" value={provider.displayName} />
           <InfoLine label="Legal name" value={provider.legalName} />
           <InfoLine label="Activity nickname" value={provider.activityNickname} />
+          <InfoLine
+            label="Experience"
+            value={
+              provider.experienceYears === null || provider.experienceYears === undefined
+                ? null
+                : `${provider.experienceYears} year(s)`
+            }
+          />
+          <InfoLine label="Specialties" value={formatJsonList(provider.specialties)} />
+          <InfoLine label="Languages" value={formatJsonList(provider.languages)} />
+          <InfoLine label="Service style" value={provider.serviceStyle} />
           <InfoLine label="Date of birth" value={formatDateOnly(provider.dateOfBirth)} />
           <InfoLine label="Gender" value={provider.gender} />
           <InfoLine label="Phone" value={provider.user?.phone} />
@@ -1579,6 +1590,13 @@ function buildProviderResubmissionPlan(provider: ProviderDetail) {
 }
 
 function buildProviderRegistrationDossier(provider: ProviderDetail) {
+  const specialties = jsonStringList(provider.specialties);
+  const languages = jsonStringList(provider.languages);
+  const hasProfileQuality =
+    (provider.experienceYears ?? 0) > 0 &&
+    specialties.length > 0 &&
+    languages.length > 0 &&
+    Boolean(provider.serviceStyle?.trim());
   const profileComplete = Boolean(
     provider.legalName?.trim() &&
     provider.dateOfBirth &&
@@ -1589,7 +1607,8 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
   const publicProfileComplete = Boolean(
     provider.activityNickname?.trim() ||
     (provider.bio?.trim() &&
-      (provider.documents ?? []).some((document) => document.type === 'PROFILE_PHOTO')),
+      (provider.documents ?? []).some((document) => document.type === 'PROFILE_PHOTO')) ||
+      hasProfileQuality,
   );
   const addressComplete = Boolean(provider.residentialAddress?.trim() && provider.city?.trim());
   const serviceAreaComplete =
@@ -1621,10 +1640,14 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
       ok: publicProfileComplete,
       status: publicProfileComplete ? 'READY' : 'DRAFT',
       detail: publicProfileComplete
-        ? 'Provider has public-facing profile material for customer review.'
+        ? `Provider has public-facing profile material for customer review. Quality fields: ${
+            hasProfileQuality
+              ? `${provider.experienceYears} year(s), ${specialties.length} specialty, ${languages.length} language.`
+              : 'partial quality profile.'
+          }`
         : 'Activity nickname, introduction, profile photo, and work photos should be reviewed before customer launch.',
       operatorAction: publicProfileComplete
-        ? 'Check whether photos and bio are suitable for the HANDS customer app.'
+        ? 'Check whether photos, service style, specialties, and bio are suitable for the HANDS customer app.'
         : 'Keep as draft until public profile content is ready.',
     },
     {
@@ -1992,6 +2015,16 @@ function formatJsonSummary(value: unknown) {
     return Object.keys(value as Record<string, unknown>).length ? JSON.stringify(value).slice(0, 120) : null;
   }
   return String(value);
+}
+
+function jsonStringList(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item).trim()).filter(Boolean);
+}
+
+function formatJsonList(value: unknown) {
+  const items = jsonStringList(value);
+  return items.length ? items.join(', ') : null;
 }
 
 function formatRating(provider: ProviderDetail) {

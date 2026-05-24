@@ -262,6 +262,10 @@ model ProviderProfile {
   facebookId               String?
   activityNickname         String?
   bio                      String?
+  experienceYears          Int?
+  specialties              Json?
+  languages                Json?
+  serviceStyle             String?
   residentialAddress       String?
   city                     String?
   serviceArea              Json?

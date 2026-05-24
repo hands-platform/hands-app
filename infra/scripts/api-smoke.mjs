@@ -405,9 +405,27 @@ await patchJson('/provider/onboarding/basic-profile', providerAuth.accessToken, 
   legalName: 'Smoke Provider',
   dateOfBirth: '1995-01-01',
   displayName: 'Smoke Provider',
+  bio: 'Provider onboarding smoke profile.',
+  experienceYears: 5,
+  specialties: ['Foot massage', 'Swedish massage'],
+  languages: ['vi', 'en'],
+  serviceStyle: 'Calm, professional hotel and home service.',
   residentialAddress: 'District 1, Ho Chi Minh City, Vietnam',
   city: 'Ho Chi Minh City',
+  serviceArea: { country: 'VN', cities: ['Ho Chi Minh City'] },
 });
+const providerOnboardingAfterBasicProfile = await getJson('/provider/onboarding', providerAuth.accessToken);
+if (
+  providerOnboardingAfterBasicProfile.basicProfile?.experienceYears !== 5 ||
+  !providerOnboardingAfterBasicProfile.basicProfile?.specialties?.includes('Foot massage') ||
+  !providerOnboardingAfterBasicProfile.basicProfile?.languages?.includes('vi')
+) {
+  throw new Error(
+    `Provider profile quality fields were not saved: ${JSON.stringify(
+      providerOnboardingAfterBasicProfile.basicProfile,
+    )}`,
+  );
+}
 await expectRequestFailure(
   'KYC submit without required documents',
   () =>

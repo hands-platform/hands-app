@@ -918,6 +918,10 @@ class ProviderDetailPage extends StatelessWidget {
           final displayName = detail['displayName'] as String? ?? 'Provider';
           final rating = providerAverageRating(detail);
           final reviewCount = providerReviewCount(detail);
+          final experienceYears = asNum(detail['experienceYears'])?.toInt();
+          final specialties = asStringList(detail['specialties']);
+          final languages = asStringList(detail['languages']);
+          final serviceStyle = detail['serviceStyle']?.toString().trim() ?? '';
 
           return CustomScrollView(
             slivers: [
@@ -1065,12 +1069,36 @@ class ProviderDetailPage extends StatelessWidget {
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ),
+                      if (serviceStyle.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        DetailInfoCard(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.room_service_outlined,
+                                  color: Color(0xFF5E8E4A)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  serviceStyle,
+                                  style: Theme.of(context).textTheme.bodyLarge,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       DetailInfoCard(
                         child: Wrap(
                           spacing: 10,
                           runSpacing: 10,
                           children: [
+                            if (experienceYears != null)
+                              DetailFactChip(
+                                icon: Icons.workspace_premium_outlined,
+                                label: '$experienceYears year(s) experience',
+                              ),
                             const DetailFactChip(
                               icon: Icons.schedule_outlined,
                               label: 'Typical response within minutes',
@@ -1083,9 +1111,27 @@ class ProviderDetailPage extends StatelessWidget {
                               icon: Icons.star_outline_rounded,
                               label: '$reviewCount verified review(s)',
                             ),
+                            if (languages.isNotEmpty)
+                              DetailFactChip(
+                                icon: Icons.translate_outlined,
+                                label: languages.take(3).join(', '),
+                              ),
                           ],
                         ),
                       ),
+                      if (specialties.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        DetailInfoCard(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final specialty in specialties.take(8))
+                                ServiceTag(label: specialty),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 28),
                       const SectionHeader(
                         title: 'My services',
@@ -5392,6 +5438,16 @@ Map<String, dynamic>? asMap(dynamic value) {
 
 List<dynamic> asList(dynamic value) {
   return value is List<dynamic> ? value : const [];
+}
+
+List<String> asStringList(dynamic value) {
+  if (value is List) {
+    return value
+        .map((item) => item.toString().trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+  return const [];
 }
 
 double bookingProgress(String status) {

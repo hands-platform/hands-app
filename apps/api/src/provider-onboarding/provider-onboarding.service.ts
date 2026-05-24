@@ -76,6 +76,10 @@ export class ProviderOnboardingService {
         facebookId: provider.facebookId,
         activityNickname: provider.activityNickname,
         bio: provider.bio,
+        experienceYears: provider.experienceYears,
+        specialties: provider.specialties,
+        languages: provider.languages,
+        serviceStyle: provider.serviceStyle,
         residentialAddress: provider.residentialAddress,
         city: provider.city,
         serviceArea: provider.serviceArea,
@@ -128,6 +132,10 @@ export class ProviderOnboardingService {
       displayName?: string;
       activityNickname?: string;
       bio?: string;
+      experienceYears?: number;
+      specialties?: unknown;
+      languages?: unknown;
+      serviceStyle?: string;
       residentialAddress?: string;
       city?: string;
       serviceArea?: unknown;
@@ -144,6 +152,10 @@ export class ProviderOnboardingService {
         displayName: normalizeString(input.displayName),
         activityNickname: normalizeString(input.activityNickname),
         bio: normalizeString(input.bio),
+        experienceYears: normalizeOptionalInteger(input.experienceYears),
+        specialties: input.specialties === undefined ? undefined : toJsonList(input.specialties),
+        languages: input.languages === undefined ? undefined : toJsonList(input.languages),
+        serviceStyle: normalizeString(input.serviceStyle),
         residentialAddress: normalizeString(input.residentialAddress),
         city: normalizeString(input.city),
         serviceArea: input.serviceArea === undefined ? undefined : toJson(input.serviceArea),
@@ -157,6 +169,8 @@ export class ProviderOnboardingService {
         metadata: toJson({
           hasAddress: Boolean(updated.residentialAddress?.trim()),
           city: updated.city,
+          specialtyCount: Array.isArray(updated.specialties) ? updated.specialties.length : 0,
+          languageCount: Array.isArray(updated.languages) ? updated.languages.length : 0,
         }),
       },
     });
@@ -933,6 +947,26 @@ function requiredString(value: string | undefined, message: string) {
 function normalizeString(value?: string | null) {
   const normalized = value?.trim();
   return normalized ? normalized : undefined;
+}
+
+function normalizeOptionalInteger(value?: number | null) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (!Number.isInteger(value) || value < 0 || value > 80) {
+    throw new BadRequestException('experienceYears must be an integer between 0 and 80');
+  }
+  return value;
+}
+
+function toJsonList(value: unknown): Prisma.InputJsonValue {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value
+    .map((item) => (typeof item === 'string' ? item.trim() : String(item).trim()))
+    .filter(Boolean)
+    .slice(0, 20) as Prisma.InputJsonValue;
 }
 
 function normalizeIdNumber(value?: string | null) {

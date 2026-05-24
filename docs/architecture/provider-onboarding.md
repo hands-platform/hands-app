@@ -13,7 +13,7 @@ HANDS provider onboarding is split into small domains so legal, tax, payout, and
 
 | Domain        | Responsibility                                                             | Main Tables                                                                             |
 | ------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Provider core | Public/provider identity, activity name, city, service area, level, status | `ProviderProfile`                                                                       |
+| Provider core | Public/provider identity, activity name, profile quality fields, city, service area, level, status | `ProviderProfile`                                                                       |
 | KYC           | CCCD/CMND hash, review state, resubmission state                           | `ProviderKyc`                                                                           |
 | Documents     | Typed uploaded files for CCCD front/back, selfie, work photos, bank QR     | `ProviderDocument`, `FileAsset`                                                         |
 | Bank accounts | Masked account data, QR banking metadata, admin review                     | `ProviderBankAccount`                                                                   |
@@ -32,6 +32,18 @@ HANDS provider onboarding is split into small domains so legal, tax, payout, and
 | `LEVEL_4_TRUSTED`        | Trusted badge                            | Admin career/profile review                                                 |
 
 Tax fields are intentionally not required during signup. They appear when the provider earns revenue for the first time, not before the first job. This keeps signup light while still moving tax and settlement compliance forward as soon as money exists.
+
+The public profile keeps lightweight quality fields early in onboarding because
+they directly affect customer trust before booking:
+
+- `experienceYears`
+- `specialties`
+- `languages`
+- `serviceStyle`
+
+These fields are editable from the Provider app basic profile sheet and are
+shown on the customer provider detail page alongside bio, services, reviews,
+and public photos. They are not tax or payout gates.
 
 The onboarding snapshot follows the same staged rule. Before the first completed service,
 `payoutGate.missing` should only report `firstCompletedService`. Tax profile,

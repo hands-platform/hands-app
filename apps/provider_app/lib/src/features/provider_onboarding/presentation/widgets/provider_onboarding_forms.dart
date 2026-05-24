@@ -17,6 +17,10 @@ class ProviderBasicProfileInput {
     required this.facebookId,
     required this.activityNickname,
     required this.bio,
+    required this.experienceYears,
+    required this.specialties,
+    required this.languages,
+    required this.serviceStyle,
     required this.residentialAddress,
     required this.city,
     required this.serviceCities,
@@ -29,6 +33,10 @@ class ProviderBasicProfileInput {
   final String facebookId;
   final String activityNickname;
   final String bio;
+  final int? experienceYears;
+  final List<String> specialties;
+  final List<String> languages;
+  final String serviceStyle;
   final String residentialAddress;
   final String city;
   final List<String> serviceCities;
@@ -42,6 +50,10 @@ class ProviderBasicProfileInput {
       'facebookId': facebookId,
       'activityNickname': activityNickname,
       'bio': bio,
+      'experienceYears': experienceYears,
+      'specialties': specialties,
+      'languages': languages,
+      'serviceStyle': serviceStyle,
       'residentialAddress': residentialAddress,
       'city': city,
       'serviceArea': {
@@ -198,6 +210,10 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
   late final TextEditingController facebookId;
   late final TextEditingController activityNickname;
   late final TextEditingController bio;
+  late final TextEditingController experienceYears;
+  late final TextEditingController specialties;
+  late final TextEditingController languages;
+  late final TextEditingController serviceStyle;
   late final TextEditingController residentialAddress;
   late final TextEditingController city;
   late final TextEditingController serviceCities;
@@ -212,6 +228,14 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
     facebookId = _controller(widget.initial['facebookId']);
     activityNickname = _controller(widget.initial['activityNickname']);
     bio = _controller(widget.initial['bio']);
+    experienceYears = _controller(widget.initial['experienceYears']);
+    specialties = TextEditingController(
+      text: _jsonListText(widget.initial['specialties']),
+    );
+    languages = TextEditingController(
+      text: _jsonListText(widget.initial['languages']),
+    );
+    serviceStyle = _controller(widget.initial['serviceStyle']);
     residentialAddress = _controller(widget.initial['residentialAddress']);
     city = _controller(widget.initial['city']);
     final serviceArea = widget.initial['serviceArea'];
@@ -236,6 +260,10 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
     facebookId.dispose();
     activityNickname.dispose();
     bio.dispose();
+    experienceYears.dispose();
+    specialties.dispose();
+    languages.dispose();
+    serviceStyle.dispose();
     residentialAddress.dispose();
     city.dispose();
     serviceCities.dispose();
@@ -267,6 +295,28 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
             _Field(controller: activityNickname, label: 'Activity nickname'),
             _Field(controller: bio, label: 'Bio', maxLines: 3),
             _Field(
+              controller: experienceYears,
+              label: 'Experience years',
+              hint: '4',
+              keyboardType: TextInputType.number,
+            ),
+            _Field(
+              controller: specialties,
+              label: 'Specialties',
+              hint: 'Foot massage, Swedish massage',
+            ),
+            _Field(
+              controller: languages,
+              label: 'Languages',
+              hint: 'Vietnamese, English, Korean',
+            ),
+            _Field(
+              controller: serviceStyle,
+              label: 'Service style',
+              hint: 'Quiet, professional, hotel-friendly',
+              maxLines: 2,
+            ),
+            _Field(
               controller: residentialAddress,
               label: 'Residential address',
               required: true,
@@ -293,6 +343,10 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
                     activityNickname:
                         _fallback(activityNickname.text, displayName.text),
                     bio: bio.text.trim(),
+                    experienceYears: int.tryParse(experienceYears.text.trim()),
+                    specialties: _splitCsv(specialties.text, ''),
+                    languages: _splitCsv(languages.text, 'Vietnamese'),
+                    serviceStyle: serviceStyle.text.trim(),
                     residentialAddress: residentialAddress.text.trim(),
                     city: city.text.trim(),
                     serviceCities: _splitCsv(serviceCities.text, city.text),
@@ -765,6 +819,13 @@ List<String> _splitCsv(String value, String fallback) {
       .map((item) => item.trim())
       .where((item) => item.isNotEmpty)
       .toList();
+}
+
+String _jsonListText(dynamic value) {
+  if (value is List) {
+    return value.map((item) => item.toString()).join(', ');
+  }
+  return value?.toString() ?? '';
 }
 
 String _firstText(List<Object?> values) {
