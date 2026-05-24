@@ -2983,10 +2983,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
         .toList();
     final bankAccounts = asList(snapshot['bankAccounts']);
     final documents = asList(snapshot['documents']);
-    final agreements = asList(snapshot['agreements']);
     final requiredKycTypes = requiredKycDocumentTypesFromSnapshot(snapshot);
-    final requiredAgreements =
-        requiredPayoutAgreementTypesFromSnapshot(snapshot);
     final payoutGate = asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
     final payoutMissing = asMap(payoutGate['missing']) ?? <String, dynamic>{};
     final canWithdraw = payoutGate['canWithdraw'] == true;
@@ -3011,6 +3008,13 @@ class _ProviderOnboardingCard extends StatelessWidget {
         .where((type) => requiredKycTypes.contains(type))
         .toSet()
         .length;
+    final kycDocumentsReady =
+        submittedKycRequiredCount >= requiredKycTypes.length;
+    final missingAgreementCount = (asList(payoutMissing['agreements'])).length;
+    final payoutPrerequisiteReady = completedBookingCount > 0 &&
+        taxStatus == 'APPROVED' &&
+        (addressText?.trim().isNotEmpty ?? false) &&
+        missingAgreementCount == 0;
 
     return Card(
       child: Padding(
@@ -3055,19 +3059,6 @@ class _ProviderOnboardingCard extends StatelessWidget {
               ErrorCard(text: 'Onboarding load failed: $error'),
               const SizedBox(height: 12),
             ],
-            _OnboardingGateRow(
-              title: 'Basic profile',
-              detail: addressText == null || addressText.isEmpty
-                  ? 'Name, birthday, address, service area'
-                  : addressText,
-              complete: hasBasicProfile,
-            ),
-            _OnboardingGateRow(
-              title: 'KYC / admin review',
-              detail:
-                  '${kycStatus ?? 'Not submitted'} / $submittedKycRequiredCount of ${requiredKycTypes.length} required docs',
-              complete: kycStatus == 'APPROVED',
-            ),
             if (documents.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -3086,24 +3077,6 @@ class _ProviderOnboardingCard extends StatelessWidget {
                 ),
               ),
             ],
-            _OnboardingGateRow(
-              title: 'Bank account',
-              detail: bankStatus ?? 'Not submitted',
-              complete: bankStatus == 'APPROVED',
-            ),
-            _OnboardingGateRow(
-              title: 'Tax profile',
-              detail: completedBookingCount == 0
-                  ? 'Required before first payout'
-                  : (taxStatus ?? 'Not submitted'),
-              complete: completedBookingCount == 0 || taxStatus == 'APPROVED',
-            ),
-            _OnboardingGateRow(
-              title: 'Legal agreements',
-              detail:
-                  '${agreements.length}/${requiredAgreements.length} accepted',
-              complete: (asList(payoutMissing['agreements'])).isEmpty,
-            ),
             const SizedBox(height: 12),
             if (nextActions.isEmpty)
               const InfoCard(text: 'All current onboarding gates are clear.')
@@ -3112,36 +3085,80 @@ class _ProviderOnboardingCard extends StatelessWidget {
                 text: 'Next: ${nextActions.map(_readableAction).join(', ')}',
               ),
             const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilledButton.tonalIcon(
-                  onPressed: isSaving ? null : onFillBasicProfile,
-                  icon: const Icon(Icons.badge_outlined),
-                  label: const Text('Edit profile'),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: isSaving ? null : onSubmitKyc,
-                  icon: const Icon(Icons.verified_user_outlined),
-                  label: const Text('Submit KYC'),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: isSaving ? null : onAddBankAccount,
-                  icon: const Icon(Icons.account_balance_outlined),
-                  label: const Text('Add bank account'),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: isSaving ? null : onAddTaxProfile,
-                  icon: const Icon(Icons.receipt_long_outlined),
-                  label: const Text('Add tax profile'),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: isSaving ? null : onAcceptAgreements,
-                  icon: const Icon(Icons.assignment_turned_in_outlined),
-                  label: const Text('Review terms'),
-                ),
-              ],
+            _OnboardingStepCard(
+              step: '1',
+              title: 'Basic profile',
+              detail: addressText == null || addressText.isEmpty
+                  ? 'Add legal name, public name, birthday, address, and service area.'
+                  : addressText,
+              status: hasBasicProfile ? 'Complete' : 'Required',
+              complete: hasBasicProfile,
+              icon: Icons.badge_outlined,
+              actionLabel: hasBasicProfile ? 'Edit profile' : 'Start profile',
+              onPressed: isSaving ? null : onFillBasicProfile,
+            ),
+            _OnboardingStepCard(
+              step: '2',
+              title: 'KYC verification',
+              detail:
+                  '$submittedKycRequiredCount of ${requiredKycTypes.length} required photos ready. Status: ${kycStatus ?? 'Not submitted'}.',
+              status: kycStatus == 'APPROVED'
+                  ? 'Approved'
+                  : kycDocumentsReady
+                      ? 'Ready to submit'
+                      : 'Upload documents first',
+              complete: kycStatus == 'APPROVED',
+              icon: Icons.verified_user_outlined,
+              actionLabel:
+                  kycDocumentsReady ? 'Submit KYC' : 'Open KYC checklist',
+              onPressed: isSaving ? null : onSubmitKyc,
+            ),
+            _OnboardingStepCard(
+              step: '3',
+              title: 'Bank account',
+              detail: bankStatus == null
+                  ? 'Add bank name, account number, account holder, and optional QR banking info.'
+                  : 'Review status: $bankStatus.',
+              status: bankStatus == 'APPROVED' ? 'Approved' : 'Required',
+              complete: bankStatus == 'APPROVED',
+              icon: Icons.account_balance_outlined,
+              actionLabel: bankStatus == null
+                  ? 'Add bank account'
+                  : 'Update bank account',
+              onPressed: isSaving ? null : onAddBankAccount,
+            ),
+            _OnboardingStepCard(
+              step: '4',
+              title: 'Payout unlock',
+              detail: completedBookingCount == 0
+                  ? 'Tax and payout agreements are requested after the first completed service.'
+                  : 'Tax: ${taxStatus ?? 'missing'}, agreements missing: $missingAgreementCount.',
+              status: canWithdraw
+                  ? 'Withdrawals enabled'
+                  : payoutPrerequisiteReady
+                      ? 'Ready for admin refresh'
+                      : 'Locked',
+              complete: canWithdraw,
+              icon: Icons.payments_outlined,
+              actionLabel: completedBookingCount == 0
+                  ? 'Review terms'
+                  : taxStatus == 'APPROVED'
+                      ? 'Review terms'
+                      : 'Add tax profile',
+              onPressed: isSaving
+                  ? null
+                  : completedBookingCount == 0 || taxStatus == 'APPROVED'
+                      ? onAcceptAgreements
+                      : onAddTaxProfile,
+            ),
+            _OnboardingStepCard(
+              step: '5',
+              title: 'Trusted badge',
+              detail:
+                  'Admin can add the trust badge after identity, experience, and profile evidence are reviewed.',
+              status: recommended == 'LEVEL_4_TRUSTED' ? 'Trusted' : 'Later',
+              complete: recommended == 'LEVEL_4_TRUSTED',
+              icon: Icons.workspace_premium_outlined,
             ),
             if (isSaving) ...[
               const SizedBox(height: 12),
@@ -3180,29 +3197,100 @@ class _OnboardingPill extends StatelessWidget {
   }
 }
 
-class _OnboardingGateRow extends StatelessWidget {
-  const _OnboardingGateRow({
+class _OnboardingStepCard extends StatelessWidget {
+  const _OnboardingStepCard({
+    required this.step,
     required this.title,
     required this.detail,
+    required this.status,
     required this.complete,
+    required this.icon,
+    this.actionLabel,
+    this.onPressed,
   });
 
+  final String step;
   final String title;
   final String detail;
+  final String status;
   final bool complete;
+  final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(
-        complete ? Icons.check_circle_outline : Icons.pending_outlined,
-        color: complete
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).colorScheme.outline,
+    final colorScheme = Theme.of(context).colorScheme;
+    final background = complete
+        ? colorScheme.primaryContainer
+        : colorScheme.surfaceContainerHighest;
+    final foreground = complete
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurfaceVariant;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: complete ? colorScheme.primary : colorScheme.outlineVariant,
+        ),
       ),
-      title: Text(title),
-      subtitle: Text(detail),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: complete
+                    ? colorScheme.primary
+                    : colorScheme.surfaceContainerHighest,
+                foregroundColor:
+                    complete ? colorScheme.onPrimary : colorScheme.primary,
+                child: complete
+                    ? const Icon(Icons.check, size: 20)
+                    : Text(step,
+                        style: const TextStyle(fontWeight: FontWeight.w800)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 4),
+                    Text(detail, style: TextStyle(color: foreground)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(icon, color: foreground),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Chip(
+                label: Text(status),
+                backgroundColor:
+                    complete ? colorScheme.primary : colorScheme.surface,
+              ),
+              if (actionLabel != null)
+                FilledButton.tonal(
+                  onPressed: onPressed,
+                  child: Text(actionLabel!),
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
