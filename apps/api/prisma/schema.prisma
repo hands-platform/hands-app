@@ -147,6 +147,12 @@ enum FileUploadStatus {
   FAILED
 }
 
+enum FileReviewStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
 enum ReviewStatus {
   PUBLISHED
   HIDDEN
@@ -232,6 +238,7 @@ model User {
   auditLogs                AdminAuditLog[]            @relation("AdminActor")
   bookingOpsTasks          BookingOpsTask[]           @relation("BookingOpsTaskActor")
   fileAssets               FileAsset[]                @relation("FileAssetOwner")
+  reviewedFileAssets       FileAsset[]                @relation("FileAssetReviewer")
   taxPolicyVersions        TaxPolicyVersion[]         @relation("TaxPolicyAuthor")
   platformFeePolicies      PlatformFeePolicyVersion[] @relation("PlatformFeePolicyAuthor")
   providerVerificationLogs ProviderVerificationLog[]  @relation("ProviderVerificationLogActor")
@@ -900,6 +907,11 @@ model FileAsset {
   purpose                FilePurpose           @default(PROVIDER_VERIFICATION)
   visibility             FileVisibility
   uploadStatus           FileUploadStatus      @default(PENDING)
+  reviewStatus           FileReviewStatus      @default(PENDING_REVIEW)
+  reviewedAt             DateTime?
+  reviewReason           String?
+  reviewedById           String?
+  reviewedBy             User?                 @relation("FileAssetReviewer", fields: [reviewedById], references: [id])
   uploadedAt             DateTime?
   sizeBytes              Int?
   ownerUserId            String?
@@ -911,6 +923,7 @@ model FileAsset {
 
   @@index([ownerUserId, purpose, createdAt])
   @@index([visibility, purpose, createdAt])
+  @@index([reviewStatus, purpose, createdAt])
 }
 
 model LocationSnapshot {

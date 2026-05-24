@@ -2767,7 +2767,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           .uploadProfileImage(bytes: bytes, contentType: contentType);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Profile image uploaded: ${image.name}')),
+          SnackBar(
+              content: Text(
+                  'Profile image uploaded for admin review: ${image.name}')),
         );
       }
     } catch (error) {
@@ -2807,7 +2809,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           .uploadGalleryImage(bytes: bytes, contentType: contentType);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Work photo uploaded: ${image.name}')),
+          SnackBar(
+              content:
+                  Text('Work photo uploaded for admin review: ${image.name}')),
         );
       }
     } catch (error) {

@@ -125,6 +125,13 @@ exception
   when duplicate_object then null;
 end $$;
 
+do $$
+begin
+  create type public.file_review_status as enum ('PENDING_REVIEW', 'APPROVED', 'REJECTED');
+exception
+  when duplicate_object then null;
+end $$;
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role public.user_role not null default 'CUSTOMER',
@@ -354,6 +361,10 @@ create table if not exists public.files (
   visibility public.file_visibility not null default 'PRIVATE',
   purpose public.file_purpose not null default 'PROVIDER_VERIFICATION',
   upload_status public.file_upload_status not null default 'PENDING',
+  review_status public.file_review_status not null default 'PENDING_REVIEW',
+  reviewed_at timestamptz,
+  review_reason text,
+  reviewed_by_id uuid references public.profiles(id) on delete set null,
   content_type text,
   uploaded_at timestamptz,
   size_bytes integer check (size_bytes is null or size_bytes >= 0),
@@ -429,6 +440,7 @@ create index if not exists notification_deliveries_notification_idx
 create index if not exists files_owner_idx on public.files(owner_id, created_at desc);
 create index if not exists files_owner_purpose_idx on public.files(owner_id, purpose, created_at desc);
 create index if not exists files_visibility_purpose_idx on public.files(visibility, purpose, created_at desc);
+create index if not exists files_review_status_purpose_idx on public.files(review_status, purpose, created_at desc);
 create index if not exists location_snapshots_provider_idx on public.location_snapshots(provider_id, recorded_at desc);
 create index if not exists refunds_booking_idx on public.refunds(booking_id, created_at desc);
 create index if not exists admin_audit_logs_created_idx on public.admin_audit_logs(created_at desc);

@@ -3,6 +3,7 @@ import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   FilePurpose,
+  FileReviewStatus,
   FileUploadStatus,
   FileVisibility,
   PayoutBatchStatus,
@@ -611,6 +612,64 @@ export class AdminService {
       },
     );
     return result;
+  }
+
+  async reviewPublicProviderMedia(
+    actorId: string,
+    fileId: string,
+    status: FileReviewStatus,
+    reason?: string,
+  ) {
+    const file = await this.prisma.fileAsset.findUnique({
+      where: { id: fileId },
+      include: { owner: { include: { providerProfile: true } } },
+    });
+    if (!file) {
+      throw new NotFoundException('File not found');
+    }
+    if (
+      file.visibility !== FileVisibility.PUBLIC ||
+      (file.purpose !== FilePurpose.PROFILE_IMAGE && file.purpose !== FilePurpose.PROVIDER_GALLERY)
+    ) {
+      throw new BadRequestException('Only public provider media can be reviewed here');
+    }
+    if (file.uploadStatus !== FileUploadStatus.UPLOADED) {
+      throw new BadRequestException('Only completed uploads can be reviewed');
+    }
+    const normalizedReason = status === FileReviewStatus.REJECTED ? normalizeNullable(reason) : null;
+    if (status === FileReviewStatus.REJECTED && !normalizedReason) {
+      throw new BadRequestException('Rejection reason is required');
+    }
+
+    const updated = await this.prisma.fileAsset.update({
+      where: { id: fileId },
+      data: {
+        reviewStatus: status,
+        reviewedAt: new Date(),
+        reviewedById: actorId,
+        reviewReason: normalizedReason,
+      },
+    });
+    await this.writeAudit(actorId, `provider_media.${status.toLowerCase()}`, `file:${fileId}`, {
+      fileId,
+      purpose: file.purpose,
+      ownerUserId: file.ownerUserId,
+      providerProfileId: file.owner?.providerProfile?.id,
+      reason: normalizedReason,
+    });
+    if (file.ownerUserId) {
+      await this.notifications.create({
+        userId: file.ownerUserId,
+        type: `provider.media.${status.toLowerCase()}`,
+        title: status === FileReviewStatus.APPROVED ? 'Profile media approved' : 'Profile media needs changes',
+        body:
+          status === FileReviewStatus.APPROVED
+            ? 'Your public profile media is now visible to customers.'
+            : (normalizedReason ?? 'Please upload a clearer public profile photo.'),
+        data: { fileId, purpose: file.purpose, status, reason: normalizedReason },
+      });
+    }
+    return { ok: true, file: updated };
   }
 
   listBookings() {

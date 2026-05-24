@@ -52,6 +52,9 @@ export type AdminProvider = {
       purpose?: string;
       visibility: string;
       uploadStatus?: string;
+      reviewStatus?: string;
+      reviewedAt?: string | null;
+      reviewReason?: string | null;
       uploadedAt?: string | null;
       sizeBytes?: number | null;
       url?: string | null;
@@ -157,6 +160,9 @@ export type AdminProvider = {
       purpose: string;
       visibility: string;
       uploadStatus?: string;
+      reviewStatus?: string;
+      reviewedAt?: string | null;
+      reviewReason?: string | null;
       uploadedAt?: string | null;
       sizeBytes?: number | null;
       createdAt?: string;

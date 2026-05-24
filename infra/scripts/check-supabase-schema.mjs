@@ -17,6 +17,7 @@ const enumChecks = [
   { prisma: 'PayoutBatchStatus', sql: 'payout_batch_status' },
   { prisma: 'FilePurpose', sql: 'file_purpose' },
   { prisma: 'FileUploadStatus', sql: 'file_upload_status' },
+  { prisma: 'FileReviewStatus', sql: 'file_review_status' },
   { prisma: 'ProviderLevel', sql: 'provider_level' },
   { prisma: 'ProviderKycStatus', sql: 'provider_kyc_status' },
   { prisma: 'ProviderDocumentType', sql: 'provider_document_type' },
@@ -102,10 +103,17 @@ const requiredFileSchemaFragments = [
     label: 'files upload status enum column',
     pattern: /upload_status\s+public\.file_upload_status\s+not\s+null/i,
   },
+  {
+    label: 'files review status enum column',
+    pattern: /review_status\s+public\.file_review_status\s+not\s+null/i,
+  },
+  { label: 'files reviewed_at column', pattern: /reviewed_at\s+timestamptz/i },
+  { label: 'files review_reason column', pattern: /review_reason\s+text/i },
   { label: 'files uploaded_at column', pattern: /uploaded_at\s+timestamptz/i },
   { label: 'files size_bytes column', pattern: /size_bytes\s+integer/i },
   { label: 'files owner purpose index', pattern: /files_owner_purpose_idx/i },
   { label: 'files visibility purpose index', pattern: /files_visibility_purpose_idx/i },
+  { label: 'files review status purpose index', pattern: /files_review_status_purpose_idx/i },
 ];
 
 for (const fragment of requiredFileSchemaFragments) {

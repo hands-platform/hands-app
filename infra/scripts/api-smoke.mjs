@@ -434,6 +434,7 @@ const publicProfileImageUpload = await postJson('/files/presign', providerAuth.a
 await postJson(`/files/${publicProfileImageUpload.file.id}/complete`, providerAuth.accessToken, {
   sizeBytes: 4096,
 });
+await postJson(`/admin/files/${publicProfileImageUpload.file.id}/approve-public-media`, adminAuth.accessToken);
 const publicGalleryImageUpload = await postJson('/files/presign', providerAuth.accessToken, {
   contentType: 'image/jpeg',
   visibility: 'PUBLIC',
@@ -442,6 +443,7 @@ const publicGalleryImageUpload = await postJson('/files/presign', providerAuth.a
 await postJson(`/files/${publicGalleryImageUpload.file.id}/complete`, providerAuth.accessToken, {
   sizeBytes: 8192,
 });
+await postJson(`/admin/files/${publicGalleryImageUpload.file.id}/approve-public-media`, adminAuth.accessToken);
 await expectRequestFailure(
   'KYC submit without required documents',
   () =>
@@ -998,6 +1000,13 @@ if (
     `Admin provider payload is missing onboarding review state: ${JSON.stringify(adminProvider)}`,
   );
 }
+if (
+  !adminProvider?.user?.fileAssets?.some(
+    (file) => file.id === publicProfileImageUpload.file.id && file.reviewStatus === 'APPROVED',
+  )
+) {
+  throw new Error(`Admin provider payload is missing approved public media: ${JSON.stringify(adminProvider)}`);
+}
 const adminBackupProvider = adminProviders.find(
   (item) => item.id === backupProviderAuth.user.providerProfile.id,
 );
@@ -1093,6 +1102,7 @@ console.log({
   nearbyProviderRecent: nearbyProvider.isRecentLocation,
   providerProfileImageReady: Boolean(customerProviderDetail.profileImageUrl),
   providerGalleryImageCount: customerProviderDetail.galleryImageUrls.length,
+  providerPublicMediaApproved: true,
   momoPaymentStatus: momoPayment?.status ?? null,
   couponId: coupon.id,
   couponCode: coupon.code,

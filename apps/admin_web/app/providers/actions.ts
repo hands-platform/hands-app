@@ -94,6 +94,21 @@ export async function rejectProviderDocument(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function approvePublicProviderMedia(formData: FormData) {
+  const fileId = readRequiredFormString(formData, 'fileId');
+  await adminPost(`/admin/files/${fileId}/approve-public-media`, {}, null);
+  revalidateProviderPaths(readOptionalProviderId(formData));
+  revalidatePath('/audit-log');
+}
+
+export async function rejectPublicProviderMedia(formData: FormData) {
+  const fileId = readRequiredFormString(formData, 'fileId');
+  const reason = readReviewReason(formData);
+  await adminPost(`/admin/files/${fileId}/reject-public-media`, { reason }, null);
+  revalidateProviderPaths(readOptionalProviderId(formData));
+  revalidatePath('/audit-log');
+}
+
 export async function approveProviderBankAccount(formData: FormData) {
   const bankAccountId = readRequiredFormString(formData, 'bankAccountId');
   await adminPost(`/admin/provider-bank-accounts/${bankAccountId}/approve`, {}, null);

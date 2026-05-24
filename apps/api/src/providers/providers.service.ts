@@ -1,5 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { FilePurpose, FileUploadStatus, FileVisibility, ProviderStatus, VerificationStatus } from '@prisma/client';
+import {
+  FilePurpose,
+  FileReviewStatus,
+  FileUploadStatus,
+  FileVisibility,
+  ProviderStatus,
+  VerificationStatus,
+} from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
@@ -40,6 +47,7 @@ export class ProvidersService {
                 purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
                 visibility: FileVisibility.PUBLIC,
                 uploadStatus: FileUploadStatus.UPLOADED,
+                reviewStatus: FileReviewStatus.APPROVED,
               },
               orderBy: { createdAt: 'desc' },
               take: 6,
@@ -85,6 +93,7 @@ export class ProvidersService {
                 purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
                 visibility: FileVisibility.PUBLIC,
                 uploadStatus: FileUploadStatus.UPLOADED,
+                reviewStatus: FileReviewStatus.APPROVED,
               },
               orderBy: { createdAt: 'desc' },
               take: 6,

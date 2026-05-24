@@ -12,6 +12,7 @@ import {
   approveProviderDocument,
   approveProviderKyc,
   approveProviderTaxProfile,
+  approvePublicProviderMedia,
   blockProviderAccount,
   blockProviderDevice,
   rejectProvider,
@@ -19,6 +20,7 @@ import {
   rejectProviderDocument,
   rejectProviderKyc,
   rejectProviderTaxProfile,
+  rejectPublicProviderMedia,
   syncSupabaseProviderRole,
   unblockProviderAccount,
   unblockProviderDevice,
@@ -951,12 +953,17 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 <div className="participant-list" style={{ marginBottom: 6 }}>
                   <span className="pill pill-info">{providerPublicMediaLabel(file.purpose)}</span>
                   <span className="pill pill-success">{file.uploadStatus ?? 'UPLOADED'}</span>
+                  <span className={`pill ${file.reviewStatus === 'APPROVED' ? 'pill-success' : file.reviewStatus === 'REJECTED' ? 'pill-danger' : 'pill-warn'}`}>
+                    {file.reviewStatus ?? 'PENDING_REVIEW'}
+                  </span>
                 </div>
                 <p className="muted">
                   {file.contentType}
                   {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
                   {file.uploadedAt ? ` / uploaded ${formatDate(file.uploadedAt)}` : ''}
                 </p>
+                {file.reviewedAt ? <p className="muted">Reviewed {formatDate(file.reviewedAt)}</p> : null}
+                {file.reviewReason ? <p className="muted">Review reason: {file.reviewReason}</p> : null}
                 <p className="muted">
                   {file.url ? (
                     <a className="text-link" href={file.url} target="_blank" rel="noreferrer">
@@ -966,6 +973,29 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                     file.key
                   )}
                 </p>
+                <div className="actions">
+                  <form action={approvePublicProviderMedia}>
+                    <input type="hidden" name="providerId" value={provider.id} />
+                    <input type="hidden" name="fileId" value={file.id} />
+                    <button type="submit" disabled={file.reviewStatus === 'APPROVED'}>
+                      Approve public media
+                    </button>
+                  </form>
+                  <form action={rejectPublicProviderMedia}>
+                    <input type="hidden" name="providerId" value={provider.id} />
+                    <input type="hidden" name="fileId" value={file.id} />
+                    <input
+                      name="reason"
+                      placeholder="Media rejection reason"
+                      required
+                      minLength={12}
+                      maxLength={500}
+                    />
+                    <button type="submit" disabled={file.reviewStatus === 'REJECTED'}>
+                      Reject media
+                    </button>
+                  </form>
+                </div>
               </div>
             ))
           ) : (

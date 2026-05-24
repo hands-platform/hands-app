@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/co
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
+  FileReviewStatus,
   PayoutBatchStatus,
   ProviderReportSeverity,
   ProviderReportSource,
@@ -135,6 +136,20 @@ export class AdminController {
   @Post('providers/:id/sync-supabase-role')
   syncProviderSupabaseRole(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
     return this.admin.syncProviderSupabaseRole(user.id, providerProfileId);
+  }
+
+  @Post('files/:id/approve-public-media')
+  approvePublicProviderMedia(@CurrentUser() user: AuthenticatedUser, @Param('id') fileId: string) {
+    return this.admin.reviewPublicProviderMedia(user.id, fileId, FileReviewStatus.APPROVED);
+  }
+
+  @Post('files/:id/reject-public-media')
+  rejectPublicProviderMedia(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') fileId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.admin.reviewPublicProviderMedia(user.id, fileId, FileReviewStatus.REJECTED, body.reason);
   }
 
   @Post('providers/:id/reject')
