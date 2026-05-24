@@ -6,6 +6,8 @@ import {
   Prisma,
   ProviderAgreementType,
   ProviderBankAccountStatus,
+  ProviderSanctionStatus,
+  ProviderSanctionType,
   ProviderTaxProfileStatus,
   TaxPolicyStatus,
   TaxRuleScope,
@@ -137,7 +139,15 @@ export class EarningsService {
 
   async summaryForProviderUser(userId: string) {
     const provider = await this.requireProviderProfile(userId);
-    return this.summaryWhere({ providerProfileId: provider.id });
+    const [summary, payoutHold] = await Promise.all([
+      this.summaryWhere({ providerProfileId: provider.id }),
+      this.activePayoutHoldForProvider(this.prisma, provider.id),
+    ]);
+    return {
+      ...summary,
+      payoutBlocked: Boolean(payoutHold),
+      payoutHold,
+    };
   }
 
   listForAdmin() {
@@ -237,7 +247,7 @@ export class EarningsService {
       return tx.providerPayoutBatch.findUniqueOrThrow({
         where: { id: batch.id },
         include: {
-          providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
+          providerProfile: { include: this.providerPayoutInclude() },
           earnings: {
             orderBy: { createdAt: 'desc' },
             include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
@@ -253,7 +263,7 @@ export class EarningsService {
       orderBy: { createdAt: 'desc' },
       take: 100,
       include: {
-        providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
+        providerProfile: { include: this.providerPayoutInclude() },
         earnings: {
           orderBy: { createdAt: 'desc' },
           include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
@@ -284,6 +294,12 @@ export class EarningsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      if (
+        nextStatus === PayoutBatchStatus.PROCESSING ||
+        nextStatus === PayoutBatchStatus.PAID
+      ) {
+        await this.ensureNoActivePayoutHold(tx, existing.providerProfileId);
+      }
       const paidAt = nextStatus === PayoutBatchStatus.PAID ? (existing.paidAt ?? new Date()) : undefined;
       const batch = await tx.providerPayoutBatch.update({
         where: { id: payoutBatchId },
@@ -315,7 +331,7 @@ export class EarningsService {
       return tx.providerPayoutBatch.findUniqueOrThrow({
         where: { id: payoutBatchId },
         include: {
-          providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
+          providerProfile: { include: this.providerPayoutInclude() },
           earnings: {
             orderBy: { createdAt: 'desc' },
             include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
@@ -418,6 +434,8 @@ export class EarningsService {
       throw new NotFoundException('Provider profile not found');
     }
 
+    await this.ensureNoActivePayoutHold(tx, providerProfileId);
+
     const completedBookingCount = await tx.booking.count({
       where: { selectedProviderId: providerProfileId, status: BookingStatus.COMPLETED },
     });
@@ -439,6 +457,36 @@ export class EarningsService {
     if (missingAgreements.length > 0) {
       throw new BadRequestException(
         `Provider must accept payout agreements: ${missingAgreements.join(', ')}`,
+      );
+    }
+  }
+
+  private providerPayoutInclude() {
+    return {
+      user: { select: { id: true, phone: true, fullName: true } },
+      sanctions: {
+        where: activePayoutHoldWhere(),
+        orderBy: { startsAt: 'desc' as const },
+        take: 3,
+      },
+    };
+  }
+
+  private async activePayoutHoldForProvider(
+    client: PrismaService | TxClient,
+    providerProfileId: string,
+  ) {
+    return client.providerSanction.findFirst({
+      where: activePayoutHoldWhere(providerProfileId),
+      orderBy: { startsAt: 'desc' },
+    });
+  }
+
+  private async ensureNoActivePayoutHold(client: TxClient, providerProfileId: string) {
+    const payoutHold = await this.activePayoutHoldForProvider(client, providerProfileId);
+    if (payoutHold) {
+      throw new BadRequestException(
+        `Provider payout is blocked by active sanction: ${payoutHold.reason}`,
       );
     }
   }
@@ -555,6 +603,15 @@ function normalizeNullable(value: string | null) {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function activePayoutHoldWhere(providerProfileId?: string): Prisma.ProviderSanctionWhereInput {
+  return {
+    ...(providerProfileId ? { providerProfileId } : {}),
+    type: ProviderSanctionType.PAYOUT_HOLD,
+    status: ProviderSanctionStatus.ACTIVE,
+    OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+  };
 }
 
 function selectTaxRule(rules: TaxRuleRecord[], input: { grossAmount: number; serviceTypes: string[] }) {

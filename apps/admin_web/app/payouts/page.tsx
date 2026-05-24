@@ -22,6 +22,10 @@ export default async function PayoutsPage() {
           <h2>{summary.inProgress}</h2>
         </div>
         <div className="card">
+          <p>Payout holds</p>
+          <h2>{summary.payoutHolds}</h2>
+        </div>
+        <div className="card">
           <p>Settled</p>
           <h2>{summary.settled}</h2>
         </div>
@@ -71,6 +75,7 @@ export default async function PayoutsPage() {
           <tbody>
             {batches.map((batch) => {
               const checklist = payoutChecklist(batch);
+              const payoutHold = activePayoutHold(batch);
               return (
                 <tr id={batch.id} key={batch.id}>
                   <td>
@@ -82,13 +87,20 @@ export default async function PayoutsPage() {
                       {batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown'}
                     </div>
                     <div className="muted">{batch.providerProfile?.user?.phone ?? 'No phone on file'}</div>
+                    {payoutHold && (
+                      <div style={{ marginTop: 6 }}>
+                        <span className="pill pill-danger">Payout hold</span>
+                      </div>
+                    )}
                   </td>
                   <td>
                     <div>{humanizeStatus(batch.status)}</div>
                     <div className="muted">{payoutPhase(batch.status)}</div>
                   </td>
                   <td>
-                    <span className={signalClass(batch.status)}>{opsSignal(batch)}</span>
+                    <span className={payoutHold ? 'signal signal-warn' : signalClass(batch.status)}>
+                      {opsSignal(batch)}
+                    </span>
                     <div className="muted" style={{ marginTop: 6 }}>
                       {opsHint(batch)}
                     </div>
@@ -140,13 +152,28 @@ export default async function PayoutsPage() {
                     </form>
                     <div className="actions" style={{ marginTop: 8 }}>
                       {batch.status === 'DRAFT' && (
-                        <PayoutStatusForm action={markPayoutProcessing} batch={batch} label="Processing" />
+                        <PayoutStatusForm
+                          action={markPayoutProcessing}
+                          batch={batch}
+                          disabled={Boolean(payoutHold)}
+                          label="Processing"
+                        />
                       )}
                       {batch.status !== 'PAID' && batch.status !== 'CANCELLED' && (
-                        <PayoutStatusForm action={markPayoutPaid} batch={batch} label="Paid" />
+                        <PayoutStatusForm
+                          action={markPayoutPaid}
+                          batch={batch}
+                          disabled={Boolean(payoutHold)}
+                          label="Paid"
+                        />
                       )}
                       {batch.status === 'PROCESSING' && (
                         <PayoutStatusForm action={markPayoutFailed} batch={batch} label="Failed" />
+                      )}
+                      {payoutHold && (
+                        <a className="pill pill-danger" href={`/providers/${batch.providerProfileId}`}>
+                          Open provider risk
+                        </a>
                       )}
                       {(batch.status === 'PAID' || batch.status === 'CANCELLED') && (
                         <span className="muted">No status action</span>
@@ -171,17 +198,21 @@ export default async function PayoutsPage() {
 function PayoutStatusForm({
   action,
   batch,
+  disabled,
   label,
 }: {
   action: (formData: FormData) => Promise<void>;
   batch: AdminPayoutBatch;
+  disabled?: boolean;
   label: string;
 }) {
   return (
     <form action={action}>
       <input type="hidden" name="payoutBatchId" value={batch.id} />
       <input type="hidden" name="transferRef" value={batch.transferRef ?? ''} />
-      <button type="submit">{label}</button>
+      <button disabled={disabled} type="submit">
+        {label}
+      </button>
     </form>
   );
 }
@@ -219,6 +250,7 @@ function buildSummary(batches: AdminPayoutBatch[]) {
     total: batches.length,
     needsReview: batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED').length,
     inProgress: batches.filter((batch) => batch.status === 'PROCESSING').length,
+    payoutHolds: batches.filter((batch) => Boolean(activePayoutHold(batch))).length,
     settled: batches.filter((batch) => batch.status === 'PAID').length,
     totalNetAmount: batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
     withholdingAmount: batches.reduce((sum, batch) => sum + batchWithholdingAmount(batch), 0),
@@ -273,6 +305,9 @@ function signalClass(status: string) {
 }
 
 function opsSignal(batch: AdminPayoutBatch) {
+  if (activePayoutHold(batch)) {
+    return 'Payout hold';
+  }
   switch (batch.status) {
     case 'DRAFT':
       return 'Needs review';
@@ -290,6 +325,10 @@ function opsSignal(batch: AdminPayoutBatch) {
 }
 
 function opsHint(batch: AdminPayoutBatch) {
+  const payoutHold = activePayoutHold(batch);
+  if (payoutHold) {
+    return `Finance actions are locked until this active sanction is lifted: ${payoutHold.reason}`;
+  }
   switch (batch.status) {
     case 'DRAFT':
       return 'Check included earnings, confirm the therapist, and release only if totals look right.';
@@ -319,11 +358,19 @@ function earningsStatusHint(batch: AdminPayoutBatch) {
 function payoutChecklist(batch: AdminPayoutBatch) {
   const earnings = batch.earnings ?? [];
   const allEarningsPaid = earnings.length > 0 && earnings.every((earning) => earning.status === 'PAID');
+  const payoutHold = activePayoutHold(batch);
   return [
+    { label: payoutHold ? 'Held' : 'No hold', ok: !payoutHold },
     { label: batch.transferRef ? 'Ref' : 'No ref', ok: Boolean(batch.transferRef) },
     { label: allEarningsPaid ? 'Earnings paid' : 'Earnings open', ok: allEarningsPaid },
     { label: batch.paidAt ? 'Paid date' : 'No paid date', ok: Boolean(batch.paidAt) },
   ];
+}
+
+function activePayoutHold(batch: AdminPayoutBatch) {
+  return batch.providerProfile?.sanctions?.find(
+    (sanction) => sanction.type === 'PAYOUT_HOLD' && sanction.status === 'ACTIVE',
+  );
 }
 
 function formatMoney(amount: number, currency: string) {

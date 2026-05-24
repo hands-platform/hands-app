@@ -420,7 +420,11 @@ export type AdminPayoutBatch = {
   notes?: string | null;
   createdAt: string;
   paidAt?: string | null;
-  providerProfile?: { displayName?: string | null; user?: { phone?: string; fullName?: string | null } };
+  providerProfile?: {
+    displayName?: string | null;
+    user?: { phone?: string; fullName?: string | null };
+    sanctions?: AdminProviderSanction[];
+  };
   earnings?: AdminEarning[];
   withholdingLogs?: AdminWithholdingLog[];
 };

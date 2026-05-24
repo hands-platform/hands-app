@@ -643,6 +643,40 @@ if (
 if (providerEarningsSummary.withholdingAmount <= 0) {
   throw new Error(`Earnings summary did not include withholding: ${JSON.stringify(providerEarningsSummary)}`);
 }
+const existingPayoutHolds = await getJson('/admin/provider-sanctions', adminAuth.accessToken);
+for (const sanction of existingPayoutHolds.filter(
+  (item) =>
+    item.providerProfileId === providerAuth.user.providerProfile.id &&
+    item.type === 'PAYOUT_HOLD' &&
+    item.status === 'ACTIVE',
+)) {
+  await postJson(`/admin/provider-sanctions/${sanction.id}/lift`, adminAuth.accessToken);
+}
+const payoutHoldSanction = await postJson(
+  `/admin/providers/${providerAuth.user.providerProfile.id}/sanctions`,
+  adminAuth.accessToken,
+  {
+    type: 'PAYOUT_HOLD',
+    reason: 'Smoke payout hold before finance release',
+  },
+);
+await expectRequestFailure(
+  'Active payout hold blocks payout batch creation',
+  () =>
+    postJson('/admin/payout-batches', adminAuth.accessToken, {
+      providerProfileId: providerAuth.user.providerProfile.id,
+      transferRef: `SMOKE-HOLD-${Date.now()}`,
+      notes: 'This should be blocked by active payout hold',
+    }),
+  400,
+);
+const liftedPayoutHoldSanction = await postJson(
+  `/admin/provider-sanctions/${payoutHoldSanction.id}/lift`,
+  adminAuth.accessToken,
+);
+if (liftedPayoutHoldSanction.status !== 'LIFTED') {
+  throw new Error(`Payout hold sanction was not lifted: ${JSON.stringify(liftedPayoutHoldSanction)}`);
+}
 const payoutBatch = await postJson('/admin/payout-batches', adminAuth.accessToken, {
   providerProfileId: providerAuth.user.providerProfile.id,
   transferRef: `SMOKE-${Date.now()}`,
@@ -820,6 +854,7 @@ console.log({
   providerRiskReportStatus: resolvedProviderRiskReport.status,
   providerRiskSanctionId: providerRiskSanction.id,
   providerRiskSanctionLifted: liftedProviderRiskSanction.status === 'LIFTED',
+  providerPayoutHoldBlocked: Boolean(payoutHoldSanction.id) && liftedPayoutHoldSanction.status === 'LIFTED',
   providerSupabaseRoleSyncStatus: providerSupabaseRoleSync.status,
   hybridPreferredProviderId: adminHybridBooking?.preferredProvider?.id ?? null,
   hybridSelectedProviderId: adminHybridBooking?.selectedProvider?.id ?? null,
