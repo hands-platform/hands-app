@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   BookingStatus,
   EarningStatus,
@@ -15,7 +15,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-const PROVIDER_WALLET_BLOCK_REASON = '수수료에대한 정산이 되지 않아 예약을 받을수 없습니다';
+const PROVIDER_WALLET_BLOCK_REASON =
+  '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
 
 @Injectable()
 export class BookingsService {
@@ -58,15 +59,35 @@ export class BookingsService {
           include: { user: true },
         })
       : null;
+    const providerService = preferredProvider
+      ? await this.prisma.providerService.findUnique({
+          where: {
+            providerProfileId_serviceId: {
+              providerProfileId: preferredProvider.id,
+              serviceId: service.id,
+            },
+          },
+        })
+      : null;
     if (preferredProvider) {
       await this.ensureProviderWalletCanAccept(preferredProvider.id);
+      const configuredServiceCount = await this.prisma.providerService.count({
+        where: {
+          providerProfileId: preferredProvider.id,
+          active: true,
+        },
+      });
+      if (!providerService?.active && configuredServiceCount > 0) {
+        throw new BadRequestException('Provider does not offer this service');
+      }
     }
+    const customerPrice = this.resolveCustomerPrice(service, providerService?.price);
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
     const scheduledStartAt = new Date(input.scheduledStartAt);
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + service.durationMin * 60_000);
     const expiresAt = new Date(Date.now() + 15 * 60_000);
-    const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, service.basePrice) : 0;
-    const finalAmount = Math.max(0, service.basePrice - discountAmount);
+    const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
+    const finalAmount = Math.max(0, customerPrice - discountAmount);
 
     let booking = await this.prisma.booking.create({
       data: {
@@ -84,12 +105,13 @@ export class BookingsService {
         services: {
           create: {
             serviceId: service.id,
-            price: service.basePrice,
+            price: customerPrice,
           },
         },
         payment: {
           create: this.payments.buildAuthorization(input.paymentMethod, finalAmount, 'pending-booking', {
-            originalAmount: service.basePrice,
+            originalAmount: customerPrice,
+            adminMinimumAmount: service.basePrice,
             discountAmount,
             couponCode: coupon?.code,
             couponId: coupon?.id,
@@ -191,6 +213,24 @@ export class BookingsService {
     }
 
     return Math.min(subtotal, Math.round((subtotal * value) / 100));
+  }
+
+  private resolveCustomerPrice(
+    service: { basePrice: number; priceStep?: number | null },
+    providerPrice?: number | null,
+  ) {
+    const customerPrice = providerPrice ?? service.basePrice;
+    const priceStep = service.priceStep ?? 100000;
+    if (!Number.isInteger(customerPrice) || customerPrice <= 0) {
+      throw new BadRequestException('Provider service price is invalid');
+    }
+    if (customerPrice < service.basePrice) {
+      throw new BadRequestException('Provider service price cannot be lower than the admin minimum');
+    }
+    if (customerPrice % priceStep !== 0) {
+      throw new BadRequestException(`Provider service price must use ${priceStep} VND increments`);
+    }
+    return customerPrice;
   }
 
   getBooking(id: string) {

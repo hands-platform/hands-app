@@ -17,7 +17,18 @@ export class ServicesController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
-  create(@Body() body: { name: string; description?: string; durationMin: number; basePrice: number }) {
+  create(
+    @Body()
+    body: {
+      serviceGroupKey?: string;
+      name: string;
+      description?: string;
+      durationMin: number;
+      basePrice: number;
+      priceStep?: number;
+      displayOrder?: number;
+    },
+  ) {
     return this.services.create(body);
   }
 }

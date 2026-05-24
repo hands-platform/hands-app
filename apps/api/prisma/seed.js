@@ -10,41 +10,148 @@ const {
 const prisma = new PrismaClient();
 
 async function main() {
-  const services = await Promise.all([
-    prisma.massageService.upsert({
-      where: { id: 'svc-swedish-60' },
-      update: {},
-      create: {
-        id: 'svc-swedish-60',
-        name: 'Swedish Massage',
-        description: 'Relaxing full-body massage for first-time customers.',
-        durationMin: 60,
-        basePrice: 450000,
+  const serviceCatalog = [
+    {
+      id: 'svc-foot-45',
+      serviceGroupKey: 'foot',
+      name: 'Foot Massage',
+      description: 'Foot and lower-leg massage for quick recovery.',
+      durationMin: 45,
+      basePrice: 300000,
+      displayOrder: 10,
+    },
+    {
+      id: 'svc-foot-60',
+      serviceGroupKey: 'foot',
+      name: 'Foot Massage',
+      description: 'Foot and lower-leg massage for quick recovery.',
+      durationMin: 60,
+      basePrice: 500000,
+      displayOrder: 11,
+    },
+    {
+      id: 'svc-foot-90',
+      serviceGroupKey: 'foot',
+      name: 'Foot Massage',
+      description: 'Foot and lower-leg massage for quick recovery.',
+      durationMin: 90,
+      basePrice: 700000,
+      displayOrder: 12,
+    },
+    {
+      id: 'svc-foot-120',
+      serviceGroupKey: 'foot',
+      name: 'Foot Massage',
+      description: 'Foot and lower-leg massage for quick recovery.',
+      durationMin: 120,
+      basePrice: 900000,
+      displayOrder: 13,
+    },
+    {
+      id: 'svc-swedish-60',
+      serviceGroupKey: 'swedish',
+      name: 'Swedish Massage',
+      description: 'Relaxing full-body massage for first-time customers.',
+      durationMin: 60,
+      basePrice: 500000,
+      displayOrder: 20,
+    },
+    {
+      id: 'svc-swedish-90',
+      serviceGroupKey: 'swedish',
+      name: 'Swedish Massage',
+      description: 'Relaxing full-body massage for first-time customers.',
+      durationMin: 90,
+      basePrice: 700000,
+      displayOrder: 21,
+    },
+    {
+      id: 'svc-swedish-120',
+      serviceGroupKey: 'swedish',
+      name: 'Swedish Massage',
+      description: 'Relaxing full-body massage for first-time customers.',
+      durationMin: 120,
+      basePrice: 900000,
+      displayOrder: 22,
+    },
+    {
+      id: 'svc-deep-tissue-60',
+      serviceGroupKey: 'deep_tissue',
+      name: 'Deep Tissue Massage',
+      description: 'Focused pressure for muscle tension and recovery.',
+      durationMin: 60,
+      basePrice: 500000,
+      displayOrder: 30,
+    },
+    {
+      id: 'svc-deep-tissue-90',
+      serviceGroupKey: 'deep_tissue',
+      name: 'Deep Tissue Massage',
+      description: 'Focused pressure for muscle tension and recovery.',
+      durationMin: 90,
+      basePrice: 700000,
+      displayOrder: 31,
+    },
+    {
+      id: 'svc-deep-tissue-120',
+      serviceGroupKey: 'deep_tissue',
+      name: 'Deep Tissue Massage',
+      description: 'Focused pressure for muscle tension and recovery.',
+      durationMin: 120,
+      basePrice: 900000,
+      displayOrder: 32,
+    },
+  ];
+  const services = await Promise.all(
+    serviceCatalog.map((service) =>
+      prisma.massageService.upsert({
+        where: { id: service.id },
+        update: {
+          serviceGroupKey: service.serviceGroupKey,
+          name: service.name,
+          description: service.description,
+          durationMin: service.durationMin,
+          basePrice: service.basePrice,
+          priceStep: 100000,
+          displayOrder: service.displayOrder,
+          active: true,
+        },
+        create: {
+          ...service,
+          priceStep: 100000,
+        },
+      }),
+    ),
+  );
+
+  for (const service of services) {
+    await prisma.servicePayoutRule.upsert({
+      where: {
+        serviceId_customerPrice: {
+          serviceId: service.id,
+          customerPrice: service.basePrice,
+        },
       },
-    }),
-    prisma.massageService.upsert({
-      where: { id: 'svc-deep-tissue-90' },
-      update: {},
-      create: {
-        id: 'svc-deep-tissue-90',
-        name: 'Deep Tissue Massage',
-        description: 'Focused pressure for muscle tension and recovery.',
-        durationMin: 90,
-        basePrice: 690000,
+      update: {
+        providerPayoutAmount: Math.max(0, service.basePrice - Math.round(service.basePrice * 0.2)),
+        vatBps: 0,
+        otherCostAmount: 0,
+        currency: 'VND',
+        active: true,
+        notes: 'Default MVP payout rule generated from the 20% platform fee baseline.',
       },
-    }),
-    prisma.massageService.upsert({
-      where: { id: 'svc-foot-45' },
-      update: {},
       create: {
-        id: 'svc-foot-45',
-        name: 'Foot Massage',
-        description: 'Foot and lower-leg massage for quick recovery.',
-        durationMin: 45,
-        basePrice: 300000,
+        serviceId: service.id,
+        customerPrice: service.basePrice,
+        providerPayoutAmount: Math.max(0, service.basePrice - Math.round(service.basePrice * 0.2)),
+        vatBps: 0,
+        otherCostAmount: 0,
+        currency: 'VND',
+        active: true,
+        notes: 'Default MVP payout rule generated from the 20% platform fee baseline.',
       },
-    }),
-  ]);
+    });
+  }
 
   const customer = await prisma.user.upsert({
     where: { phone: '+84900000001' },

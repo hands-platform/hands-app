@@ -1,0 +1,134 @@
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { adminPatch, adminPost } from '../../lib/admin-api';
+
+export async function createService(formData: FormData) {
+  const name = String(formData.get('name') || '').trim();
+  const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
+  const description = String(formData.get('description') || '').trim();
+  const durationMin = parseInteger(formData.get('durationMin'));
+  const basePrice = parseInteger(formData.get('basePrice'));
+  const priceStep = parseInteger(formData.get('priceStep')) ?? 100000;
+  const displayOrder = parseInteger(formData.get('displayOrder')) ?? 0;
+
+  if (!name || !durationMin || !basePrice) {
+    return;
+  }
+
+  await adminPost(
+    '/admin/services',
+    {
+      name,
+      serviceGroupKey: serviceGroupKey || undefined,
+      description: description || undefined,
+      durationMin,
+      basePrice,
+      priceStep,
+      displayOrder,
+      active: true,
+    },
+    null,
+  );
+  revalidatePath('/services');
+  revalidatePath('/audit-log');
+}
+
+export async function updateService(formData: FormData) {
+  const serviceId = String(formData.get('serviceId') || '').trim();
+  const name = String(formData.get('name') || '').trim();
+  const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
+  const description = String(formData.get('description') || '').trim();
+  const durationMin = parseInteger(formData.get('durationMin'));
+  const basePrice = parseInteger(formData.get('basePrice'));
+  const priceStep = parseInteger(formData.get('priceStep')) ?? 100000;
+  const displayOrder = parseInteger(formData.get('displayOrder')) ?? 0;
+  const active = formData.get('active') === 'on';
+
+  if (!serviceId || !name || !durationMin || !basePrice) {
+    return;
+  }
+
+  await adminPatch(
+    `/admin/services/${serviceId}`,
+    {
+      name,
+      serviceGroupKey: serviceGroupKey || null,
+      description: description || null,
+      durationMin,
+      basePrice,
+      priceStep,
+      displayOrder,
+      active,
+    },
+    null,
+  );
+  revalidatePath('/services');
+  revalidatePath('/audit-log');
+}
+
+export async function upsertPayoutRule(formData: FormData) {
+  const serviceId = String(formData.get('serviceId') || '').trim();
+  const customerPrice = parseInteger(formData.get('customerPrice'));
+  const providerPayoutAmount = parseInteger(formData.get('providerPayoutAmount'));
+  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
+  const notes = String(formData.get('notes') || '').trim();
+
+  if (!serviceId || !customerPrice || providerPayoutAmount === null) {
+    return;
+  }
+
+  await adminPost(
+    `/admin/services/${serviceId}/payout-rules`,
+    {
+      customerPrice,
+      providerPayoutAmount,
+      vatBps,
+      otherCostAmount,
+      active: true,
+      notes: notes || undefined,
+    },
+    null,
+  );
+  revalidatePath('/services');
+  revalidatePath('/audit-log');
+}
+
+export async function updatePayoutRule(formData: FormData) {
+  const ruleId = String(formData.get('ruleId') || '').trim();
+  const customerPrice = parseInteger(formData.get('customerPrice'));
+  const providerPayoutAmount = parseInteger(formData.get('providerPayoutAmount'));
+  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
+  const active = formData.get('active') === 'on';
+  const notes = String(formData.get('notes') || '').trim();
+
+  if (!ruleId || !customerPrice || providerPayoutAmount === null) {
+    return;
+  }
+
+  await adminPatch(
+    `/admin/service-payout-rules/${ruleId}`,
+    {
+      customerPrice,
+      providerPayoutAmount,
+      vatBps,
+      otherCostAmount,
+      active,
+      notes: notes || null,
+    },
+    null,
+  );
+  revalidatePath('/services');
+  revalidatePath('/audit-log');
+}
+
+function parseInteger(value: FormDataEntryValue | null) {
+  const raw = String(value ?? '').trim();
+  if (!raw) {
+    return null;
+  }
+  const number = Number(raw);
+  return Number.isInteger(number) ? number : null;
+}

@@ -512,14 +512,21 @@ model ProviderVerification {
 }
 
 model MassageService {
-  id          String            @id @default(cuid())
-  name        String
-  description String?
-  durationMin Int
-  basePrice   Int
-  active      Boolean           @default(true)
-  providers   ProviderService[]
-  bookings    BookingService[]
+  id              String              @id @default(cuid())
+  serviceGroupKey String?
+  name            String
+  description     String?
+  durationMin     Int
+  basePrice       Int
+  priceStep       Int                 @default(100000)
+  displayOrder    Int                 @default(0)
+  active          Boolean             @default(true)
+  providers       ProviderService[]
+  bookings        BookingService[]
+  payoutRules     ServicePayoutRule[]
+
+  @@index([serviceGroupKey, durationMin])
+  @@index([active, displayOrder])
 }
 
 model ProviderService {
@@ -532,6 +539,24 @@ model ProviderService {
   service           MassageService  @relation(fields: [serviceId], references: [id])
 
   @@unique([providerProfileId, serviceId])
+}
+
+model ServicePayoutRule {
+  id                   String         @id @default(cuid())
+  serviceId            String
+  customerPrice        Int
+  providerPayoutAmount Int
+  vatBps               Int            @default(0)
+  otherCostAmount      Int            @default(0)
+  currency             String         @default("VND")
+  active               Boolean        @default(true)
+  notes                String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  service              MassageService @relation(fields: [serviceId], references: [id])
+
+  @@unique([serviceId, customerPrice])
+  @@index([serviceId, active])
 }
 
 model Booking {

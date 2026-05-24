@@ -194,6 +194,82 @@ export class AdminController {
     return this.admin.earningsSummary();
   }
 
+  @Get('services')
+  services() {
+    return this.admin.listServices();
+  }
+
+  @Post('services')
+  createService(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    body: {
+      serviceGroupKey?: string;
+      name?: string;
+      description?: string | null;
+      durationMin?: number;
+      basePrice?: number;
+      priceStep?: number;
+      displayOrder?: number;
+      active?: boolean;
+    },
+  ) {
+    return this.admin.createService(user.id, body);
+  }
+
+  @Patch('services/:id')
+  updateService(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      serviceGroupKey?: string | null;
+      name?: string;
+      description?: string | null;
+      durationMin?: number;
+      basePrice?: number;
+      priceStep?: number;
+      displayOrder?: number;
+      active?: boolean;
+    },
+  ) {
+    return this.admin.updateService(user.id, id, body);
+  }
+
+  @Post('services/:id/payout-rules')
+  upsertServicePayoutRule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') serviceId: string,
+    @Body()
+    body: {
+      customerPrice?: number;
+      providerPayoutAmount?: number;
+      vatBps?: number;
+      otherCostAmount?: number;
+      active?: boolean;
+      notes?: string | null;
+    },
+  ) {
+    return this.admin.upsertServicePayoutRule(user.id, serviceId, body);
+  }
+
+  @Patch('service-payout-rules/:id')
+  updateServicePayoutRule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      customerPrice?: number;
+      providerPayoutAmount?: number;
+      vatBps?: number;
+      otherCostAmount?: number;
+      active?: boolean;
+      notes?: string | null;
+    },
+  ) {
+    return this.admin.updateServicePayoutRule(user.id, id, body);
+  }
+
   @Post('earnings/:id/mark-paid')
   markEarningPaid(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.admin.markEarningPaid(user.id, id);

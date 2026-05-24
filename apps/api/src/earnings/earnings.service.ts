@@ -15,13 +15,20 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 
-const PROVIDER_WALLET_BLOCK_REASON = '수수료에대한 정산이 되지 않아 예약을 받을수 없습니다';
+const PROVIDER_WALLET_BLOCK_REASON =
+  '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
 
 type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
 type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
 type PlatformFeePolicyWithRules = Prisma.PlatformFeePolicyVersionGetPayload<{ include: { rules: true } }>;
 type PlatformFeeRuleRecord = PlatformFeePolicyWithRules['rules'][number];
 type TxClient = Prisma.TransactionClient;
+type PricedBookingService = {
+  serviceId: string;
+  serviceName?: string | null;
+  price: number;
+  quantity: number;
+};
 
 @Injectable()
 export class EarningsService {
@@ -53,12 +60,19 @@ export class EarningsService {
     const serviceTypes = booking.services.flatMap((item) =>
       [item.serviceId, item.service?.name].filter(Boolean),
     );
+    const pricedServices = booking.services.map((item) => ({
+      serviceId: item.serviceId,
+      serviceName: item.service?.name,
+      price: item.price,
+      quantity: item.quantity,
+    }));
 
     return this.prisma.$transaction(async (tx) => {
       const platformFee = await this.calculatePlatformFee(tx, {
         grossAmount,
         currency,
         serviceTypes,
+        services: pricedServices,
         occurredAt: booking.updatedAt ?? new Date(),
       });
       const tax = await this.calculateWithholding(tx, {
@@ -452,9 +466,15 @@ export class EarningsService {
       grossAmount: number;
       currency: string;
       serviceTypes: string[];
+      services: PricedBookingService[];
       occurredAt: Date;
     },
   ) {
+    const servicePayoutFee = await this.calculateServicePayoutFee(tx, input);
+    if (servicePayoutFee) {
+      return servicePayoutFee;
+    }
+
     const policy = await tx.platformFeePolicyVersion.findFirst({
       where: {
         status: TaxPolicyStatus.ACTIVE,
@@ -497,6 +517,82 @@ export class EarningsService {
         maxGrossAmount: rule.maxGrossAmount,
         rateBps,
         fixedAmount,
+      },
+    };
+  }
+
+  private async calculateServicePayoutFee(
+    tx: TxClient,
+    input: {
+      grossAmount: number;
+      currency: string;
+      services: PricedBookingService[];
+    },
+  ) {
+    if (input.services.length === 0) {
+      return null;
+    }
+
+    const payoutRules = await tx.servicePayoutRule.findMany({
+      where: {
+        active: true,
+        OR: input.services.map((service) => ({
+          serviceId: service.serviceId,
+          customerPrice: service.price,
+        })),
+      },
+    });
+    const ruleByServiceAndPrice = new Map(
+      payoutRules.map((rule) => [`${rule.serviceId}:${rule.customerPrice}`, rule]),
+    );
+    const selectedRules = input.services.map((service) => ({
+      service,
+      rule: ruleByServiceAndPrice.get(`${service.serviceId}:${service.price}`),
+    }));
+    if (selectedRules.some((item) => !item.rule)) {
+      return null;
+    }
+
+    const ruleLines = selectedRules.map(({ service, rule }) => {
+      if (!rule) {
+        throw new BadRequestException('Missing service payout rule');
+      }
+      const customerAmount = service.price * service.quantity;
+      const providerPayoutAmount = rule.providerPayoutAmount * service.quantity;
+      const platformFeeAmount = Math.max(0, customerAmount - providerPayoutAmount);
+      const vatAmount = Math.round((platformFeeAmount * rule.vatBps) / 10_000);
+      const otherCostAmount = rule.otherCostAmount * service.quantity;
+      return {
+        serviceId: service.serviceId,
+        serviceName: service.serviceName,
+        quantity: service.quantity,
+        customerPrice: service.price,
+        customerAmount,
+        providerPayoutAmount,
+        platformFeeAmount,
+        vatBps: rule.vatBps,
+        vatAmount,
+        otherCostAmount,
+        ruleId: rule.id,
+      };
+    });
+    const providerPayoutAmount = ruleLines.reduce((sum, line) => sum + line.providerPayoutAmount, 0);
+    const platformFeeAmount = Math.max(0, input.grossAmount - providerPayoutAmount);
+    const vatAmount = ruleLines.reduce((sum, line) => sum + line.vatAmount, 0);
+    const otherCostAmount = ruleLines.reduce((sum, line) => sum + line.otherCostAmount, 0);
+
+    return {
+      platformFeeAmount,
+      currency: input.currency,
+      policyVersionId: null,
+      ruleSnapshot: {
+        source: 'SERVICE_PAYOUT_RULE',
+        providerPayoutAmount,
+        vatAmount,
+        otherCostAmount,
+        grossAmount: input.grossAmount,
+        netCompanyFeeBeforeWithholding: Math.max(0, platformFeeAmount - vatAmount - otherCostAmount),
+        lines: ruleLines,
       },
     };
   }

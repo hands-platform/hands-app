@@ -758,6 +758,141 @@ export class AdminService {
     return this.earnings.adminSummary();
   }
 
+  listServices() {
+    return this.prisma.massageService.findMany({
+      orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
+      include: {
+        payoutRules: { orderBy: [{ active: 'desc' }, { customerPrice: 'asc' }] },
+        _count: { select: { providers: true, bookings: true } },
+      },
+    });
+  }
+
+  async createService(
+    actorId: string,
+    input: {
+      serviceGroupKey?: string;
+      name?: string;
+      description?: string | null;
+      durationMin?: number;
+      basePrice?: number;
+      priceStep?: number;
+      displayOrder?: number;
+      active?: boolean;
+    },
+  ) {
+    const data = normalizeServiceInput(input, true) as Prisma.MassageServiceUncheckedCreateInput;
+    const service = await this.prisma.massageService.create({
+      data,
+      include: { payoutRules: true },
+    });
+    await this.writeAudit(actorId, 'service.create', `service:${service.id}`, toJson(data));
+    return service;
+  }
+
+  async updateService(
+    actorId: string,
+    serviceId: string,
+    input: {
+      serviceGroupKey?: string | null;
+      name?: string;
+      description?: string | null;
+      durationMin?: number;
+      basePrice?: number;
+      priceStep?: number;
+      displayOrder?: number;
+      active?: boolean;
+    },
+  ) {
+    const existing = await this.prisma.massageService.findUniqueOrThrow({ where: { id: serviceId } });
+    const data = normalizeServiceInput(input, false, existing) as Prisma.MassageServiceUncheckedUpdateInput;
+    return this.prisma.$transaction(async (tx) => {
+      const service = await tx.massageService.update({
+        where: { id: serviceId },
+        data,
+        include: {
+          payoutRules: { orderBy: [{ active: 'desc' }, { customerPrice: 'asc' }] },
+          _count: { select: { providers: true, bookings: true } },
+        },
+      });
+      let adjustedProviderPrices = 0;
+      const nextBasePrice = typeof data.basePrice === 'number' ? data.basePrice : undefined;
+      if (nextBasePrice !== undefined) {
+        const adjusted = await tx.providerService.updateMany({
+          where: { serviceId, price: { lt: nextBasePrice } },
+          data: { price: nextBasePrice },
+        });
+        adjustedProviderPrices = adjusted.count;
+      }
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'service.update',
+          target: `service:${serviceId}`,
+          metadata: toJson({ ...data, adjustedProviderPrices }),
+        },
+      });
+      return service;
+    });
+  }
+
+  async upsertServicePayoutRule(
+    actorId: string,
+    serviceId: string,
+    input: {
+      customerPrice?: number;
+      providerPayoutAmount?: number;
+      vatBps?: number;
+      otherCostAmount?: number;
+      active?: boolean;
+      notes?: string | null;
+    },
+  ) {
+    const service = await this.prisma.massageService.findUniqueOrThrow({ where: { id: serviceId } });
+    const data = normalizeServicePayoutRuleInput(service, input, true);
+    const rule = await this.prisma.servicePayoutRule.upsert({
+      where: {
+        serviceId_customerPrice: {
+          serviceId,
+          customerPrice: data.customerPrice,
+        },
+      },
+      update: data,
+      create: {
+        ...data,
+        serviceId,
+      },
+    });
+    await this.writeAudit(actorId, 'service_payout_rule.upsert', `service:${serviceId}`, toJson(data));
+    return rule;
+  }
+
+  async updateServicePayoutRule(
+    actorId: string,
+    ruleId: string,
+    input: {
+      customerPrice?: number;
+      providerPayoutAmount?: number;
+      vatBps?: number;
+      otherCostAmount?: number;
+      active?: boolean;
+      notes?: string | null;
+    },
+  ) {
+    const existing = await this.prisma.servicePayoutRule.findUniqueOrThrow({
+      where: { id: ruleId },
+      include: { service: true },
+    });
+    const data = normalizeServicePayoutRuleInput(existing.service, input, false, existing);
+    const rule = await this.prisma.servicePayoutRule.update({
+      where: { id: ruleId },
+      data,
+      include: { service: true },
+    });
+    await this.writeAudit(actorId, 'service_payout_rule.update', `service_payout_rule:${ruleId}`, toJson(data));
+    return rule;
+  }
+
   async markEarningPaid(actorId: string, earningId: string) {
     const earning = await this.earnings.markPaid(earningId);
     await this.writeAudit(actorId, earning.netAmount < 0 ? 'earning.cash_fee_settled' : 'earning.paid', `earning:${earning.id}`, {
@@ -955,4 +1090,131 @@ function toJson(value: unknown): Prisma.InputJsonValue {
 function normalizeNullable(value?: string | null) {
   const normalized = value?.trim();
   return normalized ? normalized : null;
+}
+
+function normalizeServiceInput(
+  input: {
+    serviceGroupKey?: string | null;
+    name?: string;
+    description?: string | null;
+    durationMin?: number;
+    basePrice?: number;
+    priceStep?: number;
+    displayOrder?: number;
+    active?: boolean;
+  },
+  creating: boolean,
+  existing?: { name: string; basePrice: number; priceStep: number },
+): Prisma.MassageServiceUncheckedCreateInput | Prisma.MassageServiceUncheckedUpdateInput {
+  const name = input.name?.trim();
+  if (creating && !name) {
+    throw new BadRequestException('Service name is required');
+  }
+  const durationMin = input.durationMin;
+  if ((creating || durationMin !== undefined) && (!Number.isInteger(durationMin) || (durationMin ?? 0) <= 0)) {
+    throw new BadRequestException('Service duration must be a positive integer');
+  }
+
+  const nextPriceStep = input.priceStep ?? existing?.priceStep ?? 100000;
+  if (!Number.isInteger(nextPriceStep) || nextPriceStep <= 0) {
+    throw new BadRequestException('Price step must be a positive integer');
+  }
+  const nextBasePrice = input.basePrice ?? existing?.basePrice;
+  if ((creating || input.basePrice !== undefined) && (!Number.isInteger(nextBasePrice) || (nextBasePrice ?? 0) <= 0)) {
+    throw new BadRequestException('Base price must be a positive integer');
+  }
+  if (nextBasePrice !== undefined && nextBasePrice % nextPriceStep !== 0) {
+    throw new BadRequestException(`Base price must use ${nextPriceStep} VND increments`);
+  }
+
+  const nextName = name ?? existing?.name ?? '';
+  return {
+    serviceGroupKey:
+      input.serviceGroupKey === undefined
+        ? creating
+          ? slugify(nextName)
+          : undefined
+        : normalizeNullable(input.serviceGroupKey) ?? null,
+    name: name ?? undefined,
+    description: input.description === undefined ? undefined : normalizeNullable(input.description),
+    durationMin,
+    basePrice: input.basePrice,
+    priceStep: input.priceStep,
+    displayOrder: input.displayOrder,
+    active: input.active,
+  };
+}
+
+function normalizeServicePayoutRuleInput(
+  service: { basePrice: number; priceStep: number },
+  input: {
+    customerPrice?: number;
+    providerPayoutAmount?: number;
+    vatBps?: number;
+    otherCostAmount?: number;
+    active?: boolean;
+    notes?: string | null;
+  },
+  creating: boolean,
+  existing?: {
+    customerPrice: number;
+    providerPayoutAmount: number;
+    vatBps: number;
+    otherCostAmount: number;
+    active: boolean;
+    notes?: string | null;
+  },
+) {
+  const customerPrice = input.customerPrice ?? existing?.customerPrice;
+  if ((creating || input.customerPrice !== undefined) && (!Number.isInteger(customerPrice) || (customerPrice ?? 0) <= 0)) {
+    throw new BadRequestException('Customer price must be a positive integer');
+  }
+  if (customerPrice !== undefined && customerPrice < service.basePrice) {
+    throw new BadRequestException('Customer price cannot be lower than the admin minimum');
+  }
+  if (customerPrice !== undefined && customerPrice % service.priceStep !== 0) {
+    throw new BadRequestException(`Customer price must use ${service.priceStep} VND increments`);
+  }
+
+  const providerPayoutAmount = input.providerPayoutAmount ?? existing?.providerPayoutAmount;
+  if (
+    (creating || input.providerPayoutAmount !== undefined) &&
+    (!Number.isInteger(providerPayoutAmount) || (providerPayoutAmount ?? -1) < 0)
+  ) {
+    throw new BadRequestException('Provider payout amount must be zero or greater');
+  }
+  if (
+    customerPrice !== undefined &&
+    providerPayoutAmount !== undefined &&
+    providerPayoutAmount > customerPrice
+  ) {
+    throw new BadRequestException('Provider payout amount cannot exceed customer price');
+  }
+
+  const vatBps = input.vatBps ?? existing?.vatBps ?? 0;
+  if (!Number.isInteger(vatBps) || vatBps < 0 || vatBps > 10000) {
+    throw new BadRequestException('VAT basis points must be between 0 and 10000');
+  }
+  const otherCostAmount = input.otherCostAmount ?? existing?.otherCostAmount ?? 0;
+  if (!Number.isInteger(otherCostAmount) || otherCostAmount < 0) {
+    throw new BadRequestException('Other cost amount must be zero or greater');
+  }
+
+  return {
+    customerPrice: customerPrice as number,
+    providerPayoutAmount: providerPayoutAmount as number,
+    vatBps,
+    otherCostAmount,
+    currency: 'VND',
+    active: input.active ?? existing?.active ?? true,
+    notes: input.notes === undefined ? existing?.notes : normalizeNullable(input.notes),
+  };
+}
+
+function slugify(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }

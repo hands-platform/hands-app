@@ -236,6 +236,7 @@ export default async function EarningsPage() {
                     {formatMoney(earning.platformFee, earning.currency)} platform fee
                   </div>
                   <div className="muted">{platformFeePolicyHint(earning)}</div>
+                  <div className="muted">{netCompanyFeeHint(earning)}</div>
                   <div className="muted">
                     {formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld
                   </div>
@@ -552,9 +553,44 @@ function platformFeePolicyHint(earning: AdminEarning) {
     return 'Fee policy: no log yet';
   }
   const snapshot = latestFeeLog.ruleSnapshot as
-    | { scope?: string; rateBps?: number; fixedAmount?: number }
+    | {
+        source?: string;
+        scope?: string;
+        rateBps?: number;
+        fixedAmount?: number;
+        providerPayoutAmount?: number;
+        vatAmount?: number;
+        otherCostAmount?: number;
+      }
     | undefined;
+  if (snapshot?.source === 'SERVICE_PAYOUT_RULE') {
+    return `Fee policy: service payout matrix / provider payout ${formatMoney(
+      snapshot.providerPayoutAmount ?? 0,
+      earning.currency,
+    )}`;
+  }
   return `Fee policy: ${snapshot?.scope ?? 'RULE'} at ${((snapshot?.rateBps ?? 0) / 100).toFixed(2)}%`;
+}
+
+function netCompanyFeeHint(earning: AdminEarning) {
+  const latestFeeLog = earning.platformFeeLogs?.[0];
+  const snapshot = latestFeeLog?.ruleSnapshot as
+    | {
+        source?: string;
+        vatAmount?: number;
+        otherCostAmount?: number;
+      }
+    | undefined;
+  const vatAmount = snapshot?.vatAmount ?? 0;
+  const otherCostAmount = snapshot?.otherCostAmount ?? 0;
+  const netCompanyFee = Math.max(
+    0,
+    earning.platformFee - (earning.withholdingAmount ?? 0) - vatAmount - otherCostAmount,
+  );
+  if (snapshot?.source === 'SERVICE_PAYOUT_RULE') {
+    return `Net company fee after VAT/tax/cost: ${formatMoney(netCompanyFee, earning.currency)}`;
+  }
+  return `Net company fee estimate: ${formatMoney(netCompanyFee, earning.currency)}`;
 }
 
 function canDirectlyPay(earning: AdminEarning) {

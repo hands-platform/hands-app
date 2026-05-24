@@ -493,6 +493,34 @@ export type AdminCoupon = {
   endsAt?: string | null;
 };
 
+export type AdminServicePayoutRule = {
+  id: string;
+  serviceId: string;
+  customerPrice: number;
+  providerPayoutAmount: number;
+  vatBps: number;
+  otherCostAmount: number;
+  currency: string;
+  active: boolean;
+  notes?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type AdminServiceCatalogItem = {
+  id: string;
+  serviceGroupKey?: string | null;
+  name: string;
+  description?: string | null;
+  durationMin: number;
+  basePrice: number;
+  priceStep: number;
+  displayOrder: number;
+  active: boolean;
+  payoutRules?: AdminServicePayoutRule[];
+  _count?: { providers?: number; bookings?: number };
+};
+
 export type AdminTaxPolicyVersion = {
   id: string;
   name: string;

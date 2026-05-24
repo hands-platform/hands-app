@@ -261,6 +261,36 @@ if (resolvedProviderRiskReport.status !== 'RESOLVED' || resolvedProviderRiskRepo
 
 const services = await request('/services');
 const service = services[0];
+if (!service?.id || !Array.isArray(service.payoutRules) || service.priceStep !== 100000) {
+  throw new Error(`Public services should expose payout-ready pricing metadata: ${JSON.stringify(service)}`);
+}
+const adminServices = await getJson('/admin/services', adminAuth.accessToken);
+const adminService = adminServices.find((item) => item.id === service.id);
+if (
+  !adminService ||
+  !adminService.payoutRules?.some((rule) => rule.customerPrice === service.basePrice && rule.active)
+) {
+  throw new Error(`Admin service matrix is missing the base payout rule: ${JSON.stringify(adminService)}`);
+}
+const higherCustomerPrice = service.basePrice + service.priceStep;
+const higherPricePayoutRule = await postJson(
+  `/admin/services/${service.id}/payout-rules`,
+  adminAuth.accessToken,
+  {
+    customerPrice: higherCustomerPrice,
+    providerPayoutAmount: Math.max(0, higherCustomerPrice - Math.round(higherCustomerPrice * 0.2)),
+    vatBps: 0,
+    otherCostAmount: 0,
+    active: true,
+    notes: 'Smoke test higher-price payout rule',
+  },
+);
+if (
+  higherPricePayoutRule.customerPrice !== higherCustomerPrice ||
+  higherPricePayoutRule.providerPayoutAmount <= 0
+) {
+  throw new Error(`Higher-price payout rule was not created correctly: ${JSON.stringify(higherPricePayoutRule)}`);
+}
 const couponCode = `smoke${Date.now()}`;
 const coupon = await postJson('/admin/coupons', adminAuth.accessToken, {
   code: couponCode,
@@ -745,6 +775,13 @@ if (
   adminCompletedEarning.platformFeeLogs[0].platformFeeAmount !== completedEarning.platformFee
 ) {
   throw new Error(`Completed earning did not record platform fee policy log: ${JSON.stringify(adminCompletedEarning)}`);
+}
+if (adminCompletedEarning.platformFeeLogs[0].ruleSnapshot?.source !== 'SERVICE_PAYOUT_RULE') {
+  throw new Error(
+    `Completed earning should prefer the service payout matrix: ${JSON.stringify(
+      adminCompletedEarning.platformFeeLogs[0],
+    )}`,
+  );
 }
 if (providerEarningsSummary.walletBlocked === true || providerEarningsSummary.walletBalance <= 0) {
   throw new Error(
