@@ -40,13 +40,12 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
             Text(
               missingRequired.isEmpty
                   ? 'Required identity photos are ready for KYC submission.'
-                  : 'Upload each required photo before submitting KYC.',
+                  : 'Upload the CCCD/CMND front, back, and selfie before submitting KYC.',
             ),
             const SizedBox(height: 12),
             for (final type in requiredProviderDocumentTypes) ...[
               _DocumentSlot(
                 type: type,
-                required: true,
                 uploaded: uploadedDocumentIds.containsKey(type),
                 isUploading: isUploading,
                 onUpload: onUpload,
@@ -57,7 +56,6 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
             for (final type in optionalProviderDocumentTypes) ...[
               _DocumentSlot(
                 type: type,
-                required: false,
                 uploaded: uploadedDocumentIds.containsKey(type),
                 isUploading: isUploading,
                 onUpload: onUpload,
@@ -81,14 +79,12 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
 class _DocumentSlot extends StatelessWidget {
   const _DocumentSlot({
     required this.type,
-    required this.required,
     required this.uploaded,
     required this.isUploading,
     required this.onUpload,
   });
 
   final String type;
-  final bool required;
   final bool uploaded;
   final bool isUploading;
   final Future<void> Function(String type) onUpload;
@@ -117,13 +113,11 @@ class _DocumentSlot extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  providerDocumentTypeLabel(type),
+                  '${providerDocumentTypeStep(type)} · ${providerDocumentTypeLabel(type)}',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 Text(
-                  required
-                      ? 'Required for Level 2 approval'
-                      : 'Optional supporting document',
+                  providerDocumentTypeDescription(type),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -143,9 +137,9 @@ class _DocumentSlot extends StatelessWidget {
 String providerDocumentTypeLabel(String type) {
   switch (type) {
     case 'CCCD_FRONT':
-      return 'CCCD front image';
+      return 'CCCD front side';
     case 'CCCD_BACK':
-      return 'CCCD back image';
+      return 'CCCD back side';
     case 'SELFIE':
       return 'Selfie verification';
     case 'PROFILE_PHOTO':
@@ -157,4 +151,29 @@ String providerDocumentTypeLabel(String type) {
     default:
       return type;
   }
+}
+
+String providerDocumentTypeDescription(String type) {
+  switch (type) {
+    case 'CCCD_FRONT':
+      return 'Front side of CCCD/CMND. Keep all text readable.';
+    case 'CCCD_BACK':
+      return 'Back side of CCCD/CMND. Avoid glare and cropped corners.';
+    case 'SELFIE':
+      return 'Face photo taken by the provider. It must match the ID document.';
+    case 'PROFILE_PHOTO':
+      return 'Public profile photo used after admin review.';
+    case 'WORK_PHOTO':
+      return 'Optional work or service evidence for trust review.';
+    case 'BANK_QR':
+      return 'Optional VietQR or banking QR image for payout review.';
+    default:
+      return 'Supporting document for provider verification.';
+  }
+}
+
+String providerDocumentTypeStep(String type) {
+  final requiredIndex = requiredProviderDocumentTypes.indexOf(type);
+  if (requiredIndex >= 0) return 'Step ${requiredIndex + 1}';
+  return 'Optional';
 }

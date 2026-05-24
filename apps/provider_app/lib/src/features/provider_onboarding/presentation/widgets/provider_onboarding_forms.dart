@@ -311,7 +311,7 @@ class _KycFormState extends State<_KycForm> {
     return _SheetFrame(
       title: 'KYC identity check',
       description:
-          'Enter the provider CCCD/CMND number. ID images can be uploaded from the verification section below.',
+          'Enter the provider CCCD/CMND number after the front, back, and selfie photos are ready.',
       child: Form(
         key: _formKey,
         child: Column(
@@ -384,27 +384,32 @@ class _BankAccountFormState extends State<_BankAccountForm> {
   @override
   Widget build(BuildContext context) {
     return _SheetFrame(
-      title: 'Bank account',
-      description: 'Submitted accounts require admin approval before payout.',
+      title: 'Payout bank account',
+      description:
+          'Use the provider own Vietnamese bank account. Admin approval is required before payout.',
       child: Form(
         key: _formKey,
         child: Column(
           children: [
-            _Field(controller: bankName, label: 'Bank name', required: true),
+            _Field(
+              controller: bankName,
+              label: 'Vietnam bank name',
+              required: true,
+            ),
             _Field(
               controller: accountNumber,
-              label: 'Account number',
+              label: 'Bank account number',
               keyboardType: TextInputType.number,
               required: true,
             ),
             _Field(
               controller: accountHolderName,
-              label: 'Account holder name',
+              label: 'Account holder legal name',
               required: true,
             ),
             _Field(
               controller: qrBankingProvider,
-              label: 'QR banking provider',
+              label: 'QR banking provider / VietQR',
               hint: 'vietqr',
             ),
             const SizedBox(height: 12),
@@ -476,12 +481,12 @@ class _TaxProfileFormState extends State<_TaxProfileForm> {
     return _SheetFrame(
       title: 'Tax profile',
       description:
-          'Tax information is required before the provider can withdraw earnings.',
+          'Tax profile is required after the first completed service and before withdrawal. Rates are managed by admin policy.',
       child: Form(
         key: _formKey,
         child: Column(
           children: [
-            _Field(controller: taxCode, label: 'MST / tax code'),
+            _Field(controller: taxCode, label: 'MST / personal tax code'),
             _Field(controller: legalName, label: 'Legal name', required: true),
             _Field(
               controller: registeredAddress,

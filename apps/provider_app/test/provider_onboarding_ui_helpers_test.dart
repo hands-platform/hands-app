@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider_app/main.dart';
+import 'package:provider_app/src/features/provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
 
 void main() {
   test('reads onboarding requirements from API snapshot', () {
@@ -49,6 +50,16 @@ void main() {
         'Bank account submitted');
     expect(providerLogActionLabel('unknown.custom_action'),
         'Unknown Custom Action');
+  });
+
+  test('describes provider verification document slots', () {
+    expect(providerDocumentTypeLabel('CCCD_FRONT'), 'CCCD front side');
+    expect(providerDocumentTypeStep('CCCD_BACK'), 'Step 2');
+    expect(
+      providerDocumentTypeDescription('SELFIE'),
+      contains('match the ID document'),
+    );
+    expect(providerDocumentTypeStep('BANK_QR'), 'Optional');
   });
 
   test('prioritizes basic profile before other onboarding gates', () {
