@@ -117,6 +117,35 @@ void main() {
     expect(readyItems[1].detail, contains('approved by admin'));
   });
 
+  test('builds provider level roadmap milestones', () {
+    final milestones = providerLevelMilestonesFromSnapshot({
+      'level': 'LEVEL_2_ACTIVE',
+      'nextRequiredActions': <String>[],
+      'kyc': {'status': 'APPROVED'},
+      'bankAccounts': [
+        {'status': 'APPROVED'},
+      ],
+      'completedBookingCount': 1,
+      'taxProfile': {'status': 'PENDING_REVIEW'},
+      'payoutGate': {'canWithdraw': false},
+    });
+
+    expect(milestones, hasLength(4));
+    expect(milestones[0].complete, isTrue);
+    expect(milestones[1].current, isTrue);
+    expect(milestones[1].complete, isTrue);
+    expect(milestones[2].complete, isFalse);
+    expect(milestones[2].detail, contains('wait for admin approval'));
+
+    final trusted = providerLevelMilestonesFromSnapshot({
+      'level': 'LEVEL_4_TRUSTED',
+      'payoutGate': {'canWithdraw': true},
+    });
+
+    expect(trusted.every((item) => item.complete), isTrue);
+    expect(trusted.last.current, isTrue);
+  });
+
   test('describes bank and tax resubmission forms', () {
     expect(
       bankAccountFormDescription(

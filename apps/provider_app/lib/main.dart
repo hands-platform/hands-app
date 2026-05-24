@@ -3061,6 +3061,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
         (addressText?.trim().isNotEmpty ?? false) &&
         missingAgreementCount == 0;
     final payoutGateItems = providerPayoutGateItemsFromSnapshot(snapshot);
+    final levelMilestones = providerLevelMilestonesFromSnapshot(snapshot);
     final priority = providerOnboardingPriorityFromSnapshot(snapshot);
     final priorityAction = switch (priority.actionKey) {
       'BASIC_PROFILE' => onFillBasicProfile,
@@ -3109,6 +3110,8 @@ class _ProviderOnboardingCard extends StatelessWidget {
                     isPositive: canWithdraw),
               ],
             ),
+            const SizedBox(height: 12),
+            _ProviderLevelRoadmap(milestones: levelMilestones),
             const SizedBox(height: 12),
             if (error != null) ...[
               ErrorCard(text: 'Onboarding load failed: $error'),
@@ -3286,6 +3289,107 @@ class _ProviderOnboardingCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ProviderLevelRoadmap extends StatelessWidget {
+  const _ProviderLevelRoadmap({required this.milestones});
+
+  final List<ProviderOnboardingLevelMilestone> milestones;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final completedCount =
+        milestones.where((milestone) => milestone.complete).length;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.stairs_outlined, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Provider level roadmap',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Chip(label: Text('$completedCount/${milestones.length}')),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final milestone in milestones) ...[
+            _ProviderLevelRoadmapRow(milestone: milestone),
+            if (milestone != milestones.last) const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ProviderLevelRoadmapRow extends StatelessWidget {
+  const _ProviderLevelRoadmapRow({required this.milestone});
+
+  final ProviderOnboardingLevelMilestone milestone;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final icon = milestone.complete
+        ? Icons.check_circle_outline
+        : milestone.current
+            ? Icons.radio_button_checked
+            : Icons.radio_button_unchecked;
+    final iconColor = milestone.complete || milestone.current
+        ? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
+    final background = milestone.current
+        ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+        : Colors.transparent;
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: iconColor, size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  milestone.title,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  milestone.detail,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          if (milestone.current) ...[
+            const SizedBox(width: 8),
+            const Chip(label: Text('Current')),
+          ],
+        ],
       ),
     );
   }

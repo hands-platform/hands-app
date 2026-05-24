@@ -28,6 +28,22 @@ class ProviderOnboardingGateItem {
   final bool complete;
 }
 
+class ProviderOnboardingLevelMilestone {
+  const ProviderOnboardingLevelMilestone({
+    required this.level,
+    required this.title,
+    required this.detail,
+    required this.complete,
+    required this.current,
+  });
+
+  final String level;
+  final String title;
+  final String detail;
+  final bool complete;
+  final bool current;
+}
+
 ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
     Map<String, dynamic> snapshot) {
   final nextActions = _asList(snapshot['nextRequiredActions'])
@@ -178,6 +194,82 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
         'Submitted information is saved. Refresh this page after admin finishes the remaining review.',
     tone: 'info',
   );
+}
+
+List<ProviderOnboardingLevelMilestone> providerLevelMilestonesFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final currentLevel = snapshot['level']?.toString() ?? 'LEVEL_1_SIGNUP';
+  final nextActions = _asList(snapshot['nextRequiredActions'])
+      .map((action) => action.toString())
+      .toSet();
+  final completedBookingCount =
+      _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
+  final kyc = _asMap(snapshot['kyc']);
+  final verification = _asMap(snapshot['verification']);
+  final bankAccounts = _asList(snapshot['bankAccounts']);
+  final taxProfile = _asMap(snapshot['taxProfile']);
+  final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
+  final basicProfileComplete = !nextActions.contains('BASIC_PROFILE');
+  final kycApproved =
+      (kyc?['status']?.toString() ?? verification?['status']?.toString()) ==
+          'APPROVED';
+  final bankApproved =
+      bankAccounts.map(_asMap).whereType<Map<String, dynamic>>().any(
+            (account) => account['status']?.toString() == 'APPROVED',
+          );
+  final taxApproved = taxProfile?['status']?.toString() == 'APPROVED';
+  final canWithdraw = payoutGate['canWithdraw'] == true;
+  final currentIndex = _providerLevelIndex(currentLevel);
+
+  bool completedByLevelOrCondition(String level, bool condition) {
+    return currentIndex >= _providerLevelIndex(level) || condition;
+  }
+
+  return [
+    ProviderOnboardingLevelMilestone(
+      level: 'LEVEL_1_SIGNUP',
+      title: 'Level 1 - signup ready',
+      detail: basicProfileComplete
+          ? 'Phone login and public/basic profile are ready.'
+          : 'Complete phone login and basic public profile first.',
+      complete:
+          completedByLevelOrCondition('LEVEL_1_SIGNUP', basicProfileComplete),
+      current: currentLevel == 'LEVEL_1_SIGNUP',
+    ),
+    ProviderOnboardingLevelMilestone(
+      level: 'LEVEL_2_ACTIVE',
+      title: 'Level 2 - can receive work',
+      detail: kycApproved && bankApproved
+          ? 'Identity check and payout bank account are approved.'
+          : 'Requires approved CCCD/selfie KYC and a reviewed Vietnamese bank account.',
+      complete: completedByLevelOrCondition(
+          'LEVEL_2_ACTIVE', kycApproved && bankApproved),
+      current: currentLevel == 'LEVEL_2_ACTIVE',
+    ),
+    ProviderOnboardingLevelMilestone(
+      level: 'LEVEL_3_PAYOUT_ENABLED',
+      title: 'Level 3 - withdrawal enabled',
+      detail: canWithdraw
+          ? 'First service, tax profile, address, and agreements are complete.'
+          : completedBookingCount == 0
+              ? 'Withdrawal unlock starts after the first completed service.'
+              : taxApproved
+                  ? 'Finish address and payout/tax agreements before withdrawal.'
+                  : 'Submit MST/tax profile after earnings exist, then wait for admin approval.',
+      complete:
+          completedByLevelOrCondition('LEVEL_3_PAYOUT_ENABLED', canWithdraw),
+      current: currentLevel == 'LEVEL_3_PAYOUT_ENABLED',
+    ),
+    ProviderOnboardingLevelMilestone(
+      level: 'LEVEL_4_TRUSTED',
+      title: 'Level 4 - trusted badge',
+      detail: currentLevel == 'LEVEL_4_TRUSTED'
+          ? 'HANDS admin has granted the trusted provider badge.'
+          : 'Admin can grant this after identity, profile quality, and experience review.',
+      complete: currentLevel == 'LEVEL_4_TRUSTED',
+      current: currentLevel == 'LEVEL_4_TRUSTED',
+    ),
+  ];
 }
 
 List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
@@ -398,4 +490,19 @@ Map<String, dynamic>? _asMap(dynamic value) {
 
 List<dynamic> _asList(dynamic value) {
   return value is List<dynamic> ? value : const [];
+}
+
+int _providerLevelIndex(String level) {
+  switch (level) {
+    case 'LEVEL_4_TRUSTED':
+      return 4;
+    case 'LEVEL_3_PAYOUT_ENABLED':
+      return 3;
+    case 'LEVEL_2_ACTIVE':
+      return 2;
+    case 'LEVEL_1_SIGNUP':
+      return 1;
+    default:
+      return 0;
+  }
 }
