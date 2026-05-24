@@ -86,9 +86,9 @@ void main() {
       'payoutGate': {
         'missing': {
           'firstCompletedService': true,
-          'taxProfileApproved': true,
-          'residentialAddress': true,
-          'agreements': ['PAYOUT', 'TAX'],
+          'taxProfileApproved': false,
+          'residentialAddress': false,
+          'agreements': <String>[],
         },
       },
       'requirements': {
@@ -98,9 +98,10 @@ void main() {
 
     expect(lockedItems, hasLength(4));
     expect(lockedItems.where((item) => item.complete), isEmpty);
-    expect(lockedItems.last.detail, contains('1 of 3 accepted'));
-    expect(lockedItems.last.detail, contains('Payout'));
-    expect(lockedItems.last.detail, contains('Tax'));
+    expect(lockedItems[1].detail, contains('deferred until revenue exists'));
+    expect(lockedItems[2].detail, contains('after revenue exists'));
+    expect(lockedItems.last.detail,
+        contains('deferred until first completed service'));
 
     final readyItems = providerPayoutGateItemsFromSnapshot({
       'completedBookingCount': 2,

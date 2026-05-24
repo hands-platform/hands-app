@@ -225,14 +225,18 @@ const providerRiskSanction = await postJson(
   },
 );
 if (providerRiskSanction.status !== 'ACTIVE' || providerRiskSanction.type !== 'WARNING') {
-  throw new Error(`Provider risk sanction was not created correctly: ${JSON.stringify(providerRiskSanction)}`);
+  throw new Error(
+    `Provider risk sanction was not created correctly: ${JSON.stringify(providerRiskSanction)}`,
+  );
 }
 const liftedProviderRiskSanction = await postJson(
   `/admin/provider-sanctions/${providerRiskSanction.id}/lift`,
   adminAuth.accessToken,
 );
 if (liftedProviderRiskSanction.status !== 'LIFTED') {
-  throw new Error(`Provider risk sanction was not lifted correctly: ${JSON.stringify(liftedProviderRiskSanction)}`);
+  throw new Error(
+    `Provider risk sanction was not lifted correctly: ${JSON.stringify(liftedProviderRiskSanction)}`,
+  );
 }
 const resolvedProviderRiskReport = await patchJson(
   `/admin/provider-reports/${providerRiskReport.id}`,
@@ -244,7 +248,9 @@ const resolvedProviderRiskReport = await patchJson(
   },
 );
 if (resolvedProviderRiskReport.status !== 'RESOLVED' || resolvedProviderRiskReport.severity !== 'MEDIUM') {
-  throw new Error(`Provider risk report was not updated correctly: ${JSON.stringify(resolvedProviderRiskReport)}`);
+  throw new Error(
+    `Provider risk report was not updated correctly: ${JSON.stringify(resolvedProviderRiskReport)}`,
+  );
 }
 
 const services = await request('/services');
@@ -318,6 +324,18 @@ if (
 ) {
   throw new Error(`Provider onboarding snapshot is incomplete: ${JSON.stringify(providerOnboarding)}`);
 }
+if (
+  providerOnboarding.completedBookingCount === 0 &&
+  (providerOnboarding.payoutGate.missing?.taxProfileApproved ||
+    providerOnboarding.payoutGate.missing?.residentialAddress ||
+    (providerOnboarding.payoutGate.missing?.agreements ?? []).length > 0)
+) {
+  throw new Error(
+    `Provider payout gate should defer tax/address/agreements until first completed service: ${JSON.stringify(
+      providerOnboarding.payoutGate,
+    )}`,
+  );
+}
 await patchJson('/provider/onboarding/basic-profile', providerAuth.accessToken, {
   legalName: 'Smoke Provider',
   dateOfBirth: '1995-01-01',
@@ -362,7 +380,9 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
     visibility: 'PRIVATE',
     purpose: `provider-kyc-pending-${type.toLowerCase()}`,
   });
-  await postJson(`/files/${upload.file.id}/complete`, kycNegativeProviderAuth.accessToken, { sizeBytes: 1024 });
+  await postJson(`/files/${upload.file.id}/complete`, kycNegativeProviderAuth.accessToken, {
+    sizeBytes: 1024,
+  });
   pendingKycDocumentUploads.push({ fileId: upload.file.id, type });
 }
 await postJson('/provider/onboarding/kyc/submit', kycNegativeProviderAuth.accessToken, {
@@ -445,12 +465,16 @@ const smokeTaxPolicy = await postJson('/admin/tax-policy-versions', adminAuth.ac
   effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
   notes: 'Smoke test active withholding policy',
 });
-const smokeTaxRule = await postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
-  scope: 'DEFAULT',
-  rateBps: 500,
-  fixedAmount: 0,
-  active: true,
-});
+const smokeTaxRule = await postJson(
+  `/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`,
+  adminAuth.accessToken,
+  {
+    scope: 'DEFAULT',
+    rateBps: 500,
+    fixedAmount: 0,
+    active: true,
+  },
+);
 const updatedSmokeTaxRule = await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
   scope: 'DEFAULT',
   rateBps: 500,

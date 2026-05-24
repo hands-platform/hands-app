@@ -54,8 +54,9 @@ export class ProviderOnboardingService {
     const legacyVerificationApproved = provider.verification?.status === VerificationStatus.APPROVED;
     const taxProfileApproved = provider.taxProfile?.status === ProviderTaxProfileStatus.APPROVED;
     const hasAddress = Boolean(provider.residentialAddress?.trim());
+    const payoutSetupStarted = completedBookingCount > 0;
     const canWithdraw =
-      completedBookingCount > 0 && taxProfileApproved && hasAddress && missingAgreements.length === 0;
+      payoutSetupStarted && taxProfileApproved && hasAddress && missingAgreements.length === 0;
 
     return {
       providerProfileId: provider.id,
@@ -90,10 +91,10 @@ export class ProviderOnboardingService {
       payoutGate: {
         canWithdraw,
         missing: {
-          firstCompletedService: completedBookingCount === 0,
-          taxProfileApproved: !taxProfileApproved,
-          residentialAddress: !hasAddress,
-          agreements: missingAgreements,
+          firstCompletedService: !payoutSetupStarted,
+          taxProfileApproved: payoutSetupStarted && !taxProfileApproved,
+          residentialAddress: payoutSetupStarted && !hasAddress,
+          agreements: payoutSetupStarted ? missingAgreements : [],
         },
       },
       activeTaxPolicy,

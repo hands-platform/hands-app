@@ -278,6 +278,7 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
   final payoutMissing = _asMap(payoutGate['missing']) ?? <String, dynamic>{};
   final completedBookingCount =
       _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
+  final payoutSetupStarted = completedBookingCount > 0;
   final taxProfile = _asMap(snapshot['taxProfile']);
   final taxStatus = taxProfile?['status']?.toString();
   final basicProfile = _asMap(snapshot['basicProfile']) ?? <String, dynamic>{};
@@ -304,26 +305,32 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
       label: 'Tax profile',
       detail: taxStatus == 'APPROVED'
           ? 'MST/tax profile is approved by admin.'
-          : completedBookingCount == 0
+          : !payoutSetupStarted
               ? 'Tax information is deferred until revenue exists.'
               : 'Submit MST, legal name, and registered address for admin review.',
-      complete: payoutMissing['taxProfileApproved'] != true &&
+      complete: payoutSetupStarted &&
+          payoutMissing['taxProfileApproved'] != true &&
           taxStatus == 'APPROVED',
     ),
     ProviderOnboardingGateItem(
       label: 'Residential address',
       detail: address.isNotEmpty
           ? address
-          : 'Save a residential address before payout approval.',
-      complete:
-          payoutMissing['residentialAddress'] != true && address.isNotEmpty,
+          : !payoutSetupStarted
+              ? 'Residential address is requested before withdrawal after revenue exists.'
+              : 'Save a residential address before payout approval.',
+      complete: payoutSetupStarted &&
+          payoutMissing['residentialAddress'] != true &&
+          address.isNotEmpty,
     ),
     ProviderOnboardingGateItem(
       label: 'Payout agreements',
-      detail: missingAgreements.isEmpty
-          ? 'All required agreements are accepted.'
-          : '$acceptedAgreementCount of ${requiredAgreements.length} accepted. Missing: ${missingAgreements.map(_agreementLabel).join(', ')}.',
-      complete: missingAgreements.isEmpty,
+      detail: !payoutSetupStarted
+          ? 'Payout and tax agreements are deferred until first completed service.'
+          : missingAgreements.isEmpty
+              ? 'All required agreements are accepted.'
+              : '$acceptedAgreementCount of ${requiredAgreements.length} accepted. Missing: ${missingAgreements.map(_agreementLabel).join(', ')}.',
+      complete: payoutSetupStarted && missingAgreements.isEmpty,
     ),
   ];
 }
