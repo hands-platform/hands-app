@@ -3060,6 +3060,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
         taxStatus == 'APPROVED' &&
         (addressText?.trim().isNotEmpty ?? false) &&
         missingAgreementCount == 0;
+    final payoutGateItems = providerPayoutGateItemsFromSnapshot(snapshot);
     final priority = providerOnboardingPriorityFromSnapshot(snapshot);
     final priorityAction = switch (priority.actionKey) {
       'BASIC_PROFILE' => onFillBasicProfile,
@@ -3262,6 +3263,10 @@ class _ProviderOnboardingCard extends StatelessWidget {
                       ? onAcceptAgreements
                       : onAddTaxProfile,
             ),
+            _PayoutGateChecklist(
+              items: payoutGateItems,
+              agreementVersion: providerAgreementVersionFromSnapshot(snapshot),
+            ),
             _OnboardingStepCard(
               step: '5',
               title: 'Trusted badge',
@@ -3282,6 +3287,95 @@ class _ProviderOnboardingCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PayoutGateChecklist extends StatelessWidget {
+  const _PayoutGateChecklist({
+    required this.items,
+    required this.agreementVersion,
+  });
+
+  final List<ProviderOnboardingGateItem> items;
+  final String agreementVersion;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final completeCount = items.where((item) => item.complete).length;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.fact_check_outlined, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Payout gate checklist',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Chip(label: Text('$completeCount/${items.length}')),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Agreement version: $agreementVersion',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 10),
+          for (final item in items) ...[
+            _PayoutGateChecklistRow(item: item),
+            if (item != items.last) const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PayoutGateChecklistRow extends StatelessWidget {
+  const _PayoutGateChecklistRow({required this.item});
+
+  final ProviderOnboardingGateItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final iconColor = item.complete ? colorScheme.primary : colorScheme.error;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          item.complete ? Icons.check_circle_outline : Icons.lock_outline,
+          color: iconColor,
+          size: 22,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item.label, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 2),
+              Text(
+                item.detail,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

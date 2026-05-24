@@ -16,6 +16,18 @@ class ProviderOnboardingPriority {
   final String? buttonLabel;
 }
 
+class ProviderOnboardingGateItem {
+  const ProviderOnboardingGateItem({
+    required this.label,
+    required this.detail,
+    required this.complete,
+  });
+
+  final String label;
+  final String detail;
+  final bool complete;
+}
+
 ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
     Map<String, dynamic> snapshot) {
   final nextActions = _asList(snapshot['nextRequiredActions'])
@@ -168,6 +180,62 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
   );
 }
 
+List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
+  final payoutMissing = _asMap(payoutGate['missing']) ?? <String, dynamic>{};
+  final completedBookingCount =
+      _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
+  final taxProfile = _asMap(snapshot['taxProfile']);
+  final taxStatus = taxProfile?['status']?.toString();
+  final basicProfile = _asMap(snapshot['basicProfile']) ?? <String, dynamic>{};
+  final address = basicProfile['residentialAddress']?.toString().trim() ?? '';
+  final missingAgreements = _asList(payoutMissing['agreements'])
+      .map((value) => value.toString())
+      .where((value) => value.isNotEmpty)
+      .toList();
+  final requiredAgreements = requiredPayoutAgreementTypesFromSnapshot(snapshot);
+  final acceptedAgreementCount =
+      (requiredAgreements.length - missingAgreements.length)
+          .clamp(0, requiredAgreements.length);
+
+  return [
+    ProviderOnboardingGateItem(
+      label: 'First completed service',
+      detail: completedBookingCount > 0
+          ? '$completedBookingCount completed service(s) recorded.'
+          : 'Complete the first customer booking before withdrawal unlocks.',
+      complete: payoutMissing['firstCompletedService'] != true &&
+          completedBookingCount > 0,
+    ),
+    ProviderOnboardingGateItem(
+      label: 'Tax profile',
+      detail: taxStatus == 'APPROVED'
+          ? 'MST/tax profile is approved by admin.'
+          : completedBookingCount == 0
+              ? 'Tax information is deferred until revenue exists.'
+              : 'Submit MST, legal name, and registered address for admin review.',
+      complete: payoutMissing['taxProfileApproved'] != true &&
+          taxStatus == 'APPROVED',
+    ),
+    ProviderOnboardingGateItem(
+      label: 'Residential address',
+      detail: address.isNotEmpty
+          ? address
+          : 'Save a residential address before payout approval.',
+      complete:
+          payoutMissing['residentialAddress'] != true && address.isNotEmpty,
+    ),
+    ProviderOnboardingGateItem(
+      label: 'Payout agreements',
+      detail: missingAgreements.isEmpty
+          ? 'All required agreements are accepted.'
+          : '$acceptedAgreementCount of ${requiredAgreements.length} accepted. Missing: ${missingAgreements.map(_agreementLabel).join(', ')}.',
+      complete: missingAgreements.isEmpty,
+    ),
+  ];
+}
+
 String providerLogActionLabel(String value) {
   switch (value) {
     case 'basic_profile.update':
@@ -198,6 +266,23 @@ String providerLogActionLabel(String value) {
       return 'Agreement accepted';
     default:
       return _readableAction(value.replaceAll('.', '_'));
+  }
+}
+
+String _agreementLabel(String value) {
+  switch (value) {
+    case 'TERMS':
+      return 'Service terms';
+    case 'PRIVACY':
+      return 'Privacy';
+    case 'LOCATION':
+      return 'Location';
+    case 'PAYOUT':
+      return 'Payout';
+    case 'TAX':
+      return 'Tax';
+    default:
+      return _readableAction(value);
   }
 }
 

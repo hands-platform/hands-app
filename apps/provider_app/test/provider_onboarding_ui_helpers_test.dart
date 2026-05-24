@@ -79,6 +79,44 @@ void main() {
     );
   });
 
+  test('builds payout gate checklist from onboarding snapshot', () {
+    final lockedItems = providerPayoutGateItemsFromSnapshot({
+      'completedBookingCount': 0,
+      'basicProfile': {'residentialAddress': ''},
+      'payoutGate': {
+        'missing': {
+          'firstCompletedService': true,
+          'taxProfileApproved': true,
+          'residentialAddress': true,
+          'agreements': ['PAYOUT', 'TAX'],
+        },
+      },
+      'requirements': {
+        'requiredPayoutAgreements': ['TERMS', 'PAYOUT', 'TAX'],
+      },
+    });
+
+    expect(lockedItems, hasLength(4));
+    expect(lockedItems.where((item) => item.complete), isEmpty);
+    expect(lockedItems.last.detail, contains('1 of 3 accepted'));
+    expect(lockedItems.last.detail, contains('Payout'));
+    expect(lockedItems.last.detail, contains('Tax'));
+
+    final readyItems = providerPayoutGateItemsFromSnapshot({
+      'completedBookingCount': 2,
+      'taxProfile': {'status': 'APPROVED'},
+      'basicProfile': {
+        'residentialAddress': 'District 1, Ho Chi Minh City',
+      },
+      'payoutGate': {
+        'missing': {'agreements': <String>[]},
+      },
+    });
+
+    expect(readyItems.every((item) => item.complete), isTrue);
+    expect(readyItems[1].detail, contains('approved by admin'));
+  });
+
   test('describes bank and tax resubmission forms', () {
     expect(
       bankAccountFormDescription(
