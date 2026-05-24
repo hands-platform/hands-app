@@ -291,6 +291,35 @@ if (
 ) {
   throw new Error(`Higher-price payout rule was not created correctly: ${JSON.stringify(higherPricePayoutRule)}`);
 }
+const providerServicesBeforeUpdate = await getJson('/provider/services', providerAuth.accessToken);
+const providerService = providerServicesBeforeUpdate.find((item) => item.id === service.id);
+if (
+  !providerService ||
+  providerService.basePrice !== service.basePrice ||
+  providerService.effectivePrice < service.basePrice
+) {
+  throw new Error(`Provider service pricing list is incomplete: ${JSON.stringify(providerService)}`);
+}
+await expectRequestFailure(
+  'Provider price below admin minimum is rejected',
+  () =>
+    patchJson(`/provider/services/${service.id}`, providerAuth.accessToken, {
+      price: service.basePrice - service.priceStep,
+      active: true,
+    }),
+  400,
+);
+const updatedProviderService = await patchJson(
+  `/provider/services/${service.id}`,
+  providerAuth.accessToken,
+  {
+    price: higherCustomerPrice,
+    active: true,
+  },
+);
+if (updatedProviderService.price !== higherCustomerPrice || updatedProviderService.active !== true) {
+  throw new Error(`Provider service price was not updated: ${JSON.stringify(updatedProviderService)}`);
+}
 const couponCode = `smoke${Date.now()}`;
 const coupon = await postJson('/admin/coupons', adminAuth.accessToken, {
   code: couponCode,

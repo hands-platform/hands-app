@@ -13,6 +13,7 @@ import 'src/core/realtime_socket.dart';
 import 'src/features/provider_onboarding/presentation/provider_onboarding_status.dart';
 import 'src/features/provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
 import 'src/features/provider_onboarding/presentation/widgets/provider_onboarding_forms.dart';
+import 'src/features/provider_services/presentation/widgets/provider_service_pricing_card.dart';
 
 void main() {
   runApp(const ProviderScope(child: ProviderApp()));
@@ -2882,6 +2883,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   : 'Upload public profile image'),
             ),
             const SizedBox(height: 12),
+            const ProviderServicePricingCard(),
+            const SizedBox(height: 12),
           ],
           if (auth == null)
             const InfoCard(text: 'Login first to manage verification.')
@@ -2978,11 +2981,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         );
                       }),
                     const SizedBox(height: 12),
-                    for (final item in [
-                      'Massage menu',
-                      'Pricing',
-                      'Online toggle'
-                    ])
+                    for (final item in ['Massage menu', 'Online toggle'])
                       Card(
                         child: ListTile(
                           title: Text(item),

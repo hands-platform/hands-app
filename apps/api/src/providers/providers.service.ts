@@ -228,6 +228,126 @@ export class ProvidersService {
     return { ...updated, currentLocationUpdatedAt: recordedAt.toISOString(), locationUpdated: true };
   }
 
+  async listServices(userId: string | undefined) {
+    const provider = await this.requireProvider(userId);
+    const services = await this.prisma.massageService.findMany({
+      where: { active: true },
+      include: {
+        providers: {
+          where: { providerProfileId: provider.id },
+          take: 1,
+        },
+        payoutRules: {
+          where: { active: true },
+          orderBy: { customerPrice: 'asc' },
+        },
+      },
+      orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
+    });
+
+    return services.map((service) => {
+      const providerService = service.providers[0] ?? null;
+      const effectivePrice = providerService?.price ?? service.basePrice;
+      const payoutRule = service.payoutRules.find((rule) => rule.customerPrice === effectivePrice);
+      const platformFee = payoutRule ? effectivePrice - payoutRule.providerPayoutAmount : null;
+      return {
+        id: service.id,
+        serviceGroupKey: service.serviceGroupKey,
+        name: service.name,
+        description: service.description,
+        durationMin: service.durationMin,
+        basePrice: service.basePrice,
+        priceStep: service.priceStep,
+        displayOrder: service.displayOrder,
+        providerServiceId: providerService?.id ?? null,
+        providerPrice: providerService?.price ?? null,
+        effectivePrice,
+        active: providerService?.active ?? true,
+        payoutRuleConfigured: Boolean(payoutRule),
+        payoutRule: payoutRule
+          ? {
+              id: payoutRule.id,
+              customerPrice: payoutRule.customerPrice,
+              providerPayoutAmount: payoutRule.providerPayoutAmount,
+              platformFee,
+              vatBps: payoutRule.vatBps,
+              otherCostAmount: payoutRule.otherCostAmount,
+              currency: payoutRule.currency,
+            }
+          : null,
+      };
+    });
+  }
+
+  async updateServicePrice(
+    userId: string | undefined,
+    serviceId: string,
+    input: { price?: number; active?: boolean },
+  ) {
+    const provider = await this.requireProvider(userId);
+    assertProviderNotBlocked(provider);
+    const service = await this.prisma.massageService.findFirst({
+      where: { id: serviceId, active: true },
+      include: {
+        payoutRules: {
+          where: { active: true },
+          select: { customerPrice: true },
+        },
+      },
+    });
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    const existing = await this.prisma.providerService.findUnique({
+      where: {
+        providerProfileId_serviceId: {
+          providerProfileId: provider.id,
+          serviceId,
+        },
+      },
+    });
+    const active = input.active ?? existing?.active ?? true;
+    const price = input.price ?? existing?.price ?? service.basePrice;
+    assertProviderServicePrice(service, price);
+
+    const hasPayoutRule = service.payoutRules.some((rule) => rule.customerPrice === price);
+    if (active && !hasPayoutRule) {
+      throw new BadRequestException(
+        'Admin payout rule is required before this provider price can be activated',
+      );
+    }
+
+    return this.prisma.providerService.upsert({
+      where: {
+        providerProfileId_serviceId: {
+          providerProfileId: provider.id,
+          serviceId,
+        },
+      },
+      create: {
+        providerProfileId: provider.id,
+        serviceId,
+        price,
+        active,
+      },
+      update: {
+        price,
+        active,
+      },
+      include: {
+        service: {
+          include: {
+            payoutRules: {
+              where: { active: true, customerPrice: price },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+  }
+
   async getVerification(userId: string | undefined) {
     const provider = await this.requireProvider(userId);
     return this.prisma.providerVerification.upsert({
@@ -313,6 +433,21 @@ function assertProviderNotBlocked(provider: { blockedAt: Date | null; blockedRea
         ? `Provider account is blocked by admin review: ${provider.blockedReason}`
         : 'Provider account is blocked by admin review.',
     );
+  }
+}
+
+function assertProviderServicePrice(
+  service: { basePrice: number; priceStep: number },
+  price: number,
+) {
+  if (!Number.isInteger(price) || price <= 0) {
+    throw new BadRequestException('Provider service price is invalid');
+  }
+  if (price < service.basePrice) {
+    throw new BadRequestException('Provider service price cannot be lower than the admin minimum');
+  }
+  if (price % service.priceStep !== 0) {
+    throw new BadRequestException(`Provider service price must use ${service.priceStep} VND increments`);
   }
 }
 

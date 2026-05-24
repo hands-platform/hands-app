@@ -63,6 +63,24 @@ export class ProvidersController {
     return this.providers.updateLocation(user.id, body);
   }
 
+  @Get('provider/services')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  services(@CurrentUser() user: AuthenticatedUser) {
+    return this.providers.listServices(user.id);
+  }
+
+  @Patch('provider/services/:serviceId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  updateServicePrice(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('serviceId') serviceId: string,
+    @Body() body: { price?: number; active?: boolean },
+  ) {
+    return this.providers.updateServicePrice(user.id, serviceId, body);
+  }
+
   @Get('provider/verification')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)

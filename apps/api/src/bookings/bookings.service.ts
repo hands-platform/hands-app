@@ -74,10 +74,12 @@ export class BookingsService {
       const configuredServiceCount = await this.prisma.providerService.count({
         where: {
           providerProfileId: preferredProvider.id,
-          active: true,
         },
       });
-      if (!providerService?.active && configuredServiceCount > 0) {
+      if (providerService && !providerService.active) {
+        throw new BadRequestException('Provider does not offer this service');
+      }
+      if (!providerService && configuredServiceCount > 0) {
         throw new BadRequestException('Provider does not offer this service');
       }
     }

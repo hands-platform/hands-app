@@ -17,8 +17,28 @@ The admin controls the minimum customer price for each service duration. Provide
 - `MassageService.priceStep` defines the allowed increment.
 - `ProviderService.price` must be greater than or equal to `MassageService.basePrice`.
 - `ProviderService.price` must be divisible by `MassageService.priceStep`.
+- `ProviderService.price` can be activated only when an active
+  `ServicePayoutRule` exists for the exact service and customer price.
 
 The booking service row stores the actual customer price used at checkout, so later price changes do not rewrite booking history.
+
+## Provider App Price Editor
+
+The Provider app Profile tab includes a service pricing card. It loads
+`GET /provider/services` and saves each row with
+`PATCH /provider/services/:serviceId`.
+
+The card shows:
+
+- Admin minimum price.
+- Current provider customer price.
+- Active or paused booking state.
+- Whether the admin payout rule is configured.
+- Provider payout amount when the payout rule exists.
+
+The Flutter UI validates minimum price and step size before saving. The API
+revalidates the same rules and also checks payout-rule readiness, so old app
+versions cannot activate unsupported prices.
 
 ## Payout Rules
 
@@ -66,7 +86,6 @@ If the provider wallet is negative:
 
 ## Future Work
 
-- Provider-facing service price editor.
 - Bulk admin import/export for service matrix.
 - Service-specific VAT and withholding policy mapping if Vietnam policy requires it.
 - Provider app warning before accepting cash bookings when wallet risk is high.
