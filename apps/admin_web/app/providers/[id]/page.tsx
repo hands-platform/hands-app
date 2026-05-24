@@ -38,13 +38,25 @@ type ProviderDetail = AdminProvider & {
   locationSnapshots?: Array<{ id: string; lat: string | number; lng: string | number; recordedAt: string }>;
   earnings?: Array<{
     id: string;
+    bookingId?: string | null;
     grossAmount: number;
     withholdingAmount: number;
     netAmount: number;
+    currency?: string | null;
     status: string;
+    availableAt?: string | null;
+    paidAt?: string | null;
     createdAt?: string;
   }>;
-  payoutBatches?: Array<{ id: string; totalNetAmount: number; status: string; createdAt?: string }>;
+  payoutBatches?: Array<{
+    id: string;
+    totalNetAmount: number;
+    currency?: string | null;
+    status: string;
+    transferRef?: string | null;
+    paidAt?: string | null;
+    createdAt?: string;
+  }>;
   verificationLogs?: Array<{
     id: string;
     action: string;
@@ -81,6 +93,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const primaryBank = provider.bankAccounts?.[0];
   const reviewChecklist = buildReviewChecklist(provider);
   const opsSummary = buildProviderOpsSummary(provider);
+  const payoutOps = buildProviderPayoutOps(provider);
   const securitySummary = buildProviderSecuritySummary(provider);
   const levelPlan = buildProviderLevelPlan(provider);
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
@@ -177,6 +190,122 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               <small>{card.action}</small>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payout operations</h2>
+            <p className="muted">
+              Settlement view for unpaid earnings, withholding, payout batches, and payout holds.
+            </p>
+          </div>
+          <span className={`pill ${pillClass(payoutOps.tone)}`}>{payoutOps.status}</span>
+        </div>
+        <div className="ops-task-grid">
+          {payoutOps.cards.map((card) => (
+            <div className={`ops-task-card ${cardClass(card.tone)}`} key={card.title}>
+              <div>
+                <span className={`pill ${pillClass(card.tone)}`}>{card.status}</span>
+                <h3>{card.title}</h3>
+                <p className="muted">{card.detail}</p>
+              </div>
+              <small>{card.action}</small>
+            </div>
+          ))}
+        </div>
+        {payoutOps.hold ? (
+          <div className="setup-stage-item" style={{ marginTop: 16 }}>
+            <span>HELD</span>
+            <div>
+              <strong>Active payout hold</strong>
+              <p className="muted">{payoutOps.hold.reason}</p>
+              <p className="muted">
+                Started {formatDate(payoutOps.hold.startsAt)} / expires {formatDate(payoutOps.hold.expiresAt)}
+              </p>
+            </div>
+            <Link className="text-link" href={`/provider-risk?q=${encodeURIComponent(provider.id)}`}>
+              Risk desk
+            </Link>
+          </div>
+        ) : null}
+        {payoutOps.blockers.length ? (
+          <div className="setup-stage-list">
+            {payoutOps.blockers.map((blocker) => (
+              <div className="setup-stage-item" key={blocker}>
+                <span>GATE</span>
+                <div>
+                  <strong>Payout blocker</strong>
+                  <p className="muted">{blocker}</p>
+                </div>
+                <small>Resolve</small>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <div className="detail-grid" style={{ marginTop: 16 }}>
+          <div>
+            <div className="risk-watch-header">
+              <h3>Recent earnings</h3>
+              <Link className="text-link" href="/earnings">
+                Open earnings
+              </Link>
+            </div>
+            {(provider.earnings ?? []).length ? (
+              <div className="setup-stage-list">
+                {provider.earnings?.slice(0, 5).map((earning) => (
+                  <div className="setup-stage-item" key={earning.id}>
+                    <span>{earning.status}</span>
+                    <div>
+                      <strong>Net {formatCurrency(earning.netAmount)}</strong>
+                      <p className="muted">
+                        Gross {formatCurrency(earning.grossAmount)} / withholding{' '}
+                        {formatCurrency(earning.withholdingAmount)}
+                      </p>
+                      <p className="muted">
+                        {earning.bookingId ? `Booking ${shortRiskId(earning.bookingId)} / ` : ''}
+                        created {formatDate(earning.createdAt)}
+                      </p>
+                    </div>
+                    <small>{earning.paidAt ? `Paid ${formatDate(earning.paidAt)}` : 'Unpaid'}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No earnings yet. Payout unlock starts after the first completed service.</p>
+            )}
+          </div>
+          <div>
+            <div className="risk-watch-header">
+              <h3>Recent payout batches</h3>
+              <Link className="text-link" href="/payouts">
+                Open payouts
+              </Link>
+            </div>
+            {(provider.payoutBatches ?? []).length ? (
+              <div className="setup-stage-list">
+                {provider.payoutBatches?.slice(0, 5).map((batch) => (
+                  <div className="setup-stage-item" key={batch.id}>
+                    <span>{batch.status}</span>
+                    <div>
+                      <strong>{formatCurrency(batch.totalNetAmount)}</strong>
+                      <p className="muted">
+                        Created {formatDate(batch.createdAt)}
+                        {batch.transferRef ? ` / transfer ${batch.transferRef}` : ''}
+                      </p>
+                      {batch.paidAt ? <p className="muted">Paid {formatDate(batch.paidAt)}</p> : null}
+                    </div>
+                    <Link className="text-link" href={`/payouts#${batch.id}`}>
+                      View
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No payout batch has been created for this provider yet.</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1019,6 +1148,81 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
   };
 }
 
+function buildProviderPayoutOps(provider: ProviderDetail) {
+  const primaryBank = provider.bankAccounts?.[0];
+  const earnings = provider.earnings ?? [];
+  const payoutBatches = provider.payoutBatches ?? [];
+  const payoutHold = activePayoutHold(provider);
+  const agreementsAccepted = provider.agreements?.length ?? 0;
+  const hasCompletedService = earnings.length > 0;
+  const hasAddress = Boolean(provider.residentialAddress?.trim());
+  const bankApproved = primaryBank?.status === 'APPROVED';
+  const taxApproved = provider.taxProfile?.status === 'APPROVED';
+  const agreementsReady = agreementsAccepted >= 5;
+  const payoutReady = hasCompletedService && bankApproved && taxApproved && hasAddress && agreementsReady && !payoutHold;
+  const blockers = hasCompletedService ? payoutBlockers(provider) : [];
+  const unpaidEarnings = earnings.filter((earning) => !['PAID', 'CANCELLED', 'REFUNDED'].includes(earning.status));
+  const unpaidNetAmount = unpaidEarnings.reduce((sum, earning) => sum + amountValue(earning.netAmount), 0);
+  const withholdingAmount = earnings.reduce((sum, earning) => sum + amountValue(earning.withholdingAmount), 0);
+  const latestBatch = payoutBatches[0];
+
+  const status = payoutHold ? 'HELD' : payoutReady ? 'UNLOCKED' : hasCompletedService ? 'BLOCKED' : 'DEFERRED';
+  const tone: ProviderOpsCard['tone'] = payoutReady ? 'done' : payoutHold || hasCompletedService ? 'blocked' : 'pending';
+
+  const cards: ProviderOpsCard[] = [
+    {
+      title: 'Unpaid net',
+      status: unpaidEarnings.length ? `${unpaidEarnings.length} ITEM(S)` : '0 ITEM',
+      detail: formatCurrency(unpaidNetAmount),
+      action: unpaidEarnings.length ? 'Eligible only after all payout gates are clear.' : 'No unpaid earning signal.',
+      tone: unpaidEarnings.length ? (payoutReady ? 'done' : 'pending') : 'pending',
+    },
+    {
+      title: 'Withholding',
+      status: earnings.length ? 'TRACKED' : 'NONE',
+      detail: formatCurrency(withholdingAmount),
+      action: earnings.length ? 'Tax is calculated from active policy rules.' : 'No completed service earning yet.',
+      tone: earnings.length ? 'done' : 'pending',
+    },
+    {
+      title: 'Payout batches',
+      status: payoutBatches.length ? `${payoutBatches.length} RECENT` : 'NONE',
+      detail: latestBatch
+        ? `${latestBatch.status} / ${formatCurrency(latestBatch.totalNetAmount)}`
+        : 'No batch created yet.',
+      action: latestBatch?.paidAt ? `Last paid ${formatDate(latestBatch.paidAt)}.` : 'Open payouts to create or process batch.',
+      tone: latestBatch?.status === 'PAID' ? 'done' : payoutBatches.length ? 'pending' : 'pending',
+    },
+    {
+      title: 'Payout gate',
+      status,
+      detail: payoutHold
+        ? `Active hold: ${payoutHold.reason}`
+        : payoutReady
+          ? 'Bank, tax, address, agreements, and first service are complete.'
+          : hasCompletedService
+            ? blockers.join(' ')
+            : 'Deferred until the first completed service.',
+      action: payoutHold
+        ? 'Resolve the risk/finance reason before lifting the hold.'
+        : payoutReady
+          ? 'Provider may be paid when an eligible batch exists.'
+          : hasCompletedService
+            ? 'Clear blockers before payment.'
+            : 'No payout request should be approved yet.',
+      tone,
+    },
+  ];
+
+  return {
+    blockers,
+    cards,
+    hold: payoutHold,
+    status,
+    tone,
+  };
+}
+
 function buildProviderSecuritySummary(provider: ProviderDetail) {
   const sessions = provider.sessions ?? [];
   const devices = provider.devices ?? [];
@@ -1570,9 +1774,21 @@ function maskDeviceId(value?: string | null) {
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
-function formatCurrency(value?: number | null) {
-  if (!value) return '0 VND';
-  return `${value.toLocaleString('vi-VN')} VND`;
+function formatCurrency(value?: number | string | null) {
+  const amount = amountValue(value);
+  if (!amount) return '0 VND';
+  return `${amount.toLocaleString('vi-VN')} VND`;
+}
+
+function amountValue(value?: number | string | null) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
 }
 
 function humanizeProviderLogAction(action: string) {
