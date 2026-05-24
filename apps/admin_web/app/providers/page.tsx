@@ -57,6 +57,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   );
   const summary = buildProviderSummary(providers);
   const reviewQueue = buildProviderReviewQueue(providers);
+  const priorityLane = buildProviderPriorityLane(providers);
 
   return (
     <>
@@ -181,6 +182,47 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           ))}
         </div>
       </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Provider priority lane</h2>
+            <p className="muted">
+              The next operators should open these provider profiles first. This is derived from profile,
+              KYC, document, bank, tax, location, and push readiness.
+            </p>
+          </div>
+          <span className={`pill ${priorityLane.blockedCount === 0 ? 'pill-success' : 'pill-danger'}`}>
+            {priorityLane.blockedCount} blocked
+          </span>
+        </div>
+        <div className="setup-stage-list">
+          {priorityLane.items.map((item) => (
+            <div className="setup-stage-item" key={item.provider.id}>
+              <span>{item.action.status}</span>
+              <div>
+                <strong>
+                  <Link className="text-link" href={`/providers/${item.provider.id}`}>
+                    {providerDisplayName(item.provider)}
+                  </Link>
+                </strong>
+                <p className="muted">{item.action.detail}</p>
+                <p className="muted">{item.action.operatorAction}</p>
+              </div>
+              <small>{item.action.tone === 'done' ? 'OK' : item.action.tone === 'blocked' ? 'Fix' : 'Watch'}</small>
+            </div>
+          ))}
+          {priorityLane.items.length === 0 ? (
+            <div className="setup-stage-item">
+              <span>OK</span>
+              <div>
+                <strong>No providers need immediate attention</strong>
+                <p className="muted">The current filtered list has no blocking provider operation items.</p>
+              </div>
+              <small>Clear</small>
+            </div>
+          ) : null}
+        </div>
+      </section>
       <div className="card">
         <table className="table">
           <thead>
@@ -218,6 +260,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <ProviderOnboardingCell provider={provider} fileReadUrls={fileReadUrls} />
                 </td>
                 <td>
+                  <ProviderNextActionCell provider={provider} />
                   <div className="participant-list" style={{ marginBottom: 8 }}>
                     <span
                       className={`pill ${provider.verification?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}
@@ -540,6 +583,31 @@ function hasHealthyPush(provider: AdminProvider) {
   return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
 }
 
+type ProviderListAction = {
+  status: string;
+  detail: string;
+  operatorAction: string;
+  tone: 'done' | 'pending' | 'blocked';
+  priority: number;
+};
+
+function ProviderNextActionCell({ provider }: { provider: AdminProvider }) {
+  const action = nextProviderListAction(provider);
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div className="participant-list" style={{ marginBottom: 6 }}>
+        <span className={`pill ${providerListActionPillClass(action.tone)}`}>{action.status}</span>
+      </div>
+      <p className="muted" style={{ marginBottom: 4 }}>
+        {action.detail}
+      </p>
+      <p className="muted" style={{ marginBottom: 8 }}>
+        {action.operatorAction}
+      </p>
+    </div>
+  );
+}
+
 function ProviderIssuePills({ provider }: { provider: AdminProvider }) {
   const issues = providerReviewIssues(provider);
   if (!issues.length) {
@@ -560,6 +628,149 @@ function ProviderIssuePills({ provider }: { provider: AdminProvider }) {
       {issues.length > 5 ? <span className="pill pill-info">+{issues.length - 5} more</span> : null}
     </div>
   );
+}
+
+function buildProviderPriorityLane(providers: AdminProvider[]) {
+  const ranked = providers
+    .map((provider) => ({ provider, action: nextProviderListAction(provider) }))
+    .filter((item) => item.action.tone !== 'done')
+    .sort((left, right) => {
+      if (left.action.priority !== right.action.priority) {
+        return right.action.priority - left.action.priority;
+      }
+      return providerDisplayName(left.provider).localeCompare(providerDisplayName(right.provider));
+    });
+
+  return {
+    items: ranked.slice(0, 6),
+    blockedCount: ranked.filter((item) => item.action.tone === 'blocked').length,
+  };
+}
+
+function nextProviderListAction(provider: AdminProvider): ProviderListAction {
+  const missingDocuments = missingApprovedRequiredKycDocuments(provider);
+  const primaryBank = provider.bankAccounts?.[0];
+  const completedServiceSignal = provider.level === 'LEVEL_3_PAYOUT_ENABLED' || provider.level === 'LEVEL_4_TRUSTED';
+  const agreementsAccepted = provider.agreements?.length ?? 0;
+  const locationState = providerLocationStatus(provider);
+
+  if (!provider.displayName?.trim() || !provider.legalName?.trim() || !provider.residentialAddress?.trim()) {
+    return {
+      status: 'PROFILE',
+      detail: 'Basic profile is incomplete.',
+      operatorAction: 'Ask provider to complete name, legal name, and address before approval.',
+      tone: 'blocked',
+      priority: 100,
+    };
+  }
+  if (missingDocuments.length > 0) {
+    return {
+      status: 'DOCUMENTS',
+      detail: `Missing or unapproved: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`,
+      operatorAction: 'Open detail and review each typed KYC document.',
+      tone: 'blocked',
+      priority: 95,
+    };
+  }
+  if (provider.kyc?.status !== 'APPROVED') {
+    return {
+      status: 'KYC',
+      detail: `KYC status is ${provider.kyc?.status ?? 'MISSING'}.`,
+      operatorAction: 'Approve or reject KYC with a clear reason.',
+      tone: 'blocked',
+      priority: provider.kyc?.status === 'REJECTED' ? 92 : 90,
+    };
+  }
+  if (provider.verification?.status !== 'APPROVED') {
+    return {
+      status: 'VERIFY',
+      detail: `Provider verification is ${provider.verification?.status ?? 'DRAFT'}.`,
+      operatorAction: 'Approve provider verification when identity review is complete.',
+      tone: 'blocked',
+      priority: 86,
+    };
+  }
+  if (primaryBank?.status !== 'APPROVED') {
+    return {
+      status: 'BANK',
+      detail: `Primary bank account is ${primaryBank?.status ?? 'missing'}.`,
+      operatorAction: 'Approve or reject bank details before payout readiness.',
+      tone: 'blocked',
+      priority: primaryBank?.status === 'REJECTED' ? 82 : 80,
+    };
+  }
+  if (completedServiceSignal && provider.taxProfile?.status !== 'APPROVED') {
+    return {
+      status: 'TAX',
+      detail: `Provider has payout-level signal, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
+      operatorAction: 'Approve/reject tax profile before withdrawal.',
+      tone: 'blocked',
+      priority: provider.taxProfile?.status === 'REJECTED' ? 76 : 74,
+    };
+  }
+  if (completedServiceSignal && agreementsAccepted < 5) {
+    return {
+      status: 'TERMS',
+      detail: `Payout agreements are ${agreementsAccepted}/5.`,
+      operatorAction: 'Ask provider to accept missing payout/tax/location agreements.',
+      tone: 'blocked',
+      priority: 70,
+    };
+  }
+  if (locationState !== 'recent') {
+    return {
+      status: 'LOCATION',
+      detail: providerLocationAgeLabel(provider.currentLocationUpdatedAt),
+      operatorAction: 'Ask provider to open the app and refresh current location.',
+      tone: locationState === 'missing' ? 'blocked' : 'pending',
+      priority: locationState === 'missing' ? 66 : 58,
+    };
+  }
+  if (!hasHealthyPush(provider)) {
+    return {
+      status: 'PUSH',
+      detail: 'No enabled push device is available for request alerts.',
+      operatorAction: 'Ask provider to reopen the app and register alerts.',
+      tone: 'pending',
+      priority: 54,
+    };
+  }
+  if (!provider.user?.supabaseUserId) {
+    return {
+      status: 'SUPABASE',
+      detail: 'Provider is still on Nest auth only.',
+      operatorAction: 'Sync/link Supabase role after Supabase OTP login is active.',
+      tone: 'pending',
+      priority: 35,
+    };
+  }
+  return {
+    status: 'CLEAR',
+    detail: 'No provider operation blocker is visible.',
+    operatorAction: 'Monitor dispatch and service quality.',
+    tone: 'done',
+    priority: 0,
+  };
+}
+
+function missingApprovedRequiredKycDocuments(provider: AdminProvider) {
+  const requiredDocuments = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
+  const approvedDocuments = new Set(
+    (provider.documents ?? [])
+      .filter((document) => document.status === 'APPROVED')
+      .map((document) => document.type),
+  );
+  return requiredDocuments.filter((type) => !approvedDocuments.has(type));
+}
+
+function providerListActionPillClass(tone: ProviderListAction['tone']) {
+  if (tone === 'done') return 'pill-success';
+  if (tone === 'blocked') return 'pill-danger';
+  return 'pill-warn';
+}
+
+function providerDisplayName(provider: AdminProvider) {
+  return provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id;
 }
 
 function ProviderLocationCell({ provider }: { provider: AdminProvider }) {
@@ -612,13 +823,7 @@ function providerActionHint(provider: AdminProvider) {
 }
 
 function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
-  const requiredDocuments = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
-  const approvedDocuments = new Set(
-    (provider.documents ?? [])
-      .filter((document) => document.status === 'APPROVED')
-      .map((document) => document.type),
-  );
-  return requiredDocuments.every((type) => approvedDocuments.has(type));
+  return missingApprovedRequiredKycDocuments(provider).length === 0;
 }
 
 function buildProviderSummary(providers: AdminProvider[]) {
