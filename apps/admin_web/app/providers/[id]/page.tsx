@@ -30,6 +30,15 @@ type ProviderDetail = AdminProvider & {
     createdAt?: string;
   }>;
   payoutBatches?: Array<{ id: string; totalNetAmount: number; status: string; createdAt?: string }>;
+  verificationLogs?: Array<{
+    id: string;
+    action: string;
+    fromStatus?: string | null;
+    toStatus?: string | null;
+    metadata?: unknown;
+    createdAt: string;
+    actor?: { phone?: string | null; fullName?: string | null } | null;
+  }>;
 };
 
 export default async function ProviderDetailPage({ params }: PageProps) {
@@ -126,6 +135,42 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Review history</h2>
+            <p className="muted">
+              Provider, KYC, document, bank, and tax review decisions are shown here for handoff and audit.
+            </p>
+          </div>
+          <span className="pill pill-info">{provider.verificationLogs?.length ?? 0} recent event(s)</span>
+        </div>
+        {(provider.verificationLogs ?? []).length ? (
+          <div className="setup-stage-list">
+            {provider.verificationLogs?.slice(0, 8).map((log) => {
+              const preview = metadataPreview(log.metadata);
+              return (
+                <div className="setup-stage-item" key={log.id}>
+                  <span>{humanizeProviderLogAction(log.action)}</span>
+                  <div>
+                    <strong>{statusTransition(log)}</strong>
+                    <p className="muted">
+                      {formatDate(log.createdAt)} / {log.actor?.fullName ?? log.actor?.phone ?? 'System'}
+                    </p>
+                    {preview ? <p className="muted">{preview}</p> : null}
+                  </div>
+                  <small>{log.action}</small>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="muted">
+            No provider review logs yet. New approval, rejection, and resubmission actions will appear here.
+          </p>
+        )}
       </div>
 
       <section className="detail-grid">
@@ -477,4 +522,33 @@ function locationAgeMinutes(value?: string | null) {
 function formatCurrency(value?: number | null) {
   if (!value) return '0 VND';
   return `${value.toLocaleString('vi-VN')} VND`;
+}
+
+function humanizeProviderLogAction(action: string) {
+  return action
+    .split(/[._-]/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function statusTransition(log: NonNullable<ProviderDetail['verificationLogs']>[number]) {
+  if (log.fromStatus || log.toStatus) {
+    return `${log.fromStatus ?? 'New'} -> ${log.toStatus ?? 'Unknown'}`;
+  }
+  return 'Decision recorded';
+}
+
+function metadataPreview(metadata?: unknown) {
+  if (!metadata || typeof metadata !== 'object') return null;
+  const record = metadata as Record<string, unknown>;
+  const reason = typeof record.reason === 'string' ? record.reason : null;
+  const documentType = typeof record.documentType === 'string' ? record.documentType : null;
+  const target = typeof record.target === 'string' ? record.target : null;
+  const parts = [
+    reason ? `Reason: ${reason}` : null,
+    documentType ? `Document: ${documentType}` : null,
+    target ? `Target: ${target}` : null,
+  ].filter(Boolean);
+  return parts.join(' / ');
 }

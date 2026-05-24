@@ -1,4 +1,8 @@
 const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3100/api';
+const ADMIN_TOKEN_REFRESH_SKEW_MS = 60_000;
+
+let cachedAdminToken: { token: string; expiresAt: number } | null = null;
+let pendingAdminToken: Promise<string> | null = null;
 
 export type AdminUser = {
   id: string;
@@ -499,6 +503,24 @@ async function getAdminAccessToken() {
     return process.env.ADMIN_ACCESS_TOKEN;
   }
 
+  const now = Date.now();
+  if (cachedAdminToken && cachedAdminToken.expiresAt > now + ADMIN_TOKEN_REFRESH_SKEW_MS) {
+    return cachedAdminToken.token;
+  }
+
+  if (pendingAdminToken) {
+    return pendingAdminToken;
+  }
+
+  pendingAdminToken = requestAdminAccessToken();
+  try {
+    return await pendingAdminToken;
+  } finally {
+    pendingAdminToken = null;
+  }
+}
+
+async function requestAdminAccessToken() {
   const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -515,5 +537,23 @@ async function getAdminAccessToken() {
   }
 
   const body = (await response.json()) as { accessToken: string };
+  cachedAdminToken = {
+    token: body.accessToken,
+    expiresAt: readJwtExpiry(body.accessToken) ?? Date.now() + 10 * 60_000,
+  };
   return body.accessToken;
+}
+
+function readJwtExpiry(token: string) {
+  try {
+    const [, payload] = token.split('.');
+    if (!payload) return null;
+    const normalizedPayload = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = JSON.parse(Buffer.from(normalizedPayload, 'base64').toString('utf8')) as {
+      exp?: number;
+    };
+    return decoded.exp ? decoded.exp * 1000 : null;
+  } catch {
+    return null;
+  }
 }

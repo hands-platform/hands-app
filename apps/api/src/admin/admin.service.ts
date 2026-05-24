@@ -84,6 +84,11 @@ export class AdminService {
         locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
         earnings: { orderBy: { createdAt: 'desc' }, take: 10 },
         payoutBatches: { orderBy: { createdAt: 'desc' }, take: 10 },
+        verificationLogs: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          include: { actor: { select: { phone: true, fullName: true } } },
+        },
       },
     });
     if (!provider) {
