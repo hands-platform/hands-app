@@ -264,12 +264,14 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 </p>
                 <div className="actions">
                   <form action={approveProviderDocument}>
+                    <input type="hidden" name="providerId" value={provider.id} />
                     <input type="hidden" name="documentId" value={document.id} />
                     <button type="submit" disabled={document.status === 'APPROVED'}>
                       Approve doc
                     </button>
                   </form>
                   <form action={rejectProviderDocument}>
+                    <input type="hidden" name="providerId" value={provider.id} />
                     <input type="hidden" name="documentId" value={document.id} />
                     <input
                       name="reason"
@@ -302,12 +304,14 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               <InfoLine label="Rejection reason" value={primaryBank.rejectionReason} />
               <div className="actions" style={{ marginTop: 12 }}>
                 <form action={approveProviderBankAccount}>
+                  <input type="hidden" name="providerId" value={provider.id} />
                   <input type="hidden" name="bankAccountId" value={primaryBank.id} />
                   <button type="submit" disabled={primaryBank.status === 'APPROVED'}>
                     Approve bank
                   </button>
                 </form>
                 <form action={rejectProviderBankAccount}>
+                  <input type="hidden" name="providerId" value={provider.id} />
                   <input type="hidden" name="bankAccountId" value={primaryBank.id} />
                   <input
                     name="reason"

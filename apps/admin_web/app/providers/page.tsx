@@ -359,6 +359,7 @@ function ProviderOnboardingCell({
   const primaryBank = provider.bankAccounts?.[0];
   const missingAgreements = 5 - (provider.agreements?.length ?? 0);
   const documents = provider.documents ?? [];
+  const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
 
   return (
     <div>
@@ -429,12 +430,14 @@ function ProviderOnboardingCell({
               </p>
               <div className="actions">
                 <form action={approveProviderDocument}>
+                  <input type="hidden" name="providerId" value={provider.id} />
                   <input type="hidden" name="documentId" value={document.id} />
                   <button type="submit" disabled={document.status === 'APPROVED'}>
                     Approve doc
                   </button>
                 </form>
                 <form action={rejectProviderDocument}>
+                  <input type="hidden" name="providerId" value={provider.id} />
                   <input type="hidden" name="documentId" value={document.id} />
                   <input
                     type="hidden"
@@ -457,7 +460,7 @@ function ProviderOnboardingCell({
       <div className="actions">
         <form action={approveProviderKyc}>
           <input type="hidden" name="providerId" value={provider.id} />
-          <button type="submit" disabled={provider.kyc?.status === 'APPROVED'}>
+          <button type="submit" disabled={provider.kyc?.status === 'APPROVED' || !canApproveKyc}>
             Approve KYC
           </button>
         </form>
@@ -471,12 +474,14 @@ function ProviderOnboardingCell({
         {primaryBank ? (
           <>
             <form action={approveProviderBankAccount}>
+              <input type="hidden" name="providerId" value={provider.id} />
               <input type="hidden" name="bankAccountId" value={primaryBank.id} />
               <button type="submit" disabled={primaryBank.status === 'APPROVED'}>
                 Approve bank
               </button>
             </form>
             <form action={rejectProviderBankAccount}>
+              <input type="hidden" name="providerId" value={provider.id} />
               <input type="hidden" name="bankAccountId" value={primaryBank.id} />
               <input type="hidden" name="reason" value="Bank account rejected from admin dashboard" />
               <button type="submit" disabled={primaryBank.status === 'REJECTED'}>
@@ -503,6 +508,11 @@ function ProviderOnboardingCell({
           </>
         ) : null}
       </div>
+      {!canApproveKyc ? (
+        <p className="muted" style={{ marginTop: 8 }}>
+          KYC approval unlocks after CCCD front, CCCD back, and selfie documents are approved.
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -599,6 +609,16 @@ function providerActionHint(provider: AdminProvider) {
     return 'Therapist is operational in Nest auth. Supabase role sync will become available after Supabase OTP login links this phone.';
   }
   return 'Therapist is ready for direct requests and fallback matching.';
+}
+
+function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
+  const requiredDocuments = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
+  const approvedDocuments = new Set(
+    (provider.documents ?? [])
+      .filter((document) => document.status === 'APPROVED')
+      .map((document) => document.type),
+  );
+  return requiredDocuments.every((type) => approvedDocuments.has(type));
 }
 
 function buildProviderSummary(providers: AdminProvider[]) {
