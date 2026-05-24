@@ -515,18 +515,27 @@ export class ProviderOnboardingService {
       notes?: string;
     },
   ) {
-    const policy = await this.prisma.taxPolicyVersion.create({
-      data: {
-        name: requiredString(input.name, 'Policy name is required'),
-        status: input.status ?? TaxPolicyStatus.DRAFT,
-        effectiveFrom: parseDate(input.effectiveFrom, 'effectiveFrom is required'),
-        effectiveTo: input.effectiveTo ? new Date(input.effectiveTo) : null,
-        notes: normalizeString(input.notes),
-        createdById: actorId,
-      },
-      include: { rules: true },
+    const status = input.status ?? TaxPolicyStatus.DRAFT;
+    const result = await this.prisma.$transaction(async (tx) => {
+      const policy = await tx.taxPolicyVersion.create({
+        data: {
+          name: requiredString(input.name, 'Policy name is required'),
+          status,
+          effectiveFrom: parseDate(input.effectiveFrom, 'effectiveFrom is required'),
+          effectiveTo: input.effectiveTo ? new Date(input.effectiveTo) : null,
+          notes: normalizeString(input.notes),
+          createdById: actorId,
+        },
+        include: { rules: true },
+      });
+      const deactivated = await deactivateOtherActiveTaxPolicies(tx, policy.id, status);
+      return { policy, deactivatedCount: deactivated.count };
     });
-    await this.writeAudit(actorId, 'tax_policy.create', `tax_policy:${policy.id}`, { status: policy.status });
+    const { policy } = result;
+    await this.writeAudit(actorId, 'tax_policy.create', `tax_policy:${policy.id}`, {
+      status: policy.status,
+      deactivatedOtherActivePolicies: result.deactivatedCount,
+    });
     return policy;
   }
 
@@ -541,23 +550,31 @@ export class ProviderOnboardingService {
       notes?: string | null;
     },
   ) {
-    const policy = await this.prisma.taxPolicyVersion.update({
-      where: { id },
-      data: {
-        name: normalizeString(input.name),
-        status: input.status,
-        effectiveFrom: input.effectiveFrom ? new Date(input.effectiveFrom) : undefined,
-        effectiveTo:
-          input.effectiveTo === undefined
-            ? undefined
-            : input.effectiveTo
-              ? new Date(input.effectiveTo)
-              : null,
-        notes: input.notes === undefined ? undefined : normalizeString(input.notes),
-      },
-      include: { rules: true },
+    const result = await this.prisma.$transaction(async (tx) => {
+      const policy = await tx.taxPolicyVersion.update({
+        where: { id },
+        data: {
+          name: normalizeString(input.name),
+          status: input.status,
+          effectiveFrom: input.effectiveFrom ? new Date(input.effectiveFrom) : undefined,
+          effectiveTo:
+            input.effectiveTo === undefined
+              ? undefined
+              : input.effectiveTo
+                ? new Date(input.effectiveTo)
+                : null,
+          notes: input.notes === undefined ? undefined : normalizeString(input.notes),
+        },
+        include: { rules: true },
+      });
+      const deactivated = await deactivateOtherActiveTaxPolicies(tx, policy.id, policy.status);
+      return { policy, deactivatedCount: deactivated.count };
     });
-    await this.writeAudit(actorId, 'tax_policy.update', `tax_policy:${policy.id}`, { status: policy.status });
+    const { policy } = result;
+    await this.writeAudit(actorId, 'tax_policy.update', `tax_policy:${policy.id}`, {
+      status: policy.status,
+      deactivatedOtherActivePolicies: result.deactivatedCount,
+    });
     return policy;
   }
 
@@ -843,6 +860,23 @@ function sha256(value: string) {
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function deactivateOtherActiveTaxPolicies(
+  tx: Prisma.TransactionClient,
+  activePolicyId: string,
+  status: TaxPolicyStatus,
+) {
+  if (status !== TaxPolicyStatus.ACTIVE) {
+    return Promise.resolve({ count: 0 });
+  }
+  return tx.taxPolicyVersion.updateMany({
+    where: {
+      id: { not: activePolicyId },
+      status: TaxPolicyStatus.ACTIVE,
+    },
+    data: { status: TaxPolicyStatus.INACTIVE },
+  });
 }
 
 function normalizeTaxRuleInput(
