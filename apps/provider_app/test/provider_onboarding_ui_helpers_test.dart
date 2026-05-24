@@ -64,6 +64,10 @@ void main() {
       'WORK_PHOTO',
       'BANK_QR',
     ]);
+    expect(
+      providerDocumentStatusLabel('REJECTED'),
+      'Rejected. Upload a clearer replacement image.',
+    );
     expect(providerDocumentTypeStep('BANK_QR'), 'Optional');
   });
 

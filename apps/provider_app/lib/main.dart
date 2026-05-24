@@ -2860,10 +2860,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           text: 'Verification load failed: ${snapshot.error}'),
                       const SizedBox(height: 12),
                     ],
-                    ProviderDocumentUploadSlots(
-                      uploadedDocumentIds: _uploadedOnboardingDocumentIds,
-                      isUploading: _isUploading,
-                      onUpload: _pickAndUploadVerificationFile,
+                    FutureBuilder<Map<String, dynamic>>(
+                      future: _onboardingFuture,
+                      builder: (context, onboardingSnapshot) {
+                        final onboarding =
+                            onboardingSnapshot.data ?? <String, dynamic>{};
+                        return ProviderDocumentUploadSlots(
+                          uploadedDocumentIds: _uploadedOnboardingDocumentIds,
+                          submittedDocuments: asList(onboarding['documents']),
+                          isUploading: _isUploading,
+                          onUpload: _pickAndUploadVerificationFile,
+                        );
+                      },
                     ),
                     if (_uploadedOnboardingDocumentIds.isNotEmpty) ...[
                       const SizedBox(height: 8),

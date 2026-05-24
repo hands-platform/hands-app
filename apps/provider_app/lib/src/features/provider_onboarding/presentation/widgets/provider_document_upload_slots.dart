@@ -4,7 +4,7 @@ const requiredProviderDocumentTypes = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 const optionalProviderDocumentTypes = [
   'PROFILE_PHOTO',
   'WORK_PHOTO',
-  'BANK_QR'
+  'BANK_QR',
 ];
 const providerDocumentTypes = [
   ...requiredProviderDocumentTypes,
@@ -15,18 +15,34 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
   const ProviderDocumentUploadSlots({
     super.key,
     required this.uploadedDocumentIds,
+    this.submittedDocuments = const [],
     required this.isUploading,
     required this.onUpload,
   });
 
   final Map<String, String> uploadedDocumentIds;
+  final List<dynamic> submittedDocuments;
   final bool isUploading;
   final Future<void> Function(String type) onUpload;
 
   @override
   Widget build(BuildContext context) {
+    final submittedByType = <String, Map<String, dynamic>>{};
+    for (final document in submittedDocuments) {
+      final item = _asMap(document);
+      final type = item?['type']?.toString();
+      if (item != null && type != null && type.isNotEmpty) {
+        submittedByType[type] = item;
+      }
+    }
+
     final missingRequired = requiredProviderDocumentTypes
-        .where((type) => !uploadedDocumentIds.containsKey(type))
+        .where(
+          (type) =>
+              !uploadedDocumentIds.containsKey(type) &&
+              submittedByType[type]?['status']?.toString() != 'APPROVED' &&
+              submittedByType[type]?['status']?.toString() != 'PENDING_REVIEW',
+        )
         .map(providerDocumentTypeLabel)
         .toList();
 
@@ -50,6 +66,7 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
             for (final type in requiredProviderDocumentTypes) ...[
               _DocumentSlot(
                 type: type,
+                submittedDocument: submittedByType[type],
                 uploaded: uploadedDocumentIds.containsKey(type),
                 isUploading: isUploading,
                 onUpload: onUpload,
@@ -60,6 +77,7 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
             for (final type in optionalProviderDocumentTypes) ...[
               _DocumentSlot(
                 type: type,
+                submittedDocument: submittedByType[type],
                 uploaded: uploadedDocumentIds.containsKey(type),
                 isUploading: isUploading,
                 onUpload: onUpload,
@@ -83,12 +101,14 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
 class _DocumentSlot extends StatelessWidget {
   const _DocumentSlot({
     required this.type,
+    required this.submittedDocument,
     required this.uploaded,
     required this.isUploading,
     required this.onUpload,
   });
 
   final String type;
+  final Map<String, dynamic>? submittedDocument;
   final bool uploaded;
   final bool isUploading;
   final Future<void> Function(String type) onUpload;
@@ -96,20 +116,42 @@ class _DocumentSlot extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final status = submittedDocument?['status']?.toString();
+    final rejected = status == 'REJECTED';
+    final approved = status == 'APPROVED';
+    final pending = status == 'PENDING_REVIEW';
+    final rejectionReason =
+        submittedDocument?['rejectionReason']?.toString().trim();
+    final statusLabel = uploaded
+        ? 'New image attached. Submit KYC to send it for review.'
+        : status == null
+            ? providerDocumentTypeDescription(type)
+            : providerDocumentStatusLabel(status);
+    final activeColor = rejected ? colorScheme.error : colorScheme.primary;
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         border: Border.all(
-          color: uploaded ? colorScheme.primary : colorScheme.outlineVariant,
+          color: uploaded || approved || pending || rejected
+              ? activeColor
+              : colorScheme.outlineVariant,
         ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
           Icon(
-            uploaded ? Icons.check_circle_outline : Icons.add_photo_alternate,
-            color:
-                uploaded ? colorScheme.primary : colorScheme.onSurfaceVariant,
+            uploaded || approved
+                ? Icons.check_circle_outline
+                : rejected
+                    ? Icons.error_outline
+                    : pending
+                        ? Icons.hourglass_top_outlined
+                        : Icons.add_photo_alternate,
+            color: uploaded || approved || pending || rejected
+                ? activeColor
+                : colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -117,20 +159,29 @@ class _DocumentSlot extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${providerDocumentTypeStep(type)} · ${providerDocumentTypeLabel(type)}',
+                  '${providerDocumentTypeStep(type)} - ${providerDocumentTypeLabel(type)}',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 Text(
-                  providerDocumentTypeDescription(type),
+                  statusLabel,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
+                if (rejectionReason != null && rejectionReason.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'Admin note: $rejectionReason',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.error,
+                        ),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(width: 8),
           FilledButton.tonal(
             onPressed: isUploading ? null : () => onUpload(type),
-            child: Text(uploaded ? 'Replace' : 'Upload'),
+            child: Text(uploaded || rejected ? 'Replace' : 'Upload'),
           ),
         ],
       ),
@@ -180,4 +231,27 @@ String providerDocumentTypeStep(String type) {
   final requiredIndex = requiredProviderDocumentTypes.indexOf(type);
   if (requiredIndex >= 0) return 'Step ${requiredIndex + 1}';
   return 'Optional';
+}
+
+String providerDocumentStatusLabel(String status) {
+  switch (status) {
+    case 'APPROVED':
+      return 'Approved by admin.';
+    case 'PENDING_REVIEW':
+      return 'Submitted. Waiting for admin review.';
+    case 'REJECTED':
+      return 'Rejected. Upload a clearer replacement image.';
+    default:
+      return status;
+  }
+}
+
+Map<String, dynamic>? _asMap(dynamic value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  if (value is Map) {
+    return Map<String, dynamic>.from(value);
+  }
+  return null;
 }
