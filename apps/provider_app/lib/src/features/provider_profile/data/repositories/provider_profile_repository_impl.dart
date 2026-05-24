@@ -41,13 +41,17 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     final record = result is Map<String, dynamic>
         ? result
         : <String, dynamic>{'ok': true};
-    if (record['blocked'] == true) {
+    final providerBlocked =
+        record['providerBlocked'] == true || record['blockedScope'] == 'provider';
+    if (record['blocked'] == true || providerBlocked) {
       final device = _asMap(record['device']);
-      final reason = device?['blockReason']?.toString();
+      final reason = record['blockReason']?.toString() ??
+          (providerBlocked ? null : device?['blockReason']?.toString());
+      final subject = providerBlocked ? 'provider account' : 'device';
       throw StateError(
         reason == null || reason.isEmpty
-            ? 'This device is blocked by admin review.'
-            : 'This device is blocked by admin review: $reason',
+            ? 'This $subject is blocked by admin review.'
+            : 'This $subject is blocked by admin review: $reason',
       );
     }
     return record;

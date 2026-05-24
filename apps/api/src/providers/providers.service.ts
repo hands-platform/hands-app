@@ -24,6 +24,7 @@ export class ProvidersService {
     const providers = await this.prisma.providerProfile.findMany({
       where: {
         status: { in: [ProviderStatus.ONLINE_AVAILABLE, ProviderStatus.ONLINE_AVAILABLE_SOON] },
+        blockedAt: null,
         currentLat: { not: null },
         currentLng: { not: null },
         currentLocationUpdatedAt: { gte: hideBefore },
@@ -73,8 +74,8 @@ export class ProvidersService {
   }
 
   async getDetail(id: string) {
-    const provider = await this.prisma.providerProfile.findUniqueOrThrow({
-      where: { id },
+    const provider = await this.prisma.providerProfile.findFirstOrThrow({
+      where: { id, blockedAt: null },
       include: {
         user: {
           select: {
@@ -109,6 +110,7 @@ export class ProvidersService {
 
   async setStatus(userId: string | undefined, status: ProviderStatus) {
     const provider = await this.requireProvider(userId);
+    assertProviderNotBlocked(provider);
     const updated = await this.prisma.providerProfile.update({
       where: { id: provider.id },
       data: { status },
@@ -127,6 +129,8 @@ export class ProvidersService {
     const platform = normalizeOptional(input.platform);
     const appVersion = normalizeOptional(input.appVersion);
     const now = new Date();
+    const providerBlocked = Boolean(provider.blockedAt);
+    const providerBlockReason = provider.blockedReason ?? 'No reason saved';
 
     const [existingDevice, sharedDeviceCount] = await Promise.all([
       this.prisma.providerDevice.findUnique({
@@ -146,12 +150,14 @@ export class ProvidersService {
     ]);
 
     const blocked = Boolean(existingDevice?.blockedAt);
-    const suspicious = blocked || sharedDeviceCount > 0;
-    const suspiciousReason = blocked
-      ? `Blocked device: ${existingDevice?.blockReason ?? 'No reason saved'}`
-      : sharedDeviceCount > 0
-        ? `Device is already linked to ${sharedDeviceCount} other provider profile(s).`
-        : null;
+    const suspicious = providerBlocked || blocked || sharedDeviceCount > 0;
+    const suspiciousReason = providerBlocked
+      ? `Blocked provider account: ${providerBlockReason}`
+      : blocked
+        ? `Blocked device: ${existingDevice?.blockReason ?? 'No reason saved'}`
+        : sharedDeviceCount > 0
+          ? `Device is already linked to ${sharedDeviceCount} other provider profile(s).`
+          : null;
 
     const result = await this.prisma.$transaction(async (tx) => {
       const device = existingDevice
@@ -190,8 +196,11 @@ export class ProvidersService {
     });
 
     return {
-      ok: !blocked,
-      blocked,
+      ok: !blocked && !providerBlocked,
+      blocked: blocked || providerBlocked,
+      blockedScope: providerBlocked ? 'provider' : blocked ? 'device' : null,
+      providerBlocked,
+      blockReason: providerBlocked ? providerBlockReason : existingDevice?.blockReason ?? null,
       sharedDeviceProfileCount: sharedDeviceCount,
       device: result.device,
       session: result.session,
@@ -200,6 +209,7 @@ export class ProvidersService {
 
   async updateLocation(userId: string | undefined, input: { lat: number; lng: number }) {
     const provider = await this.requireProvider(userId);
+    assertProviderNotBlocked(provider);
     assertVietnamCoordinate(input.lat, input.lng, 'Provider location must be inside Vietnam');
     const recordedAt = new Date();
     const updated = await this.prisma.providerProfile.update({
@@ -293,6 +303,16 @@ function toRadians(value: number) {
 function assertVietnamCoordinate(lat: number, lng: number, message: string) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || !isVietnamCoordinate(lat, lng)) {
     throw new BadRequestException(message);
+  }
+}
+
+function assertProviderNotBlocked(provider: { blockedAt: Date | null; blockedReason: string | null }) {
+  if (provider.blockedAt) {
+    throw new BadRequestException(
+      provider.blockedReason
+        ? `Provider account is blocked by admin review: ${provider.blockedReason}`
+        : 'Provider account is blocked by admin review.',
+    );
   }
 }
 

@@ -154,6 +154,55 @@ if (unblockedProviderDeviceSession.blocked !== false || unblockedProviderDeviceS
     `Unblocked provider device still appears blocked: ${JSON.stringify(unblockedProviderDeviceSession)}`,
   );
 }
+await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/block`, adminAuth.accessToken, {
+  reason: 'Smoke test account-level provider block',
+});
+const accountBlockedProviderDeviceSession = await postJson(
+  '/provider/device-session',
+  providerAuth.accessToken,
+  {
+    deviceId: providerSmokeDeviceId,
+    platform: 'android',
+    appVersion: 'smoke-test',
+  },
+);
+if (
+  accountBlockedProviderDeviceSession.providerBlocked !== true ||
+  accountBlockedProviderDeviceSession.blockedScope !== 'provider' ||
+  accountBlockedProviderDeviceSession.ok !== false
+) {
+  throw new Error(
+    `Blocked provider account was not rejected by device-session: ${JSON.stringify(
+      accountBlockedProviderDeviceSession,
+    )}`,
+  );
+}
+await expectRequestFailure(
+  'Blocked provider account cannot go online',
+  () => postJson('/provider/online', providerAuth.accessToken),
+  400,
+);
+await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/unblock`, adminAuth.accessToken);
+const accountUnblockedProviderDeviceSession = await postJson(
+  '/provider/device-session',
+  providerAuth.accessToken,
+  {
+    deviceId: providerSmokeDeviceId,
+    platform: 'android',
+    appVersion: 'smoke-test',
+  },
+);
+if (
+  accountUnblockedProviderDeviceSession.providerBlocked !== false ||
+  accountUnblockedProviderDeviceSession.blocked !== false ||
+  accountUnblockedProviderDeviceSession.ok !== true
+) {
+  throw new Error(
+    `Unblocked provider account still appears blocked: ${JSON.stringify(
+      accountUnblockedProviderDeviceSession,
+    )}`,
+  );
+}
 
 const services = await request('/services');
 const service = services[0];

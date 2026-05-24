@@ -59,6 +59,20 @@ export class AdminController {
     return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.APPROVED);
   }
 
+  @Post('providers/:id/block')
+  blockProviderAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.admin.blockProviderAccount(user.id, providerProfileId, body.reason);
+  }
+
+  @Post('providers/:id/unblock')
+  unblockProviderAccount(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
+    return this.admin.unblockProviderAccount(user.id, providerProfileId);
+  }
+
   @Post('providers/:id/sync-supabase-role')
   syncProviderSupabaseRole(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
     return this.admin.syncProviderSupabaseRole(user.id, providerProfileId);

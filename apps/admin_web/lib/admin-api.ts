@@ -21,6 +21,8 @@ export type AdminProvider = {
   residentialAddress?: string | null;
   city?: string | null;
   status: string;
+  blockedAt?: string | null;
+  blockedReason?: string | null;
   currentLat?: string | number | null;
   currentLng?: string | number | null;
   currentLocationUpdatedAt?: string | null;

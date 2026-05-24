@@ -3740,11 +3740,12 @@ class ProviderErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isProviderDeviceBlockedMessage(text)) {
+    if (!isProviderBlockedMessage(text)) {
       return ErrorCard(text: text);
     }
 
     final colorScheme = Theme.of(context).colorScheme;
+    final accountBlocked = isProviderAccountBlockedMessage(text);
     return Card(
       color: colorScheme.errorContainer,
       child: Padding(
@@ -3752,14 +3753,21 @@ class ProviderErrorCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.phonelink_lock_outlined, color: colorScheme.error),
+            Icon(
+              accountBlocked
+                  ? Icons.admin_panel_settings_outlined
+                  : Icons.phonelink_lock_outlined,
+              color: colorScheme.error,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Device blocked by admin',
+                    accountBlocked
+                        ? 'Provider account blocked by admin'
+                        : 'Device blocked by admin',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: colorScheme.onErrorContainer,
                           fontWeight: FontWeight.w800,
@@ -3772,7 +3780,9 @@ class ProviderErrorCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Do not create a new account. Contact HANDS operations so this device can be reviewed or unblocked.',
+                    accountBlocked
+                        ? 'Contact HANDS operations. This account cannot go online or share location until an admin unblocks it.'
+                        : 'Do not create a new account. Contact HANDS operations so this device can be reviewed or unblocked.',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onErrorContainer,
                         ),
@@ -3818,9 +3828,26 @@ String providerAppErrorMessage(Object error) {
       'This device is blocked by HANDS admin review',
     );
   }
+  if (isProviderAccountBlockedMessage(normalized)) {
+    return normalized.replaceFirst(
+      'This provider account is blocked by admin review',
+      'This provider account is blocked by HANDS admin review',
+    );
+  }
   return normalized;
+}
+
+bool isProviderBlockedMessage(String value) {
+  return isProviderDeviceBlockedMessage(value) ||
+      isProviderAccountBlockedMessage(value);
 }
 
 bool isProviderDeviceBlockedMessage(String value) {
   return value.toLowerCase().contains('device is blocked');
+}
+
+bool isProviderAccountBlockedMessage(String value) {
+  final normalized = value.toLowerCase();
+  return normalized.contains('provider account is blocked') ||
+      normalized.contains('account is blocked');
 }

@@ -11,6 +11,7 @@ import {
   approveProviderDocument,
   approveProviderKyc,
   approveProviderTaxProfile,
+  blockProviderAccount,
   enablePushDevice,
   rejectProvider,
   rejectProviderBankAccount,
@@ -18,11 +19,12 @@ import {
   rejectProviderKyc,
   rejectProviderTaxProfile,
   syncSupabaseProviderRole,
+  unblockProviderAccount,
 } from './actions';
 
 type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
 type ProviderLocationState = 'recent' | 'stale' | 'expired' | 'missing';
-type ProviderSecurityState = 'clear' | 'blocked' | 'suspicious' | 'shared' | 'missing';
+type ProviderSecurityState = 'clear' | 'account-blocked' | 'blocked' | 'suspicious' | 'shared' | 'missing';
 type ProviderFilters = {
   q: string;
   verification: string;
@@ -115,6 +117,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             Security
             <select name="security" defaultValue={filters.security}>
               <option value="">All</option>
+              <option value="account-blocked">Account blocked</option>
               <option value="blocked">Blocked device</option>
               <option value="suspicious">Suspicious session</option>
               <option value="shared">Shared device</option>
@@ -141,6 +144,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="bank">Bank payout review</option>
               <option value="tax">Tax profile review</option>
               <option value="security">Device/session risk</option>
+              <option value="blocked">Account blocks</option>
               <option value="location">Location freshness</option>
               <option value="push">Push alert readiness</option>
             </select>
@@ -270,6 +274,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <p className="muted" style={{ marginTop: 4 }}>
                     Queue status: {provider.status}
                   </p>
+                  {provider.blockedAt ? (
+                    <p className="muted" style={{ marginTop: 4 }}>
+                      Account blocked: {provider.blockedReason ?? 'No reason saved'}
+                    </p>
+                  ) : null}
                 </td>
                 <td>
                   <ProviderOnboardingCell provider={provider} fileReadUrls={fileReadUrls} />
@@ -397,6 +406,24 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                         Sync Supabase role
                       </button>
                     </form>
+                    {provider.blockedAt ? (
+                      <form action={unblockProviderAccount}>
+                        <input type="hidden" name="providerId" value={provider.id} />
+                        <button type="submit">Unblock account</button>
+                      </form>
+                    ) : (
+                      <form action={blockProviderAccount}>
+                        <input type="hidden" name="providerId" value={provider.id} />
+                        <input
+                          name="reason"
+                          placeholder="Account block reason"
+                          required
+                          minLength={12}
+                          maxLength={500}
+                        />
+                        <button type="submit">Block account</button>
+                      </form>
+                    )}
                     <Link className="text-link" href={`/providers/${provider.id}`}>
                       Open detail
                     </Link>
@@ -699,6 +726,15 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   const locationState = providerLocationStatus(provider);
   const securityState = providerSecurityStatus(provider);
 
+  if (provider.blockedAt) {
+    return {
+      status: 'ACCOUNT',
+      detail: `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`,
+      operatorAction: 'Unblock only after identity, safety, payout, or policy issue is resolved.',
+      tone: 'blocked',
+      priority: 120,
+    };
+  }
   if (!provider.displayName?.trim() || !provider.legalName?.trim() || !provider.residentialAddress?.trim()) {
     return {
       status: 'PROFILE',
@@ -760,6 +796,15 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
       operatorAction: 'Ask provider to accept missing payout/tax/location agreements.',
       tone: 'blocked',
       priority: 70,
+    };
+  }
+  if (securityState === 'account-blocked') {
+    return {
+      status: 'ACCOUNT',
+      detail: 'The provider account is blocked by admin policy.',
+      operatorAction: 'Open provider detail and unblock only after the recorded issue is resolved.',
+      tone: 'blocked',
+      priority: 69,
     };
   }
   if (securityState === 'blocked') {
@@ -880,6 +925,11 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
           ? `Last app device: ${maskToken(latestDevice.deviceId)} / ${latestDevice.platform ?? 'unknown'}`
           : 'No provider app device recorded yet.'}
       </p>
+      {provider.blockedAt ? (
+        <p className="muted" style={{ marginBottom: 4 }}>
+          Account block: {provider.blockedReason ?? 'No reason saved'} / {formatDate(provider.blockedAt)}
+        </p>
+      ) : null}
       {latestSession ? (
         <p className="muted" style={{ marginBottom: 4 }}>
           Last session: {latestSession.ipAddress ?? 'no IP'} / {formatDate(latestSession.lastSeenAt)}
@@ -896,6 +946,9 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
 }
 
 function providerActionHint(provider: AdminProvider) {
+  if (provider.blockedAt) {
+    return 'This provider account is blocked and cannot go online, update location, or appear to customers.';
+  }
   if (provider.verification?.status !== 'APPROVED') {
     return 'Review verification before this therapist can safely take customer requests.';
   }
@@ -930,6 +983,7 @@ function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
 }
 
 function buildProviderSummary(providers: AdminProvider[]) {
+  const accountBlocked = providers.filter((provider) => Boolean(provider.blockedAt)).length;
   const approved = providers.filter((provider) => provider.verification?.status === 'APPROVED').length;
   const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
   const recentLocation = providers.filter((provider) => providerLocationStatus(provider) === 'recent').length;
@@ -941,11 +995,12 @@ function buildProviderSummary(providers: AdminProvider[]) {
     (provider.user?.pushDevices ?? []).some((device) => !device.enabled),
   ).length;
   const deviceRisk = providers.filter((provider) =>
-    ['blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const readyNow = providers.filter(
     (provider) =>
       provider.verification?.status === 'APPROVED' &&
+      !provider.blockedAt &&
       provider.status === 'ONLINE_AVAILABLE' &&
       providerLocationStatus(provider) === 'recent' &&
       providerSecurityStatus(provider) === 'clear' &&
@@ -954,6 +1009,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
 
   return [
     ['Total therapists', providers.length.toString()],
+    ['Account blocked', accountBlocked.toString()],
     ['Approved', approved.toString()],
     ['Online now', online.toString()],
     ['Recent location', recentLocation.toString()],
@@ -966,6 +1022,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
 }
 
 function buildProviderReviewQueue(providers: AdminProvider[]) {
+  const accountBlocks = providers.filter((provider) => Boolean(provider.blockedAt)).length;
   const kycNeedsReview = providers.filter((provider) =>
     ['PENDING', 'REJECTED'].includes(provider.kyc?.status ?? 'MISSING'),
   ).length;
@@ -983,11 +1040,12 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
   ).length;
   const pushNeedsReview = providers.filter((provider) => !hasHealthyPush(provider)).length;
   const securityNeedsReview = providers.filter((provider) =>
-    ['blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const readyForDispatch = providers.filter(
     (provider) =>
       provider.verification?.status === 'APPROVED' &&
+      !provider.blockedAt &&
       provider.status === 'ONLINE_AVAILABLE' &&
       providerLocationStatus(provider) === 'recent' &&
       providerSecurityStatus(provider) === 'clear' &&
@@ -995,6 +1053,12 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
   ).length;
 
   const items = [
+    {
+      label: 'Account blocks',
+      count: accountBlocks,
+      href: '/providers?review=blocked',
+      detail: 'Providers blocked by admin cannot go online, refresh location, or appear in customer discovery.',
+    },
     {
       label: 'KYC updates',
       count: kycNeedsReview,
@@ -1058,6 +1122,9 @@ function providerReviewIssues(provider: AdminProvider) {
   const bankStatus = provider.bankAccounts?.[0]?.status ?? 'MISSING';
   const taxStatus = provider.taxProfile?.status ?? 'MISSING';
 
+  if (provider.blockedAt) {
+    issues.push({ label: 'account blocked', severity: 'high' });
+  }
   if (provider.verification?.status !== 'APPROVED') {
     issues.push({ label: 'verification review', severity: 'high' });
   }
@@ -1140,7 +1207,9 @@ function filterProviders(providers: AdminProvider[], filters: ProviderFilters) {
     if (search && !providerSearchText(provider).includes(search)) {
       return false;
     }
-    if (filters.verification && (provider.verification?.status ?? 'DRAFT') !== filters.verification) {
+    if (filters.verification === 'BLOCKED') {
+      if (!provider.blockedAt) return false;
+    } else if (filters.verification && (provider.verification?.status ?? 'DRAFT') !== filters.verification) {
       return false;
     }
     if (filters.providerStatus && provider.status !== filters.providerStatus) {
@@ -1166,6 +1235,9 @@ function filterProviders(providers: AdminProvider[], filters: ProviderFilters) {
 }
 
 function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
+  if (review === 'blocked') {
+    return Boolean(provider.blockedAt);
+  }
   if (review === 'kyc') {
     return ['PENDING', 'REJECTED'].includes(provider.kyc?.status ?? 'MISSING');
   }
@@ -1183,7 +1255,7 @@ function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
     return ['PENDING_REVIEW', 'REJECTED'].includes(provider.taxProfile?.status ?? 'MISSING');
   }
   if (review === 'security') {
-    return ['blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider));
+    return ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider));
   }
   if (review === 'location') {
     return ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider));
@@ -1201,6 +1273,7 @@ function providerSearchText(provider: AdminProvider) {
     provider.legalName,
     provider.city,
     provider.residentialAddress,
+    provider.blockedReason,
     provider.user?.fullName,
     provider.user?.phone,
     provider.devices?.map((device) => device.deviceId).join(' '),
@@ -1213,6 +1286,9 @@ function providerSearchText(provider: AdminProvider) {
 }
 
 function providerReadiness(provider: AdminProvider) {
+  if (provider.blockedAt) {
+    return 'needs-review';
+  }
   if (
     provider.verification?.status === 'APPROVED' &&
     provider.status === 'ONLINE_AVAILABLE' &&
@@ -1232,7 +1308,10 @@ function providerReadiness(provider: AdminProvider) {
 }
 
 function providerPriority(provider: AdminProvider) {
-  if (['blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))) {
+  if (provider.blockedAt) {
+    return 0;
+  }
+  if (['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))) {
     return 0;
   }
   if (
@@ -1254,6 +1333,9 @@ function providerPriority(provider: AdminProvider) {
 }
 
 function providerSecurityStatus(provider: AdminProvider): ProviderSecurityState {
+  if (provider.blockedAt) {
+    return 'account-blocked';
+  }
   if ((provider.devices ?? []).some((device) => Boolean(device.blockedAt))) {
     return 'blocked';
   }
@@ -1274,6 +1356,7 @@ function sharedDeviceIds(provider: AdminProvider) {
 }
 
 function providerSecurityLabel(status: ProviderSecurityState) {
+  if (status === 'account-blocked') return 'Account blocked';
   if (status === 'blocked') return 'Device blocked';
   if (status === 'suspicious') return 'Suspicious session';
   if (status === 'shared') return 'Shared device';

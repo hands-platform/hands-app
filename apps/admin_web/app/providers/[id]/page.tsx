@@ -12,6 +12,7 @@ import {
   approveProviderDocument,
   approveProviderKyc,
   approveProviderTaxProfile,
+  blockProviderAccount,
   blockProviderDevice,
   rejectProvider,
   rejectProviderBankAccount,
@@ -19,6 +20,7 @@ import {
   rejectProviderKyc,
   rejectProviderTaxProfile,
   syncSupabaseProviderRole,
+  unblockProviderAccount,
   unblockProviderDevice,
 } from '../actions';
 
@@ -115,6 +117,24 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               Sync Supabase role
             </button>
           </form>
+          {provider.blockedAt ? (
+            <form action={unblockProviderAccount}>
+              <input type="hidden" name="providerId" value={provider.id} />
+              <button type="submit">Unblock account</button>
+            </form>
+          ) : (
+            <form action={blockProviderAccount}>
+              <input type="hidden" name="providerId" value={provider.id} />
+              <input
+                name="reason"
+                placeholder="Account block reason"
+                required
+                minLength={12}
+                maxLength={500}
+              />
+              <button type="submit">Block account</button>
+            </form>
+          )}
         </div>
       </section>
 
@@ -123,6 +143,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <StatusCard label="Provider status" value={provider.status} />
         <StatusCard label="KYC" value={provider.kyc?.status ?? 'DRAFT'} />
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
+        <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -680,11 +701,13 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
     provider.taxProfile?.status === 'APPROVED' &&
     Boolean(provider.residentialAddress?.trim()) &&
     payoutAgreementsReady;
+  const accountClear = !provider.blockedAt;
 
   const cards: ProviderOpsCard[] = [
     {
       title: 'Dispatch readiness',
       status:
+        accountClear &&
         provider.verification?.status === 'APPROVED' &&
         provider.status === 'ONLINE_AVAILABLE' &&
         hasRecentLocation &&
@@ -692,7 +715,9 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
           ? 'READY'
           : 'CHECK',
       detail:
-        provider.verification?.status !== 'APPROVED'
+        !accountClear
+          ? `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
+          : provider.verification?.status !== 'APPROVED'
           ? 'Provider verification is not approved yet.'
           : provider.status !== 'ONLINE_AVAILABLE'
             ? 'Provider is approved but not online for direct booking or backup matching.'
@@ -702,7 +727,9 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
                 ? 'No enabled push device is registered for request alerts.'
                 : 'Provider can receive customer direct requests and backup matching alerts.',
       action:
-        provider.verification?.status !== 'APPROVED'
+        !accountClear
+          ? 'Unblock only after the account-level issue is resolved.'
+          : provider.verification?.status !== 'APPROVED'
           ? 'Finish verification review first.'
           : provider.status !== 'ONLINE_AVAILABLE'
             ? 'Ask provider to open the app and go online.'
@@ -712,14 +739,16 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
                 ? 'Ask provider to reopen the app and register alerts.'
                 : 'No dispatch blocker.',
       tone:
-        provider.verification?.status === 'APPROVED' &&
-        provider.status === 'ONLINE_AVAILABLE' &&
-        hasRecentLocation &&
-        hasEnabledPush
-          ? 'done'
-          : provider.verification?.status !== 'APPROVED'
-            ? 'blocked'
-            : 'pending',
+        !accountClear
+          ? 'blocked'
+          : provider.verification?.status === 'APPROVED' &&
+              provider.status === 'ONLINE_AVAILABLE' &&
+              hasRecentLocation &&
+              hasEnabledPush
+            ? 'done'
+            : provider.verification?.status !== 'APPROVED'
+              ? 'blocked'
+              : 'pending',
     },
     {
       title: 'Identity and documents',
@@ -785,6 +814,17 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
   const staleAppActivity = lastSeenMinutes > 24 * 60;
 
   const cards: ProviderOpsCard[] = [
+    {
+      title: 'Account block',
+      status: provider.blockedAt ? 'BLOCKED' : 'CLEAR',
+      detail: provider.blockedAt
+        ? `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
+        : 'Provider account is not blocked.',
+      action: provider.blockedAt
+        ? 'Unblock only after identity, safety, payout, or policy issue is resolved.'
+        : 'No account block action.',
+      tone: provider.blockedAt ? 'blocked' : 'done',
+    },
     {
       title: 'Provider app activity',
       status: devices.length || sessions.length ? (staleAppActivity ? 'STALE' : 'RECENT') : 'MISSING',
@@ -1057,6 +1097,15 @@ function payoutBlockers(provider: ProviderDetail) {
 }
 
 function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
+  if (provider.blockedAt) {
+    return {
+      title: 'Next admin action',
+      status: 'ACCOUNT',
+      detail: `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`,
+      action: 'Unblock only after the recorded account-level issue is resolved.',
+      tone: 'blocked',
+    };
+  }
   if (!provider.displayName?.trim() || !provider.legalName?.trim() || !provider.residentialAddress?.trim()) {
     return {
       title: 'Next admin action',
@@ -1154,6 +1203,14 @@ function buildReviewChecklist(provider: ProviderDetail) {
   );
 
   const items = [
+    {
+      label: 'Account block',
+      ok: !provider.blockedAt,
+      status: provider.blockedAt ? 'BLOCKED' : 'CLEAR',
+      detail: provider.blockedAt
+        ? `Blocked reason: ${provider.blockedReason ?? 'No reason saved'}.`
+        : 'Provider account is not blocked.',
+    },
     {
       label: 'Basic provider identity',
       ok: hasBasicProfile,

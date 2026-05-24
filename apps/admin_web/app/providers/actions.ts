@@ -18,6 +18,21 @@ export async function rejectProvider(formData: FormData) {
   revalidateProviderPaths(providerId);
 }
 
+export async function blockProviderAccount(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  const reason = readReviewReason(formData);
+  await adminPost(`/admin/providers/${providerId}/block`, { reason }, null);
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
+export async function unblockProviderAccount(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  await adminPost(`/admin/providers/${providerId}/unblock`, {}, null);
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
 export async function syncSupabaseProviderRole(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
   await adminPost(`/admin/providers/${providerId}/sync-supabase-role`, {}, null);

@@ -105,6 +105,50 @@ void main() {
 
     await server.close(force: true);
   });
+
+  test('does not go online when admin blocked this provider account', () async {
+    final requests = <String>[];
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+
+    unawaited(
+      server.forEach((request) async {
+        requests.add('${request.method} ${request.uri.path}');
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'blocked': true,
+          'providerBlocked': true,
+          'blockedScope': 'provider',
+          'blockReason': 'Identity review failed',
+        }));
+        await request.response.close();
+      }),
+    );
+
+    final repository = ProviderProfileRepositoryImpl(
+      api: ApiClient(
+        baseUrl: 'http://${server.address.host}:${server.port}',
+        tokenRefreshMode: TokenRefreshMode.disabled,
+      ),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3100'),
+      locationDataSource: _NoLocationDataSource(),
+      deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
+    );
+
+    await expectLater(
+      repository.goOnline(),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('Identity review failed'),
+        ),
+      ),
+    );
+
+    expect(requests, ['POST /provider/device-session']);
+
+    await server.close(force: true);
+  });
 }
 
 class _NoLocationDataSource extends ProviderDeviceLocationDataSource {

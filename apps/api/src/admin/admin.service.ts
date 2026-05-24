@@ -4,6 +4,7 @@ import {
   BookingOpsTaskType,
   PayoutBatchStatus,
   Prisma,
+  ProviderStatus,
   ReviewStatus,
   VerificationStatus,
 } from '@prisma/client';
@@ -11,6 +12,7 @@ import { SupabaseAdminService } from '../auth/supabase-admin.service';
 import { EarningsService } from '../earnings/earnings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisStateService } from '../redis/redis-state.service';
 
 @Injectable()
 export class AdminService {
@@ -19,6 +21,7 @@ export class AdminService {
     private readonly earnings: EarningsService,
     private readonly notifications: NotificationsService,
     private readonly supabaseAdmin: SupabaseAdminService,
+    private readonly redisState: RedisStateService,
   ) {}
 
   listUsers() {
@@ -185,6 +188,64 @@ export class AdminService {
     });
 
     return { ok: true, providerDeviceId: device.id };
+  }
+
+  async blockProviderAccount(actorId: string, providerProfileId: string, reason?: string) {
+    const blockReason = normalizeNullable(reason);
+    if (!blockReason) {
+      throw new BadRequestException('Block reason is required');
+    }
+
+    const provider = await this.prisma.providerProfile.update({
+      where: { id: providerProfileId },
+      data: {
+        status: ProviderStatus.OFFLINE,
+        blockedAt: new Date(),
+        blockedReason: blockReason,
+      },
+      select: { id: true, userId: true, status: true, blockedAt: true, blockedReason: true },
+    });
+    await this.redisState.setProviderStatus(provider.id, ProviderStatus.OFFLINE);
+
+    await this.writeAudit(actorId, 'provider_account.block', `provider:${providerProfileId}`, {
+      providerProfileId,
+      reason: blockReason,
+    });
+
+    await this.notifications.create({
+      userId: provider.userId,
+      type: 'provider.account.blocked',
+      title: 'Provider account blocked',
+      body: blockReason,
+      data: { providerProfileId, reason: blockReason },
+    });
+
+    return { ok: true, providerProfileId: provider.id, blockedAt: provider.blockedAt };
+  }
+
+  async unblockProviderAccount(actorId: string, providerProfileId: string) {
+    const provider = await this.prisma.providerProfile.update({
+      where: { id: providerProfileId },
+      data: {
+        blockedAt: null,
+        blockedReason: null,
+      },
+      select: { id: true, userId: true },
+    });
+
+    await this.writeAudit(actorId, 'provider_account.unblock', `provider:${providerProfileId}`, {
+      providerProfileId,
+    });
+
+    await this.notifications.create({
+      userId: provider.userId,
+      type: 'provider.account.unblocked',
+      title: 'Provider account unblocked',
+      body: 'Your HANDS provider account can sign in again. Go online only when ready to receive requests.',
+      data: { providerProfileId },
+    });
+
+    return { ok: true, providerProfileId: provider.id };
   }
 
   async reviewProvider(
