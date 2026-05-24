@@ -243,6 +243,7 @@ export type AdminEarning = {
   bookingId: string;
   grossAmount: number;
   platformFee: number;
+  withholdingAmount: number;
   tipAmount: number;
   netAmount: number;
   currency: string;
@@ -252,12 +253,14 @@ export type AdminEarning = {
   payoutBatchId?: string | null;
   createdAt?: string;
   providerProfile?: { displayName?: string | null; user?: { phone?: string; fullName?: string | null } };
+  taxLogs?: AdminProviderTaxLog[];
 };
 
 export type AdminEarningSummary = {
   count: number;
   grossAmount: number;
   platformFee: number;
+  withholdingAmount: number;
   tipAmount: number;
   netAmount: number;
   pendingNetAmount: number;
@@ -294,6 +297,26 @@ export type AdminPayoutBatch = {
   paidAt?: string | null;
   providerProfile?: { displayName?: string | null; user?: { phone?: string; fullName?: string | null } };
   earnings?: AdminEarning[];
+  withholdingLogs?: AdminWithholdingLog[];
+};
+
+export type AdminProviderTaxLog = {
+  id: string;
+  grossAmount: number;
+  taxableAmount: number;
+  withholdingAmount: number;
+  currency: string;
+  ruleSnapshot?: unknown;
+  createdAt?: string;
+};
+
+export type AdminWithholdingLog = {
+  id: string;
+  providerTaxLogId: string;
+  payoutBatchId?: string | null;
+  amount: number;
+  status: string;
+  createdAt?: string;
 };
 
 export type AdminReview = {

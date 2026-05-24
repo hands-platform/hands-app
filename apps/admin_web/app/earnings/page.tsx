@@ -5,6 +5,7 @@ const emptySummary: AdminEarningSummary = {
   count: 0,
   grossAmount: 0,
   platformFee: 0,
+  withholdingAmount: 0,
   tipAmount: 0,
   netAmount: 0,
   pendingNetAmount: 0,
@@ -23,6 +24,7 @@ export default async function EarningsPage() {
   const metrics = [
     ['Gross', summary.grossAmount],
     ['Platform fee', summary.platformFee],
+    ['Tax withheld', summary.withholdingAmount],
     ['Tips', summary.tipAmount],
     ['Provider net', summary.netAmount],
     ['Pending net', summary.pendingNetAmount],
@@ -51,7 +53,7 @@ export default async function EarningsPage() {
               <th>Booking</th>
               <th>Status</th>
               <th>Payout batch</th>
-              <th>Gross / Fee / Tip</th>
+              <th>Gross / Fee / Tax / Tip</th>
               <th>Net</th>
               <th>Action</th>
             </tr>
@@ -95,7 +97,11 @@ export default async function EarningsPage() {
                   <div className="muted">
                     {formatMoney(earning.platformFee, earning.currency)} platform fee
                   </div>
+                  <div className="muted">
+                    {formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld
+                  </div>
                   <div className="muted">{formatMoney(earning.tipAmount, earning.currency)} tip</div>
+                  <div className="muted">{taxPolicyHint(earning)}</div>
                 </td>
                 <td>
                   <strong>{formatMoney(earning.netAmount, earning.currency)}</strong>
@@ -192,6 +198,20 @@ function earningHint(earning: AdminEarning) {
     return `Available ${relativeTime(earning.availableAt)}`;
   }
   return 'Ready for finance review';
+}
+
+function taxPolicyHint(earning: AdminEarning) {
+  const latestTaxLog = earning.taxLogs?.[0];
+  if (!latestTaxLog) {
+    return 'No tax log yet';
+  }
+  const snapshot = latestTaxLog.ruleSnapshot as
+    | { scope?: string; reason?: string; rateBps?: number }
+    | undefined;
+  if (snapshot?.reason) {
+    return `Tax policy: ${snapshot.reason}`;
+  }
+  return `Tax policy: ${snapshot?.scope ?? 'RULE'} at ${((snapshot?.rateBps ?? 0) / 100).toFixed(2)}%`;
 }
 
 function canDirectlyPay(earning: AdminEarning) {

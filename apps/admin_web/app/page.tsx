@@ -37,6 +37,7 @@ export default async function DashboardPage() {
         count: 0,
         grossAmount: 0,
         platformFee: 0,
+        withholdingAmount: 0,
         tipAmount: 0,
         netAmount: 0,
         pendingNetAmount: 0,

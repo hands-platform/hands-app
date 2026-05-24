@@ -205,7 +205,10 @@ await postJson('/provider/onboarding/tax-profile', providerAuth.accessToken, {
   legalName: 'Smoke Provider',
   registeredAddress: 'District 1, Ho Chi Minh City, Vietnam',
 });
-await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/tax-profile/approve`, adminAuth.accessToken);
+await postJson(
+  `/admin/providers/${providerAuth.user.providerProfile.id}/tax-profile/approve`,
+  adminAuth.accessToken,
+);
 for (const type of ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX']) {
   await postJson('/provider/onboarding/agreements', providerAuth.accessToken, {
     type,
@@ -225,6 +228,18 @@ const taxPolicyVersions = await getJson('/admin/tax-policy-versions', adminAuth.
 if (!Array.isArray(taxPolicyVersions)) {
   throw new Error(`Tax policy version list did not return an array: ${JSON.stringify(taxPolicyVersions)}`);
 }
+const smokeTaxPolicy = await postJson('/admin/tax-policy-versions', adminAuth.accessToken, {
+  name: `Smoke withholding ${Date.now()}`,
+  status: 'ACTIVE',
+  effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
+  notes: 'Smoke test active withholding policy',
+});
+await postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
+  scope: 'DEFAULT',
+  rateBps: 500,
+  fixedAmount: 0,
+  active: true,
+});
 
 await postJson('/provider/online', providerAuth.accessToken);
 await postJson('/provider/online', backupProviderAuth.accessToken);
@@ -390,6 +405,21 @@ const review = await postJson('/customer/reviews', customerAuth.accessToken, {
 
 const providerEarnings = await getJson('/provider/earnings', providerAuth.accessToken);
 const providerEarningsSummary = await getJson('/provider/earnings/summary', providerAuth.accessToken);
+const completedEarning = providerEarnings.find((earning) => earning.bookingId === booking.id);
+if (
+  !completedEarning ||
+  completedEarning.withholdingAmount <= 0 ||
+  completedEarning.netAmount !==
+    completedEarning.grossAmount -
+      completedEarning.platformFee -
+      completedEarning.withholdingAmount +
+      completedEarning.tipAmount
+) {
+  throw new Error(`Completed earning did not apply withholding policy: ${JSON.stringify(completedEarning)}`);
+}
+if (providerEarningsSummary.withholdingAmount <= 0) {
+  throw new Error(`Earnings summary did not include withholding: ${JSON.stringify(providerEarningsSummary)}`);
+}
 const payoutBatch = await postJson('/admin/payout-batches', adminAuth.accessToken, {
   providerProfileId: providerAuth.user.providerProfile.id,
   transferRef: `SMOKE-${Date.now()}`,
@@ -400,6 +430,9 @@ if (payoutBatch.status !== 'DRAFT' || payoutBatch.paidAt) {
 }
 if (!payoutBatch.earnings?.length || payoutBatch.earnings.some((earning) => earning.status === 'PAID')) {
   throw new Error(`Draft payout batch should not mark earnings paid: ${JSON.stringify(payoutBatch)}`);
+}
+if (!payoutBatch.withholdingLogs?.length) {
+  throw new Error(`Draft payout batch should include withholding logs: ${JSON.stringify(payoutBatch)}`);
 }
 const payoutBatchUpdate = await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
   transferRef: `${payoutBatch.transferRef}-UPDATED`,
@@ -426,7 +459,8 @@ const payoutBatchPaid = await patchJson(`/admin/payout-batches/${payoutBatch.id}
 if (
   payoutBatchPaid.status !== 'PAID' ||
   !payoutBatchPaid.paidAt ||
-  payoutBatchPaid.earnings?.some((earning) => earning.status !== 'PAID')
+  payoutBatchPaid.earnings?.some((earning) => earning.status !== 'PAID') ||
+  payoutBatchPaid.withholdingLogs?.some((log) => log.status !== 'PAID')
 ) {
   throw new Error(`Payout batch should mark linked earnings paid: ${JSON.stringify(payoutBatchPaid)}`);
 }
@@ -475,7 +509,9 @@ if (
   !adminProvider?.bankAccounts?.some((account) => account.status === 'APPROVED') ||
   adminProvider?.taxProfile?.status !== 'APPROVED'
 ) {
-  throw new Error(`Admin provider payload is missing onboarding review state: ${JSON.stringify(adminProvider)}`);
+  throw new Error(
+    `Admin provider payload is missing onboarding review state: ${JSON.stringify(adminProvider)}`,
+  );
 }
 const adminBackupProvider = adminProviders.find(
   (item) => item.id === backupProviderAuth.user.providerProfile.id,

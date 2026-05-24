@@ -302,6 +302,7 @@ create table if not exists public.provider_earnings (
   booking_id uuid not null unique references public.bookings(id) on delete cascade,
   gross_amount_vnd integer not null check (gross_amount_vnd >= 0),
   platform_fee_vnd integer not null check (platform_fee_vnd >= 0),
+  withholding_amount_vnd integer not null default 0 check (withholding_amount_vnd >= 0),
   tip_amount_vnd integer not null default 0 check (tip_amount_vnd >= 0),
   net_amount_vnd integer not null check (net_amount_vnd >= 0),
   currency text not null default 'VND',

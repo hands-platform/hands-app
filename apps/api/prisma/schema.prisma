@@ -569,6 +569,7 @@ model ProviderEarning {
   bookingId         String               @unique
   grossAmount       Int
   platformFee       Int
+  withholdingAmount Int                  @default(0)
   tipAmount         Int                  @default(0)
   netAmount         Int
   currency          String               @default("VND")

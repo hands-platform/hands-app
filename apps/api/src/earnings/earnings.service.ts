@@ -1,8 +1,29 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { BookingStatus, EarningStatus, PayoutBatchStatus, Prisma } from '@prisma/client';
+import {
+  BookingStatus,
+  EarningStatus,
+  PayoutBatchStatus,
+  Prisma,
+  ProviderAgreementType,
+  ProviderBankAccountStatus,
+  ProviderTaxProfileStatus,
+  TaxPolicyStatus,
+  TaxRuleScope,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const DEFAULT_PLATFORM_FEE_RATE = 0.2;
+const REQUIRED_PAYOUT_AGREEMENTS = [
+  ProviderAgreementType.TERMS,
+  ProviderAgreementType.PRIVACY,
+  ProviderAgreementType.LOCATION,
+  ProviderAgreementType.PAYOUT,
+  ProviderAgreementType.TAX,
+];
+
+type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
+type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
+type TxClient = Prisma.TransactionClient;
 
 @Injectable()
 export class EarningsService {
@@ -12,7 +33,7 @@ export class EarningsService {
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
       include: {
-        services: true,
+        services: { include: { service: true } },
         payment: true,
         review: true,
       },
@@ -30,32 +51,51 @@ export class EarningsService {
       booking.services.reduce((total, service) => total + service.price * service.quantity, 0);
     const tipAmount = booking.review?.tipAmount ?? 0;
     const platformFee = Math.round(grossAmount * DEFAULT_PLATFORM_FEE_RATE);
-    const netAmount = grossAmount - platformFee + tipAmount;
     const availableAt = new Date(Date.now() + 24 * 60 * 60_000);
+    const currency = booking.payment?.currency ?? 'VND';
+    const serviceTypes = booking.services.flatMap((item) =>
+      [item.serviceId, item.service?.name].filter(Boolean),
+    );
 
-    return this.prisma.providerEarning.upsert({
-      where: { bookingId },
-      update: {
+    return this.prisma.$transaction(async (tx) => {
+      const tax = await this.calculateWithholding(tx, {
         providerProfileId,
-        grossAmount,
-        platformFee,
-        tipAmount,
-        netAmount,
-        currency: booking.payment?.currency ?? 'VND',
-        status: EarningStatus.PENDING,
-        availableAt,
-      },
-      create: {
         bookingId,
-        providerProfileId,
         grossAmount,
-        platformFee,
-        tipAmount,
-        netAmount,
-        currency: booking.payment?.currency ?? 'VND',
-        status: EarningStatus.PENDING,
-        availableAt,
-      },
+        currency,
+        serviceTypes,
+        occurredAt: booking.updatedAt ?? new Date(),
+      });
+      const netAmount = grossAmount - platformFee - tax.withholdingAmount + tipAmount;
+      const earning = await tx.providerEarning.upsert({
+        where: { bookingId },
+        update: {
+          providerProfileId,
+          grossAmount,
+          platformFee,
+          withholdingAmount: tax.withholdingAmount,
+          tipAmount,
+          netAmount,
+          currency,
+          status: EarningStatus.PENDING,
+          availableAt,
+        },
+        create: {
+          bookingId,
+          providerProfileId,
+          grossAmount,
+          platformFee,
+          withholdingAmount: tax.withholdingAmount,
+          tipAmount,
+          netAmount,
+          currency,
+          status: EarningStatus.PENDING,
+          availableAt,
+        },
+      });
+
+      await this.upsertTaxLog(tx, earning, tax);
+      return earning;
     });
   }
 
@@ -73,7 +113,7 @@ export class EarningsService {
       where: { bookingId },
       data: {
         tipAmount,
-        netAmount: earning.grossAmount - earning.platformFee + tipAmount,
+        netAmount: earning.grossAmount - earning.platformFee - earning.withholdingAmount + tipAmount,
       },
     });
   }
@@ -107,6 +147,7 @@ export class EarningsService {
       include: {
         providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
         booking: { include: { payment: true, review: true } },
+        taxLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
     });
   }
@@ -141,6 +182,7 @@ export class EarningsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      await this.ensurePayoutEligible(tx, input.providerProfileId);
       const earnings = await tx.providerEarning.findMany({
         where: {
           providerProfileId: input.providerProfileId,
@@ -173,12 +215,34 @@ export class EarningsService {
           payoutBatchId: batch.id,
         },
       });
+      const taxLogs = await tx.providerTaxLog.findMany({
+        where: { earningId: { in: earnings.map((earning) => earning.id) }, withholdingAmount: { gt: 0 } },
+      });
+      if (taxLogs.length > 0) {
+        await tx.withholdingLog.createMany({
+          data: taxLogs.map((taxLog) => ({
+            providerTaxLogId: taxLog.id,
+            payoutBatchId: batch.id,
+            amount: taxLog.withholdingAmount,
+            status: 'PENDING',
+            metadata: {
+              bookingId: taxLog.bookingId,
+              earningId: taxLog.earningId,
+              policyVersionId: taxLog.policyVersionId,
+            },
+          })),
+        });
+      }
 
       return tx.providerPayoutBatch.findUniqueOrThrow({
         where: { id: batch.id },
         include: {
           providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
-          earnings: { orderBy: { createdAt: 'desc' } },
+          earnings: {
+            orderBy: { createdAt: 'desc' },
+            include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
+          },
+          withholdingLogs: true,
         },
       });
     });
@@ -190,7 +254,11 @@ export class EarningsService {
       take: 100,
       include: {
         providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
-        earnings: { orderBy: { createdAt: 'desc' } },
+        earnings: {
+          orderBy: { createdAt: 'desc' },
+          include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
+        },
+        withholdingLogs: true,
       },
     });
   }
@@ -238,13 +306,21 @@ export class EarningsService {
             paidAt: batch.paidAt,
           },
         });
+        await tx.withholdingLog.updateMany({
+          where: { payoutBatchId },
+          data: { status: 'PAID' },
+        });
       }
 
       return tx.providerPayoutBatch.findUniqueOrThrow({
         where: { id: payoutBatchId },
         include: {
           providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
-          earnings: { orderBy: { createdAt: 'desc' } },
+          earnings: {
+            orderBy: { createdAt: 'desc' },
+            include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
+          },
+          withholdingLogs: true,
         },
       });
     });
@@ -284,7 +360,13 @@ export class EarningsService {
     const [total, pending, available, paid, count] = await Promise.all([
       this.prisma.providerEarning.aggregate({
         where,
-        _sum: { grossAmount: true, platformFee: true, tipAmount: true, netAmount: true },
+        _sum: {
+          grossAmount: true,
+          platformFee: true,
+          withholdingAmount: true,
+          tipAmount: true,
+          netAmount: true,
+        },
       }),
       this.prisma.providerEarning.aggregate({
         where: { ...where, status: EarningStatus.PENDING },
@@ -305,6 +387,7 @@ export class EarningsService {
       count,
       grossAmount: total._sum.grossAmount ?? 0,
       platformFee: total._sum.platformFee ?? 0,
+      withholdingAmount: total._sum.withholdingAmount ?? 0,
       tipAmount: total._sum.tipAmount ?? 0,
       netAmount: total._sum.netAmount ?? 0,
       pendingNetAmount: pending._sum.netAmount ?? 0,
@@ -321,6 +404,149 @@ export class EarningsService {
     }
     return provider;
   }
+
+  private async ensurePayoutEligible(tx: TxClient, providerProfileId: string) {
+    const provider = await tx.providerProfile.findUnique({
+      where: { id: providerProfileId },
+      include: {
+        taxProfile: true,
+        bankAccounts: { where: { status: ProviderBankAccountStatus.APPROVED, deletedAt: null }, take: 1 },
+        agreements: true,
+      },
+    });
+    if (!provider) {
+      throw new NotFoundException('Provider profile not found');
+    }
+
+    const completedBookingCount = await tx.booking.count({
+      where: { selectedProviderId: providerProfileId, status: BookingStatus.COMPLETED },
+    });
+    const acceptedAgreementTypes = new Set(provider.agreements.map((agreement) => agreement.type));
+    const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
+
+    if (completedBookingCount < 1) {
+      throw new BadRequestException('Provider must complete at least one booking before payout');
+    }
+    if (!provider.taxProfile || provider.taxProfile.status !== ProviderTaxProfileStatus.APPROVED) {
+      throw new BadRequestException('Provider tax profile must be approved before payout');
+    }
+    if (!provider.residentialAddress?.trim()) {
+      throw new BadRequestException('Provider residential address is required before payout');
+    }
+    if (provider.bankAccounts.length === 0) {
+      throw new BadRequestException('Provider needs an approved bank account before payout');
+    }
+    if (missingAgreements.length > 0) {
+      throw new BadRequestException(
+        `Provider must accept payout agreements: ${missingAgreements.join(', ')}`,
+      );
+    }
+  }
+
+  private async calculateWithholding(
+    tx: TxClient,
+    input: {
+      providerProfileId: string;
+      bookingId: string;
+      grossAmount: number;
+      currency: string;
+      serviceTypes: string[];
+      occurredAt: Date;
+    },
+  ) {
+    const [policy, taxProfile] = await Promise.all([
+      tx.taxPolicyVersion.findFirst({
+        where: {
+          status: TaxPolicyStatus.ACTIVE,
+          effectiveFrom: { lte: input.occurredAt },
+          OR: [{ effectiveTo: null }, { effectiveTo: { gte: input.occurredAt } }],
+        },
+        include: { rules: { where: { active: true }, orderBy: { createdAt: 'desc' } } },
+        orderBy: { effectiveFrom: 'desc' },
+      }),
+      tx.providerTaxProfile.findUnique({ where: { providerProfileId: input.providerProfileId } }),
+    ]);
+
+    const taxableAmount = input.grossAmount;
+    if (!policy || !taxProfile || taxProfile.status !== ProviderTaxProfileStatus.APPROVED) {
+      return {
+        taxableAmount,
+        withholdingAmount: 0,
+        currency: input.currency,
+        policyVersionId: policy?.id,
+        taxProfileId: taxProfile?.id,
+        ruleSnapshot: {
+          reason: !policy ? 'NO_ACTIVE_POLICY' : 'NO_APPROVED_TAX_PROFILE',
+        },
+      };
+    }
+
+    const rule = selectTaxRule(policy.rules, {
+      grossAmount: input.grossAmount,
+      serviceTypes: input.serviceTypes,
+    });
+    const rateBps = rule?.rateBps ?? 0;
+    const fixedAmount = rule?.fixedAmount ?? 0;
+    const withholdingAmount = Math.max(
+      0,
+      Math.min(taxableAmount, Math.round((taxableAmount * rateBps) / 10_000) + fixedAmount),
+    );
+
+    return {
+      taxableAmount,
+      withholdingAmount,
+      currency: input.currency,
+      policyVersionId: policy.id,
+      taxProfileId: taxProfile.id,
+      ruleSnapshot: {
+        policyName: policy.name,
+        ruleId: rule?.id ?? null,
+        scope: rule?.scope ?? 'NONE',
+        serviceType: rule?.serviceType ?? null,
+        minGrossAmount: rule?.minGrossAmount ?? null,
+        maxGrossAmount: rule?.maxGrossAmount ?? null,
+        rateBps,
+        fixedAmount,
+      },
+    };
+  }
+
+  private async upsertTaxLog(
+    tx: TxClient,
+    earning: {
+      id: string;
+      bookingId: string;
+      providerProfileId: string;
+      grossAmount: number;
+    },
+    tax: {
+      taxableAmount: number;
+      withholdingAmount: number;
+      currency: string;
+      policyVersionId?: string | null;
+      taxProfileId?: string | null;
+      ruleSnapshot: Prisma.InputJsonValue;
+    },
+  ) {
+    const existing = await tx.providerTaxLog.findFirst({ where: { earningId: earning.id } });
+    const data = {
+      providerProfileId: earning.providerProfileId,
+      bookingId: earning.bookingId,
+      earningId: earning.id,
+      taxProfileId: tax.taxProfileId ?? null,
+      policyVersionId: tax.policyVersionId ?? null,
+      grossAmount: earning.grossAmount,
+      taxableAmount: tax.taxableAmount,
+      withholdingAmount: tax.withholdingAmount,
+      currency: tax.currency,
+      ruleSnapshot: tax.ruleSnapshot,
+    };
+
+    if (existing) {
+      return tx.providerTaxLog.update({ where: { id: existing.id }, data });
+    }
+    return tx.providerTaxLog.create({ data });
+  }
 }
 
 function normalizeNullable(value: string | null) {
@@ -329,4 +555,29 @@ function normalizeNullable(value: string | null) {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function selectTaxRule(rules: TaxRuleRecord[], input: { grossAmount: number; serviceTypes: string[] }) {
+  const serviceTypes = new Set(input.serviceTypes.map((value) => value.toLowerCase()));
+  const prioritized = [...rules].sort(
+    (left, right) =>
+      taxRulePriority(right, serviceTypes, input.grossAmount) -
+      taxRulePriority(left, serviceTypes, input.grossAmount),
+  );
+  return prioritized.find((rule) => taxRulePriority(rule, serviceTypes, input.grossAmount) > 0) ?? null;
+}
+
+function taxRulePriority(rule: TaxRuleRecord, serviceTypes: Set<string>, grossAmount: number) {
+  if (rule.scope === TaxRuleScope.SERVICE_TYPE) {
+    return rule.serviceType && serviceTypes.has(rule.serviceType.toLowerCase()) ? 30 : 0;
+  }
+  if (rule.scope === TaxRuleScope.AMOUNT_BAND) {
+    const aboveMin = rule.minGrossAmount === null || grossAmount >= rule.minGrossAmount;
+    const belowMax = rule.maxGrossAmount === null || grossAmount <= rule.maxGrossAmount;
+    return aboveMin && belowMax ? 20 : 0;
+  }
+  if (rule.scope === TaxRuleScope.DEFAULT) {
+    return 10;
+  }
+  return 0;
 }

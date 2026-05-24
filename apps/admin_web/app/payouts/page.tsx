@@ -29,6 +29,10 @@ export default async function PayoutsPage() {
           <p>Total net</p>
           <h2>{formatMoney(summary.totalNetAmount, summary.currency)}</h2>
         </div>
+        <div className="card">
+          <p>Withheld tax</p>
+          <h2>{formatMoney(summary.withholdingAmount, summary.currency)}</h2>
+        </div>
       </section>
 
       <div className="card">
@@ -59,6 +63,7 @@ export default async function PayoutsPage() {
               <th>Earnings</th>
               <th>Checklist</th>
               <th>Total</th>
+              <th>Tax withheld</th>
               <th>Paid at</th>
               <th>Actions</th>
             </tr>
@@ -107,6 +112,10 @@ export default async function PayoutsPage() {
                   </td>
                   <td>{formatMoney(batch.totalNetAmount, batch.currency)}</td>
                   <td>
+                    <div>{formatMoney(batchWithholdingAmount(batch), batch.currency)}</div>
+                    <div className="muted">{batch.withholdingLogs?.length ?? 0} tax log(s)</div>
+                  </td>
+                  <td>
                     <div>{batch.paidAt ? new Date(batch.paidAt).toLocaleString() : '-'}</div>
                     <div className="muted">
                       {batch.paidAt ? relativeTime(batch.paidAt) : 'Awaiting settlement'}
@@ -149,7 +158,7 @@ export default async function PayoutsPage() {
             })}
             {batches.length === 0 && (
               <tr>
-                <td colSpan={10}>No payout batches loaded.</td>
+                <td colSpan={11}>No payout batches loaded.</td>
               </tr>
             )}
           </tbody>
@@ -212,8 +221,16 @@ function buildSummary(batches: AdminPayoutBatch[]) {
     inProgress: batches.filter((batch) => batch.status === 'PROCESSING').length,
     settled: batches.filter((batch) => batch.status === 'PAID').length,
     totalNetAmount: batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
+    withholdingAmount: batches.reduce((sum, batch) => sum + batchWithholdingAmount(batch), 0),
     currency,
   };
+}
+
+function batchWithholdingAmount(batch: AdminPayoutBatch) {
+  if (batch.withholdingLogs?.length) {
+    return batch.withholdingLogs.reduce((sum, log) => sum + log.amount, 0);
+  }
+  return (batch.earnings ?? []).reduce((sum, earning) => sum + (earning.withholdingAmount ?? 0), 0);
 }
 
 function humanizeStatus(status: string) {
