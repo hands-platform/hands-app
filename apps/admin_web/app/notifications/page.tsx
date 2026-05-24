@@ -1,9 +1,17 @@
 import { AdminNotification, adminGet } from '../../lib/admin-api';
 import { retryNotification } from './actions';
 
-export default async function NotificationsPage() {
-  const notifications = sortNotifications(await adminGet<AdminNotification[]>('/admin/notifications', []));
-  const summary = buildSummary(notifications);
+type NotificationsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function NotificationsPage({
+  searchParams,
+}: {
+  searchParams?: NotificationsPageSearchParams;
+}) {
+  const filters = buildNotificationFilters((await searchParams) ?? {});
+  const allNotifications = sortNotifications(await adminGet<AdminNotification[]>('/admin/notifications', []));
+  const notifications = filterNotifications(allNotifications, filters);
+  const summary = buildSummary(allNotifications);
 
   return (
     <>
@@ -11,7 +19,7 @@ export default async function NotificationsPage() {
       <section className="grid" style={{ marginBottom: 16 }}>
         <div className="card">
           <p>Total</p>
-          <h2>{notifications.length}</h2>
+          <h2>{allNotifications.length}</h2>
         </div>
         <div className="card">
           <p>Needs retry</p>
@@ -33,12 +41,33 @@ export default async function NotificationsPage() {
       <div className="card">
         <div className="toolbar">
           <div>
-            <p className="muted">Delivery board for push retries, disabled devices, and last-mile alert confidence.</p>
+            <p className="muted">
+              Delivery board for push retries, disabled devices, and last-mile alert confidence.
+            </p>
           </div>
           <div className="participant-list">
             <span className="pill pill-success">Latest failures first</span>
             <span className="pill pill-info">Delivery signal</span>
             <span className="pill pill-warn">Retry readiness</span>
+          </div>
+        </div>
+
+        <div className="card soft-card" style={{ marginBottom: 16 }}>
+          <div className="toolbar">
+            <div>
+              <h3>Notification operation filters</h3>
+              <p className="muted">
+                Open each queue directly from the command dashboard without hunting through rows.
+              </p>
+            </div>
+            {filters.review ? <span className="pill pill-info">Filtered: {filters.review}</span> : null}
+          </div>
+          <div className="participant-list">
+            {notificationFilterLinks.map((link) => (
+              <a key={link.href} className="pill pill-neutral" href={link.href}>
+                {link.label}
+              </a>
+            ))}
           </div>
         </div>
 
@@ -84,16 +113,21 @@ export default async function NotificationsPage() {
                 <td>
                   {notification.deliveries && notification.deliveries.length > 0
                     ? notification.deliveries.map((delivery) => (
-                        <div key={delivery.id ?? `${notification.id}-${delivery.attemptedAt}`} style={{ marginBottom: 10 }}>
+                        <div
+                          key={delivery.id ?? `${notification.id}-${delivery.attemptedAt}`}
+                          style={{ marginBottom: 10 }}
+                        >
                           <div>
-                            <strong>{delivery.provider}</strong> - {delivery.status} - {delivery.pushDevice?.platform ?? 'device'}
+                            <strong>{delivery.provider}</strong> - {delivery.status} -{' '}
+                            {delivery.pushDevice?.platform ?? 'device'}
                           </div>
                           <div className="muted" style={{ marginTop: 4 }}>
-                            {delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled'} - Attempted{' '}
-                            {new Date(delivery.attemptedAt).toLocaleString()}
+                            {delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled'} -
+                            Attempted {new Date(delivery.attemptedAt).toLocaleString()}
                           </div>
                           <div className="muted" style={{ marginTop: 4 }}>
-                            Failure {readFailureCode(delivery) ?? '-'} / HTTP {delivery.response?.statusCode ?? '-'}
+                            Failure {readFailureCode(delivery) ?? '-'} / HTTP{' '}
+                            {delivery.response?.statusCode ?? '-'}
                           </div>
                           <div className="muted" style={{ marginTop: 4 }}>
                             Token {delivery.pushDevice?.token ? maskToken(delivery.pushDevice.token) : '-'}
@@ -157,9 +191,63 @@ function buildSummary(notifications: AdminNotification[]) {
   };
 }
 
+const notificationFilterLinks = [
+  { label: 'All notifications', href: '/notifications' },
+  { label: 'Failed sends', href: '/notifications?review=failed' },
+  { label: 'Disabled devices', href: '/notifications?review=disabled-device' },
+  { label: 'Needs retry', href: '/notifications?review=needs-retry' },
+  { label: 'Skipped', href: '/notifications?review=skipped' },
+  { label: 'Sent', href: '/notifications?review=sent' },
+  { label: 'Pending', href: '/notifications?review=pending' },
+];
+
+function buildNotificationFilters(params: Record<string, string | string[] | undefined>) {
+  return {
+    review: readParam(params.review),
+  };
+}
+
+function readParam(value: string | string[] | undefined) {
+  if (Array.isArray(value)) {
+    return value[0] ?? '';
+  }
+  return value ?? '';
+}
+
+function filterNotifications(notifications: AdminNotification[], filters: { review: string }) {
+  return notifications.filter((notification) => notificationMatchesReview(notification, filters.review));
+}
+
+function notificationMatchesReview(notification: AdminNotification, review: string) {
+  const deliveries = notification.deliveries ?? [];
+  if (!review) {
+    return true;
+  }
+  if (review === 'failed') {
+    return deliveries.some((delivery) => delivery.status === 'FAILED');
+  }
+  if (review === 'disabled-device') {
+    return deliveries.some((delivery) => delivery.pushDevice?.enabled === false);
+  }
+  if (review === 'needs-retry') {
+    return needsRetry(notification);
+  }
+  if (review === 'skipped') {
+    return deliveries.some((delivery) => delivery.status === 'SKIPPED');
+  }
+  if (review === 'sent') {
+    return deliveries.some((delivery) => delivery.status === 'SENT');
+  }
+  if (review === 'pending') {
+    return deliveries.length === 0;
+  }
+  return true;
+}
+
 function countDeliveries(notifications: AdminNotification[], status: string) {
   return notifications.reduce(
-    (total, notification) => total + (notification.deliveries ?? []).filter((delivery) => delivery.status === status).length,
+    (total, notification) =>
+      total + (notification.deliveries ?? []).filter((delivery) => delivery.status === status).length,
     0,
   );
 }

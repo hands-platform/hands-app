@@ -77,6 +77,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <select name="verification" defaultValue={filters.verification}>
               <option value="">All</option>
               <option value="APPROVED">Approved</option>
+              <option value="SUBMITTED">Submitted</option>
               <option value="PENDING">Pending</option>
               <option value="REJECTED">Rejected</option>
               <option value="BLOCKED">Blocked</option>
@@ -206,8 +207,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Provider priority lane</h2>
             <p className="muted">
-              The next operators should open these provider profiles first. This is derived from profile,
-              KYC, document, bank, tax, location, and push readiness.
+              The next operators should open these provider profiles first. This is derived from profile, KYC,
+              document, bank, tax, location, and push readiness.
             </p>
           </div>
           <span className={`pill ${priorityLane.blockedCount === 0 ? 'pill-success' : 'pill-danger'}`}>
@@ -227,7 +228,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <p className="muted">{item.action.detail}</p>
                 <p className="muted">{item.action.operatorAction}</p>
               </div>
-              <small>{item.action.tone === 'done' ? 'OK' : item.action.tone === 'blocked' ? 'Fix' : 'Watch'}</small>
+              <small>
+                {item.action.tone === 'done' ? 'OK' : item.action.tone === 'blocked' ? 'Fix' : 'Watch'}
+              </small>
             </div>
           ))}
           {priorityLane.items.length === 0 ? (
@@ -305,7 +308,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     >
                       {provider.user?.supabaseUserId ? 'Supabase linked' : 'Nest auth only'}
                     </span>
-                    <span className={`pill ${hasOpenProviderRisk(provider) ? 'pill-danger' : 'pill-success'}`}>
+                    <span
+                      className={`pill ${hasOpenProviderRisk(provider) ? 'pill-danger' : 'pill-success'}`}
+                    >
                       {hasOpenProviderRisk(provider) ? 'Risk open' : 'Risk clear'}
                     </span>
                   </div>
@@ -571,13 +576,7 @@ function ProviderOnboardingCell({
         </form>
         <form action={rejectProviderKyc}>
           <input type="hidden" name="providerId" value={provider.id} />
-          <input
-            name="reason"
-            placeholder="KYC rejection reason"
-            required
-            minLength={12}
-            maxLength={500}
-          />
+          <input name="reason" placeholder="KYC rejection reason" required minLength={12} maxLength={500} />
           <button type="submit" disabled={!provider.kyc || provider.kyc.status === 'REJECTED'}>
             Reject KYC
           </button>
@@ -730,7 +729,8 @@ function buildProviderPriorityLane(providers: AdminProvider[]) {
 function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
   const primaryBank = provider.bankAccounts?.[0];
-  const completedServiceSignal = provider.level === 'LEVEL_3_PAYOUT_ENABLED' || provider.level === 'LEVEL_4_TRUSTED';
+  const completedServiceSignal =
+    provider.level === 'LEVEL_3_PAYOUT_ENABLED' || provider.level === 'LEVEL_4_TRUSTED';
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const locationState = providerLocationStatus(provider);
   const securityState = providerSecurityStatus(provider);
@@ -945,7 +945,9 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
         </p>
       ) : null}
       {blockedDevices.length ? <p className="muted">{blockedDevices.length} blocked device(s)</p> : null}
-      {suspiciousSessions.length ? <p className="muted">{suspiciousSessions.length} suspicious session(s)</p> : null}
+      {suspiciousSessions.length ? (
+        <p className="muted">{suspiciousSessions.length} suspicious session(s)</p>
+      ) : null}
       {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
       <Link className="text-link" href={`/providers/${provider.id}`}>
         Review security
@@ -1069,7 +1071,8 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       label: 'Account blocks',
       count: accountBlocks,
       href: '/providers?review=blocked',
-      detail: 'Providers blocked by admin cannot go online, refresh location, or appear in customer discovery.',
+      detail:
+        'Providers blocked by admin cannot go online, refresh location, or appear in customer discovery.',
     },
     {
       label: 'KYC updates',
@@ -1111,7 +1114,8 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       label: 'Location freshness',
       count: locationNeedsReview,
       href: '/providers?review=location',
-      detail: 'Providers with missing, stale, or expired locations should reopen the Provider app before dispatch.',
+      detail:
+        'Providers with missing, stale, or expired locations should reopen the Provider app before dispatch.',
     },
     {
       label: 'Push alert readiness',
@@ -1165,7 +1169,10 @@ function providerReviewIssues(provider: AdminProvider) {
   }
   const locationState = providerLocationStatus(provider);
   if (locationState !== 'recent') {
-    issues.push({ label: `location ${locationState}`, severity: locationState === 'missing' ? 'high' : 'medium' });
+    issues.push({
+      label: `location ${locationState}`,
+      severity: locationState === 'missing' ? 'high' : 'medium',
+    });
   }
   const securityState = providerSecurityStatus(provider);
   if (securityState === 'blocked') {
@@ -1186,7 +1193,9 @@ function providerReviewIssues(provider: AdminProvider) {
   const openReports = (provider.reports ?? []).filter((report) =>
     ['OPEN', 'INVESTIGATING'].includes(report.status),
   ).length;
-  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE').length;
+  const activeSanctions = (provider.sanctions ?? []).filter(
+    (sanction) => sanction.status === 'ACTIVE',
+  ).length;
   if (openReports > 0) {
     issues.push({ label: `${openReports} open report(s)`, severity: 'high' });
   }
@@ -1316,7 +1325,9 @@ function providerSearchText(provider: AdminProvider) {
     provider.user?.phone,
     provider.devices?.map((device) => device.deviceId).join(' '),
     provider.sessions?.map((session) => `${session.deviceId ?? ''} ${session.ipAddress ?? ''}`).join(' '),
-    provider.reports?.map((report) => `${report.category} ${report.summary} ${report.details ?? ''}`).join(' '),
+    provider.reports
+      ?.map((report) => `${report.category} ${report.summary} ${report.details ?? ''}`)
+      .join(' '),
     provider.sanctions?.map((sanction) => `${sanction.type} ${sanction.reason}`).join(' '),
     provider.services?.map((item) => item.service?.name).join(' '),
   ]

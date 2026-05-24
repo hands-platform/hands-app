@@ -2,8 +2,12 @@ import { AdminPayment, adminGet } from '../../lib/admin-api';
 import Link from 'next/link';
 import { capturePayment, refundPayment, releasePayment, syncPayment } from './actions';
 
-export default async function PaymentsPage() {
-  const payments = sortPayments(await adminGet<AdminPayment[]>('/admin/payments', []));
+type PaymentsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function PaymentsPage({ searchParams }: { searchParams?: PaymentsPageSearchParams }) {
+  const filters = buildPaymentFilters(searchParams ? await searchParams : {});
+  const allPayments = sortPayments(await adminGet<AdminPayment[]>('/admin/payments', []));
+  const payments = filterPayments(allPayments, filters);
 
   return (
     <>
@@ -11,27 +15,56 @@ export default async function PaymentsPage() {
       <section className="grid" style={{ marginBottom: 16 }}>
         <div className="card">
           <p>Authorized</p>
-          <h2>{payments.filter((payment) => payment.status === 'AUTHORIZED').length}</h2>
+          <h2>{allPayments.filter((payment) => payment.status === 'AUTHORIZED').length}</h2>
         </div>
         <div className="card">
           <p>Pending cash</p>
-          <h2>{payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING').length}</h2>
+          <h2>
+            {
+              allPayments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING')
+                .length
+            }
+          </h2>
         </div>
         <div className="card">
           <p>Captured</p>
-          <h2>{payments.filter((payment) => payment.status === 'CAPTURED').length}</h2>
+          <h2>{allPayments.filter((payment) => payment.status === 'CAPTURED').length}</h2>
         </div>
         <div className="card">
           <p>Refunded</p>
-          <h2>{payments.filter((payment) => payment.status === 'REFUNDED').length}</h2>
+          <h2>{allPayments.filter((payment) => payment.status === 'REFUNDED').length}</h2>
         </div>
         <div className="card">
           <p>Needs action</p>
-          <h2>{payments.filter((payment) => paymentOpsState(payment) !== 'settled').length}</h2>
+          <h2>{allPayments.filter((payment) => paymentOpsState(payment) !== 'settled').length}</h2>
         </div>
         <div className="card">
           <p>Linked refunds</p>
-          <h2>{payments.reduce((total, payment) => total + (payment.refunds?.length ?? 0), 0)}</h2>
+          <h2>{allPayments.reduce((total, payment) => total + (payment.refunds?.length ?? 0), 0)}</h2>
+        </div>
+      </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payment operation filters</h2>
+            <p className="muted">
+              Jump straight from the dashboard lane into the payment subset that needs operator review.
+            </p>
+          </div>
+          <span className={`pill ${filters.review ? 'pill-warn' : 'pill-success'}`}>
+            Showing {payments.length} of {allPayments.length}
+          </span>
+        </div>
+        <div className="participant-list">
+          {paymentFilterLinks().map((item) => (
+            <Link
+              className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
+              href={item.href}
+              key={item.label}
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       </section>
       <div className="card">
@@ -63,7 +96,9 @@ export default async function PaymentsPage() {
                 <td>
                   {shortId(payment.bookingId)}
                   <div className="muted">{payment.booking?.status ?? 'UNKNOWN'}</div>
-                  <div className="muted">{payment.booking?.customerProfile?.user?.phone ?? 'No customer phone'}</div>
+                  <div className="muted">
+                    {payment.booking?.customerProfile?.user?.phone ?? 'No customer phone'}
+                  </div>
                   <div className="actions" style={{ marginTop: 8 }}>
                     <Link className="text-link" href={`/bookings/${payment.bookingId}`}>
                       Open booking
@@ -84,18 +119,31 @@ export default async function PaymentsPage() {
                 <td>{payment.providerRef ?? 'NONE'}</td>
                 <td>
                   <div className="actions">
-                    <PaymentAction action={syncPayment} paymentId={payment.id} label="Sync" disabled={!payment.providerRef} />
+                    <PaymentAction
+                      action={syncPayment}
+                      paymentId={payment.id}
+                      label="Sync"
+                      disabled={!payment.providerRef}
+                    />
                     <PaymentAction
                       action={capturePayment}
                       paymentId={payment.id}
                       label="Capture"
-                      disabled={payment.status === 'CAPTURED' || payment.status === 'REFUNDED' || payment.status === 'RELEASED'}
+                      disabled={
+                        payment.status === 'CAPTURED' ||
+                        payment.status === 'REFUNDED' ||
+                        payment.status === 'RELEASED'
+                      }
                     />
                     <PaymentAction
                       action={releasePayment}
                       paymentId={payment.id}
                       label="Release"
-                      disabled={payment.status === 'CAPTURED' || payment.status === 'REFUNDED' || payment.status === 'RELEASED'}
+                      disabled={
+                        payment.status === 'CAPTURED' ||
+                        payment.status === 'REFUNDED' ||
+                        payment.status === 'RELEASED'
+                      }
                     />
                     <PaymentAction
                       action={refundPayment}
@@ -129,6 +177,58 @@ function sortPayments(payments: AdminPayment[]) {
 
     return (right.id || '').localeCompare(left.id || '');
   });
+}
+
+function buildPaymentFilters(params: Record<string, string | string[] | undefined>) {
+  return {
+    review: readParam(params.review),
+  };
+}
+
+function readParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+}
+
+function filterPayments(payments: AdminPayment[], filters: ReturnType<typeof buildPaymentFilters>) {
+  if (!filters.review) {
+    return payments;
+  }
+
+  return payments.filter((payment) => paymentMatchesReview(payment, filters.review));
+}
+
+function paymentMatchesReview(payment: AdminPayment, review: string) {
+  if (review === 'capture') {
+    return payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED';
+  }
+  if (review === 'missing-ref') {
+    return payment.status === 'AUTHORIZED' && !payment.providerRef;
+  }
+  if (review === 'authorized') {
+    return payment.status === 'AUTHORIZED';
+  }
+  if (review === 'cash') {
+    return payment.method === 'CASH' && payment.status === 'PENDING';
+  }
+  if (review === 'needs-action') {
+    return paymentOpsState(payment) !== 'settled';
+  }
+  if (review === 'refunded') {
+    return payment.status === 'REFUNDED';
+  }
+  return true;
+}
+
+function paymentFilterLinks() {
+  return [
+    { label: 'All payments', href: '/payments', review: '' },
+    { label: 'Capture review', href: '/payments?review=capture', review: 'capture' },
+    { label: 'Missing refs', href: '/payments?review=missing-ref', review: 'missing-ref' },
+    { label: 'Authorized holds', href: '/payments?review=authorized', review: 'authorized' },
+    { label: 'Cash collection', href: '/payments?review=cash', review: 'cash' },
+    { label: 'Needs action', href: '/payments?review=needs-action', review: 'needs-action' },
+    { label: 'Refunded', href: '/payments?review=refunded', review: 'refunded' },
+  ];
 }
 
 function paymentPriority(payment: AdminPayment) {
