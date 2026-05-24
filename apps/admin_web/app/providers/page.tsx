@@ -17,12 +17,23 @@ import {
 
 type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
 type ProviderLocationState = 'recent' | 'stale' | 'expired' | 'missing';
+type ProviderFilters = {
+  q: string;
+  verification: string;
+  providerStatus: string;
+  kyc: string;
+  location: string;
+  readiness: string;
+};
+type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
 
-export default async function ProvidersPage() {
-  const providers = sortProviders(await adminGet<AdminProvider[]>('/admin/providers', []));
+export default async function ProvidersPage({ searchParams }: { searchParams?: ProvidersPageSearchParams }) {
+  const filters = buildProviderFilters(searchParams ? await searchParams : {});
+  const allProviders = sortProviders(await adminGet<AdminProvider[]>('/admin/providers', []));
+  const providers = filterProviders(allProviders, filters);
   const fileReadUrls = new Map<string, string>();
   await Promise.all(
     providers.flatMap((provider) =>
@@ -43,6 +54,74 @@ export default async function ProvidersPage() {
   return (
     <>
       <h1>Provider Verification</h1>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <form className="form-grid" action="/providers">
+          <label>
+            Search
+            <input name="q" defaultValue={filters.q} placeholder="Name, phone, city, provider id" />
+          </label>
+          <label>
+            Verification
+            <select name="verification" defaultValue={filters.verification}>
+              <option value="">All</option>
+              <option value="APPROVED">Approved</option>
+              <option value="PENDING">Pending</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="BLOCKED">Blocked</option>
+            </select>
+          </label>
+          <label>
+            Provider status
+            <select name="providerStatus" defaultValue={filters.providerStatus}>
+              <option value="">All</option>
+              <option value="ONLINE_AVAILABLE">Online available</option>
+              <option value="ONLINE_BUSY">Online busy</option>
+              <option value="ONLINE_AVAILABLE_SOON">Available soon</option>
+              <option value="OFFLINE">Offline</option>
+            </select>
+          </label>
+          <label>
+            KYC
+            <select name="kyc" defaultValue={filters.kyc}>
+              <option value="">All</option>
+              <option value="APPROVED">Approved</option>
+              <option value="PENDING">Pending</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="DRAFT">Draft</option>
+              <option value="MISSING">Missing</option>
+            </select>
+          </label>
+          <label>
+            Location
+            <select name="location" defaultValue={filters.location}>
+              <option value="">All</option>
+              <option value="recent">Recent</option>
+              <option value="stale">Stale</option>
+              <option value="expired">Expired</option>
+              <option value="missing">Missing</option>
+            </select>
+          </label>
+          <label>
+            Readiness
+            <select name="readiness" defaultValue={filters.readiness}>
+              <option value="">All</option>
+              <option value="ready">Ready for dispatch</option>
+              <option value="needs-review">Needs review</option>
+              <option value="approved-offline">Approved but offline</option>
+              <option value="push-missing">Push missing</option>
+            </select>
+          </label>
+          <div className="actions full-span">
+            <button type="submit">Apply filters</button>
+            <Link className="text-link" href="/providers">
+              Clear filters
+            </Link>
+            <span className="muted">
+              Showing {providers.length} of {allProviders.length} therapists
+            </span>
+          </div>
+        </form>
+      </div>
       <div className="grid" style={{ marginBottom: 16 }}>
         {summary.map(([label, value]) => (
           <div className="card" key={label}>
@@ -488,6 +567,81 @@ function sortProviders(providers: AdminProvider[]) {
       right.displayName || right.user?.fullName || right.user?.phone || '',
     );
   });
+}
+
+function buildProviderFilters(params: Record<string, string | string[] | undefined>): ProviderFilters {
+  return {
+    q: readParam(params.q),
+    verification: readParam(params.verification),
+    providerStatus: readParam(params.providerStatus),
+    kyc: readParam(params.kyc),
+    location: readParam(params.location),
+    readiness: readParam(params.readiness),
+  };
+}
+
+function readParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+}
+
+function filterProviders(providers: AdminProvider[], filters: ProviderFilters) {
+  const search = filters.q.toLowerCase();
+
+  return providers.filter((provider) => {
+    if (search && !providerSearchText(provider).includes(search)) {
+      return false;
+    }
+    if (filters.verification && (provider.verification?.status ?? 'DRAFT') !== filters.verification) {
+      return false;
+    }
+    if (filters.providerStatus && provider.status !== filters.providerStatus) {
+      return false;
+    }
+    if (filters.kyc && (provider.kyc?.status ?? 'MISSING') !== filters.kyc) {
+      return false;
+    }
+    if (filters.location && providerLocationStatus(provider) !== filters.location) {
+      return false;
+    }
+    if (filters.readiness && providerReadiness(provider) !== filters.readiness) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function providerSearchText(provider: AdminProvider) {
+  return [
+    provider.id,
+    provider.displayName,
+    provider.legalName,
+    provider.city,
+    provider.residentialAddress,
+    provider.user?.fullName,
+    provider.user?.phone,
+    provider.services?.map((item) => item.service?.name).join(' '),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
+function providerReadiness(provider: AdminProvider) {
+  if (
+    provider.verification?.status === 'APPROVED' &&
+    provider.status === 'ONLINE_AVAILABLE' &&
+    providerLocationStatus(provider) === 'recent' &&
+    hasHealthyPush(provider)
+  ) {
+    return 'ready';
+  }
+  if (provider.verification?.status === 'APPROVED' && provider.status !== 'ONLINE_AVAILABLE') {
+    return 'approved-offline';
+  }
+  if (provider.verification?.status === 'APPROVED' && !hasHealthyPush(provider)) {
+    return 'push-missing';
+  }
+  return 'needs-review';
 }
 
 function providerPriority(provider: AdminProvider) {
