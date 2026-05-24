@@ -1,7 +1,16 @@
 import { AdminAuditLog, adminGet } from '../../lib/admin-api';
 
-export default async function AuditLogPage() {
-  const logs = sortLogs(await adminGet<AdminAuditLog[]>('/admin/audit-logs', []));
+type AuditLogFilters = {
+  q: string;
+  bucket: string;
+  priority: string;
+};
+type AuditLogPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function AuditLogPage({ searchParams }: { searchParams?: AuditLogPageSearchParams }) {
+  const filters = buildAuditFilters(searchParams ? await searchParams : {});
+  const allLogs = sortLogs(await adminGet<AdminAuditLog[]>('/admin/audit-logs', []));
+  const logs = filterAuditLogs(allLogs, filters);
   const summary = buildSummary(logs);
 
   return (
@@ -32,6 +41,46 @@ export default async function AuditLogPage() {
           <p>Recent hour</p>
           <h2>{summary.recentHour}</h2>
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <form className="form-grid" action="/audit-log">
+          <label>
+            Search
+            <input name="q" defaultValue={filters.q} placeholder="Action, target, actor, metadata" />
+          </label>
+          <label>
+            Bucket
+            <select name="bucket" defaultValue={filters.bucket}>
+              <option value="">All</option>
+              <option value="Dispatch">Dispatch</option>
+              <option value="Payment">Payment</option>
+              <option value="Notification">Notification</option>
+              <option value="Provider">Provider</option>
+              <option value="Tax">Tax</option>
+              <option value="System">System</option>
+            </select>
+          </label>
+          <label>
+            Priority
+            <select name="priority" defaultValue={filters.priority}>
+              <option value="">All</option>
+              <option value="4">Review this first</option>
+              <option value="3">Check before close</option>
+              <option value="2">Trace related flow</option>
+              <option value="1">Reference event</option>
+            </select>
+          </label>
+          <div className="actions full-span">
+            <button type="submit">Apply filters</button>
+            <a className="text-link" href="/audit-log">
+              Clear filters
+            </a>
+            <span className="muted">
+              Showing {logs.length} of {allLogs.length} events
+            </span>
+          </div>
+        </form>
       </section>
 
       <div className="card">
@@ -75,8 +124,8 @@ export default async function AuditLogPage() {
                   <div className="muted">{log.target}</div>
                 </td>
                 <td>
-                  <a className="pill pill-info" href={relatedBoardHref(log.action, log.target)}>
-                    {relatedBoardLabel(log.action)}
+                  <a className="pill pill-info" href={relatedBoardHref(log)}>
+                    {relatedBoardLabel(log)}
                   </a>
                   <div className="muted" style={{ marginTop: 6 }}>
                     {reviewPriorityLabel(log.action)}
@@ -139,6 +188,47 @@ function buildSummary(logs: AdminAuditLog[]) {
   };
 }
 
+function buildAuditFilters(params: Record<string, string | string[] | undefined>): AuditLogFilters {
+  return {
+    q: readParam(params.q),
+    bucket: readParam(params.bucket),
+    priority: readParam(params.priority),
+  };
+}
+
+function readParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+}
+
+function filterAuditLogs(logs: AdminAuditLog[], filters: AuditLogFilters) {
+  const query = filters.q.toLowerCase();
+  return logs.filter((log) => {
+    if (query && !auditSearchText(log).includes(query)) {
+      return false;
+    }
+    if (filters.bucket && actionBucketLabel(log.action) !== filters.bucket) {
+      return false;
+    }
+    if (filters.priority && String(auditPriority(log.action)) !== filters.priority) {
+      return false;
+    }
+    return true;
+  });
+}
+
+function auditSearchText(log: AdminAuditLog) {
+  return [
+    log.action,
+    log.target,
+    log.actor?.fullName,
+    log.actor?.phone,
+    metadataPreview(log.metadata),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+}
+
 function auditPriority(action: string) {
   if (action.endsWith('.refund') || action.includes('reject') || action.endsWith('.retry')) {
     return 4;
@@ -153,7 +243,12 @@ function auditPriority(action: string) {
 }
 
 function isDispatchAction(action: string) {
-  return action.startsWith('booking.') || action.startsWith('provider.');
+  return (
+    action.startsWith('booking.') ||
+    action.startsWith('provider.') ||
+    action.startsWith('provider_') ||
+    action.startsWith('provider-')
+  );
 }
 
 function isPaymentAction(action: string) {
@@ -165,6 +260,12 @@ function isNotificationAction(action: string) {
 }
 
 function actionBucketLabel(action: string) {
+  if (action.startsWith('tax_')) {
+    return 'Tax';
+  }
+  if (isProviderReviewAction(action)) {
+    return 'Provider';
+  }
   if (isDispatchAction(action)) {
     return 'Dispatch';
   }
@@ -174,10 +275,18 @@ function actionBucketLabel(action: string) {
   if (isNotificationAction(action)) {
     return 'Notification';
   }
-  if (action.startsWith('provider-verification.') || action.startsWith('provider.')) {
+  if (isProviderReviewAction(action)) {
     return 'Provider';
   }
   return 'System';
+}
+
+function isProviderReviewAction(action: string) {
+  return (
+    action.startsWith('provider_') ||
+    action.startsWith('provider-') ||
+    action.startsWith('provider-verification.')
+  );
 }
 
 function signalClass(action: string) {
@@ -230,35 +339,58 @@ function metadataPreview(metadata: unknown) {
   }
 }
 
-function relatedBoardHref(action: string, target?: string) {
-  const targetId = target?.split(':')[1];
-  if (action.startsWith('booking.')) {
+function relatedBoardHref(log: AdminAuditLog) {
+  const targetId = log.target?.split(':')[1];
+  const metadata = readMetadataObject(log.metadata);
+  if (log.action.startsWith('booking.')) {
     return targetId ? `/bookings/${targetId}` : '/bookings';
   }
-  if (action.startsWith('payment.')) {
+  if (log.action.startsWith('payment.')) {
     return targetId ? `/payments#payment-${targetId}` : '/payments';
   }
-  if (action.startsWith('refund.')) {
+  if (log.action.startsWith('refund.')) {
     return targetId ? `/refunds#refund-${targetId}` : '/refunds';
   }
-  if (action.startsWith('notification.')) {
+  if (log.action.startsWith('notification.')) {
     return '/notifications';
   }
-  if (action.startsWith('provider-verification.') || action.startsWith('provider.')) {
-    return '/providers';
+  if (isDispatchAction(log.action)) {
+    const providerId =
+      targetId && log.target?.startsWith('provider:')
+        ? targetId
+        : typeof metadata.providerProfileId === 'string'
+          ? metadata.providerProfileId
+          : null;
+    return providerId ? `/providers/${providerId}` : '/providers';
   }
-  if (action.startsWith('coupon.')) {
+  if (log.action.startsWith('coupon.')) {
     return '/coupons';
+  }
+  if (log.action.startsWith('tax_') || log.action.startsWith('tax.')) {
+    return '/tax-policy';
   }
   return '/audit-log';
 }
 
-function relatedBoardLabel(action: string) {
-  const href = relatedBoardHref(action);
+function relatedBoardLabel(log: AdminAuditLog) {
+  const href = relatedBoardHref(log);
   if (href === '/audit-log') {
     return 'Audit';
   }
+  if (href.startsWith('/providers/')) {
+    return 'provider detail';
+  }
+  if (href.startsWith('/bookings/')) {
+    return 'booking detail';
+  }
   return href.slice(1).replace('-', ' ');
+}
+
+function readMetadataObject(metadata: unknown): Record<string, unknown> {
+  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+    return metadata as Record<string, unknown>;
+  }
+  return {};
 }
 
 function reviewPriorityLabel(action: string) {
