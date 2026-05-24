@@ -3028,6 +3028,15 @@ class _ProviderOnboardingCard extends StatelessWidget {
         taxStatus == 'APPROVED' &&
         (addressText?.trim().isNotEmpty ?? false) &&
         missingAgreementCount == 0;
+    final priority = providerOnboardingPriorityFromSnapshot(snapshot);
+    final priorityAction = switch (priority.actionKey) {
+      'BASIC_PROFILE' => onFillBasicProfile,
+      'KYC_REVIEW' => onSubmitKyc,
+      'BANK_ACCOUNT_REVIEW' => onAddBankAccount,
+      'TAX_PROFILE_REVIEW' => onAddTaxProfile,
+      'AGREEMENTS' => onAcceptAgreements,
+      _ => null,
+    };
 
     return Card(
       child: Padding(
@@ -3072,6 +3081,15 @@ class _ProviderOnboardingCard extends StatelessWidget {
               ErrorCard(text: 'Onboarding load failed: $error'),
               const SizedBox(height: 12),
             ],
+            _OnboardingPriorityPanel(
+              priority: priority,
+              onPressed: isSaving || priorityAction == null
+                  ? null
+                  : () {
+                      priorityAction();
+                    },
+            ),
+            const SizedBox(height: 12),
             if (documents.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -3130,13 +3148,6 @@ class _ProviderOnboardingCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
             ],
-            if (nextActions.isEmpty)
-              const InfoCard(text: 'All current onboarding gates are clear.')
-            else
-              InfoCard(
-                text: 'Next: ${nextActions.map(_readableAction).join(', ')}',
-              ),
-            const SizedBox(height: 12),
             _OnboardingStepCard(
               step: '1',
               title: 'Basic profile',
@@ -3269,6 +3280,85 @@ class _OnboardingHistoryList extends StatelessWidget {
             _OnboardingHistoryRow(log: log),
             if (log != logs.take(5).last)
               Divider(color: colorScheme.outlineVariant),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OnboardingPriorityPanel extends StatelessWidget {
+  const _OnboardingPriorityPanel({
+    required this.priority,
+    required this.onPressed,
+  });
+
+  final ProviderOnboardingPriority priority;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final colors = switch (priority.tone) {
+      'success' => (
+          background: colorScheme.primaryContainer,
+          foreground: colorScheme.onPrimaryContainer,
+          icon: Icons.check_circle_outline,
+        ),
+      'warning' => (
+          background: colorScheme.tertiaryContainer,
+          foreground: colorScheme.onTertiaryContainer,
+          icon: Icons.priority_high_outlined,
+        ),
+      _ => (
+          background: colorScheme.secondaryContainer,
+          foreground: colorScheme.onSecondaryContainer,
+          icon: Icons.flag_outlined,
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colors.background,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(colors.icon, color: colors.foreground),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      priority.title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(color: colors.foreground),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      priority.detail,
+                      style: TextStyle(color: colors.foreground),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (priority.buttonLabel != null) ...[
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              onPressed: onPressed,
+              icon: const Icon(Icons.arrow_forward),
+              label: Text(priority.buttonLabel!),
+            ),
           ],
         ],
       ),
@@ -3509,6 +3599,160 @@ String _readableAction(String value) {
       .map((part) =>
           part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
       .join(' ');
+}
+
+class ProviderOnboardingPriority {
+  const ProviderOnboardingPriority({
+    required this.title,
+    required this.detail,
+    required this.tone,
+    this.actionKey,
+    this.buttonLabel,
+  });
+
+  final String title;
+  final String detail;
+  final String tone;
+  final String? actionKey;
+  final String? buttonLabel;
+}
+
+ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final nextActions = asList(snapshot['nextRequiredActions'])
+      .map((action) => action.toString())
+      .toList();
+  final documents = asList(snapshot['documents']);
+  final requiredKycTypes = requiredKycDocumentTypesFromSnapshot(snapshot);
+  final submittedKycRequiredCount = documents
+      .map(asMap)
+      .whereType<Map<String, dynamic>>()
+      .map((document) => document['type']?.toString())
+      .where((type) => requiredKycTypes.contains(type))
+      .toSet()
+      .length;
+  final kycDocumentsReady =
+      submittedKycRequiredCount >= requiredKycTypes.length;
+  final bankAccounts = asList(snapshot['bankAccounts']);
+  final bankStatus = bankAccounts.isEmpty
+      ? null
+      : asMap(bankAccounts.first)?['status']?.toString();
+  final kyc = asMap(snapshot['kyc']);
+  final verification = asMap(snapshot['verification']);
+  final kycStatus =
+      kyc?['status']?.toString() ?? verification?['status']?.toString();
+  final taxProfile = asMap(snapshot['taxProfile']);
+  final taxStatus = taxProfile?['status']?.toString();
+  final payoutGate = asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
+  final payoutMissing = asMap(payoutGate['missing']) ?? <String, dynamic>{};
+  final canWithdraw = payoutGate['canWithdraw'] == true;
+  final completedBookingCount =
+      asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
+  final missingAgreementCount = asList(payoutMissing['agreements']).length;
+
+  if (nextActions.contains('BASIC_PROFILE')) {
+    return const ProviderOnboardingPriority(
+      title: 'Start with your public profile',
+      detail:
+          'Add your legal name, public display name, birthday, address, and service area before taking requests.',
+      tone: 'warning',
+      actionKey: 'BASIC_PROFILE',
+      buttonLabel: 'Complete profile',
+    );
+  }
+
+  if (nextActions.contains('KYC_REVIEW')) {
+    if (kycStatus == 'REJECTED') {
+      return const ProviderOnboardingPriority(
+        title: 'Fix rejected KYC',
+        detail:
+            'Review the rejection message, upload clearer CCCD and selfie photos, then resubmit.',
+        tone: 'warning',
+        actionKey: 'KYC_REVIEW',
+        buttonLabel: 'Resubmit KYC',
+      );
+    }
+    if (kycDocumentsReady) {
+      return const ProviderOnboardingPriority(
+        title: 'Submit KYC for admin review',
+        detail:
+            'All required identity photos are attached. Submit them so admin can unlock Level 2.',
+        tone: 'info',
+        actionKey: 'KYC_REVIEW',
+        buttonLabel: 'Submit KYC',
+      );
+    }
+    return ProviderOnboardingPriority(
+      title: 'Upload identity photos',
+      detail:
+          '$submittedKycRequiredCount of ${requiredKycTypes.length} required KYC photos are ready. Upload the missing photos below.',
+      tone: 'warning',
+      actionKey: 'KYC_REVIEW',
+      buttonLabel: 'Open KYC checklist',
+    );
+  }
+
+  if (nextActions.contains('BANK_ACCOUNT_REVIEW')) {
+    return ProviderOnboardingPriority(
+      title: bankStatus == 'REJECTED'
+          ? 'Fix rejected bank account'
+          : 'Add payout bank account',
+      detail:
+          'Bank account approval is required before this provider can become fully active.',
+      tone: 'warning',
+      actionKey: 'BANK_ACCOUNT_REVIEW',
+      buttonLabel: bankStatus == 'REJECTED' ? 'Resubmit bank' : 'Add bank',
+    );
+  }
+
+  if (nextActions.contains('TAX_PROFILE_REVIEW')) {
+    return ProviderOnboardingPriority(
+      title: taxStatus == 'REJECTED'
+          ? 'Fix rejected tax profile'
+          : 'Add tax profile for payout',
+      detail:
+          'Tax information is only required after earnings exist, but it must be approved before withdrawal.',
+      tone: 'warning',
+      actionKey: 'TAX_PROFILE_REVIEW',
+      buttonLabel: taxStatus == 'REJECTED' ? 'Resubmit tax' : 'Add tax',
+    );
+  }
+
+  if (nextActions.contains('AGREEMENTS')) {
+    return ProviderOnboardingPriority(
+      title: 'Accept payout agreements',
+      detail:
+          '$missingAgreementCount payout agreement(s) still need acceptance before withdrawal is available.',
+      tone: 'warning',
+      actionKey: 'AGREEMENTS',
+      buttonLabel: 'Review agreements',
+    );
+  }
+
+  if (canWithdraw) {
+    return const ProviderOnboardingPriority(
+      title: 'Provider setup is complete',
+      detail:
+          'This provider can receive bookings and request payouts when earnings are available.',
+      tone: 'success',
+    );
+  }
+
+  if (completedBookingCount == 0) {
+    return const ProviderOnboardingPriority(
+      title: 'Ready for the first booking',
+      detail:
+          'Core setup is clear. Keep the app online so customers can send direct requests.',
+      tone: 'success',
+    );
+  }
+
+  return const ProviderOnboardingPriority(
+    title: 'Waiting for admin review',
+    detail:
+        'Submitted information is saved. Refresh this page after admin finishes the remaining review.',
+    tone: 'info',
+  );
 }
 
 String providerLogActionLabel(String value) {

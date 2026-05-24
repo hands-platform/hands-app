@@ -50,4 +50,41 @@ void main() {
     expect(providerLogActionLabel('unknown.custom_action'),
         'Unknown Custom Action');
   });
+
+  test('prioritizes basic profile before other onboarding gates', () {
+    final priority = providerOnboardingPriorityFromSnapshot({
+      'nextRequiredActions': ['BASIC_PROFILE', 'KYC_REVIEW'],
+    });
+
+    expect(priority.actionKey, 'BASIC_PROFILE');
+    expect(priority.buttonLabel, 'Complete profile');
+    expect(priority.tone, 'warning');
+  });
+
+  test('prioritizes KYC submission when required photos are ready', () {
+    final priority = providerOnboardingPriorityFromSnapshot({
+      'nextRequiredActions': ['KYC_REVIEW'],
+      'documents': [
+        {'type': 'CCCD_FRONT'},
+        {'type': 'CCCD_BACK'},
+        {'type': 'SELFIE'},
+      ],
+    });
+
+    expect(priority.actionKey, 'KYC_REVIEW');
+    expect(priority.title, 'Submit KYC for admin review');
+    expect(priority.buttonLabel, 'Submit KYC');
+  });
+
+  test('shows ready state after core setup before first booking', () {
+    final priority = providerOnboardingPriorityFromSnapshot({
+      'nextRequiredActions': <String>[],
+      'completedBookingCount': 0,
+      'payoutGate': {'canWithdraw': false},
+    });
+
+    expect(priority.actionKey, isNull);
+    expect(priority.title, 'Ready for the first booking');
+    expect(priority.tone, 'success');
+  });
 }
