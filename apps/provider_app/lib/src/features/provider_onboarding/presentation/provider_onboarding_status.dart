@@ -1,0 +1,250 @@
+import 'widgets/provider_document_upload_slots.dart';
+
+class ProviderOnboardingPriority {
+  const ProviderOnboardingPriority({
+    required this.title,
+    required this.detail,
+    required this.tone,
+    this.actionKey,
+    this.buttonLabel,
+  });
+
+  final String title;
+  final String detail;
+  final String tone;
+  final String? actionKey;
+  final String? buttonLabel;
+}
+
+ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final nextActions = _asList(snapshot['nextRequiredActions'])
+      .map((action) => action.toString())
+      .toList();
+  final documents = _asList(snapshot['documents']);
+  final requiredKycTypes = requiredKycDocumentTypesFromSnapshot(snapshot);
+  final submittedKycRequiredCount = documents
+      .map(_asMap)
+      .whereType<Map<String, dynamic>>()
+      .map((document) => document['type']?.toString())
+      .where((type) => requiredKycTypes.contains(type))
+      .toSet()
+      .length;
+  final kycDocumentsReady =
+      submittedKycRequiredCount >= requiredKycTypes.length;
+  final bankAccounts = _asList(snapshot['bankAccounts']);
+  final bankStatus = bankAccounts.isEmpty
+      ? null
+      : _asMap(bankAccounts.first)?['status']?.toString();
+  final kyc = _asMap(snapshot['kyc']);
+  final verification = _asMap(snapshot['verification']);
+  final kycStatus =
+      kyc?['status']?.toString() ?? verification?['status']?.toString();
+  final taxProfile = _asMap(snapshot['taxProfile']);
+  final taxStatus = taxProfile?['status']?.toString();
+  final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
+  final payoutMissing = _asMap(payoutGate['missing']) ?? <String, dynamic>{};
+  final canWithdraw = payoutGate['canWithdraw'] == true;
+  final completedBookingCount =
+      _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
+  final missingAgreementCount = _asList(payoutMissing['agreements']).length;
+
+  if (nextActions.contains('BASIC_PROFILE')) {
+    return const ProviderOnboardingPriority(
+      title: 'Start with your public profile',
+      detail:
+          'Add your legal name, public display name, birthday, address, and service area before taking requests.',
+      tone: 'warning',
+      actionKey: 'BASIC_PROFILE',
+      buttonLabel: 'Complete profile',
+    );
+  }
+
+  if (nextActions.contains('KYC_REVIEW')) {
+    if (kycStatus == 'REJECTED') {
+      return const ProviderOnboardingPriority(
+        title: 'Fix rejected KYC',
+        detail:
+            'Review the rejection message, upload clearer CCCD and selfie photos, then resubmit.',
+        tone: 'warning',
+        actionKey: 'KYC_REVIEW',
+        buttonLabel: 'Resubmit KYC',
+      );
+    }
+    if (kycDocumentsReady) {
+      return const ProviderOnboardingPriority(
+        title: 'Submit KYC for admin review',
+        detail:
+            'All required identity photos are attached. Submit them so admin can unlock Level 2.',
+        tone: 'info',
+        actionKey: 'KYC_REVIEW',
+        buttonLabel: 'Submit KYC',
+      );
+    }
+    return ProviderOnboardingPriority(
+      title: 'Upload identity photos',
+      detail:
+          '$submittedKycRequiredCount of ${requiredKycTypes.length} required KYC photos are ready. Upload the missing photos below.',
+      tone: 'warning',
+      actionKey: 'KYC_REVIEW',
+      buttonLabel: 'Open KYC checklist',
+    );
+  }
+
+  if (nextActions.contains('BANK_ACCOUNT_REVIEW')) {
+    return ProviderOnboardingPriority(
+      title: bankStatus == 'REJECTED'
+          ? 'Fix rejected bank account'
+          : 'Add payout bank account',
+      detail:
+          'Bank account approval is required before this provider can become fully active.',
+      tone: 'warning',
+      actionKey: 'BANK_ACCOUNT_REVIEW',
+      buttonLabel: bankStatus == 'REJECTED' ? 'Resubmit bank' : 'Add bank',
+    );
+  }
+
+  if (nextActions.contains('TAX_PROFILE_REVIEW')) {
+    return ProviderOnboardingPriority(
+      title: taxStatus == 'REJECTED'
+          ? 'Fix rejected tax profile'
+          : 'Add tax profile for payout',
+      detail:
+          'Tax information is only required after earnings exist, but it must be approved before withdrawal.',
+      tone: 'warning',
+      actionKey: 'TAX_PROFILE_REVIEW',
+      buttonLabel: taxStatus == 'REJECTED' ? 'Resubmit tax' : 'Add tax',
+    );
+  }
+
+  if (nextActions.contains('AGREEMENTS')) {
+    return ProviderOnboardingPriority(
+      title: 'Accept payout agreements',
+      detail:
+          '$missingAgreementCount payout agreement(s) still need acceptance before withdrawal is available.',
+      tone: 'warning',
+      actionKey: 'AGREEMENTS',
+      buttonLabel: 'Review agreements',
+    );
+  }
+
+  if (canWithdraw) {
+    return const ProviderOnboardingPriority(
+      title: 'Provider setup is complete',
+      detail:
+          'This provider can receive bookings and request payouts when earnings are available.',
+      tone: 'success',
+    );
+  }
+
+  if (completedBookingCount == 0) {
+    return const ProviderOnboardingPriority(
+      title: 'Ready for the first booking',
+      detail:
+          'Core setup is clear. Keep the app online so customers can send direct requests.',
+      tone: 'success',
+    );
+  }
+
+  return const ProviderOnboardingPriority(
+    title: 'Waiting for admin review',
+    detail:
+        'Submitted information is saved. Refresh this page after admin finishes the remaining review.',
+    tone: 'info',
+  );
+}
+
+String providerLogActionLabel(String value) {
+  switch (value) {
+    case 'basic_profile.update':
+      return 'Basic profile updated';
+    case 'kyc.submit':
+      return 'KYC submitted';
+    case 'kyc.approved':
+      return 'KYC approved';
+    case 'kyc.rejected':
+      return 'KYC rejected';
+    case 'document.approved':
+      return 'Document approved';
+    case 'document.rejected':
+      return 'Document rejected';
+    case 'bank_account.submit':
+      return 'Bank account submitted';
+    case 'bank_account.approved':
+      return 'Bank account approved';
+    case 'bank_account.rejected':
+      return 'Bank account rejected';
+    case 'tax_profile.submit':
+      return 'Tax profile submitted';
+    case 'tax_profile.approved':
+      return 'Tax profile approved';
+    case 'tax_profile.rejected':
+      return 'Tax profile rejected';
+    case 'agreement.accept':
+      return 'Agreement accepted';
+    default:
+      return _readableAction(value.replaceAll('.', '_'));
+  }
+}
+
+String? reviewReason(Map<String, dynamic>? value) {
+  final reason = value?['rejectionReason']?.toString().trim();
+  return reason == null || reason.isEmpty ? null : reason;
+}
+
+List<String> requiredKycDocumentTypesFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final requirements = _asMap(snapshot['requirements']);
+  final values = _asList(requirements?['requiredKycDocumentTypes'])
+      .map((value) => value.toString())
+      .where((value) => value.isNotEmpty)
+      .toList();
+  return values.isEmpty ? requiredProviderDocumentTypes : values;
+}
+
+List<String> requiredPayoutAgreementTypesFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final requirements = _asMap(snapshot['requirements']);
+  final values = _asList(requirements?['requiredPayoutAgreements'])
+      .map((value) => value.toString())
+      .where((value) => value.isNotEmpty)
+      .toList();
+  return values.isEmpty
+      ? const ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX']
+      : values;
+}
+
+String _readableAction(String value) {
+  return value
+      .split('_')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
+}
+
+num? _asNum(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+  if (value is num) {
+    return value;
+  }
+  if (value is String) {
+    return num.tryParse(value);
+  }
+  return null;
+}
+
+Map<String, dynamic>? _asMap(dynamic value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  if (value is Map) {
+    return Map<String, dynamic>.from(value);
+  }
+  return null;
+}
+
+List<dynamic> _asList(dynamic value) {
+  return value is List<dynamic> ? value : const [];
+}

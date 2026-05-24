@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider_app/main.dart';
+import 'package:provider_app/src/features/provider_onboarding/presentation/provider_onboarding_status.dart';
 import 'package:provider_app/src/features/provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
 
 void main() {
