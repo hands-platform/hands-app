@@ -187,8 +187,19 @@ await patchJson('/provider/onboarding/basic-profile', providerAuth.accessToken, 
   residentialAddress: 'District 1, Ho Chi Minh City, Vietnam',
   city: 'Ho Chi Minh City',
 });
+const kycDocumentUploads = [];
+for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
+  const upload = await postJson('/files/presign', providerAuth.accessToken, {
+    contentType: 'image/jpeg',
+    visibility: 'PRIVATE',
+    purpose: `provider-kyc-${type.toLowerCase()}`,
+  });
+  await postJson(`/files/${upload.file.id}/complete`, providerAuth.accessToken, { sizeBytes: 1024 });
+  kycDocumentUploads.push({ fileId: upload.file.id, type });
+}
 await postJson('/provider/onboarding/kyc/submit', providerAuth.accessToken, {
   cccdNumber: '000000000000',
+  documents: kycDocumentUploads,
 });
 await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
 const onboardingBankAccount = await postJson('/provider/onboarding/bank-accounts', providerAuth.accessToken, {
@@ -234,10 +245,22 @@ const smokeTaxPolicy = await postJson('/admin/tax-policy-versions', adminAuth.ac
   effectiveFrom: new Date(Date.now() - 60_000).toISOString(),
   notes: 'Smoke test active withholding policy',
 });
-await postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
+const smokeTaxRule = await postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
   scope: 'DEFAULT',
   rateBps: 500,
   fixedAmount: 0,
+  active: true,
+});
+const updatedSmokeTaxRule = await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
+  scope: 'DEFAULT',
+  rateBps: 500,
+  fixedAmount: 0,
+  active: false,
+});
+if (updatedSmokeTaxRule.active !== false || updatedSmokeTaxRule.rateBps !== 500) {
+  throw new Error(`Tax rule update failed: ${JSON.stringify(updatedSmokeTaxRule)}`);
+}
+await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
   active: true,
 });
 

@@ -1,5 +1,5 @@
 import { AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
-import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion } from './actions';
+import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
 const scopeOptions = ['DEFAULT', 'SERVICE_TYPE', 'AMOUNT_BAND'];
@@ -142,12 +142,73 @@ export default async function TaxPolicyPage() {
             </form>
 
             <h3>Rules</h3>
-            <div className="participant-list" style={{ marginBottom: 12 }}>
+            <div className="setup-stage-list" style={{ marginBottom: 12 }}>
               {(policy.rules ?? []).map((rule) => (
-                <span key={rule.id} className={`pill ${rule.active ? 'pill-info' : 'pill-neutral'}`}>
-                  {rule.scope} {rule.serviceType ? `/${rule.serviceType}` : ''} {formatBps(rule.rateBps)}
-                  {rule.fixedAmount ? ` + ${formatCurrency(rule.fixedAmount)} VND` : ''}
-                </span>
+                <div className="setup-stage-item" key={rule.id}>
+                  <span>{rule.active ? 'ON' : 'OFF'}</span>
+                  <div>
+                    <strong>
+                      {rule.scope}
+                      {rule.serviceType ? ` / ${rule.serviceType}` : ''}
+                    </strong>
+                    <p className="muted">
+                      {formatBps(rule.rateBps)}
+                      {rule.fixedAmount ? ` + ${formatCurrency(rule.fixedAmount)} VND` : ''}
+                      {rule.scope === 'AMOUNT_BAND'
+                        ? ` / ${formatCurrency(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatCurrency(rule.maxGrossAmount) : 'no max'} VND`
+                        : ''}
+                    </p>
+                    <form action={updateTaxRule} className="form-grid compact-form">
+                      <input type="hidden" name="ruleId" value={rule.id} />
+                      <label>
+                        Scope
+                        <select name="scope" defaultValue={rule.scope}>
+                          {scopeOptions.map((scope) => (
+                            <option key={scope} value={scope}>
+                              {scope}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Service type
+                        <input name="serviceType" defaultValue={rule.serviceType ?? ''} />
+                      </label>
+                      <label>
+                        Min amount
+                        <input
+                          name="minGrossAmount"
+                          type="number"
+                          min="0"
+                          defaultValue={rule.minGrossAmount ?? ''}
+                        />
+                      </label>
+                      <label>
+                        Max amount
+                        <input
+                          name="maxGrossAmount"
+                          type="number"
+                          min="0"
+                          defaultValue={rule.maxGrossAmount ?? ''}
+                        />
+                      </label>
+                      <label>
+                        Rate bps
+                        <input name="rateBps" type="number" min="0" max="10000" defaultValue={rule.rateBps} />
+                      </label>
+                      <label>
+                        Fixed amount
+                        <input name="fixedAmount" type="number" min="0" defaultValue={rule.fixedAmount} />
+                      </label>
+                      <label>
+                        Active
+                        <input name="active" type="checkbox" defaultChecked={rule.active} />
+                      </label>
+                      <button type="submit">Update rule</button>
+                    </form>
+                  </div>
+                  <small>{rule.id.slice(0, 8)}</small>
+                </div>
               ))}
               {(policy.rules ?? []).length === 0 ? <span className="muted">No rules yet.</span> : null}
             </div>

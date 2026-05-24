@@ -574,27 +574,64 @@ export class ProviderOnboardingService {
       active?: boolean;
     },
   ) {
-    const scope = input.scope ?? TaxRuleScope.DEFAULT;
-    const rateBps = input.rateBps ?? 0;
-    if (!Number.isInteger(rateBps) || rateBps < 0 || rateBps > 10000) {
-      throw new BadRequestException('rateBps must be an integer between 0 and 10000');
-    }
+    const data = normalizeTaxRuleInput(input, true);
     const rule = await this.prisma.taxRule.create({
       data: {
         policyVersionId,
-        scope,
-        serviceType: normalizeString(input.serviceType),
-        minGrossAmount: input.minGrossAmount,
-        maxGrossAmount: input.maxGrossAmount,
-        rateBps,
-        fixedAmount: input.fixedAmount ?? 0,
-        active: input.active ?? true,
+        scope: data.scope,
+        serviceType: data.serviceType,
+        minGrossAmount: data.minGrossAmount,
+        maxGrossAmount: data.maxGrossAmount,
+        rateBps: data.rateBps,
+        fixedAmount: data.fixedAmount,
+        active: data.active,
       },
     });
     await this.writeAudit(actorId, 'tax_rule.create', `tax_rule:${rule.id}`, {
       policyVersionId,
-      scope,
-      rateBps,
+      scope: rule.scope,
+      rateBps: rule.rateBps,
+    });
+    return rule;
+  }
+
+  async updateTaxRule(
+    actorId: string,
+    id: string,
+    input: {
+      scope?: TaxRuleScope;
+      serviceType?: string | null;
+      minGrossAmount?: number | null;
+      maxGrossAmount?: number | null;
+      rateBps?: number;
+      fixedAmount?: number;
+      active?: boolean;
+    },
+  ) {
+    const existing = await this.prisma.taxRule.findUniqueOrThrow({ where: { id } });
+    const data = normalizeTaxRuleInput(
+      {
+        scope: input.scope ?? existing.scope,
+        serviceType: input.serviceType === undefined ? existing.serviceType : input.serviceType,
+        minGrossAmount:
+          input.minGrossAmount === undefined ? existing.minGrossAmount : input.minGrossAmount,
+        maxGrossAmount:
+          input.maxGrossAmount === undefined ? existing.maxGrossAmount : input.maxGrossAmount,
+        rateBps: input.rateBps ?? existing.rateBps,
+        fixedAmount: input.fixedAmount ?? existing.fixedAmount,
+        active: input.active ?? existing.active,
+      },
+      false,
+    );
+    const rule = await this.prisma.taxRule.update({
+      where: { id },
+      data,
+    });
+    await this.writeAudit(actorId, 'tax_rule.update', `tax_rule:${rule.id}`, {
+      policyVersionId: rule.policyVersionId,
+      scope: rule.scope,
+      rateBps: rule.rateBps,
+      active: rule.active,
     });
     return rule;
   }
@@ -806,4 +843,59 @@ function sha256(value: string) {
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function normalizeTaxRuleInput(
+  input: {
+    scope?: TaxRuleScope;
+    serviceType?: string | null;
+    minGrossAmount?: number | null;
+    maxGrossAmount?: number | null;
+    rateBps?: number;
+    fixedAmount?: number;
+    active?: boolean;
+  },
+  isCreate: boolean,
+) {
+  const scope = input.scope ?? TaxRuleScope.DEFAULT;
+  const rateBps = input.rateBps ?? 0;
+  const fixedAmount = input.fixedAmount ?? 0;
+  const minGrossAmount = input.minGrossAmount ?? null;
+  const maxGrossAmount = input.maxGrossAmount ?? null;
+  const serviceType = normalizeString(input.serviceType);
+
+  if (!Object.values(TaxRuleScope).includes(scope)) {
+    throw new BadRequestException('Invalid tax rule scope');
+  }
+  if (!Number.isInteger(rateBps) || rateBps < 0 || rateBps > 10000) {
+    throw new BadRequestException('rateBps must be an integer between 0 and 10000');
+  }
+  if (!Number.isInteger(fixedAmount) || fixedAmount < 0) {
+    throw new BadRequestException('fixedAmount must be a non-negative integer');
+  }
+  if (minGrossAmount !== null && (!Number.isInteger(minGrossAmount) || minGrossAmount < 0)) {
+    throw new BadRequestException('minGrossAmount must be a non-negative integer');
+  }
+  if (maxGrossAmount !== null && (!Number.isInteger(maxGrossAmount) || maxGrossAmount < 0)) {
+    throw new BadRequestException('maxGrossAmount must be a non-negative integer');
+  }
+  if (minGrossAmount !== null && maxGrossAmount !== null && minGrossAmount > maxGrossAmount) {
+    throw new BadRequestException('minGrossAmount cannot be greater than maxGrossAmount');
+  }
+  if (scope === TaxRuleScope.SERVICE_TYPE && !serviceType) {
+    throw new BadRequestException('SERVICE_TYPE tax rules require serviceType');
+  }
+  if (scope === TaxRuleScope.AMOUNT_BAND && minGrossAmount === null && maxGrossAmount === null) {
+    throw new BadRequestException('AMOUNT_BAND tax rules require minGrossAmount or maxGrossAmount');
+  }
+
+  return {
+    scope,
+    serviceType: scope === TaxRuleScope.SERVICE_TYPE ? serviceType : null,
+    minGrossAmount: scope === TaxRuleScope.AMOUNT_BAND ? minGrossAmount : null,
+    maxGrossAmount: scope === TaxRuleScope.AMOUNT_BAND ? maxGrossAmount : null,
+    rateBps,
+    fixedAmount,
+    active: input.active ?? (isCreate ? true : undefined),
+  };
 }

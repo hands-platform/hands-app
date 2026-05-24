@@ -163,6 +163,25 @@ export class ProviderOnboardingController {
     return this.onboarding.createTaxRule(user.id, policyVersionId, body);
   }
 
+  @Patch('admin/tax-rules/:id')
+  @Roles(Role.ADMIN)
+  updateTaxRule(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      scope?: TaxRuleScope;
+      serviceType?: string | null;
+      minGrossAmount?: number | null;
+      maxGrossAmount?: number | null;
+      rateBps?: number;
+      fixedAmount?: number;
+      active?: boolean;
+    },
+  ) {
+    return this.onboarding.updateTaxRule(user.id, id, body);
+  }
+
   @Post('admin/providers/:id/kyc/approve')
   @Roles(Role.ADMIN)
   approveKyc(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {

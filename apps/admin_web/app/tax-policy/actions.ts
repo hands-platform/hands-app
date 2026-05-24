@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { AdminTaxPolicyVersion, adminPatch, adminPost } from '../../lib/admin-api';
+import { AdminTaxPolicyVersion, AdminTaxRule, adminPatch, adminPost } from '../../lib/admin-api';
 
 export async function createTaxPolicyVersion(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
@@ -79,6 +79,34 @@ export async function createTaxRule(formData: FormData) {
       rateBps,
       fixedAmount,
       active: true,
+    },
+    null,
+  );
+
+  revalidatePath('/tax-policy');
+  revalidatePath('/audit-log');
+}
+
+export async function updateTaxRule(formData: FormData) {
+  const ruleId = String(formData.get('ruleId'));
+  const scope = String(formData.get('scope') || 'DEFAULT');
+  const serviceType = String(formData.get('serviceType') || '').trim();
+  const minGrossAmount = parseInteger(formData.get('minGrossAmount'));
+  const maxGrossAmount = parseInteger(formData.get('maxGrossAmount'));
+  const rateBps = parseInteger(formData.get('rateBps')) ?? 0;
+  const fixedAmount = parseInteger(formData.get('fixedAmount')) ?? 0;
+  const active = formData.get('active') === 'on';
+
+  await adminPatch<AdminTaxRule | null>(
+    `/admin/tax-rules/${ruleId}`,
+    {
+      scope,
+      serviceType: serviceType || null,
+      minGrossAmount,
+      maxGrossAmount,
+      rateBps,
+      fixedAmount,
+      active,
     },
     null,
   );
