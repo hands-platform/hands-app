@@ -123,6 +123,34 @@ export type AdminProvider = {
   };
 };
 
+const PROVIDER_DOCUMENT_LABELS: Record<string, string> = {
+  CCCD_FRONT: 'CCCD front side',
+  CCCD_BACK: 'CCCD back side',
+  SELFIE: 'Selfie verification',
+  PROFILE_PHOTO: 'Profile photo',
+  WORK_PHOTO: 'Work photo',
+  BANK_QR: 'Bank QR image',
+};
+
+const PROVIDER_DOCUMENT_REVIEW_HINTS: Record<string, string> = {
+  CCCD_FRONT: 'Confirm the number and full name are readable.',
+  CCCD_BACK: 'Check corners, expiry details, and glare.',
+  SELFIE: 'Face should match the submitted ID document.',
+  PROFILE_PHOTO: 'Public profile photo candidate after approval.',
+  WORK_PHOTO: 'Optional evidence for experience or trust review.',
+  BANK_QR: 'Optional payout QR evidence, not a replacement for bank approval.',
+};
+
+export function providerDocumentLabel(type?: string | null) {
+  if (!type) return 'Unknown document';
+  return PROVIDER_DOCUMENT_LABELS[type] ?? type;
+}
+
+export function providerDocumentReviewHint(type?: string | null) {
+  if (!type) return 'Review the uploaded private file before approval.';
+  return PROVIDER_DOCUMENT_REVIEW_HINTS[type] ?? 'Review the uploaded private file before approval.';
+}
+
 export type AdminBooking = {
   id: string;
   status: string;

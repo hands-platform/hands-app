@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { AdminProvider, adminGet } from '../../../lib/admin-api';
+import {
+  AdminProvider,
+  adminGet,
+  providerDocumentLabel,
+  providerDocumentReviewHint,
+} from '../../../lib/admin-api';
 import {
   approveProvider,
   approveProviderBankAccount,
@@ -224,11 +229,12 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             provider.documents?.map((document) => (
               <div className="provider-file-row" key={document.id}>
                 <div className="participant-list" style={{ marginBottom: 6 }}>
-                  <span className="pill pill-info">{document.type}</span>
+                  <span className="pill pill-info">{providerDocumentLabel(document.type)}</span>
                   <span className={`pill ${document.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
                     {document.status}
                   </span>
                 </div>
+                <p className="muted">{providerDocumentReviewHint(document.type)}</p>
                 <p className="muted">
                   {document.fileAsset?.contentType ?? 'Unknown type'}
                   {document.fileAsset?.uploadedAt ? ` / ${formatDate(document.fileAsset.uploadedAt)}` : ''}
@@ -463,7 +469,7 @@ function buildReviewChecklist(provider: ProviderDetail) {
       detail:
         missingDocuments.length === 0
           ? 'CCCD front, CCCD back, and selfie are approved.'
-          : `Missing or unapproved: ${missingDocuments.join(', ')}.`,
+          : `Missing or unapproved: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`,
     },
     {
       label: 'Bank account',

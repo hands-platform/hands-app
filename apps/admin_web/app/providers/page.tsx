@@ -1,5 +1,10 @@
 import Link from 'next/link';
-import { AdminProvider, adminGet } from '../../lib/admin-api';
+import {
+  AdminProvider,
+  adminGet,
+  providerDocumentLabel,
+  providerDocumentReviewHint,
+} from '../../lib/admin-api';
 import {
   approveProvider,
   approveProviderBankAccount,
@@ -398,11 +403,14 @@ function ProviderOnboardingCell({
           {documents.map((document) => (
             <div key={document.id} className="provider-file-row">
               <div className="participant-list" style={{ marginBottom: 6 }}>
-                <span className="pill pill-info">{document.type}</span>
+                <span className="pill pill-info">{providerDocumentLabel(document.type)}</span>
                 <span className={`pill ${document.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
                   {document.status}
                 </span>
               </div>
+              <p className="muted" style={{ marginBottom: 6 }}>
+                {providerDocumentReviewHint(document.type)}
+              </p>
               <p className="muted" style={{ marginBottom: 6 }}>
                 {document.fileAsset?.contentType ?? 'unknown file'}
                 {document.fileAsset?.sizeBytes ? ` / ${formatBytes(document.fileAsset.sizeBytes)}` : ''}
@@ -443,7 +451,7 @@ function ProviderOnboardingCell({
         </div>
       ) : (
         <p className="muted" style={{ marginBottom: 8 }}>
-          No typed KYC documents yet.
+          No typed provider documents yet.
         </p>
       )}
       <div className="actions">
