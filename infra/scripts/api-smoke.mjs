@@ -115,18 +115,43 @@ await patchJson('/notifications/device-token/register', backupProviderAuth.acces
   platform: 'android',
 });
 
+const providerSmokeDeviceId = `smoke-provider-device-${Date.now()}`;
 const providerDeviceSession = await postJson('/provider/device-session', providerAuth.accessToken, {
-  deviceId: 'smoke-provider-device',
+  deviceId: providerSmokeDeviceId,
   platform: 'android',
   appVersion: 'smoke-test',
 });
 if (
   providerDeviceSession.blocked !== false ||
-  providerDeviceSession.device?.deviceId !== 'smoke-provider-device' ||
-  providerDeviceSession.session?.deviceId !== 'smoke-provider-device'
+  providerDeviceSession.device?.deviceId !== providerSmokeDeviceId ||
+  providerDeviceSession.session?.deviceId !== providerSmokeDeviceId
 ) {
   throw new Error(
     `Provider device session was not recorded correctly: ${JSON.stringify(providerDeviceSession)}`,
+  );
+}
+await postJson(`/admin/provider-devices/${providerDeviceSession.device.id}/block`, adminAuth.accessToken, {
+  reason: 'Smoke test duplicate-device block',
+});
+const blockedProviderDeviceSession = await postJson('/provider/device-session', providerAuth.accessToken, {
+  deviceId: providerSmokeDeviceId,
+  platform: 'android',
+  appVersion: 'smoke-test',
+});
+if (blockedProviderDeviceSession.blocked !== true || blockedProviderDeviceSession.ok !== false) {
+  throw new Error(
+    `Blocked provider device was not rejected by device-session: ${JSON.stringify(blockedProviderDeviceSession)}`,
+  );
+}
+await postJson(`/admin/provider-devices/${providerDeviceSession.device.id}/unblock`, adminAuth.accessToken);
+const unblockedProviderDeviceSession = await postJson('/provider/device-session', providerAuth.accessToken, {
+  deviceId: providerSmokeDeviceId,
+  platform: 'android',
+  appVersion: 'smoke-test',
+});
+if (unblockedProviderDeviceSession.blocked !== false || unblockedProviderDeviceSession.ok !== true) {
+  throw new Error(
+    `Unblocked provider device still appears blocked: ${JSON.stringify(unblockedProviderDeviceSession)}`,
   );
 }
 
@@ -697,6 +722,8 @@ console.log({
   adminProviderPushDeviceCount: adminProvider?.user?.pushDevices?.length ?? 0,
   adminBackupProviderPushDeviceCount: adminBackupProvider?.user?.pushDevices?.length ?? 0,
   providerDeviceSessionId: providerDeviceSession.session?.id ?? null,
+  providerDeviceBlockRoundTrip:
+    blockedProviderDeviceSession.blocked === true && unblockedProviderDeviceSession.blocked === false,
   providerSupabaseRoleSyncStatus: providerSupabaseRoleSync.status,
   hybridPreferredProviderId: adminHybridBooking?.preferredProvider?.id ?? null,
   hybridSelectedProviderId: adminHybridBooking?.selectedProvider?.id ?? null,
