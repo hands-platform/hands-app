@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 const requiredProviderDocumentTypes = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
-const optionalProviderDocumentTypes = ['WORK_PHOTO', 'BANK_QR'];
+const optionalProviderDocumentTypes = [
+  'PROFILE_PHOTO',
+  'WORK_PHOTO',
+  'BANK_QR'
+];
 const providerDocumentTypes = [
   ...requiredProviderDocumentTypes,
   ...optionalProviderDocumentTypes,

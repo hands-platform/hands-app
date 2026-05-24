@@ -59,6 +59,11 @@ void main() {
       providerDocumentTypeDescription('SELFIE'),
       contains('match the ID document'),
     );
+    expect(optionalProviderDocumentTypes, [
+      'PROFILE_PHOTO',
+      'WORK_PHOTO',
+      'BANK_QR',
+    ]);
     expect(providerDocumentTypeStep('BANK_QR'), 'Optional');
   });
 
