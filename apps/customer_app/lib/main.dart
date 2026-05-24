@@ -922,6 +922,9 @@ class ProviderDetailPage extends StatelessWidget {
           final specialties = asStringList(detail['specialties']);
           final languages = asStringList(detail['languages']);
           final serviceStyle = detail['serviceStyle']?.toString().trim() ?? '';
+          final galleryImageUrls = asStringList(detail['galleryImageUrls']);
+          final photoCount =
+              galleryImageUrls.isEmpty ? 1 : galleryImageUrls.length;
 
           return CustomScrollView(
             slivers: [
@@ -976,8 +979,8 @@ class ProviderDetailPage extends StatelessWidget {
                             color: Colors.black54,
                             borderRadius: BorderRadius.circular(999),
                           ),
-                          child: const Text('1 / 2',
-                              style: TextStyle(
+                          child: Text('1 / $photoCount',
+                              style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w700)),
                         ),
@@ -1129,6 +1132,31 @@ class ProviderDetailPage extends StatelessWidget {
                               for (final specialty in specialties.take(8))
                                 ServiceTag(label: specialty),
                             ],
+                          ),
+                        ),
+                      ],
+                      if (galleryImageUrls.isNotEmpty) ...[
+                        const SizedBox(height: 24),
+                        const SectionHeader(
+                          title: 'Photos',
+                          subtitle:
+                              'Public profile and work photos from this therapist.',
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 112,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: galleryImageUrls.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(width: 12),
+                            itemBuilder: (context, index) {
+                              return ProviderThumbnail(
+                                name: displayName,
+                                size: 112,
+                                imageUrl: galleryImageUrls[index],
+                              );
+                            },
                           ),
                         ),
                       ],

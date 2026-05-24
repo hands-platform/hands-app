@@ -2518,6 +2518,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final List<String> _uploadedFileIds = [];
   final Map<String, String> _uploadedOnboardingDocumentIds = {};
   bool _isUploadingProfileImage = false;
+  bool _isUploadingGalleryImage = false;
   bool _isUploading = false;
   bool _isSubmitting = false;
   bool _isSavingOnboarding = false;
@@ -2784,6 +2785,46 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     }
   }
 
+  Future<void> _pickAndUploadGalleryImage() async {
+    final image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 82,
+      maxWidth: 1800,
+    );
+    if (image == null) {
+      return;
+    }
+
+    setState(() {
+      _isUploadingGalleryImage = true;
+    });
+    try {
+      final bytes = await image.readAsBytes();
+      final contentType =
+          image.mimeType ?? guessImageContentTypeFromName(image.name);
+      await ref
+          .read(providerRepositoryProvider)
+          .uploadGalleryImage(bytes: bytes, contentType: contentType);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Work photo uploaded: ${image.name}')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Work photo upload failed: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingGalleryImage = false;
+        });
+      }
+    }
+  }
+
   Future<void> _submitVerification(List<dynamic> existingFiles) async {
     final uploadedExistingIds = existingFiles
         .whereType<Map>()
@@ -2881,6 +2922,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               label: Text(_isUploadingProfileImage
                   ? 'Uploading profile image...'
                   : 'Upload public profile image'),
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonalIcon(
+              onPressed:
+                  _isUploadingGalleryImage ? null : _pickAndUploadGalleryImage,
+              icon: const Icon(Icons.photo_library_outlined),
+              label: Text(_isUploadingGalleryImage
+                  ? 'Uploading work photo...'
+                  : 'Upload public work photo'),
             ),
             const SizedBox(height: 12),
             const ProviderServicePricingCard(),

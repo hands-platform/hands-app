@@ -944,6 +944,36 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card">
+          <h2>Public profile media</h2>
+          {(provider.user?.fileAssets ?? []).length ? (
+            provider.user?.fileAssets?.map((file) => (
+              <div className="provider-file-row" key={file.id}>
+                <div className="participant-list" style={{ marginBottom: 6 }}>
+                  <span className="pill pill-info">{providerPublicMediaLabel(file.purpose)}</span>
+                  <span className="pill pill-success">{file.uploadStatus ?? 'UPLOADED'}</span>
+                </div>
+                <p className="muted">
+                  {file.contentType}
+                  {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
+                  {file.uploadedAt ? ` / uploaded ${formatDate(file.uploadedAt)}` : ''}
+                </p>
+                <p className="muted">
+                  {file.url ? (
+                    <a className="text-link" href={file.url} target="_blank" rel="noreferrer">
+                      {file.key}
+                    </a>
+                  ) : (
+                    file.key
+                  )}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="muted">No public profile image or work photos uploaded yet.</p>
+          )}
+        </div>
+
+        <div className="card">
           <h2>Bank and payout gate</h2>
           {primaryBank ? (
             <>
@@ -2032,6 +2062,18 @@ function formatRating(provider: ProviderDetail) {
   const numericRating = typeof rating === 'number' ? rating : Number(rating);
   const formattedRating = Number.isFinite(numericRating) ? numericRating.toFixed(1) : String(rating);
   return `${formattedRating} (${provider.reviewCount ?? 0} reviews)`;
+}
+
+function providerPublicMediaLabel(purpose?: string | null) {
+  if (purpose === 'PROFILE_IMAGE') return 'Profile image';
+  if (purpose === 'PROVIDER_GALLERY') return 'Work gallery';
+  return purpose ?? 'Public media';
+}
+
+function formatBytes(value: number) {
+  if (value < 1024) return `${value} B`;
+  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function locationAgeMinutes(value?: string | null) {

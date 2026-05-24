@@ -103,6 +103,16 @@ class ProviderRepository {
     );
   }
 
+  Future<Map<String, dynamic>> uploadGalleryImage({
+    required List<int> bytes,
+    required String contentType,
+  }) async {
+    return _profileRepository.uploadGalleryImage(
+      bytes: bytes,
+      contentType: contentType,
+    );
+  }
+
   Future<List<dynamic>> openBookings() async {
     return _bookingRepository.openBookings();
   }

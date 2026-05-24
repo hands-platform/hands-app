@@ -13,4 +13,9 @@ abstract class ProviderProfileRepository {
     required List<int> bytes,
     required String contentType,
   });
+
+  Future<Map<String, dynamic>> uploadGalleryImage({
+    required List<int> bytes,
+    required String contentType,
+  });
 }

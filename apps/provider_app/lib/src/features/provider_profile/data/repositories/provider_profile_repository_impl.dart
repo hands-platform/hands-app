@@ -91,10 +91,37 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     required List<int> bytes,
     required String contentType,
   }) async {
+    return _uploadProviderMedia(
+      bytes: bytes,
+      contentType: contentType,
+      purpose: 'profile-image',
+      errorLabel: 'Profile image',
+    );
+  }
+
+  @override
+  Future<Map<String, dynamic>> uploadGalleryImage({
+    required List<int> bytes,
+    required String contentType,
+  }) async {
+    return _uploadProviderMedia(
+      bytes: bytes,
+      contentType: contentType,
+      purpose: 'provider-gallery',
+      errorLabel: 'Gallery image',
+    );
+  }
+
+  Future<Map<String, dynamic>> _uploadProviderMedia({
+    required List<int> bytes,
+    required String contentType,
+    required String purpose,
+    required String errorLabel,
+  }) async {
     final uploadContract = await _api.postJson('/files/presign', {
       'contentType': contentType,
       'visibility': 'PUBLIC',
-      'purpose': 'profile-image',
+      'purpose': purpose,
     });
     final contract = _asMap(uploadContract);
     final file = _asMap(contract?['file']);
@@ -105,7 +132,7 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     final headers = _stringHeaders(upload?['headers']);
 
     if (fileId == null || fileId.isEmpty) {
-      throw StateError('Profile image upload did not return a file id.');
+      throw StateError('$errorLabel upload did not return a file id.');
     }
     if (uploadUrl == null || uploadUrl.isEmpty || uploadUrl.startsWith('/')) {
       throw StateError(
@@ -121,7 +148,7 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
       body: bytes,
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw StateError('Profile image upload failed (${response.statusCode}).');
+      throw StateError('$errorLabel upload failed (${response.statusCode}).');
     }
 
     final completed = await _api.postJson('/files/$fileId/complete', {

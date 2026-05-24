@@ -426,6 +426,22 @@ if (
     )}`,
   );
 }
+const publicProfileImageUpload = await postJson('/files/presign', providerAuth.accessToken, {
+  contentType: 'image/jpeg',
+  visibility: 'PUBLIC',
+  purpose: 'profile-image',
+});
+await postJson(`/files/${publicProfileImageUpload.file.id}/complete`, providerAuth.accessToken, {
+  sizeBytes: 4096,
+});
+const publicGalleryImageUpload = await postJson('/files/presign', providerAuth.accessToken, {
+  contentType: 'image/jpeg',
+  visibility: 'PUBLIC',
+  purpose: 'provider-gallery',
+});
+await postJson(`/files/${publicGalleryImageUpload.file.id}/complete`, providerAuth.accessToken, {
+  sizeBytes: 8192,
+});
 await expectRequestFailure(
   'KYC submit without required documents',
   () =>
@@ -615,6 +631,26 @@ const nearbyProviders = await getJson(
 const nearbyProvider = nearbyProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
 if (!nearbyProvider?.currentLocationUpdatedAt || nearbyProvider.isRecentLocation !== true) {
   throw new Error(`Nearby provider payload is missing freshness metadata: ${JSON.stringify(nearbyProvider)}`);
+}
+if (
+  !nearbyProvider.profileImageUrl ||
+  !Array.isArray(nearbyProvider.galleryImageUrls) ||
+  nearbyProvider.galleryImageUrls.length < 2
+) {
+  throw new Error(`Nearby provider payload is missing public media: ${JSON.stringify(nearbyProvider)}`);
+}
+const customerProviderDetail = await getJson(
+  `/customer/providers/${providerAuth.user.providerProfile.id}`,
+  customerAuth.accessToken,
+);
+if (
+  !customerProviderDetail.profileImageUrl ||
+  !Array.isArray(customerProviderDetail.galleryImageUrls) ||
+  customerProviderDetail.galleryImageUrls.length < 2
+) {
+  throw new Error(
+    `Customer provider detail payload is missing public media: ${JSON.stringify(customerProviderDetail)}`,
+  );
 }
 
 await expectRequestFailure(
@@ -1055,6 +1091,8 @@ console.log({
   savedSelectedLocationId: savedSelectedLocation.id,
   nearbyProviderDistanceMeters: nearbyProvider.distanceMeters,
   nearbyProviderRecent: nearbyProvider.isRecentLocation,
+  providerProfileImageReady: Boolean(customerProviderDetail.profileImageUrl),
+  providerGalleryImageCount: customerProviderDetail.galleryImageUrls.length,
   momoPaymentStatus: momoPayment?.status ?? null,
   couponId: coupon.id,
   couponCode: coupon.code,

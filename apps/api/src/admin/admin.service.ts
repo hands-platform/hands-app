@@ -2,6 +2,9 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
+  FilePurpose,
+  FileUploadStatus,
+  FileVisibility,
   PayoutBatchStatus,
   Prisma,
   ProviderReportSeverity,
@@ -52,6 +55,15 @@ export class AdminService {
                 },
               },
             },
+            fileAssets: {
+              where: {
+                purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+                visibility: FileVisibility.PUBLIC,
+                uploadStatus: FileUploadStatus.UPLOADED,
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
+            },
           },
         },
         verification: { include: { files: true } },
@@ -83,6 +95,15 @@ export class AdminService {
                   take: 5,
                 },
               },
+            },
+            fileAssets: {
+              where: {
+                purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+                visibility: FileVisibility.PUBLIC,
+                uploadStatus: FileUploadStatus.UPLOADED,
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 8,
             },
           },
         },

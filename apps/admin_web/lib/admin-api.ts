@@ -149,6 +149,18 @@ export type AdminProvider = {
     fullName?: string | null;
     phone?: string;
     supabaseUserId?: string | null;
+    fileAssets?: Array<{
+      id: string;
+      key: string;
+      url?: string | null;
+      contentType: string;
+      purpose: string;
+      visibility: string;
+      uploadStatus?: string;
+      uploadedAt?: string | null;
+      sizeBytes?: number | null;
+      createdAt?: string;
+    }>;
     pushDevices?: Array<{
       id: string;
       platform: string;
