@@ -1,4 +1,5 @@
 import { AdminNotification, adminGet } from '../../lib/admin-api';
+import Link from 'next/link';
 import { retryNotification } from './actions';
 
 type NotificationsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -12,6 +13,7 @@ export default async function NotificationsPage({
   const allNotifications = sortNotifications(await adminGet<AdminNotification[]>('/admin/notifications', []));
   const notifications = filterNotifications(allNotifications, filters);
   const summary = buildSummary(allNotifications);
+  const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
 
   return (
     <>
@@ -59,14 +61,31 @@ export default async function NotificationsPage({
               <p className="muted">
                 Open each queue directly from the command dashboard without hunting through rows.
               </p>
+              {activeFilter?.review ? (
+                <p className="muted">
+                  Active queue: <strong>{activeFilter.label}</strong> -{' '}
+                  {notificationFilterDescription(activeFilter.review)}
+                </p>
+              ) : null}
             </div>
-            {filters.review ? <span className="pill pill-info">Filtered: {filters.review}</span> : null}
+            <span className={`pill ${filters.review ? 'pill-warn' : 'pill-success'}`}>
+              Showing {notifications.length} of {allNotifications.length}
+            </span>
           </div>
           <div className="participant-list">
+            {filters.review ? (
+              <Link className="pill pill-success" href="/notifications">
+                Clear filter
+              </Link>
+            ) : null}
             {notificationFilterLinks.map((link) => (
-              <a key={link.href} className="pill pill-neutral" href={link.href}>
+              <Link
+                key={link.href}
+                className={`pill ${filters.review === link.review ? 'pill-warn' : 'pill-neutral'}`}
+                href={link.href}
+              >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
         </div>
@@ -146,7 +165,7 @@ export default async function NotificationsPage({
             ))}
             {notifications.length === 0 && (
               <tr>
-                <td colSpan={7}>No notifications loaded.</td>
+                <td colSpan={7}>{emptyNotificationMessage(filters.review)}</td>
               </tr>
             )}
           </tbody>
@@ -192,13 +211,17 @@ function buildSummary(notifications: AdminNotification[]) {
 }
 
 const notificationFilterLinks = [
-  { label: 'All notifications', href: '/notifications' },
-  { label: 'Failed sends', href: '/notifications?review=failed' },
-  { label: 'Disabled devices', href: '/notifications?review=disabled-device' },
-  { label: 'Needs retry', href: '/notifications?review=needs-retry' },
-  { label: 'Skipped', href: '/notifications?review=skipped' },
-  { label: 'Sent', href: '/notifications?review=sent' },
-  { label: 'Pending', href: '/notifications?review=pending' },
+  { label: 'All notifications', href: '/notifications', review: '' },
+  { label: 'Failed sends', href: '/notifications?review=failed', review: 'failed' },
+  {
+    label: 'Disabled devices',
+    href: '/notifications?review=disabled-device',
+    review: 'disabled-device',
+  },
+  { label: 'Needs retry', href: '/notifications?review=needs-retry', review: 'needs-retry' },
+  { label: 'Skipped', href: '/notifications?review=skipped', review: 'skipped' },
+  { label: 'Sent', href: '/notifications?review=sent', review: 'sent' },
+  { label: 'Pending', href: '/notifications?review=pending', review: 'pending' },
 ];
 
 function buildNotificationFilters(params: Record<string, string | string[] | undefined>) {
@@ -242,6 +265,35 @@ function notificationMatchesReview(notification: AdminNotification, review: stri
     return deliveries.length === 0;
   }
   return true;
+}
+
+function notificationFilterDescription(review: string) {
+  if (review === 'failed') {
+    return 'delivery attempts that returned a push provider failure.';
+  }
+  if (review === 'disabled-device') {
+    return 'users or providers with disabled push devices.';
+  }
+  if (review === 'needs-retry') {
+    return 'notifications whose delivery path should be reviewed before retry.';
+  }
+  if (review === 'skipped') {
+    return 'alerts that were intentionally skipped or had no available send path.';
+  }
+  if (review === 'sent') {
+    return 'successfully delivered push notifications.';
+  }
+  if (review === 'pending') {
+    return 'notifications without a captured delivery attempt yet.';
+  }
+  return 'all notification records.';
+}
+
+function emptyNotificationMessage(review: string) {
+  if (!review) {
+    return 'No notifications loaded.';
+  }
+  return `No notifications currently match this queue. ${notificationFilterDescription(review)}`;
 }
 
 function countDeliveries(notifications: AdminNotification[], status: string) {

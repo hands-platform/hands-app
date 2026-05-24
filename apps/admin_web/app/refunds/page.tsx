@@ -7,6 +7,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
   const filters = buildRefundFilters(searchParams ? await searchParams : {});
   const allRefunds = sortRefunds(await adminGet<AdminRefund[]>('/admin/refunds', []));
   const refunds = filterRefunds(allRefunds, filters);
+  const activeFilter = refundFilterLinks().find((item) => item.review === filters.review);
 
   return (
     <>
@@ -42,12 +43,23 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
             <p className="muted">
               Use these shortcuts from the dashboard to focus on the refund queue state.
             </p>
+            {activeFilter?.review ? (
+              <p className="muted">
+                Active queue: <strong>{activeFilter.label}</strong> -{' '}
+                {refundFilterDescription(activeFilter.review)}
+              </p>
+            ) : null}
           </div>
           <span className={`pill ${filters.review ? 'pill-warn' : 'pill-success'}`}>
             Showing {refunds.length} of {allRefunds.length}
           </span>
         </div>
         <div className="participant-list">
+          {filters.review ? (
+            <Link className="pill pill-success" href="/refunds">
+              Clear filter
+            </Link>
+          ) : null}
           {refundFilterLinks().map((item) => (
             <Link
               className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
@@ -112,7 +124,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
             ))}
             {refunds.length === 0 && (
               <tr>
-                <td colSpan={8}>No refunds loaded.</td>
+                <td colSpan={8}>{emptyRefundMessage(filters.review)}</td>
               </tr>
             )}
           </tbody>
@@ -172,6 +184,32 @@ function refundFilterLinks() {
     { label: 'Refunded bookings', href: '/refunds?review=refunded-booking', review: 'refunded-booking' },
     { label: 'Completed', href: '/refunds?review=completed', review: 'completed' },
   ];
+}
+
+function refundFilterDescription(review: string) {
+  if (review === 'open') {
+    return 'refund cases that are not completed yet.';
+  }
+  if (review === 'requested') {
+    return 'customer refund requests waiting for operator processing.';
+  }
+  if (review === 'needs-update') {
+    return 'requested refunds whose payment record is not marked refunded yet.';
+  }
+  if (review === 'refunded-booking') {
+    return 'bookings already marked as refunded, ready for ledger confirmation.';
+  }
+  if (review === 'completed') {
+    return 'closed refund cases.';
+  }
+  return 'all refund records.';
+}
+
+function emptyRefundMessage(review: string) {
+  if (!review) {
+    return 'No refunds loaded.';
+  }
+  return `No refunds currently match this queue. ${refundFilterDescription(review)}`;
 }
 
 function refundOpsSignal(refund: AdminRefund) {

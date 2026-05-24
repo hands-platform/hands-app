@@ -8,6 +8,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
   const filters = buildPaymentFilters(searchParams ? await searchParams : {});
   const allPayments = sortPayments(await adminGet<AdminPayment[]>('/admin/payments', []));
   const payments = filterPayments(allPayments, filters);
+  const activeFilter = paymentFilterLinks().find((item) => item.review === filters.review);
 
   return (
     <>
@@ -50,12 +51,23 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
             <p className="muted">
               Jump straight from the dashboard lane into the payment subset that needs operator review.
             </p>
+            {activeFilter?.review ? (
+              <p className="muted">
+                Active queue: <strong>{activeFilter.label}</strong> -{' '}
+                {paymentFilterDescription(activeFilter.review)}
+              </p>
+            ) : null}
           </div>
           <span className={`pill ${filters.review ? 'pill-warn' : 'pill-success'}`}>
             Showing {payments.length} of {allPayments.length}
           </span>
         </div>
         <div className="participant-list">
+          {filters.review ? (
+            <Link className="pill pill-success" href="/payments">
+              Clear filter
+            </Link>
+          ) : null}
           {paymentFilterLinks().map((item) => (
             <Link
               className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
@@ -157,7 +169,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
             ))}
             {payments.length === 0 && (
               <tr>
-                <td colSpan={8}>No payments loaded.</td>
+                <td colSpan={8}>{emptyPaymentMessage(filters.review)}</td>
               </tr>
             )}
           </tbody>
@@ -229,6 +241,35 @@ function paymentFilterLinks() {
     { label: 'Needs action', href: '/payments?review=needs-action', review: 'needs-action' },
     { label: 'Refunded', href: '/payments?review=refunded', review: 'refunded' },
   ];
+}
+
+function paymentFilterDescription(review: string) {
+  if (review === 'capture') {
+    return 'authorized payments tied to completed services, ready for capture review.';
+  }
+  if (review === 'missing-ref') {
+    return 'authorized payments that do not yet have a gateway/provider reference.';
+  }
+  if (review === 'authorized') {
+    return 'active authorization holds that still need service or payment resolution.';
+  }
+  if (review === 'cash') {
+    return 'cash bookings waiting for collection confirmation.';
+  }
+  if (review === 'needs-action') {
+    return 'payments that are not settled, released, or refunded yet.';
+  }
+  if (review === 'refunded') {
+    return 'payments already moved into the refund path.';
+  }
+  return 'all payment records.';
+}
+
+function emptyPaymentMessage(review: string) {
+  if (!review) {
+    return 'No payments loaded.';
+  }
+  return `No payments currently match this queue. ${paymentFilterDescription(review)}`;
 }
 
 function paymentPriority(payment: AdminPayment) {
