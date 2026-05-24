@@ -24,6 +24,7 @@ type ProviderFilters = {
   kyc: string;
   location: string;
   readiness: string;
+  review: string;
 };
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -50,6 +51,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     ),
   );
   const summary = buildProviderSummary(providers);
+  const reviewQueue = buildProviderReviewQueue(providers);
 
   return (
     <>
@@ -111,6 +113,18 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="push-missing">Push missing</option>
             </select>
           </label>
+          <label>
+            Review queue
+            <select name="review" defaultValue={filters.review}>
+              <option value="">All</option>
+              <option value="kyc">KYC updates</option>
+              <option value="documents">Document review</option>
+              <option value="bank">Bank payout review</option>
+              <option value="tax">Tax profile review</option>
+              <option value="location">Location freshness</option>
+              <option value="push">Push alert readiness</option>
+            </select>
+          </label>
           <div className="actions full-span">
             <button type="submit">Apply filters</button>
             <Link className="text-link" href="/providers">
@@ -130,6 +144,38 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
         ))}
       </div>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Review queue</h2>
+            <p className="muted">
+              Prioritized provider issues for KYC, documents, payout readiness, device alerts, and dispatch
+              location freshness.
+            </p>
+          </div>
+          <span className={`pill ${reviewQueue.totalOpen === 0 ? 'pill-success' : 'pill-warn'}`}>
+            {reviewQueue.totalOpen} open item(s)
+          </span>
+        </div>
+        <div className="setup-stage-list">
+          {reviewQueue.items.map((item) => (
+            <div className="setup-stage-item" key={item.label}>
+              <span>{item.count ? 'CHECK' : 'OK'}</span>
+              <div>
+                <strong>{item.label}</strong>
+                <p className="muted">{item.detail}</p>
+              </div>
+              {item.href ? (
+                <Link className="text-link" href={item.href}>
+                  {item.count}
+                </Link>
+              ) : (
+                <small>{item.count}</small>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
       <div className="card">
         <table className="table">
           <thead>
@@ -187,6 +233,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                       {provider.user?.supabaseUserId ? 'Supabase linked' : 'Nest auth only'}
                     </span>
                   </div>
+                  <ProviderIssuePills provider={provider} />
                   <p className="muted">{providerActionHint(provider)}</p>
                 </td>
                 <td>
@@ -475,6 +522,28 @@ function hasHealthyPush(provider: AdminProvider) {
   return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
 }
 
+function ProviderIssuePills({ provider }: { provider: AdminProvider }) {
+  const issues = providerReviewIssues(provider);
+  if (!issues.length) {
+    return (
+      <div className="participant-list" style={{ marginBottom: 8 }}>
+        <span className="pill pill-success">No blocking issues</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="participant-list" style={{ marginBottom: 8 }}>
+      {issues.slice(0, 5).map((issue) => (
+        <span className={`pill ${issue.severity === 'high' ? 'pill-danger' : 'pill-warn'}`} key={issue.label}>
+          {issue.label}
+        </span>
+      ))}
+      {issues.length > 5 ? <span className="pill pill-info">+{issues.length - 5} more</span> : null}
+    </div>
+  );
+}
+
 function ProviderLocationCell({ provider }: { provider: AdminProvider }) {
   const status = providerLocationStatus(provider);
   const hasCoordinate = hasProviderCoordinate(provider);
@@ -555,6 +624,123 @@ function buildProviderSummary(providers: AdminProvider[]) {
   ] as const;
 }
 
+function buildProviderReviewQueue(providers: AdminProvider[]) {
+  const kycNeedsReview = providers.filter((provider) =>
+    ['PENDING', 'REJECTED'].includes(provider.kyc?.status ?? 'MISSING'),
+  ).length;
+  const documentNeedsReview = providers.filter((provider) =>
+    (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
+  ).length;
+  const bankNeedsReview = providers.filter((provider) =>
+    (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
+  ).length;
+  const taxNeedsReview = providers.filter((provider) =>
+    ['PENDING_REVIEW', 'REJECTED'].includes(provider.taxProfile?.status ?? 'MISSING'),
+  ).length;
+  const locationNeedsReview = providers.filter((provider) =>
+    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider)),
+  ).length;
+  const pushNeedsReview = providers.filter((provider) => !hasHealthyPush(provider)).length;
+  const readyForDispatch = providers.filter(
+    (provider) =>
+      provider.verification?.status === 'APPROVED' &&
+      provider.status === 'ONLINE_AVAILABLE' &&
+      providerLocationStatus(provider) === 'recent' &&
+      hasHealthyPush(provider),
+  ).length;
+
+  const items = [
+    {
+      label: 'KYC updates',
+      count: kycNeedsReview,
+      href: '/providers?review=kyc',
+      detail: 'Providers with pending or rejected identity verification need admin review or resubmission.',
+    },
+    {
+      label: 'Document review',
+      count: documentNeedsReview,
+      href: '/providers?review=documents',
+      detail: 'Typed CCCD, selfie, or portfolio documents are waiting for approval or rejection handling.',
+    },
+    {
+      label: 'Bank payout review',
+      count: bankNeedsReview,
+      href: '/providers?review=bank',
+      detail: 'Bank accounts must be approved before providers can move toward payout readiness.',
+    },
+    {
+      label: 'Tax profile review',
+      count: taxNeedsReview,
+      href: '/providers?review=tax',
+      detail: 'Freelance tax profiles should be approved only after MST and registered address are checked.',
+    },
+    {
+      label: 'Location freshness',
+      count: locationNeedsReview,
+      href: '/providers?review=location',
+      detail: 'Providers with missing, stale, or expired locations should reopen the Provider app before dispatch.',
+    },
+    {
+      label: 'Push alert readiness',
+      count: pushNeedsReview,
+      href: '/providers?review=push',
+      detail: 'Providers without enabled push devices may miss direct requests and backup matching alerts.',
+    },
+    {
+      label: 'Ready for dispatch',
+      count: readyForDispatch,
+      href: '/providers?readiness=ready',
+      detail: 'Approved, online providers with recent location and push registration.',
+    },
+  ];
+
+  const totalOpen = items
+    .filter((item) => item.label !== 'Ready for dispatch')
+    .reduce((sum, item) => sum + item.count, 0);
+
+  return { items, totalOpen };
+}
+
+function providerReviewIssues(provider: AdminProvider) {
+  const issues: Array<{ label: string; severity: 'high' | 'medium' }> = [];
+  const kycStatus = provider.kyc?.status ?? 'MISSING';
+  const bankStatus = provider.bankAccounts?.[0]?.status ?? 'MISSING';
+  const taxStatus = provider.taxProfile?.status ?? 'MISSING';
+
+  if (provider.verification?.status !== 'APPROVED') {
+    issues.push({ label: 'verification review', severity: 'high' });
+  }
+  if (kycStatus !== 'APPROVED') {
+    issues.push({ label: `KYC ${kycStatus}`, severity: kycStatus === 'REJECTED' ? 'high' : 'medium' });
+  }
+  if ((provider.documents ?? []).some((document) => document.status === 'REJECTED')) {
+    issues.push({ label: 'document rejected', severity: 'high' });
+  } else if ((provider.documents ?? []).some((document) => document.status === 'PENDING_REVIEW')) {
+    issues.push({ label: 'document pending', severity: 'medium' });
+  }
+  if (bankStatus !== 'APPROVED') {
+    issues.push({
+      label: `bank ${bankStatus}`,
+      severity: bankStatus === 'REJECTED' ? 'high' : 'medium',
+    });
+  }
+  if (taxStatus !== 'APPROVED') {
+    issues.push({ label: `tax ${taxStatus}`, severity: taxStatus === 'REJECTED' ? 'high' : 'medium' });
+  }
+  const locationState = providerLocationStatus(provider);
+  if (locationState !== 'recent') {
+    issues.push({ label: `location ${locationState}`, severity: locationState === 'missing' ? 'high' : 'medium' });
+  }
+  if (!hasHealthyPush(provider)) {
+    issues.push({ label: 'push missing', severity: 'medium' });
+  }
+  if (!provider.user?.supabaseUserId) {
+    issues.push({ label: 'Supabase role pending', severity: 'medium' });
+  }
+
+  return issues;
+}
+
 function sortProviders(providers: AdminProvider[]) {
   return [...providers].sort((left, right) => {
     const leftScore = providerPriority(left);
@@ -577,6 +763,7 @@ function buildProviderFilters(params: Record<string, string | string[] | undefin
     kyc: readParam(params.kyc),
     location: readParam(params.location),
     readiness: readParam(params.readiness),
+    review: readParam(params.review),
   };
 }
 
@@ -606,8 +793,37 @@ function filterProviders(providers: AdminProvider[], filters: ProviderFilters) {
     if (filters.readiness && providerReadiness(provider) !== filters.readiness) {
       return false;
     }
+    if (filters.review && !providerMatchesReviewQueue(provider, filters.review)) {
+      return false;
+    }
     return true;
   });
+}
+
+function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
+  if (review === 'kyc') {
+    return ['PENDING', 'REJECTED'].includes(provider.kyc?.status ?? 'MISSING');
+  }
+  if (review === 'documents') {
+    return (provider.documents ?? []).some((document) =>
+      ['PENDING_REVIEW', 'REJECTED'].includes(document.status),
+    );
+  }
+  if (review === 'bank') {
+    return (provider.bankAccounts ?? []).some((account) =>
+      ['PENDING_REVIEW', 'REJECTED'].includes(account.status),
+    );
+  }
+  if (review === 'tax') {
+    return ['PENDING_REVIEW', 'REJECTED'].includes(provider.taxProfile?.status ?? 'MISSING');
+  }
+  if (review === 'location') {
+    return ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider));
+  }
+  if (review === 'push') {
+    return !hasHealthyPush(provider);
+  }
+  return true;
 }
 
 function providerSearchText(provider: AdminProvider) {
