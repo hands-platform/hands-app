@@ -4,6 +4,11 @@ import {
   BookingOpsTaskType,
   PayoutBatchStatus,
   Prisma,
+  ProviderReportSeverity,
+  ProviderReportSource,
+  ProviderReportStatus,
+  ProviderSanctionStatus,
+  ProviderSanctionType,
   ProviderStatus,
   ReviewStatus,
   VerificationStatus,
@@ -54,6 +59,8 @@ export class AdminService {
         documents: { include: { fileAsset: true }, orderBy: { createdAt: 'desc' } },
         bankAccounts: { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }] },
         taxProfile: true,
+        reports: { orderBy: { createdAt: 'desc' }, take: 5 },
+        sanctions: { orderBy: { createdAt: 'desc' }, take: 5 },
         agreements: { orderBy: { acceptedAt: 'desc' } },
         services: { include: { service: true } },
         sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
@@ -84,6 +91,25 @@ export class AdminService {
         documents: { include: { fileAsset: true }, orderBy: { createdAt: 'desc' } },
         bankAccounts: { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }] },
         taxProfile: true,
+        reports: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          include: {
+            booking: { select: { id: true, status: true } },
+            reporterUser: { select: { phone: true, fullName: true } },
+            assignedAdmin: { select: { phone: true, fullName: true } },
+            sanctions: { orderBy: { createdAt: 'desc' } },
+          },
+        },
+        sanctions: {
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          include: {
+            report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
+            issuedBy: { select: { phone: true, fullName: true } },
+            liftedBy: { select: { phone: true, fullName: true } },
+          },
+        },
         agreements: { orderBy: { acceptedAt: 'desc' } },
         services: { include: { service: true } },
         locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
@@ -212,6 +238,17 @@ export class AdminService {
       reason: blockReason,
     });
 
+    await this.prisma.providerSanction.create({
+      data: {
+        providerProfileId,
+        type: ProviderSanctionType.ACCOUNT_BLOCK,
+        status: ProviderSanctionStatus.ACTIVE,
+        reason: blockReason,
+        issuedById: actorId,
+        metadata: toJson({ source: 'admin_account_block' }),
+      },
+    });
+
     await this.notifications.create({
       userId: provider.userId,
       type: 'provider.account.blocked',
@@ -237,6 +274,19 @@ export class AdminService {
       providerProfileId,
     });
 
+    await this.prisma.providerSanction.updateMany({
+      where: {
+        providerProfileId,
+        type: ProviderSanctionType.ACCOUNT_BLOCK,
+        status: ProviderSanctionStatus.ACTIVE,
+      },
+      data: {
+        status: ProviderSanctionStatus.LIFTED,
+        liftedAt: new Date(),
+        liftedById: actorId,
+      },
+    });
+
     await this.notifications.create({
       userId: provider.userId,
       type: 'provider.account.unblocked',
@@ -246,6 +296,216 @@ export class AdminService {
     });
 
     return { ok: true, providerProfileId: provider.id };
+  }
+
+  listProviderReports() {
+    return this.prisma.providerReport.findMany({
+      orderBy: [{ status: 'asc' }, { severity: 'desc' }, { createdAt: 'desc' }],
+      take: 100,
+      include: {
+        providerProfile: { include: { user: { select: { phone: true, fullName: true } } } },
+        booking: { select: { id: true, status: true, scheduledStartAt: true } },
+        reporterUser: { select: { phone: true, fullName: true } },
+        assignedAdmin: { select: { phone: true, fullName: true } },
+        sanctions: { orderBy: { createdAt: 'desc' } },
+      },
+    });
+  }
+
+  async createProviderReport(
+    actorId: string,
+    input: {
+      providerProfileId?: string;
+      bookingId?: string | null;
+      source?: ProviderReportSource;
+      severity?: ProviderReportSeverity;
+      category?: string;
+      summary?: string;
+      details?: string | null;
+    },
+  ) {
+    const providerProfileId = normalizeNullable(input.providerProfileId);
+    const category = normalizeNullable(input.category);
+    const summary = normalizeNullable(input.summary);
+    if (!providerProfileId) throw new BadRequestException('providerProfileId is required');
+    if (!category) throw new BadRequestException('Report category is required');
+    if (!summary) throw new BadRequestException('Report summary is required');
+    if (input.source && !Object.values(ProviderReportSource).includes(input.source)) {
+      throw new BadRequestException('Invalid report source');
+    }
+    if (input.severity && !Object.values(ProviderReportSeverity).includes(input.severity)) {
+      throw new BadRequestException('Invalid report severity');
+    }
+
+    const report = await this.prisma.providerReport.create({
+      data: {
+        providerProfileId,
+        bookingId: normalizeNullable(input.bookingId),
+        source: input.source ?? ProviderReportSource.ADMIN,
+        severity: input.severity ?? ProviderReportSeverity.MEDIUM,
+        category,
+        summary,
+        details: normalizeNullable(input.details),
+        reporterUserId: actorId,
+        assignedAdminId: actorId,
+      },
+      include: { providerProfile: true, sanctions: true },
+    });
+
+    await this.writeAudit(actorId, 'provider_report.create', `provider_report:${report.id}`, {
+      providerProfileId,
+      category,
+      severity: report.severity,
+    });
+    return report;
+  }
+
+  async updateProviderReport(
+    actorId: string,
+    reportId: string,
+    input: { status?: ProviderReportStatus; severity?: ProviderReportSeverity; resolutionNote?: string | null },
+  ) {
+    if (input.status && !Object.values(ProviderReportStatus).includes(input.status)) {
+      throw new BadRequestException('Invalid report status');
+    }
+    if (input.severity && !Object.values(ProviderReportSeverity).includes(input.severity)) {
+      throw new BadRequestException('Invalid report severity');
+    }
+    const report = await this.prisma.providerReport.update({
+      where: { id: reportId },
+      data: {
+        status: input.status,
+        severity: input.severity,
+        resolutionNote: normalizeNullable(input.resolutionNote),
+        resolvedAt:
+          input.status === ProviderReportStatus.RESOLVED || input.status === ProviderReportStatus.DISMISSED
+            ? new Date()
+            : input.status === ProviderReportStatus.OPEN || input.status === ProviderReportStatus.INVESTIGATING
+              ? null
+              : undefined,
+      },
+    });
+
+    await this.writeAudit(actorId, 'provider_report.update', `provider_report:${reportId}`, {
+      status: input.status,
+      severity: input.severity,
+      resolutionNote: normalizeNullable(input.resolutionNote),
+    });
+    return report;
+  }
+
+  listProviderSanctions() {
+    return this.prisma.providerSanction.findMany({
+      orderBy: [{ status: 'asc' }, { startsAt: 'desc' }],
+      take: 100,
+      include: {
+        providerProfile: { include: { user: { select: { phone: true, fullName: true } } } },
+        report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
+        issuedBy: { select: { phone: true, fullName: true } },
+        liftedBy: { select: { phone: true, fullName: true } },
+      },
+    });
+  }
+
+  async createProviderSanction(
+    actorId: string,
+    providerProfileId: string,
+    input: { type?: ProviderSanctionType; reason?: string; reportId?: string | null; expiresAt?: string | null },
+  ) {
+    const reason = normalizeNullable(input.reason);
+    if (!reason) throw new BadRequestException('Sanction reason is required');
+    if (input.type && !Object.values(ProviderSanctionType).includes(input.type)) {
+      throw new BadRequestException('Invalid sanction type');
+    }
+    const type = input.type ?? ProviderSanctionType.WARNING;
+    if (type === ProviderSanctionType.ACCOUNT_BLOCK) {
+      await this.blockProviderAccount(actorId, providerProfileId, reason);
+      const accountBlock = await this.prisma.providerSanction.findFirstOrThrow({
+        where: {
+          providerProfileId,
+          type: ProviderSanctionType.ACCOUNT_BLOCK,
+          status: ProviderSanctionStatus.ACTIVE,
+          reason,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      const updated = normalizeNullable(input.reportId)
+        ? await this.prisma.providerSanction.update({
+            where: { id: accountBlock.id },
+            data: { reportId: normalizeNullable(input.reportId) },
+          })
+        : accountBlock;
+      await this.writeAudit(actorId, 'provider_sanction.create', `provider_sanction:${updated.id}`, {
+        providerProfileId,
+        reportId: normalizeNullable(input.reportId),
+        type,
+      });
+      return updated;
+    }
+
+    const sanction = await this.prisma.providerSanction.create({
+      data: {
+        providerProfileId,
+        reportId: normalizeNullable(input.reportId),
+        type,
+        reason,
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+        issuedById: actorId,
+      },
+    });
+
+    await this.writeAudit(actorId, 'provider_sanction.create', `provider_sanction:${sanction.id}`, {
+      providerProfileId,
+      reportId: normalizeNullable(input.reportId),
+      type,
+    });
+    return sanction;
+  }
+
+  async liftProviderSanction(actorId: string, sanctionId: string) {
+    const sanction = await this.prisma.providerSanction.update({
+      where: { id: sanctionId },
+      data: {
+        status: ProviderSanctionStatus.LIFTED,
+        liftedAt: new Date(),
+        liftedById: actorId,
+      },
+    });
+
+    if (sanction.type === ProviderSanctionType.ACCOUNT_BLOCK) {
+      const remainingAccountBlocks = await this.prisma.providerSanction.count({
+        where: {
+          providerProfileId: sanction.providerProfileId,
+          type: ProviderSanctionType.ACCOUNT_BLOCK,
+          status: ProviderSanctionStatus.ACTIVE,
+        },
+      });
+
+      if (remainingAccountBlocks === 0) {
+        const provider = await this.prisma.providerProfile.update({
+          where: { id: sanction.providerProfileId },
+          data: {
+            blockedAt: null,
+            blockedReason: null,
+          },
+          select: { id: true, userId: true },
+        });
+
+        await this.notifications.create({
+          userId: provider.userId,
+          type: 'provider.account.unblocked',
+          title: 'Provider account unblocked',
+          body: 'Your HANDS provider account can sign in again. Go online only when ready to receive requests.',
+          data: { providerProfileId: provider.id, sanctionId },
+        });
+      }
+    }
+
+    await this.writeAudit(actorId, 'provider_sanction.lift', `provider_sanction:${sanctionId}`, {
+      providerProfileId: sanction.providerProfileId,
+      type: sanction.type,
+    });
+    return sanction;
   }
 
   async reviewProvider(

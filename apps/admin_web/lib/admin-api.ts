@@ -93,6 +93,8 @@ export type AdminProvider = {
     version: string;
     acceptedAt: string;
   }>;
+  reports?: AdminProviderReport[];
+  sanctions?: AdminProviderSanction[];
   sessions?: Array<{
     id: string;
     deviceId?: string | null;
@@ -158,6 +160,59 @@ export type AdminProvider = {
       }>;
     }>;
   };
+};
+
+export type AdminProviderReport = {
+  id: string;
+  providerProfileId: string;
+  bookingId?: string | null;
+  source: string;
+  severity: string;
+  status: string;
+  category: string;
+  summary: string;
+  details?: string | null;
+  resolvedAt?: string | null;
+  resolutionNote?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  providerProfile?: {
+    id: string;
+    displayName?: string | null;
+    user?: { phone?: string | null; fullName?: string | null };
+  };
+  booking?: { id: string; status?: string; scheduledStartAt?: string } | null;
+  reporterUser?: { phone?: string | null; fullName?: string | null } | null;
+  assignedAdmin?: { phone?: string | null; fullName?: string | null } | null;
+  sanctions?: AdminProviderSanction[];
+};
+
+export type AdminProviderSanction = {
+  id: string;
+  providerProfileId: string;
+  reportId?: string | null;
+  type: string;
+  status: string;
+  reason: string;
+  startsAt: string;
+  expiresAt?: string | null;
+  liftedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  providerProfile?: {
+    id: string;
+    displayName?: string | null;
+    user?: { phone?: string | null; fullName?: string | null };
+  };
+  report?: {
+    id: string;
+    category: string;
+    severity: string;
+    status: string;
+    summary: string;
+  } | null;
+  issuedBy?: { phone?: string | null; fullName?: string | null } | null;
+  liftedBy?: { phone?: string | null; fullName?: string | null } | null;
 };
 
 const PROVIDER_DOCUMENT_LABELS: Record<string, string> = {

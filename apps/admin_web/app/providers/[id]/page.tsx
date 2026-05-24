@@ -23,6 +23,12 @@ import {
   unblockProviderAccount,
   unblockProviderDevice,
 } from '../actions';
+import {
+  createProviderReport,
+  createProviderSanction,
+  liftProviderSanction,
+  updateProviderReport,
+} from '../../provider-risk/actions';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -311,6 +317,154 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             ))}
           </div>
         ) : null}
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Risk reports and sanctions</h2>
+            <p className="muted">
+              Keep customer complaints, staff findings, payout holds, and account blocks visible on the provider profile.
+            </p>
+          </div>
+          <Link className="text-link" href={`/provider-risk?q=${encodeURIComponent(provider.id)}`}>
+            Open risk desk
+          </Link>
+        </div>
+        <form className="form-grid" action={createProviderReport} style={{ marginBottom: 16 }}>
+          <input type="hidden" name="providerProfileId" value={provider.id} />
+          <label>
+            Category
+            <input name="category" placeholder="safety, payout, behavior, identity" required />
+          </label>
+          <label>
+            Severity
+            <select name="severity" defaultValue="MEDIUM">
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="CRITICAL">Critical</option>
+            </select>
+          </label>
+          <label>
+            Source
+            <select name="source" defaultValue="ADMIN">
+              <option value="ADMIN">Admin</option>
+              <option value="CUSTOMER">Customer</option>
+              <option value="PROVIDER">Provider</option>
+              <option value="SYSTEM">System</option>
+            </select>
+          </label>
+          <label className="full-span">
+            Summary
+            <input name="summary" placeholder="Short risk report summary" required />
+          </label>
+          <label className="full-span">
+            Details
+            <textarea name="details" placeholder="Evidence, timeline, follow-up, or staff note" />
+          </label>
+          <div className="actions full-span">
+            <button type="submit">Create report</button>
+          </div>
+        </form>
+        <div className="detail-grid">
+          <div>
+            <h3>Recent reports</h3>
+            {(provider.reports ?? []).length ? (
+              <div className="setup-stage-list">
+                {provider.reports?.map((report) => (
+                  <div className="setup-stage-item" key={report.id}>
+                    <span>{report.status}</span>
+                    <div>
+                      <strong>{report.summary}</strong>
+                      <p className="muted">
+                        {report.category} / {report.source} / {formatDate(report.createdAt)}
+                      </p>
+                      <div className="participant-list" style={{ marginTop: 6 }}>
+                        <span className={`pill ${riskSeverityPill(report.severity)}`}>{report.severity}</span>
+                        <span className={`pill ${riskStatusPill(report.status)}`}>{report.status}</span>
+                        {report.bookingId ? (
+                          <Link className="text-link" href={`/bookings/${report.bookingId}`}>
+                            Booking {shortRiskId(report.bookingId)}
+                          </Link>
+                        ) : null}
+                      </div>
+                      {report.details ? <p className="muted">{report.details}</p> : null}
+                      {report.resolutionNote ? <p className="muted">Resolution: {report.resolutionNote}</p> : null}
+                      <form className="actions" action={updateProviderReport} style={{ marginTop: 8 }}>
+                        <input type="hidden" name="reportId" value={report.id} />
+                        <input type="hidden" name="providerProfileId" value={provider.id} />
+                        <select name="status" defaultValue={report.status}>
+                          <option value="OPEN">Open</option>
+                          <option value="INVESTIGATING">Investigating</option>
+                          <option value="RESOLVED">Resolved</option>
+                          <option value="DISMISSED">Dismissed</option>
+                        </select>
+                        <select name="severity" defaultValue={report.severity}>
+                          <option value="LOW">Low</option>
+                          <option value="MEDIUM">Medium</option>
+                          <option value="HIGH">High</option>
+                          <option value="CRITICAL">Critical</option>
+                        </select>
+                        <input name="resolutionNote" placeholder="Resolution note" />
+                        <button type="submit">Update</button>
+                      </form>
+                      <form className="actions" action={createProviderSanction} style={{ marginTop: 8 }}>
+                        <input type="hidden" name="providerProfileId" value={provider.id} />
+                        <input type="hidden" name="reportId" value={report.id} />
+                        <select name="type" defaultValue={report.severity === 'CRITICAL' ? 'ACCOUNT_BLOCK' : 'WARNING'}>
+                          <option value="WARNING">Warning</option>
+                          <option value="PAYOUT_HOLD">Payout hold</option>
+                          <option value="ACCOUNT_BLOCK">Account block</option>
+                          <option value="TRUST_BADGE_REMOVAL">Trust badge removal</option>
+                        </select>
+                        <input name="reason" placeholder="Sanction reason" required minLength={12} maxLength={500} />
+                        <button type="submit">Apply sanction</button>
+                      </form>
+                    </div>
+                    <small>{shortRiskId(report.id)}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No provider reports recorded yet.</p>
+            )}
+          </div>
+          <div>
+            <h3>Recent sanctions</h3>
+            {(provider.sanctions ?? []).length ? (
+              <div className="setup-stage-list">
+                {provider.sanctions?.map((sanction) => (
+                  <div className="setup-stage-item" key={sanction.id}>
+                    <span>{sanction.status}</span>
+                    <div>
+                      <strong>{sanction.type}</strong>
+                      <p className="muted">{sanction.reason}</p>
+                      <p className="muted">
+                        Started {formatDate(sanction.startsAt)} / expires {formatDate(sanction.expiresAt)}
+                      </p>
+                      {sanction.report ? (
+                        <p className="muted">
+                          Report: {sanction.report.category} / {sanction.report.severity}
+                        </p>
+                      ) : null}
+                      {sanction.status === 'ACTIVE' ? (
+                        <form action={liftProviderSanction} style={{ marginTop: 8 }}>
+                          <input type="hidden" name="providerProfileId" value={provider.id} />
+                          <input type="hidden" name="sanctionId" value={sanction.id} />
+                          <button type="submit">Lift sanction</button>
+                        </form>
+                      ) : null}
+                    </div>
+                    <small>{shortRiskId(sanction.id)}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No active or historical sanction recorded yet.</p>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -1074,6 +1228,22 @@ function providerDocumentResubmissionInstruction(type?: string | null) {
     return 'Ask for a readable bank QR image, but still verify the typed bank account fields.';
   }
   return 'Ask the provider to upload a clearer replacement image for review.';
+}
+
+function riskSeverityPill(severity: string) {
+  if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
+  if (severity === 'MEDIUM') return 'pill-warn';
+  return 'pill-neutral';
+}
+
+function riskStatusPill(status: string) {
+  if (status === 'RESOLVED' || status === 'DISMISSED') return 'pill-success';
+  if (status === 'INVESTIGATING') return 'pill-warn';
+  return 'pill-info';
+}
+
+function shortRiskId(value: string) {
+  return value.length > 12 ? `${value.slice(0, 8)}...` : value;
 }
 
 function payoutBlockers(provider: ProviderDetail) {

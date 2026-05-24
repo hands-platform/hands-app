@@ -3,6 +3,10 @@ import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   PayoutBatchStatus,
+  ProviderReportSeverity,
+  ProviderReportSource,
+  ProviderReportStatus,
+  ProviderSanctionType,
   ReviewStatus,
   Role,
   VerificationStatus,
@@ -71,6 +75,61 @@ export class AdminController {
   @Post('providers/:id/unblock')
   unblockProviderAccount(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
     return this.admin.unblockProviderAccount(user.id, providerProfileId);
+  }
+
+  @Get('provider-reports')
+  providerReports() {
+    return this.admin.listProviderReports();
+  }
+
+  @Post('provider-reports')
+  createProviderReport(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    body: {
+      providerProfileId?: string;
+      bookingId?: string | null;
+      source?: ProviderReportSource;
+      severity?: ProviderReportSeverity;
+      category?: string;
+      summary?: string;
+      details?: string | null;
+    },
+  ) {
+    return this.admin.createProviderReport(user.id, body);
+  }
+
+  @Patch('provider-reports/:id')
+  updateProviderReport(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') reportId: string,
+    @Body()
+    body: {
+      status?: ProviderReportStatus;
+      severity?: ProviderReportSeverity;
+      resolutionNote?: string | null;
+    },
+  ) {
+    return this.admin.updateProviderReport(user.id, reportId, body);
+  }
+
+  @Get('provider-sanctions')
+  providerSanctions() {
+    return this.admin.listProviderSanctions();
+  }
+
+  @Post('providers/:id/sanctions')
+  createProviderSanction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { type?: ProviderSanctionType; reason?: string; reportId?: string | null; expiresAt?: string | null },
+  ) {
+    return this.admin.createProviderSanction(user.id, providerProfileId, body);
+  }
+
+  @Post('provider-sanctions/:id/lift')
+  liftProviderSanction(@CurrentUser() user: AuthenticatedUser, @Param('id') sanctionId: string) {
+    return this.admin.liftProviderSanction(user.id, sanctionId);
   }
 
   @Post('providers/:id/sync-supabase-role')

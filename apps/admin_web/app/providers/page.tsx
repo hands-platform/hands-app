@@ -144,6 +144,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="bank">Bank payout review</option>
               <option value="tax">Tax profile review</option>
               <option value="security">Device/session risk</option>
+              <option value="risk">Reports/sanctions</option>
               <option value="blocked">Account blocks</option>
               <option value="location">Location freshness</option>
               <option value="push">Push alert readiness</option>
@@ -304,9 +305,17 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     >
                       {provider.user?.supabaseUserId ? 'Supabase linked' : 'Nest auth only'}
                     </span>
+                    <span className={`pill ${hasOpenProviderRisk(provider) ? 'pill-danger' : 'pill-success'}`}>
+                      {hasOpenProviderRisk(provider) ? 'Risk open' : 'Risk clear'}
+                    </span>
                   </div>
                   <ProviderIssuePills provider={provider} />
                   <p className="muted">{providerActionHint(provider)}</p>
+                  {hasOpenProviderRisk(provider) ? (
+                    <Link className="text-link" href={`/provider-risk?q=${encodeURIComponent(provider.id)}`}>
+                      Open risk desk
+                    </Link>
+                  ) : null}
                 </td>
                 <td>
                   <ProviderLocationCell provider={provider} />
@@ -994,6 +1003,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
   const pushDisabled = providers.filter((provider) =>
     (provider.user?.pushDevices ?? []).some((device) => !device.enabled),
   ).length;
+  const openRisk = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
   const deviceRisk = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
@@ -1016,6 +1026,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
     ['Location needs review', staleLocation.toString()],
     ['Push ready', pushReady.toString()],
     ['Push needs review', pushDisabled.toString()],
+    ['Open risk', openRisk.toString()],
     ['Device risk', deviceRisk.toString()],
     ['Ready for dispatch', readyNow.toString()],
   ] as const;
@@ -1042,6 +1053,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
   const securityNeedsReview = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
+  const riskNeedsReview = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
   const readyForDispatch = providers.filter(
     (provider) =>
       provider.verification?.status === 'APPROVED' &&
@@ -1088,6 +1100,12 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       count: securityNeedsReview,
       href: '/providers?review=security',
       detail: 'Blocked, shared, or suspicious provider app devices need operator review.',
+    },
+    {
+      label: 'Reports and sanctions',
+      count: riskNeedsReview,
+      href: '/providers?review=risk',
+      detail: 'Open reports or active sanctions should be reviewed before dispatch and trust badge changes.',
     },
     {
       label: 'Location freshness',
@@ -1165,8 +1183,25 @@ function providerReviewIssues(provider: AdminProvider) {
   if (!provider.user?.supabaseUserId) {
     issues.push({ label: 'Supabase role pending', severity: 'medium' });
   }
+  const openReports = (provider.reports ?? []).filter((report) =>
+    ['OPEN', 'INVESTIGATING'].includes(report.status),
+  ).length;
+  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE').length;
+  if (openReports > 0) {
+    issues.push({ label: `${openReports} open report(s)`, severity: 'high' });
+  }
+  if (activeSanctions > 0) {
+    issues.push({ label: `${activeSanctions} active sanction(s)`, severity: 'high' });
+  }
 
   return issues;
+}
+
+function hasOpenProviderRisk(provider: AdminProvider) {
+  return (
+    (provider.reports ?? []).some((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)) ||
+    (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')
+  );
 }
 
 function sortProviders(providers: AdminProvider[]) {
@@ -1257,6 +1292,9 @@ function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
   if (review === 'security') {
     return ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider));
   }
+  if (review === 'risk') {
+    return hasOpenProviderRisk(provider);
+  }
   if (review === 'location') {
     return ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider));
   }
@@ -1278,6 +1316,8 @@ function providerSearchText(provider: AdminProvider) {
     provider.user?.phone,
     provider.devices?.map((device) => device.deviceId).join(' '),
     provider.sessions?.map((session) => `${session.deviceId ?? ''} ${session.ipAddress ?? ''}`).join(' '),
+    provider.reports?.map((report) => `${report.category} ${report.summary} ${report.details ?? ''}`).join(' '),
+    provider.sanctions?.map((sanction) => `${sanction.type} ${sanction.reason}`).join(' '),
     provider.services?.map((item) => item.service?.name).join(' '),
   ]
     .filter(Boolean)

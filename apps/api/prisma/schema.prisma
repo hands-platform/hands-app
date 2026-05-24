@@ -181,6 +181,40 @@ enum BookingOpsTaskStatus {
   BLOCKED
 }
 
+enum ProviderReportSource {
+  CUSTOMER
+  PROVIDER
+  ADMIN
+  SYSTEM
+}
+
+enum ProviderReportSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ProviderReportStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+enum ProviderSanctionType {
+  WARNING
+  ACCOUNT_BLOCK
+  PAYOUT_HOLD
+  TRUST_BADGE_REMOVAL
+}
+
+enum ProviderSanctionStatus {
+  ACTIVE
+  LIFTED
+  EXPIRED
+}
+
 model User {
   id                       String                    @id @default(cuid())
   supabaseUserId           String?                   @unique
@@ -200,6 +234,10 @@ model User {
   fileAssets               FileAsset[]               @relation("FileAssetOwner")
   taxPolicyVersions        TaxPolicyVersion[]        @relation("TaxPolicyAuthor")
   providerVerificationLogs ProviderVerificationLog[] @relation("ProviderVerificationLogActor")
+  providerReportsCreated   ProviderReport[]          @relation("ProviderReportCreator")
+  providerReportsAssigned  ProviderReport[]          @relation("ProviderReportAssignee")
+  providerSanctionsIssued  ProviderSanction[]        @relation("ProviderSanctionIssuer")
+  providerSanctionsLifted  ProviderSanction[]        @relation("ProviderSanctionLifter")
 }
 
 model CustomerProfile {
@@ -257,6 +295,8 @@ model ProviderProfile {
   reviews                  Review[]
   earnings                 ProviderEarning[]
   payoutBatches            ProviderPayoutBatch[]
+  reports                  ProviderReport[]
+  sanctions                ProviderSanction[]
 }
 
 model ProviderKyc {
@@ -356,6 +396,59 @@ model ProviderVerificationLog {
 
   @@index([providerProfileId, createdAt])
   @@index([actorId, createdAt])
+}
+
+model ProviderReport {
+  id                String                 @id @default(cuid())
+  providerProfileId String
+  bookingId         String?
+  source            ProviderReportSource   @default(ADMIN)
+  severity          ProviderReportSeverity @default(MEDIUM)
+  status            ProviderReportStatus   @default(OPEN)
+  category          String
+  summary           String
+  details           String?
+  reporterUserId    String?
+  assignedAdminId   String?
+  resolvedAt        DateTime?
+  resolutionNote    String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  providerProfile   ProviderProfile        @relation(fields: [providerProfileId], references: [id])
+  booking           Booking?               @relation(fields: [bookingId], references: [id])
+  reporterUser      User?                  @relation("ProviderReportCreator", fields: [reporterUserId], references: [id])
+  assignedAdmin     User?                  @relation("ProviderReportAssignee", fields: [assignedAdminId], references: [id])
+  sanctions         ProviderSanction[]
+
+  @@index([providerProfileId, status, severity])
+  @@index([bookingId])
+  @@index([status, severity, createdAt])
+  @@index([assignedAdminId, status])
+}
+
+model ProviderSanction {
+  id                String                 @id @default(cuid())
+  providerProfileId String
+  reportId          String?
+  type              ProviderSanctionType
+  status            ProviderSanctionStatus @default(ACTIVE)
+  reason            String
+  startsAt          DateTime               @default(now())
+  expiresAt         DateTime?
+  liftedAt          DateTime?
+  issuedById        String?
+  liftedById        String?
+  metadata          Json?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  providerProfile   ProviderProfile        @relation(fields: [providerProfileId], references: [id])
+  report            ProviderReport?        @relation(fields: [reportId], references: [id])
+  issuedBy          User?                  @relation("ProviderSanctionIssuer", fields: [issuedById], references: [id])
+  liftedBy          User?                  @relation("ProviderSanctionLifter", fields: [liftedById], references: [id])
+
+  @@index([providerProfileId, status, type])
+  @@index([reportId])
+  @@index([status, startsAt])
 }
 
 model ProviderSession {
@@ -470,6 +563,7 @@ model Booking {
   earning             ProviderEarning?
   taxLogs             ProviderTaxLog[]
   opsTasks            BookingOpsTask[]
+  providerReports     ProviderReport[]
 }
 
 model BookingOpsTask {

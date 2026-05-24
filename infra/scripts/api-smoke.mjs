@@ -204,6 +204,49 @@ if (
   );
 }
 
+const providerRiskReport = await postJson('/admin/provider-reports', adminAuth.accessToken, {
+  providerProfileId: providerAuth.user.providerProfile.id,
+  category: 'smoke-risk',
+  summary: 'Smoke provider risk report',
+  details: 'Created by the smoke test to verify provider risk report operations.',
+  severity: 'HIGH',
+  source: 'ADMIN',
+});
+if (providerRiskReport.status !== 'OPEN' || providerRiskReport.severity !== 'HIGH') {
+  throw new Error(`Provider risk report was not created correctly: ${JSON.stringify(providerRiskReport)}`);
+}
+const providerRiskSanction = await postJson(
+  `/admin/providers/${providerAuth.user.providerProfile.id}/sanctions`,
+  adminAuth.accessToken,
+  {
+    reportId: providerRiskReport.id,
+    type: 'WARNING',
+    reason: 'Smoke warning sanction for provider risk flow',
+  },
+);
+if (providerRiskSanction.status !== 'ACTIVE' || providerRiskSanction.type !== 'WARNING') {
+  throw new Error(`Provider risk sanction was not created correctly: ${JSON.stringify(providerRiskSanction)}`);
+}
+const liftedProviderRiskSanction = await postJson(
+  `/admin/provider-sanctions/${providerRiskSanction.id}/lift`,
+  adminAuth.accessToken,
+);
+if (liftedProviderRiskSanction.status !== 'LIFTED') {
+  throw new Error(`Provider risk sanction was not lifted correctly: ${JSON.stringify(liftedProviderRiskSanction)}`);
+}
+const resolvedProviderRiskReport = await patchJson(
+  `/admin/provider-reports/${providerRiskReport.id}`,
+  adminAuth.accessToken,
+  {
+    status: 'RESOLVED',
+    severity: 'MEDIUM',
+    resolutionNote: 'Smoke risk report resolved',
+  },
+);
+if (resolvedProviderRiskReport.status !== 'RESOLVED' || resolvedProviderRiskReport.severity !== 'MEDIUM') {
+  throw new Error(`Provider risk report was not updated correctly: ${JSON.stringify(resolvedProviderRiskReport)}`);
+}
+
 const services = await request('/services');
 const service = services[0];
 const couponCode = `smoke${Date.now()}`;
@@ -773,6 +816,10 @@ console.log({
   providerDeviceSessionId: providerDeviceSession.session?.id ?? null,
   providerDeviceBlockRoundTrip:
     blockedProviderDeviceSession.blocked === true && unblockedProviderDeviceSession.blocked === false,
+  providerRiskReportId: providerRiskReport.id,
+  providerRiskReportStatus: resolvedProviderRiskReport.status,
+  providerRiskSanctionId: providerRiskSanction.id,
+  providerRiskSanctionLifted: liftedProviderRiskSanction.status === 'LIFTED',
   providerSupabaseRoleSyncStatus: providerSupabaseRoleSync.status,
   hybridPreferredProviderId: adminHybridBooking?.preferredProvider?.id ?? null,
   hybridSelectedProviderId: adminHybridBooking?.selectedProvider?.id ?? null,
