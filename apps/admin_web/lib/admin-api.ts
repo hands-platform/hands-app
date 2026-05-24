@@ -17,15 +17,24 @@ export type AdminProvider = {
   displayName: string;
   level?: string;
   legalName?: string | null;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  facebookId?: string | null;
+  activityNickname?: string | null;
   bio?: string | null;
   residentialAddress?: string | null;
   city?: string | null;
+  serviceArea?: unknown;
   status: string;
+  ratingAvg?: string | number | null;
+  reviewCount?: number | null;
   blockedAt?: string | null;
   blockedReason?: string | null;
   currentLat?: string | number | null;
   currentLng?: string | number | null;
   currentLocationUpdatedAt?: string | null;
+  nextAvailableAt?: string | null;
+  trustedAt?: string | null;
   verification?: {
     id: string;
     status: string;
