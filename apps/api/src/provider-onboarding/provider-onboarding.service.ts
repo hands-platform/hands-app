@@ -296,6 +296,147 @@ export class ProviderOnboardingService {
     return { ok: true, agreement };
   }
 
+  async reviewKyc(
+    actorId: string,
+    providerProfileId: string,
+    status: ProviderKycStatus,
+    reason?: string,
+  ) {
+    const existing = await this.prisma.providerKyc.findUnique({
+      where: { providerProfileId },
+    });
+    const kyc = await this.prisma.providerKyc.upsert({
+      where: { providerProfileId },
+      update: {
+        status,
+        reviewedAt: new Date(),
+        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizeString(reason),
+        blockedAt: status === ProviderKycStatus.BLOCKED ? new Date() : undefined,
+      },
+      create: {
+        providerProfileId,
+        status,
+        submittedAt: new Date(),
+        reviewedAt: new Date(),
+        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizeString(reason),
+        blockedAt: status === ProviderKycStatus.BLOCKED ? new Date() : undefined,
+      },
+    });
+
+    await this.prisma.providerVerification.upsert({
+      where: { providerProfileId },
+      update: {
+        status:
+          status === ProviderKycStatus.APPROVED ? VerificationStatus.APPROVED : VerificationStatus.REJECTED,
+        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizeString(reason),
+        reviewedAt: new Date(),
+      },
+      create: {
+        providerProfileId,
+        status:
+          status === ProviderKycStatus.APPROVED ? VerificationStatus.APPROVED : VerificationStatus.REJECTED,
+        rejectionReason: status === ProviderKycStatus.APPROVED ? null : normalizeString(reason),
+        submittedAt: new Date(),
+        reviewedAt: new Date(),
+      },
+    });
+
+    await this.prisma.providerVerificationLog.create({
+      data: {
+        providerProfileId,
+        actorId,
+        action: `kyc.${status.toLowerCase()}`,
+        fromStatus: existing?.status,
+        toStatus: status,
+        metadata: toJson({ reason }),
+      },
+    });
+    await this.writeAudit(actorId, `provider_kyc.${status.toLowerCase()}`, `provider:${providerProfileId}`, {
+      reason,
+    });
+    await this.refreshProviderLevel(providerProfileId);
+    return { ok: true, kyc };
+  }
+
+  async reviewBankAccount(
+    actorId: string,
+    bankAccountId: string,
+    status: ProviderBankAccountStatus,
+    reason?: string,
+  ) {
+    const existing = await this.prisma.providerBankAccount.findUniqueOrThrow({
+      where: { id: bankAccountId },
+    });
+    const account = await this.prisma.providerBankAccount.update({
+      where: { id: bankAccountId },
+      data: {
+        status,
+        reviewedAt: new Date(),
+        rejectionReason: status === ProviderBankAccountStatus.APPROVED ? null : normalizeString(reason),
+      },
+    });
+    await this.prisma.providerVerificationLog.create({
+      data: {
+        providerProfileId: account.providerProfileId,
+        actorId,
+        action: `bank_account.${status.toLowerCase()}`,
+        fromStatus: existing.status,
+        toStatus: status,
+        metadata: toJson({ reason, bankAccountId }),
+      },
+    });
+    await this.writeAudit(
+      actorId,
+      `provider_bank_account.${status.toLowerCase()}`,
+      `bank_account:${bankAccountId}`,
+      {
+        providerProfileId: account.providerProfileId,
+        reason,
+      },
+    );
+    await this.refreshProviderLevel(account.providerProfileId);
+    return { ok: true, bankAccount: account };
+  }
+
+  async reviewTaxProfile(
+    actorId: string,
+    providerProfileId: string,
+    status: ProviderTaxProfileStatus,
+    reason?: string,
+  ) {
+    const existing = await this.prisma.providerTaxProfile.findUniqueOrThrow({
+      where: { providerProfileId },
+    });
+    const taxProfile = await this.prisma.providerTaxProfile.update({
+      where: { providerProfileId },
+      data: {
+        status,
+        approvedAt: status === ProviderTaxProfileStatus.APPROVED ? new Date() : null,
+        rejectionReason: status === ProviderTaxProfileStatus.APPROVED ? null : normalizeString(reason),
+      },
+    });
+    await this.prisma.providerVerificationLog.create({
+      data: {
+        providerProfileId,
+        actorId,
+        action: `tax_profile.${status.toLowerCase()}`,
+        fromStatus: existing.status,
+        toStatus: status,
+        metadata: toJson({ reason }),
+      },
+    });
+    await this.writeAudit(
+      actorId,
+      `provider_tax_profile.${status.toLowerCase()}`,
+      `provider:${providerProfileId}`,
+      {
+        reason,
+      },
+    );
+    await this.refreshProviderLevel(providerProfileId);
+    return { ok: true, taxProfile };
+  }
+
   listTaxPolicyVersions() {
     return this.prisma.taxPolicyVersion.findMany({
       orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
@@ -449,6 +590,47 @@ export class ProviderOnboardingService {
       throw new NotFoundException('Provider profile not found');
     }
     return provider;
+  }
+
+  private async refreshProviderLevel(providerProfileId: string) {
+    const provider = await this.prisma.providerProfile.findUniqueOrThrow({
+      where: { id: providerProfileId },
+      include: {
+        verification: true,
+        kyc: true,
+        bankAccounts: true,
+        taxProfile: true,
+        agreements: true,
+      },
+    });
+    const completedBookingCount = await this.prisma.booking.count({
+      where: {
+        selectedProviderId: provider.id,
+        status: BookingStatus.COMPLETED,
+      },
+    });
+    const acceptedAgreementTypes = new Set(provider.agreements.map((agreement) => agreement.type));
+    const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
+    const level = this.recommendedLevel({
+      kycApproved: provider.kyc?.status === ProviderKycStatus.APPROVED,
+      legacyVerificationApproved: provider.verification?.status === VerificationStatus.APPROVED,
+      approvedBankAccount: provider.bankAccounts.some(
+        (account) => account.status === ProviderBankAccountStatus.APPROVED,
+      ),
+      canWithdraw:
+        completedBookingCount > 0 &&
+        provider.taxProfile?.status === ProviderTaxProfileStatus.APPROVED &&
+        Boolean(provider.residentialAddress?.trim()) &&
+        missingAgreements.length === 0,
+      trustedAt: provider.trustedAt,
+    });
+    if (provider.level === level) {
+      return provider;
+    }
+    return this.prisma.providerProfile.update({
+      where: { id: providerProfileId },
+      data: { level },
+    });
   }
 
   private recommendedLevel(input: {

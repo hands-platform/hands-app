@@ -11,6 +11,10 @@ export type AdminUser = {
 export type AdminProvider = {
   id: string;
   displayName: string;
+  level?: string;
+  legalName?: string | null;
+  residentialAddress?: string | null;
+  city?: string | null;
   status: string;
   currentLat?: string | number | null;
   currentLng?: string | number | null;
@@ -33,6 +37,55 @@ export type AdminProvider = {
       url?: string | null;
     }>;
   } | null;
+  kyc?: {
+    id: string;
+    status: string;
+    cccdNumberLast4?: string | null;
+    submittedAt?: string | null;
+    reviewedAt?: string | null;
+    rejectionReason?: string | null;
+  } | null;
+  documents?: Array<{
+    id: string;
+    type: string;
+    status: string;
+    reviewedAt?: string | null;
+    rejectionReason?: string | null;
+    fileAsset?: {
+      id: string;
+      key: string;
+      contentType: string;
+      uploadStatus?: string;
+      uploadedAt?: string | null;
+      sizeBytes?: number | null;
+    };
+  }>;
+  bankAccounts?: Array<{
+    id: string;
+    bankName: string;
+    accountNumberMasked?: string | null;
+    accountNumberLast4?: string | null;
+    accountHolderName: string;
+    status: string;
+    isPrimary: boolean;
+    reviewedAt?: string | null;
+    rejectionReason?: string | null;
+  }>;
+  taxProfile?: {
+    id: string;
+    status: string;
+    taxCodeLast4?: string | null;
+    legalName: string;
+    registeredAddress: string;
+    approvedAt?: string | null;
+    rejectionReason?: string | null;
+  } | null;
+  agreements?: Array<{
+    id: string;
+    type: string;
+    version: string;
+    acceptedAt: string;
+  }>;
   services?: Array<{ service?: { name: string } }>;
   user?: {
     id?: string;

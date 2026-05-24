@@ -29,3 +29,48 @@ export async function enablePushDevice(formData: FormData) {
   revalidatePath('/providers');
   revalidatePath('/notifications');
 }
+
+export async function approveProviderKyc(formData: FormData) {
+  const providerId = String(formData.get('providerId'));
+  await adminPost(`/admin/providers/${providerId}/kyc/approve`, {}, null);
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}
+
+export async function rejectProviderKyc(formData: FormData) {
+  const providerId = String(formData.get('providerId'));
+  const reason = String(formData.get('reason') || 'KYC rejected by admin');
+  await adminPost(`/admin/providers/${providerId}/kyc/reject`, { reason }, null);
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}
+
+export async function approveProviderBankAccount(formData: FormData) {
+  const bankAccountId = String(formData.get('bankAccountId'));
+  await adminPost(`/admin/provider-bank-accounts/${bankAccountId}/approve`, {}, null);
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}
+
+export async function rejectProviderBankAccount(formData: FormData) {
+  const bankAccountId = String(formData.get('bankAccountId'));
+  const reason = String(formData.get('reason') || 'Bank account rejected by admin');
+  await adminPost(`/admin/provider-bank-accounts/${bankAccountId}/reject`, { reason }, null);
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}
+
+export async function approveProviderTaxProfile(formData: FormData) {
+  const providerId = String(formData.get('providerId'));
+  await adminPost(`/admin/providers/${providerId}/tax-profile/approve`, {}, null);
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}
+
+export async function rejectProviderTaxProfile(formData: FormData) {
+  const providerId = String(formData.get('providerId'));
+  const reason = String(formData.get('reason') || 'Tax profile rejected by admin');
+  await adminPost(`/admin/providers/${providerId}/tax-profile/reject`, { reason }, null);
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}

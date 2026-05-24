@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nest
 import {
   ProviderAgreementType,
   ProviderBankAccountStatus,
+  ProviderKycStatus,
   ProviderTaxProfileStatus,
   Role,
   TaxPolicyStatus,
@@ -159,5 +160,63 @@ export class ProviderOnboardingController {
     },
   ) {
     return this.onboarding.createTaxRule(user.id, policyVersionId, body);
+  }
+
+  @Post('admin/providers/:id/kyc/approve')
+  @Roles(Role.ADMIN)
+  approveKyc(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
+    return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.APPROVED);
+  }
+
+  @Post('admin/providers/:id/kyc/reject')
+  @Roles(Role.ADMIN)
+  rejectKyc(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.REJECTED, body.reason);
+  }
+
+  @Post('admin/provider-bank-accounts/:id/approve')
+  @Roles(Role.ADMIN)
+  approveBankAccount(@CurrentUser() user: AuthenticatedUser, @Param('id') bankAccountId: string) {
+    return this.onboarding.reviewBankAccount(user.id, bankAccountId, ProviderBankAccountStatus.APPROVED);
+  }
+
+  @Post('admin/provider-bank-accounts/:id/reject')
+  @Roles(Role.ADMIN)
+  rejectBankAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') bankAccountId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.onboarding.reviewBankAccount(
+      user.id,
+      bankAccountId,
+      ProviderBankAccountStatus.REJECTED,
+      body.reason,
+    );
+  }
+
+  @Post('admin/providers/:id/tax-profile/approve')
+  @Roles(Role.ADMIN)
+  approveTaxProfile(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
+    return this.onboarding.reviewTaxProfile(user.id, providerProfileId, ProviderTaxProfileStatus.APPROVED);
+  }
+
+  @Post('admin/providers/:id/tax-profile/reject')
+  @Roles(Role.ADMIN)
+  rejectTaxProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.onboarding.reviewTaxProfile(
+      user.id,
+      providerProfileId,
+      ProviderTaxProfileStatus.REJECTED,
+      body.reason,
+    );
   }
 }

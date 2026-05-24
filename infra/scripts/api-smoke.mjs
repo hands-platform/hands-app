@@ -180,6 +180,47 @@ if (
 ) {
   throw new Error(`Provider onboarding snapshot is incomplete: ${JSON.stringify(providerOnboarding)}`);
 }
+await patchJson('/provider/onboarding/basic-profile', providerAuth.accessToken, {
+  legalName: 'Smoke Provider',
+  dateOfBirth: '1995-01-01',
+  displayName: 'Smoke Provider',
+  residentialAddress: 'District 1, Ho Chi Minh City, Vietnam',
+  city: 'Ho Chi Minh City',
+});
+await postJson('/provider/onboarding/kyc/submit', providerAuth.accessToken, {
+  cccdNumber: '000000000000',
+});
+await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
+const onboardingBankAccount = await postJson('/provider/onboarding/bank-accounts', providerAuth.accessToken, {
+  bankName: 'Vietcombank',
+  accountNumber: '000012345678',
+  accountHolderName: 'Smoke Provider',
+});
+await postJson(
+  `/admin/provider-bank-accounts/${onboardingBankAccount.bankAccount.id}/approve`,
+  adminAuth.accessToken,
+);
+await postJson('/provider/onboarding/tax-profile', providerAuth.accessToken, {
+  taxCode: '0000000000',
+  legalName: 'Smoke Provider',
+  registeredAddress: 'District 1, Ho Chi Minh City, Vietnam',
+});
+await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/tax-profile/approve`, adminAuth.accessToken);
+for (const type of ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX']) {
+  await postJson('/provider/onboarding/agreements', providerAuth.accessToken, {
+    type,
+    version: '2026-05',
+    deviceId: 'smoke-device',
+  });
+}
+const approvedProviderOnboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
+if (
+  approvedProviderOnboarding.kyc?.status !== 'APPROVED' ||
+  !approvedProviderOnboarding.bankAccounts?.some((account) => account.status === 'APPROVED') ||
+  approvedProviderOnboarding.taxProfile?.status !== 'APPROVED'
+) {
+  throw new Error(`Provider onboarding review flow failed: ${JSON.stringify(approvedProviderOnboarding)}`);
+}
 const taxPolicyVersions = await getJson('/admin/tax-policy-versions', adminAuth.accessToken);
 if (!Array.isArray(taxPolicyVersions)) {
   throw new Error(`Tax policy version list did not return an array: ${JSON.stringify(taxPolicyVersions)}`);
@@ -428,6 +469,13 @@ if (!adminProvider?.user?.pushDevices?.some((device) => device.token === 'demo-p
   throw new Error(
     `Admin provider payload is missing registered push device: ${JSON.stringify(adminProvider)}`,
   );
+}
+if (
+  adminProvider?.kyc?.status !== 'APPROVED' ||
+  !adminProvider?.bankAccounts?.some((account) => account.status === 'APPROVED') ||
+  adminProvider?.taxProfile?.status !== 'APPROVED'
+) {
+  throw new Error(`Admin provider payload is missing onboarding review state: ${JSON.stringify(adminProvider)}`);
 }
 const adminBackupProvider = adminProviders.find(
   (item) => item.id === backupProviderAuth.user.providerProfile.id,

@@ -47,6 +47,11 @@ export class AdminService {
           },
         },
         verification: { include: { files: true } },
+        kyc: true,
+        documents: { include: { fileAsset: true }, orderBy: { createdAt: 'desc' } },
+        bankAccounts: { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }] },
+        taxProfile: true,
+        agreements: { orderBy: { acceptedAt: 'desc' } },
         services: { include: { service: true } },
       },
     });
@@ -200,7 +205,10 @@ export class AdminService {
         refunds: true,
         review: true,
         earning: true,
-        opsTasks: { orderBy: { updatedAt: 'desc' }, include: { actor: { select: { phone: true, fullName: true } } } },
+        opsTasks: {
+          orderBy: { updatedAt: 'desc' },
+          include: { actor: { select: { phone: true, fullName: true } } },
+        },
         snapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
         chatRoom: {
           include: {
