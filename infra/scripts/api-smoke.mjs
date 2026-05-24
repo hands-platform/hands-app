@@ -202,6 +202,27 @@ await expectRequestFailure(
     }),
   400,
 );
+const duplicateKycFileUpload = await postJson('/files/presign', kycNegativeProviderAuth.accessToken, {
+  contentType: 'image/jpeg',
+  visibility: 'PRIVATE',
+  purpose: 'provider-kyc-duplicate-file-negative',
+});
+await postJson(`/files/${duplicateKycFileUpload.file.id}/complete`, kycNegativeProviderAuth.accessToken, {
+  sizeBytes: 1024,
+});
+await expectRequestFailure(
+  'KYC submit rejects duplicate file ids across document types',
+  () =>
+    postJson('/provider/onboarding/kyc/submit', kycNegativeProviderAuth.accessToken, {
+      cccdNumber: '000000000000',
+      documents: [
+        { fileId: duplicateKycFileUpload.file.id, type: 'CCCD_FRONT' },
+        { fileId: duplicateKycFileUpload.file.id, type: 'CCCD_BACK' },
+        { fileId: duplicateKycFileUpload.file.id, type: 'SELFIE' },
+      ],
+    }),
+  400,
+);
 const pendingKycDocumentUploads = [];
 for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
   const upload = await postJson('/files/presign', kycNegativeProviderAuth.accessToken, {

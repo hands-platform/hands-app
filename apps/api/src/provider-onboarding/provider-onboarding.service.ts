@@ -174,6 +174,7 @@ export class ProviderOnboardingService {
       fileId: requiredString(document.fileId, 'fileId is required'),
       type: parseEnum(ProviderDocumentType, document.type, 'Invalid provider document type'),
     }));
+    this.assertUniqueKycDocumentPayload(requestedDocuments);
     const submittedDocumentTypes = new Set([
       ...provider.documents
         .filter((document) => document.status !== ProviderDocumentStatus.REJECTED)
@@ -233,6 +234,23 @@ export class ProviderOnboardingService {
     });
 
     return { ok: true, kyc };
+  }
+
+  private assertUniqueKycDocumentPayload(
+    documents: Array<{ fileId: string; type: ProviderDocumentType }>,
+  ) {
+    const seenTypes = new Set<ProviderDocumentType>();
+    const seenFileIds = new Set<string>();
+    for (const document of documents) {
+      if (seenTypes.has(document.type)) {
+        throw new BadRequestException(`Duplicate KYC document type: ${document.type}`);
+      }
+      if (seenFileIds.has(document.fileId)) {
+        throw new BadRequestException('Each KYC document must use a different uploaded file');
+      }
+      seenTypes.add(document.type);
+      seenFileIds.add(document.fileId);
+    }
   }
 
   async createBankAccount(
