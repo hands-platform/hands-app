@@ -117,6 +117,87 @@ export class ProvidersService {
     return updated;
   }
 
+  async recordDeviceSession(
+    userId: string | undefined,
+    input: { deviceId?: string; platform?: string; appVersion?: string },
+    ipAddress?: string,
+  ) {
+    const provider = await this.requireProvider(userId);
+    const deviceId = normalizeRequired(input.deviceId, 'deviceId is required');
+    const platform = normalizeOptional(input.platform);
+    const appVersion = normalizeOptional(input.appVersion);
+    const now = new Date();
+
+    const [existingDevice, sharedDeviceCount] = await Promise.all([
+      this.prisma.providerDevice.findUnique({
+        where: {
+          providerProfileId_deviceId: {
+            providerProfileId: provider.id,
+            deviceId,
+          },
+        },
+      }),
+      this.prisma.providerDevice.count({
+        where: {
+          deviceId,
+          providerProfileId: { not: provider.id },
+        },
+      }),
+    ]);
+
+    const blocked = Boolean(existingDevice?.blockedAt);
+    const suspicious = blocked || sharedDeviceCount > 0;
+    const suspiciousReason = blocked
+      ? `Blocked device: ${existingDevice?.blockReason ?? 'No reason saved'}`
+      : sharedDeviceCount > 0
+        ? `Device is already linked to ${sharedDeviceCount} other provider profile(s).`
+        : null;
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const device = existingDevice
+        ? await tx.providerDevice.update({
+            where: { id: existingDevice.id },
+            data: {
+              platform,
+              appVersion,
+              lastSeenAt: now,
+            },
+          })
+        : await tx.providerDevice.create({
+            data: {
+              providerProfileId: provider.id,
+              deviceId,
+              platform,
+              appVersion,
+              enabled: true,
+              lastSeenAt: now,
+            },
+          });
+
+      const session = await tx.providerSession.create({
+        data: {
+          providerProfileId: provider.id,
+          deviceId,
+          ipAddress: normalizeOptional(ipAddress),
+          appVersion,
+          lastSeenAt: now,
+          suspicious,
+          suspiciousReason,
+        },
+      });
+
+      return { device, session };
+    });
+
+    return {
+      ok: !blocked,
+      blocked,
+      sharedDeviceProfileCount: sharedDeviceCount,
+      device: result.device,
+      session: result.session,
+    };
+  }
+
   async updateLocation(userId: string | undefined, input: { lat: number; lng: number }) {
     const provider = await this.requireProvider(userId);
     assertVietnamCoordinate(input.lat, input.lng, 'Provider location must be inside Vietnam');
@@ -217,6 +298,19 @@ function assertVietnamCoordinate(lat: number, lng: number, message: string) {
 
 function isVietnamCoordinate(lat: number, lng: number) {
   return lat >= 8.0 && lat <= 24.0 && lng >= 102.0 && lng <= 110.0;
+}
+
+function normalizeRequired(value: string | undefined, message: string) {
+  const normalized = value?.trim();
+  if (!normalized) {
+    throw new BadRequestException(message);
+  }
+  return normalized.slice(0, 160);
+}
+
+function normalizeOptional(value: string | undefined) {
+  const normalized = value?.trim();
+  return normalized ? normalized.slice(0, 160) : undefined;
 }
 
 function publicProviderMedia(provider: {

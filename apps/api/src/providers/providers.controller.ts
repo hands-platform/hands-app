@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ProviderStatus, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -36,6 +36,17 @@ export class ProvidersController {
   @Roles(Role.PROVIDER)
   online(@CurrentUser() user: AuthenticatedUser) {
     return this.providers.setStatus(user.id, ProviderStatus.ONLINE_AVAILABLE);
+  }
+
+  @Post('provider/device-session')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  recordDeviceSession(
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: { ip?: string },
+    @Body() body: { deviceId?: string; platform?: string; appVersion?: string },
+  ) {
+    return this.providers.recordDeviceSession(user.id, body, request.ip);
   }
 
   @Post('provider/offline')

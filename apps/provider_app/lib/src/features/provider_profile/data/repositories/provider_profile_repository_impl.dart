@@ -1,6 +1,7 @@
 import '../../../../core/api_client.dart';
 import '../../../../core/realtime_socket.dart';
 import '../../../map/data/datasources/provider_device_location_datasource.dart';
+import '../datasources/provider_device_identity_datasource.dart';
 import '../../domain/repositories/provider_profile_repository.dart';
 import 'package:http/http.dart' as http;
 
@@ -9,16 +10,20 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     required ApiClient api,
     required RealtimeSocket socket,
     required ProviderDeviceLocationDataSource locationDataSource,
+    required ProviderDeviceIdentityDataSource deviceIdentityDataSource,
   })  : _api = api,
         _socket = socket,
-        _locationDataSource = locationDataSource;
+        _locationDataSource = locationDataSource,
+        _deviceIdentityDataSource = deviceIdentityDataSource;
 
   final ApiClient _api;
   final RealtimeSocket _socket;
   final ProviderDeviceLocationDataSource _locationDataSource;
+  final ProviderDeviceIdentityDataSource _deviceIdentityDataSource;
 
   @override
   Future<void> goOnline() async {
+    await recordDeviceSession();
     await _api.postJson('/provider/online', {});
     try {
       await updateLocation();
@@ -26,6 +31,26 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
       await _api.postJson('/provider/offline', {});
       rethrow;
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> recordDeviceSession() async {
+    final identity = await _deviceIdentityDataSource.currentIdentity();
+    final result =
+        await _api.postJson('/provider/device-session', identity.toJson());
+    final record = result is Map<String, dynamic>
+        ? result
+        : <String, dynamic>{'ok': true};
+    if (record['blocked'] == true) {
+      final device = _asMap(record['device']);
+      final reason = device?['blockReason']?.toString();
+      throw StateError(
+        reason == null || reason.isEmpty
+            ? 'This device is blocked by admin review.'
+            : 'This device is blocked by admin review: $reason',
+      );
+    }
+    return record;
   }
 
   @override

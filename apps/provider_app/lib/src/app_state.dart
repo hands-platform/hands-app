@@ -81,6 +81,10 @@ class ProviderRepository {
     await _profileRepository.goOffline();
   }
 
+  Future<Map<String, dynamic>> recordDeviceSession() async {
+    return _profileRepository.recordDeviceSession();
+  }
+
   Future<Map<String, double>> updateLocation({String? bookingId}) async {
     return _profileRepository.updateLocation(bookingId: bookingId);
   }

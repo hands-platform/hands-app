@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/src/core/realtime_socket.dart';
 import 'package:provider_app/src/features/map/data/datasources/provider_device_location_datasource.dart';
+import 'package:provider_app/src/features/provider_profile/data/datasources/provider_device_identity_datasource.dart';
 import 'package:provider_app/src/features/provider_profile/data/repositories/provider_profile_repository_impl.dart';
 
 void main() {
@@ -42,6 +44,7 @@ void main() {
       ),
       socket: RealtimeSocket(baseUrl: 'http://localhost:3100'),
       locationDataSource: _NoLocationDataSource(),
+      deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
     );
 
     await expectLater(
@@ -50,10 +53,55 @@ void main() {
     );
 
     expect(requests, [
+      'POST /provider/device-session',
       'POST /provider/online',
       'GET /provider/me',
       'POST /provider/offline',
     ]);
+
+    await server.close(force: true);
+  });
+
+  test('does not go online when admin blocked this device', () async {
+    final requests = <String>[];
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+
+    unawaited(
+      server.forEach((request) async {
+        requests.add('${request.method} ${request.uri.path}');
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(jsonEncode({
+          'blocked': true,
+          'device': {
+            'blockReason': 'Duplicate account risk',
+          },
+        }));
+        await request.response.close();
+      }),
+    );
+
+    final repository = ProviderProfileRepositoryImpl(
+      api: ApiClient(
+        baseUrl: 'http://${server.address.host}:${server.port}',
+        tokenRefreshMode: TokenRefreshMode.disabled,
+      ),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3100'),
+      locationDataSource: _NoLocationDataSource(),
+      deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
+    );
+
+    await expectLater(
+      repository.goOnline(),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('Duplicate account risk'),
+        ),
+      ),
+    );
+
+    expect(requests, ['POST /provider/device-session']);
 
     await server.close(force: true);
   });
@@ -62,4 +110,18 @@ void main() {
 class _NoLocationDataSource extends ProviderDeviceLocationDataSource {
   @override
   Future<Position?> currentPosition() async => null;
+}
+
+class _FakeDeviceIdentityDataSource extends ProviderDeviceIdentityDataSource {
+  const _FakeDeviceIdentityDataSource()
+      : super(storage: const FlutterSecureStorage());
+
+  @override
+  Future<ProviderDeviceIdentity> currentIdentity() async {
+    return const ProviderDeviceIdentity(
+      deviceId: 'test-provider-device',
+      platform: 'android',
+      appVersion: 'test',
+    );
+  }
 }
