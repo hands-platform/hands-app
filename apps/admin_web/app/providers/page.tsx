@@ -193,7 +193,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </thead>
           <tbody>
             {providers.map((provider) => (
-              <tr key={provider.id}>
+              <tr id={`provider-${provider.id}`} key={provider.id}>
                 <td>
                   <Link className="text-link" href={`/providers/${provider.id}`}>
                     {provider.displayName || provider.user?.fullName || provider.user?.phone}

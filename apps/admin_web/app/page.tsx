@@ -113,6 +113,15 @@ export default async function DashboardPage() {
           <Link className="text-link" href="/payments">
             Payments
           </Link>
+          <Link className="text-link" href="/providers">
+            Provider review
+          </Link>
+          <Link className="text-link" href="/tax-policy">
+            Tax policy
+          </Link>
+          <Link className="text-link" href="/setup">
+            Setup
+          </Link>
           <Link className="text-link" href="/audit-log">
             Audit log
           </Link>
@@ -378,7 +387,7 @@ function buildOpsQueue(input: {
     if (provider.verification?.status === 'SUBMITTED') {
       items.push({
         area: 'Provider',
-        href: `/providers#provider-${provider.id}`,
+        href: `/providers/${provider.id}`,
         label: 'Provider verification waiting',
         detail: provider.displayName,
         severity: 'medium',
@@ -388,7 +397,7 @@ function buildOpsQueue(input: {
     if (disabledDevices.length > 0) {
       items.push({
         area: 'Notification',
-        href: `/providers#provider-${provider.id}`,
+        href: `/providers/${provider.id}`,
         label: 'Provider has disabled push device',
         detail: `${provider.displayName} has ${disabledDevices.length} disabled device(s).`,
         severity: 'low',
