@@ -33,6 +33,12 @@ HANDS provider onboarding is split into small domains so legal, tax, payout, and
 
 Tax fields are intentionally not required during signup. They appear when the provider has earned money and tries to withdraw.
 
+The onboarding snapshot follows the same staged rule. Before the first completed service,
+`payoutGate.missing` should only report `firstCompletedService`. Tax profile,
+residential address, and payout/tax agreement gaps stay deferred in the API payload so
+the Provider app does not pressure new signups to complete withdrawal-only paperwork too
+early. After the first completed service, those payout requirements become active gates.
+
 ## Tax Policy Rule
 
 Tax calculation must read an active `TaxPolicyVersion` and matching `TaxRule`.
