@@ -11,6 +11,8 @@ import 'features/notification/domain/repositories/push_notification_repository.d
 import 'features/notification/presentation/providers/notification_providers.dart';
 import 'features/provider_profile/domain/repositories/provider_profile_repository.dart';
 import 'features/provider_profile/presentation/providers/provider_profile_providers.dart';
+import 'features/provider_onboarding/domain/repositories/provider_onboarding_repository.dart';
+import 'features/provider_onboarding/presentation/providers/provider_onboarding_providers.dart';
 import 'features/verification/domain/repositories/provider_verification_repository.dart';
 import 'features/verification/presentation/providers/verification_providers.dart';
 
@@ -22,6 +24,7 @@ export 'features/earnings/presentation/providers/earnings_providers.dart';
 export 'features/map/domain/services/provider_location_heartbeat.dart';
 export 'features/map/presentation/providers/map_providers.dart';
 export 'features/notification/presentation/providers/notification_providers.dart';
+export 'features/provider_onboarding/presentation/providers/provider_onboarding_providers.dart';
 export 'features/provider_profile/presentation/providers/provider_profile_providers.dart';
 export 'features/verification/presentation/providers/verification_providers.dart';
 
@@ -33,6 +36,7 @@ final providerRepositoryProvider = Provider<ProviderRepository>((ref) {
     ref.read(providerEarningsRepositoryProvider),
     ref.read(pushNotificationRepositoryProvider),
     ref.read(providerVerificationRepositoryProvider),
+    ref.read(providerOnboardingRepositoryProvider),
   );
 });
 
@@ -58,7 +62,8 @@ class ProviderRepository {
       this._chatRepository,
       this._earningsRepository,
       this._notificationRepository,
-      this._verificationRepository);
+      this._verificationRepository,
+      this._onboardingRepository);
 
   final ProviderProfileRepository _profileRepository;
   final ProviderBookingRepository _bookingRepository;
@@ -66,6 +71,7 @@ class ProviderRepository {
   final ProviderEarningsRepository _earningsRepository;
   final PushNotificationRepository _notificationRepository;
   final ProviderVerificationRepository _verificationRepository;
+  final ProviderOnboardingRepository _onboardingRepository;
 
   Future<void> goOnline() async {
     await _profileRepository.goOnline();
@@ -173,5 +179,62 @@ class ProviderRepository {
   Future<Map<String, dynamic>> submitVerification(
       {List<String> fileIds = const []}) async {
     return _verificationRepository.submitVerification(fileIds: fileIds);
+  }
+
+  Future<Map<String, dynamic>> onboardingSnapshot() async {
+    return _onboardingRepository.snapshot();
+  }
+
+  Future<Map<String, dynamic>> updateOnboardingBasicProfile(
+      Map<String, dynamic> input) async {
+    return _onboardingRepository.updateBasicProfile(input);
+  }
+
+  Future<Map<String, dynamic>> submitOnboardingKyc({
+    String? cccdNumber,
+    List<Map<String, String>> documents = const [],
+  }) async {
+    return _onboardingRepository.submitKyc(
+      cccdNumber: cccdNumber,
+      documents: documents,
+    );
+  }
+
+  Future<Map<String, dynamic>> createOnboardingBankAccount({
+    required String bankName,
+    String? accountNumber,
+    required String accountHolderName,
+    Map<String, dynamic>? qrBankingInfo,
+  }) async {
+    return _onboardingRepository.createBankAccount(
+      bankName: bankName,
+      accountNumber: accountNumber,
+      accountHolderName: accountHolderName,
+      qrBankingInfo: qrBankingInfo,
+    );
+  }
+
+  Future<Map<String, dynamic>> upsertOnboardingTaxProfile({
+    String? taxCode,
+    required String legalName,
+    required String registeredAddress,
+  }) async {
+    return _onboardingRepository.upsertTaxProfile(
+      taxCode: taxCode,
+      legalName: legalName,
+      registeredAddress: registeredAddress,
+    );
+  }
+
+  Future<Map<String, dynamic>> acceptOnboardingAgreement({
+    required String type,
+    required String version,
+    String? deviceId,
+  }) async {
+    return _onboardingRepository.acceptAgreement(
+      type: type,
+      version: version,
+      deviceId: deviceId,
+    );
   }
 }

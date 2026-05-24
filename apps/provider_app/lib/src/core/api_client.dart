@@ -30,6 +30,11 @@ class ApiClient {
         http.post(_uri(path), headers: _headers(), body: jsonEncode(body)));
   }
 
+  Future<dynamic> patchJson(String path, Map<String, dynamic> body) async {
+    return _sendWithRefresh(() =>
+        http.patch(_uri(path), headers: _headers(), body: jsonEncode(body)));
+  }
+
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
   Map<String, String> _headers() {

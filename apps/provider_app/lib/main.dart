@@ -2468,20 +2468,123 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late Future<Map<String, dynamic>> _verificationFuture;
+  late Future<Map<String, dynamic>> _onboardingFuture;
   final List<String> _uploadedFileIds = [];
   bool _isUploadingProfileImage = false;
   bool _isUploading = false;
   bool _isSubmitting = false;
+  bool _isSavingOnboarding = false;
 
   @override
   void initState() {
     super.initState();
     _verificationFuture = ref.read(providerRepositoryProvider).verification();
+    _onboardingFuture =
+        ref.read(providerRepositoryProvider).onboardingSnapshot();
   }
 
   void _refreshVerification() {
     setState(() {
       _verificationFuture = ref.read(providerRepositoryProvider).verification();
+    });
+  }
+
+  void _refreshOnboarding() {
+    setState(() {
+      _onboardingFuture =
+          ref.read(providerRepositoryProvider).onboardingSnapshot();
+    });
+  }
+
+  Future<void> _runOnboardingAction(
+      String successMessage, Future<void> Function() action) async {
+    setState(() {
+      _isSavingOnboarding = true;
+    });
+    try {
+      await action();
+      _refreshOnboarding();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(successMessage)),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Onboarding update failed: $error')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingOnboarding = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _fillDemoBasicProfile() {
+    return _runOnboardingAction('Basic profile saved', () async {
+      await ref.read(providerRepositoryProvider).updateOnboardingBasicProfile({
+        'legalName': 'Demo Provider',
+        'dateOfBirth': '1995-01-01',
+        'gender': 'female',
+        'facebookId': 'demo.provider',
+        'displayName': 'Linh Wellness',
+        'activityNickname': 'Linh',
+        'bio': 'Verified provider available for home massage in Vietnam.',
+        'residentialAddress': 'District 1, Ho Chi Minh City, Vietnam',
+        'city': 'Ho Chi Minh City',
+        'serviceArea': {
+          'country': 'VN',
+          'cities': ['Ho Chi Minh City'],
+        },
+      });
+    });
+  }
+
+  Future<void> _submitDemoKyc() {
+    return _runOnboardingAction('KYC request submitted for admin review',
+        () async {
+      await ref
+          .read(providerRepositoryProvider)
+          .submitOnboardingKyc(cccdNumber: '000000000000');
+      _refreshVerification();
+    });
+  }
+
+  Future<void> _addDemoBankAccount() {
+    return _runOnboardingAction('Bank account submitted for review', () async {
+      await ref.read(providerRepositoryProvider).createOnboardingBankAccount(
+        bankName: 'Vietcombank',
+        accountNumber: '000012345678',
+        accountHolderName: 'Demo Provider',
+        qrBankingInfo: const {'provider': 'vietqr', 'enabled': true},
+      );
+    });
+  }
+
+  Future<void> _addDemoTaxProfile() {
+    return _runOnboardingAction('Tax profile submitted for review', () async {
+      await ref.read(providerRepositoryProvider).upsertOnboardingTaxProfile(
+            taxCode: '0000000000',
+            legalName: 'Demo Provider',
+            registeredAddress: 'District 1, Ho Chi Minh City, Vietnam',
+          );
+    });
+  }
+
+  Future<void> _acceptRequiredAgreements() {
+    const requiredTypes = ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX'];
+    return _runOnboardingAction('Required agreements accepted', () async {
+      for (final type in requiredTypes) {
+        await ref.read(providerRepositoryProvider).acceptOnboardingAgreement(
+              type: type,
+              version: '2026-05',
+              deviceId: 'provider-demo-device',
+            );
+      }
     });
   }
 
@@ -2635,6 +2738,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           if (auth != null) ...[
+            FutureBuilder<Map<String, dynamic>>(
+              future: _onboardingFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                return _ProviderOnboardingCard(
+                  snapshot: snapshot.data ?? <String, dynamic>{},
+                  error: snapshot.error,
+                  isSaving: _isSavingOnboarding,
+                  onRefresh: _refreshOnboarding,
+                  onFillBasicProfile: _fillDemoBasicProfile,
+                  onSubmitKyc: _submitDemoKyc,
+                  onAddBankAccount: _addDemoBankAccount,
+                  onAddTaxProfile: _addDemoTaxProfile,
+                  onAcceptAgreements: _acceptRequiredAgreements,
+                );
+              },
+            ),
+            const SizedBox(height: 12),
             FilledButton.tonalIcon(
               onPressed:
                   _isUploadingProfileImage ? null : _pickAndUploadProfileImage,
@@ -2765,6 +2888,250 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
   }
+}
+
+class _ProviderOnboardingCard extends StatelessWidget {
+  const _ProviderOnboardingCard({
+    required this.snapshot,
+    required this.error,
+    required this.isSaving,
+    required this.onRefresh,
+    required this.onFillBasicProfile,
+    required this.onSubmitKyc,
+    required this.onAddBankAccount,
+    required this.onAddTaxProfile,
+    required this.onAcceptAgreements,
+  });
+
+  final Map<String, dynamic> snapshot;
+  final Object? error;
+  final bool isSaving;
+  final VoidCallback onRefresh;
+  final Future<void> Function() onFillBasicProfile;
+  final Future<void> Function() onSubmitKyc;
+  final Future<void> Function() onAddBankAccount;
+  final Future<void> Function() onAddTaxProfile;
+  final Future<void> Function() onAcceptAgreements;
+
+  @override
+  Widget build(BuildContext context) {
+    final level = snapshot['level']?.toString() ?? 'LEVEL_1_SIGNUP';
+    final recommended =
+        snapshot['recommendedLevel']?.toString() ?? 'LEVEL_1_SIGNUP';
+    final nextActions = asList(snapshot['nextRequiredActions'])
+        .map((action) => action.toString())
+        .toList();
+    final bankAccounts = asList(snapshot['bankAccounts']);
+    final agreements = asList(snapshot['agreements']);
+    final payoutGate = asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
+    final payoutMissing = asMap(payoutGate['missing']) ?? <String, dynamic>{};
+    final canWithdraw = payoutGate['canWithdraw'] == true;
+    final completedBookingCount =
+        asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
+    final kyc = asMap(snapshot['kyc']);
+    final verification = asMap(snapshot['verification']);
+    final taxProfile = asMap(snapshot['taxProfile']);
+    final basicProfile = asMap(snapshot['basicProfile']) ?? <String, dynamic>{};
+    final hasBasicProfile = !nextActions.contains('BASIC_PROFILE');
+    final kycStatus =
+        kyc?['status']?.toString() ?? verification?['status']?.toString();
+    final bankStatus = bankAccounts.isEmpty
+        ? null
+        : asMap(bankAccounts.first)?['status']?.toString();
+    final taxStatus = taxProfile?['status']?.toString();
+    final addressText = basicProfile['residentialAddress']?.toString();
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Provider onboarding',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                ),
+                IconButton(
+                  onPressed: isSaving ? null : onRefresh,
+                  icon: const Icon(Icons.refresh),
+                  tooltip: 'Refresh onboarding',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                _OnboardingPill(label: 'Current', value: _compactLevel(level)),
+                _OnboardingPill(
+                    label: 'Recommended', value: _compactLevel(recommended)),
+                _OnboardingPill(
+                    label: 'Completed',
+                    value: '$completedBookingCount service(s)'),
+                _OnboardingPill(
+                    label: 'Payout',
+                    value: canWithdraw ? 'Ready' : 'Locked',
+                    isPositive: canWithdraw),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (error != null) ...[
+              ErrorCard(text: 'Onboarding load failed: $error'),
+              const SizedBox(height: 12),
+            ],
+            _OnboardingGateRow(
+              title: 'Basic profile',
+              detail: addressText == null || addressText.isEmpty
+                  ? 'Name, birthday, address, service area'
+                  : addressText,
+              complete: hasBasicProfile,
+            ),
+            _OnboardingGateRow(
+              title: 'KYC / admin review',
+              detail: kycStatus ?? 'Not submitted',
+              complete: kycStatus == 'APPROVED',
+            ),
+            _OnboardingGateRow(
+              title: 'Bank account',
+              detail: bankStatus ?? 'Not submitted',
+              complete: bankStatus == 'APPROVED',
+            ),
+            _OnboardingGateRow(
+              title: 'Tax profile',
+              detail: completedBookingCount == 0
+                  ? 'Required before first payout'
+                  : (taxStatus ?? 'Not submitted'),
+              complete: completedBookingCount == 0 || taxStatus == 'APPROVED',
+            ),
+            _OnboardingGateRow(
+              title: 'Legal agreements',
+              detail: '${agreements.length}/5 accepted',
+              complete: (asList(payoutMissing['agreements'])).isEmpty,
+            ),
+            const SizedBox(height: 12),
+            if (nextActions.isEmpty)
+              const InfoCard(text: 'All current onboarding gates are clear.')
+            else
+              InfoCard(
+                text: 'Next: ${nextActions.map(_readableAction).join(', ')}',
+              ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: isSaving ? null : onFillBasicProfile,
+                  icon: const Icon(Icons.badge_outlined),
+                  label: const Text('Save demo profile'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: isSaving ? null : onSubmitKyc,
+                  icon: const Icon(Icons.verified_user_outlined),
+                  label: const Text('Submit KYC'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: isSaving ? null : onAddBankAccount,
+                  icon: const Icon(Icons.account_balance_outlined),
+                  label: const Text('Add bank'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: isSaving ? null : onAddTaxProfile,
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: const Text('Add tax'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: isSaving ? null : onAcceptAgreements,
+                  icon: const Icon(Icons.assignment_turned_in_outlined),
+                  label: const Text('Accept terms'),
+                ),
+              ],
+            ),
+            if (isSaving) ...[
+              const SizedBox(height: 12),
+              const LinearProgressIndicator(),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _OnboardingPill extends StatelessWidget {
+  const _OnboardingPill({
+    required this.label,
+    required this.value,
+    this.isPositive,
+  });
+
+  final String label;
+  final String value;
+  final bool? isPositive;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final color = isPositive == null
+        ? colorScheme.secondaryContainer
+        : isPositive!
+            ? colorScheme.primaryContainer
+            : colorScheme.errorContainer;
+    return Chip(
+      backgroundColor: color,
+      label: Text('$label: $value'),
+    );
+  }
+}
+
+class _OnboardingGateRow extends StatelessWidget {
+  const _OnboardingGateRow({
+    required this.title,
+    required this.detail,
+    required this.complete,
+  });
+
+  final String title;
+  final String detail;
+  final bool complete;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        complete ? Icons.check_circle_outline : Icons.pending_outlined,
+        color: complete
+            ? Theme.of(context).colorScheme.primary
+            : Theme.of(context).colorScheme.outline,
+      ),
+      title: Text(title),
+      subtitle: Text(detail),
+    );
+  }
+}
+
+String _compactLevel(String value) {
+  return value
+      .replaceAll('LEVEL_', 'L')
+      .replaceAll('_SIGNUP', ' signup')
+      .replaceAll('_ACTIVE', ' active')
+      .replaceAll('_PAYOUT_ENABLED', ' payout')
+      .replaceAll('_TRUSTED', ' trusted');
+}
+
+String _readableAction(String value) {
+  return value
+      .toLowerCase()
+      .split('_')
+      .map((part) =>
+          part.isEmpty ? part : '${part[0].toUpperCase()}${part.substring(1)}')
+      .join(' ');
 }
 
 String guessImageContentTypeFromName(String name) {
