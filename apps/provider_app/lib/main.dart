@@ -2551,7 +2551,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ...existingDocumentTypes,
       ..._uploadedOnboardingDocumentIds.keys,
     };
-    final missingTypes = requiredProviderDocumentTypes
+    final requiredTypes = requiredKycDocumentTypesFromSnapshot(snapshot);
+    final missingTypes = requiredTypes
         .where((type) => !readyDocumentTypes.contains(type))
         .toList();
     if (missingTypes.isNotEmpty) {
@@ -2983,6 +2984,9 @@ class _ProviderOnboardingCard extends StatelessWidget {
     final bankAccounts = asList(snapshot['bankAccounts']);
     final documents = asList(snapshot['documents']);
     final agreements = asList(snapshot['agreements']);
+    final requiredKycTypes = requiredKycDocumentTypesFromSnapshot(snapshot);
+    final requiredAgreements =
+        requiredPayoutAgreementTypesFromSnapshot(snapshot);
     final payoutGate = asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
     final payoutMissing = asMap(payoutGate['missing']) ?? <String, dynamic>{};
     final canWithdraw = payoutGate['canWithdraw'] == true;
@@ -3000,6 +3004,13 @@ class _ProviderOnboardingCard extends StatelessWidget {
         : asMap(bankAccounts.first)?['status']?.toString();
     final taxStatus = taxProfile?['status']?.toString();
     final addressText = basicProfile['residentialAddress']?.toString();
+    final submittedKycRequiredCount = documents
+        .map(asMap)
+        .whereType<Map<String, dynamic>>()
+        .map((document) => document['type']?.toString())
+        .where((type) => requiredKycTypes.contains(type))
+        .toSet()
+        .length;
 
     return Card(
       child: Padding(
@@ -3053,7 +3064,8 @@ class _ProviderOnboardingCard extends StatelessWidget {
             ),
             _OnboardingGateRow(
               title: 'KYC / admin review',
-              detail: kycStatus ?? 'Not submitted',
+              detail:
+                  '${kycStatus ?? 'Not submitted'} / $submittedKycRequiredCount of ${requiredKycTypes.length} required docs',
               complete: kycStatus == 'APPROVED',
             ),
             if (documents.isNotEmpty) ...[
@@ -3088,7 +3100,8 @@ class _ProviderOnboardingCard extends StatelessWidget {
             ),
             _OnboardingGateRow(
               title: 'Legal agreements',
-              detail: '${agreements.length}/5 accepted',
+              detail:
+                  '${agreements.length}/${requiredAgreements.length} accepted',
               complete: (asList(payoutMissing['agreements'])).isEmpty,
             ),
             const SizedBox(height: 12),
@@ -3297,6 +3310,28 @@ Map<String, dynamic>? asMap(dynamic value) {
 
 List<dynamic> asList(dynamic value) {
   return value is List<dynamic> ? value : const [];
+}
+
+List<String> requiredKycDocumentTypesFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final requirements = asMap(snapshot['requirements']);
+  final values = asList(requirements?['requiredKycDocumentTypes'])
+      .map((value) => value.toString())
+      .where((value) => value.isNotEmpty)
+      .toList();
+  return values.isEmpty ? requiredProviderDocumentTypes : values;
+}
+
+List<String> requiredPayoutAgreementTypesFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final requirements = asMap(snapshot['requirements']);
+  final values = asList(requirements?['requiredPayoutAgreements'])
+      .map((value) => value.toString())
+      .where((value) => value.isNotEmpty)
+      .toList();
+  return values.isEmpty
+      ? const ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX']
+      : values;
 }
 
 class InfoCard extends StatelessWidget {
