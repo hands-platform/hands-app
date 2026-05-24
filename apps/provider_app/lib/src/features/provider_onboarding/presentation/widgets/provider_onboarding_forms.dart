@@ -127,12 +127,18 @@ Future<ProviderKycInput?> showProviderKycSheet(BuildContext context) {
 Future<ProviderBankAccountInput?> showProviderBankAccountSheet(
   BuildContext context, {
   Map<String, dynamic> initial = const {},
+  String? status,
+  String? rejectionReason,
 }) {
   return showModalBottomSheet<ProviderBankAccountInput>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) => _BankAccountForm(initial: initial),
+    builder: (context) => _BankAccountForm(
+      initial: initial,
+      status: status,
+      rejectionReason: rejectionReason,
+    ),
   );
 }
 
@@ -140,13 +146,19 @@ Future<ProviderTaxProfileInput?> showProviderTaxProfileSheet(
   BuildContext context, {
   Map<String, dynamic> initial = const {},
   Map<String, dynamic> basicProfile = const {},
+  String? status,
+  String? rejectionReason,
 }) {
   return showModalBottomSheet<ProviderTaxProfileInput>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (context) =>
-        _TaxProfileForm(initial: initial, basicProfile: basicProfile),
+    builder: (context) => _TaxProfileForm(
+      initial: initial,
+      basicProfile: basicProfile,
+      status: status,
+      rejectionReason: rejectionReason,
+    ),
   );
 }
 
@@ -345,9 +357,15 @@ class _KycFormState extends State<_KycForm> {
 }
 
 class _BankAccountForm extends StatefulWidget {
-  const _BankAccountForm({required this.initial});
+  const _BankAccountForm({
+    required this.initial,
+    required this.status,
+    required this.rejectionReason,
+  });
 
   final Map<String, dynamic> initial;
+  final String? status;
+  final String? rejectionReason;
 
   @override
   State<_BankAccountForm> createState() => _BankAccountFormState();
@@ -385,8 +403,10 @@ class _BankAccountFormState extends State<_BankAccountForm> {
   Widget build(BuildContext context) {
     return _SheetFrame(
       title: 'Payout bank account',
-      description:
-          'Use the provider own Vietnamese bank account. Admin approval is required before payout.',
+      description: bankAccountFormDescription(
+        status: widget.status,
+        rejectionReason: widget.rejectionReason,
+      ),
       child: Form(
         key: _formKey,
         child: Column(
@@ -435,10 +455,17 @@ class _BankAccountFormState extends State<_BankAccountForm> {
 }
 
 class _TaxProfileForm extends StatefulWidget {
-  const _TaxProfileForm({required this.initial, required this.basicProfile});
+  const _TaxProfileForm({
+    required this.initial,
+    required this.basicProfile,
+    required this.status,
+    required this.rejectionReason,
+  });
 
   final Map<String, dynamic> initial;
   final Map<String, dynamic> basicProfile;
+  final String? status;
+  final String? rejectionReason;
 
   @override
   State<_TaxProfileForm> createState() => _TaxProfileFormState();
@@ -480,8 +507,10 @@ class _TaxProfileFormState extends State<_TaxProfileForm> {
   Widget build(BuildContext context) {
     return _SheetFrame(
       title: 'Tax profile',
-      description:
-          'Tax profile is required after the first completed service and before withdrawal. Rates are managed by admin policy.',
+      description: taxProfileFormDescription(
+        status: widget.status,
+        rejectionReason: widget.rejectionReason,
+      ),
       child: Form(
         key: _formKey,
         child: Column(
@@ -749,4 +778,42 @@ String _agreementLabel(String type) {
     default:
       return type;
   }
+}
+
+String bankAccountFormDescription({
+  required String? status,
+  String? rejectionReason,
+}) {
+  if (status == 'REJECTED') {
+    final reason = rejectionReason?.trim();
+    final prefix =
+        reason == null || reason.isEmpty ? 'Rejected.' : 'Rejected: $reason.';
+    return '$prefix Correct the Vietnamese bank account details and submit again for admin approval.';
+  }
+  if (status == 'PENDING_REVIEW') {
+    return 'This bank account is waiting for admin approval. You can update details if the provider changed accounts.';
+  }
+  if (status == 'APPROVED') {
+    return 'This bank account is approved for payout. Submit again only when account details change.';
+  }
+  return 'Use the provider own Vietnamese bank account. Admin approval is required before payout.';
+}
+
+String taxProfileFormDescription({
+  required String? status,
+  String? rejectionReason,
+}) {
+  if (status == 'REJECTED') {
+    final reason = rejectionReason?.trim();
+    final prefix =
+        reason == null || reason.isEmpty ? 'Rejected.' : 'Rejected: $reason.';
+    return '$prefix Correct MST, legal name, and registered address before withdrawal.';
+  }
+  if (status == 'PENDING_REVIEW') {
+    return 'This tax profile is waiting for admin review. Rates are still managed by admin policy.';
+  }
+  if (status == 'APPROVED') {
+    return 'This tax profile is approved. Update only if the provider tax details change.';
+  }
+  return 'Tax profile is required after the first completed service and before withdrawal. Rates are managed by admin policy.';
 }

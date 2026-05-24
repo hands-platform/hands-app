@@ -2593,11 +2593,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   Future<void> _addBankAccountFromForm(Map<String, dynamic> snapshot) async {
     final bankAccounts = asList(snapshot['bankAccounts']);
+    final initialBankAccount = bankAccounts.isEmpty
+        ? <String, dynamic>{}
+        : asMap(bankAccounts.first) ?? <String, dynamic>{};
     final input = await showProviderBankAccountSheet(
       context,
-      initial: bankAccounts.isEmpty
-          ? <String, dynamic>{}
-          : asMap(bankAccounts.first) ?? <String, dynamic>{},
+      initial: initialBankAccount,
+      status: initialBankAccount['status']?.toString(),
+      rejectionReason: reviewReason(initialBankAccount),
     );
     if (input == null) return;
     return _runOnboardingAction('Bank account submitted for review', () async {
@@ -2611,10 +2614,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _addTaxProfileFromForm(Map<String, dynamic> snapshot) async {
+    final taxProfile = asMap(snapshot['taxProfile']) ?? <String, dynamic>{};
     final input = await showProviderTaxProfileSheet(
       context,
-      initial: asMap(snapshot['taxProfile']) ?? <String, dynamic>{},
+      initial: taxProfile,
       basicProfile: asMap(snapshot['basicProfile']) ?? <String, dynamic>{},
+      status: taxProfile['status']?.toString(),
+      rejectionReason: reviewReason(taxProfile),
     );
     if (input == null) return;
     return _runOnboardingAction('Tax profile submitted for review', () async {
@@ -3162,14 +3168,16 @@ class _ProviderOnboardingCard extends StatelessWidget {
             if (bankRejectionReason != null) ...[
               _ReviewAlert(
                 title: 'Bank account needs updates',
-                detail: bankRejectionReason,
+                detail:
+                    '$bankRejectionReason\n\nOpen Bank account and submit corrected details.',
               ),
               const SizedBox(height: 8),
             ],
             if (taxRejectionReason != null) ...[
               _ReviewAlert(
                 title: 'Tax profile needs updates',
-                detail: taxRejectionReason,
+                detail:
+                    '$taxRejectionReason\n\nOpen Tax profile and submit corrected MST, legal name, and registered address.',
               ),
               const SizedBox(height: 8),
             ],
@@ -3208,9 +3216,10 @@ class _ProviderOnboardingCard extends StatelessWidget {
             _OnboardingStepCard(
               step: '3',
               title: 'Bank account',
-              detail: bankStatus == null
-                  ? 'Add bank name, account number, account holder, and optional QR banking info.'
-                  : 'Review status: $bankStatus.',
+              detail: providerBankAccountStepDetail(
+                status: bankStatus,
+                rejectionReason: bankRejectionReason,
+              ),
               status: bankStatus == 'APPROVED' ? 'Approved' : 'Required',
               complete: bankStatus == 'APPROVED',
               icon: Icons.account_balance_outlined,
@@ -3224,9 +3233,12 @@ class _ProviderOnboardingCard extends StatelessWidget {
             _OnboardingStepCard(
               step: '4',
               title: 'Payout unlock',
-              detail: completedBookingCount == 0
-                  ? 'Tax and payout agreements are requested after the first completed service.'
-                  : 'Tax: ${taxStatus ?? 'missing'}, agreements missing: $missingAgreementCount.',
+              detail: providerTaxProfileStepDetail(
+                completedBookingCount: completedBookingCount,
+                status: taxStatus,
+                rejectionReason: taxRejectionReason,
+                missingAgreementCount: missingAgreementCount,
+              ),
               status: canWithdraw
                   ? 'Withdrawals enabled'
                   : payoutPrerequisiteReady

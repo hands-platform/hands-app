@@ -37,12 +37,15 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
   final bankStatus = bankAccounts.isEmpty
       ? null
       : _asMap(bankAccounts.first)?['status']?.toString();
+  final bankRejectionReason =
+      bankAccounts.isEmpty ? null : reviewReason(_asMap(bankAccounts.first));
   final kyc = _asMap(snapshot['kyc']);
   final verification = _asMap(snapshot['verification']);
   final kycStatus =
       kyc?['status']?.toString() ?? verification?['status']?.toString();
   final taxProfile = _asMap(snapshot['taxProfile']);
   final taxStatus = taxProfile?['status']?.toString();
+  final taxRejectionReason = reviewReason(taxProfile);
   final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
   final payoutMissing = _asMap(payoutGate['missing']) ?? <String, dynamic>{};
   final canWithdraw = payoutGate['canWithdraw'] == true;
@@ -97,8 +100,12 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
       title: bankStatus == 'REJECTED'
           ? 'Fix rejected bank account'
           : 'Add payout bank account',
-      detail:
-          'Bank account approval is required before this provider can become fully active.',
+      detail: bankStatus == 'REJECTED'
+          ? providerBankAccountStepDetail(
+              status: bankStatus,
+              rejectionReason: bankRejectionReason,
+            )
+          : 'Bank account approval is required before this provider can become fully active.',
       tone: 'warning',
       actionKey: 'BANK_ACCOUNT_REVIEW',
       buttonLabel: bankStatus == 'REJECTED' ? 'Resubmit bank' : 'Add bank',
@@ -110,8 +117,14 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
       title: taxStatus == 'REJECTED'
           ? 'Fix rejected tax profile'
           : 'Add tax profile for payout',
-      detail:
-          'Tax information is only required after earnings exist, but it must be approved before withdrawal.',
+      detail: taxStatus == 'REJECTED'
+          ? providerTaxProfileStepDetail(
+              completedBookingCount: completedBookingCount,
+              status: taxStatus,
+              rejectionReason: taxRejectionReason,
+              missingAgreementCount: missingAgreementCount,
+            )
+          : 'Tax information is only required after earnings exist, but it must be approved before withdrawal.',
       tone: 'warning',
       actionKey: 'TAX_PROFILE_REVIEW',
       buttonLabel: taxStatus == 'REJECTED' ? 'Resubmit tax' : 'Add tax',
@@ -191,6 +204,52 @@ String providerLogActionLabel(String value) {
 String? reviewReason(Map<String, dynamic>? value) {
   final reason = value?['rejectionReason']?.toString().trim();
   return reason == null || reason.isEmpty ? null : reason;
+}
+
+String providerBankAccountStepDetail({
+  required String? status,
+  String? rejectionReason,
+}) {
+  if (status == null) {
+    return 'Add bank name, account number, account holder, and optional QR banking info.';
+  }
+  if (status == 'REJECTED') {
+    final reason = rejectionReason?.trim();
+    final prefix =
+        reason == null || reason.isEmpty ? 'Rejected.' : 'Rejected: $reason.';
+    return '$prefix Update the bank details and submit again.';
+  }
+  if (status == 'PENDING_REVIEW') {
+    return 'Submitted. Waiting for admin approval before payout.';
+  }
+  if (status == 'APPROVED') {
+    return 'Approved for payout.';
+  }
+  return 'Review status: $status.';
+}
+
+String providerTaxProfileStepDetail({
+  required int completedBookingCount,
+  required String? status,
+  String? rejectionReason,
+  required int missingAgreementCount,
+}) {
+  if (completedBookingCount == 0) {
+    return 'Tax and payout agreements are requested after the first completed service.';
+  }
+  if (status == 'REJECTED') {
+    final reason = rejectionReason?.trim();
+    final prefix =
+        reason == null || reason.isEmpty ? 'Rejected.' : 'Rejected: $reason.';
+    return '$prefix Update MST, legal name, and registered address before withdrawal.';
+  }
+  if (status == 'PENDING_REVIEW') {
+    return 'Submitted. Waiting for admin tax review. Agreements missing: $missingAgreementCount.';
+  }
+  if (status == 'APPROVED') {
+    return 'Tax approved. Agreements missing: $missingAgreementCount.';
+  }
+  return 'Tax: ${status ?? 'missing'}, agreements missing: $missingAgreementCount.';
 }
 
 List<String> requiredKycDocumentTypesFromSnapshot(

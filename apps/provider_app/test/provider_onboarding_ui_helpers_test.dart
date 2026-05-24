@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider_app/src/features/provider_onboarding/presentation/provider_onboarding_status.dart';
 import 'package:provider_app/src/features/provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
+import 'package:provider_app/src/features/provider_onboarding/presentation/widgets/provider_onboarding_forms.dart';
 
 void main() {
   test('reads onboarding requirements from API snapshot', () {
@@ -41,6 +42,62 @@ void main() {
         'Blurry CCCD photo');
     expect(reviewReason({'rejectionReason': '   '}), isNull);
     expect(reviewReason(null), isNull);
+  });
+
+  test('describes bank and tax review states for onboarding steps', () {
+    expect(
+      providerBankAccountStepDetail(
+        status: 'REJECTED',
+        rejectionReason: 'Account holder does not match CCCD',
+      ),
+      'Rejected: Account holder does not match CCCD. Update the bank details and submit again.',
+    );
+    expect(
+      providerBankAccountStepDetail(status: 'PENDING_REVIEW'),
+      'Submitted. Waiting for admin approval before payout.',
+    );
+    expect(
+      providerTaxProfileStepDetail(
+        completedBookingCount: 2,
+        status: 'REJECTED',
+        rejectionReason: 'MST is invalid',
+        missingAgreementCount: 1,
+      ),
+      'Rejected: MST is invalid. Update MST, legal name, and registered address before withdrawal.',
+    );
+    expect(
+      providerTaxProfileStepDetail(
+        completedBookingCount: 0,
+        status: null,
+        missingAgreementCount: 5,
+      ),
+      'Tax and payout agreements are requested after the first completed service.',
+    );
+  });
+
+  test('describes bank and tax resubmission forms', () {
+    expect(
+      bankAccountFormDescription(
+        status: 'REJECTED',
+        rejectionReason: 'Bank number is wrong',
+      ),
+      contains('Correct the Vietnamese bank account details'),
+    );
+    expect(
+      taxProfileFormDescription(
+        status: 'REJECTED',
+        rejectionReason: 'Tax code is not valid',
+      ),
+      contains('Correct MST'),
+    );
+    expect(
+      bankAccountFormDescription(status: 'APPROVED'),
+      contains('approved for payout'),
+    );
+    expect(
+      taxProfileFormDescription(status: 'PENDING_REVIEW'),
+      contains('waiting for admin review'),
+    );
   });
 
   test('labels provider onboarding history actions', () {
@@ -187,6 +244,35 @@ void main() {
 
     expect(priority.title, 'Upload identity photos');
     expect(priority.buttonLabel, 'Open KYC checklist');
+  });
+
+  test('prioritizes rejected bank and tax records with the admin reason', () {
+    final bankPriority = providerOnboardingPriorityFromSnapshot({
+      'nextRequiredActions': ['BANK_ACCOUNT_REVIEW'],
+      'bankAccounts': [
+        {
+          'status': 'REJECTED',
+          'rejectionReason': 'Account holder does not match CCCD',
+        },
+      ],
+    });
+
+    expect(bankPriority.title, 'Fix rejected bank account');
+    expect(bankPriority.detail, contains('Account holder does not match CCCD'));
+    expect(bankPriority.buttonLabel, 'Resubmit bank');
+
+    final taxPriority = providerOnboardingPriorityFromSnapshot({
+      'nextRequiredActions': ['TAX_PROFILE_REVIEW'],
+      'completedBookingCount': 1,
+      'taxProfile': {
+        'status': 'REJECTED',
+        'rejectionReason': 'MST is invalid',
+      },
+    });
+
+    expect(taxPriority.title, 'Fix rejected tax profile');
+    expect(taxPriority.detail, contains('MST is invalid'));
+    expect(taxPriority.buttonLabel, 'Resubmit tax');
   });
 
   test('shows ready state after core setup before first booking', () {
