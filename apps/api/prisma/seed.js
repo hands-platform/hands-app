@@ -1,4 +1,11 @@
-const { PrismaClient, Role, ProviderStatus, VerificationStatus } = require('@prisma/client');
+const {
+  PrismaClient,
+  Role,
+  ProviderStatus,
+  TaxPolicyStatus,
+  TaxRuleScope,
+  VerificationStatus,
+} = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
@@ -85,6 +92,49 @@ async function main() {
       phone: '+84900000099',
       fullName: 'Demo Admin',
       roles: [Role.ADMIN],
+    },
+  });
+
+  await prisma.platformFeePolicyVersion.upsert({
+    where: { id: 'platform-fee-vn-mvp-2026' },
+    update: {
+      status: TaxPolicyStatus.ACTIVE,
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      notes: 'Default MVP platform fee. Update via admin policy tooling before production.',
+      rules: {
+        upsert: {
+          where: { id: 'platform-fee-rule-default-20pct' },
+          update: {
+            scope: TaxRuleScope.DEFAULT,
+            rateBps: 2000,
+            fixedAmount: 0,
+            active: true,
+          },
+          create: {
+            id: 'platform-fee-rule-default-20pct',
+            scope: TaxRuleScope.DEFAULT,
+            rateBps: 2000,
+            fixedAmount: 0,
+            active: true,
+          },
+        },
+      },
+    },
+    create: {
+      id: 'platform-fee-vn-mvp-2026',
+      name: 'HANDS Vietnam MVP platform fee',
+      status: TaxPolicyStatus.ACTIVE,
+      effectiveFrom: new Date('2026-01-01T00:00:00.000Z'),
+      notes: 'Default MVP platform fee. Update via admin policy tooling before production.',
+      rules: {
+        create: {
+          id: 'platform-fee-rule-default-20pct',
+          scope: TaxRuleScope.DEFAULT,
+          rateBps: 2000,
+          fixedAmount: 0,
+          active: true,
+        },
+      },
     },
   });
 

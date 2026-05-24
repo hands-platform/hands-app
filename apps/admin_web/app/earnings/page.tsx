@@ -235,6 +235,7 @@ export default async function EarningsPage() {
                   <div className="muted">
                     {formatMoney(earning.platformFee, earning.currency)} platform fee
                   </div>
+                  <div className="muted">{platformFeePolicyHint(earning)}</div>
                   <div className="muted">
                     {formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld
                   </div>
@@ -543,6 +544,17 @@ function taxPolicyHint(earning: AdminEarning) {
     return `Tax policy: ${snapshot.reason}`;
   }
   return `Tax policy: ${snapshot?.scope ?? 'RULE'} at ${((snapshot?.rateBps ?? 0) / 100).toFixed(2)}%`;
+}
+
+function platformFeePolicyHint(earning: AdminEarning) {
+  const latestFeeLog = earning.platformFeeLogs?.[0];
+  if (!latestFeeLog) {
+    return 'Fee policy: no log yet';
+  }
+  const snapshot = latestFeeLog.ruleSnapshot as
+    | { scope?: string; rateBps?: number; fixedAmount?: number }
+    | undefined;
+  return `Fee policy: ${snapshot?.scope ?? 'RULE'} at ${((snapshot?.rateBps ?? 0) / 100).toFixed(2)}%`;
 }
 
 function canDirectlyPay(earning: AdminEarning) {

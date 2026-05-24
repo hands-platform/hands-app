@@ -737,6 +737,15 @@ if (
 if (providerEarningsSummary.withholdingAmount <= 0) {
   throw new Error(`Earnings summary did not include withholding: ${JSON.stringify(providerEarningsSummary)}`);
 }
+const adminCompletedEarning = (await getJson('/admin/earnings', adminAuth.accessToken)).find(
+  (earning) => earning.bookingId === booking.id,
+);
+if (
+  !adminCompletedEarning?.platformFeeLogs?.length ||
+  adminCompletedEarning.platformFeeLogs[0].platformFeeAmount !== completedEarning.platformFee
+) {
+  throw new Error(`Completed earning did not record platform fee policy log: ${JSON.stringify(adminCompletedEarning)}`);
+}
 if (providerEarningsSummary.walletBlocked === true || providerEarningsSummary.walletBalance <= 0) {
   throw new Error(
     `Online payment earning should keep provider wallet positive: ${JSON.stringify(providerEarningsSummary)}`,

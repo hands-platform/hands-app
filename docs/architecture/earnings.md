@@ -15,7 +15,7 @@ The MVP creates a provider earning record when the selected provider completes a
 ## Calculation
 
 - `grossAmount`: captured payment amount, falling back to booking service totals.
-- `platformFee`: 20% of gross amount for the MVP.
+- `platformFee`: calculated from the active `PlatformFeePolicyVersion` and `PlatformFeeRule`.
 - `withholdingAmount`: calculated from the active versioned tax policy.
 - `tipAmount`: review tip amount, applied after the customer submits a review.
 - `netAmount` for MoMo/VNPay: `grossAmount - platformFee - withholdingAmount + tipAmount`.
@@ -23,6 +23,14 @@ The MVP creates a provider earning record when the selected provider completes a
 - `availableAt`: 24 hours after completion for MVP payout review.
 
 Cash bookings therefore create a company receivable instead of a provider payout. The provider wallet can go negative when cash-service platform fees or tax withholding have not been settled.
+
+## Platform Fee Policy
+
+Platform fees are versioned like tax policies. The MVP seeds an active default policy
+(`platform-fee-vn-mvp-2026`) with a 20% default rule, but the calculation reads from
+database policy rows rather than a code constant. Each completed booking writes a
+`ProviderPlatformFeeLog` with the applied policy version, rule snapshot, gross amount,
+and fee amount so finance can audit historical fee calculations after policy changes.
 
 ## Statuses
 

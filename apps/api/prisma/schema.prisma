@@ -216,28 +216,29 @@ enum ProviderSanctionStatus {
 }
 
 model User {
-  id                       String                    @id @default(cuid())
-  supabaseUserId           String?                   @unique
-  phone                    String                    @unique
+  id                       String                     @id @default(cuid())
+  supabaseUserId           String?                    @unique
+  phone                    String                     @unique
   email                    String?
   fullName                 String?
   roles                    Role[]
-  createdAt                DateTime                  @default(now())
-  updatedAt                DateTime                  @updatedAt
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
   customerProfile          CustomerProfile?
   providerProfile          ProviderProfile?
   notifications            Notification[]
   pushDevices              PushDevice[]
   chatMessages             ChatMessage[]
-  auditLogs                AdminAuditLog[]           @relation("AdminActor")
-  bookingOpsTasks          BookingOpsTask[]          @relation("BookingOpsTaskActor")
-  fileAssets               FileAsset[]               @relation("FileAssetOwner")
-  taxPolicyVersions        TaxPolicyVersion[]        @relation("TaxPolicyAuthor")
-  providerVerificationLogs ProviderVerificationLog[] @relation("ProviderVerificationLogActor")
-  providerReportsCreated   ProviderReport[]          @relation("ProviderReportCreator")
-  providerReportsAssigned  ProviderReport[]          @relation("ProviderReportAssignee")
-  providerSanctionsIssued  ProviderSanction[]        @relation("ProviderSanctionIssuer")
-  providerSanctionsLifted  ProviderSanction[]        @relation("ProviderSanctionLifter")
+  auditLogs                AdminAuditLog[]            @relation("AdminActor")
+  bookingOpsTasks          BookingOpsTask[]           @relation("BookingOpsTaskActor")
+  fileAssets               FileAsset[]                @relation("FileAssetOwner")
+  taxPolicyVersions        TaxPolicyVersion[]         @relation("TaxPolicyAuthor")
+  platformFeePolicies      PlatformFeePolicyVersion[] @relation("PlatformFeePolicyAuthor")
+  providerVerificationLogs ProviderVerificationLog[]  @relation("ProviderVerificationLogActor")
+  providerReportsCreated   ProviderReport[]           @relation("ProviderReportCreator")
+  providerReportsAssigned  ProviderReport[]           @relation("ProviderReportAssignee")
+  providerSanctionsIssued  ProviderSanction[]         @relation("ProviderSanctionIssuer")
+  providerSanctionsLifted  ProviderSanction[]         @relation("ProviderSanctionLifter")
 }
 
 model CustomerProfile {
@@ -283,6 +284,7 @@ model ProviderProfile {
   bankAccounts             ProviderBankAccount[]
   taxProfile               ProviderTaxProfile?
   taxLogs                  ProviderTaxLog[]
+  platformFeeLogs          ProviderPlatformFeeLog[]
   agreements               ProviderAgreement[]
   verificationLogs         ProviderVerificationLog[]
   sessions                 ProviderSession[]
@@ -533,26 +535,26 @@ model ProviderService {
 }
 
 model Booking {
-  id                  String               @id @default(cuid())
+  id                  String                   @id @default(cuid())
   customerProfileId   String
   preferredProviderId String?
   selectedProviderId  String?
-  status              BookingStatus        @default(CREATED)
+  status              BookingStatus            @default(CREATED)
   scheduledStartAt    DateTime
   scheduledEndAt      DateTime
   address             Json
-  lat                 Decimal              @db.Decimal(10, 7)
-  lng                 Decimal              @db.Decimal(10, 7)
+  lat                 Decimal                  @db.Decimal(10, 7)
+  lng                 Decimal                  @db.Decimal(10, 7)
   notes               String?
-  travelBufferMin     Int                  @default(30)
-  earlyAcceptMin      Int                  @default(20)
+  travelBufferMin     Int                      @default(30)
+  earlyAcceptMin      Int                      @default(20)
   openedAt            DateTime?
   expiresAt           DateTime?
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  customerProfile     CustomerProfile      @relation(fields: [customerProfileId], references: [id])
-  preferredProvider   ProviderProfile?     @relation("PreferredProvider", fields: [preferredProviderId], references: [id])
-  selectedProvider    ProviderProfile?     @relation("SelectedProvider", fields: [selectedProviderId], references: [id])
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  customerProfile     CustomerProfile          @relation(fields: [customerProfileId], references: [id])
+  preferredProvider   ProviderProfile?         @relation("PreferredProvider", fields: [preferredProviderId], references: [id])
+  selectedProvider    ProviderProfile?         @relation("SelectedProvider", fields: [selectedProviderId], references: [id])
   services            BookingService[]
   participants        BookingParticipant[]
   chatRoom            ChatRoom?
@@ -561,6 +563,7 @@ model Booking {
   refunds             Refund[]
   snapshots           LocationSnapshot[]
   earning             ProviderEarning?
+  platformFeeLogs     ProviderPlatformFeeLog[]
   taxLogs             ProviderTaxLog[]
   opsTasks            BookingOpsTask[]
   providerReports     ProviderReport[]
@@ -658,24 +661,25 @@ model Review {
 }
 
 model ProviderEarning {
-  id                String               @id @default(cuid())
+  id                String                   @id @default(cuid())
   providerProfileId String
-  bookingId         String               @unique
+  bookingId         String                   @unique
   grossAmount       Int
   platformFee       Int
-  withholdingAmount Int                  @default(0)
-  tipAmount         Int                  @default(0)
+  withholdingAmount Int                      @default(0)
+  tipAmount         Int                      @default(0)
   netAmount         Int
-  currency          String               @default("VND")
-  status            EarningStatus        @default(PENDING)
+  currency          String                   @default("VND")
+  status            EarningStatus            @default(PENDING)
   availableAt       DateTime?
   paidAt            DateTime?
   payoutBatchId     String?
-  createdAt         DateTime             @default(now())
-  updatedAt         DateTime             @updatedAt
-  providerProfile   ProviderProfile      @relation(fields: [providerProfileId], references: [id])
-  booking           Booking              @relation(fields: [bookingId], references: [id])
-  payoutBatch       ProviderPayoutBatch? @relation(fields: [payoutBatchId], references: [id])
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  providerProfile   ProviderProfile          @relation(fields: [providerProfileId], references: [id])
+  booking           Booking                  @relation(fields: [bookingId], references: [id])
+  payoutBatch       ProviderPayoutBatch?     @relation(fields: [payoutBatchId], references: [id])
+  platformFeeLogs   ProviderPlatformFeeLog[]
   taxLogs           ProviderTaxLog[]
 }
 
@@ -726,6 +730,61 @@ model TaxRule {
   policyVersion   TaxPolicyVersion @relation(fields: [policyVersionId], references: [id])
 
   @@index([policyVersionId, scope, active])
+}
+
+model PlatformFeePolicyVersion {
+  id            String                   @id @default(cuid())
+  name          String
+  status        TaxPolicyStatus          @default(DRAFT)
+  effectiveFrom DateTime
+  effectiveTo   DateTime?
+  notes         String?
+  createdById   String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  createdBy     User?                    @relation("PlatformFeePolicyAuthor", fields: [createdById], references: [id])
+  rules         PlatformFeeRule[]
+  feeLogs       ProviderPlatformFeeLog[]
+
+  @@index([status, effectiveFrom])
+}
+
+model PlatformFeeRule {
+  id              String                   @id @default(cuid())
+  policyVersionId String
+  scope           TaxRuleScope             @default(DEFAULT)
+  serviceType     String?
+  minGrossAmount  Int?
+  maxGrossAmount  Int?
+  rateBps         Int                      @default(0)
+  fixedAmount     Int                      @default(0)
+  active          Boolean                  @default(true)
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  policyVersion   PlatformFeePolicyVersion @relation(fields: [policyVersionId], references: [id])
+
+  @@index([policyVersionId, scope, active])
+}
+
+model ProviderPlatformFeeLog {
+  id                String                    @id @default(cuid())
+  providerProfileId String
+  bookingId         String?
+  earningId         String?
+  policyVersionId   String?
+  grossAmount       Int
+  platformFeeAmount Int
+  currency          String                    @default("VND")
+  ruleSnapshot      Json?
+  createdAt         DateTime                  @default(now())
+  providerProfile   ProviderProfile           @relation(fields: [providerProfileId], references: [id])
+  booking           Booking?                  @relation(fields: [bookingId], references: [id])
+  earning           ProviderEarning?          @relation(fields: [earningId], references: [id])
+  policyVersion     PlatformFeePolicyVersion? @relation(fields: [policyVersionId], references: [id])
+
+  @@index([providerProfileId, createdAt])
+  @@index([bookingId])
+  @@index([earningId])
 }
 
 model ProviderTaxLog {

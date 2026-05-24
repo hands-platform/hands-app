@@ -15,11 +15,12 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 
-const DEFAULT_PLATFORM_FEE_RATE = 0.2;
 const PROVIDER_WALLET_BLOCK_REASON = '수수료에대한 정산이 되지 않아 예약을 받을수 없습니다';
 
 type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
 type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
+type PlatformFeePolicyWithRules = Prisma.PlatformFeePolicyVersionGetPayload<{ include: { rules: true } }>;
+type PlatformFeeRuleRecord = PlatformFeePolicyWithRules['rules'][number];
 type TxClient = Prisma.TransactionClient;
 
 @Injectable()
@@ -47,7 +48,6 @@ export class EarningsService {
       booking.payment?.amount ??
       booking.services.reduce((total, service) => total + service.price * service.quantity, 0);
     const tipAmount = booking.review?.tipAmount ?? 0;
-    const platformFee = Math.round(grossAmount * DEFAULT_PLATFORM_FEE_RATE);
     const availableAt = new Date(Date.now() + 24 * 60 * 60_000);
     const currency = booking.payment?.currency ?? 'VND';
     const serviceTypes = booking.services.flatMap((item) =>
@@ -55,6 +55,12 @@ export class EarningsService {
     );
 
     return this.prisma.$transaction(async (tx) => {
+      const platformFee = await this.calculatePlatformFee(tx, {
+        grossAmount,
+        currency,
+        serviceTypes,
+        occurredAt: booking.updatedAt ?? new Date(),
+      });
       const tax = await this.calculateWithholding(tx, {
         providerProfileId,
         bookingId,
@@ -66,7 +72,7 @@ export class EarningsService {
       const netAmount = this.calculateProviderWalletDelta({
         paymentMethod: booking.payment?.method,
         grossAmount,
-        platformFee,
+        platformFee: platformFee.platformFeeAmount,
         withholdingAmount: tax.withholdingAmount,
         tipAmount,
       });
@@ -75,7 +81,7 @@ export class EarningsService {
         update: {
           providerProfileId,
           grossAmount,
-          platformFee,
+          platformFee: platformFee.platformFeeAmount,
           withholdingAmount: tax.withholdingAmount,
           tipAmount,
           netAmount,
@@ -87,7 +93,7 @@ export class EarningsService {
           bookingId,
           providerProfileId,
           grossAmount,
-          platformFee,
+          platformFee: platformFee.platformFeeAmount,
           withholdingAmount: tax.withholdingAmount,
           tipAmount,
           netAmount,
@@ -97,6 +103,7 @@ export class EarningsService {
         },
       });
 
+      await this.upsertPlatformFeeLog(tx, earning, platformFee);
       await this.upsertTaxLog(tx, earning, tax);
       return earning;
     });
@@ -171,6 +178,7 @@ export class EarningsService {
       include: {
         providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
         booking: { include: { payment: true, review: true } },
+        platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
         taxLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
     });
@@ -438,6 +446,61 @@ export class EarningsService {
     return input.grossAmount - input.platformFee - input.withholdingAmount + input.tipAmount;
   }
 
+  private async calculatePlatformFee(
+    tx: TxClient,
+    input: {
+      grossAmount: number;
+      currency: string;
+      serviceTypes: string[];
+      occurredAt: Date;
+    },
+  ) {
+    const policy = await tx.platformFeePolicyVersion.findFirst({
+      where: {
+        status: TaxPolicyStatus.ACTIVE,
+        effectiveFrom: { lte: input.occurredAt },
+        OR: [{ effectiveTo: null }, { effectiveTo: { gte: input.occurredAt } }],
+      },
+      include: { rules: { where: { active: true }, orderBy: { createdAt: 'desc' } } },
+      orderBy: { effectiveFrom: 'desc' },
+    });
+
+    if (!policy) {
+      throw new BadRequestException('No active platform fee policy configured');
+    }
+
+    const rule = selectPlatformFeeRule(policy.rules, {
+      grossAmount: input.grossAmount,
+      serviceTypes: input.serviceTypes,
+    });
+    if (!rule) {
+      throw new BadRequestException('Active platform fee policy has no matching rule');
+    }
+
+    const rateBps = rule.rateBps ?? 0;
+    const fixedAmount = rule.fixedAmount ?? 0;
+    const platformFeeAmount = Math.max(
+      0,
+      Math.min(input.grossAmount, Math.round((input.grossAmount * rateBps) / 10_000) + fixedAmount),
+    );
+
+    return {
+      platformFeeAmount,
+      currency: input.currency,
+      policyVersionId: policy.id,
+      ruleSnapshot: {
+        policyName: policy.name,
+        ruleId: rule.id,
+        scope: rule.scope,
+        serviceType: rule.serviceType,
+        minGrossAmount: rule.minGrossAmount,
+        maxGrossAmount: rule.maxGrossAmount,
+        rateBps,
+        fixedAmount,
+      },
+    };
+  }
+
   private async requireProviderProfile(userId: string) {
     const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
     if (!provider) {
@@ -615,6 +678,39 @@ export class EarningsService {
     }
     return tx.providerTaxLog.create({ data });
   }
+
+  private async upsertPlatformFeeLog(
+    tx: TxClient,
+    earning: {
+      id: string;
+      bookingId: string;
+      providerProfileId: string;
+      grossAmount: number;
+    },
+    platformFee: {
+      platformFeeAmount: number;
+      currency: string;
+      policyVersionId?: string | null;
+      ruleSnapshot: Prisma.InputJsonValue;
+    },
+  ) {
+    const existing = await tx.providerPlatformFeeLog.findFirst({ where: { earningId: earning.id } });
+    const data = {
+      providerProfileId: earning.providerProfileId,
+      bookingId: earning.bookingId,
+      earningId: earning.id,
+      policyVersionId: platformFee.policyVersionId ?? null,
+      grossAmount: earning.grossAmount,
+      platformFeeAmount: platformFee.platformFeeAmount,
+      currency: platformFee.currency,
+      ruleSnapshot: platformFee.ruleSnapshot,
+    };
+
+    if (existing) {
+      return tx.providerPlatformFeeLog.update({ where: { id: existing.id }, data });
+    }
+    return tx.providerPlatformFeeLog.create({ data });
+  }
 }
 
 function normalizeNullable(value: string | null) {
@@ -642,6 +738,34 @@ function selectTaxRule(rules: TaxRuleRecord[], input: { grossAmount: number; ser
       taxRulePriority(left, serviceTypes, input.grossAmount),
   );
   return prioritized.find((rule) => taxRulePriority(rule, serviceTypes, input.grossAmount) > 0) ?? null;
+}
+
+function selectPlatformFeeRule(
+  rules: PlatformFeeRuleRecord[],
+  input: { grossAmount: number; serviceTypes: string[] },
+) {
+  const serviceTypes = new Set(input.serviceTypes.map((value) => value.toLowerCase()));
+  const prioritized = [...rules].sort(
+    (left, right) =>
+      platformFeeRulePriority(right, serviceTypes, input.grossAmount) -
+      platformFeeRulePriority(left, serviceTypes, input.grossAmount),
+  );
+  return prioritized.find((rule) => platformFeeRulePriority(rule, serviceTypes, input.grossAmount) > 0) ?? null;
+}
+
+function platformFeeRulePriority(rule: PlatformFeeRuleRecord, serviceTypes: Set<string>, grossAmount: number) {
+  if (rule.scope === TaxRuleScope.SERVICE_TYPE) {
+    return rule.serviceType && serviceTypes.has(rule.serviceType.toLowerCase()) ? 30 : 0;
+  }
+  if (rule.scope === TaxRuleScope.AMOUNT_BAND) {
+    const aboveMin = rule.minGrossAmount === null || grossAmount >= rule.minGrossAmount;
+    const belowMax = rule.maxGrossAmount === null || grossAmount <= rule.maxGrossAmount;
+    return aboveMin && belowMax ? 20 : 0;
+  }
+  if (rule.scope === TaxRuleScope.DEFAULT) {
+    return 10;
+  }
+  return 0;
 }
 
 function taxRulePriority(rule: TaxRuleRecord, serviceTypes: Set<string>, grossAmount: number) {

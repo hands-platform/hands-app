@@ -392,6 +392,7 @@ export type AdminEarning = {
     scheduledStartAt?: string;
     payment?: { method: string; status: string; amount: number; currency?: string } | null;
   } | null;
+  platformFeeLogs?: AdminProviderPlatformFeeLog[];
   taxLogs?: AdminProviderTaxLog[];
 };
 
@@ -448,6 +449,15 @@ export type AdminProviderTaxLog = {
   grossAmount: number;
   taxableAmount: number;
   withholdingAmount: number;
+  currency: string;
+  ruleSnapshot?: unknown;
+  createdAt?: string;
+};
+
+export type AdminProviderPlatformFeeLog = {
+  id: string;
+  grossAmount: number;
+  platformFeeAmount: number;
   currency: string;
   ruleSnapshot?: unknown;
   createdAt?: string;
