@@ -12,12 +12,14 @@ import {
   approveProviderDocument,
   approveProviderKyc,
   approveProviderTaxProfile,
+  blockProviderDevice,
   rejectProvider,
   rejectProviderBankAccount,
   rejectProviderDocument,
   rejectProviderKyc,
   rejectProviderTaxProfile,
   syncSupabaseProviderRole,
+  unblockProviderDevice,
 } from '../actions';
 
 type PageProps = {
@@ -71,6 +73,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const primaryBank = provider.bankAccounts?.[0];
   const reviewChecklist = buildReviewChecklist(provider);
   const opsSummary = buildProviderOpsSummary(provider);
+  const securitySummary = buildProviderSecuritySummary(provider);
   const levelPlan = buildProviderLevelPlan(provider);
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
@@ -172,6 +175,121 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Device and session security</h2>
+            <p className="muted">
+              Watch for shared devices, suspicious sessions, blocked devices, and stale provider app activity.
+            </p>
+          </div>
+          <span className={`pill ${securitySummary.risky ? 'pill-danger' : 'pill-success'}`}>
+            {securitySummary.risky ? 'Risk review' : 'No active risk'}
+          </span>
+        </div>
+        <div className="ops-task-grid">
+          {securitySummary.cards.map((card) => (
+            <div className={`ops-task-card ${cardClass(card.tone)}`} key={card.title}>
+              <div>
+                <span className={`pill ${pillClass(card.tone)}`}>{card.status}</span>
+                <h3>{card.title}</h3>
+                <p className="muted">{card.detail}</p>
+              </div>
+              <small>{card.action}</small>
+            </div>
+          ))}
+        </div>
+        <div className="detail-grid" style={{ marginTop: 16 }}>
+          <div>
+            <h3>Provider app devices</h3>
+            {(provider.devices ?? []).length ? (
+              <div className="setup-stage-list">
+                {provider.devices?.map((device) => (
+                  <div className="setup-stage-item" key={device.id}>
+                    <span>{device.blockedAt ? 'BLOCKED' : device.enabled ? 'ENABLED' : 'DISABLED'}</span>
+                    <div>
+                      <strong>{maskDeviceId(device.deviceId)}</strong>
+                      <p className="muted">
+                        {device.platform ?? 'unknown platform'} / {device.appVersion ?? 'unknown app'} / last seen{' '}
+                        {formatDate(device.lastSeenAt)}
+                      </p>
+                      {device.blockReason ? <p className="muted">Block reason: {device.blockReason}</p> : null}
+                    </div>
+                    <small>{device.blockedAt ? formatDate(device.blockedAt) : 'Active'}</small>
+                    <div className="actions">
+                      {device.blockedAt || !device.enabled ? (
+                        <form action={unblockProviderDevice}>
+                          <input type="hidden" name="providerId" value={provider.id} />
+                          <input type="hidden" name="providerDeviceId" value={device.id} />
+                          <button type="submit">Unblock</button>
+                        </form>
+                      ) : (
+                        <form action={blockProviderDevice}>
+                          <input type="hidden" name="providerId" value={provider.id} />
+                          <input type="hidden" name="providerDeviceId" value={device.id} />
+                          <input
+                            name="reason"
+                            placeholder="Device block reason"
+                            required
+                            minLength={12}
+                            maxLength={500}
+                          />
+                          <button type="submit">Block</button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No provider app device record yet. It should appear after provider app sign-in.</p>
+            )}
+          </div>
+          <div>
+            <h3>Recent sessions</h3>
+            {(provider.sessions ?? []).length ? (
+              <div className="setup-stage-list">
+                {provider.sessions?.slice(0, 6).map((session) => (
+                  <div className="setup-stage-item" key={session.id}>
+                    <span>{session.suspicious ? 'WATCH' : 'OK'}</span>
+                    <div>
+                      <strong>{maskDeviceId(session.deviceId)}</strong>
+                      <p className="muted">
+                        IP {session.ipAddress ?? 'missing'} / {session.appVersion ?? 'unknown app'} / last seen{' '}
+                        {formatDate(session.lastSeenAt)}
+                      </p>
+                      {session.suspiciousReason ? (
+                        <p className="muted">Reason: {session.suspiciousReason}</p>
+                      ) : null}
+                    </div>
+                    <small>{formatDate(session.loggedInAt)}</small>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="muted">No provider session log yet.</p>
+            )}
+          </div>
+        </div>
+        {(provider.sharedDeviceMatches ?? []).length ? (
+          <div className="setup-stage-list" style={{ marginTop: 16 }}>
+            {provider.sharedDeviceMatches?.map((match) => (
+              <div className="setup-stage-item" key={match.id}>
+                <span>SHARED</span>
+                <div>
+                  <strong>{maskDeviceId(match.deviceId)}</strong>
+                  <p className="muted">
+                    Also used by {match.providerProfile?.displayName ?? 'another provider'} (
+                    {match.providerProfile?.user?.phone ?? 'no phone'}) / last seen {formatDate(match.lastSeenAt)}
+                  </p>
+                </div>
+                <small>{match.enabled ? 'Enabled' : 'Disabled'}</small>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -652,6 +770,73 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
   };
 }
 
+function buildProviderSecuritySummary(provider: ProviderDetail) {
+  const sessions = provider.sessions ?? [];
+  const devices = provider.devices ?? [];
+  const sharedDeviceMatches = provider.sharedDeviceMatches ?? [];
+  const suspiciousSessions = sessions.filter((session) => session.suspicious);
+  const blockedDevices = devices.filter((device) => device.blockedAt || !device.enabled);
+  const mostRecentSession = sessions[0];
+  const mostRecentDevice = devices[0];
+  const lastSeenMinutes = Math.min(
+    locationAgeMinutes(mostRecentSession?.lastSeenAt),
+    locationAgeMinutes(mostRecentDevice?.lastSeenAt),
+  );
+  const staleAppActivity = lastSeenMinutes > 24 * 60;
+
+  const cards: ProviderOpsCard[] = [
+    {
+      title: 'Provider app activity',
+      status: devices.length || sessions.length ? (staleAppActivity ? 'STALE' : 'RECENT') : 'MISSING',
+      detail:
+        devices.length || sessions.length
+          ? `Latest provider app signal is ${Number.isFinite(lastSeenMinutes) ? `${lastSeenMinutes}m old` : 'missing'}.`
+          : 'No provider app device or session has been recorded yet.',
+      action:
+        devices.length || sessions.length
+          ? staleAppActivity
+            ? 'Ask provider to open the app before dispatching work.'
+            : 'Provider app activity is visible.'
+          : 'Provider should sign in on the real app once onboarding starts.',
+      tone: devices.length || sessions.length ? (staleAppActivity ? 'pending' : 'done') : 'pending',
+    },
+    {
+      title: 'Blocked devices',
+      status: blockedDevices.length ? `${blockedDevices.length} BLOCKED` : 'CLEAR',
+      detail: blockedDevices.length
+        ? 'One or more provider devices are disabled or blocked from use.'
+        : 'No provider app device is currently blocked.',
+      action: blockedDevices.length ? 'Review whether the device can be safely unblocked.' : 'No action.',
+      tone: blockedDevices.length ? 'blocked' : 'done',
+    },
+    {
+      title: 'Suspicious sessions',
+      status: suspiciousSessions.length ? `${suspiciousSessions.length} WATCH` : 'CLEAR',
+      detail: suspiciousSessions.length
+        ? suspiciousSessions.map((session) => session.suspiciousReason ?? 'Suspicious login').join(' ')
+        : 'No suspicious session flag is currently recorded.',
+      action: suspiciousSessions.length ? 'Confirm identity and review recent app/device activity.' : 'No action.',
+      tone: suspiciousSessions.length ? 'blocked' : 'done',
+    },
+    {
+      title: 'Shared device signal',
+      status: sharedDeviceMatches.length ? `${sharedDeviceMatches.length} MATCH` : 'CLEAR',
+      detail: sharedDeviceMatches.length
+        ? 'The same device identifier appears on another provider profile.'
+        : 'No cross-provider device match is visible.',
+      action: sharedDeviceMatches.length
+        ? 'Check for multi-account behavior before approval or payout.'
+        : 'No action.',
+      tone: sharedDeviceMatches.length ? 'blocked' : 'done',
+    },
+  ];
+
+  return {
+    cards,
+    risky: cards.some((card) => card.tone === 'blocked'),
+  };
+}
+
 type ProviderLevelPathItem = {
   level: string;
   status: string;
@@ -1070,6 +1255,12 @@ function locationAgeLabel(value?: string | null) {
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes}m old`;
   return `${Math.round(minutes / 60)}h old`;
+}
+
+function maskDeviceId(value?: string | null) {
+  if (!value) return 'No device id';
+  if (value.length <= 8) return value;
+  return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
 function formatCurrency(value?: number | null) {

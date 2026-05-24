@@ -40,6 +40,20 @@ export class AdminController {
     return this.admin.enablePushDevice(user.id, pushDeviceId);
   }
 
+  @Post('provider-devices/:id/block')
+  blockProviderDevice(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerDeviceId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.admin.blockProviderDevice(user.id, providerDeviceId, body.reason);
+  }
+
+  @Post('provider-devices/:id/unblock')
+  unblockProviderDevice(@CurrentUser() user: AuthenticatedUser, @Param('id') providerDeviceId: string) {
+    return this.admin.unblockProviderDevice(user.id, providerDeviceId);
+  }
+
   @Post('providers/:id/approve')
   approveProvider(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
     return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.APPROVED);

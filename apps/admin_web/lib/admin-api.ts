@@ -91,6 +91,41 @@ export type AdminProvider = {
     version: string;
     acceptedAt: string;
   }>;
+  sessions?: Array<{
+    id: string;
+    deviceId?: string | null;
+    ipAddress?: string | null;
+    appVersion?: string | null;
+    loggedInAt?: string;
+    lastSeenAt?: string;
+    suspicious: boolean;
+    suspiciousReason?: string | null;
+  }>;
+  devices?: Array<{
+    id: string;
+    deviceId: string;
+    platform?: string | null;
+    appVersion?: string | null;
+    enabled: boolean;
+    lastSeenAt?: string | null;
+    blockedAt?: string | null;
+    blockReason?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
+  sharedDeviceMatches?: Array<{
+    id: string;
+    deviceId: string;
+    platform?: string | null;
+    enabled: boolean;
+    lastSeenAt?: string | null;
+    blockedAt?: string | null;
+    providerProfile?: {
+      id: string;
+      displayName?: string | null;
+      user?: { phone?: string | null };
+    };
+  }>;
   services?: Array<{ service?: { name: string } }>;
   user?: {
     id?: string;

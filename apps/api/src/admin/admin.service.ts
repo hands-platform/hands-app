@@ -53,6 +53,8 @@ export class AdminService {
         taxProfile: true,
         agreements: { orderBy: { acceptedAt: 'desc' } },
         services: { include: { service: true } },
+        sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
+        devices: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
       },
     });
   }
@@ -84,6 +86,8 @@ export class AdminService {
         locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
         earnings: { orderBy: { createdAt: 'desc' }, take: 10 },
         payoutBatches: { orderBy: { createdAt: 'desc' }, take: 10 },
+        sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
+        devices: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
         verificationLogs: {
           orderBy: { createdAt: 'desc' },
           take: 20,
@@ -94,7 +98,36 @@ export class AdminService {
     if (!provider) {
       throw new NotFoundException('Provider not found');
     }
-    return provider;
+
+    const deviceIds = Array.from(
+      new Set(
+        [
+          ...provider.devices.map((device) => device.deviceId),
+          ...provider.sessions.map((session) => session.deviceId),
+        ].filter((deviceId): deviceId is string => Boolean(deviceId)),
+      ),
+    );
+    const sharedDeviceMatches = deviceIds.length
+      ? await this.prisma.providerDevice.findMany({
+          where: {
+            deviceId: { in: deviceIds },
+            providerProfileId: { not: provider.id },
+          },
+          orderBy: { lastSeenAt: 'desc' },
+          take: 20,
+          include: {
+            providerProfile: {
+              select: {
+                id: true,
+                displayName: true,
+                user: { select: { phone: true } },
+              },
+            },
+          },
+        })
+      : [];
+
+    return { ...provider, sharedDeviceMatches };
   }
 
   async enablePushDevice(actorId: string, pushDeviceId: string) {
@@ -110,6 +143,48 @@ export class AdminService {
     });
 
     return { ok: true, pushDeviceId: device.id };
+  }
+
+  async blockProviderDevice(actorId: string, providerDeviceId: string, reason?: string) {
+    const blockReason = normalizeNullable(reason);
+    if (!blockReason) {
+      throw new BadRequestException('Block reason is required');
+    }
+
+    const device = await this.prisma.providerDevice.update({
+      where: { id: providerDeviceId },
+      data: {
+        enabled: false,
+        blockedAt: new Date(),
+        blockReason,
+      },
+    });
+
+    await this.writeAudit(actorId, 'provider_device.block', `provider_device:${providerDeviceId}`, {
+      providerProfileId: device.providerProfileId,
+      deviceId: device.deviceId,
+      reason: blockReason,
+    });
+
+    return { ok: true, providerDeviceId: device.id };
+  }
+
+  async unblockProviderDevice(actorId: string, providerDeviceId: string) {
+    const device = await this.prisma.providerDevice.update({
+      where: { id: providerDeviceId },
+      data: {
+        enabled: true,
+        blockedAt: null,
+        blockReason: null,
+      },
+    });
+
+    await this.writeAudit(actorId, 'provider_device.unblock', `provider_device:${providerDeviceId}`, {
+      providerProfileId: device.providerProfileId,
+      deviceId: device.deviceId,
+    });
+
+    return { ok: true, providerDeviceId: device.id };
   }
 
   async reviewProvider(

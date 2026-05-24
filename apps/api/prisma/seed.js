@@ -105,6 +105,47 @@ async function main() {
         },
       });
     }
+
+    await prisma.providerDevice.upsert({
+      where: {
+        providerProfileId_deviceId: {
+          providerProfileId: provider.providerProfile.id,
+          deviceId: 'demo-provider-android-01',
+        },
+      },
+      update: {
+        platform: 'android',
+        appVersion: '0.1.0-dev',
+        enabled: true,
+        lastSeenAt: new Date(),
+        blockedAt: null,
+        blockReason: null,
+      },
+      create: {
+        providerProfileId: provider.providerProfile.id,
+        deviceId: 'demo-provider-android-01',
+        platform: 'android',
+        appVersion: '0.1.0-dev',
+        enabled: true,
+        lastSeenAt: new Date(),
+      },
+    });
+
+    await prisma.providerSession.deleteMany({
+      where: {
+        providerProfileId: provider.providerProfile.id,
+        deviceId: 'demo-provider-android-01',
+      },
+    });
+    await prisma.providerSession.create({
+      data: {
+        providerProfileId: provider.providerProfile.id,
+        deviceId: 'demo-provider-android-01',
+        ipAddress: '127.0.0.1',
+        appVersion: '0.1.0-dev',
+        lastSeenAt: new Date(),
+      },
+    });
   }
 
   console.log({

@@ -32,6 +32,23 @@ export async function enablePushDevice(formData: FormData) {
   revalidatePath('/notifications');
 }
 
+export async function blockProviderDevice(formData: FormData) {
+  const providerId = readOptionalProviderId(formData);
+  const providerDeviceId = readRequiredFormString(formData, 'providerDeviceId');
+  const reason = readReviewReason(formData);
+  await adminPost(`/admin/provider-devices/${providerDeviceId}/block`, { reason }, null);
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
+export async function unblockProviderDevice(formData: FormData) {
+  const providerId = readOptionalProviderId(formData);
+  const providerDeviceId = readRequiredFormString(formData, 'providerDeviceId');
+  await adminPost(`/admin/provider-devices/${providerDeviceId}/unblock`, {}, null);
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
 export async function approveProviderKyc(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
   await adminPost(`/admin/providers/${providerId}/kyc/approve`, {}, null);
