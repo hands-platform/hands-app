@@ -11,6 +11,7 @@ import {
   approveProviderDocument,
   approveProviderKyc,
   approveProviderTaxProfile,
+  approvePublicProviderMedia,
   blockProviderAccount,
   enablePushDevice,
   rejectProvider,
@@ -18,11 +19,13 @@ import {
   rejectProviderDocument,
   rejectProviderKyc,
   rejectProviderTaxProfile,
+  rejectPublicProviderMedia,
   syncSupabaseProviderRole,
   unblockProviderAccount,
 } from './actions';
 
 type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
+type AdminProviderPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
 type ProviderLocationState = 'recent' | 'stale' | 'expired' | 'missing';
 type ProviderSecurityState = 'clear' | 'account-blocked' | 'blocked' | 'suspicious' | 'shared' | 'missing';
 type ProviderFilters = {
@@ -143,6 +146,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="">All</option>
               <option value="kyc">KYC updates</option>
               <option value="documents">Document review</option>
+              <option value="public-media">Public media review</option>
               <option value="bank">Bank payout review</option>
               <option value="tax">Tax profile review</option>
               <option value="security">Device/session risk</option>
@@ -376,8 +380,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     : 'None'}
                 </td>
                 <td>
-                  {provider.verification?.files?.length
-                    ? provider.verification.files.map((file) => (
+                  {provider.verification?.files?.length ? (
+                    provider.verification.files.map((file) => (
                         <div key={file.id} className="provider-file-row">
                           <div className="participant-list" style={{ marginBottom: 6 }}>
                             <span className="pill pill-info">{file.purpose ?? 'PROVIDER_VERIFICATION'}</span>
@@ -407,7 +411,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                           </p>
                         </div>
                       ))
-                    : 'None'}
+                  ) : (
+                    <p className="muted">No private verification files.</p>
+                  )}
+                  <ProviderPublicMediaQueueCell provider={provider} />
                 </td>
                 <td>
                   {provider.services
@@ -655,6 +662,82 @@ function ProviderOnboardingCell({
   );
 }
 
+function ProviderPublicMediaQueueCell({ provider }: { provider: AdminProvider }) {
+  const media = providerPublicMedia(provider);
+  if (!media.length) {
+    return (
+      <p className="muted" style={{ marginTop: 8 }}>
+        No public profile media uploaded.
+      </p>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 10 }}>
+      <p className="muted" style={{ marginBottom: 6 }}>
+        Public media review
+      </p>
+      {media.slice(0, 4).map((file) => (
+        <div key={file.id} className="provider-file-row">
+          <div className="participant-list" style={{ marginBottom: 6 }}>
+            <span className="pill pill-info">{file.purpose}</span>
+            <span className={`pill ${publicMediaReviewPillClass(file.reviewStatus)}`}>
+              {file.reviewStatus ?? 'PENDING_REVIEW'}
+            </span>
+          </div>
+          <p className="muted" style={{ marginBottom: 6 }}>
+            {file.contentType}
+            {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
+            {file.uploadedAt ? ` / uploaded ${new Date(file.uploadedAt).toLocaleString()}` : ''}
+          </p>
+          <p className="muted" style={{ marginBottom: 6 }}>
+            {file.url ? (
+              <a href={file.url} target="_blank" rel="noreferrer">
+                {file.key}
+              </a>
+            ) : (
+              file.key
+            )}
+          </p>
+          {file.reviewReason ? (
+            <p className="muted" style={{ marginBottom: 6 }}>
+              Reason: {file.reviewReason}
+            </p>
+          ) : null}
+          <div className="actions">
+            <form action={approvePublicProviderMedia}>
+              <input type="hidden" name="providerId" value={provider.id} />
+              <input type="hidden" name="fileId" value={file.id} />
+              <button type="submit" disabled={file.reviewStatus === 'APPROVED'}>
+                Approve media
+              </button>
+            </form>
+            <form action={rejectPublicProviderMedia}>
+              <input type="hidden" name="providerId" value={provider.id} />
+              <input type="hidden" name="fileId" value={file.id} />
+              <input
+                name="reason"
+                placeholder="Media rejection reason"
+                required
+                minLength={12}
+                maxLength={500}
+              />
+              <button type="submit" disabled={file.reviewStatus === 'REJECTED'}>
+                Reject media
+              </button>
+            </form>
+          </div>
+        </div>
+      ))}
+      {media.length > 4 ? (
+        <Link className="text-link" href={`/providers/${provider.id}`}>
+          Review {media.length - 4} more media item(s)
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 function maskToken(token: string) {
   if (token.length <= 10) {
     return token;
@@ -676,6 +759,22 @@ function readLastAttempt(device: AdminPushDevice) {
 
 function hasHealthyPush(provider: AdminProvider) {
   return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
+}
+
+function providerPublicMedia(provider: AdminProvider): AdminProviderPublicMedia[] {
+  return provider.user?.fileAssets ?? [];
+}
+
+function providerPublicMediaNeedsReview(provider: AdminProvider) {
+  return providerPublicMedia(provider).some((file) =>
+    ['PENDING_REVIEW', 'REJECTED'].includes(file.reviewStatus ?? 'PENDING_REVIEW'),
+  );
+}
+
+function publicMediaReviewPillClass(status?: string) {
+  if (status === 'APPROVED') return 'pill-success';
+  if (status === 'REJECTED') return 'pill-danger';
+  return 'pill-warn';
 }
 
 type ProviderListAction = {
@@ -794,6 +893,15 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
       operatorAction: 'Approve provider verification when identity review is complete.',
       tone: 'blocked',
       priority: 86,
+    };
+  }
+  if (providerPublicMediaNeedsReview(provider)) {
+    return {
+      status: 'MEDIA',
+      detail: 'Public profile or gallery media is waiting for admin review.',
+      operatorAction: 'Approve safe, original public media or reject unclear uploads with a reason.',
+      tone: 'pending',
+      priority: 84,
     };
   }
   if (primaryBank?.status !== 'APPROVED') {
@@ -979,6 +1087,9 @@ function providerActionHint(provider: AdminProvider) {
   if (provider.verification?.status !== 'APPROVED') {
     return 'Review verification before this therapist can safely take customer requests.';
   }
+  if (providerPublicMediaNeedsReview(provider)) {
+    return 'Approve public profile media before customers can see the latest uploaded images.';
+  }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Therapist is approved but not currently online for direct or backup requests.';
   }
@@ -1021,6 +1132,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
   const pushDisabled = providers.filter((provider) =>
     (provider.user?.pushDevices ?? []).some((device) => !device.enabled),
   ).length;
+  const publicMediaReview = providers.filter(providerPublicMediaNeedsReview).length;
   const openRisk = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
   const deviceRisk = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
@@ -1044,6 +1156,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
     ['Location needs review', staleLocation.toString()],
     ['Push ready', pushReady.toString()],
     ['Push needs review', pushDisabled.toString()],
+    ['Public media review', publicMediaReview.toString()],
     ['Open risk', openRisk.toString()],
     ['Device risk', deviceRisk.toString()],
     ['Ready for dispatch', readyNow.toString()],
@@ -1058,6 +1171,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
   const documentNeedsReview = providers.filter((provider) =>
     (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
   ).length;
+  const publicMediaNeedsReview = providers.filter(providerPublicMediaNeedsReview).length;
   const bankNeedsReview = providers.filter((provider) =>
     (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
   ).length;
@@ -1099,6 +1213,12 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       count: documentNeedsReview,
       href: '/providers?review=documents',
       detail: 'Typed CCCD, selfie, or portfolio documents are waiting for approval or rejection handling.',
+    },
+    {
+      label: 'Public media review',
+      count: publicMediaNeedsReview,
+      href: '/providers?review=public-media',
+      detail: 'Uploaded public profile and gallery images must be approved before customers can see them.',
     },
     {
       label: 'Bank payout review',
@@ -1184,6 +1304,11 @@ function providerReviewIssues(provider: AdminProvider) {
   }
   if (provider.verification?.status !== 'APPROVED') {
     issues.push({ label: 'verification review', severity: 'high' });
+  }
+  if (providerPublicMedia(provider).some((file) => file.reviewStatus === 'REJECTED')) {
+    issues.push({ label: 'media rejected', severity: 'medium' });
+  } else if (providerPublicMediaNeedsReview(provider)) {
+    issues.push({ label: 'media pending', severity: 'medium' });
   }
   if (kycStatus !== 'APPROVED') {
     issues.push({ label: `KYC ${kycStatus}`, severity: kycStatus === 'REJECTED' ? 'high' : 'medium' });
@@ -1375,6 +1500,9 @@ function providerFilterDescription(kind: string, value: string) {
   if (kind === 'review' && value === 'risk') {
     return 'Risk review highlights providers with open reports or active sanctions.';
   }
+  if (kind === 'review' && value === 'public-media') {
+    return 'Public media review highlights uploaded provider photos that are pending or rejected.';
+  }
   if (kind === 'review') {
     return 'Review queue focuses the table on one operational approval lane.';
   }
@@ -1438,6 +1566,9 @@ function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
       ['PENDING_REVIEW', 'REJECTED'].includes(document.status),
     );
   }
+  if (review === 'public-media') {
+    return providerPublicMediaNeedsReview(provider);
+  }
   if (review === 'bank') {
     return (provider.bankAccounts ?? []).some((account) =>
       ['PENDING_REVIEW', 'REJECTED'].includes(account.status),
@@ -1472,6 +1603,9 @@ function providerSearchText(provider: AdminProvider) {
     provider.user?.fullName,
     provider.user?.phone,
     provider.devices?.map((device) => device.deviceId).join(' '),
+    providerPublicMedia(provider)
+      .map((file) => `${file.purpose} ${file.reviewStatus ?? ''} ${file.reviewReason ?? ''} ${file.key}`)
+      .join(' '),
     provider.sessions?.map((session) => `${session.deviceId ?? ''} ${session.ipAddress ?? ''}`).join(' '),
     provider.reports
       ?.map((report) => `${report.category} ${report.summary} ${report.details ?? ''}`)
