@@ -46,7 +46,8 @@ export default async function PayoutsPage() {
           <div>
             <h2>Payout command queue</h2>
             <p className="muted">
-              Finance-first view for review money, active transfers, payout holds, and reconciliation warnings.
+              Finance-first view for review money, active transfers, payout holds, and reconciliation
+              warnings.
             </p>
           </div>
           <a className="text-link" href="/earnings">
@@ -72,7 +73,8 @@ export default async function PayoutsPage() {
           <div>
             <h2>Payout status lanes</h2>
             <p className="muted">
-              Work from blocked and failed lanes first, then draft review, processing confirmation, and paid reconciliation.
+              Work from blocked and failed lanes first, then draft review, processing confirmation, and paid
+              reconciliation.
             </p>
           </div>
           <span className="pill pill-info">{batches.length} batch(es)</span>
@@ -96,7 +98,8 @@ export default async function PayoutsPage() {
                             'Unknown provider'}
                         </strong>
                         <p className="muted">
-                          {formatMoney(batch.totalNetAmount, batch.currency)} / {batch.earnings?.length ?? 0} earning(s)
+                          {formatMoney(batch.totalNetAmount, batch.currency)} / {batch.earnings?.length ?? 0}{' '}
+                          earning(s)
                         </p>
                         <p className="muted">{opsHint(batch)}</p>
                       </div>
@@ -191,10 +194,17 @@ export default async function PayoutsPage() {
                   <td>
                     <div className="participant-list">
                       {checklist.map((item) => (
-                        <span className={item.ok ? 'pill pill-success' : 'pill pill-warn'} key={item.label}>
+                        <span
+                          className={item.ok ? 'pill pill-success' : 'pill pill-warn'}
+                          key={item.label}
+                          title={item.detail}
+                        >
                           {item.label}
                         </span>
                       ))}
+                    </div>
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      {payoutReadinessSummary(batch)}
                     </div>
                   </td>
                   <td>{formatMoney(batch.totalNetAmount, batch.currency)}</td>
@@ -355,17 +365,27 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
   const held = batches.filter((batch) => Boolean(activePayoutHold(batch)));
   const missingTransferRef = batches.filter((batch) => batch.status === 'PAID' && !batch.transferRef);
   const missingEarnings = batches.filter((batch) => !batch.earnings?.length);
+  const missingWithholdingLogs = batches.filter(
+    (batch) => batchWithholdingAmount(batch) > 0 && !batch.withholdingLogs?.length,
+  );
   const pendingWithholding = batches.filter((batch) =>
     (batch.withholdingLogs ?? []).some((log) => log.status !== 'PAID'),
   );
-  const reconciliationWarnings = missingTransferRef.length + missingEarnings.length + pendingWithholding.length;
+  const reconciliationWarnings =
+    missingTransferRef.length +
+    missingEarnings.length +
+    missingWithholdingLogs.length +
+    pendingWithholding.length;
   const currency = batches[0]?.currency ?? 'VND';
 
   return [
     {
       title: 'Review amount',
       status: `${needsReview.length} BATCH(ES)`,
-      detail: formatMoney(needsReview.reduce((sum, batch) => sum + batch.totalNetAmount, 0), currency),
+      detail: formatMoney(
+        needsReview.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
+        currency,
+      ),
       action: needsReview.length
         ? 'Check failed and draft batches before starting bank transfer.'
         : 'No batch currently needs finance review.',
@@ -375,7 +395,10 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
     {
       title: 'Banking in motion',
       status: `${processing.length} PROCESSING`,
-      detail: formatMoney(processing.reduce((sum, batch) => sum + batch.totalNetAmount, 0), currency),
+      detail: formatMoney(
+        processing.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
+        currency,
+      ),
       action: processing.length
         ? 'Confirm transfer results, then mark paid or failed.'
         : 'No payout is currently in banking transfer.',
@@ -386,7 +409,10 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
       title: 'Payout holds',
       status: `${held.length} HELD`,
       detail: held.length
-        ? held.map((batch) => activePayoutHold(batch)?.reason ?? 'Active hold').slice(0, 2).join(' ')
+        ? held
+            .map((batch) => activePayoutHold(batch)?.reason ?? 'Active hold')
+            .slice(0, 2)
+            .join(' ')
         : 'No active payout hold on listed batches.',
       action: held.length ? 'Open provider risk before attempting payout.' : 'No risk hold action.',
       className: held.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -395,7 +421,7 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
     {
       title: 'Reconciliation',
       status: `${reconciliationWarnings} CHECK`,
-      detail: `${missingTransferRef.length} paid missing ref, ${pendingWithholding.length} tax open, ${missingEarnings.length} empty batch.`,
+      detail: `${missingTransferRef.length} paid missing ref, ${pendingWithholding.length} tax open, ${missingWithholdingLogs.length} tax missing, ${missingEarnings.length} empty batch.`,
       action: reconciliationWarnings
         ? 'Fix references, withholding status, or empty batch records.'
         : 'Paid batch references and tax logs look consistent.',
@@ -547,12 +573,86 @@ function payoutChecklist(batch: AdminPayoutBatch) {
   const earnings = batch.earnings ?? [];
   const allEarningsPaid = earnings.length > 0 && earnings.every((earning) => earning.status === 'PAID');
   const payoutHold = activePayoutHold(batch);
+  const withholdingAmount = batchWithholdingAmount(batch);
+  const withholdingLogs = batch.withholdingLogs ?? [];
+  const withholdingLogsPaid =
+    withholdingAmount <= 0 ||
+    (withholdingLogs.length > 0 && withholdingLogs.every((log) => log.status === 'PAID'));
+  const transferRefReady = batch.status !== 'PAID' || Boolean(batch.transferRef);
+  const paidDateReady = batch.status !== 'PAID' || Boolean(batch.paidAt);
+  const earningsAttached = earnings.length > 0;
   return [
-    { label: payoutHold ? 'Held' : 'No hold', ok: !payoutHold },
-    { label: batch.transferRef ? 'Ref' : 'No ref', ok: Boolean(batch.transferRef) },
-    { label: allEarningsPaid ? 'Earnings paid' : 'Earnings open', ok: allEarningsPaid },
-    { label: batch.paidAt ? 'Paid date' : 'No paid date', ok: Boolean(batch.paidAt) },
+    {
+      label: payoutHold ? 'Held' : 'No hold',
+      ok: !payoutHold,
+      detail: payoutHold
+        ? `Provider has an active payout hold: ${payoutHold.reason}`
+        : 'No active payout hold is attached to this provider.',
+    },
+    {
+      label: earningsAttached ? 'Earnings linked' : 'No earnings',
+      ok: earningsAttached,
+      detail: earningsAttached
+        ? `${earnings.length} earning record(s) are attached to this batch.`
+        : 'This payout batch has no earning records attached.',
+    },
+    {
+      label:
+        withholdingAmount <= 0
+          ? 'No tax due'
+          : withholdingLogs.length
+            ? withholdingLogsPaid
+              ? 'Tax paid'
+              : 'Tax open'
+            : 'Tax log missing',
+      ok: withholdingLogsPaid,
+      detail:
+        withholdingAmount <= 0
+          ? 'No withholding amount is recorded for this batch.'
+          : withholdingLogs.length
+            ? `${withholdingLogs.length} withholding log(s), ${formatMoney(withholdingAmount, batch.currency)} total.`
+            : `Withholding amount exists (${formatMoney(withholdingAmount, batch.currency)}) but no withholding log is linked.`,
+    },
+    {
+      label: batch.transferRef ? 'Bank ref' : batch.status === 'PAID' ? 'No ref' : 'Ref later',
+      ok: transferRefReady,
+      detail: batch.transferRef
+        ? `Bank transfer reference: ${batch.transferRef}`
+        : batch.status === 'PAID'
+          ? 'Paid batches must keep a bank transfer reference for reconciliation.'
+          : 'Bank transfer reference can be added when finance starts or completes the payout.',
+    },
+    {
+      label: allEarningsPaid
+        ? 'Earnings paid'
+        : batch.status === 'PAID'
+          ? 'Earnings open'
+          : 'Earnings pending',
+      ok: batch.status === 'PAID' ? allEarningsPaid : earningsAttached,
+      detail: allEarningsPaid
+        ? 'Every attached earning is marked PAID.'
+        : batch.status === 'PAID'
+          ? 'The payout is PAID, but one or more attached earnings are not marked PAID.'
+          : 'Attached earnings will be marked paid when payout settlement is complete.',
+    },
+    {
+      label: batch.paidAt ? 'Paid date' : batch.status === 'PAID' ? 'No paid date' : 'Date later',
+      ok: paidDateReady,
+      detail: batch.paidAt
+        ? `Paid at ${new Date(batch.paidAt).toLocaleString()}.`
+        : batch.status === 'PAID'
+          ? 'Paid batches need a paid timestamp.'
+          : 'Paid timestamp is expected only after settlement.',
+    },
   ];
+}
+
+function payoutReadinessSummary(batch: AdminPayoutBatch) {
+  const failedItems = payoutChecklist(batch).filter((item) => !item.ok);
+  if (!failedItems.length) {
+    return 'Ready for the current payout phase.';
+  }
+  return `Check ${failedItems.map((item) => item.label.toLowerCase()).join(', ')} before advancing.`;
 }
 
 function activePayoutHold(batch: AdminPayoutBatch) {
