@@ -1,12 +1,14 @@
-import { AdminServiceCatalogItem, adminGet } from '../../lib/admin-api';
+import { AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
 import { createService, updatePayoutRule, updateService, upsertPayoutRule } from './actions';
 
 export default async function ServicesPage() {
   const services = await adminGet<AdminServiceCatalogItem[]>('/admin/services', []);
+  const taxPolicies = await adminGet<AdminTaxPolicyVersion[]>('/admin/tax-policy-versions', []);
   const activeServices = services.filter((service) => service.active);
   const payoutRuleCount = services.reduce((sum, service) => sum + (service.payoutRules?.length ?? 0), 0);
   const groupedServices = groupServices(services);
   const healthItems = buildPricingHealth(services);
+  const activeTaxPolicy = selectActiveTaxPolicy(taxPolicies);
 
   return (
     <>
@@ -20,6 +22,9 @@ export default async function ServicesPage() {
         <div className="actions">
           <span className="pill pill-success">{activeServices.length} active service rows</span>
           <span className="pill pill-info">{payoutRuleCount} payout rule(s)</span>
+          <span className={`pill ${activeTaxPolicy ? 'pill-success' : 'pill-warn'}`}>
+            {activeTaxPolicy ? `Tax: ${activeTaxPolicy.name}` : 'No active tax policy'}
+          </span>
         </div>
       </section>
 
@@ -164,7 +169,8 @@ export default async function ServicesPage() {
                       {(service.payoutRules ?? []).map((rule) => {
                         const fee = rule.customerPrice - rule.providerPayoutAmount;
                         const vat = Math.round((fee * rule.vatBps) / 10000);
-                        const actualCommission = Math.max(0, fee - vat - rule.otherCostAmount);
+                        const tax = estimateWithholding(activeTaxPolicy, service, rule.customerPrice);
+                        const actualCommission = fee - vat - tax.withholdingAmount - rule.otherCostAmount;
                         return (
                           <div className="setup-stage-item" key={rule.id}>
                             <span>{rule.active ? 'ON' : 'OFF'}</span>
@@ -179,7 +185,11 @@ export default async function ServicesPage() {
                                 {formatMoney(rule.otherCostAmount, rule.currency)}
                               </p>
                               <p className="muted">
-                                Actual company commission before withholding:{' '}
+                                Withholding projection {formatMoney(tax.withholdingAmount, rule.currency)}
+                                {tax.ruleLabel ? ` via ${tax.ruleLabel}` : ' (no active rule)'}
+                              </p>
+                              <p className="muted">
+                                Actual company commission after VAT/withholding/other:{' '}
                                 {formatMoney(actualCommission, rule.currency)}
                               </p>
                               <form action={updatePayoutRule} className="form-grid compact-form">
@@ -355,6 +365,74 @@ function buildPricingHealth(services: AdminServiceCatalogItem[]) {
           : 'Review payout rules with invalid customer price or provider payout amount.',
     },
   ];
+}
+
+function selectActiveTaxPolicy(policies: AdminTaxPolicyVersion[]) {
+  const now = Date.now();
+  return policies
+    .filter((policy) => {
+      if (policy.status !== 'ACTIVE') {
+        return false;
+      }
+      const startsAt = new Date(policy.effectiveFrom).getTime();
+      const endsAt = policy.effectiveTo ? new Date(policy.effectiveTo).getTime() : Number.POSITIVE_INFINITY;
+      return startsAt <= now && endsAt >= now;
+    })
+    .sort((left, right) => new Date(right.effectiveFrom).getTime() - new Date(left.effectiveFrom).getTime())[0];
+}
+
+function estimateWithholding(
+  policy: AdminTaxPolicyVersion | undefined,
+  service: AdminServiceCatalogItem,
+  grossAmount: number,
+) {
+  const rule = selectTaxRule(policy?.rules ?? [], {
+    grossAmount,
+    serviceTypes: [service.serviceGroupKey, service.name].filter(Boolean).map(String),
+  });
+  if (!policy || !rule) {
+    return { withholdingAmount: 0, ruleLabel: null };
+  }
+  const withholdingAmount = Math.max(
+    0,
+    Math.min(grossAmount, Math.round((grossAmount * rule.rateBps) / 10000) + rule.fixedAmount),
+  );
+  return {
+    withholdingAmount,
+    ruleLabel: `${rule.scope}${rule.serviceType ? `:${rule.serviceType}` : ''} ${formatBps(rule.rateBps)}`,
+  };
+}
+
+function selectTaxRule(
+  rules: NonNullable<AdminTaxPolicyVersion['rules']>,
+  input: { grossAmount: number; serviceTypes: string[] },
+) {
+  const serviceTypes = new Set(input.serviceTypes.map((value) => value.toLowerCase()));
+  const prioritized = [...rules].filter((rule) => rule.active).sort(
+    (left, right) =>
+      taxRulePriority(right, serviceTypes, input.grossAmount) -
+      taxRulePriority(left, serviceTypes, input.grossAmount),
+  );
+  return prioritized.find((rule) => taxRulePriority(rule, serviceTypes, input.grossAmount) > 0) ?? null;
+}
+
+function taxRulePriority(
+  rule: NonNullable<AdminTaxPolicyVersion['rules']>[number],
+  serviceTypes: Set<string>,
+  grossAmount: number,
+) {
+  if (rule.scope === 'SERVICE_TYPE') {
+    return rule.serviceType && serviceTypes.has(rule.serviceType.toLowerCase()) ? 30 : 0;
+  }
+  if (rule.scope === 'AMOUNT_BAND') {
+    const aboveMin = rule.minGrossAmount == null || grossAmount >= rule.minGrossAmount;
+    const belowMax = rule.maxGrossAmount == null || grossAmount <= rule.maxGrossAmount;
+    return aboveMin && belowMax ? 20 : 0;
+  }
+  if (rule.scope === 'DEFAULT') {
+    return 10;
+  }
+  return 0;
 }
 
 function slugify(value: string) {
