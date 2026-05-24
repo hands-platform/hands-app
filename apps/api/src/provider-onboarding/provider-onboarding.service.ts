@@ -171,11 +171,13 @@ export class ProviderOnboardingService {
     const now = new Date();
     const normalizedCccd = normalizeIdNumber(input.cccdNumber);
     const requestedDocuments = (input.documents ?? []).map((document) => ({
-      fileId: document.fileId,
+      fileId: requiredString(document.fileId, 'fileId is required'),
       type: parseEnum(ProviderDocumentType, document.type, 'Invalid provider document type'),
     }));
     const submittedDocumentTypes = new Set([
-      ...provider.documents.map((document) => document.type),
+      ...provider.documents
+        .filter((document) => document.status !== ProviderDocumentStatus.REJECTED)
+        .map((document) => document.type),
       ...requestedDocuments.map((document) => document.type),
     ]);
     const missingRequiredDocuments = REQUIRED_KYC_DOCUMENT_TYPES.filter(

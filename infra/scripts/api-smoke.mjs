@@ -89,6 +89,12 @@ const backupProviderAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: '+84900000003', otp: '123456', role: 'PROVIDER' }),
 });
 
+const kycNegativeProviderPhone = `+849${String(Date.now()).slice(-8)}`;
+const kycNegativeProviderAuth = await request('/auth/verify-otp', {
+  method: 'POST',
+  body: JSON.stringify({ phone: kycNegativeProviderPhone, otp: '123456', role: 'PROVIDER' }),
+});
+
 const adminAuth = await request('/auth/verify-otp', {
   method: 'POST',
   body: JSON.stringify({ phone: '+84900000099', otp: '123456', role: 'ADMIN' }),
@@ -187,6 +193,15 @@ await patchJson('/provider/onboarding/basic-profile', providerAuth.accessToken, 
   residentialAddress: 'District 1, Ho Chi Minh City, Vietnam',
   city: 'Ho Chi Minh City',
 });
+await expectRequestFailure(
+  'KYC submit without required documents',
+  () =>
+    postJson('/provider/onboarding/kyc/submit', kycNegativeProviderAuth.accessToken, {
+      cccdNumber: '000000000000',
+      documents: [],
+    }),
+  400,
+);
 const kycDocumentUploads = [];
 for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
   const upload = await postJson('/files/presign', providerAuth.accessToken, {
