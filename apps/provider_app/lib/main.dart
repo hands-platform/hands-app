@@ -2545,6 +2545,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final existingDocumentTypes = asList(snapshot['documents'])
         .map(asMap)
         .whereType<Map<String, dynamic>>()
+        .where(isProviderSubmittedDocumentUsableForKyc)
         .map((document) => document['type']?.toString())
         .whereType<String>()
         .toSet();
@@ -3026,6 +3027,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
     final submittedKycRequiredCount = documents
         .map(asMap)
         .whereType<Map<String, dynamic>>()
+        .where(isProviderSubmittedDocumentUsableForKyc)
         .map((document) => document['type']?.toString())
         .where((type) => requiredKycTypes.contains(type))
         .toSet()

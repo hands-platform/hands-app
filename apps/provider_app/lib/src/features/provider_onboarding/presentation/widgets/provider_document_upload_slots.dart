@@ -27,22 +27,15 @@ class ProviderDocumentUploadSlots extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final submittedByType = <String, Map<String, dynamic>>{};
-    for (final document in submittedDocuments) {
-      final item = _asMap(document);
-      final type = item?['type']?.toString();
-      if (item != null && type != null && type.isNotEmpty) {
-        submittedByType[type] = item;
-      }
-    }
+    final submittedByType =
+        providerDocumentSlotDocumentsByType(submittedDocuments);
 
     final missingRequired = requiredProviderDocumentTypes
-        .where(
-          (type) =>
-              !uploadedDocumentIds.containsKey(type) &&
-              submittedByType[type]?['status']?.toString() != 'APPROVED' &&
-              submittedByType[type]?['status']?.toString() != 'PENDING_REVIEW',
-        )
+        .where((type) => !isProviderKycDocumentReady(
+              type: type,
+              uploadedDocumentIds: uploadedDocumentIds,
+              submittedDocuments: submittedDocuments,
+            ))
         .map(providerDocumentTypeLabel)
         .toList();
 
@@ -254,4 +247,66 @@ Map<String, dynamic>? _asMap(dynamic value) {
     return Map<String, dynamic>.from(value);
   }
   return null;
+}
+
+Map<String, Map<String, dynamic>> providerDocumentSlotDocumentsByType(
+    List<dynamic> submittedDocuments) {
+  final documentsByType = <String, List<Map<String, dynamic>>>{};
+  for (final document in submittedDocuments) {
+    final item = _asMap(document);
+    final type = item?['type']?.toString();
+    if (item == null || type == null || type.isEmpty) {
+      continue;
+    }
+    documentsByType.putIfAbsent(type, () => []).add(item);
+  }
+
+  return documentsByType.map((type, documents) {
+    return MapEntry(type, _preferredDocumentForSlot(documents));
+  });
+}
+
+bool isProviderKycDocumentReady({
+  required String type,
+  required Map<String, String> uploadedDocumentIds,
+  required List<dynamic> submittedDocuments,
+}) {
+  if (uploadedDocumentIds.containsKey(type)) {
+    return true;
+  }
+  return submittedDocuments
+      .map(_asMap)
+      .whereType<Map<String, dynamic>>()
+      .where((document) => document['type']?.toString() == type)
+      .any(isProviderSubmittedDocumentUsableForKyc);
+}
+
+bool isProviderSubmittedDocumentUsableForKyc(Map<String, dynamic> document) {
+  final status = document['status']?.toString();
+  return status == 'APPROVED' || status == 'PENDING_REVIEW';
+}
+
+Map<String, dynamic> _preferredDocumentForSlot(
+    List<Map<String, dynamic>> documents) {
+  return documents.reduce((best, candidate) {
+    final bestScore = _documentSlotScore(best);
+    final candidateScore = _documentSlotScore(candidate);
+    if (candidateScore > bestScore) {
+      return candidate;
+    }
+    return best;
+  });
+}
+
+int _documentSlotScore(Map<String, dynamic> document) {
+  switch (document['status']?.toString()) {
+    case 'PENDING_REVIEW':
+      return 4;
+    case 'APPROVED':
+      return 3;
+    case 'REJECTED':
+      return 2;
+    default:
+      return 1;
+  }
 }

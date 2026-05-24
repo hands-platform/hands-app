@@ -71,6 +71,40 @@ void main() {
     expect(providerDocumentTypeStep('BANK_QR'), 'Optional');
   });
 
+  test('ignores rejected KYC documents when checking readiness', () {
+    final documents = [
+      {'type': 'CCCD_FRONT', 'status': 'REJECTED'},
+      {'type': 'CCCD_BACK', 'status': 'PENDING_REVIEW'},
+      {'type': 'SELFIE', 'status': 'APPROVED'},
+    ];
+
+    expect(
+      isProviderKycDocumentReady(
+        type: 'CCCD_FRONT',
+        uploadedDocumentIds: const {},
+        submittedDocuments: documents,
+      ),
+      isFalse,
+    );
+    expect(
+      isProviderKycDocumentReady(
+        type: 'CCCD_FRONT',
+        uploadedDocumentIds: const {'CCCD_FRONT': 'replacement-file-id'},
+        submittedDocuments: documents,
+      ),
+      isTrue,
+    );
+  });
+
+  test('prefers usable document status over rejected replacement history', () {
+    final documentsByType = providerDocumentSlotDocumentsByType([
+      {'type': 'CCCD_FRONT', 'status': 'REJECTED'},
+      {'type': 'CCCD_FRONT', 'status': 'APPROVED'},
+    ]);
+
+    expect(documentsByType['CCCD_FRONT']?['status'], 'APPROVED');
+  });
+
   test('prioritizes basic profile before other onboarding gates', () {
     final priority = providerOnboardingPriorityFromSnapshot({
       'nextRequiredActions': ['BASIC_PROFILE', 'KYC_REVIEW'],
@@ -85,15 +119,29 @@ void main() {
     final priority = providerOnboardingPriorityFromSnapshot({
       'nextRequiredActions': ['KYC_REVIEW'],
       'documents': [
-        {'type': 'CCCD_FRONT'},
-        {'type': 'CCCD_BACK'},
-        {'type': 'SELFIE'},
+        {'type': 'CCCD_FRONT', 'status': 'PENDING_REVIEW'},
+        {'type': 'CCCD_BACK', 'status': 'PENDING_REVIEW'},
+        {'type': 'SELFIE', 'status': 'PENDING_REVIEW'},
       ],
     });
 
     expect(priority.actionKey, 'KYC_REVIEW');
     expect(priority.title, 'Submit KYC for admin review');
     expect(priority.buttonLabel, 'Submit KYC');
+  });
+
+  test('does not prioritize KYC submit when only rejected documents exist', () {
+    final priority = providerOnboardingPriorityFromSnapshot({
+      'nextRequiredActions': ['KYC_REVIEW'],
+      'documents': [
+        {'type': 'CCCD_FRONT', 'status': 'REJECTED'},
+        {'type': 'CCCD_BACK', 'status': 'REJECTED'},
+        {'type': 'SELFIE', 'status': 'REJECTED'},
+      ],
+    });
+
+    expect(priority.title, 'Upload identity photos');
+    expect(priority.buttonLabel, 'Open KYC checklist');
   });
 
   test('shows ready state after core setup before first booking', () {

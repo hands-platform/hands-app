@@ -26,6 +26,7 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
   final submittedKycRequiredCount = documents
       .map(_asMap)
       .whereType<Map<String, dynamic>>()
+      .where(isProviderSubmittedDocumentUsableForKyc)
       .map((document) => document['type']?.toString())
       .where((type) => requiredKycTypes.contains(type))
       .toSet()
