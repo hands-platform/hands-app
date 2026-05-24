@@ -73,7 +73,9 @@ export default async function DashboardPage() {
     notifications,
     earnings,
     payoutBatches,
+    externalReadiness,
   });
+  const topCommandSignal = commandSignals[0];
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
   const pendingVerification = providers.filter((provider) => provider.verification?.status === 'SUBMITTED');
   const failedNotifications = notifications.filter((notification) =>
@@ -178,6 +180,20 @@ export default async function DashboardPage() {
             {queue.some((item) => item.severity === 'high') ? 'High priority open' : 'Stable'}
           </span>
         </div>
+        {topCommandSignal && (
+          <div className="ops-task-note" style={{ marginTop: 14 }}>
+            <div className="ops-row">
+              <div>
+                <span className={`pill ${topCommandSignal.pillClass}`}>First move</span>
+                <strong>{topCommandSignal.title}</strong>
+                <p className="muted">{topCommandSignal.detail}</p>
+              </div>
+              <Link className="text-link" href={topCommandSignal.href}>
+                {topCommandSignal.action}
+              </Link>
+            </div>
+          </div>
+        )}
         <div className="ops-task-grid">
           {commandSignals.map((signal) => (
             <div className={`ops-task-card ${signal.className}`} key={signal.title}>
@@ -418,6 +434,8 @@ type DashboardCommandSignal = {
   href: string;
   className: string;
   pillClass: string;
+  priority: number;
+  severity: 'high' | 'medium' | 'low';
   breakdown: Array<{
     label: string;
     value: string;
@@ -434,6 +452,7 @@ function buildDashboardCommandSignals(input: {
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
   payoutBatches: AdminPayoutBatch[];
+  externalReadiness: AdminExternalReadiness;
 }): DashboardCommandSignal[] {
   const openMatching = input.bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const staleOpenMatching = openMatching.filter((booking) =>
@@ -486,8 +505,16 @@ function buildDashboardCommandSignals(input: {
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
   const setupBlocked = input.earnings.availableNetAmount > 0 && payoutReviews.length === 0;
+  const readinessUnavailable = !input.externalReadiness.ok && input.externalReadiness.checks.length === 0;
+  const blockedExternal = input.externalReadiness.checks.filter((check) => check.status === 'BLOCKED');
+  const partialExternal = input.externalReadiness.checks.filter((check) => check.status === 'PARTIAL');
+  const missingExternal = input.externalReadiness.checks.reduce(
+    (count, check) => count + check.missing.length + (check.invalid?.length ?? 0),
+    0,
+  );
+  const externalNeedsSetup = readinessUnavailable || blockedExternal.length > 0 || partialExternal.length > 0;
 
-  return [
+  const signals: DashboardCommandSignal[] = [
     {
       title: 'Dispatch lane',
       status: staleOpenMatching.length
@@ -498,6 +525,13 @@ function buildDashboardCommandSignals(input: {
         : 'Monitor open matching, quiet chat rooms, and provider assignment.',
       action: 'Open booking monitor',
       href: '/bookings',
+      priority: staleOpenMatching.length || matchedWithoutChat.length ? 95 : openMatching.length ? 70 : 25,
+      severity:
+        staleOpenMatching.length || matchedWithoutChat.length
+          ? 'high'
+          : openMatching.length
+            ? 'medium'
+            : 'low',
       className: staleOpenMatching.length
         ? 'ops-task-blocked'
         : openMatching.length
@@ -543,6 +577,14 @@ function buildDashboardCommandSignals(input: {
         : 'No provider review blocker in the current snapshot.',
       action: 'Open providers',
       href: '/providers',
+      priority:
+        activeProviderSanctions.length || openProviderReports.length ? 90 : providerReviews.length ? 65 : 20,
+      severity:
+        activeProviderSanctions.length || openProviderReports.length
+          ? 'high'
+          : providerReviews.length
+            ? 'medium'
+            : 'low',
       className: providerReviews.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: providerReviews.length ? 'pill-warn' : 'pill-success',
       breakdown: [
@@ -580,6 +622,8 @@ function buildDashboardCommandSignals(input: {
         : 'Payment and refund queues are quiet.',
       action: 'Open payments',
       href: '/payments',
+      priority: completedAuthorized.length ? 100 : paymentReviews ? 80 : 20,
+      severity: completedAuthorized.length ? 'high' : paymentReviews ? 'medium' : 'low',
       className: paymentReviews ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: paymentReviews ? 'pill-danger' : 'pill-success',
       breakdown: [
@@ -613,6 +657,14 @@ function buildDashboardCommandSignals(input: {
           : `${money(input.earnings.availableNetAmount, input.earnings.currency)} available from earnings.`,
       action: 'Open payouts',
       href: '/payouts',
+      priority:
+        payoutHolds.length || failedPayouts.length ? 92 : payoutReviews.length || setupBlocked ? 62 : 15,
+      severity:
+        payoutHolds.length || failedPayouts.length
+          ? 'high'
+          : payoutReviews.length || setupBlocked
+            ? 'medium'
+            : 'low',
       className: payoutHolds.length
         ? 'ops-task-blocked'
         : payoutReviews.length || setupBlocked
@@ -658,6 +710,8 @@ function buildDashboardCommandSignals(input: {
         : 'No failed delivery in the current notification window.',
       action: 'Open notifications',
       href: '/notifications',
+      priority: failedNotifications.length ? 58 : disabledPushProviders.length ? 35 : 10,
+      severity: failedNotifications.length ? 'medium' : 'low',
       className: failedNotifications.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: failedNotifications.length ? 'pill-warn' : 'pill-success',
       breakdown: [
@@ -675,7 +729,63 @@ function buildDashboardCommandSignals(input: {
         },
       ],
     },
+    {
+      title: 'Setup lane',
+      status: readinessUnavailable
+        ? 'API CHECK'
+        : blockedExternal.length
+          ? `${blockedExternal.length} BLOCKED`
+          : partialExternal.length
+            ? `${partialExternal.length} PARTIAL`
+            : 'READY',
+      detail: readinessUnavailable
+        ? 'The external readiness endpoint is unavailable, so setup state cannot be trusted yet.'
+        : externalNeedsSetup
+          ? 'External credentials or service registrations are still pending before real production-like E2E.'
+          : 'External readiness checks are green for the current environment.',
+      action: 'Open setup',
+      href: '/setup',
+      priority: readinessUnavailable || blockedExternal.length ? 88 : partialExternal.length ? 52 : 8,
+      severity:
+        readinessUnavailable || blockedExternal.length ? 'high' : partialExternal.length ? 'medium' : 'low',
+      className:
+        readinessUnavailable || blockedExternal.length
+          ? 'ops-task-blocked'
+          : partialExternal.length
+            ? 'ops-task-pending'
+            : 'ops-task-done',
+      pillClass:
+        readinessUnavailable || blockedExternal.length
+          ? 'pill-danger'
+          : partialExternal.length
+            ? 'pill-warn'
+            : 'pill-success',
+      breakdown: [
+        {
+          label: 'Blocked',
+          value: blockedExternal.length.toString(),
+          tone: blockedExternal.length ? 'danger' : 'ok',
+          href: '/setup',
+        },
+        {
+          label: 'Partial',
+          value: partialExternal.length.toString(),
+          tone: partialExternal.length ? 'warn' : 'ok',
+          href: '/setup',
+        },
+        {
+          label: 'Missing values',
+          value: missingExternal.toString(),
+          tone: missingExternal ? 'warn' : 'ok',
+          href: '/setup',
+        },
+      ],
+    },
   ];
+
+  return signals.sort(
+    (left, right) => right.priority - left.priority || left.title.localeCompare(right.title),
+  );
 }
 
 function buildOpsQueue(input: {

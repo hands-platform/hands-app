@@ -164,6 +164,109 @@ const setupOrder = [
   },
 ];
 
+const externalRegistrationPlan = [
+  {
+    id: 'github-org',
+    groupId: 'mobile',
+    title: 'GitHub organization and repository',
+    provider: 'GitHub',
+    owner: 'hands-platform',
+    status: 'Account ready',
+    statusClass: 'pill-success',
+    detail:
+      'Development backup is now centered on hands-platform/hands-app. Keep develop as the active branch.',
+    env: ['GITHUB_OWNER=hands-platform', 'GITHUB_REPO=hands-app'],
+  },
+  {
+    id: 'domain-email',
+    groupId: 'supabase',
+    title: 'Domain, DNS, and operations email',
+    provider: 'PA Vietnam',
+    owner: 'administration@hands.vn',
+    status: 'Manual control',
+    statusClass: 'pill-info',
+    detail:
+      'hands.vn DNS and administration@hands.vn are managed manually. Add verification records only from official provider consoles.',
+    env: ['hands.vn', 'administration@hands.vn'],
+  },
+  {
+    id: 'supabase-staging',
+    groupId: 'supabase',
+    title: 'Supabase staging project',
+    provider: 'Supabase',
+    owner: 'HANDS / hands-staging',
+    detail:
+      'Project exists. Keep anon/publishable values client-side only and service-role/JWT secrets server-side only.',
+    env: ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_JWT_SECRET', 'SUPABASE_SERVICE_ROLE_KEY'],
+  },
+  {
+    id: 'maptiler-geoapify',
+    groupId: 'maps',
+    title: 'Low-cost map and geocoding keys',
+    provider: 'MapTiler + Geoapify',
+    owner: 'administration@hands.vn',
+    detail:
+      'Keys are stored in ignored local env files. Use tiles and geocoding only; no routing, directions, or live tracking APIs.',
+    env: ['MAPTILER_API_KEY', 'GEOAPIFY_API_KEY'],
+  },
+  {
+    id: 'vonage-phone',
+    groupId: 'notifications',
+    title: 'Phone OTP provider',
+    provider: 'Vonage',
+    owner: 'administration@hands.vn',
+    status: 'Deferred',
+    statusClass: 'pill-neutral',
+    detail:
+      'Supabase Phone Auth remains deferred. Keep local/dev OTP until Vonage credentials and SMS delivery are tested.',
+    env: ['SMS_PROVIDER', 'SMS_API_KEY', 'SMS_API_URL'],
+  },
+  {
+    id: 'onesignal',
+    groupId: 'notifications',
+    title: 'Push notification provider',
+    provider: 'OneSignal',
+    owner: 'administration@hands.vn',
+    status: 'Deferred',
+    statusClass: 'pill-neutral',
+    detail:
+      'Firebase Messaging is out. Use in-app notifications until OneSignal app id and server-side REST key are ready.',
+    env: ['PUSH_PROVIDER', 'ONESIGNAL_APP_ID', 'ONESIGNAL_REST_API_KEY'],
+  },
+  {
+    id: 'payments-vn',
+    groupId: 'payments',
+    title: 'Vietnam payment sandbox',
+    provider: 'MoMo + VNPay',
+    owner: 'administration@hands.vn',
+    status: 'Deferred',
+    statusClass: 'pill-neutral',
+    detail:
+      'Cash and local smoke flows can continue. Add gateway sandbox credentials before real payment authorization E2E.',
+    env: ['MOMO_PARTNER_CODE', 'MOMO_ACCESS_KEY', 'VNPAY_TMN_CODE', 'VNPAY_HASH_SECRET'],
+  },
+  {
+    id: 'storage-cdn',
+    groupId: 'storage',
+    title: 'Storage and CDN',
+    provider: 'Supabase Storage or S3-compatible storage',
+    owner: 'administration@hands.vn',
+    detail:
+      'Local MinIO is enough for development. Production needs private KYC buckets and public provider media delivery.',
+    env: ['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET', 'S3_PUBLIC_BASE_URL'],
+  },
+  {
+    id: 'android-release',
+    groupId: 'mobile-release',
+    title: 'Android release signing and store setup',
+    provider: 'Google Play Console',
+    owner: 'administration@hands.vn',
+    detail:
+      'Create separate customer/provider signing keys outside Git, then use fingerprints for Android provider consoles.',
+    env: ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'],
+  },
+];
+
 export default async function SetupPage() {
   const readiness = await apiGet<AdminExternalReadiness>('/health/external', {
     ok: false,
@@ -176,6 +279,7 @@ export default async function SetupPage() {
   const groupStatuses = buildGroupStatuses(readiness);
   const externalBacklog = buildExternalBacklog(readiness, readinessUnavailable);
   const nextActions = buildNextOperatorActions(readiness, readinessUnavailable);
+  const registrationPlan = buildExternalRegistrationPlan(readiness, readinessUnavailable);
 
   return (
     <>
@@ -218,6 +322,40 @@ export default async function SetupPage() {
           value={summary.missing}
           helper="Secret values are never displayed here."
         />
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>External registration handoff</h2>
+            <p className="muted">
+              Account ownership, service consoles, and credential status in one place. Secret values are never
+              printed here; this page only shows whether each integration is ready, deferred, or needs a human
+              setup step.
+            </p>
+          </div>
+          <span className="signal signal-info">{registrationPlan.length} services tracked</span>
+        </div>
+        <div className="setup-backlog">
+          {registrationPlan.map((item) => (
+            <a className="setup-backlog-item" href={`#${item.groupId}`} key={item.id}>
+              <span>{item.provider}</span>
+              <strong>{item.title}</strong>
+              <p className="muted">{item.detail}</p>
+              <div className="participant-list">
+                <span className={`pill ${item.statusClass}`}>{item.status}</span>
+                <span className="pill pill-neutral">{item.owner}</span>
+              </div>
+              <div className="participant-list" style={{ marginTop: 8 }}>
+                {item.env.map((name) => (
+                  <span className="pill pill-info" key={`${item.id}-${name}`}>
+                    {name}
+                  </span>
+                ))}
+              </div>
+            </a>
+          ))}
+        </div>
       </section>
 
       <section className="detail-grid" style={{ marginBottom: 16 }}>
@@ -512,6 +650,50 @@ function buildNextOperatorActions(readiness: AdminExternalReadiness, readinessUn
       };
     })
     .sort((left, right) => left.rank - right.rank || left.name.localeCompare(right.name));
+}
+
+function buildExternalRegistrationPlan(readiness: AdminExternalReadiness, readinessUnavailable = false) {
+  return externalRegistrationPlan.map((item) => {
+    if (item.status && item.statusClass) {
+      return item;
+    }
+
+    if (readinessUnavailable) {
+      return {
+        ...item,
+        status: 'Not checked',
+        statusClass: 'pill-warn',
+      };
+    }
+
+    const checks = readiness.checks.filter((check) => setupGroupMatches(item.groupId, check.category));
+    if (checks.length === 0) {
+      return {
+        ...item,
+        status: 'Not checked',
+        statusClass: 'pill-neutral',
+      };
+    }
+    if (checks.some((check) => check.status === 'BLOCKED')) {
+      return {
+        ...item,
+        status: 'Needs credential',
+        statusClass: 'pill-warn',
+      };
+    }
+    if (checks.some((check) => check.status === 'PARTIAL')) {
+      return {
+        ...item,
+        status: 'Partial',
+        statusClass: 'pill-info',
+      };
+    }
+    return {
+      ...item,
+      status: 'Ready',
+      statusClass: 'pill-success',
+    };
+  });
 }
 
 function isReadinessUnavailable(readiness: AdminExternalReadiness) {
