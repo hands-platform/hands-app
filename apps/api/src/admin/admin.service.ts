@@ -760,7 +760,7 @@ export class AdminService {
 
   async markEarningPaid(actorId: string, earningId: string) {
     const earning = await this.earnings.markPaid(earningId);
-    await this.writeAudit(actorId, 'earning.paid', `earning:${earning.id}`, {
+    await this.writeAudit(actorId, earning.netAmount < 0 ? 'earning.cash_fee_settled' : 'earning.paid', `earning:${earning.id}`, {
       bookingId: earning.bookingId,
       providerProfileId: earning.providerProfileId,
       netAmount: earning.netAmount,

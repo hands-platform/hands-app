@@ -1653,6 +1653,12 @@ class EarningsScreen extends ConsumerWidget {
                     final summary = summarySnapshot.data ?? <String, dynamic>{};
                     final earnings = earningsSnapshot.data ?? [];
                     final currency = summary['currency'] ?? 'VND';
+                    final walletBalance = asNum(summary['walletBalance']) ??
+                        ((asNum(summary['pendingNetAmount']) ?? 0) +
+                            (asNum(summary['availableNetAmount']) ?? 0));
+                    final walletBlocked = summary['walletBlocked'] == true;
+                    final walletBlockReason =
+                        summary['walletBlockReason']?.toString();
 
                     return FutureBuilder<List<dynamic>>(
                       future:
@@ -1662,6 +1668,40 @@ class EarningsScreen extends ConsumerWidget {
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            Card(
+                              color: walletBlocked
+                                  ? Theme.of(context).colorScheme.errorContainer
+                                  : Theme.of(context)
+                                      .colorScheme
+                                      .primaryContainer,
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Wallet balance',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '${formatCurrency(walletBalance)} $currency',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineSmall,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      walletBlocked
+                                          ? (walletBlockReason ??
+                                              'Unsettled cash service fees must be paid before accepting new bookings.')
+                                          : 'You can accept new booking requests.',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
                             Card(
                               child: Padding(
                                 padding: const EdgeInsets.all(16),
@@ -3878,8 +3918,10 @@ class ProviderMvpScreen extends StatelessWidget {
 
 String formatCurrency(dynamic amount) {
   final number = asNum(amount)?.toInt() ?? 0;
-  final text = number.toString();
+  final sign = number < 0 ? '-' : '';
+  final text = number.abs().toString();
   final buffer = StringBuffer();
+  buffer.write(sign);
 
   for (var index = 0; index < text.length; index++) {
     final reverseIndex = text.length - index;

@@ -675,6 +675,29 @@ await expectRequestFailure(
   () => postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken),
   400,
 );
+const adminEarningsAfterCashDebt = await getJson('/admin/earnings', adminAuth.accessToken);
+const cashDebtEarning = adminEarningsAfterCashDebt.find(
+  (earning) => earning.bookingId === walletDebtBooking.id && earning.netAmount < 0,
+);
+if (!cashDebtEarning) {
+  throw new Error(`Cash debt earning was not visible to admin: ${JSON.stringify(adminEarningsAfterCashDebt[0])}`);
+}
+await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken);
+const walletDebtProviderSummaryAfterSettlement = await getJson(
+  '/provider/earnings/summary',
+  walletDebtProviderAuth.accessToken,
+);
+if (
+  walletDebtProviderSummaryAfterSettlement.walletBalance < 0 ||
+  walletDebtProviderSummaryAfterSettlement.walletBlocked === true
+) {
+  throw new Error(
+    `Cash fee settlement did not unblock provider wallet: ${JSON.stringify(
+      walletDebtProviderSummaryAfterSettlement,
+    )}`,
+  );
+}
+await postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken);
 
 const matched = await postJson(`/customer/bookings/${booking.id}/select-provider`, customerAuth.accessToken, {
   providerId: providerAuth.user.providerProfile.id,

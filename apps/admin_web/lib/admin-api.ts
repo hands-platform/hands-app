@@ -387,6 +387,11 @@ export type AdminEarning = {
   payoutBatchId?: string | null;
   createdAt?: string;
   providerProfile?: { displayName?: string | null; user?: { phone?: string; fullName?: string | null } };
+  booking?: {
+    status?: string;
+    scheduledStartAt?: string;
+    payment?: { method: string; status: string; amount: number; currency?: string } | null;
+  } | null;
   taxLogs?: AdminProviderTaxLog[];
 };
 

@@ -23,7 +23,8 @@ export default async function EarningsPage() {
   ]);
   const sortedEarnings = sortEarnings(earnings);
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, payoutBatches);
-  const financeSignals = buildFinanceSignals(sortedEarnings, payoutBatches, payoutQueue);
+  const cashDebtQueue = buildCashDebtQueue(sortedEarnings);
+  const financeSignals = buildFinanceSignals(sortedEarnings, payoutBatches, payoutQueue, cashDebtQueue);
 
   const metrics = [
     ['Gross', summary.grossAmount],
@@ -128,6 +129,54 @@ export default async function EarningsPage() {
       <div className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
+            <h2>Cash fee debt queue</h2>
+            <p className="muted">
+              Cash bookings create a negative provider wallet until the provider deposits the HANDS fee or finance offsets it.
+            </p>
+          </div>
+          <span className={cashDebtQueue.length ? 'pill pill-danger' : 'pill pill-success'}>
+            {cashDebtQueue.length} blocked wallet(s)
+          </span>
+        </div>
+        {cashDebtQueue.length ? (
+          <div className="setup-stage-list">
+            {cashDebtQueue.slice(0, 12).map((item) => (
+              <div className="setup-stage-item" key={item.earning.id}>
+                <span>DEBT</span>
+                <div>
+                  <strong>{item.providerName}</strong>
+                  <p className="muted">
+                    Owes {formatMoney(Math.abs(item.earning.netAmount), item.earning.currency)} from booking{' '}
+                    <Link className="text-link" href={`/bookings/${item.earning.bookingId}`}>
+                      {shortId(item.earning.bookingId)}
+                    </Link>
+                    {' / '}payment {item.paymentMethod}
+                  </p>
+                  <p className="muted">
+                    Platform fee {formatMoney(item.earning.platformFee, item.earning.currency)}
+                    {' / '}tax {formatMoney(item.earning.withholdingAmount ?? 0, item.earning.currency)}
+                  </p>
+                </div>
+                <div className="actions">
+                  <Link className="text-link" href={`/providers/${item.earning.providerProfileId}`}>
+                    Provider
+                  </Link>
+                  <form action={markEarningPaid}>
+                    <input type="hidden" name="earningId" value={item.earning.id} />
+                    <button type="submit">Mark fee settled</button>
+                  </form>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">No provider has unsettled cash fee debt in the current admin result window.</p>
+        )}
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
             <h2>Recent earnings ledger</h2>
             <p className="muted">
               Raw earning rows remain visible for booking traceability, tax audit, and direct finance correction.
@@ -164,6 +213,7 @@ export default async function EarningsPage() {
                   <div className="muted">
                     {earning.createdAt ? relativeTime(earning.createdAt) : 'No create time'}
                   </div>
+                  <div className="muted">Payment {earning.booking?.payment?.method ?? 'UNKNOWN'}</div>
                 </td>
                 <td>
                   <span className={earningSignalClass(earning)}>{earningStatusLabel(earning)}</span>
@@ -198,7 +248,9 @@ export default async function EarningsPage() {
                   {canDirectlyPay(earning) && (
                     <form action={markEarningPaid}>
                       <input type="hidden" name="earningId" value={earning.id} />
-                      <button type="submit">Direct mark paid</button>
+                      <button type="submit">
+                        {isCashDebt(earning) ? 'Mark fee settled' : 'Direct mark paid'}
+                      </button>
                     </form>
                   )}
                   {canCreatePayout(earning) && (
@@ -258,6 +310,23 @@ type FinanceSignal = {
   pillClass: string;
 };
 
+type CashDebtQueueItem = {
+  earning: AdminEarning;
+  providerName: string;
+  paymentMethod: string;
+};
+
+function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
+  return earnings
+    .filter((earning) => isCashDebt(earning))
+    .map((earning) => ({
+      earning,
+      providerName: providerDisplayName(earning),
+      paymentMethod: earning.booking?.payment?.method ?? 'CASH',
+    }))
+    .sort((left, right) => left.earning.netAmount - right.earning.netAmount);
+}
+
 function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: AdminPayoutBatch[]) {
   const activeBatchByProvider = new Map<string, AdminPayoutBatch>();
   payoutBatches
@@ -271,6 +340,9 @@ function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: Admin
   const grouped = new Map<string, ProviderPayoutQueueItem>();
   earnings.forEach((earning) => {
     if (earning.status === 'PAID' || earning.status === 'CANCELLED') {
+      return;
+    }
+    if (earning.netAmount <= 0) {
       return;
     }
 
@@ -327,6 +399,7 @@ function buildFinanceSignals(
   earnings: AdminEarning[],
   payoutBatches: AdminPayoutBatch[],
   payoutQueue: ProviderPayoutQueueItem[],
+  cashDebtQueue: CashDebtQueueItem[],
 ): FinanceSignal[] {
   const readyProviders = payoutQueue.filter((item) => item.canBatch);
   const batchedUnpaid = earnings.filter(
@@ -370,6 +443,19 @@ function buildFinanceSignals(
       pillClass: batchedUnpaid.length ? 'pill-info' : 'pill-success',
     },
     {
+      title: 'Cash fee debt',
+      status: `${cashDebtQueue.length} WALLET(S)`,
+      detail: formatMoney(
+        cashDebtQueue.reduce((sum, item) => sum + Math.abs(item.earning.netAmount), 0),
+        'VND',
+      ),
+      action: cashDebtQueue.length
+        ? 'Confirm provider deposit or offset, then mark fee settled.'
+        : 'No negative cash wallet needs settlement.',
+      className: cashDebtQueue.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: cashDebtQueue.length ? 'pill-danger' : 'pill-success',
+    },
+    {
       title: 'Audit warnings',
       status: `${missingTaxLogs.length + stalePending.length} CHECK`,
       detail: `${missingTaxLogs.length} missing tax log(s), ${stalePending.length} pending after available time.`,
@@ -384,6 +470,9 @@ function buildFinanceSignals(
 }
 
 function earningPriority(earning: AdminEarning) {
+  if (isCashDebt(earning)) {
+    return -1;
+  }
   if (earning.status === 'CANCELLED') {
     return 5;
   }
@@ -424,6 +513,9 @@ function earningStatusLabel(earning: AdminEarning) {
 }
 
 function earningHint(earning: AdminEarning) {
+  if (isCashDebt(earning)) {
+    return 'Cash fee debt blocks provider wallet until settled';
+  }
   if (earning.status === 'PAID') {
     return earning.paidAt ? `Paid ${relativeTime(earning.paidAt)}` : 'Paid without timestamp';
   }
@@ -460,6 +552,16 @@ function canDirectlyPay(earning: AdminEarning) {
 function canCreatePayout(earning: AdminEarning) {
   return (
     Boolean(earning.providerProfile) &&
+    earning.status !== 'PAID' &&
+    earning.status !== 'CANCELLED' &&
+    earning.netAmount > 0 &&
+    !earning.payoutBatchId
+  );
+}
+
+function isCashDebt(earning: AdminEarning) {
+  return (
+    earning.netAmount < 0 &&
     earning.status !== 'PAID' &&
     earning.status !== 'CANCELLED' &&
     !earning.payoutBatchId
