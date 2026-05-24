@@ -115,6 +115,21 @@ await patchJson('/notifications/device-token/register', backupProviderAuth.acces
   platform: 'android',
 });
 
+const providerDeviceSession = await postJson('/provider/device-session', providerAuth.accessToken, {
+  deviceId: 'smoke-provider-device',
+  platform: 'android',
+  appVersion: 'smoke-test',
+});
+if (
+  providerDeviceSession.blocked !== false ||
+  providerDeviceSession.device?.deviceId !== 'smoke-provider-device' ||
+  providerDeviceSession.session?.deviceId !== 'smoke-provider-device'
+) {
+  throw new Error(
+    `Provider device session was not recorded correctly: ${JSON.stringify(providerDeviceSession)}`,
+  );
+}
+
 const services = await request('/services');
 const service = services[0];
 const couponCode = `smoke${Date.now()}`;
@@ -681,6 +696,7 @@ console.log({
   adminBookingDetailReady: true,
   adminProviderPushDeviceCount: adminProvider?.user?.pushDevices?.length ?? 0,
   adminBackupProviderPushDeviceCount: adminBackupProvider?.user?.pushDevices?.length ?? 0,
+  providerDeviceSessionId: providerDeviceSession.session?.id ?? null,
   providerSupabaseRoleSyncStatus: providerSupabaseRoleSync.status,
   hybridPreferredProviderId: adminHybridBooking?.preferredProvider?.id ?? null,
   hybridSelectedProviderId: adminHybridBooking?.selectedProvider?.id ?? null,
