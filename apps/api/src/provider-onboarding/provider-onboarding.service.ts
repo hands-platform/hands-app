@@ -17,14 +17,12 @@ import {
 } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
-
-const REQUIRED_PAYOUT_AGREEMENTS = [
-  ProviderAgreementType.TERMS,
-  ProviderAgreementType.PRIVACY,
-  ProviderAgreementType.LOCATION,
-  ProviderAgreementType.PAYOUT,
-  ProviderAgreementType.TAX,
-];
+import {
+  OPTIONAL_PROVIDER_DOCUMENT_TYPES,
+  PROVIDER_LEVEL_REQUIREMENTS,
+  REQUIRED_KYC_DOCUMENT_TYPES,
+  REQUIRED_PAYOUT_AGREEMENTS,
+} from './provider-onboarding.policy';
 
 @Injectable()
 export class ProviderOnboardingService {
@@ -97,6 +95,12 @@ export class ProviderOnboardingService {
         },
       },
       activeTaxPolicy,
+      requirements: {
+        requiredKycDocumentTypes: REQUIRED_KYC_DOCUMENT_TYPES,
+        optionalProviderDocumentTypes: OPTIONAL_PROVIDER_DOCUMENT_TYPES,
+        requiredPayoutAgreements: REQUIRED_PAYOUT_AGREEMENTS,
+        providerLevelRequirements: PROVIDER_LEVEL_REQUIREMENTS,
+      },
       nextRequiredActions: this.nextRequiredActions({
         provider,
         kycApproved,
@@ -154,6 +158,21 @@ export class ProviderOnboardingService {
     const provider = await this.requireProvider(userId);
     const now = new Date();
     const normalizedCccd = normalizeIdNumber(input.cccdNumber);
+    const requestedDocuments = (input.documents ?? []).map((document) => ({
+      fileId: document.fileId,
+      type: parseEnum(ProviderDocumentType, document.type, 'Invalid provider document type'),
+    }));
+    const submittedDocumentTypes = new Set([
+      ...provider.documents.map((document) => document.type),
+      ...requestedDocuments.map((document) => document.type),
+    ]);
+    const missingRequiredDocuments = REQUIRED_KYC_DOCUMENT_TYPES.filter(
+      (type) => !submittedDocumentTypes.has(type),
+    );
+    if (missingRequiredDocuments.length > 0) {
+      throw new BadRequestException(`Missing required KYC documents: ${missingRequiredDocuments.join(', ')}`);
+    }
+
     const kyc = await this.prisma.providerKyc.upsert({
       where: { providerProfileId: provider.id },
       update: {
@@ -172,9 +191,8 @@ export class ProviderOnboardingService {
       },
     });
 
-    for (const document of input.documents ?? []) {
-      const type = parseEnum(ProviderDocumentType, document.type, 'Invalid provider document type');
-      await this.attachProviderDocument(provider.id, document.fileId, type);
+    for (const document of requestedDocuments) {
+      await this.attachProviderDocument(provider.id, document.fileId, document.type);
     }
 
     await this.prisma.providerVerification.upsert({
