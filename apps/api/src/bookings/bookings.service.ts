@@ -411,6 +411,7 @@ export class BookingsService {
         participants: { include: { providerProfile: true } },
         selectedProvider: true,
         chatRoom: true,
+        payment: true,
       },
       orderBy: { createdAt: 'desc' },
     });

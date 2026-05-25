@@ -39,4 +39,17 @@ void main() {
     expect(providerWalletBalance(summary), 20000);
     expect(providerWalletBlockReason(summary), isNull);
   });
+
+  test('identifies cash bookings and explains settlement risk', () {
+    final booking = {
+      'payment': {
+        'method': 'CASH',
+        'amount': 450000,
+      },
+    };
+
+    expect(providerBookingIsCash(booking), isTrue);
+    expect(providerCashBookingRiskHint(booking), contains('450.000 VND'));
+    expect(providerCashBookingRiskHint(booking), contains('wallet debt'));
+  });
 }

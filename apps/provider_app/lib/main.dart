@@ -1470,9 +1470,12 @@ class OpenBookingCard extends StatelessWidget {
         : [];
     final preferredProvider =
         booking['preferredProvider'] as Map<String, dynamic>?;
+    final payment = asMap(booking['payment']);
     final hasPreferredProvider = preferredProvider != null;
     final hasChat = booking['chatRoom'] != null;
     final isMatched = booking['status'] == 'MATCHED';
+    final isCashBooking = providerBookingIsCash(booking);
+    final customerAmount = payment?['amount'] ?? service?['basePrice'];
     final preferredProviderName = preferredProvider?['displayName'] as String?;
     final customerAddress = booking['address'] as Map<String, dynamic>?;
     final customerName = customerAddress?['name']?.toString() ?? 'Guest';
@@ -1563,7 +1566,12 @@ class OpenBookingCard extends StatelessWidget {
                 ProviderRequestTag(
                     label: '${service?['durationMin'] ?? '-'} min'),
                 ProviderRequestTag(
-                    label: '${formatCurrency(service?['basePrice'])} VND'),
+                    label: '${formatCurrency(customerAmount)} VND'),
+                ProviderRequestTag(
+                  label: payment?['method']?.toString() ??
+                      (isCashBooking ? 'CASH' : 'PAYMENT'),
+                  highlighted: isCashBooking,
+                ),
                 if (updatedLabel != 'Updated just now')
                   ProviderRequestTag(label: updatedLabel),
               ],
@@ -1740,6 +1748,11 @@ class OpenBookingCard extends StatelessWidget {
               const ProviderErrorCard(text: providerWalletBlockFallbackReasonKo),
               const SizedBox(height: 8),
               const InfoCard(text: providerWalletBlockHintKo),
+            ] else if (isCashBooking &&
+                ((isPreferredRequest && !isMatched) ||
+                    (!isPreferredRequest && !joined))) ...[
+              const SizedBox(height: 12),
+              InfoCard(text: providerCashBookingRiskHint(booking)),
             ],
             const SizedBox(height: 12),
             if (isPreferredRequest && !isMatched)
@@ -4431,6 +4444,21 @@ String providerWalletSettlementInstruction(Map<String, dynamic> summary) {
     return instruction;
   }
   return providerWalletBlockHintKo;
+}
+
+bool providerBookingIsCash(Map<String, dynamic> booking) {
+  final payment = asMap(booking['payment']);
+  return payment?['method']?.toString().toUpperCase() == 'CASH' ||
+      booking['paymentMethod']?.toString().toUpperCase() == 'CASH';
+}
+
+String providerCashBookingRiskHint(Map<String, dynamic> booking) {
+  final payment = asMap(booking['payment']);
+  final amount = payment?['amount'] ?? booking['totalAmount'];
+  final amountText = amount == null ? 'this request' : '${formatCurrency(amount)} VND';
+  return 'Cash payment: the customer pays you directly for $amountText. '
+      'After completion, HANDS fees and tax withholding can create wallet debt. '
+      'Keep your wallet settled so future booking acceptance stays available.';
 }
 
 String formatCurrency(dynamic amount) {

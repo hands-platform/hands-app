@@ -85,9 +85,10 @@ If the provider wallet is negative:
 - The settlement action stores an optional deposit reference or offset memo on the earning row.
 - The provider app Earnings screen shows the debt amount and settlement instruction
   returned by `GET /provider/earnings/summary`.
+- The provider app warns before accepting cash requests that direct customer cash can create
+  wallet debt after completion.
 
 ## Future Work
 
 - Bulk admin import/export for service matrix.
 - Service-specific VAT and withholding policy mapping if Vietnam policy requires it.
-- Provider app warning before accepting cash bookings when wallet risk is high.
