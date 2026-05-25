@@ -773,6 +773,21 @@ button:disabled {
   line-height: 1.35;
 }
 
+.service-impact-card {
+  background: #fbfdf8;
+  border: 1px solid #d9ead1;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 12px;
+}
+
+.service-impact-card h3,
+.service-impact-card p {
+  margin: 0;
+}
+
 @media (max-width: 860px) {
   .shell {
     grid-template-columns: 1fr;

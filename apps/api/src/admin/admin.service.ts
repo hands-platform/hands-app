@@ -893,6 +893,20 @@ export class AdminService {
       orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
       include: {
         payoutRules: { orderBy: [{ active: 'desc' }, { customerPrice: 'asc' }] },
+        providers: {
+          orderBy: [{ active: 'desc' }, { price: 'asc' }],
+          take: 50,
+          include: {
+            providerProfile: {
+              select: {
+                id: true,
+                displayName: true,
+                status: true,
+                blockedAt: true,
+              },
+            },
+          },
+        },
         _count: { select: { providers: true, bookings: true } },
       },
     });

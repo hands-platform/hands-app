@@ -509,6 +509,21 @@ const updatedProviderService = await patchJson(`/provider/services/${service.id}
 if (updatedProviderService.price !== higherCustomerPrice || updatedProviderService.active !== true) {
   throw new Error(`Provider service price was not updated: ${JSON.stringify(updatedProviderService)}`);
 }
+const adminServiceAfterProviderPriceUpdate = (await getJson('/admin/services', adminAuth.accessToken)).find(
+  (item) => item.id === service.id,
+);
+if (
+  !adminServiceAfterProviderPriceUpdate?.providers?.some(
+    (item) =>
+      item.providerProfileId === providerAuth.user.providerProfile.id &&
+      item.price === higherCustomerPrice &&
+      item.active,
+  )
+) {
+  throw new Error(
+    `Admin service impact data is missing provider price rows: ${JSON.stringify(adminServiceAfterProviderPriceUpdate)}`,
+  );
+}
 const couponCode = `smoke${Date.now()}`;
 const coupon = await postJson('/admin/coupons', adminAuth.accessToken, {
   code: couponCode,

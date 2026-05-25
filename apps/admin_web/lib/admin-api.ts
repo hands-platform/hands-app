@@ -576,6 +576,19 @@ export type AdminServiceCatalogItem = {
   displayOrder: number;
   active: boolean;
   payoutRules?: AdminServicePayoutRule[];
+  providers?: Array<{
+    id: string;
+    providerProfileId: string;
+    serviceId: string;
+    price: number;
+    active: boolean;
+    providerProfile?: {
+      id: string;
+      displayName?: string | null;
+      status?: string | null;
+      blockedAt?: string | null;
+    } | null;
+  }>;
   _count?: { providers?: number; bookings?: number };
 };
 

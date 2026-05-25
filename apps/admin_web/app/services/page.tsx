@@ -360,6 +360,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                       {service._count?.providers ?? 0} provider price row(s), {service._count?.bookings ?? 0}{' '}
                       booking row(s)
                     </p>
+                    <ProviderPriceImpact service={service} activeTaxPolicy={activeTaxPolicy} />
 
                     <form action={updateService} className="form-grid compact-form">
                       <input type="hidden" name="serviceId" value={service.id} />
@@ -705,6 +706,75 @@ function readSingleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function ProviderPriceImpact({
+  service,
+  activeTaxPolicy,
+}: {
+  service: AdminServiceCatalogItem;
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined;
+}) {
+  const impact = providerPriceImpact(service, activeTaxPolicy);
+  const visibleRows = impact.rows.filter((row) => row.state === 'bookable').length;
+  const hiddenRows = impact.rows.length - visibleRows;
+
+  return (
+    <div className="service-impact-card">
+      <div className="risk-watch-header">
+        <div>
+          <h3>Provider price impact</h3>
+          <p className="muted">
+            Shows which provider prices are visible in the customer app for this exact duration option.
+          </p>
+        </div>
+        <span className={`pill ${hiddenRows ? 'pill-warn' : 'pill-success'}`}>
+          {visibleRows} visible / {hiddenRows} hidden
+        </span>
+      </div>
+      <div className="participant-list">
+        <span className="pill pill-info">{impact.rows.length} loaded row(s)</span>
+        <span className={impact.unsupportedCount ? 'pill pill-warn' : 'pill pill-success'}>
+          {impact.unsupportedCount} missing payout
+        </span>
+        <span className={impact.belowMinimumCount ? 'pill pill-danger' : 'pill pill-success'}>
+          {impact.belowMinimumCount} below minimum
+        </span>
+        <span className={impact.inactiveOrBlockedCount ? 'pill pill-neutral' : 'pill pill-success'}>
+          {impact.inactiveOrBlockedCount} inactive/blocked
+        </span>
+      </div>
+      {impact.rows.length ? (
+        <div className="setup-stage-list">
+          {impact.rows.slice(0, 6).map((row) => (
+            <div className="setup-stage-item" key={row.id}>
+              <span>{row.state === 'bookable' ? 'SHOW' : 'HIDE'}</span>
+              <div>
+                <strong>{row.providerName}</strong>
+                <p className="muted">
+                  Customer {formatMoney(row.price, row.currency)} / provider{' '}
+                  {row.rule ? formatMoney(row.rule.providerPayoutAmount, row.currency) : 'not configured'}
+                </p>
+                <p className="muted">{row.reason}</p>
+                {row.rule ? (
+                  <p className="muted">
+                    Commission projection:{' '}
+                    {formatMoney(
+                      servicePayoutFinance(service, row.rule, activeTaxPolicy).actualCompanyCommission,
+                      row.currency,
+                    )}
+                  </p>
+                ) : null}
+              </div>
+              <small>{row.providerStatus}</small>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="muted">No provider has configured a price for this duration yet.</p>
+      )}
+    </div>
+  );
+}
+
 function serviceDurationMatrix(
   items: AdminServiceCatalogItem[],
   activeTaxPolicy: AdminTaxPolicyVersion | undefined,
@@ -876,6 +946,9 @@ function buildBookingReadinessQueue(
       const lowCommissionRules = (service.payoutRules ?? []).filter(
         (rule) => rule.active && actualCompanyCommission(service, rule, activeTaxPolicy) <= 0,
       );
+      const providerPriceRows = providerPriceImpact(service, activeTaxPolicy).rows.filter(
+        (row) => row.state !== 'bookable',
+      );
 
       if (!basePayoutRule) {
         items.push({
@@ -885,6 +958,22 @@ function buildBookingReadinessQueue(
           detail: `Base price ${formatMoney(service.basePrice, 'VND')} has no active payout rule.`,
           action: 'Add an active payout rule at the minimum customer price before customers can book.',
           tone: 'blocked',
+        });
+      }
+
+      for (const row of providerPriceRows) {
+        items.push({
+          serviceId: service.id,
+          title: `${service.name} / ${service.durationMin} min`,
+          status: row.state === 'below_minimum' ? 'BLOCKED' : 'HIDDEN',
+          detail: `${row.providerName} price ${formatMoney(row.price, row.currency)}: ${row.reason}`,
+          action:
+            row.state === 'missing_payout'
+              ? 'Add an active payout rule for this exact provider customer price.'
+              : row.state === 'below_minimum'
+                ? 'Ask the provider to raise the price or lower the admin minimum price intentionally.'
+                : 'No customer action needed unless this provider should be visible.',
+          tone: row.state === 'below_minimum' ? 'blocked' : 'warning',
         });
       }
 
@@ -924,6 +1013,64 @@ function buildBookingReadinessQueue(
       const rightScore = right.tone === 'blocked' ? 0 : 1;
       return leftScore - rightScore || left.title.localeCompare(right.title);
     });
+}
+
+function providerPriceImpact(
+  service: AdminServiceCatalogItem,
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
+  const activeRules = new Map(
+    (service.payoutRules ?? [])
+      .filter((rule) => rule.active)
+      .map((rule) => [rule.customerPrice, rule] as const),
+  );
+  const rows = (service.providers ?? [])
+    .slice()
+    .sort((left, right) => {
+      const leftName = left.providerProfile?.displayName ?? left.providerProfileId;
+      const rightName = right.providerProfile?.displayName ?? right.providerProfileId;
+      return Number(right.active) - Number(left.active) || left.price - right.price || leftName.localeCompare(rightName);
+    })
+    .map((providerService) => {
+      const rule = activeRules.get(providerService.price) ?? null;
+      const providerName = providerService.providerProfile?.displayName ?? 'Unnamed provider';
+      const providerStatus = providerService.providerProfile?.status ?? 'UNKNOWN';
+      const providerBlocked = Boolean(providerService.providerProfile?.blockedAt);
+      let state: 'bookable' | 'missing_payout' | 'below_minimum' | 'inactive' = 'bookable';
+      let reason = 'Customer can book this provider price.';
+
+      if (!providerService.active || providerBlocked) {
+        state = 'inactive';
+        reason = providerBlocked ? 'Provider account is blocked.' : 'Provider price row is inactive.';
+      } else if (providerService.price < service.basePrice) {
+        state = 'below_minimum';
+        reason = 'Provider price is below the admin minimum, so it must stay hidden.';
+      } else if (!rule) {
+        state = 'missing_payout';
+        reason = 'No active payout rule exists for this exact customer price, so booking stays hidden.';
+      } else if (actualCompanyCommission(service, rule, activeTaxPolicy) <= 0) {
+        state = 'missing_payout';
+        reason = 'Payout rule exists, but projected company commission is not positive.';
+      }
+
+      return {
+        id: providerService.id,
+        providerName,
+        providerStatus,
+        price: providerService.price,
+        currency: rule?.currency ?? 'VND',
+        rule,
+        state,
+        reason,
+      };
+    });
+
+  return {
+    rows,
+    unsupportedCount: rows.filter((row) => row.state === 'missing_payout').length,
+    belowMinimumCount: rows.filter((row) => row.state === 'below_minimum').length,
+    inactiveOrBlockedCount: rows.filter((row) => row.state === 'inactive').length,
+  };
 }
 
 function selectActiveTaxPolicy(policies: AdminTaxPolicyVersion[]) {
