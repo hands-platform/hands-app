@@ -1411,6 +1411,21 @@ for (let attempt = 0; attempt < 20 && notificationToRetry; attempt++) {
   }
 }
 
+const tracedAdminServices = await getJson('/admin/services', adminAuth.accessToken);
+const tracedAdminService = tracedAdminServices.find((item) => item.id === service.id);
+const serviceFinanceTraceReady = Boolean(
+  tracedAdminService?.bookings?.some(
+    (item) =>
+      item.booking?.payment &&
+      item.booking?.earning &&
+      item.booking?.walletLedgerEntries?.length > 0 &&
+      item.booking?.platformFeeLogs?.length > 0,
+  ),
+);
+if (!serviceFinanceTraceReady) {
+  throw new Error(`Admin service finance trace is incomplete: ${JSON.stringify(tracedAdminService)}`);
+}
+
 console.log({
   ok: true,
   bookingId: booking.id,
@@ -1467,6 +1482,7 @@ console.log({
   verificationReadStorageMode: verificationReadUrl.storageMode,
   providerOnboardingLevel: providerOnboarding.level,
   taxPolicyVersionCount: taxPolicyVersions.length,
+  serviceFinanceTraceReady,
   customerNotifications: notifications.length,
   retryAccepted,
   retryBeforeDeliveryCount,

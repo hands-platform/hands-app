@@ -907,6 +907,47 @@ export class AdminService {
             },
           },
         },
+        bookings: {
+          orderBy: { id: 'desc' },
+          take: 8,
+          include: {
+            booking: {
+              select: {
+                id: true,
+                status: true,
+                createdAt: true,
+                selectedProviderId: true,
+                payment: { select: { method: true, status: true, amount: true, currency: true } },
+                earning: {
+                  select: {
+                    id: true,
+                    grossAmount: true,
+                    platformFee: true,
+                    withholdingAmount: true,
+                    netAmount: true,
+                    status: true,
+                    currency: true,
+                  },
+                },
+                taxLogs: {
+                  orderBy: { createdAt: 'desc' },
+                  take: 3,
+                  select: { id: true, withholdingAmount: true, taxableAmount: true, currency: true },
+                },
+                platformFeeLogs: {
+                  orderBy: { createdAt: 'desc' },
+                  take: 3,
+                  select: { id: true, platformFeeAmount: true, currency: true },
+                },
+                walletLedgerEntries: {
+                  orderBy: { createdAt: 'desc' },
+                  take: 3,
+                  select: { id: true, type: true, amount: true, currency: true },
+                },
+              },
+            },
+          },
+        },
         _count: { select: { providers: true, bookings: true } },
       },
     });

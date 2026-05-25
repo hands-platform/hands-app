@@ -761,10 +761,17 @@ button:disabled {
   margin-top: 14px;
 }
 
+.service-trace {
+  min-width: 1180px;
+  margin-top: 14px;
+}
+
 .service-matrix th,
 .service-matrix td,
 .service-ledger th,
-.service-ledger td {
+.service-ledger td,
+.service-trace th,
+.service-trace td {
   vertical-align: top;
 }
 

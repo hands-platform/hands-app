@@ -589,6 +589,51 @@ export type AdminServiceCatalogItem = {
       blockedAt?: string | null;
     } | null;
   }>;
+  bookings?: Array<{
+    id: string;
+    bookingId: string;
+    serviceId: string;
+    quantity: number;
+    price: number;
+    booking?: {
+      id: string;
+      status: string;
+      createdAt: string;
+      selectedProviderId?: string | null;
+      payment?: {
+        method: string;
+        status: string;
+        amount: number;
+        currency: string;
+      } | null;
+      earning?: {
+        id: string;
+        grossAmount: number;
+        platformFee: number;
+        withholdingAmount: number;
+        netAmount: number;
+        status: string;
+        currency: string;
+      } | null;
+      taxLogs?: Array<{
+        id: string;
+        withholdingAmount: number;
+        taxableAmount: number;
+        currency: string;
+      }>;
+      platformFeeLogs?: Array<{
+        id: string;
+        platformFeeAmount: number;
+        currency: string;
+      }>;
+      walletLedgerEntries?: Array<{
+        id: string;
+        type: string;
+        amount: number;
+        currency: string;
+      }>;
+    } | null;
+  }>;
   _count?: { providers?: number; bookings?: number };
 };
 

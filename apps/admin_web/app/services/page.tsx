@@ -22,6 +22,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   const readinessItems = buildBookingReadinessQueue(services, activeTaxPolicy);
   const blockedReadinessItems = readinessItems.filter((item) => item.tone === 'blocked');
   const warningReadinessItems = readinessItems.filter((item) => item.tone === 'warning');
+  const bookingTraceRows = serviceBookingTraceRows(services);
   const actionNotice = serviceActionNotice(params);
 
   return (
@@ -275,6 +276,95 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Recent booking finance trace</h2>
+            <p className="muted">
+              Links service pricing to booking payment, provider earning, tax log, platform fee log, and wallet
+              movement. Use this after changing a price policy to confirm real bookings are producing the
+              expected finance records.
+            </p>
+          </div>
+          <span className="pill pill-info">{bookingTraceRows.length} trace row(s)</span>
+        </div>
+        {bookingTraceRows.length ? (
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>Service price</th>
+                <th>Payment</th>
+                <th>Earning</th>
+                <th>Tax / fee logs</th>
+                <th>Wallet movement</th>
+                <th>Trace status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bookingTraceRows.map((row) => (
+                <tr key={`${row.service.id}-${row.bookingService.id}`}>
+                  <td>
+                    <strong>{row.service.name}</strong>
+                    <p className="muted">
+                      {row.service.durationMin} min / {row.booking?.id.slice(0, 8) ?? row.bookingService.bookingId.slice(0, 8)}
+                    </p>
+                    <p className="muted">{row.booking?.status ?? 'UNKNOWN'}</p>
+                  </td>
+                  <td>
+                    <strong>{formatMoney(row.bookingService.price, row.currency)}</strong>
+                    <p className="muted">Qty {row.bookingService.quantity}</p>
+                  </td>
+                  <td>
+                    {row.booking?.payment ? (
+                      <div className="service-matrix-cell">
+                        <strong>{formatMoney(row.booking.payment.amount, row.booking.payment.currency)}</strong>
+                        <small>
+                          {row.booking.payment.method} / {row.booking.payment.status}
+                        </small>
+                      </div>
+                    ) : (
+                      <span className="pill pill-warn">No payment</span>
+                    )}
+                  </td>
+                  <td>
+                    {row.booking?.earning ? (
+                      <div className="service-matrix-cell">
+                        <strong>{formatMoney(row.booking.earning.netAmount, row.booking.earning.currency)}</strong>
+                        <small>Gross {formatMoney(row.booking.earning.grossAmount, row.booking.earning.currency)}</small>
+                        <small>Fee {formatMoney(row.booking.earning.platformFee, row.booking.earning.currency)}</small>
+                        <small>Tax {formatMoney(row.booking.earning.withholdingAmount, row.booking.earning.currency)}</small>
+                      </div>
+                    ) : (
+                      <span className="pill pill-warn">No earning</span>
+                    )}
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <small>{row.taxLogCount} tax log(s)</small>
+                      <small>{row.platformFeeLogCount} fee log(s)</small>
+                      <small>Tax held {formatMoney(row.taxWithheldAmount, row.currency)}</small>
+                      <small>Platform fee {formatMoney(row.platformFeeAmount, row.currency)}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <strong>{formatMoney(row.walletAmount, row.currency)}</strong>
+                      <small>{row.walletEntryCount} wallet row(s)</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.traceTone}`}>{row.traceStatus}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted">No recent booking service rows were found for the current service catalog.</p>
+        )}
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -897,6 +987,59 @@ function servicePayoutLedgerRows(
         actionTone,
       };
     });
+}
+
+function serviceBookingTraceRows(services: AdminServiceCatalogItem[]) {
+  return services
+    .flatMap((service) =>
+      (service.bookings ?? []).map((bookingService) => {
+        const booking = bookingService.booking;
+        const currency =
+          booking?.payment?.currency ?? booking?.earning?.currency ?? booking?.taxLogs?.[0]?.currency ?? 'VND';
+        const taxWithheldAmount = (booking?.taxLogs ?? []).reduce(
+          (sum, log) => sum + log.withholdingAmount,
+          0,
+        );
+        const platformFeeAmount = (booking?.platformFeeLogs ?? []).reduce(
+          (sum, log) => sum + log.platformFeeAmount,
+          0,
+        );
+        const walletAmount = (booking?.walletLedgerEntries ?? []).reduce((sum, entry) => sum + entry.amount, 0);
+        const paymentReady = Boolean(booking?.payment);
+        const earningReady = Boolean(booking?.earning);
+        const taxReady = taxWithheldAmount > 0 || (booking?.taxLogs?.length ?? 0) > 0;
+        const walletReady = (booking?.walletLedgerEntries?.length ?? 0) > 0;
+        const missingParts = [
+          paymentReady ? null : 'payment',
+          earningReady ? null : 'earning',
+          taxReady ? null : 'tax',
+          walletReady ? null : 'wallet',
+        ].filter(Boolean);
+        const traceStatus = missingParts.length ? `Missing ${missingParts.join('/')}` : 'Complete';
+        const traceTone = missingParts.length ? 'pill-warn' : 'pill-success';
+
+        return {
+          service,
+          bookingService,
+          booking,
+          currency,
+          taxLogCount: booking?.taxLogs?.length ?? 0,
+          platformFeeLogCount: booking?.platformFeeLogs?.length ?? 0,
+          taxWithheldAmount,
+          platformFeeAmount,
+          walletEntryCount: booking?.walletLedgerEntries?.length ?? 0,
+          walletAmount,
+          traceStatus,
+          traceTone,
+        };
+      }),
+    )
+    .sort((left, right) => {
+      const leftCreatedAt = left.booking?.createdAt ? new Date(left.booking.createdAt).getTime() : 0;
+      const rightCreatedAt = right.booking?.createdAt ? new Date(right.booking.createdAt).getTime() : 0;
+      return rightCreatedAt - leftCreatedAt || left.service.name.localeCompare(right.service.name);
+    })
+    .slice(0, 24);
 }
 
 function serviceDurationMatrix(
