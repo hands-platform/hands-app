@@ -17,11 +17,11 @@ Do not commit real `.env` files or secrets.
 ## Recommended Fill Order
 
 1. Supabase project values
-2. Supabase Phone Auth SMS configuration
-3. MapTiler and Geoapify keys
+2. MapTiler and Geoapify keys
+3. Storage/CDN credentials
 4. MoMo and VNPay sandbox credentials
-5. Storage/CDN credentials
-6. OneSignal or another OS push provider
+5. OneSignal or another OS push provider
+6. Supabase Phone Auth SMS configuration with Vonage
 
 ## Verification
 
@@ -37,6 +37,7 @@ Run phase-specific checks when those credentials are ready:
 
 ```powershell
 npm.cmd run external:check:supabase
+npm.cmd run external:check:supabase-auth
 npm.cmd run external:check:maps
 npm.cmd run external:check:payments
 npm.cmd run external:check:storage

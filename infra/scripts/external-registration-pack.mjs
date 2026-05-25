@@ -22,7 +22,11 @@ const registrationItems = [
       envItem('APP_DOMAIN', 'hands.vn', env.APP_DOMAIN === 'hands.vn'),
       envItem('PUBLIC_WEB_URL', 'https://hands.vn', env.PUBLIC_WEB_URL === 'https://hands.vn'),
       envItem('API_PUBLIC_URL', 'https://api.hands.vn', env.API_PUBLIC_URL === 'https://api.hands.vn'),
-      envItem('ADMIN_PUBLIC_URL', 'https://admin.hands.vn', env.ADMIN_PUBLIC_URL === 'https://admin.hands.vn'),
+      envItem(
+        'ADMIN_PUBLIC_URL',
+        'https://admin.hands.vn',
+        env.ADMIN_PUBLIC_URL === 'https://admin.hands.vn',
+      ),
       envItem('ADMIN_EMAIL', 'administration@hands.vn', env.ADMIN_EMAIL === 'administration@hands.vn'),
       envItem('SUPPORT_EMAIL', 'administration@hands.vn', env.SUPPORT_EMAIL === 'administration@hands.vn'),
     ],
@@ -40,7 +44,11 @@ const registrationItems = [
     purpose: 'Phone OTP, future PostgreSQL/RLS, Storage, and Realtime migration.',
     consolePath: 'Supabase Dashboard > Project Settings > API and Authentication > Providers > Phone',
     env: [
-      envItem('AUTH_BACKEND', 'supabase', env.AUTH_BACKEND === 'supabase'),
+      envItem(
+        'AUTH_BACKEND',
+        'nest until Phone Auth E2E, then supabase',
+        ['nest', 'supabase'].includes(String(env.AUTH_BACKEND ?? '').toLowerCase()),
+      ),
       envItem(
         'SUPABASE_URL',
         'https://adzpstrkpzwpukuboxzj.supabase.co',
@@ -64,6 +72,7 @@ const registrationItems = [
       'npm.cmd run supabase:sql:pack',
       'npm.cmd run external:check:supabase',
       'npm.cmd run auth:supabase-smoke',
+      'npm.cmd run external:check:supabase-auth only when Vonage/Supabase Phone Auth E2E starts',
     ],
   },
   {

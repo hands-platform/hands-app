@@ -54,7 +54,11 @@ npm.cmd run supabase:sql:pack
 npm.cmd run external:check:supabase
 ```
 
-`external:check:supabase` is expected to fail until real Supabase project values are configured.
+`external:check:supabase` checks core Supabase URL, anon key, JWT secret, and service role values. Phone Auth is intentionally separate and should only be checked when Vonage/Supabase SMS E2E starts:
+
+```powershell
+npm.cmd run external:check:supabase-auth
+```
 
 After the API is running with `SUPABASE_JWT_SECRET`:
 
