@@ -1130,7 +1130,12 @@ export class AdminService {
           actorId,
           action: 'service.update',
           target: `service:${serviceId}`,
-          metadata: toJson({ ...data, adjustedProviderPrices }),
+          metadata: toJson({
+            before: serviceAuditSnapshot(existing),
+            after: serviceAuditSnapshot(service),
+            changedFields: changedFields(serviceAuditSnapshot(existing), serviceAuditSnapshot(service)),
+            adjustedProviderPrices,
+          }),
         },
       });
       return service;
@@ -1151,6 +1156,14 @@ export class AdminService {
   ) {
     const service = await this.prisma.massageService.findUniqueOrThrow({ where: { id: serviceId } });
     const data = normalizeServicePayoutRuleInput(service, input, true);
+    const existingRule = await this.prisma.servicePayoutRule.findUnique({
+      where: {
+        serviceId_customerPrice: {
+          serviceId,
+          customerPrice: data.customerPrice,
+        },
+      },
+    });
     const rule = await this.prisma.servicePayoutRule.upsert({
       where: {
         serviceId_customerPrice: {
@@ -1164,7 +1177,20 @@ export class AdminService {
         serviceId,
       },
     });
-    await this.writeAudit(actorId, 'service_payout_rule.upsert', `service:${serviceId}`, toJson(data));
+    await this.writeAudit(
+      actorId,
+      'service_payout_rule.upsert',
+      `service:${serviceId}`,
+      toJson({
+        service: serviceAuditSnapshot(service),
+        before: existingRule ? servicePayoutRuleAuditSnapshot(existingRule) : null,
+        after: servicePayoutRuleAuditSnapshot(rule),
+        changedFields: changedFields(
+          existingRule ? servicePayoutRuleAuditSnapshot(existingRule) : {},
+          servicePayoutRuleAuditSnapshot(rule),
+        ),
+      }),
+    );
     return rule;
   }
 
@@ -1198,6 +1224,10 @@ export class AdminService {
     });
 
     return this.prisma.$transaction(async (tx) => {
+      const existingRules = await tx.servicePayoutRule.findMany({
+        where: { serviceId, customerPrice: { in: data.map((row) => row.customerPrice) } },
+      });
+      const existingByPrice = new Map(existingRules.map((rule) => [rule.customerPrice, rule]));
       const saved = [];
       for (const row of data) {
         const rule = await tx.servicePayoutRule.upsert({
@@ -1221,8 +1251,23 @@ export class AdminService {
           action: 'service_payout_rule.bulk_upsert',
           target: `service:${serviceId}`,
           metadata: toJson({
+            service: serviceAuditSnapshot(service),
             ruleCount: saved.length,
             customerPrices: saved.map((rule) => rule.customerPrice).sort((left, right) => left - right),
+            before: saved.map((rule) => {
+              const existingRule = existingByPrice.get(rule.customerPrice);
+              return existingRule ? servicePayoutRuleAuditSnapshot(existingRule) : null;
+            }),
+            after: saved.map(servicePayoutRuleAuditSnapshot),
+            changedFieldsByPrice: saved.map((rule) => ({
+              customerPrice: rule.customerPrice,
+              changedFields: changedFields(
+                existingByPrice.get(rule.customerPrice)
+                  ? servicePayoutRuleAuditSnapshot(existingByPrice.get(rule.customerPrice)!)
+                  : {},
+                servicePayoutRuleAuditSnapshot(rule),
+              ),
+            })),
           }),
         },
       });
@@ -1256,7 +1301,15 @@ export class AdminService {
       actorId,
       'service_payout_rule.update',
       `service_payout_rule:${ruleId}`,
-      toJson(data),
+      toJson({
+        service: serviceAuditSnapshot(existing.service),
+        before: servicePayoutRuleAuditSnapshot(existing),
+        after: servicePayoutRuleAuditSnapshot(rule),
+        changedFields: changedFields(
+          servicePayoutRuleAuditSnapshot(existing),
+          servicePayoutRuleAuditSnapshot(rule),
+        ),
+      }),
     );
     return rule;
   }
@@ -1463,6 +1516,63 @@ export class AdminService {
 
 function toJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function serviceAuditSnapshot(
+  service: Pick<
+    Prisma.MassageServiceGetPayload<object>,
+    | 'id'
+    | 'serviceGroupKey'
+    | 'name'
+    | 'durationMin'
+    | 'basePrice'
+    | 'priceStep'
+    | 'displayOrder'
+    | 'active'
+  >,
+) {
+  return {
+    id: service.id,
+    serviceGroupKey: service.serviceGroupKey,
+    name: service.name,
+    durationMin: service.durationMin,
+    basePrice: service.basePrice,
+    priceStep: service.priceStep,
+    displayOrder: service.displayOrder,
+    active: service.active,
+  };
+}
+
+function servicePayoutRuleAuditSnapshot(
+  rule: Pick<
+    Prisma.ServicePayoutRuleGetPayload<object>,
+    | 'id'
+    | 'serviceId'
+    | 'customerPrice'
+    | 'providerPayoutAmount'
+    | 'vatBps'
+    | 'otherCostAmount'
+    | 'currency'
+    | 'active'
+    | 'notes'
+  >,
+) {
+  return {
+    id: rule.id,
+    serviceId: rule.serviceId,
+    customerPrice: rule.customerPrice,
+    providerPayoutAmount: rule.providerPayoutAmount,
+    vatBps: rule.vatBps,
+    otherCostAmount: rule.otherCostAmount,
+    currency: rule.currency,
+    active: rule.active,
+    notes: rule.notes,
+  };
+}
+
+function changedFields(before: Record<string, unknown>, after: Record<string, unknown>) {
+  const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
+  return [...keys].filter((key) => JSON.stringify(before[key]) !== JSON.stringify(after[key]));
 }
 
 function normalizeNullable(value?: string | null) {

@@ -1,4 +1,4 @@
-import { AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
+import { AdminAuditLog, AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
 import {
   bulkUpsertPayoutRules,
   createService,
@@ -12,8 +12,11 @@ type ServicesPageSearchParams = Promise<Record<string, string | string[] | undef
 
 export default async function ServicesPage({ searchParams }: { searchParams?: ServicesPageSearchParams }) {
   const params = (await searchParams) ?? {};
-  const services = await adminGet<AdminServiceCatalogItem[]>('/admin/services', []);
-  const taxPolicies = await adminGet<AdminTaxPolicyVersion[]>('/admin/tax-policy-versions', []);
+  const [services, taxPolicies, auditLogs] = await Promise.all([
+    adminGet<AdminServiceCatalogItem[]>('/admin/services', []),
+    adminGet<AdminTaxPolicyVersion[]>('/admin/tax-policy-versions', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
+  ]);
   const activeServices = services.filter((service) => service.active);
   const payoutRuleCount = services.reduce((sum, service) => sum + (service.payoutRules?.length ?? 0), 0);
   const groupedServices = groupServices(services);
@@ -26,6 +29,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   const bookingTraceSummary = serviceBookingTraceSummary(bookingTraceRows);
   const pricePolicyPreviewRows = servicePricePolicyPreviewRows(activeServices, activeTaxPolicy);
   const pricePolicyPreviewSummary = servicePricePolicyPreviewSummary(pricePolicyPreviewRows);
+  const pricingAuditRows = servicePricingAuditRows(auditLogs);
   const actionNotice = serviceActionNotice(params);
 
   return (
@@ -68,6 +72,71 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
           </div>
         </section>
       ) : null}
+
+      <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Recent pricing audit trail</h2>
+            <p className="muted">
+              Tracks who changed service prices, provider payout amounts, VAT, other costs, and duration
+              settings. Use this before investigating unexpected commission or payout changes.
+            </p>
+          </div>
+          <a className="text-link" href="/audit-log?bucket=Service%2FPricing">
+            Open service audit
+          </a>
+        </div>
+        {pricingAuditRows.length ? (
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Action</th>
+                <th>Actor</th>
+                <th>Target</th>
+                <th>Changed fields</th>
+                <th>Pricing snapshot</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pricingAuditRows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{relativeTime(row.createdAt)}</strong>
+                    <p className="muted">{new Date(row.createdAt).toLocaleString()}</p>
+                  </td>
+                  <td>
+                    <span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>
+                  </td>
+                  <td>{row.actorName}</td>
+                  <td>
+                    <strong>{row.targetShort}</strong>
+                    <p className="muted">{row.target}</p>
+                  </td>
+                  <td>
+                    <div className="participant-list">
+                      {row.changedFields.map((field) => (
+                        <span className="pill pill-info" key={`${row.id}-${field}`}>
+                          {field}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <small>{row.serviceLabel}</small>
+                      <small>{row.priceLabel}</small>
+                      <small>{row.payoutLabel}</small>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted">No recent service pricing audit event has been recorded yet.</p>
+        )}
+      </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -994,6 +1063,83 @@ function readSingleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
+function servicePricingAuditRows(logs: AdminAuditLog[]) {
+  return logs
+    .filter((log) => isServicePricingAuditAction(log.action))
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .slice(0, 8)
+    .map((log) => {
+      const metadata = readMetadataObject(log.metadata);
+      const before = readMetadataObject(metadata.before);
+      const after = readMetadataObject(metadata.after);
+      const service = readMetadataObject(metadata.service);
+      const changedFields = readChangedFields(metadata.changedFields);
+      const targetShort = shortTarget(log.target);
+      const serviceLabel =
+        typeof service.name === 'string'
+          ? `${service.name}${typeof service.durationMin === 'number' ? ` / ${service.durationMin} min` : ''}`
+          : typeof after.name === 'string'
+            ? `${after.name}${typeof after.durationMin === 'number' ? ` / ${after.durationMin} min` : ''}`
+            : targetShort;
+      const priceLabel =
+        typeof after.customerPrice === 'number'
+          ? `Customer ${formatMoney(after.customerPrice, String(after.currency ?? 'VND'))}`
+          : typeof after.basePrice === 'number'
+            ? `Base ${formatMoney(after.basePrice, 'VND')}`
+            : 'No customer price snapshot';
+      const payoutLabel =
+        typeof after.providerPayoutAmount === 'number'
+          ? `Provider ${formatMoney(after.providerPayoutAmount, String(after.currency ?? 'VND'))}`
+          : typeof before.providerPayoutAmount === 'number'
+            ? `Previous provider ${formatMoney(before.providerPayoutAmount, String(before.currency ?? 'VND'))}`
+            : 'No provider payout snapshot';
+
+      return {
+        id: log.id,
+        action: log.action,
+        target: log.target,
+        targetShort,
+        createdAt: log.createdAt,
+        actorName: log.actor?.fullName ?? log.actor?.phone ?? 'System',
+        changedFields: changedFields.length ? changedFields : ['created'],
+        serviceLabel,
+        priceLabel,
+        payoutLabel,
+      };
+    });
+}
+
+function isServicePricingAuditAction(action: string) {
+  return action.startsWith('service.') || action.startsWith('service_payout_rule.');
+}
+
+function readMetadataObject(metadata: unknown): Record<string, unknown> {
+  if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+    return metadata as Record<string, unknown>;
+  }
+  return {};
+}
+
+function readChangedFields(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((field): field is string => typeof field === 'string');
+}
+
+function humanizeAuditAction(action: string) {
+  return action
+    .split('.')
+    .map((part) => part.replace(/_/g, ' '))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' / ');
+}
+
+function shortTarget(target: string) {
+  const [scope, id] = target.split(':');
+  return id ? `${scope}:${id.slice(0, 8)}` : target;
+}
+
 function ProviderPriceImpact({
   service,
   activeTaxPolicy,
@@ -1816,6 +1962,26 @@ function slugify(value: string) {
 
 function formatMoney(amount: number, currency: string) {
   return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
+}
+
+function relativeTime(value: string) {
+  const diffMs = Date.now() - Date.parse(value);
+  if (!Number.isFinite(diffMs)) {
+    return 'Unknown time';
+  }
+  const minutes = Math.floor(diffMs / 60000);
+  if (minutes < 1) {
+    return 'Updated just now';
+  }
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 function formatBps(value: number) {

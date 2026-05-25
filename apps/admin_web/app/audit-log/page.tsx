@@ -30,6 +30,10 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           <h2>{summary.payments}</h2>
         </div>
         <div className="card">
+          <p>Service pricing</p>
+          <h2>{summary.servicePricing}</h2>
+        </div>
+        <div className="card">
           <p>Notification actions</p>
           <h2>{summary.notifications}</h2>
         </div>
@@ -55,6 +59,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               <option value="">All</option>
               <option value="Dispatch">Dispatch</option>
               <option value="Payment">Payment</option>
+              <option value="Service/Pricing">Service/Pricing</option>
               <option value="Notification">Notification</option>
               <option value="Provider">Provider</option>
               <option value="Tax">Tax</option>
@@ -182,6 +187,7 @@ function buildSummary(logs: AdminAuditLog[]) {
     total: logs.length,
     dispatch: logs.filter((log) => isDispatchAction(log.action)).length,
     payments: logs.filter((log) => isPaymentAction(log.action)).length,
+    servicePricing: logs.filter((log) => isServicePricingAction(log.action)).length,
     notifications: logs.filter((log) => isNotificationAction(log.action)).length,
     needsReview: logs.filter((log) => auditPriority(log.action) >= 3).length,
     recentHour: logs.filter((log) => now - Date.parse(log.createdAt) <= 60 * 60 * 1000).length,
@@ -230,6 +236,12 @@ function auditSearchText(log: AdminAuditLog) {
 }
 
 function auditPriority(action: string) {
+  if (action.startsWith('service_payout_rule.')) {
+    return 4;
+  }
+  if (action.startsWith('service.')) {
+    return 3;
+  }
   if (action.endsWith('.refund') || action.includes('reject') || action.endsWith('.retry')) {
     return 4;
   }
@@ -259,7 +271,14 @@ function isNotificationAction(action: string) {
   return action.startsWith('notification.');
 }
 
+function isServicePricingAction(action: string) {
+  return action.startsWith('service.') || action.startsWith('service_payout_rule.');
+}
+
 function actionBucketLabel(action: string) {
+  if (isServicePricingAction(action)) {
+    return 'Service/Pricing';
+  }
   if (action.startsWith('tax_')) {
     return 'Tax';
   }
@@ -290,6 +309,9 @@ function isProviderReviewAction(action: string) {
 }
 
 function signalClass(action: string) {
+  if (isServicePricingAction(action)) {
+    return 'signal signal-warn';
+  }
   if (isDispatchAction(action)) {
     return 'signal signal-info';
   }
@@ -353,6 +375,9 @@ function relatedBoardHref(log: AdminAuditLog) {
   }
   if (log.action.startsWith('notification.')) {
     return '/notifications';
+  }
+  if (isServicePricingAction(log.action)) {
+    return '/services';
   }
   if (isDispatchAction(log.action)) {
     const providerId =
@@ -443,6 +468,9 @@ function opsHint(action: string, target: string) {
   if (action.startsWith('notification.')) {
     return 'Check retry or delivery health if the customer or therapist missed an alert.';
   }
+  if (isServicePricingAction(action)) {
+    return 'Review service price, provider payout, VAT, costs, and before/after changes.';
+  }
   if (action.startsWith('provider.')) {
     return 'Review therapist readiness, moderation, or queue movement.';
   }
@@ -464,6 +492,9 @@ function opsDetail(action: string) {
   }
   if (action.endsWith('.retry')) {
     return 'Retry events are useful when push, SMS, or webhook delivery needed another pass.';
+  }
+  if (isServicePricingAction(action)) {
+    return 'Price policy changes affect customer price, provider payout, tax withholding, cash debt, and payout batches.';
   }
   if (action.endsWith('.approve') || action.endsWith('.reject')) {
     return 'Provider review actions should match verification evidence and moderation notes.';
