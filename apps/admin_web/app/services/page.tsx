@@ -298,13 +298,7 @@ export default async function ServicesPage() {
                     <h3>Payout matrix</h3>
                     <div className="setup-stage-list" style={{ marginBottom: 12 }}>
                       {(service.payoutRules ?? []).map((rule) => {
-                        const fee = rule.customerPrice - rule.providerPayoutAmount;
-                        const vat = Math.round((fee * rule.vatBps) / 10000);
-                        const tax = estimateWithholding(activeTaxPolicy, service, rule.customerPrice);
-                        const actualCommission = Math.max(
-                          0,
-                          fee - vat - tax.withholdingAmount - rule.otherCostAmount,
-                        );
+                        const finance = servicePayoutFinance(service, rule, activeTaxPolicy);
                         return (
                           <div className="setup-stage-item" key={rule.id}>
                             <span>{rule.active ? 'ON' : 'OFF'}</span>
@@ -314,17 +308,17 @@ export default async function ServicesPage() {
                                 {formatMoney(rule.providerPayoutAmount, rule.currency)}
                               </strong>
                               <p className="muted">
-                                Fee {formatMoney(fee, rule.currency)} / VAT {formatBps(rule.vatBps)} ={' '}
-                                {formatMoney(vat, rule.currency)} / other cost{' '}
+                                Fee {formatMoney(finance.fee, rule.currency)} / VAT {formatBps(rule.vatBps)} ={' '}
+                                {formatMoney(finance.vatAmount, rule.currency)} / other cost{' '}
                                 {formatMoney(rule.otherCostAmount, rule.currency)}
                               </p>
                               <p className="muted">
-                                Withholding projection {formatMoney(tax.withholdingAmount, rule.currency)}
-                                {tax.ruleLabel ? ` via ${tax.ruleLabel}` : ' (no active rule)'}
+                                Withholding projection {formatMoney(finance.withholdingAmount, rule.currency)}
+                                {finance.taxRuleLabel ? ` via ${finance.taxRuleLabel}` : ' (no active rule)'}
                               </p>
                               <p className="muted">
                                 Actual company commission after VAT/withholding/other:{' '}
-                                {formatMoney(actualCommission, rule.currency)}
+                                {formatMoney(finance.actualCompanyCommission, rule.currency)}
                               </p>
                               <form action={updatePayoutRule} className="form-grid compact-form">
                                 <input type="hidden" name="ruleId" value={rule.id} />
@@ -645,10 +639,25 @@ function actualCompanyCommission(
   rule: NonNullable<AdminServiceCatalogItem['payoutRules']>[number],
   activeTaxPolicy: AdminTaxPolicyVersion | undefined,
 ) {
-  const fee = Math.max(0, rule.customerPrice - rule.providerPayoutAmount);
-  const vat = Math.round((fee * rule.vatBps) / 10000);
+  return servicePayoutFinance(service, rule, activeTaxPolicy).actualCompanyCommission;
+}
+
+function servicePayoutFinance(
+  service: AdminServiceCatalogItem,
+  rule: NonNullable<AdminServiceCatalogItem['payoutRules']>[number],
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
+  const fee = rule.customerPrice - rule.providerPayoutAmount;
+  const taxableFee = Math.max(0, fee);
+  const vatAmount = Math.round((taxableFee * rule.vatBps) / 10000);
   const tax = estimateWithholding(activeTaxPolicy, service, rule.customerPrice);
-  return Math.max(0, fee - vat - tax.withholdingAmount - rule.otherCostAmount);
+  return {
+    fee,
+    vatAmount,
+    withholdingAmount: tax.withholdingAmount,
+    taxRuleLabel: tax.ruleLabel,
+    actualCompanyCommission: fee - vatAmount - tax.withholdingAmount - rule.otherCostAmount,
+  };
 }
 
 function selectTaxRule(

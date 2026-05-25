@@ -591,7 +591,7 @@ export class EarningsService {
         vatAmount,
         otherCostAmount,
         grossAmount: input.grossAmount,
-        netCompanyFeeBeforeWithholding: Math.max(0, platformFeeAmount - vatAmount - otherCostAmount),
+        netCompanyFeeBeforeWithholding: platformFeeAmount - vatAmount - otherCostAmount,
         lines: ruleLines,
       },
     };
