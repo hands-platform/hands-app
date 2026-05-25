@@ -597,6 +597,7 @@ export type AdminNotification = {
   title: string;
   body: string;
   createdAt: string;
+  data?: unknown;
   user?: { phone?: string; fullName?: string | null };
   deliveries?: Array<{
     id?: string;

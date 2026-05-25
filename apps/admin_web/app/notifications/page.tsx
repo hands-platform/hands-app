@@ -44,6 +44,10 @@ export default async function NotificationsPage({
           <p>Disabled devices</p>
           <h2>{summary.disabledDevices}</h2>
         </div>
+        <div className="card">
+          <p>Payout setup</p>
+          <h2>{summary.payoutSetup}</h2>
+        </div>
       </section>
       <div className="card">
         <div className="toolbar">
@@ -163,6 +167,11 @@ export default async function NotificationsPage({
                   <div className="muted" style={{ marginTop: 6 }}>
                     {notification.body}
                   </div>
+                  {notificationDataHint(notification) ? (
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      {notificationDataHint(notification)}
+                    </div>
+                  ) : null}
                 </td>
                 <td>
                   <span className={signalClass(notification)}>{opsSignal(notification)}</span>
@@ -258,6 +267,9 @@ function buildSummary(notifications: AdminNotification[]) {
     skipped: countDeliveries(notifications, 'SKIPPED'),
     failed: countDeliveries(notifications, 'FAILED'),
     disabledDevices: countDisabledDevices(notifications),
+    payoutSetup: notifications.filter(
+      (notification) => notification.type === 'provider.payout_setup_required',
+    ).length,
   };
 }
 
@@ -273,6 +285,11 @@ const notificationFilterLinks = [
   { label: 'Skipped', href: '/notifications?review=skipped', review: 'skipped' },
   { label: 'Sent', href: '/notifications?review=sent', review: 'sent' },
   { label: 'Pending', href: '/notifications?review=pending', review: 'pending' },
+  {
+    label: 'Payout setup',
+    href: '/notifications?review=payout-setup',
+    review: 'payout-setup',
+  },
 ];
 
 function buildNotificationFilters(params: Record<string, string | string[] | undefined>) {
@@ -315,6 +332,9 @@ function notificationMatchesReview(notification: AdminNotification, review: stri
   if (review === 'pending') {
     return deliveries.length === 0;
   }
+  if (review === 'payout-setup') {
+    return notification.type === 'provider.payout_setup_required';
+  }
   return true;
 }
 
@@ -336,6 +356,9 @@ function notificationFilterDescription(review: string) {
   }
   if (review === 'pending') {
     return 'notifications without a captured delivery attempt yet.';
+  }
+  if (review === 'payout-setup') {
+    return 'providers who earned revenue and now need tax/address/agreement setup before payout.';
   }
   return 'all notification records.';
 }
@@ -421,10 +444,35 @@ function typeMeaning(type: string) {
   if (type.includes('payment')) {
     return 'Payment or refund alert';
   }
+  if (type.includes('payout') || type.includes('tax')) {
+    return 'Provider tax or payout setup alert';
+  }
   if (type.includes('chat')) {
     return 'Realtime conversation alert';
   }
   return 'Operational customer or therapist alert';
+}
+
+function notificationDataHint(notification: AdminNotification) {
+  if (notification.type !== 'provider.payout_setup_required') {
+    return null;
+  }
+  const data = asRecord(notification.data);
+  const missing = asRecord(data?.missing);
+  if (!missing) {
+    return 'Missing payout setup details were not included.';
+  }
+  const parts = [];
+  if (missing.taxProfileApproved === true) {
+    parts.push('tax profile approval');
+  }
+  if (missing.residentialAddress === true) {
+    parts.push('residential address');
+  }
+  if (Array.isArray(missing.agreements) && missing.agreements.length > 0) {
+    parts.push(`agreements: ${missing.agreements.map(String).join(', ')}`);
+  }
+  return parts.length ? `Missing: ${parts.join(' / ')}` : 'Payout setup appears complete.';
 }
 
 function needsRetry(notification: AdminNotification) {
