@@ -279,6 +279,7 @@ export default async function SetupPage() {
   const groupStatuses = buildGroupStatuses(readiness);
   const externalBacklog = buildExternalBacklog(readiness, readinessUnavailable);
   const nextActions = buildNextOperatorActions(readiness, readinessUnavailable);
+  const deferredActions = buildDeferredOperatorActions(readiness, readinessUnavailable);
   const registrationPlan = buildExternalRegistrationPlan(readiness, readinessUnavailable);
 
   return (
@@ -381,9 +382,28 @@ export default async function SetupPage() {
               </a>
             ))}
             {nextActions.length === 0 && (
-              <p className="muted">All currently known external setup actions are clear.</p>
+              <p className="muted">
+                All current-stage setup actions are clear. Deferred production integrations stay tracked
+                separately.
+              </p>
             )}
           </div>
+          {deferredActions.length > 0 && (
+            <div className="setup-command-block" style={{ marginTop: 16 }}>
+              <h3>Deferred production setup</h3>
+              <p className="muted">
+                These are intentionally parked until the right E2E pass, so they should not interrupt current
+                product development.
+              </p>
+              <div className="setup-command-list">
+                {deferredActions.slice(0, 6).map((item) => (
+                  <code key={`${item.groupId}-${item.name}`}>
+                    {item.name}: {item.action}
+                  </code>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card">
@@ -631,6 +651,7 @@ function buildGroupStatuses(readiness: AdminExternalReadiness) {
 function buildNextOperatorActions(readiness: AdminExternalReadiness, readinessUnavailable = false) {
   const backlog = buildExternalBacklog(readiness, readinessUnavailable);
   return backlog
+    .filter((item) => !isDeferredSetupGroup(item.groupId))
     .map((item) => {
       if (item.groupId === 'live-readiness') {
         return {
@@ -640,6 +661,27 @@ function buildNextOperatorActions(readiness: AdminExternalReadiness, readinessUn
           rank: -1,
         };
       }
+      const groupIndex = setupOrder.findIndex((group) => group.id === item.groupId);
+      const group = setupOrder[groupIndex] ?? setupOrder[0];
+      return {
+        ...item,
+        phase: group.phase,
+        action: group.operatorAction,
+        rank: groupIndex === -1 ? setupOrder.length : groupIndex,
+      };
+    })
+    .sort((left, right) => left.rank - right.rank || left.name.localeCompare(right.name));
+}
+
+function buildDeferredOperatorActions(readiness: AdminExternalReadiness, readinessUnavailable = false) {
+  const backlog = buildExternalBacklog(readiness, readinessUnavailable);
+  if (readinessUnavailable) {
+    return [];
+  }
+
+  return backlog
+    .filter((item) => isDeferredSetupGroup(item.groupId))
+    .map((item) => {
       const groupIndex = setupOrder.findIndex((group) => group.id === item.groupId);
       const group = setupOrder[groupIndex] ?? setupOrder[0];
       return {
@@ -694,6 +736,10 @@ function buildExternalRegistrationPlan(readiness: AdminExternalReadiness, readin
       statusClass: 'pill-success',
     };
   });
+}
+
+function isDeferredSetupGroup(groupId: string) {
+  return ['notifications', 'payments', 'storage', 'mobile-release'].includes(groupId);
 }
 
 function isReadinessUnavailable(readiness: AdminExternalReadiness) {
