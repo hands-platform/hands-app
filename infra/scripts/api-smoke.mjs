@@ -865,6 +865,20 @@ if (cashOpenBooking?.payment?.method !== 'CASH') {
 }
 await postJson(`/provider/bookings/${walletDebtBooking.id}/accept`, walletDebtProviderAuth.accessToken);
 await postJson(`/provider/bookings/${walletDebtBooking.id}/complete`, walletDebtProviderAuth.accessToken);
+const walletDebtProviderNotifications = await getJson('/notifications', walletDebtProviderAuth.accessToken);
+if (
+  !walletDebtProviderNotifications.some(
+    (notification) =>
+      notification.type === 'provider.payout_setup_required' &&
+      notification.data?.missing?.taxProfileApproved === true,
+  )
+) {
+  throw new Error(
+    `First provider earning should notify payout tax setup requirements: ${JSON.stringify(
+      walletDebtProviderNotifications,
+    )}`,
+  );
+}
 const walletDebtProviderEarningsSummary = await getJson(
   '/provider/earnings/summary',
   walletDebtProviderAuth.accessToken,
@@ -901,9 +915,7 @@ const cashDebtBookingLedger = cashDebtEarning.walletLedgerEntries?.find(
   (entry) => entry.type === 'BOOKING_EARNING',
 );
 if (!cashDebtBookingLedger || cashDebtBookingLedger.amount !== cashDebtEarning.netAmount) {
-  throw new Error(
-    `Cash debt booking ledger was not recorded: ${JSON.stringify(cashDebtEarning)}`,
-  );
+  throw new Error(`Cash debt booking ledger was not recorded: ${JSON.stringify(cashDebtEarning)}`);
 }
 const cashDebtSettlementRef = `SMOKE-CASH-FEE-${Date.now()}`;
 await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {
@@ -927,9 +939,7 @@ if (
   cashDebtSettlementLedger.amount !== Math.abs(cashDebtEarning.netAmount) ||
   cashDebtSettlementLedger.reference !== cashDebtSettlementRef
 ) {
-  throw new Error(
-    `Cash fee settlement ledger was not recorded: ${JSON.stringify(settledCashDebtEarning)}`,
-  );
+  throw new Error(`Cash fee settlement ledger was not recorded: ${JSON.stringify(settledCashDebtEarning)}`);
 }
 const walletDebtProviderSummaryAfterSettlement = await getJson(
   '/provider/earnings/summary',
@@ -1094,9 +1104,7 @@ const payoutPaidLedger = paidPayoutEarning?.walletLedgerEntries?.find(
   (entry) => entry.type === 'PAYOUT_PAID' && entry.payoutBatchId === payoutBatch.id,
 );
 if (!paidPayoutEarning || !payoutPaidLedger || payoutPaidLedger.amount !== -paidPayoutEarning.netAmount) {
-  throw new Error(
-    `Payout paid wallet ledger was not recorded: ${JSON.stringify(paidPayoutEarning)}`,
-  );
+  throw new Error(`Payout paid wallet ledger was not recorded: ${JSON.stringify(paidPayoutEarning)}`);
 }
 const adminPayoutBatches = await getJson('/admin/payout-batches', adminAuth.accessToken);
 const adminBookings = await getJson('/admin/bookings', adminAuth.accessToken);

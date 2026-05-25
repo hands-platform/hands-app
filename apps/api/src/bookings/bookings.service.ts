@@ -6,6 +6,7 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  ProviderTaxProfileStatus,
   ProviderStatus,
 } from '@prisma/client';
 import { EarningsService } from '../earnings/earnings.service';
@@ -13,6 +14,7 @@ import { MatchingGateway } from '../matching/matching.gateway';
 import { MatchingService } from '../matching/matching.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
+import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { PrismaService } from '../prisma/prisma.service';
 
 const PROVIDER_WALLET_BLOCK_REASON = '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
@@ -689,9 +691,63 @@ export class BookingsService {
         body: 'Your completed service has been added to earnings.',
         data: { bookingId },
       });
+      await this.notifyProviderFirstRevenuePayoutSetup(
+        provider.id,
+        booking.selectedProvider.userId,
+        bookingId,
+      );
     }
     this.matchingGateway.emitServiceCompleted(bookingId, result);
     return result;
+  }
+
+  private async notifyProviderFirstRevenuePayoutSetup(
+    providerProfileId: string,
+    providerUserId: string,
+    bookingId: string,
+  ) {
+    const [completedBookingCount, provider] = await Promise.all([
+      this.prisma.booking.count({
+        where: {
+          selectedProviderId: providerProfileId,
+          status: BookingStatus.COMPLETED,
+        },
+      }),
+      this.prisma.providerProfile.findUnique({
+        where: { id: providerProfileId },
+        include: {
+          taxProfile: true,
+          agreements: true,
+        },
+      }),
+    ]);
+
+    if (!provider || completedBookingCount !== 1) {
+      return;
+    }
+
+    const acceptedAgreementTypes = new Set(provider.agreements.map((agreement) => agreement.type));
+    const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
+    const missing = {
+      taxProfileApproved: provider.taxProfile?.status !== ProviderTaxProfileStatus.APPROVED,
+      residentialAddress: !provider.residentialAddress,
+      agreements: missingAgreements,
+    };
+    if (!missing.taxProfileApproved && !missing.residentialAddress && missing.agreements.length === 0) {
+      return;
+    }
+
+    await this.notifications.create({
+      userId: providerUserId,
+      type: 'provider.payout_setup_required',
+      title: 'Payout setup required',
+      body: 'Your first HANDS earning is recorded. Add tax, address, and payout agreements before requesting payout.',
+      data: {
+        bookingId,
+        providerProfileId,
+        missing,
+      },
+    });
   }
 
   private async requireProvider(userId?: string) {
