@@ -207,6 +207,76 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         </table>
       </section>
 
+      <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Service payout ledger</h2>
+            <p className="muted">
+              Finance view for the current minimum price of every active duration option. This is the fastest
+              way to confirm customer price, provider payout, tax/cost assumptions, and customer-app
+              visibility before providers start selling.
+            </p>
+          </div>
+          <span className="pill pill-info">{activeServices.length} active option(s)</span>
+        </div>
+        <table className="table service-ledger">
+          <thead>
+            <tr>
+              <th>Service option</th>
+              <th>Customer price</th>
+              <th>Provider payout</th>
+              <th>Gross fee</th>
+              <th>Tax / cost</th>
+              <th>Actual company commission</th>
+              <th>Provider visibility</th>
+              <th>Next action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {servicePayoutLedgerRows(activeServices, activeTaxPolicy).map((row) => (
+              <tr key={row.service.id}>
+                <td>
+                  <strong>{row.service.name}</strong>
+                  <p className="muted">
+                    {row.service.durationMin} min / {row.service.serviceGroupKey ?? slugify(row.service.name)}
+                  </p>
+                </td>
+                <td>{formatMoney(row.service.basePrice, row.currency)}</td>
+                <td>{row.baseRule ? formatMoney(row.baseRule.providerPayoutAmount, row.currency) : '-'}</td>
+                <td>{row.baseRule ? formatMoney(row.finance.fee, row.currency) : '-'}</td>
+                <td>
+                  {row.baseRule ? (
+                    <div className="service-matrix-cell">
+                      <small>VAT {formatMoney(row.finance.vatAmount, row.currency)}</small>
+                      <small>Withholding {formatMoney(row.finance.withholdingAmount, row.currency)}</small>
+                      <small>Other {formatMoney(row.baseRule.otherCostAmount, row.currency)}</small>
+                    </div>
+                  ) : (
+                    '-'
+                  )}
+                </td>
+                <td>
+                  <span className={`pill ${row.commissionTone}`}>
+                    {row.baseRule ? formatMoney(row.finance.actualCompanyCommission, row.currency) : 'Missing rule'}
+                  </span>
+                </td>
+                <td>
+                  <div className="service-matrix-cell">
+                    <span className={`pill ${row.hiddenProviders ? 'pill-warn' : 'pill-success'}`}>
+                      {row.visibleProviders} visible / {row.hiddenProviders} hidden
+                    </span>
+                    <small>{row.totalProviderRows} provider price row(s)</small>
+                  </div>
+                </td>
+                <td>
+                  <span className={`pill ${row.actionTone}`}>{row.action}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
       <section className="card" style={{ marginBottom: 16 }}>
         <h2>Create service with duration options</h2>
         <p className="muted">
@@ -775,6 +845,60 @@ function ProviderPriceImpact({
   );
 }
 
+function servicePayoutLedgerRows(
+  services: AdminServiceCatalogItem[],
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
+  return services
+    .slice()
+    .sort(
+      (left, right) =>
+        (left.serviceGroupKey ?? left.name).localeCompare(right.serviceGroupKey ?? right.name) ||
+        left.durationMin - right.durationMin,
+    )
+    .map((service) => {
+      const baseRule = basePayoutRule(service);
+      const finance = baseRule
+        ? servicePayoutFinance(service, baseRule, activeTaxPolicy)
+        : {
+            fee: 0,
+            vatAmount: 0,
+            withholdingAmount: 0,
+            taxRuleLabel: null,
+            actualCompanyCommission: 0,
+          };
+      const impact = providerPriceImpact(service, activeTaxPolicy);
+      const visibleProviders = impact.rows.filter((row) => row.state === 'bookable').length;
+      const hiddenProviders = impact.rows.length - visibleProviders;
+      const commissionTone = !baseRule
+        ? 'pill-danger'
+        : finance.actualCompanyCommission <= 0
+          ? 'pill-warn'
+          : 'pill-success';
+      const action = !baseRule
+        ? 'Add payout rule'
+        : finance.actualCompanyCommission <= 0
+          ? 'Review margin'
+          : hiddenProviders
+            ? 'Fix hidden prices'
+            : 'Ready';
+      const actionTone = action === 'Ready' ? 'pill-success' : action === 'Review margin' ? 'pill-warn' : 'pill-danger';
+
+      return {
+        service,
+        baseRule,
+        finance,
+        currency: baseRule?.currency ?? 'VND',
+        visibleProviders,
+        hiddenProviders,
+        totalProviderRows: impact.rows.length,
+        commissionTone,
+        action,
+        actionTone,
+      };
+    });
+}
+
 function serviceDurationMatrix(
   items: AdminServiceCatalogItem[],
   activeTaxPolicy: AdminTaxPolicyVersion | undefined,
@@ -789,10 +913,7 @@ function serviceDurationMatrix(
   >();
 
   for (const service of items) {
-    const baseRule =
-      (service.payoutRules ?? []).find(
-        (rule) => rule.active && rule.customerPrice === service.basePrice,
-      ) ?? null;
+    const baseRule = basePayoutRule(service);
     byDuration.set(service.durationMin, {
       service,
       baseRule,
@@ -820,6 +941,12 @@ function serviceDurationMatrix(
         ),
     ).length,
   };
+}
+
+function basePayoutRule(service: AdminServiceCatalogItem) {
+  return (
+    (service.payoutRules ?? []).find((rule) => rule.active && rule.customerPrice === service.basePrice) ?? null
+  );
 }
 
 function formatDurationList(items: AdminServiceCatalogItem[]) {

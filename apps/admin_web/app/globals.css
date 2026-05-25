@@ -756,8 +756,15 @@ button:disabled {
   margin-top: 14px;
 }
 
+.service-ledger {
+  min-width: 1160px;
+  margin-top: 14px;
+}
+
 .service-matrix th,
-.service-matrix td {
+.service-matrix td,
+.service-ledger th,
+.service-ledger td {
   vertical-align: top;
 }
 
