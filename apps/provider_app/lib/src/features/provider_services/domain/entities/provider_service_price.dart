@@ -65,3 +65,74 @@ class ProviderServicePayoutOption {
   final int platformFee;
   final String currency;
 }
+
+class ProviderServicePriceGroup {
+  const ProviderServicePriceGroup({
+    required this.key,
+    required this.name,
+    required this.options,
+  });
+
+  final String key;
+  final String name;
+  final List<ProviderServicePrice> options;
+
+  int get activeOptionCount => options.where((option) => option.active).length;
+
+  bool get allStandardDurationsReady {
+    final durations = options
+        .where((option) => option.active)
+        .map((option) => option.durationMin)
+        .toSet();
+    return durations.containsAll({60, 90, 120});
+  }
+
+  String get durationSummary {
+    final durations = options.map((option) => option.durationMin).toList()
+      ..sort();
+    return durations.map((duration) => '$duration min').join(', ');
+  }
+}
+
+List<ProviderServicePriceGroup> groupProviderServicePrices(
+  List<ProviderServicePrice> services,
+) {
+  final groups = <String, List<ProviderServicePrice>>{};
+  final names = <String, String>{};
+
+  for (final service in services) {
+    final key = providerServiceGroupKey(service);
+    groups.putIfAbsent(key, () => <ProviderServicePrice>[]).add(service);
+    names.putIfAbsent(key, () => service.name);
+  }
+
+  return groups.entries.map((entry) {
+    final options = [...entry.value]..sort((left, right) {
+        final durationCompare = left.durationMin.compareTo(right.durationMin);
+        if (durationCompare != 0) {
+          return durationCompare;
+        }
+        return left.effectivePrice.compareTo(right.effectivePrice);
+      });
+
+    return ProviderServicePriceGroup(
+      key: entry.key,
+      name: names[entry.key] ?? 'Service',
+      options: options,
+    );
+  }).toList();
+}
+
+String providerServiceGroupKey(ProviderServicePrice service) {
+  final groupKey = service.serviceGroupKey?.trim();
+  if (groupKey != null && groupKey.isNotEmpty) {
+    return groupKey;
+  }
+
+  final name = service.name.trim();
+  if (name.isNotEmpty) {
+    return name.toLowerCase();
+  }
+
+  return service.id;
+}

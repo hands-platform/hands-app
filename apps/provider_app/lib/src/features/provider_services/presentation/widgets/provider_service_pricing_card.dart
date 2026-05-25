@@ -114,19 +114,100 @@ class _ProviderServicePricingCardState
                     text: 'No active services are configured yet.',
                   );
                 }
+                final groups = groupProviderServicePrices(services);
                 return Column(
                   children: [
-                    for (final service in services)
-                      _ProviderServicePriceTile(
-                        service: service,
+                    for (final group in groups)
+                      _ProviderServicePriceGroupCard(
+                        group: group,
                         saving: _saving,
-                        onEdit: () => _edit(service),
+                        onEdit: _edit,
                       ),
                   ],
                 );
               },
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProviderServicePriceGroupCard extends StatelessWidget {
+  const _ProviderServicePriceGroupCard({
+    required this.group,
+    required this.saving,
+    required this.onEdit,
+  });
+
+  final ProviderServicePriceGroup group;
+  final bool saving;
+  final ValueChanged<ProviderServicePrice> onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    final missingStandardDurations = [60, 90, 120]
+        .where((duration) => !group.options
+            .where((option) => option.active)
+            .map((option) => option.durationMin)
+            .contains(duration))
+        .toList();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(20),
+          border:
+              Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      group.name,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  Chip(
+                    visualDensity: VisualDensity.compact,
+                    label: Text('${group.activeOptionCount} active'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '${group.durationSummary} option(s)',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              if (missingStandardDurations.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Admin has not enabled ${missingStandardDurations.join('/')} min for this service yet.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: Colors.black54),
+                ),
+              ],
+              const SizedBox(height: 8),
+              for (final service in group.options)
+                _ProviderServicePriceTile(
+                  service: service,
+                  saving: saving,
+                  onEdit: () => onEdit(service),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -175,7 +256,7 @@ class _ProviderServicePriceTile extends StatelessWidget {
           leading: CircleAvatar(
             child: Text('${service.durationMin}'),
           ),
-          title: Text('${service.name} / ${service.durationMin} min'),
+          title: Text('${service.durationMin} min option'),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Column(
@@ -352,8 +433,8 @@ class _ProviderServicePriceSheetState
           _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
         ) ??
         service.effectivePrice;
-    final matchingRule =
-        service.payoutOptions.any((option) => option.customerPrice == previewPrice);
+    final matchingRule = service.payoutOptions
+        .any((option) => option.customerPrice == previewPrice);
     final previewRule = matchingRule
         ? service.payoutOptions
             .firstWhere((option) => option.customerPrice == previewPrice)
