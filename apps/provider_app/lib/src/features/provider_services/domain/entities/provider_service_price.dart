@@ -50,6 +50,18 @@ class ProviderServicePrice {
     final fee = platformFee ?? 0;
     return fee - estimatedVatAmount - (otherCostAmount ?? 0);
   }
+
+  ProviderServicePayoutOption? payoutOptionForPrice(int customerPrice) {
+    for (final option in payoutOptions) {
+      if (option.customerPrice == customerPrice) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  bool hasPayoutOptionForPrice(int customerPrice) =>
+      payoutOptionForPrice(customerPrice) != null;
 }
 
 class ProviderServicePayoutOption {
@@ -78,6 +90,14 @@ class ProviderServicePriceGroup {
   final List<ProviderServicePrice> options;
 
   int get activeOptionCount => options.where((option) => option.active).length;
+
+  int get payoutReadyOptionCount => options
+      .where((option) => option.active && option.payoutRuleConfigured)
+      .length;
+
+  int get payoutMissingOptionCount => options
+      .where((option) => option.active && !option.payoutRuleConfigured)
+      .length;
 
   bool get allStandardDurationsReady {
     final durations = options

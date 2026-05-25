@@ -42,6 +42,12 @@ void main() {
     expect(service.platformFee, 120000);
     expect(service.estimatedVatAmount, 12000);
     expect(service.estimatedCompanyFeeAfterCosts, 103000);
+    expect(service.hasPayoutOptionForPrice(500000), isTrue);
+    expect(service.hasPayoutOptionForPrice(700000), isFalse);
+    expect(
+      service.payoutOptionForPrice(600000)?.providerPayoutAmount,
+      460000,
+    );
     expect(service.payoutOptions, hasLength(2));
     expect(service.payoutOptions.last.customerPrice, 600000);
     expect(service.payoutOptions.last.providerPayoutAmount, 460000);
@@ -180,6 +186,49 @@ void main() {
     expect(groups.first.durationSummary, '60 min, 90 min');
     expect(groups.first.options.map((option) => option.durationMin), [60, 90]);
     expect(groups.first.allStandardDurationsReady, isFalse);
+    expect(groups.first.payoutReadyOptionCount, 2);
+    expect(groups.first.payoutMissingOptionCount, 0);
+  });
+
+  test('counts active options that still need payout rules', () {
+    final groups = groupProviderServicePrices([
+      const ProviderServicePrice(
+        id: 'svc-foot-60',
+        serviceGroupKey: 'foot_massage',
+        name: 'Foot Massage',
+        durationMin: 60,
+        basePrice: 500000,
+        priceStep: 100000,
+        effectivePrice: 500000,
+        active: true,
+        payoutRuleConfigured: true,
+      ),
+      const ProviderServicePrice(
+        id: 'svc-foot-90',
+        serviceGroupKey: 'foot_massage',
+        name: 'Foot Massage',
+        durationMin: 90,
+        basePrice: 700000,
+        priceStep: 100000,
+        effectivePrice: 800000,
+        active: true,
+        payoutRuleConfigured: false,
+      ),
+      const ProviderServicePrice(
+        id: 'svc-foot-120',
+        serviceGroupKey: 'foot_massage',
+        name: 'Foot Massage',
+        durationMin: 120,
+        basePrice: 900000,
+        priceStep: 100000,
+        effectivePrice: 900000,
+        active: false,
+        payoutRuleConfigured: false,
+      ),
+    ]);
+
+    expect(groups.single.payoutReadyOptionCount, 1);
+    expect(groups.single.payoutMissingOptionCount, 1);
   });
 }
 
