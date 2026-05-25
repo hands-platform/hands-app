@@ -766,6 +766,34 @@ button:disabled {
   margin-top: 14px;
 }
 
+.service-trace-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-top: 14px;
+}
+
+.service-trace-summary div {
+  background: #fbfdf8;
+  border: 1px solid #d9ead1;
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.service-trace-summary span {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.service-trace-summary strong {
+  color: #0f172a;
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+
 .service-matrix th,
 .service-matrix td,
 .service-ledger th,
@@ -831,6 +859,10 @@ button:disabled {
   .risk-item {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .service-trace-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .setup-backlog {

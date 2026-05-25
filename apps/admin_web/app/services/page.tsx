@@ -23,6 +23,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   const blockedReadinessItems = readinessItems.filter((item) => item.tone === 'blocked');
   const warningReadinessItems = readinessItems.filter((item) => item.tone === 'warning');
   const bookingTraceRows = serviceBookingTraceRows(services);
+  const bookingTraceSummary = serviceBookingTraceSummary(bookingTraceRows);
   const actionNotice = serviceActionNotice(params);
 
   return (
@@ -290,6 +291,32 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
           </div>
           <span className="pill pill-info">{bookingTraceRows.length} trace row(s)</span>
         </div>
+        <div className="service-trace-summary">
+          <div>
+            <span>Payment total</span>
+            <strong>{formatMoney(bookingTraceSummary.paymentAmount, bookingTraceSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Provider net</span>
+            <strong>{formatMoney(bookingTraceSummary.providerNetAmount, bookingTraceSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Platform fee</span>
+            <strong>{formatMoney(bookingTraceSummary.platformFeeAmount, bookingTraceSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Withholding</span>
+            <strong>{formatMoney(bookingTraceSummary.withholdingAmount, bookingTraceSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Wallet movement</span>
+            <strong>{formatMoney(bookingTraceSummary.walletAmount, bookingTraceSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Missing trace</span>
+            <strong>{bookingTraceSummary.missingTraceCount} row(s)</strong>
+          </div>
+        </div>
         {bookingTraceRows.length ? (
           <table className="table service-trace">
             <thead>
@@ -312,6 +339,11 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                       {row.service.durationMin} min / {row.booking?.id.slice(0, 8) ?? row.bookingService.bookingId.slice(0, 8)}
                     </p>
                     <p className="muted">{row.booking?.status ?? 'UNKNOWN'}</p>
+                    {row.booking ? (
+                      <a className="text-link" href={`/bookings/${row.booking.id}`}>
+                        Open booking
+                      </a>
+                    ) : null}
                   </td>
                   <td>
                     <strong>{formatMoney(row.bookingService.price, row.currency)}</strong>
@@ -1040,6 +1072,30 @@ function serviceBookingTraceRows(services: AdminServiceCatalogItem[]) {
       return rightCreatedAt - leftCreatedAt || left.service.name.localeCompare(right.service.name);
     })
     .slice(0, 24);
+}
+
+function serviceBookingTraceSummary(rows: ReturnType<typeof serviceBookingTraceRows>) {
+  const currency = rows.find((row) => row.currency)?.currency ?? 'VND';
+  return rows.reduce(
+    (summary, row) => ({
+      currency: summary.currency,
+      paymentAmount: summary.paymentAmount + (row.booking?.payment?.amount ?? 0),
+      providerNetAmount: summary.providerNetAmount + (row.booking?.earning?.netAmount ?? 0),
+      platformFeeAmount: summary.platformFeeAmount + row.platformFeeAmount,
+      withholdingAmount: summary.withholdingAmount + row.taxWithheldAmount,
+      walletAmount: summary.walletAmount + row.walletAmount,
+      missingTraceCount: summary.missingTraceCount + (row.traceStatus === 'Complete' ? 0 : 1),
+    }),
+    {
+      currency,
+      paymentAmount: 0,
+      providerNetAmount: 0,
+      platformFeeAmount: 0,
+      withholdingAmount: 0,
+      walletAmount: 0,
+      missingTraceCount: 0,
+    },
+  );
 }
 
 function serviceDurationMatrix(
