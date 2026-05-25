@@ -23,13 +23,15 @@ export default async function ServicesPage() {
     <>
       <section className="toolbar">
         <div>
-          <h1>Service pricing</h1>
+          <h1>Service catalog</h1>
           <p className="muted">
-            Manage service types, duration options, admin minimum customer prices, and provider payout rules.
+            Create a service name once, then manage duration options such as 60, 90, and 120 minutes with
+            separate minimum prices and payout policies.
           </p>
         </div>
         <div className="actions">
-          <span className="pill pill-success">{activeServices.length} active service rows</span>
+          <span className="pill pill-success">{groupedServices.length} service type(s)</span>
+          <span className="pill pill-info">{activeServices.length} active duration option(s)</span>
           <span className="pill pill-info">{payoutRuleCount} payout rule(s)</span>
           <span className={`pill ${activeTaxPolicy ? 'pill-success' : 'pill-warn'}`}>
             {activeTaxPolicy ? `Tax: ${activeTaxPolicy.name}` : 'No active tax policy'}
@@ -105,18 +107,19 @@ export default async function ServicesPage() {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <h2>Create 60/90/120 duration set</h2>
+        <h2>Create service with duration options</h2>
         <p className="muted">
-          Use this for common service types. Add provider payout amounts now so each duration can be booked
-          immediately after creation.
+          This creates one service type with 60, 90, and 120 minute options. Leave a duration blank if that
+          option should not be sold yet. Add provider payout amounts now so each option can be booked
+          immediately.
         </p>
         <form action={createServiceDurationSet} className="form-grid">
           <label>
-            Group key
-            <input name="serviceGroupKey" placeholder="leg_massage" required />
+            Group key (optional)
+            <input name="serviceGroupKey" placeholder="auto from name, e.g. leg_massage" />
           </label>
           <label>
-            Name
+            Service name
             <input name="name" placeholder="Leg Massage" required />
           </label>
           <label>
@@ -168,10 +171,10 @@ export default async function ServicesPage() {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <h2>Create service duration</h2>
+        <h2>Add one duration option</h2>
         <p className="muted">
-          A service type is grouped by key, then each duration gets its own minimum customer price. Add the
-          base payout rule here when possible; otherwise bookings stay blocked until finance completes it.
+          Use this when an existing service type needs another duration. The group key connects the option
+          to the parent service name in the customer app.
         </p>
         <form action={createService} className="form-grid">
           <label>
@@ -179,7 +182,7 @@ export default async function ServicesPage() {
             <input name="serviceGroupKey" placeholder="leg_massage" />
           </label>
           <label>
-            Name
+            Service name
             <input name="name" placeholder="Leg Massage" required />
           </label>
           <label>
@@ -224,9 +227,22 @@ export default async function ServicesPage() {
             <div className="toolbar" style={{ marginBottom: 12 }}>
               <div>
                 <h2>{group.label}</h2>
-                <p className="muted">{group.items.length} duration option(s)</p>
+                <p className="muted">
+                  {formatDurationList(group.items)} option(s) / {formatGroupPriceRange(group.items)}
+                </p>
               </div>
-              <span className="pill pill-info">{group.key}</span>
+              <div className="actions">
+                <span className="pill pill-info">{group.key}</span>
+                <span
+                  className={`pill ${
+                    missingStandardDurations(group.items).length === 0 ? 'pill-success' : 'pill-warn'
+                  }`}
+                >
+                  {missingStandardDurations(group.items).length === 0
+                    ? '60/90/120 ready'
+                    : `Missing ${missingStandardDurations(group.items).join('/')}`}
+                </span>
+              </div>
             </div>
 
             <div className="setup-stage-list">
@@ -234,9 +250,7 @@ export default async function ServicesPage() {
                 <div className="setup-stage-item" key={service.id}>
                   <span>{service.active ? 'ON' : 'OFF'}</span>
                   <div>
-                    <strong>
-                      {service.name} / {service.durationMin} min
-                    </strong>
+                    <strong>{service.durationMin} min option</strong>
                     <p className="muted">
                       Minimum {formatMoney(service.basePrice, 'VND')} / step{' '}
                       {formatMoney(service.priceStep, 'VND')}
@@ -462,6 +476,29 @@ function groupServices(services: AdminServiceCatalogItem[]) {
     label: items[0]?.name ?? key,
     items: items.sort((left, right) => left.durationMin - right.durationMin),
   }));
+}
+
+function formatDurationList(items: AdminServiceCatalogItem[]) {
+  return items
+    .map((item) => item.durationMin)
+    .sort((left, right) => left - right)
+    .map((duration) => `${duration} min`)
+    .join(', ');
+}
+
+function missingStandardDurations(items: AdminServiceCatalogItem[]) {
+  const configured = new Set(items.filter((item) => item.active).map((item) => item.durationMin));
+  return [60, 90, 120].filter((duration) => !configured.has(duration));
+}
+
+function formatGroupPriceRange(items: AdminServiceCatalogItem[]) {
+  const prices = items.filter((item) => item.active).map((item) => item.basePrice);
+  if (prices.length === 0) {
+    return 'no active price';
+  }
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  return min === max ? formatMoney(min, 'VND') : `${formatMoney(min, 'VND')} - ${formatMoney(max, 'VND')}`;
 }
 
 function buildPricingHealth(
