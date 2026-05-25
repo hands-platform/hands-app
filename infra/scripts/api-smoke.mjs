@@ -812,6 +812,18 @@ const blockedDirectBooking = await postJson('/customer/bookings', customerAuth.a
   lng: 106.6994,
   paymentMethod: 'CASH',
 });
+const walletDebtProviderOpenBookings = await getJson(
+  '/provider/bookings/open',
+  walletDebtProviderAuth.accessToken,
+);
+const cashOpenBooking = walletDebtProviderOpenBookings.find(
+  (item) => item.id === walletDebtBooking.id || item.id === blockedDirectBooking.id,
+);
+if (cashOpenBooking?.payment?.method !== 'CASH') {
+  throw new Error(
+    `Provider open bookings must include cash payment metadata: ${JSON.stringify(cashOpenBooking)}`,
+  );
+}
 await postJson(`/provider/bookings/${walletDebtBooking.id}/accept`, walletDebtProviderAuth.accessToken);
 await postJson(`/provider/bookings/${walletDebtBooking.id}/complete`, walletDebtProviderAuth.accessToken);
 const walletDebtProviderEarningsSummary = await getJson(
