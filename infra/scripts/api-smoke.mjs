@@ -289,8 +289,33 @@ if (
   higherPricePayoutRule.customerPrice !== higherCustomerPrice ||
   higherPricePayoutRule.providerPayoutAmount <= 0
 ) {
-  throw new Error(`Higher-price payout rule was not created correctly: ${JSON.stringify(higherPricePayoutRule)}`);
+  throw new Error(
+    `Higher-price payout rule was not created correctly: ${JSON.stringify(higherPricePayoutRule)}`,
+  );
 }
+const serviceWithoutPayoutRule = await postJson('/admin/services', adminAuth.accessToken, {
+  serviceGroupKey: `smoke_missing_payout_${Date.now()}`,
+  name: 'Smoke Missing Payout Rule',
+  description: 'Service intentionally missing a payout rule for booking guard coverage.',
+  durationMin: 60,
+  basePrice: 100000,
+  priceStep: 100000,
+  displayOrder: 999,
+  active: true,
+});
+await expectRequestFailure(
+  'Booking without a service payout rule is rejected',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: serviceWithoutPayoutRule.id,
+      scheduledStartAt: new Date(Date.now() + 45 * 60_000).toISOString(),
+      address: { line1: 'Missing payout rule smoke flow' },
+      lat: 10.7769,
+      lng: 106.7009,
+      paymentMethod: 'CASH',
+    }),
+  400,
+);
 const providerServicesBeforeUpdate = await getJson('/provider/services', providerAuth.accessToken);
 const providerService = providerServicesBeforeUpdate.find((item) => item.id === service.id);
 if (
@@ -309,14 +334,10 @@ await expectRequestFailure(
     }),
   400,
 );
-const updatedProviderService = await patchJson(
-  `/provider/services/${service.id}`,
-  providerAuth.accessToken,
-  {
-    price: higherCustomerPrice,
-    active: true,
-  },
-);
+const updatedProviderService = await patchJson(`/provider/services/${service.id}`, providerAuth.accessToken, {
+  price: higherCustomerPrice,
+  active: true,
+});
 if (updatedProviderService.price !== higherCustomerPrice || updatedProviderService.active !== true) {
   throw new Error(`Provider service price was not updated: ${JSON.stringify(updatedProviderService)}`);
 }
@@ -434,7 +455,10 @@ const publicProfileImageUpload = await postJson('/files/presign', providerAuth.a
 await postJson(`/files/${publicProfileImageUpload.file.id}/complete`, providerAuth.accessToken, {
   sizeBytes: 4096,
 });
-await postJson(`/admin/files/${publicProfileImageUpload.file.id}/approve-public-media`, adminAuth.accessToken);
+await postJson(
+  `/admin/files/${publicProfileImageUpload.file.id}/approve-public-media`,
+  adminAuth.accessToken,
+);
 const publicGalleryImageUpload = await postJson('/files/presign', providerAuth.accessToken, {
   contentType: 'image/jpeg',
   visibility: 'PUBLIC',
@@ -443,7 +467,10 @@ const publicGalleryImageUpload = await postJson('/files/presign', providerAuth.a
 await postJson(`/files/${publicGalleryImageUpload.file.id}/complete`, providerAuth.accessToken, {
   sizeBytes: 8192,
 });
-await postJson(`/admin/files/${publicGalleryImageUpload.file.id}/approve-public-media`, adminAuth.accessToken);
+await postJson(
+  `/admin/files/${publicGalleryImageUpload.file.id}/approve-public-media`,
+  adminAuth.accessToken,
+);
 await expectRequestFailure(
   'KYC submit without required documents',
   () =>
@@ -795,7 +822,9 @@ const cashDebtEarning = adminEarningsAfterCashDebt.find(
   (earning) => earning.bookingId === walletDebtBooking.id && earning.netAmount < 0,
 );
 if (!cashDebtEarning) {
-  throw new Error(`Cash debt earning was not visible to admin: ${JSON.stringify(adminEarningsAfterCashDebt[0])}`);
+  throw new Error(
+    `Cash debt earning was not visible to admin: ${JSON.stringify(adminEarningsAfterCashDebt[0])}`,
+  );
 }
 await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken);
 const walletDebtProviderSummaryAfterSettlement = await getJson(
@@ -859,7 +888,9 @@ if (
   !adminCompletedEarning?.platformFeeLogs?.length ||
   adminCompletedEarning.platformFeeLogs[0].platformFeeAmount !== completedEarning.platformFee
 ) {
-  throw new Error(`Completed earning did not record platform fee policy log: ${JSON.stringify(adminCompletedEarning)}`);
+  throw new Error(
+    `Completed earning did not record platform fee policy log: ${JSON.stringify(adminCompletedEarning)}`,
+  );
 }
 if (adminCompletedEarning.platformFeeLogs[0].ruleSnapshot?.source !== 'SERVICE_PAYOUT_RULE') {
   throw new Error(
@@ -1005,7 +1036,9 @@ if (
     (file) => file.id === publicProfileImageUpload.file.id && file.reviewStatus === 'APPROVED',
   )
 ) {
-  throw new Error(`Admin provider payload is missing approved public media: ${JSON.stringify(adminProvider)}`);
+  throw new Error(
+    `Admin provider payload is missing approved public media: ${JSON.stringify(adminProvider)}`,
+  );
 }
 const adminBackupProvider = adminProviders.find(
   (item) => item.id === backupProviderAuth.user.providerProfile.id,

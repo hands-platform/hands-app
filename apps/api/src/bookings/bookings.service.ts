@@ -15,8 +15,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-const PROVIDER_WALLET_BLOCK_REASON =
-  '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+const PROVIDER_WALLET_BLOCK_REASON = '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
 
 @Injectable()
 export class BookingsService {
@@ -84,6 +83,7 @@ export class BookingsService {
       }
     }
     const customerPrice = this.resolveCustomerPrice(service, providerService?.price);
+    await this.ensureServicePayoutRuleConfigured(service.id, customerPrice);
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
     const scheduledStartAt = new Date(input.scheduledStartAt);
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + service.durationMin * 60_000);
@@ -233,6 +233,21 @@ export class BookingsService {
       throw new BadRequestException(`Provider service price must use ${priceStep} VND increments`);
     }
     return customerPrice;
+  }
+
+  private async ensureServicePayoutRuleConfigured(serviceId: string, customerPrice: number) {
+    const payoutRule = await this.prisma.servicePayoutRule.findFirst({
+      where: {
+        serviceId,
+        customerPrice,
+        active: true,
+      },
+      select: { id: true },
+    });
+
+    if (!payoutRule) {
+      throw new BadRequestException('Admin payout rule is required before this service price can be booked');
+    }
   }
 
   getBooking(id: string) {
