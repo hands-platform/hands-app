@@ -213,6 +213,61 @@ export async function upsertPayoutRule(formData: FormData) {
   redirectToServices('saved', 'payout-rule-saved');
 }
 
+export async function bulkUpsertPayoutRules(formData: FormData) {
+  const serviceId = String(formData.get('serviceId') || '').trim();
+  const rawRules = String(formData.get('rules') || '').trim();
+  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
+  const notes = String(formData.get('notes') || '').trim();
+
+  if (!serviceId || !rawRules) {
+    redirectToServices('blocked', 'missing-bulk-payout-fields');
+  }
+
+  const rules = rawRules
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [customerPriceRaw, providerPayoutRaw] = line
+        .split(/[,\t]/)
+        .map((value) => value.trim());
+      return {
+        customerPrice: parseInteger(customerPriceRaw),
+        providerPayoutAmount: parseInteger(providerPayoutRaw),
+      };
+    });
+
+  if (
+    rules.length === 0 ||
+    rules.some((rule) => !rule.customerPrice || rule.providerPayoutAmount === null) ||
+    rules.some((rule) => (rule.providerPayoutAmount ?? 0) > (rule.customerPrice ?? 0))
+  ) {
+    redirectToServices('blocked', 'invalid-bulk-payout');
+  }
+
+  const savedRules = await adminPost<SavedPayoutRule[] | null>(
+    `/admin/services/${serviceId}/payout-rules/bulk`,
+    {
+      rules: rules.map((rule) => ({
+        customerPrice: rule.customerPrice,
+        providerPayoutAmount: rule.providerPayoutAmount,
+        vatBps,
+        otherCostAmount,
+        active: true,
+        notes: notes || 'Bulk payout ladder import from admin services screen.',
+      })),
+    },
+    null,
+  );
+  if (!savedRules?.length) {
+    redirectToServices('blocked', 'api-rejected');
+  }
+  revalidatePath('/services');
+  revalidatePath('/audit-log');
+  redirectToServices('saved', 'bulk-payout-rules-saved');
+}
+
 export async function updatePayoutRule(formData: FormData) {
   const ruleId = String(formData.get('ruleId') || '').trim();
   const customerPrice = parseInteger(formData.get('customerPrice'));

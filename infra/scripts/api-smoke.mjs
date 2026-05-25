@@ -311,6 +311,54 @@ if (
     `Higher-price payout rule was not created correctly: ${JSON.stringify(higherPricePayoutRule)}`,
   );
 }
+const bulkPayoutStartPrice = higherCustomerPrice + service.priceStep;
+const bulkPayoutRules = await postJson(
+  `/admin/services/${service.id}/payout-rules/bulk`,
+  adminAuth.accessToken,
+  {
+    rules: [
+      {
+        customerPrice: bulkPayoutStartPrice,
+        providerPayoutAmount: Math.max(0, bulkPayoutStartPrice - Math.round(bulkPayoutStartPrice * 0.2)),
+        vatBps: 0,
+        otherCostAmount: 0,
+        active: true,
+        notes: 'Smoke test bulk payout ladder row 1',
+      },
+      {
+        customerPrice: bulkPayoutStartPrice + service.priceStep,
+        providerPayoutAmount: Math.max(
+          0,
+          bulkPayoutStartPrice + service.priceStep - Math.round((bulkPayoutStartPrice + service.priceStep) * 0.2),
+        ),
+        vatBps: 0,
+        otherCostAmount: 0,
+        active: true,
+        notes: 'Smoke test bulk payout ladder row 2',
+      },
+    ],
+  },
+);
+if (!Array.isArray(bulkPayoutRules) || bulkPayoutRules.length !== 2) {
+  throw new Error(`Bulk payout ladder was not created correctly: ${JSON.stringify(bulkPayoutRules)}`);
+}
+await expectRequestFailure(
+  'Admin bulk payout duplicate customer prices are rejected atomically',
+  () =>
+    postJson(`/admin/services/${service.id}/payout-rules/bulk`, adminAuth.accessToken, {
+      rules: [
+        {
+          customerPrice: bulkPayoutStartPrice + service.priceStep * 2,
+          providerPayoutAmount: 100000,
+        },
+        {
+          customerPrice: bulkPayoutStartPrice + service.priceStep * 2,
+          providerPayoutAmount: 100000,
+        },
+      ],
+    }),
+  400,
+);
 const smokeDurationSetKey = `smoke_duration_set_${Date.now()}`;
 const smokeDurationSet = await postJson('/admin/services/duration-sets', adminAuth.accessToken, {
   serviceGroupKey: smokeDurationSetKey,

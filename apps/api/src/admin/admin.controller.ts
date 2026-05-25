@@ -296,6 +296,25 @@ export class AdminController {
     return this.admin.upsertServicePayoutRule(user.id, serviceId, body);
   }
 
+  @Post('services/:id/payout-rules/bulk')
+  bulkUpsertServicePayoutRules(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') serviceId: string,
+    @Body()
+    body: {
+      rules?: Array<{
+        customerPrice?: number;
+        providerPayoutAmount?: number;
+        vatBps?: number;
+        otherCostAmount?: number;
+        active?: boolean;
+        notes?: string | null;
+      }>;
+    },
+  ) {
+    return this.admin.bulkUpsertServicePayoutRules(user.id, serviceId, body);
+  }
+
   @Patch('service-payout-rules/:id')
   updateServicePayoutRule(
     @CurrentUser() user: AuthenticatedUser,

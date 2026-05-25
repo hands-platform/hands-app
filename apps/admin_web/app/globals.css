@@ -709,13 +709,19 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   border: 1px solid #cbd5e1;
   border-radius: 6px;
   padding: 8px 10px;
   background: white;
   color: #0f172a;
   font: inherit;
+}
+
+textarea {
+  min-height: 96px;
+  resize: vertical;
 }
 
 button {

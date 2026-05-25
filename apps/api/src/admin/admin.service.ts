@@ -1113,6 +1113,68 @@ export class AdminService {
     return rule;
   }
 
+  async bulkUpsertServicePayoutRules(
+    actorId: string,
+    serviceId: string,
+    input: {
+      rules?: Array<{
+        customerPrice?: number;
+        providerPayoutAmount?: number;
+        vatBps?: number;
+        otherCostAmount?: number;
+        active?: boolean;
+        notes?: string | null;
+      }>;
+    },
+  ) {
+    const service = await this.prisma.massageService.findUniqueOrThrow({ where: { id: serviceId } });
+    const rows = input.rules ?? [];
+    if (rows.length === 0) {
+      throw new BadRequestException('At least one payout rule is required');
+    }
+    const seenPrices = new Set<number>();
+    const data = rows.map((row) => {
+      const normalized = normalizeServicePayoutRuleInput(service, row, true);
+      if (seenPrices.has(normalized.customerPrice)) {
+        throw new BadRequestException(`Duplicate customer price in payout rule import: ${normalized.customerPrice}`);
+      }
+      seenPrices.add(normalized.customerPrice);
+      return normalized;
+    });
+
+    return this.prisma.$transaction(async (tx) => {
+      const saved = [];
+      for (const row of data) {
+        const rule = await tx.servicePayoutRule.upsert({
+          where: {
+            serviceId_customerPrice: {
+              serviceId,
+              customerPrice: row.customerPrice,
+            },
+          },
+          update: row,
+          create: {
+            ...row,
+            serviceId,
+          },
+        });
+        saved.push(rule);
+      }
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'service_payout_rule.bulk_upsert',
+          target: `service:${serviceId}`,
+          metadata: toJson({
+            ruleCount: saved.length,
+            customerPrices: saved.map((rule) => rule.customerPrice).sort((left, right) => left - right),
+          }),
+        },
+      });
+      return saved.sort((left, right) => left.customerPrice - right.customerPrice);
+    });
+  }
+
   async updateServicePayoutRule(
     actorId: string,
     ruleId: string,

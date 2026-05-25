@@ -1,5 +1,6 @@
 import { AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
 import {
+  bulkUpsertPayoutRules,
   createService,
   createServiceDurationSet,
   updatePayoutRule,
@@ -552,6 +553,37 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                       </label>
                       <button type="submit">Upsert payout rule</button>
                     </form>
+
+                    <h3>Bulk payout ladder import</h3>
+                    <p className="muted">
+                      Paste one row per customer price as <code>customerPrice,providerPayout</code>. This is
+                      saved atomically so partial payout ladders do not leak into booking.
+                    </p>
+                    <form action={bulkUpsertPayoutRules} className="form-grid compact-form">
+                      <input type="hidden" name="serviceId" value={service.id} />
+                      <label className="full-span">
+                        Price ladder rows
+                        <textarea
+                          name="rules"
+                          rows={4}
+                          defaultValue={bulkPayoutRuleExample(service)}
+                          spellCheck={false}
+                        />
+                      </label>
+                      <label>
+                        VAT bps
+                        <input name="vatBps" type="number" min="0" max="10000" defaultValue="0" />
+                      </label>
+                      <label>
+                        Other cost
+                        <input name="otherCostAmount" type="number" min="0" defaultValue="0" />
+                      </label>
+                      <label className="full-span">
+                        Notes
+                        <input name="notes" placeholder="Internal finance memo for this ladder import" />
+                      </label>
+                      <button type="submit">Import payout ladder</button>
+                    </form>
                   </div>
                   <small>{service.id.slice(0, 8)}</small>
                 </div>
@@ -606,6 +638,10 @@ function serviceActionNotice(params: Record<string, string | string[] | undefine
       title: 'Payout rule updated',
       detail: 'The payout rule was updated and pricing health has been recalculated.',
     },
+    'bulk-payout-rules-saved': {
+      title: 'Payout ladder saved',
+      detail: 'The service now has the imported customer price and provider payout rows.',
+    },
   };
 
   const blockedMessages: Record<string, { title: string; detail: string }> = {
@@ -629,6 +665,15 @@ function serviceActionNotice(params: Record<string, string | string[] | undefine
     'missing-payout-fields': {
       title: 'Payout fields are missing',
       detail: 'Enter both the customer price and provider payout before saving a payout rule.',
+    },
+    'missing-bulk-payout-fields': {
+      title: 'Bulk payout import is empty',
+      detail: 'Paste at least one customer price and provider payout row before importing.',
+    },
+    'invalid-bulk-payout': {
+      title: 'Bulk payout import is invalid',
+      detail:
+        'Each row must be customerPrice,providerPayoutAmount. Provider payout cannot exceed the customer price.',
     },
     'invalid-payout': {
       title: 'Provider payout is too high',
@@ -966,6 +1011,25 @@ function priceLadderCoverage(service: AdminServiceCatalogItem) {
       price,
       rule: activeRules.get(price) ?? null,
     }));
+}
+
+function bulkPayoutRuleExample(service: AdminServiceCatalogItem) {
+  const priceStep = Math.max(100000, service.priceStep || 100000);
+  const existingRows = (service.payoutRules ?? [])
+    .filter((rule) => rule.active)
+    .sort((left, right) => left.customerPrice - right.customerPrice)
+    .slice(0, 4)
+    .map((rule) => `${rule.customerPrice},${rule.providerPayoutAmount}`);
+  if (existingRows.length > 0) {
+    return existingRows.join('\n');
+  }
+  return [0, 1, 2]
+    .map((index) => {
+      const customerPrice = service.basePrice + priceStep * index;
+      const providerPayout = Math.max(0, customerPrice - Math.round(customerPrice * 0.2));
+      return `${customerPrice},${providerPayout}`;
+    })
+    .join('\n');
 }
 
 function selectTaxRule(
