@@ -583,10 +583,8 @@ function netCompanyFeeHint(earning: AdminEarning) {
     | undefined;
   const vatAmount = snapshot?.vatAmount ?? 0;
   const otherCostAmount = snapshot?.otherCostAmount ?? 0;
-  const netCompanyFee = Math.max(
-    0,
-    earning.platformFee - (earning.withholdingAmount ?? 0) - vatAmount - otherCostAmount,
-  );
+  const netCompanyFee =
+    earning.platformFee - (earning.withholdingAmount ?? 0) - vatAmount - otherCostAmount;
   if (snapshot?.source === 'SERVICE_PAYOUT_RULE') {
     return `Net company fee after VAT/tax/cost: ${formatMoney(netCompanyFee, earning.currency)}`;
   }
