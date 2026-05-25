@@ -146,7 +146,28 @@ export type AdminProvider = {
       user?: { phone?: string | null };
     };
   }>;
-  services?: Array<{ service?: { name: string } }>;
+  services?: Array<{
+    id?: string;
+    price?: number | string | null;
+    active?: boolean;
+    service?: {
+      id?: string;
+      name: string;
+      durationMin?: number | null;
+      basePrice?: number | string | null;
+      priceStep?: number | string | null;
+      active?: boolean;
+      payoutRules?: Array<{
+        id?: string;
+        customerPrice: number | string;
+        providerPayoutAmount: number | string;
+        vatBps?: number | string | null;
+        otherCostAmount?: number | string | null;
+        currency?: string | null;
+        active?: boolean;
+      }>;
+    };
+  }>;
   earnings?: AdminEarning[];
   user?: {
     id?: string;

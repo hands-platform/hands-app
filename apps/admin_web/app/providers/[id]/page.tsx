@@ -116,6 +116,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const levelPlan = buildProviderLevelPlan(provider);
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
   const registrationDossier = buildProviderRegistrationDossier(provider);
+  const providerServicePricing = buildProviderServicePricing(provider);
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
   const payoutHold = activePayoutHold(provider);
 
@@ -295,9 +296,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                       {earning.settlementRef ? (
                         <p className="muted">Settlement ref {earning.settlementRef}</p>
                       ) : null}
-                      {earning.settlementNotes ? (
-                        <p className="muted">{earning.settlementNotes}</p>
-                      ) : null}
+                      {earning.settlementNotes ? <p className="muted">{earning.settlementNotes}</p> : null}
                       {(earning.walletLedgerEntries ?? []).slice(0, 2).map((entry) => (
                         <p className="muted" key={entry.id}>
                           Wallet {walletLedgerLabel(entry.type)}:{' '}
@@ -924,6 +923,47 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card">
+          <h2>Service price readiness</h2>
+          <p className="muted">
+            Customer apps only show options with an active provider service and an exact active payout rule.
+          </p>
+          <InfoLine
+            label="Bookable options"
+            value={`${providerServicePricing.readyCount}/${providerServicePricing.rows.length}`}
+          />
+          {providerServicePricing.rows.length ? (
+            <div className="provider-file-list">
+              {providerServicePricing.rows.map((row) => (
+                <div className="provider-file-row" key={row.id}>
+                  <div className="participant-list" style={{ marginBottom: 6 }}>
+                    <span className={`pill ${row.bookable ? 'pill-success' : 'pill-warn'}`}>
+                      {row.bookable ? 'CUSTOMER VISIBLE' : 'HIDDEN'}
+                    </span>
+                    <span className="pill pill-info">
+                      {row.durationMin ? `${row.durationMin} min` : 'No duration'}
+                    </span>
+                    <span className="pill pill-info">{row.payoutRuleCount} payout rule(s)</span>
+                  </div>
+                  <p>
+                    <strong>{row.name}</strong>
+                  </p>
+                  <p className="muted">
+                    Customer {formatCurrency(row.customerPrice)} / admin minimum{' '}
+                    {formatCurrency(row.basePrice)}
+                    {row.providerPayoutAmount !== null
+                      ? ` / provider payout ${formatCurrency(row.providerPayoutAmount)}`
+                      : ''}
+                  </p>
+                  <p className="muted">{row.issue}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted">No provider service prices are connected yet.</p>
+          )}
+        </div>
+
+        <div className="card">
           <h2>Typed documents</h2>
           {(provider.documents ?? []).length ? (
             provider.documents?.map((document) => (
@@ -1195,6 +1235,55 @@ function InfoLine({ label, value }: { label: string; value?: string | null }) {
       <strong>{label}:</strong> {value && value.trim() ? value : 'Missing'}
     </p>
   );
+}
+
+type ProviderServicePricingRow = {
+  id: string;
+  name: string;
+  durationMin?: number | null;
+  basePrice: number;
+  customerPrice: number;
+  providerPayoutAmount: number | null;
+  payoutRuleCount: number;
+  bookable: boolean;
+  issue: string;
+};
+
+function buildProviderServicePricing(provider: ProviderDetail): {
+  readyCount: number;
+  rows: ProviderServicePricingRow[];
+} {
+  const rows = (provider.services ?? []).map((connection, index) => {
+    const service = connection.service;
+    const basePrice = amountValue(service?.basePrice);
+    const customerPrice = amountValue(connection.price) || basePrice;
+    const payoutRules = service?.payoutRules ?? [];
+    const matchingRule = payoutRules.find((rule) => amountValue(rule.customerPrice) === customerPrice);
+    const active = connection.active !== false && service?.active !== false;
+    const bookable = active && Boolean(matchingRule);
+    const issue = !active
+      ? 'Provider or service option is inactive.'
+      : matchingRule
+        ? 'Ready for customer booking. Provider price has an exact payout rule.'
+        : 'Hidden from customer app until admin creates a payout rule for this exact customer price.';
+
+    return {
+      id: connection.id ?? `${service?.id ?? 'service'}-${index}`,
+      name: service?.name ?? 'Service',
+      durationMin: service?.durationMin,
+      basePrice,
+      customerPrice,
+      providerPayoutAmount: matchingRule ? amountValue(matchingRule.providerPayoutAmount) : null,
+      payoutRuleCount: payoutRules.length,
+      bookable,
+      issue,
+    };
+  });
+
+  return {
+    readyCount: rows.filter((row) => row.bookable).length,
+    rows,
+  };
 }
 
 type ProviderOpsCard = {

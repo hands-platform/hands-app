@@ -79,7 +79,18 @@ export class AdminService {
         reports: { orderBy: { createdAt: 'desc' }, take: 5 },
         sanctions: { orderBy: { createdAt: 'desc' }, take: 5 },
         agreements: { orderBy: { acceptedAt: 'desc' } },
-        services: { include: { service: true } },
+        services: {
+          include: {
+            service: {
+              include: {
+                payoutRules: {
+                  where: { active: true },
+                  orderBy: { customerPrice: 'asc' },
+                },
+              },
+            },
+          },
+        },
         earnings: {
           where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] } },
           orderBy: { createdAt: 'desc' },
@@ -143,7 +154,18 @@ export class AdminService {
           },
         },
         agreements: { orderBy: { acceptedAt: 'desc' } },
-        services: { include: { service: true } },
+        services: {
+          include: {
+            service: {
+              include: {
+                payoutRules: {
+                  where: { active: true },
+                  orderBy: { customerPrice: 'asc' },
+                },
+              },
+            },
+          },
+        },
         locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
         earnings: {
           orderBy: { createdAt: 'desc' },
