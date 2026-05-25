@@ -42,26 +42,14 @@ type ProvidersPageSearchParams = Promise<Record<string, string | string[] | unde
 
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
+const PROVIDER_LIST_RENDER_LIMIT = 40;
 
 export default async function ProvidersPage({ searchParams }: { searchParams?: ProvidersPageSearchParams }) {
   const filters = buildProviderFilters(searchParams ? await searchParams : {});
   const allProviders = sortProviders(await adminGet<AdminProvider[]>('/admin/providers', []));
   const providers = filterProviders(allProviders, filters);
-  const fileReadUrls = new Map<string, string>();
-  await Promise.all(
-    providers.flatMap((provider) =>
-      [
-        ...(provider.verification?.files ?? []),
-        ...(provider.documents ?? []).map((document) => document.fileAsset).filter(Boolean),
-      ].map(async (file) => {
-        if (!file?.id) return;
-        const result = await adminGet<{ read?: { url?: string } }>(`/files/${file.id}/read-url`, {});
-        if (result.read?.url) {
-          fileReadUrls.set(file.id, result.read.url);
-        }
-      }),
-    ),
-  );
+  const visibleProviders = providers.slice(0, PROVIDER_LIST_RENDER_LIMIT);
+  const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
   const summary = buildProviderSummary(providers);
   const reviewQueue = buildProviderReviewQueue(providers);
   const priorityLane = buildProviderPriorityLane(providers);
@@ -162,7 +150,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               Clear filters
             </Link>
             <span className="muted">
-              Showing {providers.length} of {allProviders.length} therapists
+              Showing {visibleProviders.length} of {providers.length} matching therapists
+              {providers.length !== allProviders.length ? ` (${allProviders.length} total)` : ''}
             </span>
           </div>
           {activeFilters.length > 0 ? (
@@ -180,7 +169,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               </p>
             </div>
           ) : (
-            <p className="muted full-span">No provider filter is active. Showing the full operator queue.</p>
+            <p className="muted full-span">
+              No provider filter is active. Showing the first {PROVIDER_LIST_RENDER_LIMIT} rows from the
+              operator queue for faster loading.
+            </p>
           )}
         </form>
       </div>
@@ -284,7 +276,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </tr>
           </thead>
           <tbody>
-            {providers.map((provider) => (
+            {visibleProviders.map((provider) => (
               <tr id={`provider-${provider.id}`} key={provider.id}>
                 <td>
                   <Link className="text-link" href={`/providers/${provider.id}`}>
@@ -307,7 +299,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   ) : null}
                 </td>
                 <td>
-                  <ProviderOnboardingCell provider={provider} fileReadUrls={fileReadUrls} />
+                  <ProviderOnboardingCell provider={provider} />
                 </td>
                 <td>
                   <ProviderNextActionCell provider={provider} />
@@ -401,13 +393,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                               : ''}
                           </p>
                           <p className="muted">
-                            {fileReadUrls.get(file.id) ? (
-                              <a href={fileReadUrls.get(file.id)} target="_blank" rel="noreferrer">
-                                {file.key}
-                              </a>
-                            ) : (
-                              file.key
-                            )}
+                            {file.key}
+                            {' / '}
+                            <Link className="text-link" href={`/providers/${provider.id}`}>
+                              open detail to view
+                            </Link>
                           </p>
                         </div>
                       ))
@@ -470,6 +460,16 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 </td>
               </tr>
             ))}
+            {hiddenProviderCount > 0 ? (
+              <tr>
+                <td colSpan={10}>
+                  <p className="muted">
+                    {hiddenProviderCount} more provider row(s) are hidden for page speed. Use filters or search
+                    to narrow the queue.
+                  </p>
+                </td>
+              </tr>
+            ) : null}
             {providers.length === 0 && (
               <tr>
                 <td colSpan={10}>{emptyProviderMessage(activeFilters)}</td>
@@ -482,13 +482,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   );
 }
 
-function ProviderOnboardingCell({
-  provider,
-  fileReadUrls,
-}: {
-  provider: AdminProvider;
-  fileReadUrls: Map<string, string>;
-}) {
+function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
   const primaryBank = provider.bankAccounts?.[0];
   const missingAgreements = 5 - (provider.agreements?.length ?? 0);
   const documents = provider.documents ?? [];
@@ -551,13 +545,15 @@ function ProviderOnboardingCell({
                   : ''}
               </p>
               <p className="muted" style={{ marginBottom: 6 }}>
-                {document.fileAsset?.id && fileReadUrls.get(document.fileAsset.id) ? (
-                  <a href={fileReadUrls.get(document.fileAsset.id)} target="_blank" rel="noreferrer">
-                    {document.fileAsset.key}
-                  </a>
-                ) : (
-                  (document.fileAsset?.key ?? 'No file key')
-                )}
+                {document.fileAsset?.key ?? 'No file key'}
+                {document.fileAsset?.id ? (
+                  <>
+                    {' / '}
+                    <Link className="text-link" href={`/providers/${provider.id}`}>
+                      open detail to view
+                    </Link>
+                  </>
+                ) : null}
               </p>
               <div className="actions">
                 <form action={approveProviderDocument}>
