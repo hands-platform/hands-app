@@ -9,6 +9,8 @@ type Props = {
   bookings: AdminBooking[];
 };
 
+type BookingView = 'active' | 'high-risk' | 'payment' | 'location' | 'chat' | 'all';
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
@@ -33,7 +35,7 @@ export function BookingMonitor({ bookings }: Props) {
   const [nowMs, setNowMs] = useState<number | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [view, setView] = useState<'active' | 'chat' | 'all'>('active');
+  const [view, setView] = useState<BookingView>('active');
   const currentTimeMs = nowMs ?? 0;
 
   const orderedBookings = useMemo(
@@ -61,6 +63,8 @@ export function BookingMonitor({ bookings }: Props) {
     );
     const backupChosen = orderedBookings.filter((booking) => isBackupSelected(booking));
     const chatLive = orderedBookings.filter((booking) => Boolean(booking.chatRoom));
+    const paymentRisk = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
+    const locationRisk = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
     const highRisk = orderedBookings.filter((booking) =>
       bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
     );
@@ -74,10 +78,23 @@ export function BookingMonitor({ bookings }: Props) {
       ['Fallback options', waitingSelection.length.toString()],
       ['Backup selected', backupChosen.length.toString()],
       ['Chat live', chatLive.length.toString()],
+      ['Payment risk', paymentRisk.length.toString()],
+      ['Location risk', locationRisk.length.toString()],
     ];
   }, [currentTimeMs, orderedBookings]);
 
   const visibleBookings = useMemo(() => {
+    if (view === 'high-risk') {
+      return orderedBookings.filter((booking) =>
+        bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
+      );
+    }
+    if (view === 'payment') {
+      return orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
+    }
+    if (view === 'location') {
+      return orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
+    }
     if (view === 'chat') {
       return orderedBookings.filter((booking) => Boolean(booking.chatRoom));
     }
@@ -85,7 +102,7 @@ export function BookingMonitor({ bookings }: Props) {
       return orderedBookings;
     }
     return orderedBookings.filter((booking) => activeStatuses.has(booking.status));
-  }, [orderedBookings, view]);
+  }, [currentTimeMs, orderedBookings, view]);
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
 
   useEffect(() => {
@@ -319,7 +336,7 @@ export function BookingMonitor({ bookings }: Props) {
 }
 
 const bookingViewOptions: Array<{
-  view: 'active' | 'chat' | 'all';
+  view: BookingView;
   label: string;
   description: string;
   operatorHint: string;
@@ -330,6 +347,26 @@ const bookingViewOptions: Array<{
     description: 'live dispatch work across matching, arrival, and in-service states.',
     operatorHint:
       'Use this during operations to catch stalled matching, missing location, or unresolved payment risk.',
+  },
+  {
+    view: 'high-risk',
+    label: 'High risk',
+    description: 'bookings with expired matching, unresolved payment, or missing chat after matching.',
+    operatorHint: 'Use this as the first dispatch triage view when the dashboard shows attention needed.',
+  },
+  {
+    view: 'payment',
+    label: 'Payment ops',
+    description: 'bookings whose payment state can block closeout, refund, capture, or settlement.',
+    operatorHint:
+      'Use this to catch completed authorized payments, cancelled unresolved holds, cash pending, and missing refs.',
+  },
+  {
+    view: 'location',
+    label: 'Location ops',
+    description: 'on-the-way or in-service bookings with missing or stale provider location signals.',
+    operatorHint:
+      'Use this only for live service states. The MVP tracks last-known location, not live route streaming.',
   },
   {
     view: 'chat',
@@ -362,9 +399,18 @@ function bookingPriority(booking: AdminBooking) {
   return 1;
 }
 
-function emptyBookingMessage(view: 'active' | 'chat' | 'all') {
+function emptyBookingMessage(view: BookingView) {
   if (view === 'active') {
     return 'No active bookings match this queue. Dispatch is clear right now.';
+  }
+  if (view === 'high-risk') {
+    return 'No high-risk bookings match this queue. Expired matching, missing chat, and payment closeout are clear.';
+  }
+  if (view === 'payment') {
+    return 'No payment-risk bookings match this queue. Capture, release, refund, cash, and provider refs are clear.';
+  }
+  if (view === 'location') {
+    return 'No location-risk bookings match this queue. Live service location signals look acceptable.';
   }
   if (view === 'chat') {
     return 'No chat-live bookings match this queue. No active customer/provider conversation needs review.';
@@ -469,6 +515,36 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
   }
 
   return flags;
+}
+
+function bookingPaymentNeedsOps(booking: AdminBooking) {
+  const payment = booking.payment;
+  if (!payment) {
+    return ['CREATED', 'OPEN_MATCHING', 'MATCHED'].includes(booking.status);
+  }
+  if (booking.status === 'CANCELLED' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
+    return true;
+  }
+  if (booking.status === 'COMPLETED' && payment.status === 'AUTHORIZED') {
+    return true;
+  }
+  if (payment.status === 'AUTHORIZED' && !payment.providerRef) {
+    return true;
+  }
+  if (payment.method === 'CASH' && payment.status === 'PENDING') {
+    return true;
+  }
+  return false;
+}
+
+function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
+  if (!locationRequiredStatuses.has(booking.status)) {
+    return false;
+  }
+  if (!hasProviderLocation(booking)) {
+    return true;
+  }
+  return providerLocationFreshness(booking, nowMs) !== 'recent';
 }
 
 function riskLevel(flags: BookingRiskFlag[]) {
