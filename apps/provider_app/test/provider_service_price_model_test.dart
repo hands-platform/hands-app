@@ -49,30 +49,32 @@ void main() {
 
   test('update service picks payout rule that matches the selected price',
       () async {
-    final repository = ProviderServicePriceRepositoryImpl(_FakeApiClient({
-      'id': 'provider-service-1',
-      'price': 600000,
-      'active': true,
-      'service': {
-        'id': 'svc-foot-60',
-        'name': 'Foot Massage',
-        'durationMin': 60,
-        'basePrice': 500000,
-        'priceStep': 100000,
-        'payoutRules': [
-          {
-            'customerPrice': 500000,
-            'providerPayoutAmount': 380000,
-            'currency': 'VND',
-          },
-          {
-            'customerPrice': 600000,
-            'providerPayoutAmount': 460000,
-            'currency': 'VND',
-          },
-        ],
+    final repository = ProviderServicePriceRepositoryImpl(_FakeApiClient(
+      patchResponse: {
+        'id': 'provider-service-1',
+        'price': 600000,
+        'active': true,
+        'service': {
+          'id': 'svc-foot-60',
+          'name': 'Foot Massage',
+          'durationMin': 60,
+          'basePrice': 500000,
+          'priceStep': 100000,
+          'payoutRules': [
+            {
+              'customerPrice': 500000,
+              'providerPayoutAmount': 380000,
+              'currency': 'VND',
+            },
+            {
+              'customerPrice': 600000,
+              'providerPayoutAmount': 460000,
+              'currency': 'VND',
+            },
+          ],
+        },
       },
-    }));
+    ));
 
     final service = await repository.updateService(
       serviceId: 'svc-foot-60',
@@ -84,6 +86,54 @@ void main() {
     expect(service.providerPayoutAmount, 460000);
     expect(service.platformFee, 140000);
     expect(service.payoutRuleConfigured, isTrue);
+  });
+
+  test('list services flattens grouped provider service catalog response',
+      () async {
+    final api = _FakeApiClient(
+      getResponse: [
+        {
+          'key': 'foot_massage',
+          'name': 'Foot Massage',
+          'durationSummary': '60 min, 90 min',
+          'options': [
+            {
+              'id': 'svc-foot-60',
+              'serviceGroupKey': 'foot_massage',
+              'name': 'Foot Massage',
+              'durationMin': 60,
+              'basePrice': 500000,
+              'priceStep': 100000,
+              'effectivePrice': 500000,
+              'active': true,
+              'payoutRuleConfigured': true,
+            },
+            {
+              'id': 'svc-foot-90',
+              'serviceGroupKey': 'foot_massage',
+              'name': 'Foot Massage',
+              'durationMin': 90,
+              'basePrice': 700000,
+              'priceStep': 100000,
+              'effectivePrice': 700000,
+              'active': true,
+              'payoutRuleConfigured': true,
+            },
+          ],
+        },
+      ],
+    );
+    final repository = ProviderServicePriceRepositoryImpl(api);
+
+    final services = await repository.listServices();
+
+    expect(api.getPath, '/provider/services/groups');
+    expect(services, hasLength(2));
+    expect(services.map((service) => service.id), [
+      'svc-foot-60',
+      'svc-foot-90',
+    ]);
+    expect(services.first.serviceGroupKey, 'foot_massage');
   });
 
   test('groups provider service prices by service name and duration options',
@@ -134,15 +184,26 @@ void main() {
 }
 
 class _FakeApiClient extends ApiClient {
-  _FakeApiClient(this.response) : super(baseUrl: 'http://test.local');
+  _FakeApiClient({
+    this.getResponse = const <dynamic>[],
+    this.patchResponse = const <String, dynamic>{},
+  }) : super(baseUrl: 'http://test.local');
 
-  final Map<String, dynamic> response;
+  final dynamic getResponse;
+  final Map<String, dynamic> patchResponse;
+  String? getPath;
+
+  @override
+  Future<dynamic> getJson(String path) async {
+    getPath = path;
+    return getResponse;
+  }
 
   @override
   Future<dynamic> patchJson(String path, Map<String, dynamic> body) async {
     expect(path, '/provider/services/svc-foot-60');
     expect(body['price'], 600000);
     expect(body['active'], isTrue);
-    return response;
+    return patchResponse;
   }
 }

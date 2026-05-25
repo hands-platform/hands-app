@@ -11,10 +11,8 @@ class ProviderServicePriceRepositoryImpl
 
   @override
   Future<List<ProviderServicePrice>> listServices() async {
-    final result = await _api.getJson('/provider/services');
-    final items = result is List<dynamic> ? result : const <dynamic>[];
-    return items
-        .whereType<Map>()
+    final result = await _api.getJson('/provider/services/groups');
+    return _serviceItemsFromResult(result)
         .map((item) =>
             ProviderServicePriceModel.fromJson(Map<String, dynamic>.from(item)))
         .where((item) => item.id.isNotEmpty)
@@ -72,6 +70,27 @@ class ProviderServicePriceRepositoryImpl
                   : null,
             },
     });
+  }
+}
+
+Iterable<Map<String, dynamic>> _serviceItemsFromResult(dynamic result) sync* {
+  if (result is! List<dynamic>) {
+    return;
+  }
+  for (final item in result) {
+    if (item is! Map) {
+      continue;
+    }
+    final options = item['options'];
+    if (options is List<dynamic>) {
+      for (final option in options) {
+        if (option is Map) {
+          yield Map<String, dynamic>.from(option);
+        }
+      }
+      continue;
+    }
+    yield Map<String, dynamic>.from(item);
   }
 }
 
