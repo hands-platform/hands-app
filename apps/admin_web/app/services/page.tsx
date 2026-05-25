@@ -7,7 +7,10 @@ import {
   upsertPayoutRule,
 } from './actions';
 
-export default async function ServicesPage() {
+type ServicesPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function ServicesPage({ searchParams }: { searchParams?: ServicesPageSearchParams }) {
+  const params = (await searchParams) ?? {};
   const services = await adminGet<AdminServiceCatalogItem[]>('/admin/services', []);
   const taxPolicies = await adminGet<AdminTaxPolicyVersion[]>('/admin/tax-policy-versions', []);
   const activeServices = services.filter((service) => service.active);
@@ -18,6 +21,7 @@ export default async function ServicesPage() {
   const readinessItems = buildBookingReadinessQueue(services, activeTaxPolicy);
   const blockedReadinessItems = readinessItems.filter((item) => item.tone === 'blocked');
   const warningReadinessItems = readinessItems.filter((item) => item.tone === 'warning');
+  const actionNotice = serviceActionNotice(params);
 
   return (
     <>
@@ -38,6 +42,27 @@ export default async function ServicesPage() {
           </span>
         </div>
       </section>
+
+      {actionNotice ? (
+        <section
+          className="card"
+          style={{
+            marginBottom: 16,
+            borderColor: actionNotice.tone === 'success' ? '#b8ddb0' : '#f0c7c2',
+            background: actionNotice.tone === 'success' ? '#f4fbf1' : '#fff5f3',
+          }}
+        >
+          <div className="risk-watch-header">
+            <div>
+              <h2>{actionNotice.title}</h2>
+              <p className="muted">{actionNotice.detail}</p>
+            </div>
+            <span className={`pill ${actionNotice.tone === 'success' ? 'pill-success' : 'pill-danger'}`}>
+              {actionNotice.tone === 'success' ? 'Saved' : 'Blocked'}
+            </span>
+          </div>
+        </section>
+      ) : null}
 
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -476,6 +501,83 @@ function groupServices(services: AdminServiceCatalogItem[]) {
     label: items[0]?.name ?? key,
     items: items.sort((left, right) => left.durationMin - right.durationMin),
   }));
+}
+
+function serviceActionNotice(params: Record<string, string | string[] | undefined>) {
+  const status = readSingleParam(params.status);
+  const reason = readSingleParam(params.reason);
+  if (!status || !reason) {
+    return null;
+  }
+
+  const savedMessages: Record<string, { title: string; detail: string }> = {
+    'service-created': {
+      title: 'Service option created',
+      detail: 'The new service duration option and any base payout rule have been saved.',
+    },
+    'duration-set-created': {
+      title: 'Duration set created',
+      detail: 'The service type was created with the valid duration options that passed pricing checks.',
+    },
+    'service-updated': {
+      title: 'Service option updated',
+      detail: 'The service duration option was updated and the catalog has been refreshed.',
+    },
+    'payout-rule-saved': {
+      title: 'Payout rule saved',
+      detail: 'The customer price now has a provider payout rule for booking and finance checks.',
+    },
+    'payout-rule-updated': {
+      title: 'Payout rule updated',
+      detail: 'The payout rule was updated and pricing health has been recalculated.',
+    },
+  };
+
+  const blockedMessages: Record<string, { title: string; detail: string }> = {
+    'missing-service-fields': {
+      title: 'Required service fields are missing',
+      detail: 'Enter a service name, duration, and minimum customer price before saving.',
+    },
+    'missing-duration-prices': {
+      title: 'No duration price was entered',
+      detail: 'Enter at least one duration price, such as 60, 90, or 120 minutes, before creating a set.',
+    },
+    'invalid-duration-set': {
+      title: 'Duration set pricing is invalid',
+      detail:
+        'Every filled duration must follow the configured price step, and provider payout cannot exceed the customer price.',
+    },
+    'invalid-service-pricing': {
+      title: 'Service pricing is invalid',
+      detail: 'Minimum prices must be positive and match the configured price step, usually 100,000 VND.',
+    },
+    'missing-payout-fields': {
+      title: 'Payout fields are missing',
+      detail: 'Enter both the customer price and provider payout before saving a payout rule.',
+    },
+    'invalid-payout': {
+      title: 'Provider payout is too high',
+      detail: 'Provider payout cannot be greater than the customer price for the same service option.',
+    },
+  };
+
+  if (status === 'saved') {
+    return { tone: 'success' as const, ...(savedMessages[reason] ?? savedMessages['service-updated']) };
+  }
+  if (status === 'blocked') {
+    return {
+      tone: 'danger' as const,
+      ...(blockedMessages[reason] ?? {
+        title: 'Service action blocked',
+        detail: 'Review the service pricing and payout values, then try again.',
+      }),
+    };
+  }
+  return null;
+}
+
+function readSingleParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }
 
 function formatDurationList(items: AdminServiceCatalogItem[]) {

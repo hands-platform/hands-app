@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { adminPatch, adminPost } from '../../lib/admin-api';
 
 type CreatedService = {
@@ -20,10 +21,10 @@ export async function createService(formData: FormData) {
   const displayOrder = parseInteger(formData.get('displayOrder')) ?? 0;
 
   if (!name || !durationMin || !basePrice) {
-    return;
+    redirectToServices('blocked', 'missing-service-fields');
   }
   if (!isValidPriceStep(basePrice, priceStep) || !isValidPayout(providerPayoutAmount, basePrice)) {
-    return;
+    redirectToServices('blocked', 'invalid-service-pricing');
   }
 
   const service = await adminPost<CreatedService | null>(
@@ -58,6 +59,7 @@ export async function createService(formData: FormData) {
 
   revalidatePath('/services');
   revalidatePath('/audit-log');
+  redirectToServices('saved', 'service-created');
 }
 
 export async function createServiceDurationSet(formData: FormData) {
@@ -71,16 +73,35 @@ export async function createServiceDurationSet(formData: FormData) {
   const durations = [60, 90, 120];
 
   if (!name) {
-    return;
+    redirectToServices('blocked', 'missing-service-fields');
   }
 
-  for (const durationMin of durations) {
-    const basePrice = parseInteger(formData.get(`basePrice${durationMin}`));
-    if (!basePrice) {
-      continue;
-    }
-    const providerPayoutAmount = parseInteger(formData.get(`providerPayoutAmount${durationMin}`));
-    if (!isValidPriceStep(basePrice, priceStep) || !isValidPayout(providerPayoutAmount, basePrice)) {
+  const durationRows = durations
+    .map((durationMin) => ({
+      durationMin,
+      basePrice: parseInteger(formData.get(`basePrice${durationMin}`)),
+      providerPayoutAmount: parseInteger(formData.get(`providerPayoutAmount${durationMin}`)),
+    }))
+    .filter((row) => row.basePrice !== null);
+
+  if (durationRows.length === 0) {
+    redirectToServices('blocked', 'missing-duration-prices');
+  }
+
+  if (
+    durationRows.some(
+      (row) =>
+        row.basePrice === null ||
+        !isValidPriceStep(row.basePrice, priceStep) ||
+        !isValidPayout(row.providerPayoutAmount, row.basePrice),
+    )
+  ) {
+    redirectToServices('blocked', 'invalid-duration-set');
+  }
+
+  for (const row of durationRows) {
+    const basePrice = row.basePrice;
+    if (basePrice === null) {
       continue;
     }
     const service = await adminPost<CreatedService | null>(
@@ -89,14 +110,15 @@ export async function createServiceDurationSet(formData: FormData) {
         name,
         serviceGroupKey: serviceGroupKey || undefined,
         description: description || undefined,
-        durationMin,
+        durationMin: row.durationMin,
         basePrice,
         priceStep,
-        displayOrder: displayOrder + durationMin,
+        displayOrder: displayOrder + row.durationMin,
         active: true,
       },
       null,
     );
+    const providerPayoutAmount = row.providerPayoutAmount;
     if (service?.id && providerPayoutAmount !== null) {
       await adminPost(
         `/admin/services/${service.id}/payout-rules`,
@@ -115,6 +137,7 @@ export async function createServiceDurationSet(formData: FormData) {
 
   revalidatePath('/services');
   revalidatePath('/audit-log');
+  redirectToServices('saved', 'duration-set-created');
 }
 
 export async function updateService(formData: FormData) {
@@ -129,10 +152,10 @@ export async function updateService(formData: FormData) {
   const active = formData.get('active') === 'on';
 
   if (!serviceId || !name || !durationMin || !basePrice) {
-    return;
+    redirectToServices('blocked', 'missing-service-fields');
   }
   if (!isValidPriceStep(basePrice, priceStep)) {
-    return;
+    redirectToServices('blocked', 'invalid-service-pricing');
   }
 
   await adminPatch(
@@ -151,6 +174,7 @@ export async function updateService(formData: FormData) {
   );
   revalidatePath('/services');
   revalidatePath('/audit-log');
+  redirectToServices('saved', 'service-updated');
 }
 
 export async function upsertPayoutRule(formData: FormData) {
@@ -162,10 +186,10 @@ export async function upsertPayoutRule(formData: FormData) {
   const notes = String(formData.get('notes') || '').trim();
 
   if (!serviceId || !customerPrice || providerPayoutAmount === null) {
-    return;
+    redirectToServices('blocked', 'missing-payout-fields');
   }
   if (providerPayoutAmount > customerPrice) {
-    return;
+    redirectToServices('blocked', 'invalid-payout');
   }
 
   await adminPost(
@@ -182,6 +206,7 @@ export async function upsertPayoutRule(formData: FormData) {
   );
   revalidatePath('/services');
   revalidatePath('/audit-log');
+  redirectToServices('saved', 'payout-rule-saved');
 }
 
 export async function updatePayoutRule(formData: FormData) {
@@ -194,10 +219,10 @@ export async function updatePayoutRule(formData: FormData) {
   const notes = String(formData.get('notes') || '').trim();
 
   if (!ruleId || !customerPrice || providerPayoutAmount === null) {
-    return;
+    redirectToServices('blocked', 'missing-payout-fields');
   }
   if (providerPayoutAmount > customerPrice) {
-    return;
+    redirectToServices('blocked', 'invalid-payout');
   }
 
   await adminPatch(
@@ -214,6 +239,7 @@ export async function updatePayoutRule(formData: FormData) {
   );
   revalidatePath('/services');
   revalidatePath('/audit-log');
+  redirectToServices('saved', 'payout-rule-updated');
 }
 
 function parseInteger(value: FormDataEntryValue | null) {
@@ -231,4 +257,8 @@ function isValidPriceStep(price: number, priceStep: number) {
 
 function isValidPayout(providerPayoutAmount: number | null, customerPrice: number) {
   return providerPayoutAmount === null || (providerPayoutAmount >= 0 && providerPayoutAmount <= customerPrice);
+}
+
+function redirectToServices(status: 'saved' | 'blocked', reason: string): never {
+  redirect(`/services?status=${status}&reason=${reason}`);
 }
