@@ -22,6 +22,9 @@ export async function createService(formData: FormData) {
   if (!name || !durationMin || !basePrice) {
     return;
   }
+  if (!isValidPriceStep(basePrice, priceStep) || !isValidPayout(providerPayoutAmount, basePrice)) {
+    return;
+  }
 
   const service = await adminPost<CreatedService | null>(
     '/admin/services',
@@ -76,6 +79,10 @@ export async function createServiceDurationSet(formData: FormData) {
     if (!basePrice) {
       continue;
     }
+    const providerPayoutAmount = parseInteger(formData.get(`providerPayoutAmount${durationMin}`));
+    if (!isValidPriceStep(basePrice, priceStep) || !isValidPayout(providerPayoutAmount, basePrice)) {
+      continue;
+    }
     const service = await adminPost<CreatedService | null>(
       '/admin/services',
       {
@@ -90,7 +97,6 @@ export async function createServiceDurationSet(formData: FormData) {
       },
       null,
     );
-    const providerPayoutAmount = parseInteger(formData.get(`providerPayoutAmount${durationMin}`));
     if (service?.id && providerPayoutAmount !== null) {
       await adminPost(
         `/admin/services/${service.id}/payout-rules`,
@@ -125,6 +131,9 @@ export async function updateService(formData: FormData) {
   if (!serviceId || !name || !durationMin || !basePrice) {
     return;
   }
+  if (!isValidPriceStep(basePrice, priceStep)) {
+    return;
+  }
 
   await adminPatch(
     `/admin/services/${serviceId}`,
@@ -153,6 +162,9 @@ export async function upsertPayoutRule(formData: FormData) {
   const notes = String(formData.get('notes') || '').trim();
 
   if (!serviceId || !customerPrice || providerPayoutAmount === null) {
+    return;
+  }
+  if (providerPayoutAmount > customerPrice) {
     return;
   }
 
@@ -184,6 +196,9 @@ export async function updatePayoutRule(formData: FormData) {
   if (!ruleId || !customerPrice || providerPayoutAmount === null) {
     return;
   }
+  if (providerPayoutAmount > customerPrice) {
+    return;
+  }
 
   await adminPatch(
     `/admin/service-payout-rules/${ruleId}`,
@@ -208,4 +223,12 @@ function parseInteger(value: FormDataEntryValue | null) {
   }
   const number = Number(raw);
   return Number.isInteger(number) ? number : null;
+}
+
+function isValidPriceStep(price: number, priceStep: number) {
+  return price > 0 && priceStep >= 100000 && price % priceStep === 0;
+}
+
+function isValidPayout(providerPayoutAmount: number | null, customerPrice: number) {
+  return providerPayoutAmount === null || (providerPayoutAmount >= 0 && providerPayoutAmount <= customerPrice);
 }
