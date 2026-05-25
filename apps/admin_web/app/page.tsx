@@ -490,8 +490,12 @@ function buildDashboardCommandSignals(input: {
   const missingGatewayRef = input.payments.filter(
     (payment) => payment.status === 'AUTHORIZED' && !payment.providerRef,
   );
+  const cashPending = input.payments.filter(
+    (payment) => payment.method === 'CASH' && payment.status === 'PENDING',
+  );
   const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
-  const paymentReviews = completedAuthorized.length + missingGatewayRef.length + openRefunds.length;
+  const paymentReviews =
+    completedAuthorized.length + missingGatewayRef.length + cashPending.length + openRefunds.length;
   const payoutHolds = input.payoutBatches.filter((batch) => Boolean(activePayoutHold(batch)));
   const payoutReviews = input.payoutBatches.filter((batch) =>
     ['DRAFT', 'FAILED', 'PROCESSING'].includes(batch.status),
@@ -618,11 +622,11 @@ function buildDashboardCommandSignals(input: {
       title: 'Payment lane',
       status: `${paymentReviews} REVIEW`,
       detail: paymentReviews
-        ? 'Payment holds, missing refs, completed-service captures, or refunds need review.'
+        ? 'Payment holds, missing refs, cash collection, completed-service captures, or refunds need review.'
         : 'Payment and refund queues are quiet.',
       action: 'Open payments',
-      href: '/payments',
-      priority: completedAuthorized.length ? 100 : paymentReviews ? 80 : 20,
+      href: cashPending.length ? '/payments?review=cash' : '/payments',
+      priority: completedAuthorized.length ? 100 : cashPending.length ? 85 : paymentReviews ? 80 : 20,
       severity: completedAuthorized.length ? 'high' : paymentReviews ? 'medium' : 'low',
       className: paymentReviews ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: paymentReviews ? 'pill-danger' : 'pill-success',
@@ -638,6 +642,12 @@ function buildDashboardCommandSignals(input: {
           value: missingGatewayRef.length.toString(),
           tone: missingGatewayRef.length ? 'warn' : 'ok',
           href: '/payments?review=missing-ref',
+        },
+        {
+          label: 'Cash pending',
+          value: cashPending.length.toString(),
+          tone: cashPending.length ? 'warn' : 'ok',
+          href: '/payments?review=cash',
         },
         {
           label: 'Open refunds',
