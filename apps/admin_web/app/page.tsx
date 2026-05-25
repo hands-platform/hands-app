@@ -524,7 +524,7 @@ function buildDashboardCommandSignals(input: {
         ? 'Some open matching windows are expired and need operator review.'
         : 'Monitor open matching, quiet chat rooms, and provider assignment.',
       action: 'Open booking monitor',
-      href: '/bookings',
+      href: staleOpenMatching.length || matchedWithoutChat.length ? '/bookings?view=high-risk' : '/bookings',
       priority: staleOpenMatching.length || matchedWithoutChat.length ? 95 : openMatching.length ? 70 : 25,
       severity:
         staleOpenMatching.length || matchedWithoutChat.length
@@ -547,25 +547,25 @@ function buildDashboardCommandSignals(input: {
           label: 'Open matching',
           value: openMatching.length.toString(),
           tone: openMatching.length ? 'warn' : 'ok',
-          href: '/bookings',
+          href: '/bookings?view=active',
         },
         {
           label: 'Expired windows',
           value: staleOpenMatching.length.toString(),
           tone: staleOpenMatching.length ? 'danger' : 'ok',
-          href: '/bookings',
+          href: '/bookings?view=high-risk',
         },
         {
           label: 'Quiet chats',
           value: quietChatRooms.length.toString(),
           tone: quietChatRooms.length ? 'info' : 'ok',
-          href: '/bookings',
+          href: '/bookings?view=chat',
         },
         {
           label: 'Matched no chat',
           value: matchedWithoutChat.length.toString(),
           tone: matchedWithoutChat.length ? 'danger' : 'ok',
-          href: '/bookings',
+          href: '/bookings?view=high-risk',
         },
       ],
     },

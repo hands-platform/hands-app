@@ -7,6 +7,7 @@ import { AdminBooking } from '../../lib/admin-api';
 
 type Props = {
   bookings: AdminBooking[];
+  initialView: BookingView;
 };
 
 type BookingView = 'active' | 'high-risk' | 'payment' | 'location' | 'chat' | 'all';
@@ -28,14 +29,14 @@ const clockFormatter = new Intl.DateTimeFormat('en-GB', {
   timeZone: displayTimeZone,
 });
 
-export function BookingMonitor({ bookings }: Props) {
+export function BookingMonitor({ bookings, initialView }: Props) {
   const router = useRouter();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshLabel, setLastRefreshLabel] = useState('pending');
   const [nowMs, setNowMs] = useState<number | null>(null);
   const [hasMounted, setHasMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [view, setView] = useState<BookingView>('active');
+  const [view, setView] = useState<BookingView>(initialView);
   const currentTimeMs = nowMs ?? 0;
 
   const orderedBookings = useMemo(
