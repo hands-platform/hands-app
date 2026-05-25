@@ -658,6 +658,21 @@ class ProviderListCard extends StatelessWidget {
     final etaLabel =
         provider['status'] == 'ONLINE_AVAILABLE' ? 'Start now' : 'Starts soon';
     final isRecentLocation = provider['isRecentLocation'] != false;
+    final bookableServiceCount =
+        asNum(provider['bookableServiceCount'])?.toInt();
+    final hasBookableServices =
+        bookableServiceCount == null ? true : bookableServiceCount > 0;
+    final startingPrice = asNum(provider['startingPrice'])?.toInt();
+    final startingDuration = asNum(provider['startingDurationMin'])?.toInt();
+    final serviceSummary = hasBookableServices
+        ? [
+            if (startingPrice != null)
+              'From ${formatCurrency(startingPrice)} VND',
+            if (startingDuration != null) '$startingDuration min',
+            if (bookableServiceCount != null)
+              '$bookableServiceCount option${bookableServiceCount == 1 ? '' : 's'}',
+          ].join(' / ')
+        : 'No bookable services yet';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -764,6 +779,20 @@ class ProviderListCard extends StatelessWidget {
                                 : FontWeight.w700,
                           ),
                     ),
+                    if (serviceSummary.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        serviceSummary,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: hasBookableServices
+                                  ? Colors.black87
+                                  : Theme.of(context).colorScheme.error,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
                     const SizedBox(height: 8),
                     Row(
                       children: [
@@ -780,7 +809,7 @@ class ProviderListCard extends StatelessWidget {
                           ),
                         ),
                         FilledButton(
-                          onPressed: onTap,
+                          onPressed: hasBookableServices ? onTap : null,
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFF5E8E4A),
                             foregroundColor: Colors.white,
@@ -1167,11 +1196,28 @@ class ProviderDetailPage extends StatelessWidget {
                             'Choose one service to open a booking request with this therapist first.',
                       ),
                       const SizedBox(height: 12),
-                      for (final group in customerServiceOptionGroups(services))
-                        ServiceOptionGroupCard(
-                          group: group,
-                          onBook: (service) => onBookService(detail, service),
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final serviceGroups =
+                              customerServiceOptionGroups(services);
+                          if (serviceGroups.isEmpty) {
+                            return const EmptyPanel(
+                              text:
+                                  'This therapist has no bookable service options yet. HANDS requires an active provider price and an exact admin payout rule before booking.',
+                            );
+                          }
+                          return Column(
+                            children: [
+                              for (final group in serviceGroups)
+                                ServiceOptionGroupCard(
+                                  group: group,
+                                  onBook: (service) =>
+                                      onBookService(detail, service),
+                                ),
+                            ],
+                          );
+                        },
+                      ),
                       const SizedBox(height: 28),
                       Row(
                         children: [
@@ -5373,6 +5419,11 @@ bool customerProviderServiceIsBookable(
 
   if (nestedService != null && nestedService.containsKey('payoutRules')) {
     final price = customerServicePrice(service);
+    final basePrice = asNum(nestedService['basePrice'])?.toInt() ?? 0;
+    final priceStep = asNum(nestedService['priceStep'])?.toInt() ?? 100000;
+    if (price < basePrice || priceStep <= 0 || price % priceStep != 0) {
+      return false;
+    }
     return asList(nestedService['payoutRules']).any((rule) {
       final mapped = asMap(rule);
       return asNum(mapped?['customerPrice'])?.toInt() == price;

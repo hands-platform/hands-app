@@ -61,7 +61,18 @@ export class ProvidersService {
             active: true,
             service: { active: true },
           },
-          include: { service: true },
+          include: {
+            service: {
+              include: {
+                payoutRules: {
+                  where: { active: true },
+                  select: {
+                    customerPrice: true,
+                  },
+                },
+              },
+            },
+          },
         },
         reviews: { select: { rating: true }, take: 20, orderBy: { createdAt: 'desc' } },
       },
@@ -74,9 +85,13 @@ export class ProvidersService {
           haversineMeters(lat, lng, Number(provider.currentLat), Number(provider.currentLng)),
         );
         const currentLocationUpdatedAt = provider.currentLocationUpdatedAt?.toISOString() ?? null;
+        const bookableSummary = providerPublicBookableServiceSummary(provider.services);
+        const services = publicNearbyProviderServices(provider.services);
         return {
           ...provider,
+          services,
           ...publicProviderMedia(provider),
+          ...bookableSummary,
           currentLocationUpdatedAt,
           distanceMeters,
           isRecentLocation: provider.currentLocationUpdatedAt
@@ -526,4 +541,89 @@ function publicProviderMedia(provider: {
     profileImageUrl: profileImage,
     galleryImageUrls,
   };
+}
+
+function providerPublicBookableServiceSummary(
+  providerServices: Array<{
+    active: boolean;
+    price: number;
+    service: {
+      active: boolean;
+      basePrice: number;
+      durationMin: number;
+      priceStep: number;
+      payoutRules?: Array<{ customerPrice: number }>;
+    };
+  }>,
+) {
+  const bookableServices = providerServices
+    .map((providerService) => {
+      const customerPrice = providerService.price ?? providerService.service.basePrice;
+      const priceStep = providerService.service.priceStep || 100000;
+      const hasPayoutRule = (providerService.service.payoutRules ?? []).some(
+        (rule) => rule.customerPrice === customerPrice,
+      );
+      const validPrice =
+        Number.isInteger(customerPrice) &&
+        customerPrice >= providerService.service.basePrice &&
+        customerPrice % priceStep === 0;
+
+      return {
+        active: providerService.active && providerService.service.active,
+        customerPrice,
+        durationMin: providerService.service.durationMin,
+        hasPayoutRule,
+        validPrice,
+      };
+    })
+    .filter((service) => service.active && service.validPrice && service.hasPayoutRule)
+    .sort((a, b) => a.customerPrice - b.customerPrice || a.durationMin - b.durationMin);
+
+  const first = bookableServices[0] ?? null;
+  return {
+    bookableServiceCount: bookableServices.length,
+    hasBookableServices: bookableServices.length > 0,
+    startingPrice: first?.customerPrice ?? null,
+    startingDurationMin: first?.durationMin ?? null,
+  };
+}
+
+function publicNearbyProviderServices(
+  providerServices: Array<{
+    id: string;
+    providerProfileId: string;
+    serviceId: string;
+    price: number;
+    active: boolean;
+    service: {
+      id: string;
+      serviceGroupKey: string | null;
+      name: string;
+      description: string | null;
+      durationMin: number;
+      basePrice: number;
+      priceStep: number;
+      displayOrder: number;
+      active: boolean;
+    };
+  }>,
+) {
+  return providerServices.map((providerService) => ({
+    id: providerService.id,
+    providerProfileId: providerService.providerProfileId,
+    serviceId: providerService.serviceId,
+    price: providerService.price,
+    active: providerService.active,
+    service: {
+      id: providerService.service.id,
+      serviceGroupKey: providerService.service.serviceGroupKey,
+      name: providerService.service.name,
+      description: providerService.service.description,
+      durationMin: providerService.service.durationMin,
+      basePrice: providerService.service.basePrice,
+      priceStep: providerService.service.priceStep,
+      displayOrder: providerService.service.displayOrder,
+      active: providerService.service.active,
+    },
+  }));
 }

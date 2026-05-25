@@ -80,6 +80,23 @@ void main() {
           ],
         },
       },
+      {
+        'id': 'provider-service-4',
+        'price': 450000,
+        'active': true,
+        'service': {
+          'id': 'service-swedish-60',
+          'serviceGroupKey': 'swedish',
+          'name': 'Swedish Massage',
+          'durationMin': 60,
+          'basePrice': 500000,
+          'priceStep': 100000,
+          'active': true,
+          'payoutRules': [
+            {'customerPrice': 450000},
+          ],
+        },
+      },
     ]);
 
     expect(groups, hasLength(1));
