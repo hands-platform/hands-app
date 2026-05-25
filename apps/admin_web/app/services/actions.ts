@@ -34,6 +34,43 @@ export async function createService(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function createServiceDurationSet(formData: FormData) {
+  const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
+  const name = String(formData.get('name') || '').trim();
+  const description = String(formData.get('description') || '').trim();
+  const priceStep = parseInteger(formData.get('priceStep')) ?? 100000;
+  const displayOrder = parseInteger(formData.get('displayOrder')) ?? 100;
+  const durations = [60, 90, 120];
+
+  if (!name) {
+    return;
+  }
+
+  for (const durationMin of durations) {
+    const basePrice = parseInteger(formData.get(`basePrice${durationMin}`));
+    if (!basePrice) {
+      continue;
+    }
+    await adminPost(
+      '/admin/services',
+      {
+        name,
+        serviceGroupKey: serviceGroupKey || undefined,
+        description: description || undefined,
+        durationMin,
+        basePrice,
+        priceStep,
+        displayOrder: displayOrder + durationMin,
+        active: true,
+      },
+      null,
+    );
+  }
+
+  revalidatePath('/services');
+  revalidatePath('/audit-log');
+}
+
 export async function updateService(formData: FormData) {
   const serviceId = String(formData.get('serviceId') || '').trim();
   const name = String(formData.get('name') || '').trim();

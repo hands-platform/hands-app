@@ -1,5 +1,11 @@
 import { AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
-import { createService, updatePayoutRule, updateService, upsertPayoutRule } from './actions';
+import {
+  createService,
+  createServiceDurationSet,
+  updatePayoutRule,
+  updateService,
+  upsertPayoutRule,
+} from './actions';
 
 export default async function ServicesPage() {
   const services = await adminGet<AdminServiceCatalogItem[]>('/admin/services', []);
@@ -53,6 +59,48 @@ export default async function ServicesPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <h2>Create 60/90/120 duration set</h2>
+        <p className="muted">
+          Use this for common service types. Leave a duration price empty if that option should not be created.
+        </p>
+        <form action={createServiceDurationSet} className="form-grid">
+          <label>
+            Group key
+            <input name="serviceGroupKey" placeholder="leg_massage" required />
+          </label>
+          <label>
+            Name
+            <input name="name" placeholder="Leg Massage" required />
+          </label>
+          <label>
+            60 min minimum
+            <input name="basePrice60" type="number" min="100000" step="100000" placeholder="500000" />
+          </label>
+          <label>
+            90 min minimum
+            <input name="basePrice90" type="number" min="100000" step="100000" placeholder="700000" />
+          </label>
+          <label>
+            120 min minimum
+            <input name="basePrice120" type="number" min="100000" step="100000" placeholder="900000" />
+          </label>
+          <label>
+            Price step
+            <input name="priceStep" type="number" min="100000" step="100000" defaultValue="100000" />
+          </label>
+          <label>
+            Display order
+            <input name="displayOrder" type="number" defaultValue="100" />
+          </label>
+          <label className="full-span">
+            Description
+            <input name="description" placeholder="Shown in customer/provider apps" />
+          </label>
+          <button type="submit">Create duration set</button>
+        </form>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
