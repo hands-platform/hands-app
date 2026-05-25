@@ -94,6 +94,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
   bool loading = false;
   bool otpRequested = false;
   bool restoringSession = true;
+  bool requestActionsWalletBlocked = false;
   String requestView = 'action';
   String? statusMessage;
   String? error;
@@ -305,6 +306,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       statusMessage = null;
     });
     try {
+      if (!await ensureWalletCanAcceptRequest()) {
+        return;
+      }
       await ref.read(providerRepositoryProvider).joinBooking(bookingId);
       setState(() {
         joinedBookingIds = {...joinedBookingIds, bookingId};
@@ -331,6 +335,9 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     });
     try {
       if (accepted) {
+        if (!await ensureWalletCanAcceptRequest()) {
+          return;
+        }
         await ref.read(providerRepositoryProvider).acceptBooking(bookingId);
       } else {
         await ref.read(providerRepositoryProvider).rejectBooking(bookingId);
@@ -348,6 +355,30 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         setState(() => loading = false);
       }
     }
+  }
+
+  Future<bool> ensureWalletCanAcceptRequest() async {
+    try {
+      final summary = await ref.read(providerRepositoryProvider).earningsSummary();
+      final blockReason = providerWalletBlockReason(summary);
+      if (blockReason != null) {
+        if (mounted) {
+          setState(() {
+            error = blockReason;
+            statusMessage = providerWalletBlockHint;
+          });
+        }
+        return false;
+      }
+    } catch (exception) {
+      if (mounted) {
+        setState(() {
+          statusMessage =
+              'Wallet status could not be refreshed locally. The server will verify settlement before accepting.';
+        });
+      }
+    }
+    return true;
   }
 
   Future<void> startService(Map<String, dynamic> booking) async {
@@ -470,11 +501,25 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
             FutureBuilder<Map<String, dynamic>>(
               future: ref.read(providerRepositoryProvider).earningsSummary(),
               builder: (context, walletSnapshot) {
+                final walletSummary =
+                    walletSnapshot.data ?? const <String, dynamic>{};
+                final walletBlocked =
+                    providerWalletBlockReason(walletSummary) != null;
+                if (walletSnapshot.hasData &&
+                    requestActionsWalletBlocked != walletBlocked) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      setState(
+                          () => requestActionsWalletBlocked = walletBlocked);
+                    }
+                  });
+                }
                 return ProviderWalletGateCard(
-                  summary: walletSnapshot.data ?? const <String, dynamic>{},
+                  summary: walletSummary,
                   error: walletSnapshot.error,
                   isLoading:
                       walletSnapshot.connectionState == ConnectionState.waiting,
+                  onRefresh: () => setState(() {}),
                 );
               },
             ),
@@ -554,6 +599,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                       isPreferredRequest: isPreferredRequest,
                       joined: joinedBookingIds.contains(booking['id']),
                       loading: loading,
+                      walletBlocked: requestActionsWalletBlocked,
                       onJoin: () => joinBooking(booking),
                       onAccept: () => respondToBooking(booking, true),
                       onReject: () => respondToBooking(booking, false),
@@ -1196,11 +1242,13 @@ class ProviderWalletGateCard extends StatelessWidget {
     super.key,
     required this.summary,
     required this.isLoading,
+    required this.onRefresh,
     this.error,
   });
 
   final Map<String, dynamic> summary;
   final bool isLoading;
+  final VoidCallback onRefresh;
   final Object? error;
 
   @override
@@ -1208,11 +1256,9 @@ class ProviderWalletGateCard extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final currency = summary['currency']?.toString() ?? 'VND';
-    final walletBalance = asNum(summary['walletBalance']) ??
-        ((asNum(summary['pendingNetAmount']) ?? 0) +
-            (asNum(summary['availableNetAmount']) ?? 0));
-    final walletBlocked = summary['walletBlocked'] == true || walletBalance < 0;
-    final reason = summary['walletBlockReason']?.toString();
+    final walletBalance = providerWalletBalance(summary);
+    final reason = providerWalletBlockReason(summary);
+    final walletBlocked = reason != null;
 
     if (isLoading) {
       return Card(
@@ -1278,14 +1324,16 @@ class ProviderWalletGateCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              walletBlocked
-                  ? (reason ?? '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.')
-                  : 'You can accept new booking requests.',
+              walletBlocked ? reason : 'You can accept new booking requests.',
             ),
             if (walletBlocked) ...[
               const SizedBox(height: 8),
-              const Text(
-                '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.',
+              const Text(providerWalletBlockHint),
+              const SizedBox(height: 10),
+              FilledButton.tonalIcon(
+                onPressed: onRefresh,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Refresh wallet status'),
               ),
             ],
             if (error != null) ...[
@@ -1391,6 +1439,7 @@ class OpenBookingCard extends StatelessWidget {
     required this.isPreferredRequest,
     required this.joined,
     required this.loading,
+    required this.walletBlocked,
     required this.onJoin,
     required this.onAccept,
     required this.onReject,
@@ -1401,6 +1450,7 @@ class OpenBookingCard extends StatelessWidget {
   final bool isPreferredRequest;
   final bool joined;
   final bool loading;
+  final bool walletBlocked;
   final VoidCallback onJoin;
   final VoidCallback onAccept;
   final VoidCallback onReject;
@@ -1683,6 +1733,14 @@ class OpenBookingCard extends StatelessWidget {
               const InfoCard(
                   text:
                       'Customer is waiting and nearby therapists may volunteer for this request.'),
+            if (walletBlocked &&
+                ((isPreferredRequest && !isMatched) ||
+                    (!isPreferredRequest && !joined))) ...[
+              const SizedBox(height: 12),
+              const ProviderErrorCard(text: providerWalletBlockFallbackReason),
+              const SizedBox(height: 8),
+              const InfoCard(text: providerWalletBlockHint),
+            ],
             const SizedBox(height: 12),
             if (isPreferredRequest && !isMatched)
               Row(
@@ -1697,7 +1755,7 @@ class OpenBookingCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: loading ? null : onAccept,
+                      onPressed: loading || walletBlocked ? null : onAccept,
                       icon: const Icon(Icons.check),
                       label: const Text('Accept request'),
                     ),
@@ -1714,7 +1772,7 @@ class OpenBookingCard extends StatelessWidget {
               const InfoCard(text: 'Chat is ready. Continue from the Chat tab.')
             else if (!joined)
               FilledButton.icon(
-                onPressed: loading ? null : onJoin,
+                onPressed: loading || walletBlocked ? null : onJoin,
                 icon: const Icon(Icons.add_circle_outline),
                 label: Text(hasPreferredProvider
                     ? 'Offer backup support'
@@ -4314,6 +4372,33 @@ class ProviderMvpScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+const providerWalletBlockFallbackReason =
+    '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+
+const providerWalletBlockHint =
+    '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
+
+num providerWalletBalance(Map<String, dynamic> summary) {
+  return asNum(summary['walletBalance']) ??
+      ((asNum(summary['pendingNetAmount']) ?? 0) +
+          (asNum(summary['availableNetAmount']) ?? 0));
+}
+
+String? providerWalletBlockReason(Map<String, dynamic> summary) {
+  final walletBalance = providerWalletBalance(summary);
+  final walletBlocked = summary['walletBlocked'] == true || walletBalance < 0;
+  if (!walletBlocked) {
+    return null;
+  }
+
+  final reason = summary['walletBlockReason']?.toString().trim();
+  if (reason != null && reason.isNotEmpty) {
+    return reason;
+  }
+
+  return providerWalletBlockFallbackReason;
 }
 
 String formatCurrency(dynamic amount) {
