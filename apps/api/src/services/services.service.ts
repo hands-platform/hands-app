@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+const PRICE_STEP_UNIT_VND = 100000;
+
 @Injectable()
 export class ServicesService {
   constructor(private readonly prisma: PrismaService) {}
@@ -51,6 +53,9 @@ function normalizeServiceInput(input: {
   const priceStep = input.priceStep ?? 100000;
   if (!Number.isInteger(priceStep) || priceStep <= 0) {
     throw new BadRequestException('Price step must be a positive integer');
+  }
+  if (priceStep % PRICE_STEP_UNIT_VND !== 0) {
+    throw new BadRequestException(`Price step must use ${PRICE_STEP_UNIT_VND} VND increments`);
   }
   if (!Number.isInteger(input.basePrice) || input.basePrice <= 0) {
     throw new BadRequestException('Base price must be a positive integer');

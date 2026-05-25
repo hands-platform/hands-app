@@ -24,6 +24,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 
+const PRICE_STEP_UNIT_VND = 100000;
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -1233,6 +1235,9 @@ function normalizeServiceInput(
   const nextPriceStep = input.priceStep ?? existing?.priceStep ?? 100000;
   if (!Number.isInteger(nextPriceStep) || nextPriceStep <= 0) {
     throw new BadRequestException('Price step must be a positive integer');
+  }
+  if (nextPriceStep % PRICE_STEP_UNIT_VND !== 0) {
+    throw new BadRequestException(`Price step must use ${PRICE_STEP_UNIT_VND} VND increments`);
   }
   const nextBasePrice = input.basePrice ?? existing?.basePrice;
   if (
