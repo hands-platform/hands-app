@@ -42,6 +42,7 @@ type ProviderDetail = AdminProvider & {
     id: string;
     bookingId?: string | null;
     grossAmount: number;
+    platformFee: number;
     withholdingAmount: number;
     netAmount: number;
     currency?: string | null;
@@ -49,6 +50,10 @@ type ProviderDetail = AdminProvider & {
     availableAt?: string | null;
     paidAt?: string | null;
     createdAt?: string;
+    booking?: {
+      status?: string;
+      payment?: { method?: string; status?: string; amount?: number; currency?: string | null } | null;
+    } | null;
   }>;
   payoutBatches?: Array<{
     id: string;
@@ -259,19 +264,31 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               <div className="setup-stage-list">
                 {provider.earnings?.slice(0, 5).map((earning) => (
                   <div className="setup-stage-item" key={earning.id}>
-                    <span>{earning.status}</span>
+                    <span>{isCashFeeDebt(earning) ? 'CASH DEBT' : earning.status}</span>
                     <div>
-                      <strong>Net {formatCurrency(earning.netAmount)}</strong>
+                      <strong>
+                        {isCashFeeDebt(earning)
+                          ? `Owes HANDS ${formatCurrency(Math.abs(earning.netAmount))}`
+                          : `Net ${formatCurrency(earning.netAmount)}`}
+                      </strong>
                       <p className="muted">
-                        Gross {formatCurrency(earning.grossAmount)} / withholding{' '}
+                        Gross {formatCurrency(earning.grossAmount)} / platform fee{' '}
+                        {formatCurrency(earning.platformFee)} / withholding{' '}
                         {formatCurrency(earning.withholdingAmount)}
                       </p>
                       <p className="muted">
                         {earning.bookingId ? `Booking ${shortRiskId(earning.bookingId)} / ` : ''}
-                        created {formatDate(earning.createdAt)}
+                        payment {earning.booking?.payment?.method ?? 'UNKNOWN'} / created{' '}
+                        {formatDate(earning.createdAt)}
                       </p>
                     </div>
-                    <small>{earning.paidAt ? `Paid ${formatDate(earning.paidAt)}` : 'Unpaid'}</small>
+                    <small>
+                      {earning.paidAt
+                        ? `Settled ${formatDate(earning.paidAt)}`
+                        : isCashFeeDebt(earning)
+                          ? 'Blocks booking'
+                          : 'Unpaid'}
+                    </small>
                   </div>
                 ))}
               </div>
@@ -953,7 +970,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 <div className="participant-list" style={{ marginBottom: 6 }}>
                   <span className="pill pill-info">{providerPublicMediaLabel(file.purpose)}</span>
                   <span className="pill pill-success">{file.uploadStatus ?? 'UPLOADED'}</span>
-                  <span className={`pill ${file.reviewStatus === 'APPROVED' ? 'pill-success' : file.reviewStatus === 'REJECTED' ? 'pill-danger' : 'pill-warn'}`}>
+                  <span
+                    className={`pill ${file.reviewStatus === 'APPROVED' ? 'pill-success' : file.reviewStatus === 'REJECTED' ? 'pill-danger' : 'pill-warn'}`}
+                  >
                     {file.reviewStatus ?? 'PENDING_REVIEW'}
                   </span>
                 </div>
@@ -1668,7 +1687,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
     provider.activityNickname?.trim() ||
     (provider.bio?.trim() &&
       (provider.documents ?? []).some((document) => document.type === 'PROFILE_PHOTO')) ||
-      hasProfileQuality,
+    hasProfileQuality,
   );
   const addressComplete = Boolean(provider.residentialAddress?.trim() && provider.city?.trim());
   const serviceAreaComplete =
@@ -2143,6 +2162,10 @@ function amountValue(value?: number | string | null) {
     return Number.isFinite(parsed) ? parsed : 0;
   }
   return 0;
+}
+
+function isCashFeeDebt(earning: NonNullable<ProviderDetail['earnings']>[number]) {
+  return earning.netAmount < 0 && earning.booking?.payment?.method === 'CASH' && earning.status !== 'PAID';
 }
 
 function humanizeProviderLogAction(action: string) {

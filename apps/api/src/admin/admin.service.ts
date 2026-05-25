@@ -135,7 +135,11 @@ export class AdminService {
         agreements: { orderBy: { acceptedAt: 'desc' } },
         services: { include: { service: true } },
         locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
-        earnings: { orderBy: { createdAt: 'desc' }, take: 10 },
+        earnings: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: { booking: { include: { payment: true } } },
+        },
         payoutBatches: { orderBy: { createdAt: 'desc' }, take: 10 },
         sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
         devices: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
@@ -385,7 +389,11 @@ export class AdminService {
   async updateProviderReport(
     actorId: string,
     reportId: string,
-    input: { status?: ProviderReportStatus; severity?: ProviderReportSeverity; resolutionNote?: string | null },
+    input: {
+      status?: ProviderReportStatus;
+      severity?: ProviderReportSeverity;
+      resolutionNote?: string | null;
+    },
   ) {
     if (input.status && !Object.values(ProviderReportStatus).includes(input.status)) {
       throw new BadRequestException('Invalid report status');
@@ -402,7 +410,8 @@ export class AdminService {
         resolvedAt:
           input.status === ProviderReportStatus.RESOLVED || input.status === ProviderReportStatus.DISMISSED
             ? new Date()
-            : input.status === ProviderReportStatus.OPEN || input.status === ProviderReportStatus.INVESTIGATING
+            : input.status === ProviderReportStatus.OPEN ||
+                input.status === ProviderReportStatus.INVESTIGATING
               ? null
               : undefined,
       },
@@ -432,7 +441,12 @@ export class AdminService {
   async createProviderSanction(
     actorId: string,
     providerProfileId: string,
-    input: { type?: ProviderSanctionType; reason?: string; reportId?: string | null; expiresAt?: string | null },
+    input: {
+      type?: ProviderSanctionType;
+      reason?: string;
+      reportId?: string | null;
+      expiresAt?: string | null;
+    },
   ) {
     const reason = normalizeNullable(input.reason);
     if (!reason) throw new BadRequestException('Sanction reason is required');
@@ -661,7 +675,8 @@ export class AdminService {
       await this.notifications.create({
         userId: file.ownerUserId,
         type: `provider.media.${status.toLowerCase()}`,
-        title: status === FileReviewStatus.APPROVED ? 'Profile media approved' : 'Profile media needs changes',
+        title:
+          status === FileReviewStatus.APPROVED ? 'Profile media approved' : 'Profile media needs changes',
         body:
           status === FileReviewStatus.APPROVED
             ? 'Your public profile media is now visible to customers.'
@@ -969,17 +984,27 @@ export class AdminService {
       data,
       include: { service: true },
     });
-    await this.writeAudit(actorId, 'service_payout_rule.update', `service_payout_rule:${ruleId}`, toJson(data));
+    await this.writeAudit(
+      actorId,
+      'service_payout_rule.update',
+      `service_payout_rule:${ruleId}`,
+      toJson(data),
+    );
     return rule;
   }
 
   async markEarningPaid(actorId: string, earningId: string) {
     const earning = await this.earnings.markPaid(earningId);
-    await this.writeAudit(actorId, earning.netAmount < 0 ? 'earning.cash_fee_settled' : 'earning.paid', `earning:${earning.id}`, {
-      bookingId: earning.bookingId,
-      providerProfileId: earning.providerProfileId,
-      netAmount: earning.netAmount,
-    });
+    await this.writeAudit(
+      actorId,
+      earning.netAmount < 0 ? 'earning.cash_fee_settled' : 'earning.paid',
+      `earning:${earning.id}`,
+      {
+        bookingId: earning.bookingId,
+        providerProfileId: earning.providerProfileId,
+        netAmount: earning.netAmount,
+      },
+    );
     return earning;
   }
 
@@ -1191,7 +1216,10 @@ function normalizeServiceInput(
     throw new BadRequestException('Service name is required');
   }
   const durationMin = input.durationMin;
-  if ((creating || durationMin !== undefined) && (!Number.isInteger(durationMin) || (durationMin ?? 0) <= 0)) {
+  if (
+    (creating || durationMin !== undefined) &&
+    (!Number.isInteger(durationMin) || (durationMin ?? 0) <= 0)
+  ) {
     throw new BadRequestException('Service duration must be a positive integer');
   }
 
@@ -1200,7 +1228,10 @@ function normalizeServiceInput(
     throw new BadRequestException('Price step must be a positive integer');
   }
   const nextBasePrice = input.basePrice ?? existing?.basePrice;
-  if ((creating || input.basePrice !== undefined) && (!Number.isInteger(nextBasePrice) || (nextBasePrice ?? 0) <= 0)) {
+  if (
+    (creating || input.basePrice !== undefined) &&
+    (!Number.isInteger(nextBasePrice) || (nextBasePrice ?? 0) <= 0)
+  ) {
     throw new BadRequestException('Base price must be a positive integer');
   }
   if (nextBasePrice !== undefined && nextBasePrice % nextPriceStep !== 0) {
@@ -1214,7 +1245,7 @@ function normalizeServiceInput(
         ? creating
           ? slugify(nextName)
           : undefined
-        : normalizeNullable(input.serviceGroupKey) ?? null,
+        : (normalizeNullable(input.serviceGroupKey) ?? null),
     name: name ?? undefined,
     description: input.description === undefined ? undefined : normalizeNullable(input.description),
     durationMin,
@@ -1246,7 +1277,10 @@ function normalizeServicePayoutRuleInput(
   },
 ) {
   const customerPrice = input.customerPrice ?? existing?.customerPrice;
-  if ((creating || input.customerPrice !== undefined) && (!Number.isInteger(customerPrice) || (customerPrice ?? 0) <= 0)) {
+  if (
+    (creating || input.customerPrice !== undefined) &&
+    (!Number.isInteger(customerPrice) || (customerPrice ?? 0) <= 0)
+  ) {
     throw new BadRequestException('Customer price must be a positive integer');
   }
   if (customerPrice !== undefined && customerPrice < service.basePrice) {
