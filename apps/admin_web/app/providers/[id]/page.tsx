@@ -49,6 +49,8 @@ type ProviderDetail = AdminProvider & {
     status: string;
     availableAt?: string | null;
     paidAt?: string | null;
+    settlementRef?: string | null;
+    settlementNotes?: string | null;
     createdAt?: string;
     booking?: {
       status?: string;
@@ -281,6 +283,12 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                         payment {earning.booking?.payment?.method ?? 'UNKNOWN'} / created{' '}
                         {formatDate(earning.createdAt)}
                       </p>
+                      {earning.settlementRef ? (
+                        <p className="muted">Settlement ref {earning.settlementRef}</p>
+                      ) : null}
+                      {earning.settlementNotes ? (
+                        <p className="muted">{earning.settlementNotes}</p>
+                      ) : null}
                     </div>
                     <small>
                       {earning.paidAt
@@ -1147,6 +1155,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <p className="muted" key={earning.id}>
               {earning.status}: gross {formatCurrency(earning.grossAmount)} / withholding{' '}
               {formatCurrency(earning.withholdingAmount)} / net {formatCurrency(earning.netAmount)}
+              {earning.settlementRef ? ` / ref ${earning.settlementRef}` : ''}
             </p>
           ))}
         </div>
