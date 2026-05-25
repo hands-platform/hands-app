@@ -326,6 +326,47 @@ await expectRequestFailure(
     }),
   400,
 );
+await expectRequestFailure(
+  'Admin service base price outside configured step is rejected',
+  () =>
+    postJson('/admin/services', adminAuth.accessToken, {
+      serviceGroupKey: `smoke_invalid_base_price_${Date.now()}`,
+      name: 'Smoke Invalid Base Price',
+      description: 'Service intentionally using a base price outside the 100,000 VND step.',
+      durationMin: 60,
+      basePrice: 150000,
+      priceStep: 100000,
+      displayOrder: 999,
+      active: true,
+    }),
+  400,
+);
+await expectRequestFailure(
+  'Admin payout rule outside service price step is rejected',
+  () =>
+    postJson(`/admin/services/${service.id}/payout-rules`, adminAuth.accessToken, {
+      customerPrice: service.basePrice + Math.round(service.priceStep / 2),
+      providerPayoutAmount: service.basePrice,
+      vatBps: 0,
+      otherCostAmount: 0,
+      active: true,
+      notes: 'Smoke test invalid payout price step',
+    }),
+  400,
+);
+await expectRequestFailure(
+  'Admin payout above customer price is rejected',
+  () =>
+    postJson(`/admin/services/${service.id}/payout-rules`, adminAuth.accessToken, {
+      customerPrice: higherCustomerPrice,
+      providerPayoutAmount: higherCustomerPrice + service.priceStep,
+      vatBps: 0,
+      otherCostAmount: 0,
+      active: true,
+      notes: 'Smoke test invalid provider payout',
+    }),
+  400,
+);
 const serviceWithoutPayoutRule = await postJson('/admin/services', adminAuth.accessToken, {
   serviceGroupKey: `smoke_missing_payout_${Date.now()}`,
   name: 'Smoke Missing Payout Rule',
