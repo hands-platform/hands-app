@@ -259,7 +259,10 @@ export default async function ServicesPage() {
                         const fee = rule.customerPrice - rule.providerPayoutAmount;
                         const vat = Math.round((fee * rule.vatBps) / 10000);
                         const tax = estimateWithholding(activeTaxPolicy, service, rule.customerPrice);
-                        const actualCommission = fee - vat - tax.withholdingAmount - rule.otherCostAmount;
+                        const actualCommission = Math.max(
+                          0,
+                          fee - vat - tax.withholdingAmount - rule.otherCostAmount,
+                        );
                         return (
                           <div className="setup-stage-item" key={rule.id}>
                             <span>{rule.active ? 'ON' : 'OFF'}</span>
