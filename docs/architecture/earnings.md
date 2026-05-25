@@ -66,7 +66,7 @@ This supports two later settlement paths without changing booking flow:
 - Provider transfers the owed fee/tax amount directly to HANDS.
 - HANDS offsets the negative balance against later positive online-payment payouts.
 
-The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. After finance confirms the provider deposit or an approved offset, the operator marks the negative earning as settled. This moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the provider from accepting new requests.
+The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. After finance confirms the provider deposit or an approved offset, the operator enters a deposit reference or offset memo and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the provider from accepting new requests.
 
 ## Payout Batches
 

@@ -207,7 +207,10 @@ export class EarningsService {
     return this.summaryWhere({});
   }
 
-  async markPaid(earningId: string) {
+  async markPaid(
+    earningId: string,
+    input: { settlementRef?: string | null; settlementNotes?: string | null } = {},
+  ) {
     const earning = await this.prisma.providerEarning.findUnique({ where: { id: earningId } });
     if (!earning) {
       throw new NotFoundException('Earning not found');
@@ -218,6 +221,8 @@ export class EarningsService {
       data: {
         status: EarningStatus.PAID,
         paidAt: new Date(),
+        settlementRef: cleanOptionalText(input.settlementRef),
+        settlementNotes: cleanOptionalText(input.settlementNotes),
       },
     });
   }
@@ -820,6 +825,14 @@ function normalizeNullable(value: string | null) {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : null;
+}
+
+function cleanOptionalText(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
 }
 
 function activePayoutHoldWhere(providerProfileId?: string): Prisma.ProviderSanctionWhereInput {

@@ -163,6 +163,16 @@ export default async function EarningsPage() {
                   </Link>
                   <form action={markEarningPaid}>
                     <input type="hidden" name="earningId" value={item.earning.id} />
+                    <input
+                      aria-label="Settlement reference"
+                      name="settlementRef"
+                      placeholder="Deposit ref or offset memo"
+                    />
+                    <input
+                      type="hidden"
+                      name="settlementNotes"
+                      value="Cash fee debt settled from admin earnings queue"
+                    />
                     <button type="submit">Mark fee settled</button>
                   </form>
                 </div>
@@ -214,6 +224,9 @@ export default async function EarningsPage() {
                     {earning.createdAt ? relativeTime(earning.createdAt) : 'No create time'}
                   </div>
                   <div className="muted">Payment {earning.booking?.payment?.method ?? 'UNKNOWN'}</div>
+                  {earning.settlementRef && (
+                    <div className="muted">Settlement ref {earning.settlementRef}</div>
+                  )}
                 </td>
                 <td>
                   <span className={earningSignalClass(earning)}>{earningStatusLabel(earning)}</span>
@@ -250,6 +263,11 @@ export default async function EarningsPage() {
                   {canDirectlyPay(earning) && (
                     <form action={markEarningPaid}>
                       <input type="hidden" name="earningId" value={earning.id} />
+                      <input
+                        aria-label="Settlement reference"
+                        name="settlementRef"
+                        placeholder={isCashDebt(earning) ? 'Deposit ref or offset memo' : 'Transfer ref'}
+                      />
                       <button type="submit">
                         {isCashDebt(earning) ? 'Mark fee settled' : 'Direct mark paid'}
                       </button>

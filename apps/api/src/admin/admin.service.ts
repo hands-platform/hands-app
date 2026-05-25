@@ -1002,8 +1002,12 @@ export class AdminService {
     return rule;
   }
 
-  async markEarningPaid(actorId: string, earningId: string) {
-    const earning = await this.earnings.markPaid(earningId);
+  async markEarningPaid(
+    actorId: string,
+    earningId: string,
+    input: { settlementRef?: string | null; settlementNotes?: string | null } = {},
+  ) {
+    const earning = await this.earnings.markPaid(earningId, input);
     await this.writeAudit(
       actorId,
       earning.netAmount < 0 ? 'earning.cash_fee_settled' : 'earning.paid',
@@ -1012,6 +1016,7 @@ export class AdminService {
         bookingId: earning.bookingId,
         providerProfileId: earning.providerProfileId,
         netAmount: earning.netAmount,
+        settlementRef: earning.settlementRef,
       },
     );
     return earning;

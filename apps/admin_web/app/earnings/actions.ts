@@ -9,7 +9,10 @@ export async function markEarningPaid(formData: FormData) {
     return;
   }
 
-  await adminPost(`/admin/earnings/${earningId}/mark-paid`, {}, null);
+  await adminPost(`/admin/earnings/${earningId}/mark-paid`, {
+    settlementRef: String(formData.get('settlementRef') ?? '') || undefined,
+    settlementNotes: String(formData.get('settlementNotes') ?? '') || undefined,
+  }, null);
   revalidatePath('/earnings');
 }
 

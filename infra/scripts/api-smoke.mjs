@@ -844,7 +844,20 @@ if (!cashDebtEarning) {
     `Cash debt earning was not visible to admin: ${JSON.stringify(adminEarningsAfterCashDebt[0])}`,
   );
 }
-await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken);
+const cashDebtSettlementRef = `SMOKE-CASH-FEE-${Date.now()}`;
+await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {
+  settlementRef: cashDebtSettlementRef,
+  settlementNotes: 'Smoke test cash fee deposit reference',
+});
+const adminEarningsAfterCashSettlement = await getJson('/admin/earnings', adminAuth.accessToken);
+const settledCashDebtEarning = adminEarningsAfterCashSettlement.find(
+  (earning) => earning.id === cashDebtEarning.id,
+);
+if (settledCashDebtEarning?.settlementRef !== cashDebtSettlementRef) {
+  throw new Error(
+    `Cash fee settlement reference was not persisted: ${JSON.stringify(settledCashDebtEarning)}`,
+  );
+}
 const walletDebtProviderSummaryAfterSettlement = await getJson(
   '/provider/earnings/summary',
   walletDebtProviderAuth.accessToken,

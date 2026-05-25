@@ -286,8 +286,12 @@ export class AdminController {
   }
 
   @Post('earnings/:id/mark-paid')
-  markEarningPaid(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
-    return this.admin.markEarningPaid(user.id, id);
+  markEarningPaid(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: { settlementRef?: string | null; settlementNotes?: string | null },
+  ) {
+    return this.admin.markEarningPaid(user.id, id, body);
   }
 
   @Get('payout-batches')

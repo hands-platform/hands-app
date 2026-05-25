@@ -82,6 +82,7 @@ If the provider wallet is negative:
 
 - The provider cannot accept new bookings.
 - Admin finance can mark the cash fee as settled after deposit or offset.
+- The settlement action stores an optional deposit reference or offset memo on the earning row.
 - The provider app Earnings screen shows the debt amount and settlement instruction
   returned by `GET /provider/earnings/summary`.
 
@@ -90,4 +91,3 @@ If the provider wallet is negative:
 - Bulk admin import/export for service matrix.
 - Service-specific VAT and withholding policy mapping if Vietnam policy requires it.
 - Provider app warning before accepting cash bookings when wallet risk is high.
-- Finance deposit reference capture for cash fee settlement records.
