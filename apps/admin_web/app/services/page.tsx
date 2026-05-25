@@ -131,6 +131,81 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         )}
       </section>
 
+      <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Duration pricing matrix</h2>
+            <p className="muted">
+              One row is one service name. Each duration cell shows customer minimum, provider payout, and
+              projected company commission after VAT, withholding, and other configured costs.
+            </p>
+          </div>
+          <span className="pill pill-info">60 / 90 / 120 min</span>
+        </div>
+        <table className="table service-matrix">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>60 min</th>
+              <th>90 min</th>
+              <th>120 min</th>
+              <th>Policy state</th>
+            </tr>
+          </thead>
+          <tbody>
+            {groupedServices.map((group) => {
+              const matrix = serviceDurationMatrix(group.items, activeTaxPolicy);
+              return (
+                <tr key={group.key}>
+                  <td>
+                    <strong>{group.label}</strong>
+                    <p className="muted">{group.key}</p>
+                  </td>
+                  {[60, 90, 120].map((duration) => {
+                    const cell = matrix.byDuration.get(duration);
+                    return (
+                      <td key={`${group.key}-${duration}`}>
+                        {cell ? (
+                          <div className="service-matrix-cell">
+                            <strong>{formatMoney(cell.service.basePrice, 'VND')}</strong>
+                            <span className={cell.baseRule ? 'pill pill-success' : 'pill pill-danger'}>
+                              {cell.baseRule ? 'Payout ready' : 'Payout missing'}
+                            </span>
+                            <small>
+                              Provider{' '}
+                              {cell.baseRule
+                                ? formatMoney(cell.baseRule.providerPayoutAmount, cell.baseRule.currency)
+                                : 'not set'}
+                            </small>
+                            <small>
+                              Commission{' '}
+                              {cell.baseRule
+                                ? formatMoney(cell.finance.actualCompanyCommission, cell.baseRule.currency)
+                                : '-'}
+                            </small>
+                          </div>
+                        ) : (
+                          <span className="pill pill-neutral">Not configured</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td>
+                    <div className="service-matrix-cell">
+                      <span className={`pill ${matrix.blockedCount ? 'pill-danger' : 'pill-success'}`}>
+                        {matrix.blockedCount ? `${matrix.blockedCount} blocked` : 'Bookable'}
+                      </span>
+                      <small>{matrix.activeCount} active duration option(s)</small>
+                      <small>{matrix.payoutRuleCount} payout rule(s)</small>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </section>
+
       <section className="card" style={{ marginBottom: 16 }}>
         <h2>Create service with duration options</h2>
         <p className="muted">
@@ -583,6 +658,53 @@ function serviceActionNotice(params: Record<string, string | string[] | undefine
 
 function readSingleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function serviceDurationMatrix(
+  items: AdminServiceCatalogItem[],
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
+  const byDuration = new Map<
+    number,
+    {
+      service: AdminServiceCatalogItem;
+      baseRule: NonNullable<AdminServiceCatalogItem['payoutRules']>[number] | null;
+      finance: ReturnType<typeof servicePayoutFinance>;
+    }
+  >();
+
+  for (const service of items) {
+    const baseRule =
+      (service.payoutRules ?? []).find(
+        (rule) => rule.active && rule.customerPrice === service.basePrice,
+      ) ?? null;
+    byDuration.set(service.durationMin, {
+      service,
+      baseRule,
+      finance: baseRule
+        ? servicePayoutFinance(service, baseRule, activeTaxPolicy)
+        : {
+            fee: 0,
+            vatAmount: 0,
+            withholdingAmount: 0,
+            taxRuleLabel: null,
+            actualCompanyCommission: 0,
+          },
+    });
+  }
+
+  const activeItems = items.filter((item) => item.active);
+  return {
+    byDuration,
+    activeCount: activeItems.length,
+    payoutRuleCount: items.reduce((sum, item) => sum + (item.payoutRules?.length ?? 0), 0),
+    blockedCount: activeItems.filter(
+      (item) =>
+        !(item.payoutRules ?? []).some(
+          (rule) => rule.active && rule.customerPrice === item.basePrice,
+        ),
+    ).length,
+  };
 }
 
 function formatDurationList(items: AdminServiceCatalogItem[]) {
