@@ -958,7 +958,8 @@ if (
   walletDebtProviderEarningsSummary.walletDebtAmount <= 0 ||
   walletDebtProviderEarningsSummary.walletSettlementRequired !== true ||
   walletDebtProviderEarningsSummary.walletSettlementMethod !== 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET' ||
-  !walletDebtProviderEarningsSummary.walletSettlementInstruction
+  !walletDebtProviderEarningsSummary.walletSettlementInstruction ||
+  !walletDebtProviderEarningsSummary.walletBlockReason
 ) {
   throw new Error(
     `Cash booking did not create a negative provider wallet: ${JSON.stringify(
@@ -966,9 +967,29 @@ if (
     )}`,
   );
 }
+if (!walletDebtProviderEarningsSummary.walletSettlementInstruction.includes('HANDS')) {
+  throw new Error(
+    `Negative wallet settlement instruction should explain HANDS repayment: ${JSON.stringify(
+      walletDebtProviderEarningsSummary,
+    )}`,
+  );
+}
 await expectRequestFailure(
   'Negative provider wallet blocks direct booking acceptance',
   () => postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken),
+  400,
+);
+const blockedOpenMatchingBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  scheduledStartAt: new Date(Date.now() + 165 * 60_000).toISOString(),
+  address: { line1: 'Negative wallet open matching smoke flow' },
+  lat: 10.7783,
+  lng: 106.6994,
+  paymentMethod: 'MOMO',
+});
+await expectRequestFailure(
+  'Negative provider wallet blocks open matching join',
+  () => postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
   400,
 );
 const adminEarningsAfterCashDebt = await getJson('/admin/earnings', adminAuth.accessToken);
