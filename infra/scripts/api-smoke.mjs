@@ -293,6 +293,21 @@ if (
     `Higher-price payout rule was not created correctly: ${JSON.stringify(higherPricePayoutRule)}`,
   );
 }
+await expectRequestFailure(
+  'Admin service price step below HANDS VND unit is rejected',
+  () =>
+    postJson('/admin/services', adminAuth.accessToken, {
+      serviceGroupKey: `smoke_invalid_price_step_${Date.now()}`,
+      name: 'Smoke Invalid Price Step',
+      description: 'Service intentionally using a disallowed 50,000 VND price step.',
+      durationMin: 60,
+      basePrice: 100000,
+      priceStep: 50000,
+      displayOrder: 999,
+      active: true,
+    }),
+  400,
+);
 const serviceWithoutPayoutRule = await postJson('/admin/services', adminAuth.accessToken, {
   serviceGroupKey: `smoke_missing_payout_${Date.now()}`,
   name: 'Smoke Missing Payout Rule',
