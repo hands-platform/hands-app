@@ -13,6 +13,9 @@ class ProviderServicePrice {
     this.providerPrice,
     this.providerPayoutAmount,
     this.platformFee,
+    this.vatBps,
+    this.otherCostAmount,
+    this.currency = 'VND',
   });
 
   final String id;
@@ -28,6 +31,21 @@ class ProviderServicePrice {
   final bool payoutRuleConfigured;
   final int? providerPayoutAmount;
   final int? platformFee;
+  final int? vatBps;
+  final int? otherCostAmount;
+  final String currency;
 
-  bool get usesAdminMinimum => providerPrice == null || providerPrice == basePrice;
+  bool get usesAdminMinimum =>
+      providerPrice == null || providerPrice == basePrice;
+
+  int get estimatedVatAmount {
+    final fee = platformFee ?? 0;
+    final bps = vatBps ?? 0;
+    return ((fee * bps) / 10000).round();
+  }
+
+  int get estimatedCompanyFeeAfterCosts {
+    final fee = platformFee ?? 0;
+    return fee - estimatedVatAmount - (otherCostAmount ?? 0);
+  }
 }

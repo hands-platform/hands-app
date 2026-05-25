@@ -146,9 +146,11 @@ class _ProviderServicePriceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final platformFee = service.platformFee ?? 0;
     final payoutText = service.payoutRuleConfigured
         ? 'You receive ${formatVnd(service.providerPayoutAmount ?? 0)}'
-        : 'Admin payout rule missing';
+        : 'Admin payout rule missing for ${formatVnd(service.effectivePrice)}';
+    final statusText = service.active ? 'Bookable' : 'Paused';
     return Padding(
       padding: const EdgeInsets.only(top: 10),
       child: DecoratedBox(
@@ -170,21 +172,63 @@ class _ProviderServicePriceTile extends StatelessWidget {
             child: Text('${service.durationMin}'),
           ),
           title: Text('${service.name} / ${service.durationMin} min'),
-          subtitle: Text(
-            [
-              'Minimum ${formatVnd(service.basePrice)}',
-              'Your price ${formatVnd(service.effectivePrice)}',
-              payoutText,
-              service.active ? 'Active' : 'Paused',
-            ].join('\n'),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _PricingChip(
+                        label: 'Min', value: formatVnd(service.basePrice)),
+                    _PricingChip(
+                      label: 'Step',
+                      value: formatVnd(service.priceStep),
+                    ),
+                    _PricingChip(
+                      label: statusText,
+                      value: service.active ? 'ON' : 'OFF',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text('Customer price ${formatVnd(service.effectivePrice)}'),
+                Text(payoutText),
+                Text('HANDS fee ${formatVnd(platformFee)}'),
+                if (service.payoutRuleConfigured)
+                  Text(
+                    'VAT estimate ${formatVnd(service.estimatedVatAmount)} / other cost ${formatVnd(service.otherCostAmount ?? 0)}',
+                  ),
+                if (service.payoutRuleConfigured)
+                  Text(
+                    'Company net fee after costs ${formatVnd(service.estimatedCompanyFeeAfterCosts)}',
+                  ),
+              ],
+            ),
           ),
-          isThreeLine: true,
           trailing: FilledButton.tonal(
             onPressed: saving ? null : onEdit,
             child: const Text('Edit'),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _PricingChip extends StatelessWidget {
+  const _PricingChip({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Chip(
+      visualDensity: VisualDensity.compact,
+      label: Text('$label $value'),
     );
   }
 }
@@ -278,8 +322,8 @@ class _ProviderServicePriceSheetState
       return;
     }
     if (price < service.basePrice) {
-      setState(() => _error =
-          'Price must be at least ${formatVnd(service.basePrice)}.');
+      setState(() =>
+          _error = 'Price must be at least ${formatVnd(service.basePrice)}.');
       return;
     }
     if (price % service.priceStep != 0) {
@@ -296,6 +340,12 @@ class _ProviderServicePriceSheetState
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final service = widget.service;
+    final previewPrice = int.tryParse(
+          _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
+        ) ??
+        service.effectivePrice;
+    final matchingRule =
+        previewPrice == service.effectivePrice && service.payoutRuleConfigured;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
       child: Column(
@@ -307,17 +357,43 @@ class _ProviderServicePriceSheetState
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: 8),
-          Text('Minimum ${formatVnd(service.basePrice)}'),
-          Text('Step ${formatVnd(service.priceStep)}'),
+          _PricingSummaryLine(
+            label: 'Admin minimum',
+            value: formatVnd(service.basePrice),
+          ),
+          _PricingSummaryLine(
+            label: 'Allowed step',
+            value: formatVnd(service.priceStep),
+          ),
+          if (service.payoutRuleConfigured) ...[
+            _PricingSummaryLine(
+              label: 'Current provider payout',
+              value: formatVnd(service.providerPayoutAmount ?? 0),
+            ),
+            _PricingSummaryLine(
+              label: 'Current HANDS fee',
+              value: formatVnd(service.platformFee ?? 0),
+            ),
+          ],
           const SizedBox(height: 14),
           TextField(
             controller: _priceController,
+            onChanged: (_) => setState(() => _error = null),
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
               labelText: 'Your customer price',
               suffixText: 'VND',
               border: OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 12),
+          _PricingNotice(
+            icon: matchingRule
+                ? Icons.fact_check_outlined
+                : Icons.admin_panel_settings_outlined,
+            text: matchingRule
+                ? 'This price already has an admin payout rule. Customers can book it when active.'
+                : 'If this exact price does not have an admin payout rule, activation will be blocked until admin configures it.',
           ),
           const SizedBox(height: 12),
           SwitchListTile(
@@ -339,6 +415,28 @@ class _ProviderServicePriceSheetState
             icon: const Icon(Icons.save_outlined),
             label: const Text('Save price'),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PricingSummaryLine extends StatelessWidget {
+  const _PricingSummaryLine({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+          ),
+          Text(value, style: Theme.of(context).textTheme.bodyMedium),
         ],
       ),
     );

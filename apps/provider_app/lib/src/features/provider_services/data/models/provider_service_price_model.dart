@@ -15,6 +15,9 @@ class ProviderServicePriceModel extends ProviderServicePrice {
     super.providerPrice,
     super.providerPayoutAmount,
     super.platformFee,
+    super.vatBps,
+    super.otherCostAmount,
+    super.currency,
   });
 
   factory ProviderServicePriceModel.fromJson(Map<String, dynamic> json) {
@@ -36,6 +39,9 @@ class ProviderServicePriceModel extends ProviderServicePrice {
       payoutRuleConfigured: json['payoutRuleConfigured'] == true,
       providerPayoutAmount: _asInt(payoutRule?['providerPayoutAmount']),
       platformFee: _asInt(payoutRule?['platformFee']),
+      vatBps: _asInt(payoutRule?['vatBps']),
+      otherCostAmount: _asInt(payoutRule?['otherCostAmount']),
+      currency: payoutRule?['currency']?.toString() ?? 'VND',
     );
   }
 }
