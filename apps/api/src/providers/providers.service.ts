@@ -10,6 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
+import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 
 @Injectable()
 export class ProvidersService {
@@ -299,6 +300,10 @@ export class ProvidersService {
           : null,
       };
     });
+  }
+
+  async listServiceGroups(userId: string | undefined) {
+    return groupServiceCatalogOptions(await this.listServices(userId));
   }
 
   async updateServicePrice(

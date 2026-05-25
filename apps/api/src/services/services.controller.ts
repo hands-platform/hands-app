@@ -14,6 +14,11 @@ export class ServicesController {
     return this.services.listActive();
   }
 
+  @Get('groups')
+  listGroups() {
+    return this.services.listActiveGroups();
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)

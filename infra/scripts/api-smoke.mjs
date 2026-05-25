@@ -264,6 +264,17 @@ const service = services[0];
 if (!service?.id || !Array.isArray(service.payoutRules) || service.priceStep !== 100000) {
   throw new Error(`Public services should expose payout-ready pricing metadata: ${JSON.stringify(service)}`);
 }
+const serviceGroups = await request('/services/groups');
+const serviceGroup = serviceGroups.find((group) =>
+  group.options?.some((option) => option.id === service.id),
+);
+if (
+  !serviceGroup ||
+  !serviceGroup.key ||
+  !serviceGroup.options?.some((option) => option.durationMin === service.durationMin)
+) {
+  throw new Error(`Public grouped service catalog is incomplete: ${JSON.stringify(serviceGroup)}`);
+}
 const adminServices = await getJson('/admin/services', adminAuth.accessToken);
 const adminService = adminServices.find((item) => item.id === service.id);
 if (
@@ -271,6 +282,13 @@ if (
   !adminService.payoutRules?.some((rule) => rule.customerPrice === service.basePrice && rule.active)
 ) {
   throw new Error(`Admin service matrix is missing the base payout rule: ${JSON.stringify(adminService)}`);
+}
+const adminServiceGroups = await getJson('/admin/services/groups', adminAuth.accessToken);
+const adminServiceGroup = adminServiceGroups.find((group) =>
+  group.options?.some((option) => option.id === service.id),
+);
+if (!adminServiceGroup || typeof adminServiceGroup.activeOptionCount !== 'number') {
+  throw new Error(`Admin grouped service catalog is incomplete: ${JSON.stringify(adminServiceGroup)}`);
 }
 const higherCustomerPrice = service.basePrice + service.priceStep;
 const higherPricePayoutRule = await postJson(
@@ -340,6 +358,16 @@ if (
   !providerService.payoutOptions?.some((option) => option.customerPrice === service.basePrice)
 ) {
   throw new Error(`Provider service pricing list is incomplete: ${JSON.stringify(providerService)}`);
+}
+const providerServiceGroups = await getJson('/provider/services/groups', providerAuth.accessToken);
+const providerServiceGroup = providerServiceGroups.find((group) =>
+  group.options?.some((option) => option.id === service.id),
+);
+if (
+  !providerServiceGroup ||
+  !providerServiceGroup.options?.some((option) => option.effectivePrice >= service.basePrice)
+) {
+  throw new Error(`Provider grouped service pricing list is incomplete: ${JSON.stringify(providerServiceGroup)}`);
 }
 await expectRequestFailure(
   'Provider price below admin minimum is rejected',

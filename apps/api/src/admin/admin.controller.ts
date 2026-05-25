@@ -214,6 +214,11 @@ export class AdminController {
     return this.admin.listServices();
   }
 
+  @Get('services/groups')
+  serviceGroups() {
+    return this.admin.listServiceGroups();
+  }
+
   @Post('services')
   createService(
     @CurrentUser() user: AuthenticatedUser,

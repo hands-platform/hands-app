@@ -70,6 +70,13 @@ export class ProvidersController {
     return this.providers.listServices(user.id);
   }
 
+  @Get('provider/services/groups')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.PROVIDER)
+  serviceGroups(@CurrentUser() user: AuthenticatedUser) {
+    return this.providers.listServiceGroups(user.id);
+  }
+
   @Patch('provider/services/:serviceId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)

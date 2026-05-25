@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { groupServiceCatalogOptions } from './service-catalog-groups';
 
 const PRICE_STEP_UNIT_VND = 100000;
 
@@ -18,6 +19,10 @@ export class ServicesService {
       },
       orderBy: [{ displayOrder: 'asc' }, { serviceGroupKey: 'asc' }, { durationMin: 'asc' }],
     });
+  }
+
+  async listActiveGroups() {
+    return groupServiceCatalogOptions(await this.listActive());
   }
 
   create(input: {

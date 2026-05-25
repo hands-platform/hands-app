@@ -23,6 +23,7 @@ import { EarningsService } from '../earnings/earnings.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
+import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 
 const PRICE_STEP_UNIT_VND = 100000;
 
@@ -873,6 +874,10 @@ export class AdminService {
         _count: { select: { providers: true, bookings: true } },
       },
     });
+  }
+
+  async listServiceGroups() {
+    return groupServiceCatalogOptions(await this.listServices());
   }
 
   async createService(
