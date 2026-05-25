@@ -1167,18 +1167,10 @@ class ProviderDetailPage extends StatelessWidget {
                             'Choose one service to open a booking request with this therapist first.',
                       ),
                       const SizedBox(height: 12),
-                      for (final item in services)
-                        Builder(
-                          builder: (context) {
-                            final providerService =
-                                item as Map<String, dynamic>;
-                            final service =
-                                customerBookableService(providerService);
-                            return ServiceCard(
-                              service: service,
-                              onBook: () => onBookService(detail, service),
-                            );
-                          },
+                      for (final group in customerServiceOptionGroups(services))
+                        ServiceOptionGroupCard(
+                          group: group,
+                          onBook: (service) => onBookService(detail, service),
                         ),
                       const SizedBox(height: 28),
                       Row(
@@ -1216,8 +1208,65 @@ class ProviderDetailPage extends StatelessWidget {
   }
 }
 
-class ServiceCard extends StatelessWidget {
-  const ServiceCard({
+class ServiceOptionGroupCard extends StatelessWidget {
+  const ServiceOptionGroupCard({
+    super.key,
+    required this.group,
+    required this.onBook,
+  });
+
+  final CustomerServiceOptionGroup group;
+  final ValueChanged<Map<String, dynamic>> onBook;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(group.name,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 6),
+            Text(
+              'Choose a duration option for this service.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: Colors.black54),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: const [
+                DurationPill(label: 'In-room service'),
+                DurationPill(label: 'Cash on start'),
+              ],
+            ),
+            const SizedBox(height: 18),
+            for (final option in group.options) ...[
+              ServiceDurationOptionTile(
+                service: option,
+                onBook: () => onBook(option),
+              ),
+              if (option != group.options.last) const SizedBox(height: 10),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ServiceDurationOptionTile extends StatelessWidget {
+  const ServiceDurationOptionTile({
     super.key,
     required this.service,
     required this.onBook,
@@ -1228,70 +1277,76 @@ class ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duration = service['durationMin'];
+    final duration = asNum(service['durationMin'])?.toInt();
     final price = customerServicePrice(service);
     final basePrice = asNum(service['basePrice'])?.toInt();
     final hasProviderPrice =
         basePrice != null && basePrice > 0 && price != basePrice;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(service['name'] as String? ?? 'Service',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                DurationPill(label: '${duration ?? '-'} min'),
-                const DurationPill(label: 'In-room service'),
-                const DurationPill(label: 'Cash on start'),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Text(
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              DurationPill(label: '${duration ?? '-'} min'),
+              const Spacer(),
+              Flexible(
+                child: Text(
                   '${formatCurrency(price)} VND',
+                  textAlign: TextAlign.right,
                   style: Theme.of(context)
                       .textTheme
-                      .headlineSmall
+                      .titleMedium
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: onBook,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: const Color(0xFF5E8E4A),
-                    foregroundColor: Colors.white,
-                  ),
-                  child: const Text('Reserve'),
-                ),
-              ],
-            ),
-            if (hasProviderPrice) ...[
-              const SizedBox(height: 8),
-              Text(
-                'Provider price. Admin minimum ${formatCurrency(basePrice)} VND.',
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.black54),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onBook,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFF5E8E4A),
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Reserve ${duration ?? '-'} min'),
+            ),
+          ),
+          if (hasProviderPrice) ...[
+            const SizedBox(height: 8),
+            Text(
+              'Provider price. Admin minimum ${formatCurrency(basePrice)} VND.',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.black54),
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
+}
+
+class CustomerServiceOptionGroup {
+  const CustomerServiceOptionGroup({
+    required this.key,
+    required this.name,
+    required this.options,
+  });
+
+  final String key;
+  final String name;
+  final List<Map<String, dynamic>> options;
 }
 
 class DurationPill extends StatelessWidget {
@@ -5241,6 +5296,62 @@ Map<String, dynamic> customerBookableService(
     'customerPrice': effectivePrice,
     'providerServiceActive': providerService['active'] ?? true,
   };
+}
+
+List<CustomerServiceOptionGroup> customerServiceOptionGroups(
+    List<dynamic> providerServices) {
+  final grouped = <String, List<Map<String, dynamic>>>{};
+  final names = <String, String>{};
+
+  for (final item in providerServices) {
+    final providerService = asMap(item);
+    if (providerService == null) {
+      continue;
+    }
+
+    final service = customerBookableService(providerService);
+    final key = customerServiceGroupKey(service);
+    grouped.putIfAbsent(key, () => <Map<String, dynamic>>[]).add(service);
+    names.putIfAbsent(key, () => service['name'] as String? ?? 'Service');
+  }
+
+  return grouped.entries.map((entry) {
+    final options = [...entry.value]..sort((left, right) {
+        final leftDuration = asNum(left['durationMin'])?.toInt() ?? 0;
+        final rightDuration = asNum(right['durationMin'])?.toInt() ?? 0;
+        final durationCompare = leftDuration.compareTo(rightDuration);
+        if (durationCompare != 0) {
+          return durationCompare;
+        }
+        return customerServicePrice(left)
+            .compareTo(customerServicePrice(right));
+      });
+
+    return CustomerServiceOptionGroup(
+      key: entry.key,
+      name: names[entry.key] ?? 'Service',
+      options: options,
+    );
+  }).toList();
+}
+
+String customerServiceGroupKey(Map<String, dynamic> service) {
+  final groupKey = service['serviceGroupKey'];
+  if (groupKey is String && groupKey.trim().isNotEmpty) {
+    return groupKey.trim();
+  }
+
+  final slug = service['slug'];
+  if (slug is String && slug.trim().isNotEmpty) {
+    return slug.trim();
+  }
+
+  final name = service['name'];
+  if (name is String && name.trim().isNotEmpty) {
+    return name.trim().toLowerCase();
+  }
+
+  return service['id']?.toString() ?? 'service';
 }
 
 int customerServicePrice(Map<String, dynamic>? service) {
