@@ -39,14 +39,14 @@ class ProviderServicePriceRepositoryImpl
     final payoutRules = service['payoutRules'] is List<dynamic>
         ? service['payoutRules'] as List<dynamic>
         : const <dynamic>[];
-    final payoutRule = payoutRules.isNotEmpty && payoutRules.first is Map
-        ? Map<String, dynamic>.from(payoutRules.first as Map)
-        : null;
+    final selectedPrice =
+        _asInt(record['price']) ?? _asInt(service['basePrice']);
+    final payoutRule = _payoutRuleForPrice(payoutRules, selectedPrice);
     return ProviderServicePriceModel.fromJson({
       ...service,
       'providerServiceId': record['id'],
-      'providerPrice': record['price'],
-      'effectivePrice': record['price'],
+      'providerPrice': selectedPrice,
+      'effectivePrice': selectedPrice,
       'active': record['active'],
       'payoutRuleConfigured': payoutRule != null,
       'payoutOptions': payoutRule == null
@@ -73,4 +73,33 @@ class ProviderServicePriceRepositoryImpl
             },
     });
   }
+}
+
+Map<String, dynamic>? _payoutRuleForPrice(List<dynamic> rules, int? price) {
+  if (price == null) {
+    return null;
+  }
+  for (final rule in rules) {
+    if (rule is! Map) {
+      continue;
+    }
+    final mapped = Map<String, dynamic>.from(rule);
+    if (_asInt(mapped['customerPrice']) == price) {
+      return mapped;
+    }
+  }
+  return null;
+}
+
+int? _asInt(dynamic value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is num) {
+    return value.toInt();
+  }
+  if (value is String) {
+    return int.tryParse(value);
+  }
+  return null;
 }
