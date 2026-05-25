@@ -49,6 +49,18 @@ class ProviderServicePriceRepositoryImpl
       'effectivePrice': record['price'],
       'active': record['active'],
       'payoutRuleConfigured': payoutRule != null,
+      'payoutOptions': payoutRule == null
+          ? const []
+          : [
+              {
+                ...payoutRule,
+                'platformFee': (record['price'] is int &&
+                        payoutRule['providerPayoutAmount'] is int)
+                    ? (record['price'] as int) -
+                        (payoutRule['providerPayoutAmount'] as int)
+                    : null,
+              }
+            ],
       'payoutRule': payoutRule == null
           ? null
           : {

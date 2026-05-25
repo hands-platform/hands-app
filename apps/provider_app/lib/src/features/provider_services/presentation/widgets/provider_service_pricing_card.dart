@@ -147,6 +147,10 @@ class _ProviderServicePriceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final platformFee = service.platformFee ?? 0;
+    final availablePrices = service.payoutOptions
+        .map((option) => formatVnd(option.customerPrice))
+        .take(4)
+        .join(', ');
     final payoutText = service.payoutRuleConfigured
         ? 'You receive ${formatVnd(service.providerPayoutAmount ?? 0)}'
         : 'Admin payout rule missing for ${formatVnd(service.effectivePrice)}';
@@ -204,6 +208,10 @@ class _ProviderServicePriceTile extends StatelessWidget {
                 if (service.payoutRuleConfigured)
                   Text(
                     'Company net fee after costs ${formatVnd(service.estimatedCompanyFeeAfterCosts)}',
+                  ),
+                if (availablePrices.isNotEmpty)
+                  Text(
+                    'Bookable price options: $availablePrices${service.payoutOptions.length > 4 ? '...' : ''}',
                   ),
               ],
             ),
@@ -345,7 +353,11 @@ class _ProviderServicePriceSheetState
         ) ??
         service.effectivePrice;
     final matchingRule =
-        previewPrice == service.effectivePrice && service.payoutRuleConfigured;
+        service.payoutOptions.any((option) => option.customerPrice == previewPrice);
+    final previewRule = matchingRule
+        ? service.payoutOptions
+            .firstWhere((option) => option.customerPrice == previewPrice)
+        : null;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
       child: Column(
@@ -375,6 +387,14 @@ class _ProviderServicePriceSheetState
               value: formatVnd(service.platformFee ?? 0),
             ),
           ],
+          if (service.payoutOptions.isNotEmpty)
+            _PricingSummaryLine(
+              label: 'Bookable price options',
+              value: service.payoutOptions
+                  .map((option) => formatVnd(option.customerPrice))
+                  .take(3)
+                  .join(', '),
+            ),
           const SizedBox(height: 14),
           TextField(
             controller: _priceController,
@@ -392,7 +412,7 @@ class _ProviderServicePriceSheetState
                 ? Icons.fact_check_outlined
                 : Icons.admin_panel_settings_outlined,
             text: matchingRule
-                ? 'This price already has an admin payout rule. Customers can book it when active.'
+                ? 'This price has an admin payout rule. You receive ${formatVnd(previewRule?.providerPayoutAmount ?? 0)} and HANDS fee is ${formatVnd(previewRule?.platformFee ?? 0)}.'
                 : 'If this exact price does not have an admin payout rule, activation will be blocked until admin configures it.',
           ),
           const SizedBox(height: 12),

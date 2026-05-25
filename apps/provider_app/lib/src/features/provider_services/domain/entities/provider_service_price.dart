@@ -16,6 +16,7 @@ class ProviderServicePrice {
     this.vatBps,
     this.otherCostAmount,
     this.currency = 'VND',
+    this.payoutOptions = const [],
   });
 
   final String id;
@@ -34,6 +35,7 @@ class ProviderServicePrice {
   final int? vatBps;
   final int? otherCostAmount;
   final String currency;
+  final List<ProviderServicePayoutOption> payoutOptions;
 
   bool get usesAdminMinimum =>
       providerPrice == null || providerPrice == basePrice;
@@ -48,4 +50,18 @@ class ProviderServicePrice {
     final fee = platformFee ?? 0;
     return fee - estimatedVatAmount - (otherCostAmount ?? 0);
   }
+}
+
+class ProviderServicePayoutOption {
+  const ProviderServicePayoutOption({
+    required this.customerPrice,
+    required this.providerPayoutAmount,
+    required this.platformFee,
+    this.currency = 'VND',
+  });
+
+  final int customerPrice;
+  final int providerPayoutAmount;
+  final int platformFee;
+  final String currency;
 }

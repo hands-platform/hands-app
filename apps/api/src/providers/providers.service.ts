@@ -259,6 +259,12 @@ export class ProvidersService {
       const effectivePrice = providerService?.price ?? service.basePrice;
       const payoutRule = service.payoutRules.find((rule) => rule.customerPrice === effectivePrice);
       const platformFee = payoutRule ? effectivePrice - payoutRule.providerPayoutAmount : null;
+      const payoutOptions = service.payoutRules.map((rule) => ({
+        customerPrice: rule.customerPrice,
+        providerPayoutAmount: rule.providerPayoutAmount,
+        platformFee: rule.customerPrice - rule.providerPayoutAmount,
+        currency: rule.currency,
+      }));
       return {
         id: service.id,
         serviceGroupKey: service.serviceGroupKey,
@@ -273,6 +279,7 @@ export class ProvidersService {
         effectivePrice,
         active: providerService?.active ?? true,
         payoutRuleConfigured: Boolean(payoutRule),
+        payoutOptions,
         payoutRule: payoutRule
           ? {
               id: payoutRule.id,

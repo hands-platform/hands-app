@@ -18,10 +18,17 @@ class ProviderServicePriceModel extends ProviderServicePrice {
     super.vatBps,
     super.otherCostAmount,
     super.currency,
+    super.payoutOptions,
   });
 
   factory ProviderServicePriceModel.fromJson(Map<String, dynamic> json) {
     final payoutRule = _asMap(json['payoutRule']);
+    final payoutOptions = _asList(json['payoutOptions'])
+        .map(_asMap)
+        .whereType<Map<String, dynamic>>()
+        .map(_payoutOptionFromJson)
+        .whereType<ProviderServicePayoutOption>()
+        .toList(growable: false);
     return ProviderServicePriceModel(
       id: json['id']?.toString() ?? '',
       serviceGroupKey: json['serviceGroupKey']?.toString(),
@@ -42,8 +49,30 @@ class ProviderServicePriceModel extends ProviderServicePrice {
       vatBps: _asInt(payoutRule?['vatBps']),
       otherCostAmount: _asInt(payoutRule?['otherCostAmount']),
       currency: payoutRule?['currency']?.toString() ?? 'VND',
+      payoutOptions: payoutOptions,
     );
   }
+}
+
+ProviderServicePayoutOption? _payoutOptionFromJson(Map<String, dynamic> json) {
+  final customerPrice = _asInt(json['customerPrice']);
+  final providerPayoutAmount = _asInt(json['providerPayoutAmount']);
+  final platformFee = _asInt(json['platformFee']);
+  if (customerPrice == null ||
+      providerPayoutAmount == null ||
+      platformFee == null) {
+    return null;
+  }
+  return ProviderServicePayoutOption(
+    customerPrice: customerPrice,
+    providerPayoutAmount: providerPayoutAmount,
+    platformFee: platformFee,
+    currency: json['currency']?.toString() ?? 'VND',
+  );
+}
+
+List<dynamic> _asList(dynamic value) {
+  return value is List<dynamic> ? value : const <dynamic>[];
 }
 
 Map<String, dynamic>? _asMap(dynamic value) {

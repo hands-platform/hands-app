@@ -336,7 +336,8 @@ const providerService = providerServicesBeforeUpdate.find((item) => item.id === 
 if (
   !providerService ||
   providerService.basePrice !== service.basePrice ||
-  providerService.effectivePrice < service.basePrice
+  providerService.effectivePrice < service.basePrice ||
+  !providerService.payoutOptions?.some((option) => option.customerPrice === service.basePrice)
 ) {
   throw new Error(`Provider service pricing list is incomplete: ${JSON.stringify(providerService)}`);
 }
