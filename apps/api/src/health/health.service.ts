@@ -42,12 +42,14 @@ export class HealthService {
     const checks = [
       this.mobileFirebaseRemovalReadiness(),
       this.mobileReleaseReadiness(),
-      this.externalGroup('Supabase Auth', 'supabase', [
-        { key: 'AUTH_BACKEND', expected: 'supabase' },
+      this.externalGroup('Supabase core', 'supabase', [
         { key: 'SUPABASE_URL', validator: 'https-url' },
         { key: 'SUPABASE_ANON_KEY' },
         { key: 'SUPABASE_JWT_SECRET', validator: 'secret' },
         { key: 'SUPABASE_SERVICE_ROLE_KEY', validator: 'secret' },
+      ]),
+      this.externalGroup('Supabase Phone Auth', 'supabase-auth', [
+        { key: 'AUTH_BACKEND', expected: 'supabase' },
       ]),
       this.externalGroup('Maps and geocoding', 'maps', [
         { key: 'MAPTILER_API_KEY' },
@@ -100,7 +102,7 @@ export class HealthService {
     const required = ['S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'];
     const bucketConfigured = Boolean(
       this.config.get<string>('S3_BUCKET') ||
-        (this.config.get<string>('S3_PRIVATE_BUCKET') && this.config.get<string>('S3_PUBLIC_BUCKET')),
+      (this.config.get<string>('S3_PRIVATE_BUCKET') && this.config.get<string>('S3_PUBLIC_BUCKET')),
     );
     const missing = [
       ...required.filter((key) => !this.config.get<string>(key)),

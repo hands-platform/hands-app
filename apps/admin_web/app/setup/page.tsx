@@ -43,24 +43,17 @@ const setupOrder = [
   },
   {
     id: 'supabase',
-    title: 'Supabase Auth and database',
+    title: 'Supabase core database',
     phase: 'Staging foundation',
     operatorAction:
-      'Keep Supabase staging values in local secrets, but leave Phone Auth deferred until Vonage E2E.',
-    exitCriteria: 'Supabase SQL applies cleanly and auth smoke passes with the project JWT secret.',
-    purpose: 'Required before Firebase-free production login and direct client data access.',
-    env: [
-      'AUTH_BACKEND',
-      'SUPABASE_URL',
-      'SUPABASE_ANON_KEY',
-      'SUPABASE_JWT_SECRET',
-      'SUPABASE_SERVICE_ROLE_KEY',
-    ],
+      'Keep Supabase staging URL, anon key, JWT secret, and service-role key in local/server secrets.',
+    exitCriteria: 'Supabase SQL applies cleanly and core credential checks pass without exposing secrets.',
+    purpose: 'Required before PostgreSQL, Storage, RLS, and future Supabase-backed data access.',
+    env: ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'SUPABASE_JWT_SECRET', 'SUPABASE_SERVICE_ROLE_KEY'],
     notes: [
       'Supabase organization/workspace is HANDS and the staging project is hands-staging.',
       'The generated SQL bundle has been applied successfully.',
       'Use infra/env/hands-staging.env.example as the operator fill-in checklist.',
-      'Keep AUTH_BACKEND=nest locally until Vonage and Supabase Phone Auth are ready to test.',
       'Copy the project URL and anon key from Supabase project settings.',
       'Set the JWT secret on the API so access tokens can be verified server-side.',
       'Keep the service role key server-side only; it is used by admin operations to sync approved provider roles.',
@@ -72,6 +65,27 @@ const setupOrder = [
       'Get-Content .\\infra\\env\\hands-staging.env.example',
       'npm.cmd run supabase:sql:pack',
       'npm.cmd run external:check:supabase',
+    ],
+  },
+  {
+    id: 'supabase-auth',
+    title: 'Supabase Phone Auth with Vonage',
+    phase: 'Deferred OTP migration',
+    operatorAction:
+      'Keep AUTH_BACKEND=nest and SMS_PROVIDER=dev until Vonage credentials and real Supabase Phone Auth OTP are ready.',
+    exitCriteria: 'Vonage OTP delivery works and Supabase access tokens exchange into HANDS API tokens.',
+    purpose:
+      'Required before replacing local Nest/dev OTP with Supabase Phone Auth in customer and provider apps.',
+    env: ['AUTH_BACKEND', 'SMS_PROVIDER', 'SMS_API_URL', 'SMS_API_KEY'],
+    notes: [
+      'This step is intentionally deferred so product development can continue without breaking login.',
+      'Do not fill Supabase Phone Auth SMS fields with placeholder values.',
+      'Use Vonage for production SMS when the OTP E2E pass starts.',
+      'Provider role exchange must remain server-verified and must not trust a client-selected role.',
+      'After this passes, mobile apps can switch AUTH_BACKEND from nest to supabase.',
+    ],
+    commands: [
+      'npm.cmd run external:check:supabase-auth',
       '$env:SUPABASE_JWT_SECRET="<project-jwt-secret>"; $env:API_BASE_URL="http://localhost:3100/api"; npm.cmd run auth:supabase-smoke',
     ],
   },
@@ -112,22 +126,16 @@ const setupOrder = [
   },
   {
     id: 'notifications',
-    title: 'SMS and OS push',
+    title: 'OS push notifications',
     phase: 'Messaging E2E',
-    operatorAction: 'Keep dev OTP locally; configure Vonage and OneSignal only when those E2E passes start.',
-    exitCriteria: 'Vonage OTP delivery and production push provider strategy are confirmed.',
-    purpose: 'Required before real OTP delivery and native push notifications.',
-    env: [
-      'SMS_PROVIDER',
-      'SMS_API_URL',
-      'SMS_API_KEY',
-      'PUSH_PROVIDER',
-      'ONESIGNAL_APP_ID',
-      'ONESIGNAL_REST_API_KEY',
-    ],
+    operatorAction:
+      'Keep in-app notifications locally; configure OneSignal only when native push E2E starts.',
+    exitCriteria: 'OneSignal app id, server REST key, and mobile device delivery are confirmed.',
+    purpose:
+      'Required before native OS push notifications. OTP SMS is tracked separately under Supabase Phone Auth.',
+    env: ['PUSH_PROVIDER', 'ONESIGNAL_APP_ID', 'ONESIGNAL_REST_API_KEY'],
     notes: [
-      'Local OTP can stay on SMS_PROVIDER=dev.',
-      'Production OTP is planned with Vonage, but Supabase Phone Auth is intentionally deferred.',
+      'OTP SMS belongs to the deferred Supabase Phone Auth step.',
       'Firebase Messaging has been removed; keep PUSH_PROVIDER=in_app_only locally until OneSignal is ready.',
       'OneSignal REST API keys are server-side only and must not be copied into Flutter or browser code.',
     ],
@@ -211,7 +219,7 @@ const externalRegistrationPlan = [
   },
   {
     id: 'vonage-phone',
-    groupId: 'notifications',
+    groupId: 'supabase-auth',
     title: 'Phone OTP provider',
     provider: 'Vonage',
     owner: 'administration@hands.vn',
@@ -739,7 +747,7 @@ function buildExternalRegistrationPlan(readiness: AdminExternalReadiness, readin
 }
 
 function isDeferredSetupGroup(groupId: string) {
-  return ['notifications', 'payments', 'storage', 'mobile-release'].includes(groupId);
+  return ['supabase-auth', 'notifications', 'payments', 'storage', 'mobile-release'].includes(groupId);
 }
 
 function isReadinessUnavailable(readiness: AdminExternalReadiness) {
@@ -750,6 +758,9 @@ function setupGroupMatches(groupId: string, category: string) {
   if (groupId === 'supabase') {
     return category === 'supabase';
   }
+  if (groupId === 'supabase-auth') {
+    return category === 'supabase-auth' || category === 'sms';
+  }
   if (groupId === 'mobile') {
     return category === 'mobile';
   }
@@ -757,7 +768,7 @@ function setupGroupMatches(groupId: string, category: string) {
     return category === 'mobile-release';
   }
   if (groupId === 'notifications') {
-    return category === 'sms' || category === 'push';
+    return category === 'push';
   }
   if (groupId === 'payments') {
     return category === 'payments';
