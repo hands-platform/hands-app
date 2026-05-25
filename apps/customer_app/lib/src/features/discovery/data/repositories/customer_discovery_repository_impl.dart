@@ -8,8 +8,8 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
 
   @override
   Future<List<dynamic>> listServices() async {
-    final result = await _api.getJson('/services');
-    return result is List<dynamic> ? result : [];
+    final result = await _api.getJson('/services/groups');
+    return _serviceItemsFromResult(result).toList();
   }
 
   @override
@@ -39,5 +39,26 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
   Future<Map<String, dynamic>> getProviderDetail(String providerId) async {
     final result = await _api.getJson('/customer/providers/$providerId');
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
+  }
+}
+
+Iterable<Map<String, dynamic>> _serviceItemsFromResult(dynamic result) sync* {
+  if (result is! List<dynamic>) {
+    return;
+  }
+  for (final item in result) {
+    if (item is! Map) {
+      continue;
+    }
+    final options = item['options'];
+    if (options is List<dynamic>) {
+      for (final option in options) {
+        if (option is Map) {
+          yield Map<String, dynamic>.from(option);
+        }
+      }
+      continue;
+    }
+    yield Map<String, dynamic>.from(item);
   }
 }
