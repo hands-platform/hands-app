@@ -227,6 +227,11 @@ export default async function EarningsPage() {
                   {earning.settlementRef && (
                     <div className="muted">Settlement ref {earning.settlementRef}</div>
                   )}
+                  {(earning.walletLedgerEntries ?? []).slice(0, 2).map((entry) => (
+                    <div className="muted" key={entry.id}>
+                      Wallet {entry.type}: {formatMoney(entry.amount, entry.currency)}
+                    </div>
+                  ))}
                 </td>
                 <td>
                   <span className={earningSignalClass(earning)}>{earningStatusLabel(earning)}</span>

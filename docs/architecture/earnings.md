@@ -52,7 +52,7 @@ Admin refunds cancel unpaid earnings and set their net amount to zero. If an ear
 
 ## Provider Wallet Guard
 
-For the MVP, `ProviderEarning.netAmount` is also the provider wallet delta:
+For the MVP, the provider wallet guard still reads unsettled `ProviderEarning.netAmount` totals because that keeps booking acceptance fast and simple:
 
 - Positive delta: HANDS owes money to the provider.
 - Negative delta: the provider owes HANDS fees/tax from cash bookings.
@@ -68,6 +68,15 @@ This supports two later settlement paths without changing booking flow:
 
 The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. After finance confirms the provider deposit or an approved offset, the operator enters a deposit reference or offset memo and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the provider from accepting new requests.
 
+`ProviderWalletLedgerEntry` records the finance audit trail around those earning rows:
+
+- `BOOKING_EARNING`: created when a booking completion creates or updates the earning.
+- `CASH_FEE_DEBT_SETTLED`: created when finance confirms a provider repayment or offset for a negative cash earning.
+- `PAYOUT_PAID`: created when admin payout processing moves provider money out of the wallet.
+- `REFUND_REVERSAL`: created when an unpaid earning is cancelled after a refund.
+
+These ledger entries are append-friendly audit mirrors for finance and admin review. The direct guard can later move from earning totals to ledger totals once deposits, admin adjustments, and bank payout retries become richer.
+
 ## Payout Batches
 
 `ProviderPayoutBatch` groups one provider's unpaid positive earnings into a single payout record. The MVP marks the batch as `PAID` immediately and links included earnings through `payoutBatchId`.
@@ -76,8 +85,8 @@ This keeps the current product simple while preserving the later path for bank t
 
 ## Next Production Work
 
-- Add explicit wallet ledger entries for provider deposits and admin adjustments.
 - Add provider-facing repayment instructions for negative cash fee balances.
+- Add admin adjustment entries for manual wallet corrections.
 - Add provider payout account verification.
 - Add real bank transfer execution and failure retry.
 - Add paid-earning reversal entries for post-payout refunds and disputes.

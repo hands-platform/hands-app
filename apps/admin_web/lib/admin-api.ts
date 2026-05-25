@@ -419,6 +419,18 @@ export type AdminEarning = {
   } | null;
   platformFeeLogs?: AdminProviderPlatformFeeLog[];
   taxLogs?: AdminProviderTaxLog[];
+  walletLedgerEntries?: AdminProviderWalletLedgerEntry[];
+};
+
+export type AdminProviderWalletLedgerEntry = {
+  id: string;
+  type: string;
+  sourceKey: string;
+  amount: number;
+  currency: string;
+  reference?: string | null;
+  notes?: string | null;
+  createdAt?: string;
 };
 
 export type AdminEarningSummary = {

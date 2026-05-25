@@ -174,6 +174,14 @@ enum PayoutBatchStatus {
   CANCELLED
 }
 
+enum ProviderWalletLedgerType {
+  BOOKING_EARNING
+  CASH_FEE_DEBT_SETTLED
+  PAYOUT_PAID
+  REFUND_REVERSAL
+  ADMIN_ADJUSTMENT
+}
+
 enum BookingOpsTaskType {
   CUSTOMER_CONTACTED
   PROVIDER_CONTACTED
@@ -259,9 +267,9 @@ model CustomerProfile {
 }
 
 model ProviderProfile {
-  id                       String                    @id @default(cuid())
-  userId                   String                    @unique
-  user                     User                      @relation(fields: [userId], references: [id])
+  id                       String                      @id @default(cuid())
+  userId                   String                      @unique
+  user                     User                        @relation(fields: [userId], references: [id])
   displayName              String
   legalName                String?
   dateOfBirth              DateTime?
@@ -276,19 +284,19 @@ model ProviderProfile {
   residentialAddress       String?
   city                     String?
   serviceArea              Json?
-  level                    ProviderLevel             @default(LEVEL_1_SIGNUP)
-  status                   ProviderStatus            @default(OFFLINE)
-  ratingAvg                Decimal                   @default(0) @db.Decimal(3, 2)
-  reviewCount              Int                       @default(0)
-  currentLat               Decimal?                  @db.Decimal(10, 7)
-  currentLng               Decimal?                  @db.Decimal(10, 7)
+  level                    ProviderLevel               @default(LEVEL_1_SIGNUP)
+  status                   ProviderStatus              @default(OFFLINE)
+  ratingAvg                Decimal                     @default(0) @db.Decimal(3, 2)
+  reviewCount              Int                         @default(0)
+  currentLat               Decimal?                    @db.Decimal(10, 7)
+  currentLng               Decimal?                    @db.Decimal(10, 7)
   currentLocationUpdatedAt DateTime?
   nextAvailableAt          DateTime?
   blockedAt                DateTime?
   blockedReason            String?
   trustedAt                DateTime?
   deletedAt                DateTime?
-  updatedAt                DateTime                  @default(now()) @updatedAt
+  updatedAt                DateTime                    @default(now()) @updatedAt
   verification             ProviderVerification?
   kyc                      ProviderKyc?
   documents                ProviderDocument[]
@@ -302,12 +310,13 @@ model ProviderProfile {
   devices                  ProviderDevice[]
   services                 ProviderService[]
   participants             BookingParticipant[]
-  preferredBookings        Booking[]                 @relation("PreferredProvider")
-  selectedBookings         Booking[]                 @relation("SelectedProvider")
+  preferredBookings        Booking[]                   @relation("PreferredProvider")
+  selectedBookings         Booking[]                   @relation("SelectedProvider")
   locationSnapshots        LocationSnapshot[]
   reviews                  Review[]
   earnings                 ProviderEarning[]
   payoutBatches            ProviderPayoutBatch[]
+  walletLedgerEntries      ProviderWalletLedgerEntry[]
   reports                  ProviderReport[]
   sanctions                ProviderSanction[]
 }
@@ -571,26 +580,26 @@ model ServicePayoutRule {
 }
 
 model Booking {
-  id                  String                   @id @default(cuid())
+  id                  String                      @id @default(cuid())
   customerProfileId   String
   preferredProviderId String?
   selectedProviderId  String?
-  status              BookingStatus            @default(CREATED)
+  status              BookingStatus               @default(CREATED)
   scheduledStartAt    DateTime
   scheduledEndAt      DateTime
   address             Json
-  lat                 Decimal                  @db.Decimal(10, 7)
-  lng                 Decimal                  @db.Decimal(10, 7)
+  lat                 Decimal                     @db.Decimal(10, 7)
+  lng                 Decimal                     @db.Decimal(10, 7)
   notes               String?
-  travelBufferMin     Int                      @default(30)
-  earlyAcceptMin      Int                      @default(20)
+  travelBufferMin     Int                         @default(30)
+  earlyAcceptMin      Int                         @default(20)
   openedAt            DateTime?
   expiresAt           DateTime?
-  createdAt           DateTime                 @default(now())
-  updatedAt           DateTime                 @updatedAt
-  customerProfile     CustomerProfile          @relation(fields: [customerProfileId], references: [id])
-  preferredProvider   ProviderProfile?         @relation("PreferredProvider", fields: [preferredProviderId], references: [id])
-  selectedProvider    ProviderProfile?         @relation("SelectedProvider", fields: [selectedProviderId], references: [id])
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  customerProfile     CustomerProfile             @relation(fields: [customerProfileId], references: [id])
+  preferredProvider   ProviderProfile?            @relation("PreferredProvider", fields: [preferredProviderId], references: [id])
+  selectedProvider    ProviderProfile?            @relation("SelectedProvider", fields: [selectedProviderId], references: [id])
   services            BookingService[]
   participants        BookingParticipant[]
   chatRoom            ChatRoom?
@@ -603,6 +612,7 @@ model Booking {
   taxLogs             ProviderTaxLog[]
   opsTasks            BookingOpsTask[]
   providerReports     ProviderReport[]
+  walletLedgerEntries ProviderWalletLedgerEntry[]
 }
 
 model BookingOpsTask {
@@ -697,43 +707,72 @@ model Review {
 }
 
 model ProviderEarning {
-  id                String                   @id @default(cuid())
-  providerProfileId String
-  bookingId         String                   @unique
-  grossAmount       Int
-  platformFee       Int
-  withholdingAmount Int                      @default(0)
-  tipAmount         Int                      @default(0)
-  netAmount         Int
-  currency          String                   @default("VND")
-  status            EarningStatus            @default(PENDING)
-  availableAt       DateTime?
-  paidAt            DateTime?
-  payoutBatchId     String?
-  settlementRef     String?
-  settlementNotes   String?
-  createdAt         DateTime                 @default(now())
-  updatedAt         DateTime                 @updatedAt
-  providerProfile   ProviderProfile          @relation(fields: [providerProfileId], references: [id])
-  booking           Booking                  @relation(fields: [bookingId], references: [id])
-  payoutBatch       ProviderPayoutBatch?     @relation(fields: [payoutBatchId], references: [id])
-  platformFeeLogs   ProviderPlatformFeeLog[]
-  taxLogs           ProviderTaxLog[]
+  id                  String                      @id @default(cuid())
+  providerProfileId   String
+  bookingId           String                      @unique
+  grossAmount         Int
+  platformFee         Int
+  withholdingAmount   Int                         @default(0)
+  tipAmount           Int                         @default(0)
+  netAmount           Int
+  currency            String                      @default("VND")
+  status              EarningStatus               @default(PENDING)
+  availableAt         DateTime?
+  paidAt              DateTime?
+  payoutBatchId       String?
+  settlementRef       String?
+  settlementNotes     String?
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  providerProfile     ProviderProfile             @relation(fields: [providerProfileId], references: [id])
+  booking             Booking                     @relation(fields: [bookingId], references: [id])
+  payoutBatch         ProviderPayoutBatch?        @relation(fields: [payoutBatchId], references: [id])
+  platformFeeLogs     ProviderPlatformFeeLog[]
+  taxLogs             ProviderTaxLog[]
+  walletLedgerEntries ProviderWalletLedgerEntry[]
 }
 
 model ProviderPayoutBatch {
-  id                String            @id @default(cuid())
+  id                  String                      @id @default(cuid())
+  providerProfileId   String
+  totalNetAmount      Int
+  currency            String                      @default("VND")
+  status              PayoutBatchStatus           @default(DRAFT)
+  transferRef         String?
+  notes               String?
+  createdAt           DateTime                    @default(now())
+  paidAt              DateTime?
+  providerProfile     ProviderProfile             @relation(fields: [providerProfileId], references: [id])
+  earnings            ProviderEarning[]
+  withholdingLogs     WithholdingLog[]
+  walletLedgerEntries ProviderWalletLedgerEntry[]
+}
+
+model ProviderWalletLedgerEntry {
+  id                String                   @id @default(cuid())
   providerProfileId String
-  totalNetAmount    Int
-  currency          String            @default("VND")
-  status            PayoutBatchStatus @default(DRAFT)
-  transferRef       String?
+  bookingId         String?
+  earningId         String?
+  payoutBatchId     String?
+  type              ProviderWalletLedgerType
+  sourceKey         String                   @unique
+  amount            Int
+  currency          String                   @default("VND")
+  reference         String?
   notes             String?
-  createdAt         DateTime          @default(now())
-  paidAt            DateTime?
-  providerProfile   ProviderProfile   @relation(fields: [providerProfileId], references: [id])
-  earnings          ProviderEarning[]
-  withholdingLogs   WithholdingLog[]
+  metadata          Json?
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  providerProfile   ProviderProfile          @relation(fields: [providerProfileId], references: [id])
+  booking           Booking?                 @relation(fields: [bookingId], references: [id])
+  earning           ProviderEarning?         @relation(fields: [earningId], references: [id])
+  payoutBatch       ProviderPayoutBatch?     @relation(fields: [payoutBatchId], references: [id])
+
+  @@index([providerProfileId, createdAt])
+  @@index([bookingId])
+  @@index([earningId])
+  @@index([payoutBatchId])
+  @@index([type, createdAt])
 }
 
 model TaxPolicyVersion {

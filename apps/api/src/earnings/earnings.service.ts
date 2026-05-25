@@ -5,6 +5,7 @@ import {
   PaymentMethod,
   PayoutBatchStatus,
   Prisma,
+  ProviderWalletLedgerType,
   ProviderBankAccountStatus,
   ProviderSanctionStatus,
   ProviderSanctionType,
@@ -119,6 +120,7 @@ export class EarningsService {
 
       await this.upsertPlatformFeeLog(tx, earning, platformFee);
       await this.upsertTaxLog(tx, earning, tax);
+      await this.upsertEarningWalletLedger(tx, earning, booking.payment?.method);
       return earning;
     });
   }
@@ -136,18 +138,22 @@ export class EarningsService {
       return null;
     }
 
-    return this.prisma.providerEarning.update({
-      where: { bookingId },
-      data: {
-        tipAmount,
-        netAmount: this.calculateProviderWalletDelta({
-          paymentMethod: earning.booking.payment?.method,
-          grossAmount: earning.grossAmount,
-          platformFee: earning.platformFee,
-          withholdingAmount: earning.withholdingAmount,
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.providerEarning.update({
+        where: { bookingId },
+        data: {
           tipAmount,
-        }),
-      },
+          netAmount: this.calculateProviderWalletDelta({
+            paymentMethod: earning.booking.payment?.method,
+            grossAmount: earning.grossAmount,
+            platformFee: earning.platformFee,
+            withholdingAmount: earning.withholdingAmount,
+            tipAmount,
+          }),
+        },
+      });
+      await this.upsertEarningWalletLedger(tx, updated, earning.booking.payment?.method);
+      return updated;
     });
   }
 
@@ -199,6 +205,7 @@ export class EarningsService {
         booking: { include: { payment: true, review: true } },
         platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
         taxLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
+        walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
     });
   }
@@ -216,14 +223,21 @@ export class EarningsService {
       throw new NotFoundException('Earning not found');
     }
 
-    return this.prisma.providerEarning.update({
-      where: { id: earningId },
-      data: {
-        status: EarningStatus.PAID,
-        paidAt: new Date(),
-        settlementRef: cleanOptionalText(input.settlementRef),
-        settlementNotes: cleanOptionalText(input.settlementNotes),
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.providerEarning.update({
+        where: { id: earningId },
+        data: {
+          status: EarningStatus.PAID,
+          paidAt: new Date(),
+          settlementRef: cleanOptionalText(input.settlementRef),
+          settlementNotes: cleanOptionalText(input.settlementNotes),
+        },
+      });
+      await this.upsertPaidWalletLedger(tx, updated, {
+        reference: input.settlementRef,
+        notes: input.settlementNotes,
+      });
+      return updated;
     });
   }
 
@@ -369,6 +383,13 @@ export class EarningsService {
           where: { payoutBatchId },
           data: { status: 'PAID' },
         });
+        for (const earning of existing.earnings) {
+          await this.upsertPaidWalletLedger(tx, earning, {
+            payoutBatchId,
+            reference: batch.transferRef,
+            notes: batch.notes ?? `Payout batch ${batch.id} paid`,
+          });
+        }
       }
 
       return tx.providerPayoutBatch.findUniqueOrThrow({
@@ -404,12 +425,35 @@ export class EarningsService {
       return { skipped: true, reason: 'ALREADY_PAID', earningId: earning.id };
     }
 
-    const cancelled = await this.prisma.providerEarning.update({
-      where: { bookingId },
-      data: {
-        status: EarningStatus.CANCELLED,
-        netAmount: 0,
-      },
+    const cancelled = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.providerEarning.update({
+        where: { bookingId },
+        data: {
+          status: EarningStatus.CANCELLED,
+          netAmount: 0,
+        },
+      });
+      await tx.providerWalletLedgerEntry.upsert({
+        where: { sourceKey: `earning:${earning.id}:refund-reversal` },
+        update: {
+          amount: -earning.netAmount,
+          currency: earning.currency,
+          notes: 'Unpaid earning cancelled by refund workflow',
+          metadata: { previousNetAmount: earning.netAmount },
+        },
+        create: {
+          providerProfileId: earning.providerProfileId,
+          bookingId: earning.bookingId,
+          earningId: earning.id,
+          type: ProviderWalletLedgerType.REFUND_REVERSAL,
+          sourceKey: `earning:${earning.id}:refund-reversal`,
+          amount: -earning.netAmount,
+          currency: earning.currency,
+          notes: 'Unpaid earning cancelled by refund workflow',
+          metadata: { previousNetAmount: earning.netAmount },
+        },
+      });
+      return updated;
     });
 
     return { skipped: false, earning: cancelled };
@@ -468,6 +512,114 @@ export class EarningsService {
     }
 
     return input.grossAmount - input.platformFee - input.withholdingAmount + input.tipAmount;
+  }
+
+  private async upsertEarningWalletLedger(
+    tx: TxClient,
+    earning: {
+      id: string;
+      providerProfileId: string;
+      bookingId: string;
+      grossAmount: number;
+      platformFee: number;
+      withholdingAmount: number;
+      tipAmount: number;
+      netAmount: number;
+      currency: string;
+    },
+    paymentMethod?: PaymentMethod | null,
+  ) {
+    return tx.providerWalletLedgerEntry.upsert({
+      where: { sourceKey: `earning:${earning.id}:booking` },
+      update: {
+        amount: earning.netAmount,
+        currency: earning.currency,
+        metadata: this.earningLedgerMetadata(earning, paymentMethod),
+      },
+      create: {
+        providerProfileId: earning.providerProfileId,
+        bookingId: earning.bookingId,
+        earningId: earning.id,
+        type: ProviderWalletLedgerType.BOOKING_EARNING,
+        sourceKey: `earning:${earning.id}:booking`,
+        amount: earning.netAmount,
+        currency: earning.currency,
+        notes:
+          paymentMethod === PaymentMethod.CASH
+            ? 'Cash booking created HANDS fee/tax wallet debt'
+            : 'Completed booking created provider wallet credit',
+        metadata: this.earningLedgerMetadata(earning, paymentMethod),
+      },
+    });
+  }
+
+  private async upsertPaidWalletLedger(
+    tx: TxClient,
+    earning: {
+      id: string;
+      providerProfileId: string;
+      bookingId: string;
+      netAmount: number;
+      currency: string;
+    },
+    input: { payoutBatchId?: string | null; reference?: string | null; notes?: string | null } = {},
+  ) {
+    if (earning.netAmount === 0) {
+      return null;
+    }
+    const isDebtSettlement = earning.netAmount < 0;
+    const sourceKey = input.payoutBatchId
+      ? `earning:${earning.id}:payout:${input.payoutBatchId}`
+      : `earning:${earning.id}:paid`;
+    return tx.providerWalletLedgerEntry.upsert({
+      where: { sourceKey },
+      update: {
+        amount: -earning.netAmount,
+        currency: earning.currency,
+        reference: cleanOptionalText(input.reference),
+        notes: cleanOptionalText(input.notes),
+        metadata: {
+          earningNetAmount: earning.netAmount,
+          payoutBatchId: input.payoutBatchId ?? null,
+        },
+      },
+      create: {
+        providerProfileId: earning.providerProfileId,
+        bookingId: earning.bookingId,
+        earningId: earning.id,
+        payoutBatchId: input.payoutBatchId ?? null,
+        type: isDebtSettlement
+          ? ProviderWalletLedgerType.CASH_FEE_DEBT_SETTLED
+          : ProviderWalletLedgerType.PAYOUT_PAID,
+        sourceKey,
+        amount: -earning.netAmount,
+        currency: earning.currency,
+        reference: cleanOptionalText(input.reference),
+        notes: cleanOptionalText(input.notes),
+        metadata: {
+          earningNetAmount: earning.netAmount,
+          payoutBatchId: input.payoutBatchId ?? null,
+        },
+      },
+    });
+  }
+
+  private earningLedgerMetadata(
+    earning: {
+      grossAmount: number;
+      platformFee: number;
+      withholdingAmount: number;
+      tipAmount: number;
+    },
+    paymentMethod?: PaymentMethod | null,
+  ): Prisma.InputJsonObject {
+    return {
+      paymentMethod: paymentMethod ?? null,
+      grossAmount: earning.grossAmount,
+      platformFee: earning.platformFee,
+      withholdingAmount: earning.withholdingAmount,
+      tipAmount: earning.tipAmount,
+    };
   }
 
   private async calculatePlatformFee(
