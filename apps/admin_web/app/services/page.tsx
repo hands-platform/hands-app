@@ -295,6 +295,25 @@ export default async function ServicesPage() {
                       <button type="submit">Update service</button>
                     </form>
 
+                    <h3>Price ladder coverage</h3>
+                    <p className="muted">
+                      Providers may set prices at these increments. Booking stays blocked for any exact
+                      customer price without an active payout rule.
+                    </p>
+                    <div className="participant-list" style={{ marginBottom: 12 }}>
+                      {priceLadderCoverage(service).map((item) => (
+                        <span
+                          className={`pill ${item.rule ? 'pill-success' : 'pill-warn'}`}
+                          key={`${service.id}-${item.price}`}
+                        >
+                          {formatMoney(item.price, 'VND')}
+                          {item.rule
+                            ? ` -> ${formatMoney(item.rule.providerPayoutAmount, item.rule.currency)}`
+                            : ' missing'}
+                        </span>
+                      ))}
+                    </div>
+
                     <h3>Payout matrix</h3>
                     <div className="setup-stage-list" style={{ marginBottom: 12 }}>
                       {(service.payoutRules ?? []).map((rule) => {
@@ -658,6 +677,29 @@ function servicePayoutFinance(
     taxRuleLabel: tax.ruleLabel,
     actualCompanyCommission: fee - vatAmount - tax.withholdingAmount - rule.otherCostAmount,
   };
+}
+
+function priceLadderCoverage(service: AdminServiceCatalogItem) {
+  const activeRules = new Map(
+    (service.payoutRules ?? [])
+      .filter((rule) => rule.active)
+      .map((rule) => [rule.customerPrice, rule] as const),
+  );
+  const priceStep = Math.max(100000, service.priceStep || 100000);
+  const prices = new Set<number>();
+  for (let index = 0; index < 4; index += 1) {
+    prices.add(service.basePrice + priceStep * index);
+  }
+  for (const rule of service.payoutRules ?? []) {
+    prices.add(rule.customerPrice);
+  }
+
+  return [...prices]
+    .sort((left, right) => left - right)
+    .map((price) => ({
+      price,
+      rule: activeRules.get(price) ?? null,
+    }));
 }
 
 function selectTaxRule(
