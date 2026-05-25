@@ -56,6 +56,15 @@ type ProviderDetail = AdminProvider & {
       status?: string;
       payment?: { method?: string; status?: string; amount?: number; currency?: string | null } | null;
     } | null;
+    walletLedgerEntries?: Array<{
+      id: string;
+      type: string;
+      amount: number;
+      currency?: string | null;
+      reference?: string | null;
+      notes?: string | null;
+      createdAt?: string;
+    }>;
   }>;
   payoutBatches?: Array<{
     id: string;
@@ -289,6 +298,13 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                       {earning.settlementNotes ? (
                         <p className="muted">{earning.settlementNotes}</p>
                       ) : null}
+                      {(earning.walletLedgerEntries ?? []).slice(0, 2).map((entry) => (
+                        <p className="muted" key={entry.id}>
+                          Wallet {walletLedgerLabel(entry.type)}:{' '}
+                          {formatCurrency(entry.amount, entry.currency ?? earning.currency ?? 'VND')}
+                          {entry.reference ? ` / ref ${entry.reference}` : ''}
+                        </p>
+                      ))}
                     </div>
                     <small>
                       {earning.paidAt
@@ -2156,10 +2172,10 @@ function maskDeviceId(value?: string | null) {
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
-function formatCurrency(value?: number | string | null) {
+function formatCurrency(value?: number | string | null, currency = 'VND') {
   const amount = amountValue(value);
-  if (!amount) return '0 VND';
-  return `${amount.toLocaleString('vi-VN')} VND`;
+  if (!amount) return `0 ${currency}`;
+  return `${amount.toLocaleString('vi-VN')} ${currency}`;
 }
 
 function amountValue(value?: number | string | null) {
@@ -2175,6 +2191,14 @@ function amountValue(value?: number | string | null) {
 
 function isCashFeeDebt(earning: NonNullable<ProviderDetail['earnings']>[number]) {
   return earning.netAmount < 0 && earning.booking?.payment?.method === 'CASH' && earning.status !== 'PAID';
+}
+
+function walletLedgerLabel(type: string) {
+  return type
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
+    .join(' ');
 }
 
 function humanizeProviderLogAction(action: string) {

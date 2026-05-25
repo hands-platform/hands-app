@@ -147,7 +147,10 @@ export class AdminService {
         earnings: {
           orderBy: { createdAt: 'desc' },
           take: 10,
-          include: { booking: { include: { payment: true } } },
+          include: {
+            booking: { include: { payment: true } },
+            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+          },
         },
         payoutBatches: { orderBy: { createdAt: 'desc' }, take: 10 },
         sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
