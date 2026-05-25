@@ -19,6 +19,9 @@ import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onbo
 const PROVIDER_WALLET_BLOCK_REASON =
   '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
 
+const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
+  '현금 예약으로 발생한 HANDS 수수료/세금 미정산액입니다. 운영팀이 안내한 계좌로 입금하거나 관리자 정산 완료 후 다시 예약을 수락할 수 있습니다.';
+
 type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
 type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
 type PlatformFeePolicyWithRules = Prisma.PlatformFeePolicyVersionGetPayload<{ include: { rules: true } }>;
@@ -187,10 +190,10 @@ export class EarningsService {
       walletBlocked: walletBalance < 0,
       walletDebtAmount: walletBalance < 0 ? Math.abs(walletBalance) : 0,
       walletBlockReason: walletBalance < 0 ? PROVIDER_WALLET_BLOCK_REASON : null,
+      walletSettlementRequired: walletBalance < 0,
+      walletSettlementMethod: walletBalance < 0 ? 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET' : null,
       walletSettlementInstruction:
-        walletBalance < 0
-          ? '현금 예약으로 발생한 HANDS 수수료/세금 미정산액입니다. 운영팀이 안내한 계좌로 입금하거나 관리자 정산 완료 후 다시 예약을 수락할 수 있습니다.'
-          : null,
+        walletBalance < 0 ? PROVIDER_WALLET_SETTLEMENT_INSTRUCTION : null,
       payoutBlocked: Boolean(payoutHold),
       payoutHold,
     };

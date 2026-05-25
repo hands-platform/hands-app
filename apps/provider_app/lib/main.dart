@@ -359,7 +359,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
 
   Future<bool> ensureWalletCanAcceptRequest() async {
     try {
-      final summary = await ref.read(providerRepositoryProvider).earningsSummary();
+      final summary =
+          await ref.read(providerRepositoryProvider).earningsSummary();
       final blockReason = providerWalletBlockReason(summary);
       if (blockReason != null) {
         if (mounted) {
@@ -1257,7 +1258,10 @@ class ProviderWalletGateCard extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final currency = summary['currency']?.toString() ?? 'VND';
     final walletBalance = providerWalletBalance(summary);
+    final walletDebtAmount = asNum(summary['walletDebtAmount']) ??
+        (walletBalance < 0 ? walletBalance.abs() : 0);
     final reason = providerWalletBlockReason(summary);
+    final settlementInstruction = providerWalletSettlementInstruction(summary);
     final walletBlocked = reason != null;
 
     if (isLoading) {
@@ -1328,7 +1332,14 @@ class ProviderWalletGateCard extends StatelessWidget {
             ),
             if (walletBlocked) ...[
               const SizedBox(height: 8),
-              const Text(providerWalletBlockHintKo),
+              Text(
+                'Amount to settle: ${formatCurrency(walletDebtAmount)} $currency',
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(settlementInstruction),
               const SizedBox(height: 10),
               FilledButton.tonalIcon(
                 onPressed: onRefresh,
@@ -1745,7 +1756,8 @@ class OpenBookingCard extends StatelessWidget {
                 ((isPreferredRequest && !isMatched) ||
                     (!isPreferredRequest && !joined))) ...[
               const SizedBox(height: 12),
-              const ProviderErrorCard(text: providerWalletBlockFallbackReasonKo),
+              const ProviderErrorCard(
+                  text: providerWalletBlockFallbackReasonKo),
               const SizedBox(height: 8),
               const InfoCard(text: providerWalletBlockHintKo),
             ] else if (isCashBooking &&
@@ -4405,14 +4417,12 @@ class ProviderMvpScreen extends StatelessWidget {
   }
 }
 
-const providerWalletBlockFallbackReason =
-    '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+const providerWalletBlockFallbackReason = '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
 
 const providerWalletBlockHint =
     '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
 
-const providerWalletBlockFallbackReasonKo =
-    '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+const providerWalletBlockFallbackReasonKo = '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
 
 const providerWalletBlockHintKo =
     '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
@@ -4455,7 +4465,8 @@ bool providerBookingIsCash(Map<String, dynamic> booking) {
 String providerCashBookingRiskHint(Map<String, dynamic> booking) {
   final payment = asMap(booking['payment']);
   final amount = payment?['amount'] ?? booking['totalAmount'];
-  final amountText = amount == null ? 'this request' : '${formatCurrency(amount)} VND';
+  final amountText =
+      amount == null ? 'this request' : '${formatCurrency(amount)} VND';
   return 'Cash payment: the customer pays you directly for $amountText. '
       'After completion, HANDS fees and tax withholding can create wallet debt. '
       'Keep your wallet settled so future booking acceptance stays available.';

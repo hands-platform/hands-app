@@ -873,6 +873,8 @@ if (
   walletDebtProviderEarningsSummary.walletBalance >= 0 ||
   walletDebtProviderEarningsSummary.walletBlocked !== true ||
   walletDebtProviderEarningsSummary.walletDebtAmount <= 0 ||
+  walletDebtProviderEarningsSummary.walletSettlementRequired !== true ||
+  walletDebtProviderEarningsSummary.walletSettlementMethod !== 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET' ||
   !walletDebtProviderEarningsSummary.walletSettlementInstruction
 ) {
   throw new Error(

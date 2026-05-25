@@ -7,10 +7,15 @@ void main() {
       'walletBalance': -120000,
       'walletBlocked': true,
       'walletBlockReason': 'Custom settlement message',
+      'walletSettlementInstruction': 'Pay the HANDS fee to reopen requests.',
     };
 
     expect(providerWalletBalance(summary), -120000);
     expect(providerWalletBlockReason(summary), 'Custom settlement message');
+    expect(
+      providerWalletSettlementInstruction(summary),
+      'Pay the HANDS fee to reopen requests.',
+    );
   });
 
   test('falls back to computed wallet balance and default block message', () {
