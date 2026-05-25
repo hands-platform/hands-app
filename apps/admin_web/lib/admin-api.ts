@@ -337,7 +337,13 @@ export type AdminBooking = {
   services?: Array<{
     price?: number;
     quantity?: number;
-    service?: { name?: string; durationMin?: number; basePrice?: number };
+    service?: {
+      name?: string;
+      durationMin?: number;
+      basePrice?: number;
+      priceStep?: number;
+      payoutRules?: AdminServicePayoutRule[];
+    };
   }>;
   payment?: {
     id?: string;
@@ -370,6 +376,9 @@ export type AdminBookingDetail = AdminBooking & {
   earning?: AdminEarning | null;
   snapshots?: AdminLocationSnapshot[];
   opsTasks?: AdminBookingOpsTask[];
+  platformFeeLogs?: AdminProviderPlatformFeeLog[];
+  taxLogs?: AdminProviderTaxLog[];
+  walletLedgerEntries?: AdminProviderWalletLedgerEntry[];
 };
 
 export type AdminBookingOpsTask = {

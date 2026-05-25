@@ -766,11 +766,31 @@ export class AdminService {
             },
           },
         },
-        services: { include: { service: true } },
+        services: {
+          include: {
+            service: {
+              include: {
+                payoutRules: {
+                  where: { active: true },
+                  orderBy: { customerPrice: 'asc' },
+                },
+              },
+            },
+          },
+        },
         payment: { include: { refunds: true } },
         refunds: true,
         review: true,
-        earning: true,
+        earning: {
+          include: {
+            platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+            taxLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+          },
+        },
+        platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+        taxLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+        walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
         opsTasks: {
           orderBy: { updatedAt: 'desc' },
           include: { actor: { select: { phone: true, fullName: true } } },
@@ -1217,7 +1237,9 @@ export class AdminService {
     const data = rows.map((row) => {
       const normalized = normalizeServicePayoutRuleInput(service, row, true);
       if (seenPrices.has(normalized.customerPrice)) {
-        throw new BadRequestException(`Duplicate customer price in payout rule import: ${normalized.customerPrice}`);
+        throw new BadRequestException(
+          `Duplicate customer price in payout rule import: ${normalized.customerPrice}`,
+        );
       }
       seenPrices.add(normalized.customerPrice);
       return normalized;
@@ -1521,14 +1543,7 @@ function toJson(value: unknown): Prisma.InputJsonValue {
 function serviceAuditSnapshot(
   service: Pick<
     Prisma.MassageServiceGetPayload<object>,
-    | 'id'
-    | 'serviceGroupKey'
-    | 'name'
-    | 'durationMin'
-    | 'basePrice'
-    | 'priceStep'
-    | 'displayOrder'
-    | 'active'
+    'id' | 'serviceGroupKey' | 'name' | 'durationMin' | 'basePrice' | 'priceStep' | 'displayOrder' | 'active'
   >,
 ) {
   return {

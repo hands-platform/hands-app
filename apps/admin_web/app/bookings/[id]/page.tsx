@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { AdminBookingDetail, AdminChatMessage, AdminLocationSnapshot, adminGet } from '../../../lib/admin-api';
+import {
+  AdminBookingDetail,
+  AdminChatMessage,
+  AdminLocationSnapshot,
+  adminGet,
+} from '../../../lib/admin-api';
 import {
   addBookingOpsNote,
   captureBookingPayment,
@@ -37,6 +42,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const liveSignals = liveServiceSignals(booking);
   const dispatchSteps = dispatchChecklist(booking);
   const opsTaskCards = bookingOpsTaskCards(booking);
+  const financeTrace = bookingFinanceTrace(booking);
 
   return (
     <>
@@ -69,9 +75,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <section className="grid" style={{ marginBottom: 16 }}>
         <MetricCard label="Status" value={booking.status} helper={bookingStatusHint(booking.status)} />
         <MetricCard label="Payment" value={booking.payment?.status ?? 'NONE'} helper={paymentHint(booking)} />
-        <MetricCard label="Providers" value={`${booking.participants?.length ?? 0} joined`} helper={providerHint(booking)} />
-        <MetricCard label="Chat" value={booking.chatRoom ? 'Ready' : 'Not ready'} helper={`${messages.length} message(s)`} />
-        <MetricCard label="Location" value={providerLocationMetricValue(booking)} helper={providerLocationMetricHelper(booking)} />
+        <MetricCard
+          label="Providers"
+          value={`${booking.participants?.length ?? 0} joined`}
+          helper={providerHint(booking)}
+        />
+        <MetricCard
+          label="Chat"
+          value={booking.chatRoom ? 'Ready' : 'Not ready'}
+          helper={`${messages.length} message(s)`}
+        />
+        <MetricCard
+          label="Location"
+          value={providerLocationMetricValue(booking)}
+          helper={providerLocationMetricHelper(booking)}
+        />
         <MetricCard label="Risk" value={riskSummary.label} helper={riskSummary.helper} />
       </section>
 
@@ -102,14 +120,22 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 bookingId={booking.id}
                 paymentId={booking.payment.id}
                 label="Capture"
-                disabled={booking.payment.status === 'CAPTURED' || booking.payment.status === 'REFUNDED' || booking.payment.status === 'RELEASED'}
+                disabled={
+                  booking.payment.status === 'CAPTURED' ||
+                  booking.payment.status === 'REFUNDED' ||
+                  booking.payment.status === 'RELEASED'
+                }
               />
               <PaymentAction
                 action={releaseBookingPayment}
                 bookingId={booking.id}
                 paymentId={booking.payment.id}
                 label="Release"
-                disabled={booking.payment.status === 'CAPTURED' || booking.payment.status === 'REFUNDED' || booking.payment.status === 'RELEASED'}
+                disabled={
+                  booking.payment.status === 'CAPTURED' ||
+                  booking.payment.status === 'REFUNDED' ||
+                  booking.payment.status === 'RELEASED'
+                }
               />
               <PaymentAction
                 action={refundBookingPayment}
@@ -148,9 +174,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <div className="risk-watch-header">
           <div>
             <h2>Dispatch checklist</h2>
-            <p className="muted">Operator-facing next steps for this booking. These are guidance cards, not hidden automation.</p>
+            <p className="muted">
+              Operator-facing next steps for this booking. These are guidance cards, not hidden automation.
+            </p>
           </div>
-          <span className={`pill ${dispatchSteps.some((step) => step.priority === 'Now') ? 'pill-warn' : 'pill-success'}`}>
+          <span
+            className={`pill ${dispatchSteps.some((step) => step.priority === 'Now') ? 'pill-warn' : 'pill-success'}`}
+          >
             {dispatchSteps.filter((step) => step.priority === 'Now').length} urgent
           </span>
         </div>
@@ -163,9 +193,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 <p>{step.detail}</p>
                 <small>{step.owner}</small>
               </div>
-              {step.actionHref && (
-                <ActionLink href={step.actionHref} label={step.actionLabel ?? 'Open'} />
-              )}
+              {step.actionHref && <ActionLink href={step.actionHref} label={step.actionLabel ?? 'Open'} />}
             </div>
           ))}
         </div>
@@ -176,10 +204,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Structured ops status</h2>
             <p className="muted">
-              Track concrete handling steps separately from free-text notes. These statuses are saved per booking.
+              Track concrete handling steps separately from free-text notes. These statuses are saved per
+              booking.
             </p>
           </div>
-          <span className={`pill ${opsTaskCards.every((task) => task.status === 'DONE') ? 'pill-success' : 'pill-info'}`}>
+          <span
+            className={`pill ${opsTaskCards.every((task) => task.status === 'DONE') ? 'pill-success' : 'pill-info'}`}
+          >
             {opsTaskCards.filter((task) => task.status === 'DONE').length}/{opsTaskCards.length} done
           </span>
         </div>
@@ -207,7 +238,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <div>
           <h2>Operator notes</h2>
           <p className="muted">
-            Add internal handling notes for support handoff. Notes are appended to the booking and mirrored to the audit log.
+            Add internal handling notes for support handoff. Notes are appended to the booking and mirrored to
+            the audit log.
           </p>
           <div className="ops-note-history">
             {booking.notes?.trim() ? (
@@ -230,10 +262,18 @@ export default async function BookingDetailPage({ params }: PageProps) {
           />
           <div className="actions">
             <button type="submit">Add note</button>
-            <button name="preset" type="submit" value="Customer contacted and updated about the booking status.">
+            <button
+              name="preset"
+              type="submit"
+              value="Customer contacted and updated about the booking status."
+            >
               Customer contacted
             </button>
-            <button name="preset" type="submit" value="Provider contacted and asked to confirm location/status.">
+            <button
+              name="preset"
+              type="submit"
+              value="Provider contacted and asked to confirm location/status."
+            >
               Provider contacted
             </button>
             <button name="preset" type="submit" value="Payment reviewed by operations.">
@@ -247,8 +287,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <div>
           <h2>Live service board</h2>
           <p className="muted">
-            Last-known location monitoring only. HANDS does not use routing, directions, or continuous GPS streaming in
-            the MVP.
+            Last-known location monitoring only. HANDS does not use routing, directions, or continuous GPS
+            streaming in the MVP.
           </p>
         </div>
         <div className="grid" style={{ marginTop: 12 }}>
@@ -282,7 +322,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Phone" value={booking.customerProfile?.user?.phone ?? 'No phone'} />
           <InfoRow label="Address" value={addressLine} />
           <InfoRow label="Pin" value={coordinateLabel(booking.lat, booking.lng)} />
-          <InfoRow label="Scheduled" value={`${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`} />
+          <InfoRow
+            label="Scheduled"
+            value={`${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`}
+          />
           <InfoRow label="Expires" value={formatDate(booking.expiresAt)} />
         </div>
 
@@ -290,7 +333,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <h2>Service</h2>
           <InfoRow label="Name" value={service?.service?.name ?? 'Service pending'} />
           <InfoRow label="Duration" value={`${service?.service?.durationMin ?? '-'} min`} />
-          <InfoRow label="Booking price" value={money(service?.price ?? booking.payment?.amount, booking.payment?.currency)} />
+          <InfoRow
+            label="Booking price"
+            value={money(service?.price ?? booking.payment?.amount, booking.payment?.currency)}
+          />
           <InfoRow label="Notes" value={booking.notes ?? 'No notes'} />
           <InfoRow label="Created" value={formatDate(booking.createdAt)} />
           <InfoRow label="Updated" value={formatDate(booking.updatedAt)} />
@@ -301,8 +347,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Preferred" value={providerName(booking.preferredProvider)} />
           <InfoRow label="Final" value={providerName(finalProvider)} />
           <InfoRow label="Final phone" value={finalProvider?.user?.phone ?? 'No phone'} />
-          <InfoRow label="Latest provider pin" value={latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet'} />
-          <InfoRow label="Latest pin time" value={latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared'} />
+          <InfoRow
+            label="Latest provider pin"
+            value={
+              latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet'
+            }
+          />
+          <InfoRow
+            label="Latest pin time"
+            value={latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared'}
+          />
           <InfoRow label="Location freshness" value={providerLocationMetricHelper(booking)} />
         </div>
       </section>
@@ -316,19 +370,27 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 <div>
                   <strong>{providerName(participant.providerProfile)}</strong>
                   <div className="muted">
-                    {participant.providerProfile?.user?.phone ?? 'No phone'} - {participant.providerStatusAtJoin ?? 'status unknown'}
+                    {participant.providerProfile?.user?.phone ?? 'No phone'} -{' '}
+                    {participant.providerStatusAtJoin ?? 'status unknown'}
                   </div>
                   <div className="muted">
-                    Joined {formatDate(participant.joinedAt)} / responded {formatDate(participant.respondedAt)}
+                    Joined {formatDate(participant.joinedAt)} / responded{' '}
+                    {formatDate(participant.respondedAt)}
                   </div>
                 </div>
                 <div>
-                  <span className={`pill ${participant.status === 'REJECTED' ? 'pill-warn' : 'pill-success'}`}>{participant.status}</span>
+                  <span
+                    className={`pill ${participant.status === 'REJECTED' ? 'pill-warn' : 'pill-success'}`}
+                  >
+                    {participant.status}
+                  </span>
                   <div className="muted">{distanceLabel(participant.distanceMeters)}</div>
                 </div>
               </div>
             ))}
-            {(booking.participants ?? []).length === 0 && <p className="muted">No providers have joined yet.</p>}
+            {(booking.participants ?? []).length === 0 && (
+              <p className="muted">No providers have joined yet.</p>
+            )}
           </div>
         </div>
 
@@ -337,9 +399,33 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Payment id" value={booking.payment?.id ?? 'No payment'} />
           <InfoRow label="Method" value={booking.payment?.method ?? 'NONE'} />
           <InfoRow label="Amount" value={money(booking.payment?.amount, booking.payment?.currency)} />
-          <InfoRow label="Refund count" value={`${booking.refunds?.length ?? booking.payment?.refunds?.length ?? 0}`} />
-          <InfoRow label="Earning" value={booking.earning ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}` : 'Not created'} />
+          <InfoRow
+            label="Refund count"
+            value={`${booking.refunds?.length ?? booking.payment?.refunds?.length ?? 0}`}
+          />
+          <InfoRow
+            label="Earning"
+            value={
+              booking.earning
+                ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
+                : 'Not created'
+            }
+          />
           <InfoRow label="Review" value={booking.review ? `${booking.review.rating}/5` : 'Not submitted'} />
+        </div>
+
+        <div className="card">
+          <h2>Finance trace</h2>
+          <InfoRow label="Customer price" value={financeTrace.customerPrice} />
+          <InfoRow label="Admin minimum" value={financeTrace.adminMinimum} />
+          <InfoRow label="Payout rule" value={financeTrace.payoutRuleStatus} />
+          <InfoRow label="Provider payout" value={financeTrace.providerPayout} />
+          <InfoRow label="Platform fee" value={financeTrace.platformFee} />
+          <InfoRow label="VAT / other costs" value={financeTrace.feeCosts} />
+          <InfoRow label="Net HANDS fee" value={financeTrace.netHandsFee} />
+          <InfoRow label="Withholding" value={financeTrace.withholding} />
+          <InfoRow label="Wallet ledger" value={financeTrace.walletLedger} />
+          <InfoRow label="Provider net" value={financeTrace.providerNet} />
         </div>
 
         <div className="card">
@@ -368,7 +454,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 <span className="pill">Provider</span>
               </div>
             ))}
-            {locationTrail(booking).length === 0 && <p className="muted">No provider location snapshots linked to this booking yet.</p>}
+            {locationTrail(booking).length === 0 && (
+              <p className="muted">No provider location snapshots linked to this booking yet.</p>
+            )}
           </div>
         </div>
       </section>
@@ -600,7 +688,13 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
     });
   }
 
-  if (status === 'OPEN_MATCHING' && booking.preferredProvider && participantCount === 0 && openedAge !== null && openedAge >= 10) {
+  if (
+    status === 'OPEN_MATCHING' &&
+    booking.preferredProvider &&
+    participantCount === 0 &&
+    openedAge !== null &&
+    openedAge >= 10
+  ) {
     flags.push({
       severity: 'medium',
       title: 'Preferred provider slow',
@@ -636,7 +730,11 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
     });
   }
 
-  if (activeWithLocationNeed && latestProviderLocation(booking) && latestProviderLocationFreshness(booking) !== 'recent') {
+  if (
+    activeWithLocationNeed &&
+    latestProviderLocation(booking) &&
+    latestProviderLocationFreshness(booking) !== 'recent'
+  ) {
     flags.push({
       severity: 'medium',
       title: 'Provider location is stale',
@@ -645,7 +743,11 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
     });
   }
 
-  if (booking.chatRoom && messages.length === 0 && ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status)) {
+  if (
+    booking.chatRoom &&
+    messages.length === 0 &&
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status)
+  ) {
     flags.push({
       severity: 'low',
       title: 'Chat quiet',
@@ -706,7 +808,11 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
   const paymentHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : undefined;
   const activeWithLocationNeed = ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
 
-  if (booking.status === 'CANCELLED' && booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)) {
+  if (
+    booking.status === 'CANCELLED' &&
+    booking.payment &&
+    !['RELEASED', 'REFUNDED'].includes(booking.payment.status)
+  ) {
     steps.push({
       priority: 'Now',
       title: 'Resolve cancelled payment',
@@ -730,7 +836,11 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     });
   }
 
-  if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && isPreferredAwaitingDecision(booking)) {
+  if (
+    booking.status === 'OPEN_MATCHING' &&
+    booking.preferredProvider &&
+    isPreferredAwaitingDecision(booking)
+  ) {
     steps.push({
       priority: 'Now',
       title: 'Preferred provider response',
@@ -776,7 +886,11 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     });
   }
 
-  if (activeWithLocationNeed && latestProviderLocation(booking) && latestProviderLocationFreshness(booking) !== 'recent') {
+  if (
+    activeWithLocationNeed &&
+    latestProviderLocation(booking) &&
+    latestProviderLocationFreshness(booking) !== 'recent'
+  ) {
     steps.push({
       priority: 'Watch',
       title: 'Refresh stale location',
@@ -788,7 +902,11 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     });
   }
 
-  if (booking.chatRoom && (booking.chatRoom.messages?.length ?? 0) === 0 && ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+  if (
+    booking.chatRoom &&
+    (booking.chatRoom.messages?.length ?? 0) === 0 &&
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
+  ) {
     steps.push({
       priority: 'Watch',
       title: 'First chat contact',
@@ -836,7 +954,8 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     steps.push({
       priority: 'Done',
       title: 'Normal monitoring',
-      detail: 'No urgent operator action is active. Keep this booking visible until the next status transition.',
+      detail:
+        'No urgent operator action is active. Keep this booking visible until the next status transition.',
       owner: 'Operations',
       tone: 'pill-success',
     });
@@ -851,7 +970,8 @@ function bookingOpsTaskCards(booking: AdminBookingDetail) {
     {
       type: 'CUSTOMER_CONTACTED',
       label: 'Customer contacted',
-      helper: 'Confirm the guest has been updated when waiting, switching provider, cancelling, or resolving payment.',
+      helper:
+        'Confirm the guest has been updated when waiting, switching provider, cancelling, or resolving payment.',
     },
     {
       type: 'PROVIDER_CONTACTED',
@@ -898,7 +1018,9 @@ function liveServiceSignals(booking: AdminBookingDetail) {
   const freshness = latestProviderLocationFreshness(booking);
   const customerPin = coordinateLabel(booking.lat, booking.lng);
   const providerPin = latest ? coordinateLabel(latest.lat, latest.lng) : 'No provider pin';
-  const distanceMeters = latest ? approximateDistanceMeters(booking.lat, booking.lng, latest.lat, latest.lng) : null;
+  const distanceMeters = latest
+    ? approximateDistanceMeters(booking.lat, booking.lng, latest.lat, latest.lng)
+    : null;
   const provider = booking.selectedProvider ?? booking.preferredProvider;
 
   return [
@@ -911,7 +1033,9 @@ function liveServiceSignals(booking: AdminBookingDetail) {
     {
       label: 'Provider pin',
       value: providerPin,
-      helper: latest ? providerLocationMetricHelper(booking) : 'Ask provider to share current location from chat.',
+      helper: latest
+        ? providerLocationMetricHelper(booking)
+        : 'Ask provider to share current location from chat.',
       tone:
         freshness === 'recent'
           ? 'pill-success'
@@ -930,13 +1054,17 @@ function liveServiceSignals(booking: AdminBookingDetail) {
     {
       label: 'Service contact',
       value: provider?.user?.phone ?? 'No provider phone',
-      helper: provider ? `${providerName(provider)} is the current handoff provider.` : 'No provider assigned yet.',
+      helper: provider
+        ? `${providerName(provider)} is the current handoff provider.`
+        : 'No provider assigned yet.',
       tone: provider ? 'pill-success' : 'pill-warn',
     },
     {
       label: 'Chat',
       value: booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} message(s)` : 'Not ready',
-      helper: booking.chatRoom ? `Room ${booking.chatRoom.id}` : 'Chat opens after provider selection/service start.',
+      helper: booking.chatRoom
+        ? `Room ${booking.chatRoom.id}`
+        : 'Chat opens after provider selection/service start.',
       tone: booking.chatRoom ? 'pill-success' : 'pill-warn',
     },
     {
@@ -968,14 +1096,18 @@ function flowStages(booking: AdminBookingDetail) {
     {
       label: 'Opened',
       value: booking.openedAt ? formatDate(booking.openedAt) : 'Not opened',
-      hint: booking.preferredProvider ? 'Direct request sent to preferred provider.' : 'Open matching started.',
+      hint: booking.preferredProvider
+        ? 'Direct request sent to preferred provider.'
+        : 'Open matching started.',
       done: Boolean(booking.openedAt),
     },
     {
       label: 'Provider reply',
       value: providerDecisionLabel(booking),
       hint: providerHint(booking),
-      done: (booking.participants?.length ?? 0) > 0 || ['MATCHED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status),
+      done:
+        (booking.participants?.length ?? 0) > 0 ||
+        ['MATCHED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status),
     },
     {
       label: 'Matched',
@@ -1045,7 +1177,9 @@ function providerHint(booking: AdminBookingDetail) {
 
 function providerDecisionLabel(booking: AdminBookingDetail) {
   const preferredId = booking.preferredProvider?.id;
-  const preferredParticipant = (booking.participants ?? []).find((participant) => participant.providerProfile?.id === preferredId);
+  const preferredParticipant = (booking.participants ?? []).find(
+    (participant) => participant.providerProfile?.id === preferredId,
+  );
   if (preferredParticipant) {
     return preferredParticipant.status;
   }
@@ -1091,7 +1225,11 @@ function latestProviderLocation(booking: AdminBookingDetail) {
     .map((participant) => participant.providerProfile?.locationSnapshots?.[0])
     .filter(Boolean) as AdminLocationSnapshot[];
 
-  return participantLocations.sort((left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime())[0] ?? null;
+  return (
+    participantLocations.sort(
+      (left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime(),
+    )[0] ?? null
+  );
 }
 
 function latestProviderLocationFreshness(booking: AdminBookingDetail) {
@@ -1162,6 +1300,68 @@ function locationTrail(booking: AdminBookingDetail) {
   return latest ? [latest] : [];
 }
 
+function bookingFinanceTrace(booking: AdminBookingDetail) {
+  const bookedService = booking.services?.[0];
+  const service = bookedService?.service;
+  const currency = booking.payment?.currency ?? booking.earning?.currency ?? 'VND';
+  const customerPrice = bookedService?.price ?? booking.payment?.amount;
+  const payoutRule = service?.payoutRules?.find(
+    (rule) => Number(rule.customerPrice) === Number(customerPrice),
+  );
+  const platformFeeFromRule =
+    payoutRule && customerPrice !== undefined
+      ? Number(customerPrice) - Number(payoutRule.providerPayoutAmount)
+      : null;
+  const vatAmount =
+    payoutRule && platformFeeFromRule !== null ? bpsAmount(platformFeeFromRule, payoutRule.vatBps) : null;
+  const otherCostAmount = payoutRule ? Number(payoutRule.otherCostAmount ?? 0) : null;
+  const netHandsFee =
+    platformFeeFromRule !== null ? platformFeeFromRule - (vatAmount ?? 0) - (otherCostAmount ?? 0) : null;
+  const latestTaxLog = booking.taxLogs?.[0] ?? booking.earning?.taxLogs?.[0];
+  const latestFeeLog = booking.platformFeeLogs?.[0] ?? booking.earning?.platformFeeLogs?.[0];
+  const walletEntries = booking.walletLedgerEntries ?? booking.earning?.walletLedgerEntries ?? [];
+  const walletTotal = walletEntries.reduce((sum, entry) => sum + Number(entry.amount ?? 0), 0);
+
+  return {
+    customerPrice: money(customerPrice, currency),
+    adminMinimum: money(service?.basePrice, currency),
+    payoutRuleStatus: payoutRule
+      ? `${money(Number(payoutRule.customerPrice), payoutRule.currency ?? currency)} active`
+      : 'Missing active rule',
+    providerPayout: payoutRule
+      ? money(Number(payoutRule.providerPayoutAmount), payoutRule.currency ?? currency)
+      : booking.earning
+        ? money(booking.earning.grossAmount - booking.earning.platformFee, booking.earning.currency)
+        : 'Not calculated',
+    platformFee: latestFeeLog
+      ? `${money(latestFeeLog.platformFeeAmount, latestFeeLog.currency)} logged`
+      : platformFeeFromRule !== null
+        ? money(platformFeeFromRule, currency)
+        : 'Not calculated',
+    feeCosts:
+      vatAmount !== null || otherCostAmount !== null
+        ? `${money(vatAmount ?? 0, currency)} VAT / ${money(otherCostAmount ?? 0, currency)} other`
+        : 'No active rule snapshot',
+    netHandsFee: netHandsFee !== null ? money(netHandsFee, currency) : 'Not calculated',
+    withholding: latestTaxLog
+      ? `${money(latestTaxLog.withholdingAmount, latestTaxLog.currency)} on ${money(latestTaxLog.taxableAmount, latestTaxLog.currency)}`
+      : booking.earning
+        ? money(booking.earning.withholdingAmount, booking.earning.currency)
+        : 'Not created',
+    walletLedger:
+      walletEntries.length > 0
+        ? `${money(walletTotal, walletEntries[0]?.currency ?? currency)} / ${walletEntries.length} entry`
+        : 'No entry',
+    providerNet: booking.earning
+      ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
+      : 'Not created',
+  };
+}
+
+function bpsAmount(amount: number, bps?: number | null) {
+  return Math.round((amount * Number(bps ?? 0)) / 10000);
+}
+
 function providerName(provider?: { displayName?: string | null } | null) {
   return provider?.displayName ?? 'Not selected';
 }
@@ -1211,8 +1411,7 @@ function approximateDistanceMeters(
   const dLat = toRadians(lat2 - lat1);
   const dLng = toRadians(lng2 - lng1);
   const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+    Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
   return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
