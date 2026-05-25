@@ -72,7 +72,8 @@ console.log(
             'Open infra/setup/.generated/hands-external-registration-pack.md while creating external accounts.',
             'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready.',
             'Paste infra/supabase/.generated/hands-staging-setup.sql into Supabase SQL Editor.',
-            'After filling values, run npm.cmd run external:check:supabase and npm.cmd run auth:supabase-smoke.',
+            'Run npm.cmd run external:check:supabase for Supabase core values.',
+            'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when Vonage/Supabase Phone Auth E2E starts.',
           ]
         : failed.map((result) => result.fix),
     },

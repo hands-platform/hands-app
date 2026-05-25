@@ -39,16 +39,11 @@ const registrationItems = [
   },
   {
     order: 2,
-    category: 'Supabase',
+    category: 'Supabase core',
     account: 'Supabase project',
-    purpose: 'Phone OTP, future PostgreSQL/RLS, Storage, and Realtime migration.',
-    consolePath: 'Supabase Dashboard > Project Settings > API and Authentication > Providers > Phone',
+    purpose: 'PostgreSQL/RLS, Storage, Realtime, and future Auth token verification foundation.',
+    consolePath: 'Supabase Dashboard > Project Settings > API and SQL Editor',
     env: [
-      envItem(
-        'AUTH_BACKEND',
-        'nest until Phone Auth E2E, then supabase',
-        ['nest', 'supabase'].includes(String(env.AUTH_BACKEND ?? '').toLowerCase()),
-      ),
       envItem(
         'SUPABASE_URL',
         'https://adzpstrkpzwpukuboxzj.supabase.co',
@@ -64,19 +59,37 @@ const registrationItems = [
     ],
     setup: [
       'Use organization/workspace name HANDS and project name hands-staging.',
-      'Keep Phone Auth/SMS deferred until Vonage credentials are ready for OTP E2E.',
       'Run npm.cmd run supabase:sql:pack, then paste infra/supabase/.generated/hands-staging-setup.sql into the SQL editor.',
       'Keep the service role key only in the API environment.',
+      'Keep Phone Auth/SMS out of this core step; it is tracked separately with Vonage.',
     ],
-    verify: [
-      'npm.cmd run supabase:sql:pack',
-      'npm.cmd run external:check:supabase',
-      'npm.cmd run auth:supabase-smoke',
-      'npm.cmd run external:check:supabase-auth only when Vonage/Supabase Phone Auth E2E starts',
-    ],
+    verify: ['npm.cmd run supabase:sql:pack', 'npm.cmd run external:check:supabase'],
   },
   {
     order: 3,
+    category: 'Supabase Phone Auth',
+    account: 'Supabase Phone Auth + Vonage',
+    purpose: 'Deferred real OTP delivery and Supabase access-token exchange for mobile login.',
+    consolePath: 'Supabase Dashboard > Authentication > Providers > Phone and Vonage Dashboard',
+    env: [
+      envItem(
+        'AUTH_BACKEND',
+        'nest until Phone Auth E2E, then supabase',
+        ['nest', 'supabase'].includes(String(env.AUTH_BACKEND ?? '').toLowerCase()),
+      ),
+      envItem('SMS_PROVIDER', 'vonage', String(env.SMS_PROVIDER ?? '').toLowerCase() === 'vonage'),
+      envItem('SMS_API_URL', 'https://<sms-provider-api>', hasValue(env.SMS_API_URL)),
+      envItem('SMS_API_KEY', '<sms-api-key>', hasValue(env.SMS_API_KEY)),
+    ],
+    setup: [
+      'Keep AUTH_BACKEND=nest and SMS_PROVIDER=dev for current local/product development.',
+      'Configure Vonage only when OTP E2E starts.',
+      'After Vonage OTP works, switch AUTH_BACKEND=supabase for the dedicated auth migration pass.',
+    ],
+    verify: ['npm.cmd run external:check:supabase-auth', 'npm.cmd run auth:supabase-smoke'],
+  },
+  {
+    order: 4,
     category: 'Maps',
     account: 'MapTiler',
     purpose: 'Low-cost map tile/style rendering for customer and provider mobile screens.',
@@ -92,7 +105,7 @@ const registrationItems = [
     ],
   },
   {
-    order: 4,
+    order: 5,
     category: 'Geocoding',
     account: 'Geoapify',
     purpose: 'Vietnam address search and coordinate lookup.',
@@ -105,7 +118,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:maps'],
   },
   {
-    order: 5,
+    order: 6,
     category: 'Payments',
     account: 'MoMo merchant sandbox',
     purpose: 'Vietnam wallet authorization, release, capture, and refund testing.',
@@ -119,7 +132,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
   },
   {
-    order: 6,
+    order: 7,
     category: 'Payments',
     account: 'VNPay merchant sandbox',
     purpose: 'Vietnam card/bank payment authorization and refund testing.',
@@ -132,7 +145,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
   },
   {
-    order: 7,
+    order: 8,
     category: 'Storage',
     account: 'Supabase Storage S3, R2, or S3-compatible bucket',
     purpose: 'Provider verification files, public profile media, and moderation evidence.',
@@ -164,7 +177,7 @@ const registrationItems = [
     ],
   },
   {
-    order: 8,
+    order: 9,
     category: 'Push',
     account: 'OneSignal or equivalent push provider',
     purpose: 'Native OS push after Firebase Messaging removal.',
@@ -186,7 +199,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:production'],
   },
   {
-    order: 9,
+    order: 10,
     category: 'SMS',
     account: 'Vonage SMS provider',
     purpose: 'Real OTP delivery for Supabase Phone Auth or backend OTP after deferred SMS setup.',
@@ -205,7 +218,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:production'],
   },
   {
-    order: 10,
+    order: 11,
     category: 'Mobile release',
     account: 'Android Play Console signing',
     purpose: 'Separate customer/provider upload keys and fingerprints for production Android distribution.',
