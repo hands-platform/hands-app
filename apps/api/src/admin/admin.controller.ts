@@ -219,6 +219,29 @@ export class AdminController {
     return this.admin.listServiceGroups();
   }
 
+  @Post('services/duration-sets')
+  createServiceDurationSet(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    body: {
+      serviceGroupKey?: string;
+      name?: string;
+      description?: string | null;
+      priceStep?: number;
+      displayOrder?: number;
+      vatBps?: number;
+      otherCostAmount?: number;
+      active?: boolean;
+      durations?: Array<{
+        durationMin?: number;
+        basePrice?: number;
+        providerPayoutAmount?: number | null;
+      }>;
+    },
+  ) {
+    return this.admin.createServiceDurationSet(user.id, body);
+  }
+
   @Post('services')
   createService(
     @CurrentUser() user: AuthenticatedUser,

@@ -311,6 +311,41 @@ if (
     `Higher-price payout rule was not created correctly: ${JSON.stringify(higherPricePayoutRule)}`,
   );
 }
+const smokeDurationSetKey = `smoke_duration_set_${Date.now()}`;
+const smokeDurationSet = await postJson('/admin/services/duration-sets', adminAuth.accessToken, {
+  serviceGroupKey: smokeDurationSetKey,
+  name: 'Smoke Duration Set',
+  description: 'Atomic smoke-created 60/90/120 service set.',
+  priceStep: 100000,
+  displayOrder: 999,
+  vatBps: 0,
+  otherCostAmount: 0,
+  active: true,
+  durations: [
+    { durationMin: 60, basePrice: 500000, providerPayoutAmount: 380000 },
+    { durationMin: 90, basePrice: 700000, providerPayoutAmount: 540000 },
+    { durationMin: 120, basePrice: 900000, providerPayoutAmount: 700000 },
+  ],
+});
+if (
+  !Array.isArray(smokeDurationSet) ||
+  smokeDurationSet.length !== 3 ||
+  !smokeDurationSet.every((item) => item.serviceGroupKey === smokeDurationSetKey) ||
+  !smokeDurationSet.every((item) => item.payoutRules?.some((rule) => rule.customerPrice === item.basePrice))
+) {
+  throw new Error(`Atomic service duration set was not created correctly: ${JSON.stringify(smokeDurationSet)}`);
+}
+await expectRequestFailure(
+  'Admin duplicate service duration set is rejected atomically',
+  () =>
+    postJson('/admin/services/duration-sets', adminAuth.accessToken, {
+      serviceGroupKey: smokeDurationSetKey,
+      name: 'Smoke Duration Set',
+      priceStep: 100000,
+      durations: [{ durationMin: 60, basePrice: 500000, providerPayoutAmount: 380000 }],
+    }),
+  400,
+);
 await expectRequestFailure(
   'Admin service price step below HANDS VND unit is rejected',
   () =>

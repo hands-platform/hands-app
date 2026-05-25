@@ -924,6 +924,118 @@ export class AdminService {
     return service;
   }
 
+  async createServiceDurationSet(
+    actorId: string,
+    input: {
+      serviceGroupKey?: string;
+      name?: string;
+      description?: string | null;
+      priceStep?: number;
+      displayOrder?: number;
+      vatBps?: number;
+      otherCostAmount?: number;
+      active?: boolean;
+      durations?: Array<{
+        durationMin?: number;
+        basePrice?: number;
+        providerPayoutAmount?: number | null;
+      }>;
+    },
+  ) {
+    const name = input.name?.trim();
+    if (!name) {
+      throw new BadRequestException('Service name is required');
+    }
+    const groupKey = normalizeNullable(input.serviceGroupKey) ?? slugify(name);
+    const priceStep = input.priceStep ?? PRICE_STEP_UNIT_VND;
+    const displayOrder = input.displayOrder ?? 100;
+    const durationRows = (input.durations ?? []).filter((row) => row.basePrice !== undefined);
+    if (durationRows.length === 0) {
+      throw new BadRequestException('At least one duration price is required');
+    }
+    const durationSet = new Set<number>();
+    for (const row of durationRows) {
+      if (row.durationMin === undefined || durationSet.has(row.durationMin)) {
+        throw new BadRequestException('Duration options must be unique and explicit');
+      }
+      durationSet.add(row.durationMin);
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.massageService.findMany({
+        where: { serviceGroupKey: groupKey, durationMin: { in: [...durationSet] } },
+        select: { id: true, durationMin: true },
+      });
+      if (existing.length > 0) {
+        throw new BadRequestException(
+          `Service duration already exists for ${groupKey}: ${existing
+            .map((service) => `${service.durationMin} min`)
+            .join(', ')}`,
+        );
+      }
+
+      const created: string[] = [];
+      for (const row of durationRows) {
+        const serviceData = normalizeServiceInput(
+          {
+            serviceGroupKey: groupKey,
+            name,
+            description: input.description,
+            durationMin: row.durationMin,
+            basePrice: row.basePrice,
+            priceStep,
+            displayOrder: displayOrder + (row.durationMin ?? 0),
+            active: input.active ?? true,
+          },
+          true,
+        ) as Prisma.MassageServiceUncheckedCreateInput;
+        const service = await tx.massageService.create({
+          data: serviceData,
+          include: { payoutRules: true },
+        });
+        const providerPayoutAmount = row.providerPayoutAmount;
+        if (providerPayoutAmount !== undefined && providerPayoutAmount !== null) {
+          const payoutRuleData = normalizeServicePayoutRuleInput(
+            { basePrice: service.basePrice, priceStep: service.priceStep },
+            {
+              customerPrice: service.basePrice,
+              providerPayoutAmount,
+              vatBps: input.vatBps,
+              otherCostAmount: input.otherCostAmount,
+              active: true,
+              notes: 'Base payout rule created with the service duration set.',
+            },
+            true,
+          );
+          await tx.servicePayoutRule.create({
+            data: { ...payoutRuleData, serviceId: service.id },
+          });
+        }
+        created.push(service.id);
+      }
+
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'service.duration_set.create',
+          target: `service_group:${groupKey}`,
+          metadata: toJson({
+            groupKey,
+            name,
+            durationMins: [...durationSet].sort((left, right) => left - right),
+            serviceIds: created,
+          }),
+        },
+      });
+
+      return tx.massageService.findMany({
+        where: { id: { in: created } },
+        orderBy: { durationMin: 'asc' },
+        include: { payoutRules: { orderBy: { customerPrice: 'asc' } } },
+      });
+    });
+  }
+
   async updateService(
     actorId: string,
     serviceId: string,

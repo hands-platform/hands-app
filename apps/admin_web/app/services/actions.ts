@@ -110,46 +110,27 @@ export async function createServiceDurationSet(formData: FormData) {
     redirectToServices('blocked', 'invalid-duration-set');
   }
 
-  for (const row of durationRows) {
-    const basePrice = row.basePrice;
-    if (basePrice === null) {
-      continue;
-    }
-    const service = await adminPost<CreatedService | null>(
-      '/admin/services',
-      {
-        name,
-        serviceGroupKey: serviceGroupKey || undefined,
-        description: description || undefined,
+  const createdServices = await adminPost<CreatedService[] | null>(
+    '/admin/services/duration-sets',
+    {
+      name,
+      serviceGroupKey: serviceGroupKey || undefined,
+      description: description || undefined,
+      priceStep,
+      displayOrder,
+      vatBps,
+      otherCostAmount,
+      active: true,
+      durations: durationRows.map((row) => ({
         durationMin: row.durationMin,
-        basePrice,
-        priceStep,
-        displayOrder: displayOrder + row.durationMin,
-        active: true,
-      },
-      null,
-    );
-    if (!service?.id) {
-      redirectToServices('blocked', 'api-rejected');
-    }
-    const providerPayoutAmount = row.providerPayoutAmount;
-    if (providerPayoutAmount !== null) {
-      const payoutRule = await adminPost<SavedPayoutRule | null>(
-        `/admin/services/${service.id}/payout-rules`,
-        {
-          customerPrice: basePrice,
-          providerPayoutAmount,
-          vatBps,
-          otherCostAmount,
-          active: true,
-          notes: 'Base payout rule created with the 60/90/120 service set.',
-        },
-        null,
-      );
-      if (!payoutRule?.id) {
-        redirectToServices('blocked', 'api-rejected');
-      }
-    }
+        basePrice: row.basePrice,
+        providerPayoutAmount: row.providerPayoutAmount,
+      })),
+    },
+    null,
+  );
+  if (!createdServices?.length) {
+    redirectToServices('blocked', 'api-rejected');
   }
 
   revalidatePath('/services');
