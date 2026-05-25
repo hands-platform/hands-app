@@ -22,7 +22,11 @@ void main() {
     expect(providerWalletBalance(summary), -120000);
     expect(
       providerWalletBlockReason(summary),
-      providerWalletBlockFallbackReason,
+      providerWalletBlockFallbackReasonKo,
+    );
+    expect(
+      providerWalletSettlementInstruction(summary),
+      providerWalletBlockHintKo,
     );
   });
 

@@ -365,7 +365,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         if (mounted) {
           setState(() {
             error = blockReason;
-            statusMessage = providerWalletBlockHint;
+            statusMessage = providerWalletBlockHintKo;
           });
         }
         return false;
@@ -1328,7 +1328,7 @@ class ProviderWalletGateCard extends StatelessWidget {
             ),
             if (walletBlocked) ...[
               const SizedBox(height: 8),
-              const Text(providerWalletBlockHint),
+              const Text(providerWalletBlockHintKo),
               const SizedBox(height: 10),
               FilledButton.tonalIcon(
                 onPressed: onRefresh,
@@ -1737,9 +1737,9 @@ class OpenBookingCard extends StatelessWidget {
                 ((isPreferredRequest && !isMatched) ||
                     (!isPreferredRequest && !joined))) ...[
               const SizedBox(height: 12),
-              const ProviderErrorCard(text: providerWalletBlockFallbackReason),
+              const ProviderErrorCard(text: providerWalletBlockFallbackReasonKo),
               const SizedBox(height: 8),
-              const InfoCard(text: providerWalletBlockHint),
+              const InfoCard(text: providerWalletBlockHintKo),
             ],
             const SizedBox(height: 12),
             if (isPreferredRequest && !isMatched)
@@ -1843,6 +1843,11 @@ class EarningsScreen extends ConsumerWidget {
                     final walletBlocked = summary['walletBlocked'] == true;
                     final walletBlockReason =
                         summary['walletBlockReason']?.toString();
+                    final walletDebtAmount =
+                        asNum(summary['walletDebtAmount']) ??
+                            (walletBalance < 0 ? walletBalance.abs() : 0);
+                    final walletSettlementInstruction =
+                        providerWalletSettlementInstruction(summary);
 
                     return FutureBuilder<List<dynamic>>(
                       future:
@@ -1881,6 +1886,19 @@ class EarningsScreen extends ConsumerWidget {
                                               'Unsettled cash service fees must be paid before accepting new bookings.')
                                           : 'You can accept new booking requests.',
                                     ),
+                                    if (walletBlocked) ...[
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        'Amount to settle: ${formatCurrency(walletDebtAmount)} $currency',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                                fontWeight: FontWeight.w800),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(walletSettlementInstruction),
+                                    ],
                                   ],
                                 ),
                               ),
@@ -4380,6 +4398,12 @@ const providerWalletBlockFallbackReason =
 const providerWalletBlockHint =
     '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
 
+const providerWalletBlockFallbackReasonKo =
+    '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+
+const providerWalletBlockHintKo =
+    '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
+
 num providerWalletBalance(Map<String, dynamic> summary) {
   return asNum(summary['walletBalance']) ??
       ((asNum(summary['pendingNetAmount']) ?? 0) +
@@ -4398,7 +4422,15 @@ String? providerWalletBlockReason(Map<String, dynamic> summary) {
     return reason;
   }
 
-  return providerWalletBlockFallbackReason;
+  return providerWalletBlockFallbackReasonKo;
+}
+
+String providerWalletSettlementInstruction(Map<String, dynamic> summary) {
+  final instruction = summary['walletSettlementInstruction']?.toString().trim();
+  if (instruction != null && instruction.isNotEmpty) {
+    return instruction;
+  }
+  return providerWalletBlockHintKo;
 }
 
 String formatCurrency(dynamic amount) {

@@ -820,7 +820,9 @@ const walletDebtProviderEarningsSummary = await getJson(
 );
 if (
   walletDebtProviderEarningsSummary.walletBalance >= 0 ||
-  walletDebtProviderEarningsSummary.walletBlocked !== true
+  walletDebtProviderEarningsSummary.walletBlocked !== true ||
+  walletDebtProviderEarningsSummary.walletDebtAmount <= 0 ||
+  !walletDebtProviderEarningsSummary.walletSettlementInstruction
 ) {
   throw new Error(
     `Cash booking did not create a negative provider wallet: ${JSON.stringify(
