@@ -13,8 +13,11 @@ export default async function ServicesPage() {
   const activeServices = services.filter((service) => service.active);
   const payoutRuleCount = services.reduce((sum, service) => sum + (service.payoutRules?.length ?? 0), 0);
   const groupedServices = groupServices(services);
-  const healthItems = buildPricingHealth(services);
   const activeTaxPolicy = selectActiveTaxPolicy(taxPolicies);
+  const healthItems = buildPricingHealth(services, activeTaxPolicy);
+  const readinessItems = buildBookingReadinessQueue(services, activeTaxPolicy);
+  const blockedReadinessItems = readinessItems.filter((item) => item.tone === 'blocked');
+  const warningReadinessItems = readinessItems.filter((item) => item.tone === 'warning');
 
   return (
     <>
@@ -60,6 +63,45 @@ export default async function ServicesPage() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking readiness queue</h2>
+            <p className="muted">
+              Shows services that can block customer booking or create an unsafe finance result before
+              providers start using those prices.
+            </p>
+          </div>
+          <div className="actions">
+            <span className={blockedReadinessItems.length ? 'pill pill-danger' : 'pill pill-success'}>
+              {blockedReadinessItems.length} blocked
+            </span>
+            <span className={warningReadinessItems.length ? 'pill pill-warn' : 'pill pill-success'}>
+              {warningReadinessItems.length} warning
+            </span>
+          </div>
+        </div>
+        {readinessItems.length ? (
+          <div className="setup-stage-list">
+            {readinessItems.slice(0, 12).map((item) => (
+              <div className="setup-stage-item" key={`${item.serviceId}-${item.title}-${item.detail}`}>
+                <span>{item.status}</span>
+                <div>
+                  <strong>{item.title}</strong>
+                  <p className="muted">{item.detail}</p>
+                  <p className="muted">{item.action}</p>
+                </div>
+                <small>{item.serviceId.slice(0, 8)}</small>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted">
+            All active service rows have a base payout rule and a positive projected company commission.
+          </p>
+        )}
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -409,7 +451,10 @@ function groupServices(services: AdminServiceCatalogItem[]) {
   }));
 }
 
-function buildPricingHealth(services: AdminServiceCatalogItem[]) {
+function buildPricingHealth(
+  services: AdminServiceCatalogItem[],
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
   const active = services.filter((service) => service.active);
   const invalidMinimums = active.filter(
     (service) => service.basePrice <= 0 || service.basePrice % service.priceStep !== 0,
@@ -424,6 +469,11 @@ function buildPricingHealth(services: AdminServiceCatalogItem[]) {
         rule.customerPrice < service.basePrice ||
         rule.customerPrice % service.priceStep !== 0 ||
         rule.providerPayoutAmount > rule.customerPrice,
+    ),
+  );
+  const lowCommissionRules = active.flatMap((service) =>
+    (service.payoutRules ?? []).filter(
+      (rule) => rule.active && actualCompanyCommission(service, rule, activeTaxPolicy) <= 0,
     ),
   );
   const groupedCount = new Set(active.map((service) => service.serviceGroupKey ?? slugify(service.name)))
@@ -463,7 +513,93 @@ function buildPricingHealth(services: AdminServiceCatalogItem[]) {
           ? 'Payout rules are above minimum, on the right increment, and do not overpay providers.'
           : 'Review payout rules with invalid customer price or provider payout amount.',
     },
+    {
+      label: 'Company commission floor',
+      ok: lowCommissionRules.length === 0,
+      value: `${lowCommissionRules.length} low`,
+      detail:
+        lowCommissionRules.length === 0
+          ? 'Active payout rules keep a positive projected company commission after VAT, withholding, and costs.'
+          : 'Review payout rules where projected company commission is zero after tax/cost deductions.',
+    },
   ];
+}
+
+function buildBookingReadinessQueue(
+  services: AdminServiceCatalogItem[],
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
+  return services
+    .filter((service) => service.active)
+    .flatMap((service) => {
+      const items: Array<{
+        serviceId: string;
+        title: string;
+        status: string;
+        detail: string;
+        action: string;
+        tone: 'blocked' | 'warning';
+      }> = [];
+      const basePayoutRule = (service.payoutRules ?? []).find(
+        (rule) => rule.active && rule.customerPrice === service.basePrice,
+      );
+      const invalidRules = (service.payoutRules ?? []).filter(
+        (rule) =>
+          rule.customerPrice < service.basePrice ||
+          rule.customerPrice % service.priceStep !== 0 ||
+          rule.providerPayoutAmount > rule.customerPrice,
+      );
+      const lowCommissionRules = (service.payoutRules ?? []).filter(
+        (rule) => rule.active && actualCompanyCommission(service, rule, activeTaxPolicy) <= 0,
+      );
+
+      if (!basePayoutRule) {
+        items.push({
+          serviceId: service.id,
+          title: `${service.name} / ${service.durationMin} min`,
+          status: 'BLOCKED',
+          detail: `Base price ${formatMoney(service.basePrice, 'VND')} has no active payout rule.`,
+          action: 'Add an active payout rule at the minimum customer price before customers can book.',
+          tone: 'blocked',
+        });
+      }
+
+      for (const rule of invalidRules) {
+        items.push({
+          serviceId: service.id,
+          title: `${service.name} / ${service.durationMin} min`,
+          status: 'INVALID',
+          detail: `Customer ${formatMoney(rule.customerPrice, rule.currency)} / provider ${formatMoney(
+            rule.providerPayoutAmount,
+            rule.currency,
+          )}`,
+          action:
+            'Customer price must respect the minimum and step, and provider payout cannot exceed customer price.',
+          tone: 'blocked',
+        });
+      }
+
+      for (const rule of lowCommissionRules) {
+        items.push({
+          serviceId: service.id,
+          title: `${service.name} / ${service.durationMin} min`,
+          status: 'LOW FEE',
+          detail: `Projected company commission is ${formatMoney(
+            actualCompanyCommission(service, rule, activeTaxPolicy),
+            rule.currency,
+          )} for customer price ${formatMoney(rule.customerPrice, rule.currency)}.`,
+          action: 'Adjust provider payout, VAT/cost assumptions, or tax policy before scaling this price.',
+          tone: 'warning',
+        });
+      }
+
+      return items;
+    })
+    .sort((left, right) => {
+      const leftScore = left.tone === 'blocked' ? 0 : 1;
+      const rightScore = right.tone === 'blocked' ? 0 : 1;
+      return leftScore - rightScore || left.title.localeCompare(right.title);
+    });
 }
 
 function selectActiveTaxPolicy(policies: AdminTaxPolicyVersion[]) {
@@ -502,6 +638,17 @@ function estimateWithholding(
     withholdingAmount,
     ruleLabel: `${rule.scope}${rule.serviceType ? `:${rule.serviceType}` : ''} ${formatBps(rule.rateBps)}`,
   };
+}
+
+function actualCompanyCommission(
+  service: AdminServiceCatalogItem,
+  rule: NonNullable<AdminServiceCatalogItem['payoutRules']>[number],
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
+  const fee = Math.max(0, rule.customerPrice - rule.providerPayoutAmount);
+  const vat = Math.round((fee * rule.vatBps) / 10000);
+  const tax = estimateWithholding(activeTaxPolicy, service, rule.customerPrice);
+  return Math.max(0, fee - vat - tax.withholdingAmount - rule.otherCostAmount);
 }
 
 function selectTaxRule(
