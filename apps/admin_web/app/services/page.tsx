@@ -24,6 +24,8 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   const warningReadinessItems = readinessItems.filter((item) => item.tone === 'warning');
   const bookingTraceRows = serviceBookingTraceRows(services);
   const bookingTraceSummary = serviceBookingTraceSummary(bookingTraceRows);
+  const pricePolicyPreviewRows = servicePricePolicyPreviewRows(activeServices, activeTaxPolicy);
+  const pricePolicyPreviewSummary = servicePricePolicyPreviewSummary(pricePolicyPreviewRows);
   const actionNotice = serviceActionNotice(params);
 
   return (
@@ -277,6 +279,100 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Price policy change preview</h2>
+            <p className="muted">
+              Before changing service prices, compare the current minimum price against common one-step
+              scenarios. This helps avoid accidentally creating zero-margin prices or provider payouts that
+              make cash bookings unsafe.
+            </p>
+          </div>
+          <span className={`pill ${pricePolicyPreviewSummary.riskyScenarioCount ? 'pill-warn' : 'pill-success'}`}>
+            {pricePolicyPreviewSummary.riskyScenarioCount} risky scenario(s)
+          </span>
+        </div>
+        <div className="service-trace-summary">
+          <div>
+            <span>Previewed options</span>
+            <strong>{pricePolicyPreviewRows.length}</strong>
+          </div>
+          <div>
+            <span>Current commission</span>
+            <strong>{formatMoney(pricePolicyPreviewSummary.currentCommission, pricePolicyPreviewSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Customer + step</span>
+            <strong>{formatMoney(pricePolicyPreviewSummary.customerStepCommission, pricePolicyPreviewSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Provider + step</span>
+            <strong>{formatMoney(pricePolicyPreviewSummary.providerStepCommission, pricePolicyPreviewSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Both + step</span>
+            <strong>{formatMoney(pricePolicyPreviewSummary.balancedStepCommission, pricePolicyPreviewSummary.currency)}</strong>
+          </div>
+          <div>
+            <span>Missing base rule</span>
+            <strong>{pricePolicyPreviewSummary.missingBaseRuleCount}</strong>
+          </div>
+        </div>
+        {pricePolicyPreviewRows.length ? (
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Service option</th>
+                <th>Current policy</th>
+                <th>Customer + step</th>
+                <th>Provider + step</th>
+                <th>Both + step</th>
+                <th>Risk</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pricePolicyPreviewRows.map((row) => (
+                <tr key={row.service.id}>
+                  <td>
+                    <strong>{row.service.name}</strong>
+                    <p className="muted">
+                      {row.service.durationMin} min / step {formatMoney(row.priceStep, row.currency)}
+                    </p>
+                  </td>
+                  <td>
+                    {row.baseRule ? (
+                      <div className="service-matrix-cell">
+                        <strong>{formatMoney(row.baseRule.customerPrice, row.currency)}</strong>
+                        <small>Provider {formatMoney(row.baseRule.providerPayoutAmount, row.currency)}</small>
+                        <small>Commission {formatMoney(row.currentFinance.actualCompanyCommission, row.currency)}</small>
+                      </div>
+                    ) : (
+                      <span className="pill pill-danger">Missing base payout</span>
+                    )}
+                  </td>
+                  <td>
+                    <ScenarioPreviewCell scenario={row.customerStepScenario} />
+                  </td>
+                  <td>
+                    <ScenarioPreviewCell scenario={row.providerStepScenario} />
+                  </td>
+                  <td>
+                    <ScenarioPreviewCell scenario={row.balancedStepScenario} />
+                  </td>
+                  <td>
+                    <span className={`pill ${row.riskTone}`}>{row.riskLabel}</span>
+                    <p className="muted">{row.nextAction}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted">No active service option is available for price policy preview.</p>
+        )}
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
@@ -965,6 +1061,177 @@ function ProviderPriceImpact({
       )}
     </div>
   );
+}
+
+type ServicePayoutRule = NonNullable<AdminServiceCatalogItem['payoutRules']>[number];
+
+type PricePolicyScenario = {
+  label: string;
+  customerPrice: number;
+  providerPayoutAmount: number;
+  currency: string;
+  finance: ReturnType<typeof servicePayoutFinance>;
+  tone: string;
+  status: string;
+};
+
+function ScenarioPreviewCell({ scenario }: { scenario: PricePolicyScenario | null }) {
+  if (!scenario) {
+    return <span className="pill pill-danger">No base rule</span>;
+  }
+
+  return (
+    <div className="service-matrix-cell">
+      <span className={`pill ${scenario.tone}`}>{scenario.status}</span>
+      <strong>{formatMoney(scenario.customerPrice, scenario.currency)}</strong>
+      <small>Provider {formatMoney(scenario.providerPayoutAmount, scenario.currency)}</small>
+      <small>Commission {formatMoney(scenario.finance.actualCompanyCommission, scenario.currency)}</small>
+      <small>Tax {formatMoney(scenario.finance.withholdingAmount, scenario.currency)}</small>
+    </div>
+  );
+}
+
+function servicePricePolicyPreviewRows(
+  services: AdminServiceCatalogItem[],
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
+  return services
+    .slice()
+    .sort(
+      (left, right) =>
+        (left.serviceGroupKey ?? left.name).localeCompare(right.serviceGroupKey ?? right.name) ||
+        left.durationMin - right.durationMin,
+    )
+    .map((service) => {
+      const baseRule = basePayoutRule(service);
+      const priceStep = Math.max(100000, service.priceStep || 100000);
+      const currentFinance = baseRule
+        ? servicePayoutFinance(service, baseRule, activeTaxPolicy)
+        : emptyFinancePreview();
+      const customerStepScenario = baseRule
+        ? buildPricePolicyScenario(service, baseRule, activeTaxPolicy, {
+            label: 'Customer price + step',
+            customerPrice: baseRule.customerPrice + priceStep,
+            providerPayoutAmount: baseRule.providerPayoutAmount,
+          })
+        : null;
+      const providerStepScenario = baseRule
+        ? buildPricePolicyScenario(service, baseRule, activeTaxPolicy, {
+            label: 'Provider payout + step',
+            customerPrice: baseRule.customerPrice,
+            providerPayoutAmount: baseRule.providerPayoutAmount + priceStep,
+          })
+        : null;
+      const balancedStepScenario = baseRule
+        ? buildPricePolicyScenario(service, baseRule, activeTaxPolicy, {
+            label: 'Customer and provider + step',
+            customerPrice: baseRule.customerPrice + priceStep,
+            providerPayoutAmount: baseRule.providerPayoutAmount + priceStep,
+          })
+        : null;
+      const scenarios = [customerStepScenario, providerStepScenario, balancedStepScenario].filter(
+        Boolean,
+      ) as PricePolicyScenario[];
+      const riskyScenarios = scenarios.filter(
+        (scenario) =>
+          scenario.providerPayoutAmount > scenario.customerPrice ||
+          scenario.finance.actualCompanyCommission <= 0,
+      );
+      const riskLabel = !baseRule
+        ? 'Missing base rule'
+        : riskyScenarios.length
+          ? `${riskyScenarios.length} risky`
+          : 'Safe preview';
+      const riskTone = !baseRule ? 'pill-danger' : riskyScenarios.length ? 'pill-warn' : 'pill-success';
+      const nextAction = !baseRule
+        ? 'Add the base payout rule first.'
+        : riskyScenarios.length
+          ? 'Review provider payout or tax/cost assumptions before saving a price change.'
+          : 'These one-step scenarios keep a positive projected company commission.';
+
+      return {
+        service,
+        baseRule,
+        priceStep,
+        currency: baseRule?.currency ?? 'VND',
+        currentFinance,
+        customerStepScenario,
+        providerStepScenario,
+        balancedStepScenario,
+        riskLabel,
+        riskTone,
+        nextAction,
+      };
+    });
+}
+
+function servicePricePolicyPreviewSummary(rows: ReturnType<typeof servicePricePolicyPreviewRows>) {
+  const currency = rows.find((row) => row.currency)?.currency ?? 'VND';
+  return rows.reduce(
+    (summary, row) => ({
+      currency: summary.currency,
+      currentCommission: summary.currentCommission + row.currentFinance.actualCompanyCommission,
+      customerStepCommission:
+        summary.customerStepCommission + (row.customerStepScenario?.finance.actualCompanyCommission ?? 0),
+      providerStepCommission:
+        summary.providerStepCommission + (row.providerStepScenario?.finance.actualCompanyCommission ?? 0),
+      balancedStepCommission:
+        summary.balancedStepCommission + (row.balancedStepScenario?.finance.actualCompanyCommission ?? 0),
+      missingBaseRuleCount: summary.missingBaseRuleCount + (row.baseRule ? 0 : 1),
+      riskyScenarioCount:
+        summary.riskyScenarioCount +
+        [row.customerStepScenario, row.providerStepScenario, row.balancedStepScenario].filter(
+          (scenario) =>
+            scenario &&
+            (scenario.providerPayoutAmount > scenario.customerPrice ||
+              scenario.finance.actualCompanyCommission <= 0),
+        ).length,
+    }),
+    {
+      currency,
+      currentCommission: 0,
+      customerStepCommission: 0,
+      providerStepCommission: 0,
+      balancedStepCommission: 0,
+      missingBaseRuleCount: 0,
+      riskyScenarioCount: 0,
+    },
+  );
+}
+
+function buildPricePolicyScenario(
+  service: AdminServiceCatalogItem,
+  baseRule: ServicePayoutRule,
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+  input: { label: string; customerPrice: number; providerPayoutAmount: number },
+): PricePolicyScenario {
+  const scenarioRule = {
+    ...baseRule,
+    customerPrice: input.customerPrice,
+    providerPayoutAmount: input.providerPayoutAmount,
+  };
+  const finance = servicePayoutFinance(service, scenarioRule, activeTaxPolicy);
+  const overpaysProvider = input.providerPayoutAmount > input.customerPrice;
+  const hasPositiveCommission = finance.actualCompanyCommission > 0;
+  return {
+    label: input.label,
+    customerPrice: input.customerPrice,
+    providerPayoutAmount: input.providerPayoutAmount,
+    currency: baseRule.currency,
+    finance,
+    tone: overpaysProvider ? 'pill-danger' : hasPositiveCommission ? 'pill-success' : 'pill-warn',
+    status: overpaysProvider ? 'Overpays' : hasPositiveCommission ? 'Safe' : 'Low margin',
+  };
+}
+
+function emptyFinancePreview() {
+  return {
+    fee: 0,
+    vatAmount: 0,
+    withholdingAmount: 0,
+    taxRuleLabel: null,
+    actualCompanyCommission: 0,
+  };
 }
 
 function servicePayoutLedgerRows(
