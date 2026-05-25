@@ -335,6 +335,14 @@ List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
   ];
 }
 
+bool providerFirstRevenuePayoutSetupActiveFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final completedBookingCount =
+      _asNum(snapshot['completedBookingCount'])?.toInt() ?? 0;
+  final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
+  return completedBookingCount > 0 && payoutGate['canWithdraw'] != true;
+}
+
 String providerLogActionLabel(String value) {
   switch (value) {
     case 'basic_profile.update':

@@ -118,6 +118,30 @@ void main() {
     expect(readyItems[1].detail, contains('approved by admin'));
   });
 
+  test('activates payout setup only after first revenue', () {
+    expect(
+      providerFirstRevenuePayoutSetupActiveFromSnapshot({
+        'completedBookingCount': 0,
+        'payoutGate': {'canWithdraw': false},
+      }),
+      isFalse,
+    );
+    expect(
+      providerFirstRevenuePayoutSetupActiveFromSnapshot({
+        'completedBookingCount': 1,
+        'payoutGate': {'canWithdraw': false},
+      }),
+      isTrue,
+    );
+    expect(
+      providerFirstRevenuePayoutSetupActiveFromSnapshot({
+        'completedBookingCount': 3,
+        'payoutGate': {'canWithdraw': true},
+      }),
+      isFalse,
+    );
+  });
+
   test('builds provider level roadmap milestones', () {
     final milestones = providerLevelMilestonesFromSnapshot({
       'level': 'LEVEL_2_ACTIVE',

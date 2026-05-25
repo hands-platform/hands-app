@@ -3605,6 +3605,8 @@ class _ProviderOnboardingCard extends StatelessWidget {
     final payoutGateItems = providerPayoutGateItemsFromSnapshot(snapshot);
     final levelMilestones = providerLevelMilestonesFromSnapshot(snapshot);
     final priority = providerOnboardingPriorityFromSnapshot(snapshot);
+    final firstRevenuePayoutSetupActive =
+        providerFirstRevenuePayoutSetupActiveFromSnapshot(snapshot);
     final priorityAction = switch (priority.actionKey) {
       'BASIC_PROFILE' => onFillBasicProfile,
       'KYC_REVIEW' => onSubmitKyc,
@@ -3668,6 +3670,30 @@ class _ProviderOnboardingCard extends StatelessWidget {
                     },
             ),
             const SizedBox(height: 12),
+            if (firstRevenuePayoutSetupActive) ...[
+              _FirstRevenuePayoutSetupPanel(
+                completedBookingCount: completedBookingCount,
+                taxStatus: taxStatus,
+                addressReady: addressText?.trim().isNotEmpty ?? false,
+                missingAgreementCount: missingAgreementCount,
+                onAddTaxProfile: isSaving
+                    ? null
+                    : () {
+                        onAddTaxProfile();
+                      },
+                onUpdateAddress: isSaving
+                    ? null
+                    : () {
+                        onFillBasicProfile();
+                      },
+                onAcceptAgreements: isSaving
+                    ? null
+                    : () {
+                        onAcceptAgreements();
+                      },
+              ),
+              const SizedBox(height: 12),
+            ],
             if (documents.isNotEmpty) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
@@ -3831,6 +3857,156 @@ class _ProviderOnboardingCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FirstRevenuePayoutSetupPanel extends StatelessWidget {
+  const _FirstRevenuePayoutSetupPanel({
+    required this.completedBookingCount,
+    required this.taxStatus,
+    required this.addressReady,
+    required this.missingAgreementCount,
+    required this.onAddTaxProfile,
+    required this.onUpdateAddress,
+    required this.onAcceptAgreements,
+  });
+
+  final int completedBookingCount;
+  final String? taxStatus;
+  final bool addressReady;
+  final int missingAgreementCount;
+  final VoidCallback? onAddTaxProfile;
+  final VoidCallback? onUpdateAddress;
+  final VoidCallback? onAcceptAgreements;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final taxReady = taxStatus == 'APPROVED';
+    final agreementsReady = missingAgreementCount == 0;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.tertiaryContainer.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: colorScheme.tertiary),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.account_balance_wallet_outlined,
+                  color: colorScheme.tertiary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'First earning recorded',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$completedBookingCount completed service(s). Finish tax, address, and payout agreements before withdrawal. You can still receive bookings unless the HANDS wallet is negative.',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _PayoutSetupStatusRow(
+            label: 'Tax profile',
+            value: taxReady ? 'Approved' : taxStatus ?? 'Missing',
+            complete: taxReady,
+          ),
+          _PayoutSetupStatusRow(
+            label: 'Residential address',
+            value: addressReady ? 'Saved' : 'Missing',
+            complete: addressReady,
+          ),
+          _PayoutSetupStatusRow(
+            label: 'Payout agreements',
+            value: agreementsReady ? 'Accepted' : '$missingAgreementCount left',
+            complete: agreementsReady,
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (!taxReady)
+                FilledButton.tonalIcon(
+                  onPressed: onAddTaxProfile,
+                  icon: const Icon(Icons.receipt_long_outlined),
+                  label: Text(
+                    taxStatus == 'REJECTED' ? 'Resubmit tax' : 'Add tax',
+                  ),
+                ),
+              if (!addressReady)
+                FilledButton.tonalIcon(
+                  onPressed: onUpdateAddress,
+                  icon: const Icon(Icons.home_outlined),
+                  label: const Text('Update address'),
+                ),
+              if (!agreementsReady)
+                FilledButton.tonalIcon(
+                  onPressed: onAcceptAgreements,
+                  icon: const Icon(Icons.assignment_turned_in_outlined),
+                  label: const Text('Accept agreements'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PayoutSetupStatusRow extends StatelessWidget {
+  const _PayoutSetupStatusRow({
+    required this.label,
+    required this.value,
+    required this.complete,
+  });
+
+  final String label;
+  final String value;
+  final bool complete;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            complete ? Icons.check_circle_outline : Icons.radio_button_checked,
+            color: complete ? colorScheme.primary : colorScheme.tertiary,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
       ),
     );
   }
