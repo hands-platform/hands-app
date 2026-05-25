@@ -39,8 +39,9 @@ export default async function ServicesPage() {
           <div>
             <h2>Pricing health</h2>
             <p className="muted">
-              Providers can charge the minimum price or higher, but every configured customer price should have
-              a payout rule so finance can separate provider payout, VAT, withholding, and actual commission.
+              Providers can charge the minimum price or higher, but every configured customer price should
+              have a payout rule so finance can separate provider payout, VAT, withholding, and actual
+              commission.
             </p>
           </div>
           <span className={`pill ${healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}`}>
@@ -64,7 +65,8 @@ export default async function ServicesPage() {
       <section className="card" style={{ marginBottom: 16 }}>
         <h2>Create 60/90/120 duration set</h2>
         <p className="muted">
-          Use this for common service types. Leave a duration price empty if that option should not be created.
+          Use this for common service types. Add provider payout amounts now so each duration can be booked
+          immediately after creation.
         </p>
         <form action={createServiceDurationSet} className="form-grid">
           <label>
@@ -80,16 +82,36 @@ export default async function ServicesPage() {
             <input name="basePrice60" type="number" min="100000" step="100000" placeholder="500000" />
           </label>
           <label>
+            60 min provider payout
+            <input name="providerPayoutAmount60" type="number" min="0" step="1000" placeholder="380000" />
+          </label>
+          <label>
             90 min minimum
             <input name="basePrice90" type="number" min="100000" step="100000" placeholder="700000" />
+          </label>
+          <label>
+            90 min provider payout
+            <input name="providerPayoutAmount90" type="number" min="0" step="1000" placeholder="540000" />
           </label>
           <label>
             120 min minimum
             <input name="basePrice120" type="number" min="100000" step="100000" placeholder="900000" />
           </label>
           <label>
+            120 min provider payout
+            <input name="providerPayoutAmount120" type="number" min="0" step="1000" placeholder="700000" />
+          </label>
+          <label>
             Price step
             <input name="priceStep" type="number" min="100000" step="100000" defaultValue="100000" />
+          </label>
+          <label>
+            VAT bps
+            <input name="vatBps" type="number" min="0" max="10000" defaultValue="0" />
+          </label>
+          <label>
+            Other cost
+            <input name="otherCostAmount" type="number" min="0" defaultValue="0" />
           </label>
           <label>
             Display order
@@ -106,7 +128,8 @@ export default async function ServicesPage() {
       <section className="card" style={{ marginBottom: 16 }}>
         <h2>Create service duration</h2>
         <p className="muted">
-          A service type is grouped by key, then each duration gets its own minimum customer price.
+          A service type is grouped by key, then each duration gets its own minimum customer price. Add the
+          base payout rule here when possible; otherwise bookings stay blocked until finance completes it.
         </p>
         <form action={createService} className="form-grid">
           <label>
@@ -126,8 +149,20 @@ export default async function ServicesPage() {
             <input name="basePrice" type="number" min="100000" step="100000" placeholder="500000" required />
           </label>
           <label>
+            Provider payout
+            <input name="providerPayoutAmount" type="number" min="0" step="1000" placeholder="380000" />
+          </label>
+          <label>
             Price step
             <input name="priceStep" type="number" min="100000" step="100000" defaultValue="100000" />
+          </label>
+          <label>
+            VAT bps
+            <input name="vatBps" type="number" min="0" max="10000" defaultValue="0" />
+          </label>
+          <label>
+            Other cost
+            <input name="otherCostAmount" type="number" min="0" defaultValue="0" />
           </label>
           <label>
             Display order
@@ -165,8 +200,8 @@ export default async function ServicesPage() {
                       {formatMoney(service.priceStep, 'VND')}
                     </p>
                     <p className="muted">
-                      {service._count?.providers ?? 0} provider price row(s),{' '}
-                      {service._count?.bookings ?? 0} booking row(s)
+                      {service._count?.providers ?? 0} provider price row(s), {service._count?.bookings ?? 0}{' '}
+                      booking row(s)
                     </p>
 
                     <form action={updateService} className="form-grid compact-form">
@@ -195,7 +230,13 @@ export default async function ServicesPage() {
                       </label>
                       <label>
                         Price step
-                        <input name="priceStep" type="number" min="100000" step="100000" defaultValue={service.priceStep} />
+                        <input
+                          name="priceStep"
+                          type="number"
+                          min="100000"
+                          step="100000"
+                          defaultValue={service.priceStep}
+                        />
                       </label>
                       <label>
                         Display order
@@ -264,7 +305,13 @@ export default async function ServicesPage() {
                                 </label>
                                 <label>
                                   VAT bps
-                                  <input name="vatBps" type="number" min="0" max="10000" defaultValue={rule.vatBps} />
+                                  <input
+                                    name="vatBps"
+                                    type="number"
+                                    min="0"
+                                    max="10000"
+                                    defaultValue={rule.vatBps}
+                                  />
                                 </label>
                                 <label>
                                   Other cost
@@ -291,7 +338,9 @@ export default async function ServicesPage() {
                         );
                       })}
                       {(service.payoutRules ?? []).length === 0 ? (
-                        <span className="muted">No payout rule yet. Earnings will fall back to the generic fee policy.</span>
+                        <span className="muted">
+                          No payout rule yet. Bookings are blocked until a base payout rule is configured.
+                        </span>
                       ) : null}
                     </div>
 
@@ -364,9 +413,7 @@ function buildPricingHealth(services: AdminServiceCatalogItem[]) {
   );
   const missingBasePayoutRules = active.filter(
     (service) =>
-      !(service.payoutRules ?? []).some(
-        (rule) => rule.active && rule.customerPrice === service.basePrice,
-      ),
+      !(service.payoutRules ?? []).some((rule) => rule.active && rule.customerPrice === service.basePrice),
   );
   const invalidRules = active.flatMap((service) =>
     (service.payoutRules ?? []).filter(
@@ -376,7 +423,8 @@ function buildPricingHealth(services: AdminServiceCatalogItem[]) {
         rule.providerPayoutAmount > rule.customerPrice,
     ),
   );
-  const groupedCount = new Set(active.map((service) => service.serviceGroupKey ?? slugify(service.name))).size;
+  const groupedCount = new Set(active.map((service) => service.serviceGroupKey ?? slugify(service.name)))
+    .size;
 
   return [
     {
@@ -426,7 +474,9 @@ function selectActiveTaxPolicy(policies: AdminTaxPolicyVersion[]) {
       const endsAt = policy.effectiveTo ? new Date(policy.effectiveTo).getTime() : Number.POSITIVE_INFINITY;
       return startsAt <= now && endsAt >= now;
     })
-    .sort((left, right) => new Date(right.effectiveFrom).getTime() - new Date(left.effectiveFrom).getTime())[0];
+    .sort(
+      (left, right) => new Date(right.effectiveFrom).getTime() - new Date(left.effectiveFrom).getTime(),
+    )[0];
 }
 
 function estimateWithholding(
@@ -456,11 +506,13 @@ function selectTaxRule(
   input: { grossAmount: number; serviceTypes: string[] },
 ) {
   const serviceTypes = new Set(input.serviceTypes.map((value) => value.toLowerCase()));
-  const prioritized = [...rules].filter((rule) => rule.active).sort(
-    (left, right) =>
-      taxRulePriority(right, serviceTypes, input.grossAmount) -
-      taxRulePriority(left, serviceTypes, input.grossAmount),
-  );
+  const prioritized = [...rules]
+    .filter((rule) => rule.active)
+    .sort(
+      (left, right) =>
+        taxRulePriority(right, serviceTypes, input.grossAmount) -
+        taxRulePriority(left, serviceTypes, input.grossAmount),
+    );
   return prioritized.find((rule) => taxRulePriority(rule, serviceTypes, input.grossAmount) > 0) ?? null;
 }
 

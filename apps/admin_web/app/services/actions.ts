@@ -3,12 +3,19 @@
 import { revalidatePath } from 'next/cache';
 import { adminPatch, adminPost } from '../../lib/admin-api';
 
+type CreatedService = {
+  id: string;
+};
+
 export async function createService(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
   const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
   const description = String(formData.get('description') || '').trim();
   const durationMin = parseInteger(formData.get('durationMin'));
   const basePrice = parseInteger(formData.get('basePrice'));
+  const providerPayoutAmount = parseInteger(formData.get('providerPayoutAmount'));
+  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
   const priceStep = parseInteger(formData.get('priceStep')) ?? 100000;
   const displayOrder = parseInteger(formData.get('displayOrder')) ?? 0;
 
@@ -16,7 +23,7 @@ export async function createService(formData: FormData) {
     return;
   }
 
-  await adminPost(
+  const service = await adminPost<CreatedService | null>(
     '/admin/services',
     {
       name,
@@ -30,6 +37,22 @@ export async function createService(formData: FormData) {
     },
     null,
   );
+
+  if (service?.id && providerPayoutAmount !== null) {
+    await adminPost(
+      `/admin/services/${service.id}/payout-rules`,
+      {
+        customerPrice: basePrice,
+        providerPayoutAmount,
+        vatBps,
+        otherCostAmount,
+        active: true,
+        notes: 'Base payout rule created with the service.',
+      },
+      null,
+    );
+  }
+
   revalidatePath('/services');
   revalidatePath('/audit-log');
 }
@@ -40,6 +63,8 @@ export async function createServiceDurationSet(formData: FormData) {
   const description = String(formData.get('description') || '').trim();
   const priceStep = parseInteger(formData.get('priceStep')) ?? 100000;
   const displayOrder = parseInteger(formData.get('displayOrder')) ?? 100;
+  const vatBps = parseInteger(formData.get('vatBps')) ?? 0;
+  const otherCostAmount = parseInteger(formData.get('otherCostAmount')) ?? 0;
   const durations = [60, 90, 120];
 
   if (!name) {
@@ -51,7 +76,7 @@ export async function createServiceDurationSet(formData: FormData) {
     if (!basePrice) {
       continue;
     }
-    await adminPost(
+    const service = await adminPost<CreatedService | null>(
       '/admin/services',
       {
         name,
@@ -65,6 +90,21 @@ export async function createServiceDurationSet(formData: FormData) {
       },
       null,
     );
+    const providerPayoutAmount = parseInteger(formData.get(`providerPayoutAmount${durationMin}`));
+    if (service?.id && providerPayoutAmount !== null) {
+      await adminPost(
+        `/admin/services/${service.id}/payout-rules`,
+        {
+          customerPrice: basePrice,
+          providerPayoutAmount,
+          vatBps,
+          otherCostAmount,
+          active: true,
+          notes: 'Base payout rule created with the 60/90/120 service set.',
+        },
+        null,
+      );
+    }
   }
 
   revalidatePath('/services');
