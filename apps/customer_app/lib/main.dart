@@ -1172,9 +1172,8 @@ class ProviderDetailPage extends StatelessWidget {
                           builder: (context) {
                             final providerService =
                                 item as Map<String, dynamic>;
-                            final service = providerService['service']
-                                    as Map<String, dynamic>? ??
-                                <String, dynamic>{};
+                            final service =
+                                customerBookableService(providerService);
                             return ServiceCard(
                               service: service,
                               onBook: () => onBookService(detail, service),
@@ -1230,7 +1229,10 @@ class ServiceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final duration = service['durationMin'];
-    final price = service['basePrice'];
+    final price = customerServicePrice(service);
+    final basePrice = asNum(service['basePrice'])?.toInt();
+    final hasProviderPrice =
+        basePrice != null && basePrice > 0 && price != basePrice;
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -1275,6 +1277,16 @@ class ServiceCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (hasProviderPrice) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Provider price. Admin minimum ${formatCurrency(basePrice)} VND.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.black54),
+              ),
+            ],
           ],
         ),
       ),
@@ -1707,7 +1719,7 @@ class _BookingConfirmationPageState
 
   Future<void> applyCoupon() async {
     final code = couponController.text.trim();
-    final basePrice = asNum(widget.selectedService['basePrice'])?.toInt() ?? 0;
+    final servicePrice = customerServicePrice(widget.selectedService);
     if (code.isEmpty) {
       setState(() {
         appliedCouponCode = null;
@@ -1727,7 +1739,7 @@ class _BookingConfirmationPageState
       final preview = await ref.read(customerRepositoryProvider).previewCoupon(
             code: code,
             serviceId: widget.selectedService['id'] as String,
-            subtotal: basePrice,
+            subtotal: servicePrice,
           );
       if (!mounted) {
         return;
@@ -1768,10 +1780,12 @@ class _BookingConfirmationPageState
     final service = widget.selectedService;
     final provider = widget.providerDetail;
     final distanceMeters = asDouble(provider['distanceMeters']);
-    final basePrice = asNum(service['basePrice'])?.toInt() ?? 0;
+    final servicePrice = customerServicePrice(service);
+    final basePrice = asNum(service['basePrice'])?.toInt() ?? servicePrice;
+    final hasProviderPrice = servicePrice != basePrice;
     final platformFee = 0;
     final serviceCount = 1;
-    final rawTotalAmount = basePrice + platformFee - couponDiscountAmount;
+    final rawTotalAmount = servicePrice + platformFee - couponDiscountAmount;
     final totalAmount = rawTotalAmount < 0 ? 0 : rawTotalAmount;
     final couponApplied = appliedCouponCode != null && couponDiscountAmount > 0;
     final customerPoint = customerLat == null || customerLng == null
@@ -1958,7 +1972,11 @@ class _BookingConfirmationPageState
                             ServiceTag(
                                 label: '${service['durationMin'] ?? '-'} min'),
                             ServiceTag(
-                                label: '${formatCurrency(basePrice)} VND'),
+                                label: '${formatCurrency(servicePrice)} VND'),
+                            if (hasProviderPrice)
+                              ServiceTag(
+                                  label:
+                                      'Minimum ${formatCurrency(basePrice)} VND'),
                             const ServiceTag(label: '1 therapist'),
                           ],
                         ),
@@ -2064,7 +2082,7 @@ class _BookingConfirmationPageState
                   const SizedBox(height: 10),
                   BookingSummaryRow(
                     label: service['name'] as String? ?? 'Massage service',
-                    value: '${formatCurrency(basePrice)} VND',
+                    value: '${formatCurrency(servicePrice)} VND',
                   ),
                   const SizedBox(height: 10),
                   BookingSummaryRow(
@@ -2545,7 +2563,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           const SizedBox(height: 12),
                           if (service != null)
                             Text(
-                              '${service['name']} - ${service['durationMin']} min - ${formatCurrency(service['basePrice'])} VND',
+                              '${service['name']} - ${service['durationMin']} min - ${formatCurrency(customerServicePrice(service))} VND',
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                           const SizedBox(height: 16),
@@ -5191,9 +5209,50 @@ Map<String, dynamic>? firstBookingService(Map<String, dynamic> booking) {
   if (services.isEmpty) {
     return null;
   }
-  final first = services.first as Map<String, dynamic>;
-  final service = first['service'];
-  return service is Map<String, dynamic> ? service : null;
+  final first = asMap(services.first);
+  if (first == null) {
+    return null;
+  }
+  final service = asMap(first['service']);
+  if (service == null) {
+    return null;
+  }
+  final bookingPrice = asNum(first['price'])?.toInt();
+  return {
+    ...service,
+    'bookingServiceId': first['id'],
+    if (bookingPrice != null) 'bookingPrice': bookingPrice,
+    if (bookingPrice != null) 'effectivePrice': bookingPrice,
+  };
+}
+
+Map<String, dynamic> customerBookableService(
+    Map<String, dynamic> providerService) {
+  final service = asMap(providerService['service']) ?? <String, dynamic>{};
+  final providerPrice = asNum(providerService['price'])?.toInt();
+  final basePrice = asNum(service['basePrice'])?.toInt() ?? 0;
+  final effectivePrice = providerPrice ?? basePrice;
+
+  return {
+    ...service,
+    'providerServiceId': providerService['id'],
+    if (providerPrice != null) 'providerPrice': providerPrice,
+    'effectivePrice': effectivePrice,
+    'customerPrice': effectivePrice,
+    'providerServiceActive': providerService['active'] ?? true,
+  };
+}
+
+int customerServicePrice(Map<String, dynamic>? service) {
+  if (service == null) {
+    return 0;
+  }
+  return asNum(service['effectivePrice'])?.toInt() ??
+      asNum(service['customerPrice'])?.toInt() ??
+      asNum(service['providerPrice'])?.toInt() ??
+      asNum(service['bookingPrice'])?.toInt() ??
+      asNum(service['basePrice'])?.toInt() ??
+      0;
 }
 
 String providerDisplayName(Map<String, dynamic>? booking) {

@@ -55,7 +55,13 @@ export class ProvidersService {
             },
           },
         },
-        services: { include: { service: true } },
+        services: {
+          where: {
+            active: true,
+            service: { active: true },
+          },
+          include: { service: true },
+        },
         reviews: { select: { rating: true }, take: 20, orderBy: { createdAt: 'desc' } },
       },
       take: 100,
