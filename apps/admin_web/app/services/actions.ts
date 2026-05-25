@@ -8,6 +8,10 @@ type CreatedService = {
   id: string;
 };
 
+type SavedPayoutRule = {
+  id: string;
+};
+
 export async function createService(formData: FormData) {
   const name = String(formData.get('name') || '').trim();
   const serviceGroupKey = String(formData.get('serviceGroupKey') || '').trim();
@@ -42,8 +46,12 @@ export async function createService(formData: FormData) {
     null,
   );
 
-  if (service?.id && providerPayoutAmount !== null) {
-    await adminPost(
+  if (!service?.id) {
+    redirectToServices('blocked', 'api-rejected');
+  }
+
+  if (providerPayoutAmount !== null) {
+    const payoutRule = await adminPost<SavedPayoutRule | null>(
       `/admin/services/${service.id}/payout-rules`,
       {
         customerPrice: basePrice,
@@ -55,6 +63,9 @@ export async function createService(formData: FormData) {
       },
       null,
     );
+    if (!payoutRule?.id) {
+      redirectToServices('blocked', 'api-rejected');
+    }
   }
 
   revalidatePath('/services');
@@ -118,9 +129,12 @@ export async function createServiceDurationSet(formData: FormData) {
       },
       null,
     );
+    if (!service?.id) {
+      redirectToServices('blocked', 'api-rejected');
+    }
     const providerPayoutAmount = row.providerPayoutAmount;
-    if (service?.id && providerPayoutAmount !== null) {
-      await adminPost(
+    if (providerPayoutAmount !== null) {
+      const payoutRule = await adminPost<SavedPayoutRule | null>(
         `/admin/services/${service.id}/payout-rules`,
         {
           customerPrice: basePrice,
@@ -132,6 +146,9 @@ export async function createServiceDurationSet(formData: FormData) {
         },
         null,
       );
+      if (!payoutRule?.id) {
+        redirectToServices('blocked', 'api-rejected');
+      }
     }
   }
 
@@ -158,7 +175,7 @@ export async function updateService(formData: FormData) {
     redirectToServices('blocked', 'invalid-service-pricing');
   }
 
-  await adminPatch(
+  const service = await adminPatch<CreatedService | null>(
     `/admin/services/${serviceId}`,
     {
       name,
@@ -172,6 +189,9 @@ export async function updateService(formData: FormData) {
     },
     null,
   );
+  if (!service?.id) {
+    redirectToServices('blocked', 'api-rejected');
+  }
   revalidatePath('/services');
   revalidatePath('/audit-log');
   redirectToServices('saved', 'service-updated');
@@ -192,7 +212,7 @@ export async function upsertPayoutRule(formData: FormData) {
     redirectToServices('blocked', 'invalid-payout');
   }
 
-  await adminPost(
+  const rule = await adminPost<SavedPayoutRule | null>(
     `/admin/services/${serviceId}/payout-rules`,
     {
       customerPrice,
@@ -204,6 +224,9 @@ export async function upsertPayoutRule(formData: FormData) {
     },
     null,
   );
+  if (!rule?.id) {
+    redirectToServices('blocked', 'api-rejected');
+  }
   revalidatePath('/services');
   revalidatePath('/audit-log');
   redirectToServices('saved', 'payout-rule-saved');
@@ -225,7 +248,7 @@ export async function updatePayoutRule(formData: FormData) {
     redirectToServices('blocked', 'invalid-payout');
   }
 
-  await adminPatch(
+  const rule = await adminPatch<SavedPayoutRule | null>(
     `/admin/service-payout-rules/${ruleId}`,
     {
       customerPrice,
@@ -237,6 +260,9 @@ export async function updatePayoutRule(formData: FormData) {
     },
     null,
   );
+  if (!rule?.id) {
+    redirectToServices('blocked', 'api-rejected');
+  }
   revalidatePath('/services');
   revalidatePath('/audit-log');
   redirectToServices('saved', 'payout-rule-updated');

@@ -559,6 +559,11 @@ function serviceActionNotice(params: Record<string, string | string[] | undefine
       title: 'Provider payout is too high',
       detail: 'Provider payout cannot be greater than the customer price for the same service option.',
     },
+    'api-rejected': {
+      title: 'API rejected the service update',
+      detail:
+        'The backend did not save this change. Recheck the price step, payout rule, duplicate service values, or API connection.',
+    },
   };
 
   if (status === 'saved') {
