@@ -619,6 +619,45 @@ const smokeTaxRule = await postJson(
     active: true,
   },
 );
+await expectRequestFailure(
+  'Duplicate active default tax rule is rejected',
+  () =>
+    postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
+      scope: 'DEFAULT',
+      rateBps: 600,
+      fixedAmount: 0,
+      active: true,
+    }),
+  400,
+);
+const smokeAmountBandTaxRule = await postJson(
+  `/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`,
+  adminAuth.accessToken,
+  {
+    scope: 'AMOUNT_BAND',
+    minGrossAmount: 0,
+    maxGrossAmount: 500000,
+    rateBps: 500,
+    fixedAmount: 0,
+    active: true,
+  },
+);
+if (smokeAmountBandTaxRule.scope !== 'AMOUNT_BAND') {
+  throw new Error(`Amount-band tax rule was not created: ${JSON.stringify(smokeAmountBandTaxRule)}`);
+}
+await expectRequestFailure(
+  'Overlapping amount-band tax rule is rejected',
+  () =>
+    postJson(`/admin/tax-policy-versions/${smokeTaxPolicy.id}/rules`, adminAuth.accessToken, {
+      scope: 'AMOUNT_BAND',
+      minGrossAmount: 400000,
+      maxGrossAmount: 600000,
+      rateBps: 500,
+      fixedAmount: 0,
+      active: true,
+    }),
+  400,
+);
 const updatedSmokeTaxRule = await patchJson(`/admin/tax-rules/${smokeTaxRule.id}`, adminAuth.accessToken, {
   scope: 'DEFAULT',
   rateBps: 500,

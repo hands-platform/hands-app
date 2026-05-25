@@ -684,17 +684,20 @@ export class ProviderOnboardingService {
     },
   ) {
     const data = normalizeTaxRuleInput(input, true);
-    const rule = await this.prisma.taxRule.create({
-      data: {
-        policyVersionId,
-        scope: data.scope,
-        serviceType: data.serviceType,
-        minGrossAmount: data.minGrossAmount,
-        maxGrossAmount: data.maxGrossAmount,
-        rateBps: data.rateBps,
-        fixedAmount: data.fixedAmount,
-        active: data.active,
-      },
+    const rule = await this.prisma.$transaction(async (tx) => {
+      await assertTaxRuleDoesNotConflict(tx, policyVersionId, data);
+      return tx.taxRule.create({
+        data: {
+          policyVersionId,
+          scope: data.scope,
+          serviceType: data.serviceType,
+          minGrossAmount: data.minGrossAmount,
+          maxGrossAmount: data.maxGrossAmount,
+          rateBps: data.rateBps,
+          fixedAmount: data.fixedAmount,
+          active: data.active,
+        },
+      });
     });
     await this.writeAudit(actorId, 'tax_rule.create', `tax_rule:${rule.id}`, {
       policyVersionId,
@@ -730,9 +733,12 @@ export class ProviderOnboardingService {
       },
       false,
     );
-    const rule = await this.prisma.taxRule.update({
-      where: { id },
-      data,
+    const rule = await this.prisma.$transaction(async (tx) => {
+      await assertTaxRuleDoesNotConflict(tx, existing.policyVersionId, data, existing.id);
+      return tx.taxRule.update({
+        where: { id },
+        data,
+      });
     });
     await this.writeAudit(actorId, 'tax_rule.update', `tax_rule:${rule.id}`, {
       policyVersionId: rule.policyVersionId,
@@ -1005,6 +1011,70 @@ function deactivateOtherActiveTaxPolicies(
     },
     data: { status: TaxPolicyStatus.INACTIVE },
   });
+}
+
+async function assertTaxRuleDoesNotConflict(
+  tx: Prisma.TransactionClient,
+  policyVersionId: string,
+  data: {
+    scope: TaxRuleScope;
+    serviceType?: string | null;
+    minGrossAmount: number | null;
+    maxGrossAmount: number | null;
+    active?: boolean;
+  },
+  currentRuleId?: string,
+) {
+  if (data.active === false) {
+    return;
+  }
+
+  const existingRules = await tx.taxRule.findMany({
+    where: {
+      policyVersionId,
+      active: true,
+      id: currentRuleId ? { not: currentRuleId } : undefined,
+      scope: data.scope,
+    },
+  });
+
+  if (data.scope === TaxRuleScope.DEFAULT && existingRules.length > 0) {
+    throw new BadRequestException('Only one active DEFAULT tax rule is allowed per policy version');
+  }
+
+  if (data.scope === TaxRuleScope.SERVICE_TYPE) {
+    const duplicate = existingRules.find((rule) => rule.serviceType === data.serviceType);
+    if (duplicate) {
+      throw new BadRequestException('Only one active SERVICE_TYPE tax rule is allowed for each service type');
+    }
+  }
+
+  if (data.scope === TaxRuleScope.AMOUNT_BAND) {
+    const overlapping = existingRules.find((rule) =>
+      amountBandsOverlap(
+        data.minGrossAmount,
+        data.maxGrossAmount,
+        rule.minGrossAmount,
+        rule.maxGrossAmount,
+      ),
+    );
+    if (overlapping) {
+      throw new BadRequestException('Active AMOUNT_BAND tax rules cannot overlap in the same policy version');
+    }
+  }
+}
+
+function amountBandsOverlap(
+  leftMin: number | null,
+  leftMax: number | null,
+  rightMin: number | null,
+  rightMax: number | null,
+) {
+  const aMin = leftMin ?? Number.NEGATIVE_INFINITY;
+  const aMax = leftMax ?? Number.POSITIVE_INFINITY;
+  const bMin = rightMin ?? Number.NEGATIVE_INFINITY;
+  const bMax = rightMax ?? Number.POSITIVE_INFINITY;
+  return aMin <= bMax && bMin <= aMax;
 }
 
 function normalizeTaxRuleInput(

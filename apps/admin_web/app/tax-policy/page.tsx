@@ -1,4 +1,4 @@
-import { AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
+import { AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
@@ -274,16 +274,21 @@ function toDateTimeLocal(value?: string | null) {
 
 function buildTaxPolicyHealth(policies: AdminTaxPolicyVersion[]) {
   const activePolicies = policies.filter((policy) => policy.status === 'ACTIVE');
-  const activeWithDefaultRules = activePolicies.filter((policy) =>
-    (policy.rules ?? []).some((rule) => rule.active && rule.scope === 'DEFAULT'),
+  const activeDefaultRuleCount = activePolicies.reduce(
+    (sum, policy) =>
+      sum + (policy.rules ?? []).filter((rule) => rule.active && rule.scope === 'DEFAULT').length,
+    0,
   );
   const activeWithoutRules = activePolicies.filter((policy) => (policy.rules ?? []).length === 0);
   const futurePolicies = policies.filter(
     (policy) => new Date(policy.effectiveFrom).getTime() > Date.now() && policy.status !== 'ARCHIVED',
   );
-  const amountBandRules = policies.flatMap((policy) =>
-    (policy.rules ?? []).filter((rule) => rule.active && rule.scope === 'AMOUNT_BAND'),
+  const activeRules = activePolicies.flatMap((policy) =>
+    (policy.rules ?? []).filter((rule) => rule.active).map((rule) => ({ ...rule, policyName: policy.name })),
   );
+  const amountBandRules = activeRules.filter((rule) => rule.scope === 'AMOUNT_BAND');
+  const duplicateServiceTypeRules = duplicateActiveServiceTypeRules(activePolicies);
+  const overlappingAmountBands = overlappingActiveAmountBands(activePolicies);
 
   return [
     {
@@ -297,12 +302,12 @@ function buildTaxPolicyHealth(policies: AdminTaxPolicyVersion[]) {
     },
     {
       label: 'Default withholding rule',
-      ok: activeWithDefaultRules.length === 1,
-      value: `${activeWithDefaultRules.length} default`,
+      ok: activePolicies.length === 1 && activeDefaultRuleCount === 1,
+      value: `${activeDefaultRuleCount} default`,
       detail:
-        activeWithDefaultRules.length === 1
+        activePolicies.length === 1 && activeDefaultRuleCount === 1
           ? 'The active policy has a fallback DEFAULT rule.'
-          : 'Add one active DEFAULT rule to the active policy so every service can be calculated.',
+          : 'Keep exactly one active DEFAULT rule on the active policy so every service can be calculated predictably.',
     },
     {
       label: 'Active policy has rules',
@@ -337,7 +342,73 @@ function buildTaxPolicyHealth(policies: AdminTaxPolicyVersion[]) {
           ? 'No amount-band rules are configured yet. This is fine if default/service-type rules are enough.'
           : 'Amount-band rules should have a min or max boundary and a non-zero rate or fixed amount.',
     },
+    {
+      label: 'No duplicate service rules',
+      ok: duplicateServiceTypeRules.length === 0,
+      value: duplicateServiceTypeRules.length ? `${duplicateServiceTypeRules.length} duplicate` : 'clear',
+      detail:
+        duplicateServiceTypeRules.length === 0
+          ? 'Each active service-type rule is unique inside its policy.'
+          : `Resolve duplicate active service-type rules: ${duplicateServiceTypeRules.slice(0, 3).join(', ')}.`,
+    },
+    {
+      label: 'No overlapping amount bands',
+      ok: overlappingAmountBands.length === 0,
+      value: overlappingAmountBands.length ? `${overlappingAmountBands.length} overlap` : 'clear',
+      detail:
+        overlappingAmountBands.length === 0
+          ? 'Active amount-band rules do not overlap inside the active policy.'
+          : `Review overlapping amount bands: ${overlappingAmountBands.slice(0, 3).join(', ')}.`,
+    },
   ];
+}
+
+function duplicateActiveServiceTypeRules(policies: AdminTaxPolicyVersion[]) {
+  return policies.flatMap((policy) => {
+    const counts = new Map<string, number>();
+    for (const rule of policy.rules ?? []) {
+      if (policy.status !== 'ACTIVE' || !rule.active || rule.scope !== 'SERVICE_TYPE' || !rule.serviceType) {
+        continue;
+      }
+      const key = rule.serviceType.trim().toLowerCase();
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return [...counts.entries()]
+      .filter(([, count]) => count > 1)
+      .map(([serviceType]) => `${policy.name}/${serviceType}`);
+  });
+}
+
+function overlappingActiveAmountBands(policies: AdminTaxPolicyVersion[]) {
+  return policies.flatMap((policy) => {
+    if (policy.status !== 'ACTIVE') {
+      return [];
+    }
+    const bands = (policy.rules ?? [])
+      .filter((rule) => rule.active && rule.scope === 'AMOUNT_BAND')
+      .sort((left, right) => (left.minGrossAmount ?? 0) - (right.minGrossAmount ?? 0));
+    const overlaps: string[] = [];
+    for (let index = 0; index < bands.length; index += 1) {
+      for (let nextIndex = index + 1; nextIndex < bands.length; nextIndex += 1) {
+        if (amountBandsOverlap(bands[index], bands[nextIndex])) {
+          overlaps.push(`${policy.name}/${formatBand(bands[index])} vs ${formatBand(bands[nextIndex])}`);
+        }
+      }
+    }
+    return overlaps;
+  });
+}
+
+function amountBandsOverlap(left: AdminTaxRule, right: AdminTaxRule) {
+  const leftMin = left.minGrossAmount ?? Number.NEGATIVE_INFINITY;
+  const leftMax = left.maxGrossAmount ?? Number.POSITIVE_INFINITY;
+  const rightMin = right.minGrossAmount ?? Number.NEGATIVE_INFINITY;
+  const rightMax = right.maxGrossAmount ?? Number.POSITIVE_INFINITY;
+  return leftMin <= rightMax && rightMin <= leftMax;
+}
+
+function formatBand(rule: AdminTaxRule) {
+  return `${rule.minGrossAmount ?? 0}-${rule.maxGrossAmount ?? 'no max'}`;
 }
 
 function formatBps(value: number) {

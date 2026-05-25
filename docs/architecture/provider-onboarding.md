@@ -64,6 +64,12 @@ Rules may target:
 
 Each rule stores `rateBps` and optional `fixedAmount`. The code stores the policy/rule snapshot used for each calculation in `ProviderTaxLog.ruleSnapshot`, so later policy changes do not rewrite history.
 
+To keep tax calculation deterministic, the API rejects risky active rule setups:
+
+- More than one active `DEFAULT` rule in the same policy version.
+- More than one active `SERVICE_TYPE` rule for the same service type in the same policy version.
+- Overlapping active `AMOUNT_BAND` ranges in the same policy version.
+
 Tax and platform-fee policies must exist before the first booking is completed, even when
 the provider has not submitted a tax profile yet. If tax profile data is missing, the
 system can request it after first revenue while preserving the policy version that was
