@@ -12,8 +12,18 @@ if (-not (Test-Path $statePath)) {
 
 $state = Get-Content -Raw $statePath | ConvertFrom-Json
 
-$apiProcess = Get-Process -Id $state.apiPid -ErrorAction SilentlyContinue
-$adminProcess = Get-Process -Id $state.adminPid -ErrorAction SilentlyContinue
+function Get-OptionalProcessById {
+  param([object]$ProcessId)
+
+  if ($null -eq $ProcessId -or [string]::IsNullOrWhiteSpace([string]$ProcessId)) {
+    return $null
+  }
+
+  return Get-Process -Id ([int]$ProcessId) -ErrorAction SilentlyContinue
+}
+
+$apiProcess = Get-OptionalProcessById $state.apiPid
+$adminProcess = Get-OptionalProcessById $state.adminPid
 
 [pscustomobject]@{
   appName = $state.appName
