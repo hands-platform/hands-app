@@ -1,4 +1,4 @@
-import { AdminPayoutBatch, adminGet } from '../../lib/admin-api';
+import { AdminEarning, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
 import { markPayoutFailed, markPayoutPaid, markPayoutProcessing, updatePayoutTransferRef } from './actions';
 
 export default async function PayoutsPage() {
@@ -6,6 +6,7 @@ export default async function PayoutsPage() {
   const summary = buildSummary(batches);
   const commandSignals = buildPayoutCommandSignals(batches);
   const payoutLanes = buildPayoutLanes(batches);
+  const serviceEvidence = buildPayoutServiceEvidence(batches);
 
   return (
     <>
@@ -66,6 +67,88 @@ export default async function PayoutsPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payout service evidence</h2>
+            <p className="muted">
+              Shows which service duration options are inside payout batches, so finance can reconcile
+              provider net, HANDS fee, tax withholding, and cash wallet debt before bank transfer.
+            </p>
+          </div>
+          <a className="text-link" href="/services">
+            Review service pricing
+          </a>
+        </div>
+        <div className="service-trace-summary">
+          <div>
+            <span>Service options</span>
+            <strong>{serviceEvidence.length}</strong>
+          </div>
+          <div>
+            <span>Batches</span>
+            <strong>{batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length}</strong>
+          </div>
+          <div>
+            <span>Gross</span>
+            <strong>{formatMoney(serviceEvidence.reduce((sum, item) => sum + item.grossAmount, 0), summary.currency)}</strong>
+          </div>
+          <div>
+            <span>Provider net</span>
+            <strong>{formatMoney(serviceEvidence.reduce((sum, item) => sum + item.netAmount, 0), summary.currency)}</strong>
+          </div>
+          <div>
+            <span>Platform fee</span>
+            <strong>{formatMoney(serviceEvidence.reduce((sum, item) => sum + item.platformFee, 0), summary.currency)}</strong>
+          </div>
+          <div>
+            <span>Tax withheld</span>
+            <strong>
+              {formatMoney(serviceEvidence.reduce((sum, item) => sum + item.withholdingAmount, 0), summary.currency)}
+            </strong>
+          </div>
+        </div>
+        {serviceEvidence.length ? (
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Service option</th>
+                <th>Batches</th>
+                <th>Earnings</th>
+                <th>Gross</th>
+                <th>Provider net</th>
+                <th>Platform fee</th>
+                <th>Tax</th>
+                <th>Cash debt</th>
+              </tr>
+            </thead>
+            <tbody>
+              {serviceEvidence.map((item) => (
+                <tr key={item.key}>
+                  <td>
+                    <strong>{item.label}</strong>
+                    <p className="muted">{item.groupKey}</p>
+                  </td>
+                  <td>{item.batchCount}</td>
+                  <td>{item.earningCount}</td>
+                  <td>{formatMoney(item.grossAmount, item.currency)}</td>
+                  <td>{formatMoney(item.netAmount, item.currency)}</td>
+                  <td>{formatMoney(item.platformFee, item.currency)}</td>
+                  <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
+                  <td>
+                    <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
+                      {formatMoney(item.cashDebtAmount, item.currency)}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted">No payout batch has linked service evidence yet.</p>
+        )}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -190,6 +273,15 @@ export default async function PayoutsPage() {
                   <td>
                     <div>{batch.earnings?.length ?? 0} item(s)</div>
                     <div className="muted">{earningsStatusHint(batch)}</div>
+                    <div className="participant-list" style={{ marginTop: 8 }}>
+                      {batchServiceEvidence(batch)
+                        .slice(0, 3)
+                        .map((item) => (
+                          <span className="pill pill-info" key={`${batch.id}-${item.key}`}>
+                            {item.label}: {formatMoney(item.netAmount, item.currency)}
+                          </span>
+                        ))}
+                    </div>
                   </td>
                   <td>
                     <div className="participant-list">
@@ -358,6 +450,119 @@ type PayoutLane = {
   pillClass: string;
   emptyText: string;
 };
+
+type PayoutServiceEvidenceItem = {
+  key: string;
+  label: string;
+  groupKey: string;
+  currency: string;
+  batchCount: number;
+  earningCount: number;
+  grossAmount: number;
+  netAmount: number;
+  platformFee: number;
+  withholdingAmount: number;
+  cashDebtAmount: number;
+};
+
+type InternalPayoutServiceEvidenceItem = PayoutServiceEvidenceItem & {
+  batchIds: Set<string>;
+  earningIds: Set<string>;
+};
+
+function buildPayoutServiceEvidence(batches: AdminPayoutBatch[]): PayoutServiceEvidenceItem[] {
+  const grouped = new Map<string, InternalPayoutServiceEvidenceItem>();
+
+  batches.forEach((batch) => {
+    (batch.earnings ?? []).forEach((earning) => {
+      addEarningToServiceEvidence(grouped, batch.id, earning);
+    });
+  });
+
+  return [...grouped.values()]
+    .map(({ batchIds, earningIds, ...item }) => ({
+      ...item,
+      batchCount: batchIds.size,
+      earningCount: earningIds.size,
+    }))
+    .sort((left, right) => right.netAmount - left.netAmount || left.label.localeCompare(right.label))
+    .slice(0, 12);
+}
+
+function batchServiceEvidence(batch: AdminPayoutBatch[]): PayoutServiceEvidenceItem[];
+function batchServiceEvidence(batch: AdminPayoutBatch): PayoutServiceEvidenceItem[];
+function batchServiceEvidence(batch: AdminPayoutBatch | AdminPayoutBatch[]) {
+  return buildPayoutServiceEvidence(Array.isArray(batch) ? batch : [batch]);
+}
+
+function addEarningToServiceEvidence(
+  grouped: Map<string, InternalPayoutServiceEvidenceItem>,
+  batchId: string,
+  earning: AdminEarning,
+) {
+  if (earning.status === 'CANCELLED') {
+    return;
+  }
+
+  const bookingServices =
+    earning.booking?.services && earning.booking.services.length > 0
+      ? earning.booking.services
+      : [
+          {
+            id: `earning-${earning.id}`,
+            serviceId: 'unknown-service',
+            quantity: 1,
+            price: earning.grossAmount,
+            service: null,
+          },
+        ];
+
+  const allocationBase =
+    bookingServices.reduce(
+      (sum, bookingService) =>
+        sum + Number(bookingService.price ?? 0) * Math.max(1, Number(bookingService.quantity ?? 1)),
+      0,
+    ) || earning.grossAmount || 1;
+
+  bookingServices.forEach((bookingService) => {
+    const quantity = Math.max(1, Number(bookingService.quantity ?? 1));
+    const serviceGross = Number(bookingService.price ?? 0) * quantity;
+    const allocationShare = allocationBase > 0 ? serviceGross / allocationBase : 1 / bookingServices.length;
+    const service = bookingService.service;
+    const key = service?.id ?? bookingService.serviceId ?? 'unknown-service';
+    const duration = service?.durationMin ? `${service.durationMin} min` : 'duration not linked';
+    const label = service?.name ? `${service.name} / ${duration}` : 'Unlinked service option';
+    const item =
+      grouped.get(key) ??
+      {
+        key,
+        label,
+        groupKey: service?.serviceGroupKey ?? bookingService.serviceId ?? 'unknown',
+        currency: earning.currency,
+        batchCount: 0,
+        earningCount: 0,
+        grossAmount: 0,
+        netAmount: 0,
+        platformFee: 0,
+        withholdingAmount: 0,
+        cashDebtAmount: 0,
+        batchIds: new Set<string>(),
+        earningIds: new Set<string>(),
+      };
+
+    item.batchIds.add(batchId);
+    item.earningIds.add(earning.id);
+    item.grossAmount += Math.round(earning.grossAmount * allocationShare);
+    item.netAmount += Math.round(earning.netAmount * allocationShare);
+    item.platformFee += Math.round(earning.platformFee * allocationShare);
+    item.withholdingAmount += Math.round((earning.withholdingAmount ?? 0) * allocationShare);
+    if (earning.netAmount < 0) {
+      item.cashDebtAmount += Math.round(Math.abs(earning.netAmount) * allocationShare);
+    }
+
+    grouped.set(key, item);
+  });
+}
 
 function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSignal[] {
   const needsReview = batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED');
