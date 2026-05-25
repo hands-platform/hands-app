@@ -9,7 +9,15 @@ const fileEnv = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : 
 const env = { ...fileEnv, ...process.env };
 
 const checks = [];
-const validPhases = new Set(['advisory', 'supabase-auth', 'maps', 'payments', 'storage', 'production']);
+const validPhases = new Set([
+  'advisory',
+  'supabase-core',
+  'supabase-auth',
+  'maps',
+  'payments',
+  'storage',
+  'production',
+]);
 
 if (!validPhases.has(phase)) {
   console.error(
@@ -118,37 +126,37 @@ addRecommended(
 );
 addPhaseRequired(
   'supabase',
-  'AUTH_BACKEND=supabase for Phone Auth',
-  hasExpectedValue('AUTH_BACKEND', 'supabase'),
-  'Set AUTH_BACKEND=supabase before Supabase Phone Auth E2E.',
-  ['supabase-auth', 'production'],
-);
-addPhaseRequired(
-  'supabase',
-  'SUPABASE_URL for Phone Auth',
+  'SUPABASE_URL for core Supabase integration',
   isHttpsUrl('SUPABASE_URL'),
-  'Set SUPABASE_URL=https://<project-ref>.supabase.co before AUTH_BACKEND=supabase E2E.',
-  ['supabase-auth', 'production'],
+  'Set SUPABASE_URL=https://<project-ref>.supabase.co before Supabase-backed storage/auth/location E2E.',
+  ['supabase-core', 'supabase-auth', 'production'],
 );
 addPhaseRequired(
   'supabase',
-  'SUPABASE_ANON_KEY for Flutter OTP',
+  'SUPABASE_ANON_KEY for client reads/auth',
   hasValue('SUPABASE_ANON_KEY'),
   'Set SUPABASE_ANON_KEY from Supabase Project Settings > API.',
-  ['supabase-auth', 'production'],
+  ['supabase-core', 'supabase-auth', 'production'],
 );
 addPhaseRequired(
   'supabase',
   'SUPABASE_JWT_SECRET for API token verification',
   hasSecretLikeValue('SUPABASE_JWT_SECRET'),
   'Set SUPABASE_JWT_SECRET from Supabase Project Settings > API > JWT secret.',
-  ['supabase-auth', 'production'],
+  ['supabase-core', 'supabase-auth', 'production'],
 );
 addPhaseRequired(
   'supabase',
-  'SUPABASE_SERVICE_ROLE_KEY for provider role sync',
+  'SUPABASE_SERVICE_ROLE_KEY for server-side sync',
   hasSecretLikeValue('SUPABASE_SERVICE_ROLE_KEY'),
   'Set SUPABASE_SERVICE_ROLE_KEY from Supabase Project Settings > API. Keep it server-side only.',
+  ['supabase-core', 'supabase-auth', 'production'],
+);
+addPhaseRequired(
+  'supabase',
+  'AUTH_BACKEND=supabase for Phone Auth',
+  hasExpectedValue('AUTH_BACKEND', 'supabase'),
+  'Set AUTH_BACKEND=supabase before Supabase Phone Auth E2E.',
   ['supabase-auth', 'production'],
 );
 
