@@ -590,15 +590,9 @@ export type AdminNotification = {
     attemptedAt: string;
     response?: {
       statusCode?: number;
-      body?: {
-        error?: {
-          details?: Array<{
-            errorCode?: string;
-          }>;
-        };
-      };
+      body?: unknown;
     } | null;
-    pushDevice?: { platform?: string; token?: string; enabled?: boolean };
+    pushDevice?: { id?: string; platform?: string; token?: string; enabled?: boolean };
   }>;
 };
 

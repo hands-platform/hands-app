@@ -1,6 +1,6 @@
 import { AdminNotification, adminGet } from '../../lib/admin-api';
 import Link from 'next/link';
-import { retryNotification } from './actions';
+import { enablePushDevice, retryNotification } from './actions';
 
 type NotificationsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -13,6 +13,7 @@ export default async function NotificationsPage({
   const allNotifications = sortNotifications(await adminGet<AdminNotification[]>('/admin/notifications', []));
   const notifications = filterNotifications(allNotifications, filters);
   const summary = buildSummary(allNotifications);
+  const opsQueue = buildDeliveryOpsQueue(allNotifications);
   const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
 
   return (
@@ -39,6 +40,10 @@ export default async function NotificationsPage({
           <p>Failed</p>
           <h2>{summary.failed}</h2>
         </div>
+        <div className="card">
+          <p>Disabled devices</p>
+          <h2>{summary.disabledDevices}</h2>
+        </div>
       </section>
       <div className="card">
         <div className="toolbar">
@@ -51,6 +56,42 @@ export default async function NotificationsPage({
             <span className="pill pill-success">Latest failures first</span>
             <span className="pill pill-info">Delivery signal</span>
             <span className="pill pill-warn">Retry readiness</span>
+          </div>
+        </div>
+
+        <div className="card soft-card" style={{ marginBottom: 16 }}>
+          <div className="toolbar">
+            <div>
+              <h3>Delivery operations queue</h3>
+              <p className="muted">
+                Fix disabled tokens and push-provider setup before retrying, so failed alerts do not loop.
+              </p>
+            </div>
+            <span className={`pill ${opsQueue.length ? 'pill-warn' : 'pill-success'}`}>
+              {opsQueue.length ? `${opsQueue.length} issue(s)` : 'No delivery blockers'}
+            </span>
+          </div>
+          <div className="grid">
+            {opsQueue.length ? (
+              opsQueue.map((item) => (
+                <div className="card" key={item.key}>
+                  <span className={`pill ${item.tone}`}>{item.label}</span>
+                  <h3 style={{ marginTop: 10 }}>{item.count}</h3>
+                  <p className="muted">{item.detail}</p>
+                  <Link className="pill pill-neutral" href={item.href}>
+                    Open queue
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <div className="card">
+                <span className="pill pill-success">Ready</span>
+                <h3 style={{ marginTop: 10 }}>Delivery path is clean</h3>
+                <p className="muted">
+                  Keep monitoring failed sends after OneSignal/Vonage production credentials are enabled.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -149,8 +190,17 @@ export default async function NotificationsPage({
                             {delivery.response?.statusCode ?? '-'}
                           </div>
                           <div className="muted" style={{ marginTop: 4 }}>
+                            Reason {readFailureReason(delivery) ?? '-'}
+                          </div>
+                          <div className="muted" style={{ marginTop: 4 }}>
                             Token {delivery.pushDevice?.token ? maskToken(delivery.pushDevice.token) : '-'}
                           </div>
+                          {delivery.pushDevice?.enabled === false && delivery.pushDevice.id ? (
+                            <form action={enablePushDevice} style={{ marginTop: 6 }}>
+                              <input type="hidden" name="pushDeviceId" value={delivery.pushDevice.id} />
+                              <button type="submit">Re-enable device</button>
+                            </form>
+                          ) : null}
                         </div>
                       ))
                     : 'No devices / not attempted'}
@@ -207,6 +257,7 @@ function buildSummary(notifications: AdminNotification[]) {
     sent: countDeliveries(notifications, 'SENT'),
     skipped: countDeliveries(notifications, 'SKIPPED'),
     failed: countDeliveries(notifications, 'FAILED'),
+    disabledDevices: countDisabledDevices(notifications),
   };
 }
 
@@ -305,7 +356,27 @@ function countDeliveries(notifications: AdminNotification[], status: string) {
 }
 
 function readFailureCode(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
-  return delivery.response?.body?.error?.details?.[0]?.errorCode;
+  const body = asRecord(delivery.response?.body);
+  const error = asRecord(body?.error);
+  const details = Array.isArray(error?.details) ? error.details : [];
+  const firstDetail = asRecord(details[0]);
+  return readString(firstDetail?.errorCode) ?? readString(body?.code) ?? readString(error?.code);
+}
+
+function readFailureReason(delivery: NonNullable<AdminNotification['deliveries']>[number]) {
+  const body = asRecord(delivery.response?.body);
+  const error = asRecord(body?.error);
+  const details = Array.isArray(error?.details) ? error.details : [];
+  const firstDetail = asRecord(details[0]);
+  const errors = Array.isArray(body?.errors) ? body.errors.map(String).join(', ') : undefined;
+  return (
+    readString(body?.reason) ??
+    readString(body?.message) ??
+    readString(error?.message) ??
+    readString(firstDetail?.errorMessage) ??
+    readString(firstDetail?.errorCode) ??
+    errors
+  );
 }
 
 function maskToken(token: string) {
@@ -405,4 +476,80 @@ function opsHint(notification: AdminNotification) {
     return 'Delivery path is healthy. Use this row as a reference if the user still reports a miss.';
   }
   return 'Notification exists, but no delivery attempt was captured yet.';
+}
+
+function countDisabledDevices(notifications: AdminNotification[]) {
+  const ids = new Set<string>();
+  for (const notification of notifications) {
+    for (const delivery of notification.deliveries ?? []) {
+      if (delivery.pushDevice?.enabled === false) {
+        ids.add(delivery.pushDevice.id ?? `${notification.id}-${delivery.id ?? delivery.attemptedAt}`);
+      }
+    }
+  }
+  return ids.size;
+}
+
+function buildDeliveryOpsQueue(notifications: AdminNotification[]) {
+  const failed = notifications.filter((notification) =>
+    (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
+  ).length;
+  const disabledDevices = countDisabledDevices(notifications);
+  const skipped = notifications.filter((notification) =>
+    (notification.deliveries ?? []).some((delivery) => delivery.status === 'SKIPPED'),
+  ).length;
+  const pending = notifications.filter((notification) => (notification.deliveries ?? []).length === 0).length;
+
+  return [
+    failed
+      ? {
+          key: 'failed',
+          label: 'Failed sends',
+          count: failed,
+          detail: 'Push provider returned an error. Check failure reason, token freshness, and credentials.',
+          href: '/notifications?review=failed',
+          tone: 'pill-warn',
+        }
+      : null,
+    disabledDevices
+      ? {
+          key: 'disabled-devices',
+          label: 'Disabled devices',
+          count: disabledDevices,
+          detail:
+            'Re-enable only when the app has registered a fresh token or the operator confirms the device.',
+          href: '/notifications?review=disabled-device',
+          tone: 'pill-warn',
+        }
+      : null,
+    skipped
+      ? {
+          key: 'skipped',
+          label: 'Skipped',
+          count: skipped,
+          detail:
+            'Usually means push is intentionally inactive, no enabled device exists, or credentials are pending.',
+          href: '/notifications?review=skipped',
+          tone: 'pill-info',
+        }
+      : null,
+    pending
+      ? {
+          key: 'pending',
+          label: 'Pending',
+          count: pending,
+          detail: 'Notification rows exist without delivery attempts. Confirm workers and queue processing.',
+          href: '/notifications?review=pending',
+          tone: 'pill-neutral',
+        }
+      : null,
+  ].filter((item): item is NonNullable<typeof item> => Boolean(item));
+}
+
+function asRecord(value: unknown) {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : undefined;
+}
+
+function readString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : undefined;
 }
