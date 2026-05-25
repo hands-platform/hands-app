@@ -147,6 +147,7 @@ export type AdminProvider = {
     };
   }>;
   services?: Array<{ service?: { name: string } }>;
+  earnings?: AdminEarning[];
   user?: {
     id?: string;
     fullName?: string | null;

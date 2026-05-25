@@ -849,6 +849,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const locationState = providerLocationStatus(provider);
   const securityState = providerSecurityStatus(provider);
+  const walletBalance = providerUnsettledWalletBalance(provider);
 
   if (provider.blockedAt) {
     return {
@@ -893,6 +894,15 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
       operatorAction: 'Approve provider verification when identity review is complete.',
       tone: 'blocked',
       priority: 86,
+    };
+  }
+  if (walletBalance < 0) {
+    return {
+      status: 'CASH DEBT',
+      detail: `Wallet is negative by ${formatProviderMoney(Math.abs(walletBalance))}.`,
+      operatorAction: 'Confirm provider fee deposit or settle the cash fee debt from Earnings.',
+      tone: 'blocked',
+      priority: 85,
     };
   }
   if (providerPublicMediaNeedsReview(provider)) {
@@ -1080,6 +1090,26 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
   );
 }
 
+function providerUnsettledWalletBalance(provider: AdminProvider) {
+  return (provider.earnings ?? [])
+    .filter(
+      (earning) =>
+        ['PENDING', 'AVAILABLE'].includes(earning.status) &&
+        !earning.payoutBatchId,
+    )
+    .reduce((sum, earning) => sum + numberValue(earning.netAmount), 0);
+}
+
+function numberValue(value: unknown) {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') return Number(value) || 0;
+  return 0;
+}
+
+function formatProviderMoney(value: number, currency = 'VND') {
+  return `${new Intl.NumberFormat('vi-VN').format(value)} ${currency}`;
+}
+
 function providerActionHint(provider: AdminProvider) {
   if (provider.blockedAt) {
     return 'This provider account is blocked and cannot go online, update location, or appear to customers.';
@@ -1089,6 +1119,12 @@ function providerActionHint(provider: AdminProvider) {
   }
   if (providerPublicMediaNeedsReview(provider)) {
     return 'Approve public profile media before customers can see the latest uploaded images.';
+  }
+  const walletBalance = providerUnsettledWalletBalance(provider);
+  if (walletBalance < 0) {
+    return `Provider wallet is negative by ${formatProviderMoney(
+      Math.abs(walletBalance),
+    )}. New booking acceptance stays blocked until finance settles the cash fee debt.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Therapist is approved but not currently online for direct or backup requests.';
@@ -1326,6 +1362,10 @@ function providerReviewIssues(provider: AdminProvider) {
   }
   if (providerTaxNeedsReview(provider)) {
     issues.push({ label: `tax ${taxStatus}`, severity: taxStatus === 'REJECTED' ? 'high' : 'medium' });
+  }
+  const walletBalance = providerUnsettledWalletBalance(provider);
+  if (walletBalance < 0) {
+    issues.push({ label: `cash debt ${formatProviderMoney(Math.abs(walletBalance))}`, severity: 'high' });
   }
   const locationState = providerLocationStatus(provider);
   if (locationState !== 'recent') {

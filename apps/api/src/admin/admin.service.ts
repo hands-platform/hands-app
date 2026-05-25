@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
+  EarningStatus,
   FilePurpose,
   FileReviewStatus,
   FileUploadStatus,
@@ -76,6 +77,12 @@ export class AdminService {
         sanctions: { orderBy: { createdAt: 'desc' }, take: 5 },
         agreements: { orderBy: { acceptedAt: 'desc' } },
         services: { include: { service: true } },
+        earnings: {
+          where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] } },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+          include: { booking: { include: { payment: true } } },
+        },
         sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
         devices: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
       },
