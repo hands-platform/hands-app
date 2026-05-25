@@ -40,6 +40,41 @@ class ProviderServicePrice {
   bool get usesAdminMinimum =>
       providerPrice == null || providerPrice == basePrice;
 
+  List<ProviderServicePayoutOption> get bookablePayoutOptions {
+    final options = payoutOptions
+        .where(
+          (option) =>
+              option.customerPrice >= basePrice &&
+              priceStep > 0 &&
+              option.customerPrice % priceStep == 0,
+        )
+        .toList()
+      ..sort(
+          (left, right) => left.customerPrice.compareTo(right.customerPrice));
+    return List.unmodifiable(options);
+  }
+
+  ProviderServicePayoutOption? get lowestBookablePayoutOption {
+    final options = bookablePayoutOptions;
+    return options.isEmpty ? null : options.first;
+  }
+
+  int? get recommendedCustomerPrice => canActivateAtCurrentPrice
+      ? effectivePrice
+      : lowestBookablePayoutOption?.customerPrice;
+
+  bool get currentPriceBelowMinimum => effectivePrice < basePrice;
+
+  bool get currentPriceOffStep =>
+      priceStep <= 0 || effectivePrice % priceStep != 0;
+
+  bool get canActivateAtCurrentPrice =>
+      !currentPriceBelowMinimum &&
+      !currentPriceOffStep &&
+      (payoutRuleConfigured || hasPayoutOptionForPrice(effectivePrice));
+
+  bool get hasBookablePriceOptions => bookablePayoutOptions.isNotEmpty;
+
   int get estimatedVatAmount {
     final fee = platformFee ?? 0;
     final bps = vatBps ?? 0;
@@ -92,16 +127,16 @@ class ProviderServicePriceGroup {
   int get activeOptionCount => options.where((option) => option.active).length;
 
   int get payoutReadyOptionCount => options
-      .where((option) => option.active && option.payoutRuleConfigured)
+      .where((option) => option.active && option.canActivateAtCurrentPrice)
       .length;
 
   int get payoutMissingOptionCount => options
-      .where((option) => option.active && !option.payoutRuleConfigured)
+      .where((option) => option.active && !option.canActivateAtCurrentPrice)
       .length;
 
   bool get allStandardDurationsReady {
     final durations = options
-        .where((option) => option.active)
+        .where((option) => option.active && option.canActivateAtCurrentPrice)
         .map((option) => option.durationMin)
         .toSet();
     return durations.containsAll({60, 90, 120});

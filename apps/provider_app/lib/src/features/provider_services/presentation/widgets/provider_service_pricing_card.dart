@@ -247,15 +247,19 @@ class _ProviderServicePriceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final platformFee = service.platformFee ?? 0;
-    final availablePrices = service.payoutOptions
+    final availablePrices = service.bookablePayoutOptions
         .map((option) => formatVnd(option.customerPrice))
         .take(4)
         .join(', ');
-    final payoutText = service.payoutRuleConfigured
-        ? 'You receive ${formatVnd(service.providerPayoutAmount ?? 0)}'
-        : 'Admin payout rule missing for ${formatVnd(service.effectivePrice)}';
+    final payoutText = service.currentPriceBelowMinimum
+        ? 'Price is below the HANDS minimum. Raise it before activation.'
+        : service.currentPriceOffStep
+            ? 'Price must use ${formatVnd(service.priceStep)} steps.'
+            : (service.payoutRuleConfigured
+                ? 'You receive ${formatVnd(service.providerPayoutAmount ?? 0)}'
+                : 'Admin payout rule missing for ${formatVnd(service.effectivePrice)}');
     final statusText = service.active
-        ? service.payoutRuleConfigured
+        ? service.canActivateAtCurrentPrice
             ? 'Bookable'
             : 'Needs rule'
         : 'Paused';
@@ -268,7 +272,7 @@ class _ProviderServicePriceTile extends StatelessWidget {
               : Theme.of(context).colorScheme.surfaceContainerLow,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: service.payoutRuleConfigured
+            color: service.canActivateAtCurrentPrice
                 ? Theme.of(context).colorScheme.outlineVariant
                 : Theme.of(context).colorScheme.error.withValues(alpha: 0.45),
           ),
@@ -297,7 +301,7 @@ class _ProviderServicePriceTile extends StatelessWidget {
                     ),
                     _PricingChip(
                       label: statusText,
-                      value: service.active && service.payoutRuleConfigured
+                      value: service.active && service.canActivateAtCurrentPrice
                           ? 'ON'
                           : 'OFF',
                     ),
@@ -317,7 +321,14 @@ class _ProviderServicePriceTile extends StatelessWidget {
                   ),
                 if (availablePrices.isNotEmpty)
                   Text(
-                    'Bookable price options: $availablePrices${service.payoutOptions.length > 4 ? '...' : ''}',
+                    'Bookable price options: $availablePrices${service.bookablePayoutOptions.length > 4 ? '...' : ''}',
+                  ),
+                if (!service.hasBookablePriceOptions)
+                  Text(
+                    'No valid admin price option is available for this duration yet.',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
               ],
             ),
@@ -440,13 +451,15 @@ class _ProviderServicePriceSheetState
           _error = 'Price must be at least ${formatVnd(service.basePrice)}.');
       return;
     }
-    if (price % service.priceStep != 0) {
+    if (service.priceStep <= 0 || price % service.priceStep != 0) {
       setState(() => _error =
           'Price must increase by ${formatVnd(service.priceStep)} steps.');
       return;
     }
-    if (_active && !service.hasPayoutOptionForPrice(price)) {
-      final options = service.payoutOptions
+    if (_active &&
+        !service.bookablePayoutOptions
+            .any((option) => option.customerPrice == price)) {
+      final options = service.bookablePayoutOptions
           .map((option) => formatVnd(option.customerPrice))
           .join(', ');
       setState(() => _error = options.isEmpty
@@ -467,9 +480,10 @@ class _ProviderServicePriceSheetState
           _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
         ) ??
         service.effectivePrice;
-    final matchingRule = service.payoutOptions
+    final matchingRule = service.bookablePayoutOptions
         .any((option) => option.customerPrice == previewPrice);
     final previewRule = service.payoutOptionForPrice(previewPrice);
+    final recommendedPrice = service.recommendedCustomerPrice;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
       child: Column(
@@ -499,10 +513,10 @@ class _ProviderServicePriceSheetState
               value: formatVnd(service.platformFee ?? 0),
             ),
           ],
-          if (service.payoutOptions.isNotEmpty)
+          if (service.bookablePayoutOptions.isNotEmpty)
             _PricingSummaryLine(
               label: 'Bookable price options',
-              value: service.payoutOptions
+              value: service.bookablePayoutOptions
                   .map((option) => formatVnd(option.customerPrice))
                   .take(3)
                   .join(', '),
@@ -518,13 +532,22 @@ class _ProviderServicePriceSheetState
               border: OutlineInputBorder(),
             ),
           ),
-          if (service.payoutOptions.isNotEmpty) ...[
+          if (service.bookablePayoutOptions.isNotEmpty) ...[
             const SizedBox(height: 10),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
-                for (final option in service.payoutOptions)
+                if (recommendedPrice != null)
+                  ActionChip(
+                    avatar: const Icon(Icons.recommend_outlined, size: 18),
+                    label: Text('Recommended ${formatVnd(recommendedPrice)}'),
+                    onPressed: () => setState(() {
+                      _priceController.text = recommendedPrice.toString();
+                      _error = null;
+                    }),
+                  ),
+                for (final option in service.bookablePayoutOptions)
                   ActionChip(
                     label: Text(formatVnd(option.customerPrice)),
                     onPressed: () => setState(() {
@@ -542,7 +565,9 @@ class _ProviderServicePriceSheetState
                 : Icons.admin_panel_settings_outlined,
             text: matchingRule
                 ? 'This price has an admin payout rule. You receive ${formatVnd(previewRule?.providerPayoutAmount ?? 0)} and HANDS fee is ${formatVnd(previewRule?.platformFee ?? 0)}.'
-                : 'Active services require an exact admin payout rule. Save as paused or ask admin to configure this price.',
+                : service.hasBookablePriceOptions
+                    ? 'Active services require one of the listed admin payout prices. Pick a suggested price or save as paused.'
+                    : 'Active services require an exact admin payout rule. Save as paused or ask admin to configure this price.',
           ),
           const SizedBox(height: 12),
           SwitchListTile(
