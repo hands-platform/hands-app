@@ -5310,6 +5310,9 @@ List<CustomerServiceOptionGroup> customerServiceOptionGroups(
     }
 
     final service = customerBookableService(providerService);
+    if (!customerProviderServiceIsBookable(providerService, service)) {
+      continue;
+    }
     final key = customerServiceGroupKey(service);
     grouped.putIfAbsent(key, () => <Map<String, dynamic>>[]).add(service);
     names.putIfAbsent(key, () => service['name'] as String? ?? 'Service');
@@ -5352,6 +5355,31 @@ String customerServiceGroupKey(Map<String, dynamic> service) {
   }
 
   return service['id']?.toString() ?? 'service';
+}
+
+bool customerProviderServiceIsBookable(
+  Map<String, dynamic> providerService,
+  Map<String, dynamic> service,
+) {
+  if (providerService['active'] == false ||
+      service['providerServiceActive'] == false) {
+    return false;
+  }
+
+  final nestedService = asMap(providerService['service']);
+  if (nestedService?['active'] == false) {
+    return false;
+  }
+
+  if (nestedService != null && nestedService.containsKey('payoutRules')) {
+    final price = customerServicePrice(service);
+    return asList(nestedService['payoutRules']).any((rule) {
+      final mapped = asMap(rule);
+      return asNum(mapped?['customerPrice'])?.toInt() == price;
+    });
+  }
+
+  return true;
 }
 
 int customerServicePrice(Map<String, dynamic>? service) {

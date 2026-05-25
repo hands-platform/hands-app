@@ -109,7 +109,22 @@ export class ProvidersService {
           },
         },
         verification: { select: { status: true } },
-        services: { include: { service: true } },
+        services: {
+          where: {
+            active: true,
+            service: { active: true },
+          },
+          include: {
+            service: {
+              include: {
+                payoutRules: {
+                  where: { active: true },
+                  orderBy: { customerPrice: 'asc' },
+                },
+              },
+            },
+          },
+        },
         reviews: { take: 10, orderBy: { createdAt: 'desc' } },
       },
     });
@@ -216,7 +231,7 @@ export class ProvidersService {
       blocked: blocked || providerBlocked,
       blockedScope: providerBlocked ? 'provider' : blocked ? 'device' : null,
       providerBlocked,
-      blockReason: providerBlocked ? providerBlockReason : existingDevice?.blockReason ?? null,
+      blockReason: providerBlocked ? providerBlockReason : (existingDevice?.blockReason ?? null),
       sharedDeviceProfileCount: sharedDeviceCount,
       device: result.device,
       session: result.session,
@@ -463,10 +478,7 @@ function assertProviderNotBlocked(provider: { blockedAt: Date | null; blockedRea
   }
 }
 
-function assertProviderServicePrice(
-  service: { basePrice: number; priceStep: number },
-  price: number,
-) {
+function assertProviderServicePrice(service: { basePrice: number; priceStep: number }, price: number) {
   if (!Number.isInteger(price) || price <= 0) {
     throw new BadRequestException('Provider service price is invalid');
   }
@@ -508,9 +520,7 @@ function publicProviderMedia(provider: {
     media.find((file) => file.purpose === FilePurpose.PROFILE_IMAGE && file.url)?.url ??
     media.find((file) => file.url)?.url ??
     null;
-  const galleryImageUrls = media
-    .filter((file) => file.url)
-    .map((file) => file.url as string);
+  const galleryImageUrls = media.filter((file) => file.url).map((file) => file.url as string);
 
   return {
     profileImageUrl: profileImage,
