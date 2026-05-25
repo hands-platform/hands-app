@@ -25,6 +25,7 @@ export default async function EarningsPage() {
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, payoutBatches);
   const cashDebtQueue = buildCashDebtQueue(sortedEarnings);
   const financeSignals = buildFinanceSignals(sortedEarnings, payoutBatches, payoutQueue, cashDebtQueue);
+  const serviceBridge = buildServiceEarningBridge(sortedEarnings);
 
   const metrics = [
     ['Gross', summary.grossAmount],
@@ -75,6 +76,97 @@ export default async function EarningsPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 20, overflowX: 'auto' }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Service to earnings bridge</h2>
+            <p className="muted">
+              Confirms which service duration options are creating provider net, HANDS platform fee, tax
+              withholding, cash wallet debt, and payout-batch pressure.
+            </p>
+          </div>
+          <Link className="text-link" href="/services">
+            Review service pricing
+          </Link>
+        </div>
+        <div className="service-trace-summary">
+          <div>
+            <span>Service options</span>
+            <strong>{serviceBridge.length}</strong>
+          </div>
+          <div>
+            <span>Gross</span>
+            <strong>{formatMoney(serviceBridge.reduce((sum, item) => sum + item.grossAmount, 0), summary.currency)}</strong>
+          </div>
+          <div>
+            <span>Provider net</span>
+            <strong>{formatMoney(serviceBridge.reduce((sum, item) => sum + item.netAmount, 0), summary.currency)}</strong>
+          </div>
+          <div>
+            <span>Platform fee</span>
+            <strong>{formatMoney(serviceBridge.reduce((sum, item) => sum + item.platformFee, 0), summary.currency)}</strong>
+          </div>
+          <div>
+            <span>Tax withheld</span>
+            <strong>
+              {formatMoney(serviceBridge.reduce((sum, item) => sum + item.withholdingAmount, 0), summary.currency)}
+            </strong>
+          </div>
+          <div>
+            <span>Cash debt</span>
+            <strong>{formatMoney(serviceBridge.reduce((sum, item) => sum + item.cashDebtAmount, 0), summary.currency)}</strong>
+          </div>
+        </div>
+        {serviceBridge.length ? (
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Service option</th>
+                <th>Bookings</th>
+                <th>Gross</th>
+                <th>Provider net</th>
+                <th>Platform fee</th>
+                <th>Tax</th>
+                <th>Cash debt</th>
+                <th>Payout state</th>
+              </tr>
+            </thead>
+            <tbody>
+              {serviceBridge.map((item) => (
+                <tr key={item.key}>
+                  <td>
+                    <strong>{item.label}</strong>
+                    <p className="muted">{item.groupKey}</p>
+                  </td>
+                  <td>
+                    <strong>{item.bookingCount}</strong>
+                    <p className="muted">{item.cashBookingCount} cash booking(s)</p>
+                  </td>
+                  <td>{formatMoney(item.grossAmount, item.currency)}</td>
+                  <td>{formatMoney(item.netAmount, item.currency)}</td>
+                  <td>{formatMoney(item.platformFee, item.currency)}</td>
+                  <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
+                  <td>
+                    <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
+                      {formatMoney(item.cashDebtAmount, item.currency)}
+                    </span>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <small>{item.unbatchedCount} unbatched</small>
+                      <small>{item.batchedCount} batched</small>
+                      <small>{item.paidCount} paid</small>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted">No earning has linked service details yet.</p>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
@@ -341,6 +433,23 @@ type CashDebtQueueItem = {
   paymentMethod: string;
 };
 
+type ServiceEarningBridgeItem = {
+  key: string;
+  label: string;
+  groupKey: string;
+  currency: string;
+  bookingCount: number;
+  cashBookingCount: number;
+  grossAmount: number;
+  netAmount: number;
+  platformFee: number;
+  withholdingAmount: number;
+  cashDebtAmount: number;
+  unbatchedCount: number;
+  batchedCount: number;
+  paidCount: number;
+};
+
 function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
   return earnings
     .filter((earning) => isCashDebt(earning))
@@ -350,6 +459,89 @@ function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
       paymentMethod: earning.booking?.payment?.method ?? 'CASH',
     }))
     .sort((left, right) => left.earning.netAmount - right.earning.netAmount);
+}
+
+function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBridgeItem[] {
+  const grouped = new Map<string, ServiceEarningBridgeItem>();
+
+  earnings.forEach((earning) => {
+    if (earning.status === 'CANCELLED') {
+      return;
+    }
+
+    const bookingServices =
+      earning.booking?.services && earning.booking.services.length > 0
+        ? earning.booking.services
+        : [
+            {
+              id: `earning-${earning.id}`,
+              serviceId: 'unknown-service',
+              quantity: 1,
+              price: earning.grossAmount,
+              service: null,
+            },
+          ];
+
+    const allocationBase =
+      bookingServices.reduce(
+        (sum, bookingService) =>
+          sum + Number(bookingService.price ?? 0) * Math.max(1, Number(bookingService.quantity ?? 1)),
+        0,
+      ) || earning.grossAmount || 1;
+
+    bookingServices.forEach((bookingService) => {
+      const quantity = Math.max(1, Number(bookingService.quantity ?? 1));
+      const serviceGross = Number(bookingService.price ?? 0) * quantity;
+      const allocationShare = allocationBase > 0 ? serviceGross / allocationBase : 1 / bookingServices.length;
+      const service = bookingService.service;
+      const key = service?.id ?? bookingService.serviceId ?? 'unknown-service';
+      const duration = service?.durationMin ? `${service.durationMin} min` : 'duration not linked';
+      const label = service?.name ? `${service.name} / ${duration}` : 'Unlinked service option';
+      const item =
+        grouped.get(key) ??
+        {
+          key,
+          label,
+          groupKey: service?.serviceGroupKey ?? bookingService.serviceId ?? 'unknown',
+          currency: earning.currency,
+          bookingCount: 0,
+          cashBookingCount: 0,
+          grossAmount: 0,
+          netAmount: 0,
+          platformFee: 0,
+          withholdingAmount: 0,
+          cashDebtAmount: 0,
+          unbatchedCount: 0,
+          batchedCount: 0,
+          paidCount: 0,
+        };
+
+      item.bookingCount += 1;
+      if (earning.booking?.payment?.method === 'CASH') {
+        item.cashBookingCount += 1;
+      }
+      item.grossAmount += Math.round(earning.grossAmount * allocationShare);
+      item.netAmount += Math.round(earning.netAmount * allocationShare);
+      item.platformFee += Math.round(earning.platformFee * allocationShare);
+      item.withholdingAmount += Math.round((earning.withholdingAmount ?? 0) * allocationShare);
+      if (earning.netAmount < 0) {
+        item.cashDebtAmount += Math.round(Math.abs(earning.netAmount) * allocationShare);
+      }
+      if (earning.status === 'PAID') {
+        item.paidCount += 1;
+      } else if (earning.payoutBatchId) {
+        item.batchedCount += 1;
+      } else {
+        item.unbatchedCount += 1;
+      }
+
+      grouped.set(key, item);
+    });
+  });
+
+  return [...grouped.values()]
+    .sort((left, right) => right.grossAmount - left.grossAmount || left.label.localeCompare(right.label))
+    .slice(0, 12);
 }
 
 function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: AdminPayoutBatch[]) {

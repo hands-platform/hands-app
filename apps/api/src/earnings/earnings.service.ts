@@ -205,7 +205,7 @@ export class EarningsService {
       take: 100,
       include: {
         providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
-        booking: { include: { payment: true, review: true } },
+        booking: { include: { payment: true, review: true, services: { include: { service: true } } } },
         platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
         taxLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
         walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
@@ -313,7 +313,12 @@ export class EarningsService {
           providerProfile: { include: this.providerPayoutInclude() },
           earnings: {
             orderBy: { createdAt: 'desc' },
-            include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
+            include: {
+              booking: { include: { services: { include: { service: true } }, payment: true } },
+              taxLogs: { orderBy: { createdAt: 'desc' } },
+              platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
+              walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+            },
           },
           withholdingLogs: true,
         },
@@ -329,7 +334,12 @@ export class EarningsService {
         providerProfile: { include: this.providerPayoutInclude() },
         earnings: {
           orderBy: { createdAt: 'desc' },
-          include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
+          include: {
+            booking: { include: { services: { include: { service: true } }, payment: true } },
+            taxLogs: { orderBy: { createdAt: 'desc' } },
+            platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
+            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+          },
         },
         withholdingLogs: true,
       },
@@ -401,7 +411,12 @@ export class EarningsService {
           providerProfile: { include: this.providerPayoutInclude() },
           earnings: {
             orderBy: { createdAt: 'desc' },
-            include: { taxLogs: { orderBy: { createdAt: 'desc' } } },
+            include: {
+              booking: { include: { services: { include: { service: true } }, payment: true } },
+              taxLogs: { orderBy: { createdAt: 'desc' } },
+              platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
+              walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+            },
           },
           withholdingLogs: true,
         },

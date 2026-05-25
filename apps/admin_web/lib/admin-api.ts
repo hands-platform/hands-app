@@ -437,6 +437,19 @@ export type AdminEarning = {
     status?: string;
     scheduledStartAt?: string;
     payment?: { method: string; status: string; amount: number; currency?: string } | null;
+    services?: Array<{
+      id: string;
+      serviceId: string;
+      quantity: number;
+      price: number;
+      service?: {
+        id: string;
+        name: string;
+        serviceGroupKey?: string | null;
+        durationMin: number;
+        basePrice: number;
+      } | null;
+    }>;
   } | null;
   platformFeeLogs?: AdminProviderPlatformFeeLog[];
   taxLogs?: AdminProviderTaxLog[];
