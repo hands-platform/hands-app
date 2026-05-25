@@ -467,6 +467,18 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
               onDemoLogin: signInAndLoad,
             )
           else ...[
+            FutureBuilder<Map<String, dynamic>>(
+              future: ref.read(providerRepositoryProvider).earningsSummary(),
+              builder: (context, walletSnapshot) {
+                return ProviderWalletGateCard(
+                  summary: walletSnapshot.data ?? const <String, dynamic>{},
+                  error: walletSnapshot.error,
+                  isLoading:
+                      walletSnapshot.connectionState == ConnectionState.waiting,
+                );
+              },
+            ),
+            const SizedBox(height: 16),
             RequestFlowBar(
               activeStep: !isOnline
                   ? 0
@@ -1175,6 +1187,119 @@ class RequestQueueSummary extends StatelessWidget {
           ],
         ),
       ],
+    );
+  }
+}
+
+class ProviderWalletGateCard extends StatelessWidget {
+  const ProviderWalletGateCard({
+    super.key,
+    required this.summary,
+    required this.isLoading,
+    this.error,
+  });
+
+  final Map<String, dynamic> summary;
+  final bool isLoading;
+  final Object? error;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final currency = summary['currency']?.toString() ?? 'VND';
+    final walletBalance = asNum(summary['walletBalance']) ??
+        ((asNum(summary['pendingNetAmount']) ?? 0) +
+            (asNum(summary['availableNetAmount']) ?? 0));
+    final walletBlocked = summary['walletBlocked'] == true || walletBalance < 0;
+    final reason = summary['walletBlockReason']?.toString();
+
+    if (isLoading) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Checking wallet settlement before accepting requests.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Card(
+      color: walletBlocked
+          ? colorScheme.errorContainer
+          : colorScheme.primaryContainer.withValues(alpha: 0.55),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  walletBlocked
+                      ? Icons.lock_outline
+                      : Icons.account_balance_wallet_outlined,
+                  color: walletBlocked
+                      ? colorScheme.onErrorContainer
+                      : colorScheme.onPrimaryContainer,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    walletBlocked
+                        ? 'Wallet settlement required'
+                        : 'Wallet clear',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${formatCurrency(walletBalance)} $currency',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              walletBlocked
+                  ? (reason ?? '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.')
+                  : 'You can accept new booking requests.',
+            ),
+            if (walletBlocked) ...[
+              const SizedBox(height: 8),
+              const Text(
+                '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.',
+              ),
+            ],
+            if (error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Wallet status could not be refreshed. Booking actions will still show the server decision.',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2957,8 +3082,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 return _ProviderPublicMediaReviewCard(
                   profile: snapshot.data ?? <String, dynamic>{},
                   error: snapshot.error,
-                  isLoading: snapshot.connectionState ==
-                      ConnectionState.waiting,
+                  isLoading:
+                      snapshot.connectionState == ConnectionState.waiting,
                   onRefresh: _refreshProfile,
                 );
               },
@@ -3118,7 +3243,8 @@ class _ProviderPublicMediaReviewCard extends StatelessWidget {
         .where(providerPublicMediaIsReviewable)
         .toList();
     final pendingCount = media
-        .where((item) => providerPublicMediaReviewStatus(item) == 'PENDING_REVIEW')
+        .where(
+            (item) => providerPublicMediaReviewStatus(item) == 'PENDING_REVIEW')
         .length;
     final approvedCount = media
         .where((item) => providerPublicMediaReviewStatus(item) == 'APPROVED')
