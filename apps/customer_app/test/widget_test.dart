@@ -112,6 +112,37 @@ void main() {
           ],
         },
       },
+      {
+        'id': 'provider-service-5',
+        'price': 500000,
+        'active': true,
+        'service': {
+          'id': 'service-no-rule-60',
+          'serviceGroupKey': 'no_rule',
+          'name': 'No Rule Massage',
+          'durationMin': 60,
+          'basePrice': 500000,
+          'priceStep': 100000,
+          'active': true,
+        },
+      },
+      {
+        'id': 'provider-service-6',
+        'price': 500000,
+        'active': true,
+        'service': {
+          'id': 'service-inactive-rule-60',
+          'serviceGroupKey': 'inactive_rule',
+          'name': 'Inactive Rule Massage',
+          'durationMin': 60,
+          'basePrice': 500000,
+          'priceStep': 100000,
+          'active': true,
+          'payoutRules': [
+            {'customerPrice': 500000, 'active': false},
+          ],
+        },
+      },
     ]);
 
     expect(groups, hasLength(1));

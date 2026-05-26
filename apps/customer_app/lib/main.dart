@@ -5418,20 +5418,25 @@ bool customerProviderServiceIsBookable(
     return false;
   }
 
-  if (nestedService != null && nestedService.containsKey('payoutRules')) {
-    final price = customerServicePrice(service);
-    final basePrice = asNum(nestedService['basePrice'])?.toInt() ?? 0;
-    final priceStep = asNum(nestedService['priceStep'])?.toInt() ?? 100000;
-    if (price < basePrice || priceStep <= 0 || price % priceStep != 0) {
-      return false;
-    }
-    return asList(nestedService['payoutRules']).any((rule) {
-      final mapped = asMap(rule);
-      return asNum(mapped?['customerPrice'])?.toInt() == price;
-    });
+  if (nestedService == null) {
+    return false;
   }
 
-  return true;
+  final price = customerServicePrice(service);
+  final basePrice = asNum(nestedService['basePrice'])?.toInt() ?? 0;
+  final priceStep = asNum(nestedService['priceStep'])?.toInt() ?? 100000;
+  if (price < basePrice || priceStep <= 0 || price % priceStep != 0) {
+    return false;
+  }
+
+  final payoutRules = asList(nestedService['payoutRules']);
+  return payoutRules.any((rule) {
+    final mapped = asMap(rule);
+    if (mapped == null || mapped['active'] == false) {
+      return false;
+    }
+    return asNum(mapped['customerPrice'])?.toInt() == price;
+  });
 }
 
 int customerServicePrice(Map<String, dynamic>? service) {
