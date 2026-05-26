@@ -57,16 +57,18 @@ For the MVP, the provider wallet guard still reads unsettled `ProviderEarning.ne
 - Positive delta: HANDS owes money to the provider.
 - Negative delta: the provider owes HANDS fees/tax from cash bookings.
 
-If the unsettled wallet balance is negative, the API blocks joining or accepting new bookings and should show the provider a localized message equivalent to:
+If the unsettled wallet balance is negative, the API blocks joining or accepting new bookings and returns the provider-facing message:
 
-`Unsettled HANDS service fee blocks new bookings. Please settle your fee balance before accepting a request.`
+`수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.`
 
 This supports two later settlement paths without changing booking flow:
 
 - Provider transfers the owed fee/tax amount directly to HANDS.
 - HANDS offsets the negative balance against later positive online-payment payouts.
 
-The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. After finance confirms the provider deposit or an approved offset, the operator enters a deposit reference or offset memo and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the provider from accepting new requests.
+The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. The admin payments list and booking detail page also expose direct settlement forms for the same debt when finance is reviewing a cash booking from operational context.
+
+After finance confirms the provider deposit or an approved offset, the operator enters a deposit reference or offset memo and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the provider from accepting new requests.
 
 `ProviderWalletLedgerEntry` records the finance audit trail around those earning rows:
 
@@ -85,7 +87,6 @@ This keeps the current product simple while preserving the later path for bank t
 
 ## Next Production Work
 
-- Add provider-facing repayment instructions for negative cash fee balances.
 - Add admin adjustment entries for manual wallet corrections.
 - Add provider payout account verification.
 - Add real bank transfer execution and failure retry.

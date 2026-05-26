@@ -52,6 +52,13 @@ the Provider app does not pressure new signups to complete revenue paperwork too
 After the first completed service or first earned revenue, tax/profile/address/agreement
 requirements become active gates for payout and settlement readiness.
 
+Cash bookings are handled differently from online payments. When a provider receives
+cash directly from the customer, HANDS records platform fee and withholding as a
+negative wallet amount. A negative provider wallet blocks new booking acceptance until
+finance confirms provider repayment or an approved admin offset. The booking API returns:
+
+`수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.`
+
 ## Tax Policy Rule
 
 Tax calculation must read an active `TaxPolicyVersion` and matching `TaxRule`.
