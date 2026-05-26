@@ -1121,6 +1121,19 @@ const hybridMatched = await postJson(
   },
 );
 
+const walletDebtJoinedBeforeDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  scheduledStartAt: new Date(Date.now() + 130 * 60_000).toISOString(),
+  address: { line1: 'Negative wallet final selection smoke flow' },
+  lat: 10.7783,
+  lng: 106.6994,
+  paymentMethod: 'MOMO',
+});
+await postJson(
+  `/provider/bookings/${walletDebtJoinedBeforeDebtBooking.id}/join`,
+  walletDebtProviderAuth.accessToken,
+);
+
 const walletDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: walletDebtProviderAuth.user.providerProfile.id,
@@ -1206,6 +1219,18 @@ if (
 await expectRequestFailure(
   'Negative provider wallet blocks direct booking acceptance',
   () => postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken),
+  400,
+);
+await expectRequestFailure(
+  'Negative provider wallet blocks customer final selection',
+  () =>
+    postJson(
+      `/customer/bookings/${walletDebtJoinedBeforeDebtBooking.id}/select-provider`,
+      customerAuth.accessToken,
+      {
+        providerId: walletDebtProviderAuth.user.providerProfile.id,
+      },
+    ),
   400,
 );
 const blockedOpenMatchingBooking = await postJson('/customer/bookings', customerAuth.accessToken, {

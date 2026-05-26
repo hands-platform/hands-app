@@ -493,6 +493,7 @@ export class BookingsService {
     if (!participant || participant.status === ParticipantStatus.REJECTED) {
       throw new BadRequestException('Provider must join before customer selection');
     }
+    await this.ensureProviderWalletCanAccept(providerId);
 
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
