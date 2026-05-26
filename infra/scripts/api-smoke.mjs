@@ -397,6 +397,36 @@ await expectRequestFailure(
   400,
 );
 await expectRequestFailure(
+  'Admin duplicate single service duration option is rejected',
+  () =>
+    postJson('/admin/services', adminAuth.accessToken, {
+      serviceGroupKey: smokeDurationSetKey,
+      name: 'Smoke Duration Set',
+      description: 'Duplicate 60 minute option should be rejected.',
+      durationMin: 60,
+      basePrice: 500000,
+      priceStep: 100000,
+      displayOrder: 999,
+      active: true,
+    }),
+  400,
+);
+await expectRequestFailure(
+  'Admin service update cannot collide with another duration option',
+  () =>
+    patchJson(`/admin/services/${smokeDurationSet[1].id}`, adminAuth.accessToken, {
+      serviceGroupKey: smokeDurationSetKey,
+      name: 'Smoke Duration Set',
+      description: 'Updating 90 min into the existing 60 min slot should be rejected.',
+      durationMin: 60,
+      basePrice: 700000,
+      priceStep: 100000,
+      displayOrder: 999,
+      active: true,
+    }),
+  400,
+);
+await expectRequestFailure(
   'Admin service price step below HANDS VND unit is rejected',
   () =>
     postJson('/admin/services', adminAuth.accessToken, {

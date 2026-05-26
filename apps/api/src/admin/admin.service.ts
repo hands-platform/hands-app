@@ -1006,12 +1006,25 @@ export class AdminService {
     },
   ) {
     const data = normalizeServiceInput(input, true) as Prisma.MassageServiceUncheckedCreateInput;
-    const service = await this.prisma.massageService.create({
-      data,
-      include: { payoutRules: true },
+    return this.prisma.$transaction(async (tx) => {
+      await ensureServiceDurationIsUnique(tx, {
+        serviceGroupKey: data.serviceGroupKey as string,
+        durationMin: data.durationMin as number,
+      });
+      const service = await tx.massageService.create({
+        data,
+        include: { payoutRules: true },
+      });
+      await tx.adminAuditLog.create({
+        data: {
+          actorId,
+          action: 'service.create',
+          target: `service:${service.id}`,
+          metadata: toJson(data),
+        },
+      });
+      return service;
     });
-    await this.writeAudit(actorId, 'service.create', `service:${service.id}`, toJson(data));
-    return service;
   }
 
   async createServiceDurationSet(
@@ -1143,6 +1156,14 @@ export class AdminService {
     const existing = await this.prisma.massageService.findUniqueOrThrow({ where: { id: serviceId } });
     const data = normalizeServiceInput(input, false, existing) as Prisma.MassageServiceUncheckedUpdateInput;
     return this.prisma.$transaction(async (tx) => {
+      await ensureServiceDurationIsUnique(tx, {
+        serviceGroupKey:
+          typeof data.serviceGroupKey === 'string'
+            ? data.serviceGroupKey
+            : (existing.serviceGroupKey ?? slugify(existing.name)),
+        durationMin: typeof data.durationMin === 'number' ? data.durationMin : existing.durationMin,
+        excludeServiceId: serviceId,
+      });
       const service = await tx.massageService.update({
         where: { id: serviceId },
         data,
@@ -1655,13 +1676,14 @@ function normalizeServiceInput(
   }
 
   const nextName = name ?? existing?.name ?? '';
+  const normalizedGroupKey =
+    input.serviceGroupKey === undefined
+      ? creating
+        ? slugify(nextName)
+        : undefined
+      : (normalizeNullable(input.serviceGroupKey) ?? slugify(nextName));
   return {
-    serviceGroupKey:
-      input.serviceGroupKey === undefined
-        ? creating
-          ? slugify(nextName)
-          : undefined
-        : (normalizeNullable(input.serviceGroupKey) ?? null),
+    serviceGroupKey: normalizedGroupKey,
     name: name ?? undefined,
     description: input.description === undefined ? undefined : normalizeNullable(input.description),
     durationMin,
@@ -1670,6 +1692,26 @@ function normalizeServiceInput(
     displayOrder: input.displayOrder,
     active: input.active,
   };
+}
+
+async function ensureServiceDurationIsUnique(
+  tx: Prisma.TransactionClient,
+  input: { serviceGroupKey: string; durationMin: number; excludeServiceId?: string },
+) {
+  const existing = await tx.massageService.findFirst({
+    where: {
+      serviceGroupKey: input.serviceGroupKey,
+      durationMin: input.durationMin,
+      ...(input.excludeServiceId ? { id: { not: input.excludeServiceId } } : {}),
+    },
+    select: { id: true, name: true, durationMin: true },
+  });
+
+  if (existing) {
+    throw new BadRequestException(
+      `Service duration already exists for ${input.serviceGroupKey}: ${existing.durationMin} min`,
+    );
+  }
 }
 
 function normalizeServicePayoutRuleInput(
