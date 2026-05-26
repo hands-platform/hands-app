@@ -293,6 +293,8 @@ export default async function PayoutsPage() {
             {batches.map((batch) => {
               const checklist = payoutChecklist(batch);
               const payoutHold = activePayoutHold(batch);
+              const paidBlockedByMissingRef =
+                batch.status !== 'PAID' && batch.status !== 'CANCELLED' && !batch.transferRef;
               return (
                 <tr id={batch.id} key={batch.id}>
                   <td>
@@ -396,7 +398,7 @@ export default async function PayoutsPage() {
                         <PayoutStatusForm
                           action={markPayoutPaid}
                           batch={batch}
-                          disabled={Boolean(payoutHold)}
+                          disabled={Boolean(payoutHold) || paidBlockedByMissingRef}
                           label="Paid"
                         />
                       )}
@@ -407,6 +409,9 @@ export default async function PayoutsPage() {
                         <a className="pill pill-danger" href={`/providers/${batch.providerProfileId}`}>
                           Open provider risk
                         </a>
+                      )}
+                      {paidBlockedByMissingRef && (
+                        <span className="pill pill-warn">Save bank ref before paid</span>
                       )}
                       {(batch.status === 'PAID' || batch.status === 'CANCELLED') && (
                         <span className="muted">No status action</span>

@@ -1528,6 +1528,22 @@ const payoutBatchUpdate = await patchJson(`/admin/payout-batches/${payoutBatch.i
 if (payoutBatchUpdate.transferRef !== `${payoutBatch.transferRef}-UPDATED`) {
   throw new Error(`Payout batch transfer reference was not updated: ${JSON.stringify(payoutBatchUpdate)}`);
 }
+await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+  transferRef: '',
+  notes: 'Missing transfer reference guard',
+});
+await expectRequestFailure(
+  'Payout paid status requires transfer reference',
+  () =>
+    patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+      status: 'PAID',
+    }),
+  400,
+);
+await patchJson(`/admin/payout-batches/${payoutBatch.id}`, adminAuth.accessToken, {
+  transferRef: payoutBatchUpdate.transferRef,
+  notes: 'Updated by smoke test',
+});
 const payoutBatchProcessing = await patchJson(
   `/admin/payout-batches/${payoutBatch.id}`,
   adminAuth.accessToken,

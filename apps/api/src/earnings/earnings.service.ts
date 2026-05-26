@@ -374,6 +374,13 @@ export class EarningsService {
     if (existing.status === PayoutBatchStatus.PAID && nextStatus && nextStatus !== PayoutBatchStatus.PAID) {
       throw new BadRequestException('Paid payout batches cannot be moved back to an unpaid status');
     }
+    const nextTransferRef =
+      input.transferRef === undefined
+        ? normalizeNullable(existing.transferRef)
+        : normalizeNullable(input.transferRef);
+    if (nextStatus === PayoutBatchStatus.PAID && !nextTransferRef) {
+      throw new BadRequestException('Transfer reference is required before marking a payout batch paid');
+    }
 
     return this.prisma.$transaction(async (tx) => {
       if (nextStatus === PayoutBatchStatus.PROCESSING || nextStatus === PayoutBatchStatus.PAID) {
@@ -385,7 +392,7 @@ export class EarningsService {
         where: { id: payoutBatchId },
         data: {
           status: nextStatus,
-          transferRef: input.transferRef === undefined ? undefined : normalizeNullable(input.transferRef),
+          transferRef: input.transferRef === undefined ? undefined : nextTransferRef,
           notes: input.notes === undefined ? undefined : normalizeNullable(input.notes),
           paidAt,
         },
