@@ -284,6 +284,7 @@ export default async function PayoutsPage() {
               <th>Provider</th>
               <th>Status</th>
               <th>Ops signal</th>
+              <th>Blocking reasons</th>
               <th>Transfer ref</th>
               <th>Earnings</th>
               <th>Checklist</th>
@@ -297,6 +298,7 @@ export default async function PayoutsPage() {
             {batches.map((batch) => {
               const checklist = payoutChecklist(batch);
               const payoutHold = activePayoutHold(batch);
+              const blockingReasons = payoutBlockingReasons(batch);
               const paidBlockedByMissingRef =
                 batch.status !== 'PAID' && batch.status !== 'CANCELLED' && !batch.transferRef;
               return (
@@ -326,6 +328,28 @@ export default async function PayoutsPage() {
                     </span>
                     <div className="muted" style={{ marginTop: 6 }}>
                       {opsHint(batch)}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="participant-list">
+                      {blockingReasons.length ? (
+                        blockingReasons.map((reason) => (
+                          <span
+                            className={`pill ${reason.pillClass}`}
+                            key={reason.label}
+                            title={reason.detail}
+                          >
+                            {reason.label}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="pill pill-success">Clear</span>
+                      )}
+                    </div>
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      {blockingReasons.length
+                        ? blockingReasons.map((reason) => reason.action).join(' ')
+                        : 'No blocking reason is preventing the next finance action.'}
                     </div>
                   </td>
                   <td>
@@ -427,7 +451,7 @@ export default async function PayoutsPage() {
             })}
             {batches.length === 0 && (
               <tr>
-                <td colSpan={11}>No payout batches loaded.</td>
+                <td colSpan={12}>No payout batches loaded.</td>
               </tr>
             )}
           </tbody>
@@ -521,6 +545,13 @@ type PayoutLane = {
   batches: AdminPayoutBatch[];
   pillClass: string;
   emptyText: string;
+};
+
+type PayoutBlockingReason = {
+  label: string;
+  detail: string;
+  action: string;
+  pillClass: string;
 };
 
 type PayoutServiceEvidenceItem = {
@@ -837,6 +868,79 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
 
 function transferRefRequiredBeforePaid(batch: AdminPayoutBatch) {
   return batch.status !== 'PAID' && batch.status !== 'CANCELLED' && !batch.transferRef;
+}
+
+function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] {
+  const reasons: PayoutBlockingReason[] = [];
+  const payoutHold = activePayoutHold(batch);
+  const withholdingAmount = batchWithholdingAmount(batch);
+  const withholdingLogs = batch.withholdingLogs ?? [];
+  const earnings = batch.earnings ?? [];
+
+  if (payoutHold) {
+    reasons.push({
+      label: 'Payout hold',
+      detail: payoutHold.reason,
+      action: 'Lift the provider payout hold before changing this payout.',
+      pillClass: 'pill-danger',
+    });
+  }
+
+  if (transferRefRequiredBeforePaid(batch)) {
+    reasons.push({
+      label: 'Bank ref required',
+      detail: 'A transfer reference must be saved before this batch can be marked paid.',
+      action: 'Save the bank transfer reference first.',
+      pillClass: 'pill-warn',
+    });
+  }
+
+  if (batch.status === 'PAID' && !batch.transferRef) {
+    reasons.push({
+      label: 'Paid missing ref',
+      detail: 'This paid batch is missing its banking reference for reconciliation.',
+      action: 'Add the historical bank reference.',
+      pillClass: 'pill-danger',
+    });
+  }
+
+  if (!earnings.length) {
+    reasons.push({
+      label: 'No earnings',
+      detail: 'The payout batch has no linked earning records.',
+      action: 'Attach payable earnings or cancel the batch.',
+      pillClass: 'pill-warn',
+    });
+  }
+
+  if (withholdingAmount > 0 && !withholdingLogs.length) {
+    reasons.push({
+      label: 'Tax log missing',
+      detail: `Withholding exists (${formatMoney(withholdingAmount, batch.currency)}) but no tax log is linked.`,
+      action: 'Create or repair withholding logs before reconciliation.',
+      pillClass: 'pill-warn',
+    });
+  }
+
+  if (withholdingLogs.some((log) => log.status !== 'PAID')) {
+    reasons.push({
+      label: 'Tax open',
+      detail: 'One or more withholding logs are not marked paid.',
+      action: 'Complete withholding settlement status.',
+      pillClass: 'pill-warn',
+    });
+  }
+
+  if (batch.status === 'PAID' && earnings.some((earning) => earning.status !== 'PAID')) {
+    reasons.push({
+      label: 'Earning mismatch',
+      detail: 'The batch is paid but at least one attached earning is not paid.',
+      action: 'Repair earning status so provider ledger matches payout.',
+      pillClass: 'pill-danger',
+    });
+  }
+
+  return reasons;
 }
 
 function buildPayoutLanes(batches: AdminPayoutBatch[]): PayoutLane[] {
