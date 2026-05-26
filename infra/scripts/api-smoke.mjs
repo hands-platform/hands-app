@@ -1041,10 +1041,7 @@ const hybridBooking = await postJson('/customer/bookings', customerAuth.accessTo
   lng: 106.6994,
   paymentMethod: 'CASH',
 });
-const hybridBookingDetail = await getJson(
-  `/customer/bookings/${hybridBooking.id}`,
-  customerAuth.accessToken,
-);
+const hybridBookingDetail = await getJson(`/customer/bookings/${hybridBooking.id}`, customerAuth.accessToken);
 assertBookingPricing('Direct provider custom-price', hybridBookingDetail, {
   customerPrice: higherCustomerPrice,
   paymentAmount: higherCustomerPrice,
@@ -1311,6 +1308,11 @@ if (
     `Cash debt booking trace was not visible to booking monitor: ${JSON.stringify(cashDebtBookingInMonitor)}`,
   );
 }
+await expectRequestFailure(
+  'Negative cash fee settlement requires a reference',
+  () => postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {}),
+  400,
+);
 const cashDebtSettlementRef = `SMOKE-CASH-FEE-${Date.now()}`;
 await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {
   settlementRef: cashDebtSettlementRef,
@@ -1423,9 +1425,7 @@ if (adminCompletedEarning.platformFeeLogs[0].ruleSnapshot?.source !== 'SERVICE_P
 }
 const servicePayoutLog = adminCompletedEarning.platformFeeLogs[0];
 const servicePayoutSnapshot = servicePayoutLog.ruleSnapshot ?? {};
-const servicePayoutLines = Array.isArray(servicePayoutSnapshot.lines)
-  ? servicePayoutSnapshot.lines
-  : [];
+const servicePayoutLines = Array.isArray(servicePayoutSnapshot.lines) ? servicePayoutSnapshot.lines : [];
 const servicePayoutLine = servicePayoutLines.find(
   (line) => line.serviceId === service.id && line.customerPrice === service.basePrice,
 );

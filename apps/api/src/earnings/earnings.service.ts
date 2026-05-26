@@ -16,8 +16,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 
-const PROVIDER_WALLET_BLOCK_REASON =
-  '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
+const PROVIDER_WALLET_BLOCK_REASON = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
   '현금 예약으로 발생한 HANDS 수수료와 원천징수 금액이 미정산 상태입니다. 회사 계좌로 입금하거나 관리자 정산/상계가 완료되면 예약 수락이 다시 가능합니다.';
@@ -194,9 +193,7 @@ export class EarningsService {
       walletBlockReason: walletBlocked ? PROVIDER_WALLET_BLOCK_REASON : null,
       walletSettlementRequired: walletBlocked,
       walletSettlementMethod: walletBlocked ? 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET' : null,
-      walletSettlementReference: walletBlocked
-        ? this.providerWalletSettlementReference(provider.id)
-        : null,
+      walletSettlementReference: walletBlocked ? this.providerWalletSettlementReference(provider.id) : null,
       walletSettlementInstruction: walletBlocked ? PROVIDER_WALLET_SETTLEMENT_INSTRUCTION : null,
       walletSettlementSteps: walletBlocked
         ? this.providerWalletSettlementSteps(walletDebtAmount, summary.currency, provider.id)
@@ -232,6 +229,11 @@ export class EarningsService {
     if (!earning) {
       throw new NotFoundException('Earning not found');
     }
+    const settlementRef = cleanOptionalText(input.settlementRef);
+    const settlementNotes = cleanOptionalText(input.settlementNotes);
+    if (earning.netAmount < 0 && !settlementRef) {
+      throw new BadRequestException('Settlement reference is required for cash fee debt settlement');
+    }
 
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.providerEarning.update({
@@ -239,13 +241,13 @@ export class EarningsService {
         data: {
           status: EarningStatus.PAID,
           paidAt: new Date(),
-          settlementRef: cleanOptionalText(input.settlementRef),
-          settlementNotes: cleanOptionalText(input.settlementNotes),
+          settlementRef,
+          settlementNotes,
         },
       });
       await this.upsertPaidWalletLedger(tx, updated, {
-        reference: input.settlementRef,
-        notes: input.settlementNotes,
+        reference: settlementRef,
+        notes: settlementNotes,
       });
       return updated;
     });
@@ -1075,10 +1077,16 @@ function selectPlatformFeeRule(
       platformFeeRulePriority(right, serviceTypes, input.grossAmount) -
       platformFeeRulePriority(left, serviceTypes, input.grossAmount),
   );
-  return prioritized.find((rule) => platformFeeRulePriority(rule, serviceTypes, input.grossAmount) > 0) ?? null;
+  return (
+    prioritized.find((rule) => platformFeeRulePriority(rule, serviceTypes, input.grossAmount) > 0) ?? null
+  );
 }
 
-function platformFeeRulePriority(rule: PlatformFeeRuleRecord, serviceTypes: Set<string>, grossAmount: number) {
+function platformFeeRulePriority(
+  rule: PlatformFeeRuleRecord,
+  serviceTypes: Set<string>,
+  grossAmount: number,
+) {
   if (rule.scope === TaxRuleScope.SERVICE_TYPE) {
     return rule.serviceType && serviceTypes.has(rule.serviceType.toLowerCase()) ? 30 : 0;
   }

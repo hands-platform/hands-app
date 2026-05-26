@@ -384,6 +384,7 @@ export default async function EarningsPage() {
                     {item.settlementChecklist.map((step) => (
                       <small key={step}>{step}</small>
                     ))}
+                    <small>Suggested ref: {item.settlementReference}</small>
                     {item.lastLedgerRef ? <small>Last ledger ref: {item.lastLedgerRef}</small> : null}
                   </div>
                   <p className="muted">
@@ -401,11 +402,12 @@ export default async function EarningsPage() {
                       aria-label="Settlement reference"
                       name="settlementRef"
                       placeholder="Deposit ref or offset memo"
+                      defaultValue={item.settlementReference}
                     />
                     <input
                       type="hidden"
                       name="settlementNotes"
-                      value="Cash fee debt settled from admin earnings queue"
+                      value={`Cash fee debt settled from admin earnings queue with reference ${item.settlementReference}`}
                     />
                     <button type="submit">Mark fee settled</button>
                   </form>
@@ -586,6 +588,7 @@ type CashDebtQueueItem = {
   platformFee: number;
   taxAmount: number;
   bookingAmount: number;
+  settlementReference: string;
   lastLedgerRef?: string | null;
   settlementChecklist: string[];
 };
@@ -629,6 +632,7 @@ function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
       const platformFee = earning.platformFee;
       const taxAmount = earning.withholdingAmount ?? 0;
       const bookingAmount = earning.booking?.payment?.amount ?? earning.grossAmount;
+      const settlementReference = cashDebtSettlementReference(earning.providerProfileId);
       const lastLedgerRef = earning.walletLedgerEntries?.[0]?.reference ?? null;
 
       return {
@@ -639,15 +643,20 @@ function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
         platformFee,
         taxAmount,
         bookingAmount,
+        settlementReference,
         lastLedgerRef,
         settlementChecklist: [
-          'Confirm provider deposit or approved offset before settling.',
-          'Record a deposit reference or offset memo.',
+          `Confirm provider deposit or approved offset before settling ${settlementReference}.`,
+          'Keep the reference on the bank transfer, chat evidence, or admin offset memo.',
           'Recheck payout queue after settlement.',
         ],
       };
     })
     .sort((left, right) => right.debtAmount - left.debtAmount);
+}
+
+function cashDebtSettlementReference(providerProfileId: string) {
+  return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
 }
 
 function buildCashDebtTotals(queue: CashDebtQueueItem[]) {
