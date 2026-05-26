@@ -8,6 +8,7 @@ void main() {
       'walletBlocked': true,
       'walletBlockReason': 'Custom settlement message',
       'walletSettlementInstruction': 'Pay the HANDS fee to reopen requests.',
+      'walletSettlementReference': 'HANDS-WALLET-TEST1234',
     };
 
     expect(providerWalletBalance(summary), -120000);
@@ -19,8 +20,10 @@ void main() {
     );
     expect(
       providerWalletSettlementSteps(summary),
-      contains('Settle 120.000 VND for unpaid HANDS fees.'),
+      contains(
+          'Use reference HANDS-WALLET-TEST1234 when sending the deposit or requesting admin offset.'),
     );
+    expect(providerWalletSettlementReference(summary), 'HANDS-WALLET-TEST1234');
   });
 
   test('falls back to computed wallet balance and default block message', () {
@@ -38,6 +41,7 @@ void main() {
       providerWalletSettlementInstruction(summary),
       providerWalletBlockHintReadable,
     );
+    expect(providerWalletSettlementReference(summary), isNull);
   });
 
   test('uses server settlement steps when provided', () {

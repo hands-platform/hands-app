@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
@@ -1262,6 +1263,7 @@ class ProviderWalletGateCard extends StatelessWidget {
     final reason = providerWalletBlockReason(summary);
     final settlementInstruction = providerWalletSettlementInstruction(summary);
     final settlementSteps = providerWalletSettlementSteps(summary);
+    final settlementReference = providerWalletSettlementReference(summary);
     final walletBlocked = reason != null;
 
     if (isLoading) {
@@ -1350,6 +1352,13 @@ class ProviderWalletGateCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(settlementInstruction),
+              if (settlementReference != null) ...[
+                const SizedBox(height: 10),
+                _WalletSettlementReferenceCard(
+                  reference: settlementReference,
+                  amountLabel: '${formatCurrency(walletDebtAmount)} $currency',
+                ),
+              ],
               const SizedBox(height: 10),
               _WalletSettlementChecklist(items: settlementSteps),
               const SizedBox(height: 10),
@@ -1399,6 +1408,75 @@ class _WalletSettlementChecklist extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+class _WalletSettlementReferenceCard extends StatelessWidget {
+  const _WalletSettlementReferenceCard({
+    required this.reference,
+    required this.amountLabel,
+  });
+
+  final String reference;
+  final String amountLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.72),
+        border: Border.all(color: colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Settlement reference',
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          SelectableText(
+            reference,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Deposit or offset amount: $amountLabel',
+            style: theme.textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: reference));
+                if (!context.mounted) {
+                  return;
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Settlement reference copied.'),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.copy, size: 18),
+              label: const Text('Copy reference'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1859,6 +1937,8 @@ class EarningsScreen extends ConsumerWidget {
                         providerWalletStatusLabel(summary);
                     final walletSettlementSteps =
                         providerWalletSettlementSteps(summary);
+                    final walletSettlementReference =
+                        providerWalletSettlementReference(summary);
 
                     return FutureBuilder<List<dynamic>>(
                       future:
@@ -1919,6 +1999,15 @@ class EarningsScreen extends ConsumerWidget {
                                       ),
                                       const SizedBox(height: 6),
                                       Text(walletSettlementInstruction),
+                                      if (walletSettlementReference !=
+                                          null) ...[
+                                        const SizedBox(height: 10),
+                                        _WalletSettlementReferenceCard(
+                                          reference: walletSettlementReference,
+                                          amountLabel:
+                                              '${formatCurrency(walletDebtAmount)} $currency',
+                                        ),
+                                      ],
                                       const SizedBox(height: 10),
                                       _WalletSettlementChecklist(
                                         items: walletSettlementSteps,
@@ -4641,6 +4730,25 @@ String providerWalletSettlementInstruction(Map<String, dynamic> summary) {
   return providerWalletBlockHintReadable;
 }
 
+String? providerWalletSettlementReference(Map<String, dynamic> summary) {
+  if (providerWalletBlockReason(summary) == null) {
+    return null;
+  }
+
+  for (final key in [
+    'walletSettlementReference',
+    'settlementReference',
+    'settlementRef',
+  ]) {
+    final reference = summary[key]?.toString().trim();
+    if (reference != null && reference.isNotEmpty) {
+      return reference;
+    }
+  }
+
+  return null;
+}
+
 String providerWalletStatusLabel(Map<String, dynamic> summary) {
   final walletBalance = providerWalletBalance(summary);
   if (providerWalletBlockReason(summary) != null) {
@@ -4670,8 +4778,11 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
   final debtAmount = asNum(summary['walletDebtAmount']) ??
       providerWalletBalance(summary).abs();
   final currency = summary['currency']?.toString() ?? 'VND';
+  final reference = providerWalletSettlementReference(summary);
   return [
     'Settle ${formatCurrency(debtAmount)} $currency for unpaid HANDS fees.',
+    if (reference != null)
+      'Use reference $reference when sending the deposit or requesting admin offset.',
     'After admin confirms the deposit or offset, refresh wallet status.',
     'New booking acceptance unlocks only when the wallet is no longer negative.',
   ];
