@@ -265,9 +265,7 @@ if (!service?.id || !Array.isArray(service.payoutRules) || service.priceStep !==
   throw new Error(`Public services should expose payout-ready pricing metadata: ${JSON.stringify(service)}`);
 }
 const serviceGroups = await request('/services/groups');
-const serviceGroup = serviceGroups.find((group) =>
-  group.options?.some((option) => option.id === service.id),
-);
+const serviceGroup = serviceGroups.find((group) => group.options?.some((option) => option.id === service.id));
 if (
   !serviceGroup ||
   !serviceGroup.key ||
@@ -329,7 +327,9 @@ const bulkPayoutRules = await postJson(
         customerPrice: bulkPayoutStartPrice + service.priceStep,
         providerPayoutAmount: Math.max(
           0,
-          bulkPayoutStartPrice + service.priceStep - Math.round((bulkPayoutStartPrice + service.priceStep) * 0.2),
+          bulkPayoutStartPrice +
+            service.priceStep -
+            Math.round((bulkPayoutStartPrice + service.priceStep) * 0.2),
         ),
         vatBps: 0,
         otherCostAmount: 0,
@@ -381,7 +381,9 @@ if (
   !smokeDurationSet.every((item) => item.serviceGroupKey === smokeDurationSetKey) ||
   !smokeDurationSet.every((item) => item.payoutRules?.some((rule) => rule.customerPrice === item.basePrice))
 ) {
-  throw new Error(`Atomic service duration set was not created correctly: ${JSON.stringify(smokeDurationSet)}`);
+  throw new Error(
+    `Atomic service duration set was not created correctly: ${JSON.stringify(smokeDurationSet)}`,
+  );
 }
 await expectRequestFailure(
   'Admin duplicate service duration set is rejected atomically',
@@ -491,7 +493,9 @@ if (
   !providerServiceGroup ||
   !providerServiceGroup.options?.some((option) => option.effectivePrice >= service.basePrice)
 ) {
-  throw new Error(`Provider grouped service pricing list is incomplete: ${JSON.stringify(providerServiceGroup)}`);
+  throw new Error(
+    `Provider grouped service pricing list is incomplete: ${JSON.stringify(providerServiceGroup)}`,
+  );
 }
 await expectRequestFailure(
   'Provider price below admin minimum is rejected',
@@ -1087,7 +1091,8 @@ const blockedOpenMatchingBooking = await postJson('/customer/bookings', customer
 });
 await expectRequestFailure(
   'Negative provider wallet blocks open matching join',
-  () => postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
+  () =>
+    postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
   400,
 );
 const adminEarningsAfterCashDebt = await getJson('/admin/earnings', adminAuth.accessToken);
@@ -1106,7 +1111,9 @@ if (!cashDebtBookingLedger || cashDebtBookingLedger.amount !== cashDebtEarning.n
   throw new Error(`Cash debt booking ledger was not recorded: ${JSON.stringify(cashDebtEarning)}`);
 }
 const adminPaymentsAfterCashDebt = await getJson('/admin/payments', adminAuth.accessToken);
-const cashDebtPayment = adminPaymentsAfterCashDebt.find((payment) => payment.bookingId === walletDebtBooking.id);
+const cashDebtPayment = adminPaymentsAfterCashDebt.find(
+  (payment) => payment.bookingId === walletDebtBooking.id,
+);
 if (
   cashDebtPayment?.method !== 'CASH' ||
   cashDebtPayment?.booking?.earning?.id !== cashDebtEarning.id ||
@@ -1114,6 +1121,19 @@ if (
   !cashDebtPayment.booking.earning.walletLedgerEntries?.some((entry) => entry.type === 'BOOKING_EARNING')
 ) {
   throw new Error(`Cash debt payment trace was not visible to admin: ${JSON.stringify(cashDebtPayment)}`);
+}
+const adminBookingsAfterCashDebt = await getJson('/admin/bookings', adminAuth.accessToken);
+const cashDebtBookingInMonitor = adminBookingsAfterCashDebt.find(
+  (booking) => booking.id === walletDebtBooking.id,
+);
+if (
+  cashDebtBookingInMonitor?.earning?.id !== cashDebtEarning.id ||
+  cashDebtBookingInMonitor.earning.netAmount >= 0 ||
+  !cashDebtBookingInMonitor.earning.walletLedgerEntries?.some((entry) => entry.type === 'BOOKING_EARNING')
+) {
+  throw new Error(
+    `Cash debt booking trace was not visible to booking monitor: ${JSON.stringify(cashDebtBookingInMonitor)}`,
+  );
 }
 const cashDebtSettlementRef = `SMOKE-CASH-FEE-${Date.now()}`;
 await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {

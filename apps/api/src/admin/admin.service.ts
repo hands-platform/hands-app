@@ -733,6 +733,11 @@ export class AdminService {
         participants: { include: { providerProfile: { include: { user: true } } } },
         services: { include: { service: true } },
         payment: true,
+        earning: {
+          include: {
+            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+          },
+        },
         chatRoom: true,
       },
     });

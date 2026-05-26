@@ -354,6 +354,7 @@ export type AdminBooking = {
     providerRef?: string | null;
     refunds?: Array<{ id: string; amount: number; status: string; createdAt?: string }>;
   } | null;
+  earning?: AdminEarning | null;
   customerProfile?: { user?: { fullName?: string | null; phone?: string } };
   selectedProvider?: {
     id?: string;

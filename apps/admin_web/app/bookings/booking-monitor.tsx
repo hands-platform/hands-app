@@ -307,6 +307,19 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                         )}
                       </div>
                     )}
+                    {bookingCashDebtNeedsOps(booking) && (
+                      <div className="muted" style={{ marginTop: 8 }}>
+                        Cash fee debt{' '}
+                        {money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}
+                      </div>
+                    )}
+                    {booking.earning?.id && (
+                      <div className="actions" style={{ marginTop: 8 }}>
+                        <Link className="text-link" href={`/earnings#earning-${booking.earning.id}`}>
+                          Open earning
+                        </Link>
+                      </div>
+                    )}
                   </td>
                   <td>
                     <span className={`signal ${risk.tone}`}>{risk.label}</span>
@@ -439,6 +452,9 @@ function opsSignal(booking: AdminBooking) {
   if (booking.status === 'REFUNDED') {
     return <span className="signal signal-warn">Refunded</span>;
   }
+  if (bookingCashDebtNeedsOps(booking)) {
+    return <span className="signal signal-warn">Cash fee debt</span>;
+  }
   if (
     booking.status === 'OPEN_MATCHING' &&
     booking.preferredProvider &&
@@ -481,6 +497,9 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
   }
   if (booking.status === 'COMPLETED' && paymentStatus === 'AUTHORIZED') {
     flags.push({ severity: 'high', title: 'Completed service still on hold' });
+  }
+  if (bookingCashDebtNeedsOps(booking)) {
+    flags.push({ severity: 'high', title: 'Cash fee debt blocks provider acceptance' });
   }
   if (booking.status === 'OPEN_MATCHING' && expired) {
     flags.push({ severity: 'high', title: 'Matching window expired' });
@@ -535,7 +554,19 @@ function bookingPaymentNeedsOps(booking: AdminBooking) {
   if (payment.method === 'CASH' && payment.status === 'PENDING') {
     return true;
   }
+  if (bookingCashDebtNeedsOps(booking)) {
+    return true;
+  }
   return false;
+}
+
+function bookingCashDebtNeedsOps(booking: AdminBooking) {
+  return (
+    booking.payment?.method === 'CASH' &&
+    Boolean(booking.earning) &&
+    (booking.earning?.netAmount ?? 0) < 0 &&
+    booking.earning?.status !== 'PAID'
+  );
 }
 
 function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
@@ -580,6 +611,9 @@ function nextAction(booking: AdminBooking) {
   if (booking.status === 'REFUNDED') {
     return 'Refund is recorded. Check the refund board and customer communication.';
   }
+  if (bookingCashDebtNeedsOps(booking)) {
+    return 'Provider collected cash. Finance must settle the HANDS fee debt before this provider can accept more bookings.';
+  }
   if (
     booking.status === 'OPEN_MATCHING' &&
     booking.preferredProvider &&
@@ -613,6 +647,10 @@ function nextAction(booking: AdminBooking) {
 
 function shortId(id: string) {
   return id.slice(0, 8);
+}
+
+function money(amount: number, currency = 'VND') {
+  return `${amount.toLocaleString()} ${currency}`;
 }
 
 function formatDate(value?: string | null) {
