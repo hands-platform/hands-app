@@ -202,6 +202,14 @@ void main() {
     expect(customerServiceOptionLabel(groups.single.options.first),
         'Foot Massage / 60 min');
     expect(customerServicePrice(groups.single.options.last), 700000);
+    expect(
+        customerServiceGroupDurationSummary(groups.single), '60 min / 90 min');
+    expect(customerServiceGroupPriceRangeLabel(groups.single),
+        '600.000-700.000 VND');
+    expect(customerServicePricePolicyLabel(groups.single.options.first),
+        'Provider price');
+    expect(customerServicePricePolicyLabel(groups.single.options.last),
+        'Admin minimum');
   });
 
   test('waiting customer action explains backup choices and confirmed bookings',

@@ -1281,7 +1281,7 @@ class ServiceOptionGroupCard extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(
-              'Choose a duration option for this service.',
+              'Choose a time option. The selected therapist gets the first response window, and backup matching can open if needed.',
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -1291,9 +1291,11 @@ class ServiceOptionGroupCard extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: const [
-                DurationPill(label: 'In-room service'),
-                DurationPill(label: 'Cash on start'),
+              children: [
+                DurationPill(label: customerServiceGroupDurationSummary(group)),
+                DurationPill(label: customerServiceGroupPriceRangeLabel(group)),
+                const DurationPill(label: 'First-pick request'),
+                const DurationPill(label: 'Backup matching'),
               ],
             ),
             const SizedBox(height: 18),
@@ -1328,6 +1330,7 @@ class ServiceDurationOptionTile extends StatelessWidget {
     final basePrice = asNum(service['basePrice'])?.toInt();
     final hasProviderPrice =
         basePrice != null && basePrice > 0 && price != basePrice;
+    final policyLabel = customerServicePricePolicyLabel(service);
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1342,7 +1345,19 @@ class ServiceDurationOptionTile extends StatelessWidget {
           Row(
             children: [
               DurationPill(label: '${duration ?? '-'} min'),
-              const Spacer(),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  policyLabel,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: const Color(0xFF5E8E4A),
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ),
+              const SizedBox(width: 8),
               Flexible(
                 child: Text(
                   '${formatCurrency(price)} VND',
@@ -1370,7 +1385,7 @@ class ServiceDurationOptionTile extends StatelessWidget {
           if (hasProviderPrice) ...[
             const SizedBox(height: 8),
             Text(
-              'Provider price. Admin minimum ${formatCurrency(basePrice)} VND.',
+              'Provider price selected. Admin minimum ${formatCurrency(basePrice)} VND.',
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
@@ -5554,6 +5569,59 @@ String customerServiceDurationLabel(Map<String, dynamic>? service) {
   return duration == null || duration <= 0
       ? 'Duration not set'
       : '$duration min';
+}
+
+String customerServiceGroupDurationSummary(CustomerServiceOptionGroup group) {
+  final durations = group.options
+      .map((option) => asNum(option['durationMin'])?.toInt())
+      .whereType<int>()
+      .where((duration) => duration > 0)
+      .toSet()
+      .toList()
+    ..sort();
+  if (durations.isEmpty) {
+    return '${group.options.length} option(s)';
+  }
+  return durations.map((duration) => '$duration min').join(' / ');
+}
+
+String customerServiceGroupPriceRangeLabel(CustomerServiceOptionGroup group) {
+  final prices = group.options
+      .map(customerServicePrice)
+      .where((price) => price > 0)
+      .toList()
+    ..sort();
+  if (prices.isEmpty) {
+    return 'Price pending';
+  }
+  final lowest = prices.first;
+  final highest = prices.last;
+  if (lowest == highest) {
+    return '${formatCurrency(lowest)} VND';
+  }
+  return '${formatCurrency(lowest)}-${formatCurrency(highest)} VND';
+}
+
+String customerServicePricePolicyLabel(Map<String, dynamic>? service) {
+  if (service == null) {
+    return 'Policy pending';
+  }
+  final price = customerServicePrice(service);
+  final basePrice = asNum(service['basePrice'])?.toInt() ?? 0;
+  final step = asNum(service['priceStep'])?.toInt() ?? 100000;
+  if (price <= 0) {
+    return 'Price pending';
+  }
+  if (basePrice > 0 && price < basePrice) {
+    return 'Below minimum';
+  }
+  if (step > 0 && price % step != 0) {
+    return 'Price step check';
+  }
+  if (basePrice > 0 && price > basePrice) {
+    return 'Provider price';
+  }
+  return 'Admin minimum';
 }
 
 String customerServiceOptionPriceLabel(Map<String, dynamic>? service,
