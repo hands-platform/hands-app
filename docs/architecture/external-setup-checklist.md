@@ -384,7 +384,7 @@ npm.cmd run external:check:production
 
 ## Current Local Status
 
-Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-23:
+Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-26:
 
 - Mobile Firebase dependencies/config: removed
 - Full local verification with Docker services: passing, including API smoke, realtime smoke, Supabase Auth exchange smoke, Flutter analyze, and Flutter tests
@@ -401,6 +401,7 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-23:
 - Supabase Phone Auth/SMS: deferred
 - Planned SMS provider: Vonage
 - Mobile auth switch: still `AUTH_BACKEND=nest` locally until Vonage + Supabase Phone Auth E2E is configured
+- Secret hygiene: Supabase publishable/anon/service/JWT secret values, MapTiler, and Geoapify keys must stay only in ignored `.env` files or external secret storage, never in Git
 - Local MinIO storage: ready for MVP
 - Production SMS provider: Vonage planned, credentials not filled
 - MoMo / VNPay merchant credentials: not filled
