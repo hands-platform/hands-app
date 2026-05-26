@@ -418,41 +418,30 @@ class _ProviderServicePriceSheet extends StatefulWidget {
 
 class _ProviderServicePriceSheetState
     extends State<_ProviderServicePriceSheet> {
-  late final TextEditingController _priceController;
+  late int _selectedPrice;
   late bool _active;
   String? _error;
 
   @override
   void initState() {
     super.initState();
-    _priceController = TextEditingController(
-      text: widget.service.effectivePrice.toString(),
-    );
+    _selectedPrice =
+        widget.service.recommendedCustomerPrice ?? widget.service.effectivePrice;
     _active = widget.service.active;
   }
 
-  @override
-  void dispose() {
-    _priceController.dispose();
-    super.dispose();
-  }
-
   void _submit() {
-    final price = int.tryParse(
-      _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
-    );
     final service = widget.service;
     final validationMessage =
-        service.validationMessageForPrice(price, active: _active);
+        service.validationMessageForPrice(_selectedPrice, active: _active);
     if (validationMessage != null) {
       final options = service.bookablePayoutOptions
           .map((option) => formatVnd(option.customerPrice))
           .join(', ');
-      final detailedMessage = price != null &&
-              _active &&
+      final detailedMessage = _active &&
               service.hasBookablePriceOptions &&
-              service.bookablePayoutOptionForPrice(price) == null
-          ? 'Admin payout rule is required for exactly ${formatVnd(price)}. Choose one of: $options.'
+              service.bookablePayoutOptionForPrice(_selectedPrice) == null
+          ? 'Admin payout rule is required for exactly ${formatVnd(_selectedPrice)}. Choose one of: $options.'
           : validationMessage == 'Price must be at least the HANDS minimum.'
               ? 'Price must be at least ${formatVnd(service.basePrice)}.'
               : validationMessage == 'Price must follow the configured VND step.'
@@ -462,7 +451,7 @@ class _ProviderServicePriceSheetState
       return;
     }
     Navigator.of(context).pop(
-      ProviderServicePriceInput(price: price!, active: _active),
+      ProviderServicePriceInput(price: _selectedPrice, active: _active),
     );
   }
 
@@ -470,11 +459,11 @@ class _ProviderServicePriceSheetState
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final service = widget.service;
-    final previewPrice = int.tryParse(
-          _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
-        ) ??
-        service.effectivePrice;
-    final previewRule = service.bookablePayoutOptionForPrice(previewPrice);
+    final priceOptions = service.bookablePayoutOptions;
+    final selectedPriceIsAvailable = priceOptions.any(
+      (option) => option.customerPrice == _selectedPrice,
+    );
+    final previewRule = service.bookablePayoutOptionForPrice(_selectedPrice);
     final matchingRule = previewRule != null;
     final recommendedPrice = service.recommendedCustomerPrice;
     return Padding(
@@ -515,40 +504,62 @@ class _ProviderServicePriceSheetState
                   .join(', '),
             ),
           const SizedBox(height: 14),
-          TextField(
-            controller: _priceController,
-            onChanged: (_) => setState(() => _error = null),
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Your customer price',
-              suffixText: 'VND',
-              border: OutlineInputBorder(),
+          Text(
+            'Choose customer price',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          if (!selectedPriceIsAvailable && service.effectivePrice > 0) ...[
+            ChoiceChip(
+              label: Text('Current ${formatVnd(service.effectivePrice)}'),
+              selected: _selectedPrice == service.effectivePrice,
+              onSelected: (_) => setState(() {
+                _selectedPrice = service.effectivePrice;
+                _error = null;
+              }),
+            ),
+            const SizedBox(height: 8),
+          ],
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: priceOptions.isEmpty
+                  ? const Text(
+                      'No admin-approved price is available yet. Save this service as paused or ask admin to configure the payout matrix.',
+                    )
+                  : Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        for (final option in priceOptions)
+                          ChoiceChip(
+                            label: Text(formatVnd(option.customerPrice)),
+                            selected: _selectedPrice == option.customerPrice,
+                            onSelected: (_) => setState(() {
+                              _selectedPrice = option.customerPrice;
+                              _error = null;
+                            }),
+                          ),
+                      ],
+                    ),
             ),
           ),
-          if (service.bookablePayoutOptions.isNotEmpty) ...[
+          if (recommendedPrice != null && recommendedPrice != _selectedPrice) ...[
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (recommendedPrice != null)
-                  ActionChip(
-                    avatar: const Icon(Icons.recommend_outlined, size: 18),
-                    label: Text('Recommended ${formatVnd(recommendedPrice)}'),
-                    onPressed: () => setState(() {
-                      _priceController.text = recommendedPrice.toString();
-                      _error = null;
-                    }),
-                  ),
-                for (final option in service.bookablePayoutOptions)
-                  ActionChip(
-                    label: Text(formatVnd(option.customerPrice)),
-                    onPressed: () => setState(() {
-                      _priceController.text = option.customerPrice.toString();
-                      _error = null;
-                    }),
-                  ),
-              ],
+            OutlinedButton.icon(
+              onPressed: () => setState(() {
+                _selectedPrice = recommendedPrice;
+                _error = null;
+              }),
+              icon: const Icon(Icons.recommend_outlined),
+              label: Text('Use recommended ${formatVnd(recommendedPrice)}'),
             ),
           ],
           const SizedBox(height: 12),
