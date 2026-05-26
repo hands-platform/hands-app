@@ -614,17 +614,20 @@ function CashDebtSettlementForm({ booking }: { booking: AdminBookingDetail }) {
     return null;
   }
 
+  const settlementRef = `HANDS-CASH-${shortId(booking.id).toUpperCase()}`;
   return (
     <form action={settleBookingCashDebt} className="inline-form">
       <input type="hidden" name="bookingId" value={booking.id} />
       <input type="hidden" name="earningId" value={earning.id} />
       <input
         name="settlementRef"
-        placeholder={`HANDS-CASH-${shortId(booking.id)}`}
+        defaultValue={settlementRef}
+        placeholder={settlementRef}
         aria-label="Cash debt settlement reference"
       />
       <input
         name="settlementNotes"
+        defaultValue={`Provider deposited ${money(Math.abs(earning.netAmount), earning.currency)} with ${settlementRef}`}
         placeholder={`Provider deposited ${money(Math.abs(earning.netAmount), earning.currency)}`}
         aria-label="Cash debt settlement notes"
       />
