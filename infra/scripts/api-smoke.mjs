@@ -1172,6 +1172,16 @@ await expectRequestFailure(
     postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
   400,
 );
+await expectRequestFailure(
+  'Negative provider wallet blocks payout batch creation',
+  () =>
+    postJson('/admin/payout-batches', adminAuth.accessToken, {
+      providerProfileId: walletDebtProviderAuth.user.providerProfile.id,
+      transferRef: `SMOKE-DEBT-HOLD-${Date.now()}`,
+      notes: 'This should be blocked by cash fee debt',
+    }),
+  400,
+);
 const adminEarningsAfterCashDebt = await getJson('/admin/earnings', adminAuth.accessToken);
 const cashDebtEarning = adminEarningsAfterCashDebt.find(
   (earning) => earning.bookingId === walletDebtBooking.id && earning.netAmount < 0,

@@ -369,6 +369,7 @@ export class EarningsService {
     return this.prisma.$transaction(async (tx) => {
       if (nextStatus === PayoutBatchStatus.PROCESSING || nextStatus === PayoutBatchStatus.PAID) {
         await this.ensureNoActivePayoutHold(tx, existing.providerProfileId);
+        await this.ensureProviderWalletNonNegative(tx, existing.providerProfileId);
       }
       const paidAt = nextStatus === PayoutBatchStatus.PAID ? (existing.paidAt ?? new Date()) : undefined;
       const batch = await tx.providerPayoutBatch.update({
@@ -799,6 +800,7 @@ export class EarningsService {
     }
 
     await this.ensureNoActivePayoutHold(tx, providerProfileId);
+    await this.ensureProviderWalletNonNegative(tx, providerProfileId);
 
     const completedBookingCount = await tx.booking.count({
       where: { selectedProviderId: providerProfileId, status: BookingStatus.COMPLETED },
@@ -847,6 +849,25 @@ export class EarningsService {
     const payoutHold = await this.activePayoutHoldForProvider(client, providerProfileId);
     if (payoutHold) {
       throw new BadRequestException(`Provider payout is blocked by active sanction: ${payoutHold.reason}`);
+    }
+  }
+
+  private async ensureProviderWalletNonNegative(client: TxClient, providerProfileId: string) {
+    const wallet = await client.providerEarning.aggregate({
+      where: {
+        providerProfileId,
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+      },
+      _sum: { netAmount: true },
+    });
+    const walletBalance = wallet._sum.netAmount ?? 0;
+    if (walletBalance < 0) {
+      throw new BadRequestException(
+        `Provider has unsettled cash fee debt (${Math.abs(
+          walletBalance,
+        )} VND). Settle or offset the debt before creating a payout batch.`,
+      );
     }
   }
 
