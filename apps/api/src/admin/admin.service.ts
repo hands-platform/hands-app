@@ -41,7 +41,19 @@ export class AdminService {
     return this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: { customerProfile: true, providerProfile: true },
+      include: {
+        customerProfile: true,
+        providerProfile: true,
+        pushDevices: {
+          orderBy: { updatedAt: 'desc' },
+          include: {
+            deliveries: {
+              orderBy: { attemptedAt: 'desc' },
+              take: 1,
+            },
+          },
+        },
+      },
     });
   }
 

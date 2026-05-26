@@ -10,6 +10,22 @@ export type AdminUser = {
   fullName?: string | null;
   roles: string[];
   providerProfile?: AdminProvider | null;
+  customerProfile?: { id: string; userId: string; addresses?: unknown } | null;
+  pushDevices?: Array<{
+    id: string;
+    platform: string;
+    enabled: boolean;
+    token: string;
+    createdAt?: string;
+    updatedAt?: string;
+    deliveries?: Array<{
+      id: string;
+      status: string;
+      attemptedAt: string;
+      provider: string;
+      response?: unknown;
+    }>;
+  }>;
 };
 
 export type AdminProvider = {

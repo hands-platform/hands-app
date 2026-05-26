@@ -66,12 +66,12 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
 
   return (
     <>
-      <h1>Provider Verification</h1>
+      <h1>Partner Verification</h1>
       <div className="card" style={{ marginBottom: 16 }}>
         <form className="form-grid" action="/providers">
           <label>
             Search
-            <input name="q" defaultValue={filters.q} placeholder="Name, phone, city, provider id" />
+            <input name="q" defaultValue={filters.q} placeholder="Name, phone, city, partner id" />
           </label>
           <label>
             Verification
@@ -85,7 +85,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </select>
           </label>
           <label>
-            Provider status
+            Partner status
             <select name="providerStatus" defaultValue={filters.providerStatus}>
               <option value="">All</option>
               <option value="ONLINE_AVAILABLE">Online available</option>
@@ -180,7 +180,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </div>
           ) : (
             <p className="muted full-span">
-              No provider filter is active. Showing the first {PROVIDER_LIST_RENDER_LIMIT} rows from the
+              No partner filter is active. Showing the first {PROVIDER_LIST_RENDER_LIMIT} rows from the
               operator queue for faster loading.
             </p>
           )}
@@ -197,7 +197,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Provider command center</h2>
+            <h2>Partner command center</h2>
             <p className="muted">
               Operator overview across onboarding, dispatch readiness, payout/tax readiness, and trust risk.
             </p>

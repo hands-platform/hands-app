@@ -33,9 +33,9 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
 
   return (
     <>
-      <h1>Provider Risk</h1>
+      <h1>Partner Risk</h1>
       <p className="muted">
-        Track provider reports, active sanctions, account blocks, payout holds, and safety follow-up in one
+        Track partner reports, active sanctions, account blocks, payout holds, and safety follow-up in one
         operator view.
       </p>
 

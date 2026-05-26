@@ -9,6 +9,7 @@ import {
   AdminPayoutBatch,
   AdminProvider,
   AdminRefund,
+  AdminUser,
   apiGet,
   adminGet,
 } from '../lib/admin-api';
@@ -26,11 +27,12 @@ type OpsQueueItem = {
   detail: string;
   href: string;
   severity: 'high' | 'medium' | 'low';
-  area: 'Booking' | 'Payment' | 'Provider' | 'Notification' | 'Payout' | 'Finance';
+  area: 'Booking' | 'Payment' | 'Partner' | 'Notification' | 'Payout' | 'Finance';
 };
 
 export default async function DashboardPage() {
   const [
+    users,
     providers,
     bookings,
     payments,
@@ -41,6 +43,7 @@ export default async function DashboardPage() {
     payoutBatches,
     externalReadiness,
   ] = await Promise.all([
+    adminGet<AdminUser[]>('/admin/users', []),
     adminGet<AdminProvider[]>('/admin/providers', []),
     adminGet<AdminBooking[]>('/admin/bookings', []),
     adminGet<AdminPayment[]>('/admin/payments', []),
@@ -77,6 +80,10 @@ export default async function DashboardPage() {
     earningRows,
     payoutBatches,
   });
+  const bookingOps = buildBookingOpsInsights(bookings);
+  const customerPresence = buildCustomerPresence(users, bookings);
+  const hourlyDemand = buildHourlyBookingDemand(bookings);
+  const regionalDemand = buildRegionalBookingDemand(bookings);
   const commandSignals = buildDashboardCommandSignals({
     providers,
     bookings,
@@ -100,17 +107,47 @@ export default async function DashboardPage() {
 
   const metrics = [
     [
+      'Total bookings',
+      bookings.length.toString(),
+      'All reservations currently loaded into the admin snapshot.',
+    ],
+    [
       'Open matching',
       bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length.toString(),
-      'Customer is waiting for provider response.',
+      'Customer is waiting for partner response.',
     ],
     ['Active bookings', activeBookings.length.toString(), 'Bookings that still need operational visibility.'],
     [
-      'Online providers',
+      'Completed bookings',
+      bookingOps.completed.toString(),
+      'Finished services ready for payment/review closeout.',
+    ],
+    [
+      'Cancelled bookings',
+      bookingOps.cancelled.toString(),
+      'Cancelled requests needing refund/release review.',
+    ],
+    [
+      'No-show signal',
+      bookingOps.noShowSignal.toString(),
+      'Inferred from expired requests until a formal NO_SHOW status is added.',
+    ],
+    [
+      'Online partners',
       providers.filter((provider) => provider.status.startsWith('ONLINE')).length.toString(),
       'Supply currently visible to customers.',
     ],
-    ['Pending verification', pendingVerification.length.toString(), 'Providers waiting for admin approval.'],
+    ['Pending verification', pendingVerification.length.toString(), 'Partners waiting for admin approval.'],
+    [
+      'Customers in app',
+      customerPresence.reachableCustomers.toString(),
+      'Reachable customer proxy from enabled app push device registrations.',
+    ],
+    [
+      'Active customers',
+      customerPresence.activeBookingCustomers.toString(),
+      'Unique customers currently attached to active bookings.',
+    ],
     [
       'Payment holds',
       payments.filter((payment) => payment.status === 'AUTHORIZED').length.toString(),
@@ -124,12 +161,12 @@ export default async function DashboardPage() {
     [
       'Available payout',
       money(earnings.availableNetAmount, earnings.currency),
-      'Provider earnings ready for payout batching.',
+      'Partner earnings ready for payout batching.',
     ],
     [
       'Cash debt',
       money(cashDebtAmount, earnings.currency),
-      'Provider cash fee/tax debt blocking booking acceptance.',
+      'Partner cash fee/tax debt blocking booking acceptance.',
     ],
     [
       'Open payout batches',
@@ -139,7 +176,7 @@ export default async function DashboardPage() {
     [
       'Action queue',
       queue.length.toString(),
-      'Prioritized items generated from booking, payment, provider, and notification state.',
+      'Prioritized items generated from booking, payment, partner, and notification state.',
     ],
   ];
 
@@ -149,7 +186,7 @@ export default async function DashboardPage() {
         <div>
           <h1>HANDS Operations</h1>
           <p className="muted">
-            Daily command center for dispatch, provider supply, payment holds, refunds, notifications, and
+            Daily command center for dispatch, partner supply, payment holds, refunds, notifications, and
             payout readiness.
           </p>
         </div>
@@ -161,7 +198,7 @@ export default async function DashboardPage() {
             Payments
           </Link>
           <Link className="text-link" href="/providers">
-            Provider review
+            Partner review
           </Link>
           <Link className="text-link" href="/tax-policy">
             Tax policy
@@ -185,12 +222,144 @@ export default async function DashboardPage() {
         ))}
       </section>
 
+      <section className="detail-grid" style={{ marginTop: 20 }}>
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Booking status control</h2>
+              <p className="muted">
+                Total, matching, completion, cancellation, and no-show proxy for daily operations.
+              </p>
+            </div>
+            <Link className="text-link" href="/bookings">
+              Open bookings
+            </Link>
+          </div>
+          <div className="service-trace-summary">
+            <div>
+              <span>Total</span>
+              <strong>{bookingOps.total}</strong>
+              <small>All reservations</small>
+            </div>
+            <div>
+              <span>Matching wait</span>
+              <strong>{bookingOps.openMatching}</strong>
+              <small>Customer waiting</small>
+            </div>
+            <div>
+              <span>Completed</span>
+              <strong>{bookingOps.completed}</strong>
+              <small>Service finished</small>
+            </div>
+            <div>
+              <span>Cancelled</span>
+              <strong>{bookingOps.cancelled}</strong>
+              <small>Refund/release check</small>
+            </div>
+            <div>
+              <span>No-show signal</span>
+              <strong>{bookingOps.noShowSignal}</strong>
+              <small>Expired proxy</small>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Customer app presence</h2>
+              <p className="muted">
+                Current customer activity proxy until dedicated customer session tracking is added.
+              </p>
+            </div>
+            <span className="pill pill-info">Presence proxy</span>
+          </div>
+          <table className="table">
+            <tbody>
+              <InfoRow
+                label="Reachable customers"
+                value={customerPresence.reachableCustomers.toString()}
+                detail="Customer users with at least one enabled app push device."
+              />
+              <InfoRow
+                label="Active booking customers"
+                value={customerPresence.activeBookingCustomers.toString()}
+                detail="Unique customers attached to open or in-service reservations."
+              />
+              <InfoRow
+                label="Push-disabled customers"
+                value={customerPresence.disabledPushCustomers.toString()}
+                detail="Customers who may not receive booking or chat updates."
+              />
+              <InfoRow
+                label="Customer records"
+                value={customerPresence.totalCustomers.toString()}
+                detail="Total users with a customer profile in the latest admin snapshot."
+              />
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="detail-grid" style={{ marginTop: 20 }}>
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Hourly booking demand</h2>
+              <p className="muted">Reservations grouped by scheduled hour in Vietnam time.</p>
+            </div>
+            <span className="pill pill-info">Asia/Bangkok</span>
+          </div>
+          <div className="stack">
+            {hourlyDemand.map((item) => (
+              <div className="ops-row" key={item.hour}>
+                <div>
+                  <strong>{item.hour}</strong>
+                  <p className="muted">
+                    {item.active} active / {item.completed} completed / {item.cancelled} cancelled
+                  </p>
+                </div>
+                <span className={`pill ${item.total ? 'pill-info' : 'pill-neutral'}`}>{item.total}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Regional booking demand</h2>
+              <p className="muted">Top service areas inferred from booking address text.</p>
+            </div>
+            <Link className="text-link" href="/bookings?view=all">
+              Full booking list
+            </Link>
+          </div>
+          <div className="stack">
+            {regionalDemand.map((item) => (
+              <div className="ops-row" key={item.region}>
+                <div>
+                  <strong>{item.region}</strong>
+                  <p className="muted">
+                    {item.active} active / {item.completed} completed / {item.cancelled} cancelled
+                  </p>
+                </div>
+                <span className={`pill ${item.noShowSignal ? 'pill-warn' : 'pill-info'}`}>
+                  {item.total} booking(s)
+                </span>
+              </div>
+            ))}
+            {regionalDemand.length === 0 && <p className="muted">No booking address data loaded yet.</p>}
+          </div>
+        </div>
+      </section>
+
       <section className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Today command lanes</h2>
             <p className="muted">
-              High-level routing for the operating day: dispatch, provider onboarding, payments, payouts, and
+              High-level routing for the operating day: dispatch, partner onboarding, payments, payouts, and
               setup.
             </p>
           </div>
@@ -333,15 +502,15 @@ export default async function DashboardPage() {
               <InfoRow
                 label="Matching"
                 value={`${bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length} open`}
-                detail="Direct request first, backup providers can join when needed."
+                detail="Direct request first, backup partners can join when needed."
               />
               <InfoRow
                 label="Chat"
                 value={`${bookings.filter((booking) => booking.chatRoom).length} ready`}
-                detail="Chat is expected after provider selection/service start."
+                detail="Chat is expected after partner selection/service start."
               />
               <InfoRow
-                label="Provider locations"
+                label="Partner locations"
                 value={`${providers.filter((provider) => provider.status.startsWith('ONLINE')).length} online`}
                 detail="MVP uses last-known location, not routing or live streaming."
               />
@@ -366,7 +535,7 @@ export default async function DashboardPage() {
               <InfoRow
                 label="Platform fee"
                 value={money(earnings.platformFee, earnings.currency)}
-                detail="Admin revenue before provider payout."
+                detail="Admin revenue before partner payout."
               />
               <InfoRow
                 label="Pending net"
@@ -444,6 +613,154 @@ function InfoRow({ label, value, detail }: { label: string; value: string; detai
       <td>{value}</td>
     </tr>
   );
+}
+
+function buildBookingOpsInsights(bookings: AdminBooking[]) {
+  return {
+    total: bookings.length,
+    openMatching: bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length,
+    active: bookings.filter((booking) => activeBookingStatuses.has(booking.status)).length,
+    completed: bookings.filter((booking) => booking.status === 'COMPLETED').length,
+    cancelled: bookings.filter((booking) => booking.status === 'CANCELLED').length,
+    refunded: bookings.filter((booking) => booking.status === 'REFUNDED').length,
+    noShowSignal: bookings.filter(isNoShowSignal).length,
+  };
+}
+
+function buildCustomerPresence(users: AdminUser[], bookings: AdminBooking[]) {
+  const customers = users.filter((user) => Boolean(user.customerProfile));
+  const reachableCustomers = customers.filter((user) =>
+    (user.pushDevices ?? []).some((device) => device.enabled),
+  ).length;
+  const disabledPushCustomers = customers.filter(
+    (user) =>
+      (user.pushDevices ?? []).length > 0 && !(user.pushDevices ?? []).some((device) => device.enabled),
+  ).length;
+  const activeBookingCustomers = new Set(
+    bookings
+      .filter((booking) => activeBookingStatuses.has(booking.status))
+      .map((booking) => booking.customerProfile?.user?.phone)
+      .filter(Boolean),
+  ).size;
+
+  return {
+    totalCustomers: customers.length,
+    reachableCustomers,
+    disabledPushCustomers,
+    activeBookingCustomers,
+  };
+}
+
+function buildHourlyBookingDemand(bookings: AdminBooking[]) {
+  const hourFormatter = new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    hour12: false,
+    timeZone: 'Asia/Bangkok',
+  });
+  const buckets = new Map<
+    string,
+    { hour: string; total: number; active: number; completed: number; cancelled: number }
+  >();
+
+  for (const booking of bookings) {
+    const timestamp = booking.scheduledStartAt ?? booking.createdAt;
+    if (!timestamp) continue;
+    const hour = `${hourFormatter.format(new Date(timestamp))}:00`;
+    const bucket = buckets.get(hour) ?? { hour, total: 0, active: 0, completed: 0, cancelled: 0 };
+    bucket.total += 1;
+    if (activeBookingStatuses.has(booking.status)) bucket.active += 1;
+    if (booking.status === 'COMPLETED') bucket.completed += 1;
+    if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED') bucket.cancelled += 1;
+    buckets.set(hour, bucket);
+  }
+
+  return [...buckets.values()]
+    .sort((left, right) => right.total - left.total || left.hour.localeCompare(right.hour))
+    .slice(0, 8);
+}
+
+function buildRegionalBookingDemand(bookings: AdminBooking[]) {
+  const buckets = new Map<
+    string,
+    {
+      region: string;
+      total: number;
+      active: number;
+      completed: number;
+      cancelled: number;
+      noShowSignal: number;
+    }
+  >();
+
+  for (const booking of bookings) {
+    const region = bookingRegionLabel(booking);
+    const bucket = buckets.get(region) ?? {
+      region,
+      total: 0,
+      active: 0,
+      completed: 0,
+      cancelled: 0,
+      noShowSignal: 0,
+    };
+    bucket.total += 1;
+    if (activeBookingStatuses.has(booking.status)) bucket.active += 1;
+    if (booking.status === 'COMPLETED') bucket.completed += 1;
+    if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED') bucket.cancelled += 1;
+    if (isNoShowSignal(booking)) bucket.noShowSignal += 1;
+    buckets.set(region, bucket);
+  }
+
+  return [...buckets.values()]
+    .sort((left, right) => right.total - left.total || left.region.localeCompare(right.region))
+    .slice(0, 8);
+}
+
+function isNoShowSignal(booking: AdminBooking) {
+  if (booking.status === 'EXPIRED') {
+    return true;
+  }
+  if (booking.status !== 'MATCHED' || !booking.scheduledStartAt) {
+    return false;
+  }
+  const scheduledAt = Date.parse(booking.scheduledStartAt);
+  return Number.isFinite(scheduledAt) && scheduledAt + 30 * 60_000 < Date.now() && !booking.chatRoom;
+}
+
+function bookingRegionLabel(booking: AdminBooking) {
+  const address = readAddressText(booking.address);
+  if (!address) {
+    if (Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng))) {
+      return 'Pinned location';
+    }
+    return 'Unknown region';
+  }
+
+  const normalized = address.replace(/\s+/g, ' ').trim();
+  const parts = normalized
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const knownCity = parts.find((part) =>
+    /ho chi minh|hcmc|saigon|sai gon|da nang|ha noi|hanoi|nha trang|da lat|dalat|can tho/i.test(part),
+  );
+  return knownCity ?? parts.at(-2) ?? parts.at(-1) ?? 'Unknown region';
+}
+
+function readAddressText(value: unknown): string | null {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    const objectValue = value as Record<string, unknown>;
+    const direct =
+      objectValue.addressText ??
+      objectValue.address_text ??
+      objectValue.formatted ??
+      objectValue.formattedAddress ??
+      objectValue.label;
+    return typeof direct === 'string' ? direct : null;
+  }
+  return null;
 }
 
 type DashboardCommandSignal = {
@@ -549,7 +866,7 @@ function buildDashboardCommandSignals(input: {
         : `${openMatching.length} OPEN`,
       detail: staleOpenMatching.length
         ? 'Some open matching windows are expired and need operator review.'
-        : 'Monitor open matching, quiet chat rooms, and provider assignment.',
+        : 'Monitor open matching, quiet chat rooms, and partner assignment.',
       action: 'Open booking monitor',
       href: staleOpenMatching.length || matchedWithoutChat.length ? '/bookings?view=high-risk' : '/bookings',
       priority: staleOpenMatching.length || matchedWithoutChat.length ? 95 : openMatching.length ? 70 : 25,
@@ -597,12 +914,12 @@ function buildDashboardCommandSignals(input: {
       ],
     },
     {
-      title: 'Provider lane',
+      title: 'Partner lane',
       status: `${providerReviews.length} REVIEW`,
       detail: providerReviews.length
-        ? 'Provider verification, risk reports, sanctions, or KYC needs admin attention.'
-        : 'No provider review blocker in the current snapshot.',
-      action: 'Open providers',
+        ? 'Partner verification, risk reports, sanctions, or KYC needs admin attention.'
+        : 'No partner review blocker in the current snapshot.',
+      action: 'Open partners',
       href: '/providers',
       priority:
         activeProviderSanctions.length || openProviderReports.length ? 90 : providerReviews.length ? 65 : 20,
@@ -684,8 +1001,8 @@ function buildDashboardCommandSignals(input: {
       title: 'Cash settlement lane',
       status: cashDebtRows.length ? `${cashDebtRows.length} DEBT` : 'CLEAR',
       detail: cashDebtRows.length
-        ? `${money(cashDebtAmount, input.earnings.currency)} provider cash fee/tax debt must be collected or offset before new booking acceptance.`
-        : 'No open cash fee debt is blocking provider wallets.',
+        ? `${money(cashDebtAmount, input.earnings.currency)} partner cash fee/tax debt must be collected or offset before new booking acceptance.`
+        : 'No open cash fee debt is blocking partner wallets.',
       action: 'Open cash settlements',
       href: '/cash-settlements',
       priority: cashDebtRows.length ? 94 : 12,
@@ -717,7 +1034,7 @@ function buildDashboardCommandSignals(input: {
       title: 'Payout lane',
       status: payoutHolds.length ? `${payoutHolds.length} HELD` : `${payoutReviews.length} OPEN`,
       detail: payoutHolds.length
-        ? 'One or more payout batches are blocked by active provider sanctions.'
+        ? 'One or more payout batches are blocked by active partner sanctions.'
         : payoutReviews.length
           ? 'Draft, failed, or processing payout batches are waiting for finance movement.'
           : `${money(input.earnings.availableNetAmount, input.earnings.currency)} available from earnings.`,
@@ -916,8 +1233,8 @@ function buildOpsQueue(input: {
     items.push({
       area: 'Finance',
       href: '/cash-settlements',
-      label: 'Provider cash fee debt open',
-      detail: `${earning.providerProfile?.displayName ?? 'Provider'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before accepting more bookings.`,
+      label: 'Partner cash fee debt open',
+      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before accepting more bookings.`,
       severity: 'high',
     });
   }
@@ -925,9 +1242,9 @@ function buildOpsQueue(input: {
   for (const provider of input.providers) {
     if (provider.verification?.status === 'SUBMITTED') {
       items.push({
-        area: 'Provider',
+        area: 'Partner',
         href: `/providers/${provider.id}`,
-        label: 'Provider verification waiting',
+        label: 'Partner verification waiting',
         detail: provider.displayName,
         severity: 'medium',
       });
@@ -937,7 +1254,7 @@ function buildOpsQueue(input: {
       items.push({
         area: 'Notification',
         href: `/providers/${provider.id}`,
-        label: 'Provider has disabled push device',
+        label: 'Partner has disabled push device',
         detail: `${provider.displayName} has ${disabledDevices.length} disabled device(s).`,
         severity: 'low',
       });
@@ -947,9 +1264,9 @@ function buildOpsQueue(input: {
     );
     if (openReports.length > 0) {
       items.push({
-        area: 'Provider',
+        area: 'Partner',
         href: `/providers/${provider.id}`,
-        label: 'Provider risk report open',
+        label: 'Partner risk report open',
         detail: `${provider.displayName} has ${openReports.length} open report(s).`,
         severity: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity))
           ? 'high'
@@ -959,9 +1276,9 @@ function buildOpsQueue(input: {
     const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
     if (activeSanctions.length > 0) {
       items.push({
-        area: 'Provider',
+        area: 'Partner',
         href: `/providers/${provider.id}`,
-        label: 'Provider active sanction',
+        label: 'Partner active sanction',
         detail: `${provider.displayName} has ${activeSanctions.length} active sanction(s).`,
         severity: activeSanctions.some(
           (sanction) => sanction.type === 'PAYOUT_HOLD' || sanction.type === 'ACCOUNT_BLOCK',
@@ -989,7 +1306,7 @@ function buildOpsQueue(input: {
     items.push({
       area: 'Payout',
       href: '/payouts',
-      label: 'Provider payout can be prepared',
+      label: 'Partner payout can be prepared',
       detail: `${money(input.earnings.availableNetAmount, input.earnings.currency)} available for batching.`,
       severity: 'low',
     });
@@ -1002,7 +1319,7 @@ function buildOpsQueue(input: {
         area: 'Payout',
         href: `/payouts#${batch.id}`,
         label: 'Payout batch blocked by hold',
-        detail: `${batch.providerProfile?.displayName ?? 'Provider'} - ${payoutHold.reason}`,
+        detail: `${batch.providerProfile?.displayName ?? 'Partner'} - ${payoutHold.reason}`,
         severity: 'high',
       });
     } else if (batch.status === 'FAILED') {
@@ -1010,7 +1327,7 @@ function buildOpsQueue(input: {
         area: 'Payout',
         href: `/payouts#${batch.id}`,
         label: 'Failed payout needs recovery',
-        detail: `${money(batch.totalNetAmount, batch.currency)} for ${batch.providerProfile?.displayName ?? 'provider'}`,
+        detail: `${money(batch.totalNetAmount, batch.currency)} for ${batch.providerProfile?.displayName ?? 'partner'}`,
         severity: 'high',
       });
     } else if (batch.status === 'PROCESSING') {
@@ -1061,10 +1378,10 @@ function bookingFlags(booking: AdminBooking) {
     flags.push({ label: 'Open matching window expired', severity: 'high' });
   }
   if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && participantCount === 0) {
-    flags.push({ label: 'Preferred provider has not replied yet', severity: 'medium' });
+    flags.push({ label: 'Preferred partner has not replied yet', severity: 'medium' });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    flags.push({ label: 'No provider has joined yet', severity: 'medium' });
+    flags.push({ label: 'No partner has joined yet', severity: 'medium' });
   }
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
     flags.push({ label: 'Matched booking has no chat room', severity: 'high' });
