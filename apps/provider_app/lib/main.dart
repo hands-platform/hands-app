@@ -952,6 +952,7 @@ class ProviderScheduleCard extends StatelessWidget {
     final payment = asMap(booking['payment']);
     final selectedProvider = asMap(booking['selectedProvider']);
     final isAssigned = selectedProvider != null;
+    final amount = payment?['amount'] ?? service?['basePrice'];
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -964,7 +965,7 @@ class ProviderScheduleCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    service?['name']?.toString() ?? 'Massage booking',
+                    providerServiceOptionLabel(service),
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -981,10 +982,8 @@ class ProviderScheduleCard extends StatelessWidget {
                 ProviderRequestTag(
                     label: formatScheduleMoment(booking['scheduledStartAt'])),
                 ProviderRequestTag(
-                    label: '${service?['durationMin'] ?? '-'} min'),
-                ProviderRequestTag(
-                    label:
-                        '${formatCurrency(payment?['amount'] ?? service?['basePrice'])} VND'),
+                    label: providerServiceDurationLabel(service)),
+                ProviderRequestTag(label: '${formatCurrency(amount)} VND'),
                 ProviderRequestTag(
                     label: payment?['status']?.toString() ?? 'NO_PAYMENT'),
               ],
@@ -1528,7 +1527,7 @@ class OpenBookingCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(service?['name'] as String? ?? 'Massage booking',
+                      Text(providerServiceOptionLabel(service),
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 2),
                       Text(
@@ -1575,7 +1574,7 @@ class OpenBookingCard extends StatelessWidget {
                 ProviderRequestTag(
                     label: 'Booking $shortBookingId', highlighted: true),
                 ProviderRequestTag(
-                    label: '${service?['durationMin'] ?? '-'} min'),
+                    label: providerServiceDurationLabel(service)),
                 ProviderRequestTag(
                     label: '${formatCurrency(customerAmount)} VND'),
                 ProviderRequestTag(
@@ -4646,6 +4645,38 @@ String providerCashBookingRiskHint(Map<String, dynamic> booking) {
   return 'Cash payment: the customer pays you directly for $amountText. '
       'After completion, HANDS fees and tax withholding can create wallet debt. '
       'Keep your wallet settled so future booking acceptance stays available.';
+}
+
+String providerServiceOptionLabel(Map<String, dynamic>? service) {
+  final name = service?['name']?.toString().trim();
+  final duration = asNum(service?['durationMin'])?.toInt();
+  if (name == null || name.isEmpty) {
+    return 'Massage booking';
+  }
+  if (duration == null || duration <= 0) {
+    return name;
+  }
+  return '$name / $duration min';
+}
+
+String providerServiceOptionPriceLabel(
+  Map<String, dynamic>? service, {
+  dynamic amount,
+}) {
+  final serviceText = providerServiceOptionLabel(service);
+  final price = amount ??
+      service?['bookingPrice'] ??
+      service?['effectivePrice'] ??
+      service?['basePrice'];
+  if (price == null) {
+    return serviceText;
+  }
+  return '$serviceText / ${formatCurrency(price)} VND';
+}
+
+String providerServiceDurationLabel(Map<String, dynamic>? service) {
+  final duration = asNum(service?['durationMin'])?.toInt();
+  return duration == null || duration <= 0 ? '- min' : '$duration min';
 }
 
 String formatCurrency(dynamic amount) {

@@ -57,4 +57,28 @@ void main() {
     expect(providerCashBookingRiskHint(booking), contains('450.000 VND'));
     expect(providerCashBookingRiskHint(booking), contains('wallet debt'));
   });
+
+  test('formats provider booking service option labels consistently', () {
+    final service = {
+      'name': 'Foot Massage',
+      'durationMin': 90,
+      'basePrice': 700000,
+    };
+
+    expect(providerServiceOptionLabel(service), 'Foot Massage / 90 min');
+    expect(
+      providerServiceOptionPriceLabel(service),
+      'Foot Massage / 90 min / 700.000 VND',
+    );
+    expect(
+      providerServiceOptionPriceLabel(service, amount: 750000),
+      'Foot Massage / 90 min / 750.000 VND',
+    );
+  });
+
+  test('keeps provider booking service labels safe for missing values', () {
+    expect(providerServiceOptionLabel(null), 'Massage booking');
+    expect(providerServiceOptionPriceLabel(null), 'Massage booking');
+    expect(providerServiceDurationLabel(null), '- min');
+  });
 }
