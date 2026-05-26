@@ -429,14 +429,18 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
         <div className="card">
           <h2>Finance trace</h2>
+          <InfoRow label="Pricing source" value={financeTrace.pricingSource} />
+          <InfoRow label="Service option" value={financeTrace.serviceOption} />
           <InfoRow label="Customer price" value={financeTrace.customerPrice} />
           <InfoRow label="Admin minimum" value={financeTrace.adminMinimum} />
           <InfoRow label="Payout rule" value={financeTrace.payoutRuleStatus} />
+          <InfoRow label="Rule line" value={financeTrace.payoutRuleLine} />
           <InfoRow label="Provider payout" value={financeTrace.providerPayout} />
           <InfoRow label="Platform fee" value={financeTrace.platformFee} />
           <InfoRow label="VAT / other costs" value={financeTrace.feeCosts} />
           <InfoRow label="Net HANDS fee" value={financeTrace.netHandsFee} />
           <InfoRow label="Withholding" value={financeTrace.withholding} />
+          <InfoRow label="Company fee after tax" value={financeTrace.companyFeeAfterTax} />
           <InfoRow label="Wallet ledger" value={financeTrace.walletLedger} />
           <InfoRow label="Provider net" value={financeTrace.providerNet} />
         </div>
@@ -1387,35 +1391,81 @@ function bookingFinanceTrace(booking: AdminBookingDetail) {
     platformFeeFromRule !== null ? platformFeeFromRule - (vatAmount ?? 0) - (otherCostAmount ?? 0) : null;
   const latestTaxLog = booking.taxLogs?.[0] ?? booking.earning?.taxLogs?.[0];
   const latestFeeLog = booking.platformFeeLogs?.[0] ?? booking.earning?.platformFeeLogs?.[0];
+  const servicePayoutSnapshot = readServicePayoutSnapshot(latestFeeLog?.ruleSnapshot);
+  const servicePayoutLine = servicePayoutLineForBooking(servicePayoutSnapshot, customerPrice);
+  const snapshotProviderPayout =
+    readNullableAmount(servicePayoutLine?.providerPayoutAmount) ??
+    readNullableAmount(servicePayoutSnapshot?.providerPayoutAmount);
+  const snapshotPlatformFee =
+    readNullableAmount(servicePayoutLine?.platformFeeAmount) ?? readNullableAmount(latestFeeLog?.platformFeeAmount);
+  const snapshotVatAmount =
+    readNullableAmount(servicePayoutLine?.vatAmount) ?? readNullableAmount(servicePayoutSnapshot?.vatAmount);
+  const snapshotOtherCostAmount =
+    readNullableAmount(servicePayoutLine?.otherCostAmount) ?? readNullableAmount(servicePayoutSnapshot?.otherCostAmount);
+  const platformFeeAmount = snapshotPlatformFee ?? platformFeeFromRule;
+  const providerPayoutAmount =
+    snapshotProviderPayout ??
+    (payoutRule ? Number(payoutRule.providerPayoutAmount) : null) ??
+    (booking.earning ? booking.earning.grossAmount - booking.earning.platformFee : null);
+  const feeVatAmount = snapshotVatAmount ?? vatAmount;
+  const feeOtherCostAmount = snapshotOtherCostAmount ?? otherCostAmount;
+  const netHandsFeeAmount =
+    readNullableAmount(servicePayoutSnapshot?.netCompanyFeeBeforeWithholding) ??
+    (platformFeeAmount !== null ? platformFeeAmount - (feeVatAmount ?? 0) - (feeOtherCostAmount ?? 0) : null) ??
+    netHandsFee;
+  const withholdingAmount =
+    readNullableAmount(latestTaxLog?.withholdingAmount) ?? readNullableAmount(booking.earning?.withholdingAmount);
   const walletEntries = booking.walletLedgerEntries ?? booking.earning?.walletLedgerEntries ?? [];
   const walletTotal = walletEntries.reduce((sum, entry) => sum + Number(entry.amount ?? 0), 0);
+  const quantity = bookedService?.quantity ?? 1;
 
   return {
+    pricingSource:
+      servicePayoutSnapshot?.source === 'SERVICE_PAYOUT_RULE'
+        ? 'Service payout matrix'
+        : latestFeeLog
+          ? `Fee policy ${servicePayoutSnapshot?.scope ?? 'RULE'}`
+          : payoutRule
+            ? 'Projected from active payout rule'
+            : 'Not calculated',
+    serviceOption: service?.name
+      ? `${service.name} / ${service.durationMin ?? '-'} min / qty ${quantity}`
+      : 'Service pending',
     customerPrice: money(customerPrice, currency),
     adminMinimum: money(service?.basePrice, currency),
     payoutRuleStatus: payoutRule
       ? `${money(Number(payoutRule.customerPrice), payoutRule.currency ?? currency)} active`
       : 'Missing active rule',
-    providerPayout: payoutRule
-      ? money(Number(payoutRule.providerPayoutAmount), payoutRule.currency ?? currency)
-      : booking.earning
-        ? money(booking.earning.grossAmount - booking.earning.platformFee, booking.earning.currency)
+    payoutRuleLine: servicePayoutLine
+      ? `${money(readAmount(servicePayoutLine.customerPrice), currency)} customer -> ${money(
+          readAmount(servicePayoutLine.providerPayoutAmount),
+          currency,
+        )} provider`
+      : payoutRule
+        ? `Active rule ${shortId(payoutRule.id)}`
+        : 'No matching rule line',
+    providerPayout:
+      providerPayoutAmount !== null
+        ? money(providerPayoutAmount, servicePayoutSnapshot?.currency ?? payoutRule?.currency ?? currency)
         : 'Not calculated',
-    platformFee: latestFeeLog
-      ? `${money(latestFeeLog.platformFeeAmount, latestFeeLog.currency)} logged`
-      : platformFeeFromRule !== null
-        ? money(platformFeeFromRule, currency)
+    platformFee:
+      platformFeeAmount !== null
+        ? `${money(platformFeeAmount, latestFeeLog?.currency ?? currency)}${latestFeeLog ? ' logged' : ''}`
         : 'Not calculated',
     feeCosts:
-      vatAmount !== null || otherCostAmount !== null
-        ? `${money(vatAmount ?? 0, currency)} VAT / ${money(otherCostAmount ?? 0, currency)} other`
+      feeVatAmount !== null || feeOtherCostAmount !== null
+        ? `${money(feeVatAmount ?? 0, currency)} VAT / ${money(feeOtherCostAmount ?? 0, currency)} other`
         : 'No active rule snapshot',
-    netHandsFee: netHandsFee !== null ? money(netHandsFee, currency) : 'Not calculated',
+    netHandsFee: netHandsFeeAmount !== null ? money(netHandsFeeAmount, currency) : 'Not calculated',
     withholding: latestTaxLog
       ? `${money(latestTaxLog.withholdingAmount, latestTaxLog.currency)} on ${money(latestTaxLog.taxableAmount, latestTaxLog.currency)}`
       : booking.earning
         ? money(booking.earning.withholdingAmount, booking.earning.currency)
         : 'Not created',
+    companyFeeAfterTax:
+      netHandsFeeAmount !== null
+        ? money(netHandsFeeAmount - (withholdingAmount ?? 0), currency)
+        : 'Not calculated',
     walletLedger:
       walletEntries.length > 0
         ? `${money(walletTotal, walletEntries[0]?.currency ?? currency)} / ${walletEntries.length} entry`
@@ -1424,6 +1474,60 @@ function bookingFinanceTrace(booking: AdminBookingDetail) {
       ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
       : 'Not created',
   };
+}
+
+type ServicePayoutSnapshotLine = {
+  customerPrice?: number | string | null;
+  providerPayoutAmount?: number | string | null;
+  platformFeeAmount?: number | string | null;
+  vatAmount?: number | string | null;
+  otherCostAmount?: number | string | null;
+};
+
+type ServicePayoutSnapshot = {
+  source?: string;
+  scope?: string;
+  currency?: string;
+  providerPayoutAmount?: number | string | null;
+  vatAmount?: number | string | null;
+  otherCostAmount?: number | string | null;
+  netCompanyFeeBeforeWithholding?: number | string | null;
+  lines?: ServicePayoutSnapshotLine[];
+};
+
+function readServicePayoutSnapshot(snapshot: unknown): ServicePayoutSnapshot | null {
+  if (!snapshot || typeof snapshot !== 'object') {
+    return null;
+  }
+  return snapshot as ServicePayoutSnapshot;
+}
+
+function servicePayoutLineForBooking(snapshot: ServicePayoutSnapshot | null, customerPrice: unknown) {
+  if (!snapshot?.lines || !Array.isArray(snapshot.lines)) {
+    return null;
+  }
+
+  const targetCustomerPrice = readNullableAmount(customerPrice);
+  if (targetCustomerPrice === null) {
+    return null;
+  }
+
+  return snapshot.lines.find((line) => readNullableAmount(line.customerPrice) === targetCustomerPrice) ?? null;
+}
+
+function readAmount(value: unknown) {
+  return readNullableAmount(value) ?? 0;
+}
+
+function readNullableAmount(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function bpsAmount(amount: number, bps?: number | null) {
