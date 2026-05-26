@@ -242,6 +242,7 @@ try {
 $global:LASTEXITCODE = 0
 
 Invoke-Check "script syntax: api smoke" "node --check infra\scripts\api-smoke.mjs"
+Invoke-Check "script syntax: admin web smoke" "node --check infra\scripts\admin-web-smoke.mjs"
 Invoke-Check "script syntax: realtime smoke" "node --check infra\scripts\realtime-smoke.mjs"
 Invoke-Check "script syntax: supabase auth smoke" "node --check infra\scripts\supabase-auth-smoke.mjs"
 Invoke-Check "script syntax: env check" "node --check infra\scripts\check-env.mjs"
