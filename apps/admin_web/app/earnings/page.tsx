@@ -214,6 +214,12 @@ export default async function EarningsPage() {
                     {' / '}withholding {formatMoney(group.withholdingAmount, group.currency)}
                   </p>
                   <p className="muted">
+                    Wallet balance {formatMoney(group.walletBalance, group.currency)}
+                    {group.cashDebtAmount > 0
+                      ? ` / cash debt ${formatMoney(group.cashDebtAmount, group.currency)} blocks payout batching`
+                      : ' / no cash debt'}
+                  </p>
+                  <p className="muted">
                     {group.activeBatch
                       ? `Existing batch ${shortId(group.activeBatch.id)} is ${group.activeBatch.status}.`
                       : group.nextAction}
@@ -441,6 +447,8 @@ type ProviderPayoutQueueItem = {
   unbatchedCount: number;
   unbatchedNet: number;
   withholdingAmount: number;
+  cashDebtAmount: number;
+  walletBalance: number;
   status: string;
   canBatch: boolean;
   nextAction: string;
@@ -588,9 +596,6 @@ function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: Admin
     if (earning.status === 'PAID' || earning.status === 'CANCELLED') {
       return;
     }
-    if (earning.netAmount <= 0) {
-      return;
-    }
 
     const existing = grouped.get(earning.providerProfileId);
     const activeBatch = activeBatchByProvider.get(earning.providerProfileId);
@@ -602,6 +607,8 @@ function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: Admin
       unbatchedCount: 0,
       unbatchedNet: 0,
       withholdingAmount: 0,
+      cashDebtAmount: 0,
+      walletBalance: 0,
       status: activeBatch ? 'BATCHED' : 'READY',
       canBatch: false,
       nextAction: 'Create a payout batch after finance review.',
@@ -610,8 +617,14 @@ function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: Admin
 
     item.withholdingAmount += earning.withholdingAmount ?? 0;
     if (!earning.payoutBatchId) {
+      item.walletBalance += earning.netAmount;
+    }
+    if (!earning.payoutBatchId && earning.netAmount > 0) {
       item.unbatchedCount += 1;
       item.unbatchedNet += earning.netAmount;
+    }
+    if (!earning.payoutBatchId && earning.netAmount < 0) {
+      item.cashDebtAmount += Math.abs(earning.netAmount);
     }
 
     grouped.set(earning.providerProfileId, item);
@@ -619,19 +632,25 @@ function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: Admin
 
   return [...grouped.values()]
     .map((item) => {
-      const canBatch = item.unbatchedCount > 0 && !item.activeBatch;
+      const hasCashDebt = item.cashDebtAmount > 0;
+      const canBatch = item.unbatchedCount > 0 && !item.activeBatch && !hasCashDebt;
       return {
         ...item,
         canBatch,
-        status: item.activeBatch ? 'BATCHED' : canBatch ? 'READY' : 'WAIT',
+        status: hasCashDebt ? 'HOLD' : item.activeBatch ? 'BATCHED' : canBatch ? 'READY' : 'WAIT',
         nextAction: item.activeBatch
           ? 'Continue from payout batches before creating another batch.'
-          : canBatch
-            ? 'Create one batch for all currently eligible unpaid earnings.'
-            : 'No unbatched earning is available for this provider.',
+          : hasCashDebt
+            ? 'Settle or offset the cash fee debt before creating a payout batch.'
+            : canBatch
+              ? 'Create one batch for all currently eligible unpaid earnings.'
+              : 'No unbatched positive earning is available for this provider.',
       };
     })
     .sort((left, right) => {
+      if (left.cashDebtAmount !== right.cashDebtAmount) {
+        return right.cashDebtAmount - left.cashDebtAmount;
+      }
       if (left.canBatch !== right.canBatch) {
         return left.canBatch ? -1 : 1;
       }
