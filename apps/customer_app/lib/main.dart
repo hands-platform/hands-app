@@ -2930,6 +2930,10 @@ class TherapistSelectionCard extends StatelessWidget {
         asMap(participant['providerProfile']) ?? <String, dynamic>{};
     final providerName = provider['displayName']?.toString() ?? 'Provider';
     final distance = formatDistance(asDouble(participant['distanceMeters']));
+    final titleStyle = Theme.of(context)
+        .textTheme
+        .titleMedium
+        ?.copyWith(fontWeight: FontWeight.w700);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: Padding(
@@ -2937,65 +2941,81 @@ class TherapistSelectionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ProviderThumbnail(name: providerName, size: 84),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < 340;
+                final thumbnailSize = compact ? 68.0 : 84.0;
+                final details = Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      providerName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
+                      style: titleStyle,
+                    ),
+                    const SizedBox(height: 8),
+                    const Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        TherapistRoleTag(
+                          label: 'Backup ready',
+                          backgroundColor: Color(0xFFF8ECD4),
+                          foregroundColor: Color(0xFF8A5B12),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${participant['status'] ?? 'JOINED'} - $distance',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'This therapist can replace your preferred therapist if you want to switch.',
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(color: Colors.black54),
+                    ),
+                  ],
+                );
+
+                if (compact) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        providerName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          const TherapistRoleTag(
-                            label: 'Backup ready',
-                            backgroundColor: Color(0xFFF8ECD4),
-                            foregroundColor: Color(0xFF8A5B12),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '${participant['status'] ?? 'JOINED'} - $distance',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'This therapist can replace your preferred therapist if you want to switch.',
-                        style: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.copyWith(color: Colors.black54),
-                      ),
+                      ProviderThumbnail(
+                          name: providerName, size: thumbnailSize),
+                      const SizedBox(height: 10),
+                      details,
                     ],
-                  ),
-                ),
-              ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ProviderThumbnail(name: providerName, size: thumbnailSize),
+                    const SizedBox(width: 12),
+                    Expanded(child: details),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
+            SizedBox(
+              width: double.infinity,
               child: FilledButton(
                 onPressed: onSelect,
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF5E8E4A),
                   foregroundColor: Colors.white,
                 ),
-                                child: const Text('Switch to this therapist'),
-                              ),
+                child: const Text('Switch to this therapist'),
+              ),
             ),
           ],
         ),
@@ -5531,7 +5551,9 @@ String customerServiceName(Map<String, dynamic>? service) {
 
 String customerServiceDurationLabel(Map<String, dynamic>? service) {
   final duration = asNum(service?['durationMin'])?.toInt();
-  return duration == null || duration <= 0 ? 'Duration not set' : '$duration min';
+  return duration == null || duration <= 0
+      ? 'Duration not set'
+      : '$duration min';
 }
 
 String customerServiceOptionPriceLabel(Map<String, dynamic>? service,
