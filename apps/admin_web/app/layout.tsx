@@ -11,6 +11,7 @@ const links = [
   ['/payments', 'Payments'],
   ['/refunds', 'Refunds'],
   ['/earnings', 'Earnings'],
+  ['/cash-settlements', 'Cash Settlements'],
   ['/payouts', 'Payouts'],
   ['/tax-policy', 'Tax Policy'],
   ['/reviews', 'Reviews'],
