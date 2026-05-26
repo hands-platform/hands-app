@@ -25,6 +25,11 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
   }));
   const summary = buildRiskSummary(reports, sanctions, providers);
   const providerWatchlist = buildProviderRiskWatchlist(providers);
+  const commandCenter = buildRiskCommandCenter({
+    reports,
+    sanctions,
+    watchlist: providerWatchlist,
+  });
 
   return (
     <>
@@ -42,6 +47,78 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           </div>
         ))}
       </div>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Risk command center</h2>
+            <p className="muted">
+              One-screen triage for safety, finance blocks, account controls, and investigation SLA.
+            </p>
+          </div>
+          <span className={`pill ${commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}`}>
+            {commandCenter.urgentCount ? `${commandCenter.urgentCount} urgent` : 'No urgent lane'}
+          </span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {commandCenter.lanes.map((lane) => (
+            <Link className={`ops-task-card ${lane.className}`} href={lane.href} key={lane.title}>
+              <small>{lane.status}</small>
+              <h3>{lane.title}</h3>
+              <p>{lane.detail}</p>
+              <div className="ops-task-breakdown">
+                {lane.metrics.map((metric) => (
+                  <span className={`ops-task-breakdown-item ${metric.tone}`} key={metric.label}>
+                    <span>{metric.label}</span>
+                    <strong>{metric.value}</strong>
+                  </span>
+                ))}
+              </div>
+              <span className="ops-task-card-action">{lane.action}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Next operator actions</h2>
+            <p className="muted">
+              Prioritized by severity, wallet impact, active sanctions, and how long the item has waited.
+            </p>
+          </div>
+          <span className="pill pill-info">{commandCenter.nextActions.length} action(s)</span>
+        </div>
+        {commandCenter.nextActions.length ? (
+          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+            {commandCenter.nextActions.map((action) => (
+              <div className="setup-stage-item" key={action.id}>
+                <span>{action.status}</span>
+                <div>
+                  <strong>{action.title}</strong>
+                  <p className="muted">{action.detail}</p>
+                  <p className="muted">{action.operatorAction}</p>
+                  <div className="participant-list">
+                    {action.tags.map((tag) => (
+                      <span className={`pill ${tag.tone}`} key={`${action.id}-${tag.label}`}>
+                        {tag.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <Link className="text-link" href={action.href}>
+                  Open
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No risk action currently needs operator review.
+          </p>
+        )}
+      </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header" style={{ marginBottom: 12 }}>
@@ -452,6 +529,215 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
   );
 }
 
+type RiskCommandCenterInput = {
+  reports: AdminProviderReport[];
+  sanctions: AdminProviderSanction[];
+  watchlist: ProviderRiskWatchItem[];
+};
+
+type RiskCommandMetric = {
+  label: string;
+  value: string;
+  tone:
+    | 'ops-task-breakdown-ok'
+    | 'ops-task-breakdown-info'
+    | 'ops-task-breakdown-warn'
+    | 'ops-task-breakdown-danger';
+};
+
+type RiskNextAction = {
+  id: string;
+  priority: number;
+  status: string;
+  title: string;
+  detail: string;
+  operatorAction: string;
+  href: string;
+  tags: Array<{ label: string; tone: string }>;
+};
+
+function buildRiskCommandCenter(input: RiskCommandCenterInput) {
+  const openReports = input.reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status));
+  const urgentReports = openReports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity));
+  const overdueReports = openReports.filter((report) => reportAgeHours(report) >= reportSlaHours(report));
+  const activeSanctions = input.sanctions.filter((sanction) => sanction.status === 'ACTIVE');
+  const activePayoutHolds = activeSanctions.filter((sanction) => sanction.type === 'PAYOUT_HOLD');
+  const activeAccountBlocks = activeSanctions.filter((sanction) => sanction.type === 'ACCOUNT_BLOCK');
+  const walletDebtItems = input.watchlist.filter((item) => item.walletBalance < 0);
+  const sharedDeviceItems = input.watchlist.filter((item) =>
+    item.signals.some((signal) => signal.kind === 'DEVICE'),
+  );
+
+  const lanes = [
+    {
+      title: 'Safety triage',
+      status: urgentReports.length ? 'URGENT' : 'CLEAR',
+      detail: urgentReports.length
+        ? 'Critical or high reports need evidence review and a decision before provider trust changes.'
+        : 'No critical or high provider report is currently open.',
+      href: urgentReports.length ? '/provider-risk?severity=HIGH' : '/provider-risk?status=OPEN',
+      action: urgentReports.length ? 'Open high severity lane' : 'Review open reports',
+      className: urgentReports.length ? 'ops-task-blocked' : 'ops-task-done',
+      metrics: [
+        metric('Critical', urgentReports.filter((report) => report.severity === 'CRITICAL').length, 'danger'),
+        metric('High', urgentReports.filter((report) => report.severity === 'HIGH').length, 'warn'),
+        metric('Open', openReports.length, openReports.length ? 'info' : 'ok'),
+      ],
+    },
+    {
+      title: 'Finance block',
+      status: walletDebtItems.length ? 'BLOCKED' : 'CLEAR',
+      detail: walletDebtItems.length
+        ? 'Negative wallet providers must settle cash fee debt before accepting more bookings.'
+        : 'No provider wallet is currently blocked by cash fee debt.',
+      href: walletDebtItems.length ? '/cash-settlements' : '/earnings',
+      action: walletDebtItems.length ? 'Open cash settlements' : 'Review earnings',
+      className: walletDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
+      metrics: [
+        metric('Wallets', walletDebtItems.length, walletDebtItems.length ? 'danger' : 'ok'),
+        metric(
+          'Debt',
+          formatMoney(walletDebtItems.reduce((sum, item) => sum + Math.abs(item.walletBalance), 0)),
+          walletDebtItems.length ? 'danger' : 'ok',
+        ),
+        metric('Payout holds', activePayoutHolds.length, activePayoutHolds.length ? 'warn' : 'ok'),
+      ],
+    },
+    {
+      title: 'Access controls',
+      status: activeSanctions.length ? 'LIVE' : 'CLEAR',
+      detail: activeSanctions.length
+        ? 'Active sanctions are live operating controls and need clean audit follow-up.'
+        : 'No active sanction is currently restricting provider operations.',
+      href: activeSanctions.length ? '/provider-risk?sanction=ACTIVE' : '/provider-risk',
+      action: activeSanctions.length ? 'Review active sanctions' : 'Open risk board',
+      className: activeSanctions.length ? 'ops-task-pending' : 'ops-task-done',
+      metrics: [
+        metric('Sanctions', activeSanctions.length, activeSanctions.length ? 'warn' : 'ok'),
+        metric('Account blocks', activeAccountBlocks.length, activeAccountBlocks.length ? 'danger' : 'ok'),
+        metric('Shared devices', sharedDeviceItems.length, sharedDeviceItems.length ? 'warn' : 'ok'),
+      ],
+    },
+    {
+      title: 'SLA aging',
+      status: overdueReports.length ? 'OVERDUE' : 'ON TRACK',
+      detail: overdueReports.length
+        ? 'Some open investigations have passed the target review window.'
+        : 'Open provider reports are inside their review windows.',
+      href: overdueReports.length ? '/provider-risk?status=OPEN' : '/provider-risk?status=INVESTIGATING',
+      action: overdueReports.length ? 'Clear overdue reports' : 'Review investigations',
+      className: overdueReports.length ? 'ops-task-blocked' : 'ops-task-done',
+      metrics: [
+        metric('Overdue', overdueReports.length, overdueReports.length ? 'danger' : 'ok'),
+        metric(
+          'Investigating',
+          openReports.filter((report) => report.status === 'INVESTIGATING').length,
+          'info',
+        ),
+        metric('Oldest', oldestReportAgeLabel(openReports), overdueReports.length ? 'warn' : 'ok'),
+      ],
+    },
+  ];
+
+  return {
+    urgentCount: urgentReports.length + walletDebtItems.length + overdueReports.length,
+    lanes,
+    nextActions: buildRiskNextActions({
+      openReports,
+      activeSanctions,
+      watchlist: input.watchlist,
+    }),
+  };
+}
+
+function metric(
+  label: string,
+  value: string | number,
+  tone: 'ok' | 'info' | 'warn' | 'danger',
+): RiskCommandMetric {
+  const toneClass: Record<'ok' | 'info' | 'warn' | 'danger', RiskCommandMetric['tone']> = {
+    ok: 'ops-task-breakdown-ok',
+    info: 'ops-task-breakdown-info',
+    warn: 'ops-task-breakdown-warn',
+    danger: 'ops-task-breakdown-danger',
+  };
+
+  return {
+    label,
+    value: typeof value === 'number' ? value.toString() : value,
+    tone: toneClass[tone],
+  };
+}
+
+function buildRiskNextActions(input: {
+  openReports: AdminProviderReport[];
+  activeSanctions: AdminProviderSanction[];
+  watchlist: ProviderRiskWatchItem[];
+}) {
+  const actions: RiskNextAction[] = [];
+
+  for (const report of input.openReports) {
+    const ageHours = reportAgeHours(report);
+    const slaHours = reportSlaHours(report);
+    actions.push({
+      id: `report-${report.id}`,
+      priority: severityPriority(report.severity) + (ageHours >= slaHours ? 30 : 0),
+      status: ageHours >= slaHours ? 'OVERDUE' : report.severity,
+      title: report.summary,
+      detail: `${providerNameOrId(report.providerProfile, report.providerProfileId)} / ${report.category} / ${report.status} / ${ageLabel(ageHours)} old`,
+      operatorAction:
+        ageHours >= slaHours
+          ? `Past ${slaHours}h target. Add resolution note, assign sanction, or dismiss with evidence.`
+          : 'Review evidence and move to investigating, resolved, dismissed, or sanction.',
+      href: report.bookingId
+        ? `/bookings/${report.bookingId}`
+        : `/provider-risk?q=${encodeURIComponent(report.id)}`,
+      tags: [
+        { label: report.severity, tone: severityPill(report.severity) },
+        { label: report.status, tone: statusPill(report.status) },
+        { label: `${slaHours}h SLA`, tone: ageHours >= slaHours ? 'pill-danger' : 'pill-info' },
+      ],
+    });
+  }
+
+  for (const item of input.watchlist.filter((watch) => watch.walletBalance < 0)) {
+    actions.push({
+      id: `wallet-${item.provider.id}`,
+      priority: 95 + Math.min(20, Math.abs(item.walletBalance) / 100000),
+      status: 'WALLET',
+      title: `${adminProviderName(item.provider)} cash fee debt`,
+      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before new booking acceptance.`,
+      operatorAction: `Use ${cashDebtSettlementReference(item.provider.id)} and confirm finance settlement.`,
+      href: '/cash-settlements',
+      tags: [
+        { label: 'Cash debt', tone: 'pill-danger' },
+        { label: 'Booking blocked', tone: 'pill-danger' },
+      ],
+    });
+  }
+
+  for (const sanction of input.activeSanctions.slice(0, 12)) {
+    actions.push({
+      id: `sanction-${sanction.id}`,
+      priority: sanction.type === 'ACCOUNT_BLOCK' ? 90 : sanction.type === 'PAYOUT_HOLD' ? 82 : 60,
+      status: sanction.type,
+      title: `${providerNameOrId(sanction.providerProfile, sanction.providerProfileId)} sanction active`,
+      detail: sanction.reason,
+      operatorAction:
+        sanction.type === 'PAYOUT_HOLD'
+          ? 'Resolve payout evidence before creating or paying payout batches.'
+          : 'Keep or lift the sanction only with a clear audit trail.',
+      href: `/provider-risk?q=${encodeURIComponent(sanction.providerProfileId)}`,
+      tags: [
+        { label: sanction.status, tone: 'pill-danger' },
+        { label: sanction.type, tone: sanction.type === 'WARNING' ? 'pill-warn' : 'pill-danger' },
+      ],
+    });
+  }
+
+  return actions.sort((left, right) => right.priority - left.priority).slice(0, 10);
+}
+
 function buildFilters(params: Record<string, string | string[] | undefined>) {
   return {
     q: readParam(params.q).toLowerCase(),
@@ -765,6 +1051,55 @@ function sanctionSearchText(sanction: AdminProviderSanction) {
 
 function providerName(provider: NonNullable<AdminProviderReport['providerProfile']>) {
   return provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id;
+}
+
+function providerNameOrId(
+  provider:
+    | AdminProviderReport['providerProfile']
+    | AdminProviderSanction['providerProfile']
+    | null
+    | undefined,
+  fallbackId: string,
+) {
+  return provider?.displayName || provider?.user?.fullName || provider?.user?.phone || fallbackId;
+}
+
+function reportAgeHours(report: AdminProviderReport) {
+  const createdAt = Date.parse(report.createdAt);
+  if (Number.isNaN(createdAt)) {
+    return 0;
+  }
+  return Math.max(0, Math.floor((Date.now() - createdAt) / 3_600_000));
+}
+
+function reportSlaHours(report: AdminProviderReport) {
+  if (report.severity === 'CRITICAL') return 2;
+  if (report.severity === 'HIGH') return 8;
+  if (report.severity === 'MEDIUM') return 24;
+  return 72;
+}
+
+function oldestReportAgeLabel(reports: AdminProviderReport[]) {
+  if (!reports.length) {
+    return '0h';
+  }
+  return ageLabel(Math.max(...reports.map(reportAgeHours)));
+}
+
+function ageLabel(hours: number) {
+  if (hours < 24) {
+    return `${hours}h`;
+  }
+  const days = Math.floor(hours / 24);
+  const restHours = hours % 24;
+  return restHours ? `${days}d ${restHours}h` : `${days}d`;
+}
+
+function severityPriority(severity: string) {
+  if (severity === 'CRITICAL') return 100;
+  if (severity === 'HIGH') return 80;
+  if (severity === 'MEDIUM') return 50;
+  return 25;
 }
 
 function severityPill(severity: string) {
