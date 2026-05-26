@@ -44,6 +44,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const dispatchSteps = dispatchChecklist(booking);
   const opsTaskCards = bookingOpsTaskCards(booking);
   const financeTrace = bookingFinanceTrace(booking);
+  const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
+  const financeFlags = bookingFinanceFlags(booking, financeTrace);
 
   return (
     <>
@@ -171,6 +173,37 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
         ) : (
           <p className="muted">No active risk flags. Continue normal monitoring from the timeline.</p>
+        )}
+      </section>
+
+      <section className="card risk-watch" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Finance command center</h2>
+            <p className="muted">
+              One-booking money flow from customer price to provider payout, HANDS fee, tax, and wallet
+              impact.
+            </p>
+          </div>
+          <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
+            {financeFlags.length ? `${financeFlags.length} finance check(s)` : 'Finance clear'}
+          </span>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          {financeSummaryCards.map((card) => (
+            <MetricCard key={card.label} label={card.label} value={card.value} helper={card.helper} />
+          ))}
+        </div>
+        {financeFlags.length > 0 ? (
+          <div className="risk-list">
+            {financeFlags.map((flag) => (
+              <RiskItem flag={flag} key={`${flag.severity}-${flag.title}`} />
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            Customer charge, payout rule, earning, and wallet impact are aligned for this booking.
+          </p>
         )}
       </section>
 
@@ -342,7 +375,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
             label="Booking price"
             value={money(service?.price ?? booking.payment?.amount, booking.payment?.currency)}
           />
-          <InfoRow label="Admin minimum" value={money(service?.service?.basePrice, booking.payment?.currency)} />
+          <InfoRow
+            label="Admin minimum"
+            value={money(service?.service?.basePrice, booking.payment?.currency)}
+          />
           <InfoRow label="Provider payout rule" value={bookingServicePayoutRuleLabel(booking)} />
           <InfoRow label="Notes" value={booking.notes ?? 'No notes'} />
           <InfoRow label="Created" value={formatDate(booking.createdAt)} />
@@ -1234,6 +1270,132 @@ function bookingCashDebtNeedsSettlement(booking: AdminBookingDetail) {
   );
 }
 
+function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinanceTrace>) {
+  const walletHelper =
+    financeTrace.paymentMethod === 'CASH'
+      ? financeTrace.walletTotalAmount < 0
+        ? 'Cash fee debt blocks new booking acceptance.'
+        : 'Cash settlement ledger is not negative.'
+      : 'Non-cash booking should create payout credit after completion.';
+
+  return [
+    {
+      label: 'Customer charge',
+      value: money(financeTrace.customerPriceAmount, financeTrace.currency),
+      helper: financeTrace.serviceOption,
+    },
+    {
+      label: 'Provider payout',
+      value: money(financeTrace.providerPayoutAmount, financeTrace.currency),
+      helper: financeTrace.earningStatus
+        ? `Earning ${financeTrace.earningStatus}`
+        : 'Projected from payout rule.',
+    },
+    {
+      label: 'HANDS fee',
+      value: money(financeTrace.platformFeeAmount, financeTrace.currency),
+      helper: `${financeTrace.netHandsFee} before withholding impact.`,
+    },
+    {
+      label: 'Tax withheld',
+      value: money(financeTrace.withholdingAmount, financeTrace.currency),
+      helper: financeTrace.withholding,
+    },
+    {
+      label: 'Company net',
+      value: money(financeTrace.companyFeeAfterTaxAmount, financeTrace.currency),
+      helper: 'HANDS fee after VAT, other costs, and withholding.',
+    },
+    {
+      label: 'Wallet impact',
+      value: money(financeTrace.walletTotalAmount, financeTrace.currency),
+      helper: walletHelper,
+    },
+  ];
+}
+
+function bookingFinanceFlags(
+  booking: AdminBookingDetail,
+  financeTrace: ReturnType<typeof bookingFinanceTrace>,
+): RiskFlag[] {
+  const flags: RiskFlag[] = [];
+  const bookedService = booking.services?.[0];
+  const customerPrice = financeTrace.customerPriceAmount;
+  const paymentAmount = readNullableAmount(booking.payment?.amount);
+  const servicePrice = readNullableAmount(bookedService?.price);
+
+  if (financeTrace.payoutRuleMissing) {
+    flags.push({
+      severity: 'high',
+      title: 'Payout rule missing',
+      detail: 'This booking price has no matching active service payout rule.',
+      action: 'Open Services and add a payout rule before allowing this option in production.',
+    });
+  }
+
+  if (paymentAmount !== null && servicePrice !== null && paymentAmount !== servicePrice) {
+    flags.push({
+      severity: 'medium',
+      title: 'Payment amount differs from booked service',
+      detail: `Payment is ${money(paymentAmount, financeTrace.currency)} but booked service is ${money(
+        servicePrice,
+        financeTrace.currency,
+      )}.`,
+      action: 'Review coupon, discount, or payment capture rules before closing finance.',
+    });
+  }
+
+  if (
+    financeTrace.providerPayoutAmount !== null &&
+    customerPrice !== null &&
+    financeTrace.providerPayoutAmount > customerPrice
+  ) {
+    flags.push({
+      severity: 'high',
+      title: 'Provider payout exceeds customer price',
+      detail: 'The payout rule would pay more than the customer charge.',
+      action: 'Disable or correct the service payout rule immediately.',
+    });
+  }
+
+  if (booking.status === 'COMPLETED' && !booking.earning) {
+    flags.push({
+      severity: 'high',
+      title: 'Completed booking has no earning',
+      detail: 'Service is completed but no provider earning/wallet entry exists.',
+      action: 'Run earning creation or inspect completion processing.',
+    });
+  }
+
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    flags.push({
+      severity: 'high',
+      title: 'Cash wallet debt blocks provider',
+      detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} owes ${money(
+        Math.abs(booking.earning?.netAmount ?? financeTrace.walletTotalAmount),
+        financeTrace.currency,
+      )} before accepting more bookings.`,
+      action: 'Collect the HANDS fee deposit or offset it in an admin settlement.',
+    });
+  }
+
+  if (
+    financeTrace.paymentMethod === 'CASH' &&
+    booking.earning &&
+    financeTrace.walletTotalAmount >= 0 &&
+    booking.earning.netAmount < 0
+  ) {
+    flags.push({
+      severity: 'medium',
+      title: 'Cash debt ledger may be stale',
+      detail: 'The earning is negative but visible wallet entries are not negative.',
+      action: 'Check wallet ledger entries and settlement status.',
+    });
+  }
+
+  return flags;
+}
+
 function providerHint(booking: AdminBookingDetail) {
   if (booking.selectedProvider) {
     return `Final provider: ${providerName(booking.selectedProvider)}.`;
@@ -1397,11 +1559,13 @@ function bookingFinanceTrace(booking: AdminBookingDetail) {
     readNullableAmount(servicePayoutLine?.providerPayoutAmount) ??
     readNullableAmount(servicePayoutSnapshot?.providerPayoutAmount);
   const snapshotPlatformFee =
-    readNullableAmount(servicePayoutLine?.platformFeeAmount) ?? readNullableAmount(latestFeeLog?.platformFeeAmount);
+    readNullableAmount(servicePayoutLine?.platformFeeAmount) ??
+    readNullableAmount(latestFeeLog?.platformFeeAmount);
   const snapshotVatAmount =
     readNullableAmount(servicePayoutLine?.vatAmount) ?? readNullableAmount(servicePayoutSnapshot?.vatAmount);
   const snapshotOtherCostAmount =
-    readNullableAmount(servicePayoutLine?.otherCostAmount) ?? readNullableAmount(servicePayoutSnapshot?.otherCostAmount);
+    readNullableAmount(servicePayoutLine?.otherCostAmount) ??
+    readNullableAmount(servicePayoutSnapshot?.otherCostAmount);
   const platformFeeAmount = snapshotPlatformFee ?? platformFeeFromRule;
   const providerPayoutAmount =
     snapshotProviderPayout ??
@@ -1411,15 +1575,34 @@ function bookingFinanceTrace(booking: AdminBookingDetail) {
   const feeOtherCostAmount = snapshotOtherCostAmount ?? otherCostAmount;
   const netHandsFeeAmount =
     readNullableAmount(servicePayoutSnapshot?.netCompanyFeeBeforeWithholding) ??
-    (platformFeeAmount !== null ? platformFeeAmount - (feeVatAmount ?? 0) - (feeOtherCostAmount ?? 0) : null) ??
+    (platformFeeAmount !== null
+      ? platformFeeAmount - (feeVatAmount ?? 0) - (feeOtherCostAmount ?? 0)
+      : null) ??
     netHandsFee;
   const withholdingAmount =
-    readNullableAmount(latestTaxLog?.withholdingAmount) ?? readNullableAmount(booking.earning?.withholdingAmount);
+    readNullableAmount(latestTaxLog?.withholdingAmount) ??
+    readNullableAmount(booking.earning?.withholdingAmount);
   const walletEntries = booking.walletLedgerEntries ?? booking.earning?.walletLedgerEntries ?? [];
   const walletTotal = walletEntries.reduce((sum, entry) => sum + Number(entry.amount ?? 0), 0);
   const quantity = bookedService?.quantity ?? 1;
+  const companyFeeAfterTaxAmount =
+    netHandsFeeAmount !== null ? netHandsFeeAmount - (withholdingAmount ?? 0) : null;
 
   return {
+    currency,
+    paymentMethod: booking.payment?.method ?? 'NONE',
+    earningStatus: booking.earning?.status ?? null,
+    customerPriceAmount: readNullableAmount(customerPrice),
+    adminMinimumAmount: readNullableAmount(service?.basePrice),
+    payoutRuleMissing: !payoutRule,
+    providerPayoutAmount,
+    platformFeeAmount,
+    feeVatAmount,
+    feeOtherCostAmount,
+    netHandsFeeAmount,
+    withholdingAmount,
+    companyFeeAfterTaxAmount,
+    walletTotalAmount: walletTotal,
     pricingSource:
       servicePayoutSnapshot?.source === 'SERVICE_PAYOUT_RULE'
         ? 'Service payout matrix'
@@ -1463,9 +1646,7 @@ function bookingFinanceTrace(booking: AdminBookingDetail) {
         ? money(booking.earning.withholdingAmount, booking.earning.currency)
         : 'Not created',
     companyFeeAfterTax:
-      netHandsFeeAmount !== null
-        ? money(netHandsFeeAmount - (withholdingAmount ?? 0), currency)
-        : 'Not calculated',
+      companyFeeAfterTaxAmount !== null ? money(companyFeeAfterTaxAmount, currency) : 'Not calculated',
     walletLedger:
       walletEntries.length > 0
         ? `${money(walletTotal, walletEntries[0]?.currency ?? currency)} / ${walletEntries.length} entry`
@@ -1512,7 +1693,9 @@ function servicePayoutLineForBooking(snapshot: ServicePayoutSnapshot | null, cus
     return null;
   }
 
-  return snapshot.lines.find((line) => readNullableAmount(line.customerPrice) === targetCustomerPrice) ?? null;
+  return (
+    snapshot.lines.find((line) => readNullableAmount(line.customerPrice) === targetCustomerPrice) ?? null
+  );
 }
 
 function readAmount(value: unknown) {
@@ -1619,7 +1802,7 @@ function toRadians(value: number) {
   return (value * Math.PI) / 180;
 }
 
-function money(amount?: number, currency = 'VND') {
+function money(amount?: number | null, currency = 'VND') {
   if (amount === undefined || amount === null) {
     return 'Not set';
   }
