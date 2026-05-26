@@ -14,7 +14,11 @@ const setupOrder = [
       'Android builds should not use the Google Services Gradle plugin.',
       'Do not restore google-services.json unless the push strategy changes intentionally.',
     ],
-    commands: ['node infra\\scripts\\check-mobile-firebase.mjs', 'npm.cmd run verify:local'],
+    commands: [
+      'node infra\\scripts\\check-mobile-firebase.mjs',
+      'npm.cmd run security:secrets',
+      'npm.cmd run verify:local',
+    ],
   },
   {
     id: 'mobile-release',
@@ -57,9 +61,11 @@ const setupOrder = [
       'Copy the project URL and anon key from Supabase project settings.',
       'Set the JWT secret on the API so access tokens can be verified server-side.',
       'Keep the service role key server-side only; it is used by admin operations to sync approved provider roles.',
+      'Run the secret leak guard before every push after editing any local environment file.',
     ],
     commands: [
       'npm.cmd run setup:doctor',
+      'npm.cmd run security:secrets',
       'npm.cmd run external:pack',
       'npm.cmd run external:pack:write',
       'Get-Content .\\infra\\env\\hands-staging.env.example',
