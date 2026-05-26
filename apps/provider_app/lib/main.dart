@@ -3880,7 +3880,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
               complete: canWithdraw,
               icon: Icons.payments_outlined,
               actionLabel: completedBookingCount == 0
-                  ? 'Review terms'
+                  ? 'After first earning'
                   : taxStatus == 'REJECTED'
                       ? 'Resubmit tax'
                       : taxStatus == 'APPROVED'
@@ -3888,9 +3888,11 @@ class _ProviderOnboardingCard extends StatelessWidget {
                           : 'Add tax profile',
               onPressed: isSaving
                   ? null
-                  : completedBookingCount == 0 || taxStatus == 'APPROVED'
-                      ? onAcceptAgreements
-                      : onAddTaxProfile,
+                  : completedBookingCount == 0
+                      ? null
+                      : taxStatus == 'APPROVED'
+                          ? onAcceptAgreements
+                          : onAddTaxProfile,
             ),
             _PayoutGateChecklist(
               items: payoutGateItems,
