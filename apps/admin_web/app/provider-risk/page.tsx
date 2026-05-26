@@ -24,6 +24,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
     label: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
   }));
   const summary = buildRiskSummary(reports, sanctions, providers);
+  const providerWatchlist = buildProviderRiskWatchlist(providers);
 
   return (
     <>
@@ -112,6 +113,88 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             </div>
           ) : null}
         </form>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>System risk watchlist</h2>
+            <p className="muted">
+              Automatic provider signals from wallet debt, sanctions, onboarding gaps, devices, and recent
+              report history.
+            </p>
+          </div>
+          <span className="pill pill-info">{providerWatchlist.length} provider(s)</span>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Provider</th>
+              <th>Risk signals</th>
+              <th>Money / access</th>
+              <th>Operator next step</th>
+            </tr>
+          </thead>
+          <tbody>
+            {providerWatchlist.map((item) => (
+              <tr key={item.provider.id}>
+                <td>
+                  <Link className="text-link" href={`/providers/${item.provider.id}`}>
+                    {adminProviderName(item.provider)}
+                  </Link>
+                  <p className="muted">{item.provider.user?.phone ?? 'No phone'}</p>
+                  <span className={`pill ${watchSeverityPill(item.severity)}`}>{item.severity}</span>
+                </td>
+                <td>
+                  <div className="participant-list">
+                    {item.signals.map((signal) => (
+                      <span className={`pill ${watchSignalPill(signal.kind)}`} key={signal.label}>
+                        {signal.label}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="muted">{item.detail}</p>
+                </td>
+                <td>
+                  <strong>{formatMoney(item.walletBalance)}</strong>
+                  <p className="muted">
+                    {item.walletBalance < 0
+                      ? `Settlement ref ${cashDebtSettlementReference(item.provider.id)}`
+                      : 'No negative wallet balance in pending/available earnings.'}
+                  </p>
+                  {item.hasPayoutHold ? <span className="pill pill-danger">Payout hold active</span> : null}
+                  {item.provider.blockedAt ? <span className="pill pill-danger">Account blocked</span> : null}
+                </td>
+                <td>
+                  <div className="actions">
+                    <Link className="text-link" href={`/providers/${item.provider.id}`}>
+                      Provider detail
+                    </Link>
+                    {item.walletBalance < 0 ? (
+                      <Link className="text-link" href="/earnings">
+                        Cash debt queue
+                      </Link>
+                    ) : null}
+                    {item.openReportCount > 0 ? (
+                      <Link
+                        className="text-link"
+                        href={`/provider-risk?q=${encodeURIComponent(item.provider.id)}`}
+                      >
+                        Report lane
+                      </Link>
+                    ) : null}
+                  </div>
+                  <p className="muted">{item.nextStep}</p>
+                </td>
+              </tr>
+            ))}
+            {!providerWatchlist.length ? (
+              <tr>
+                <td colSpan={4}>No automatic provider risk signals are active.</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -468,6 +551,7 @@ function buildRiskSummary(
   sanctions: AdminProviderSanction[],
   providers: AdminProvider[],
 ) {
+  const watchlist = buildProviderRiskWatchlist(providers);
   return [
     [
       'Open reports',
@@ -479,7 +563,176 @@ function buildRiskSummary(
     ],
     ['Active sanctions', sanctions.filter((sanction) => sanction.status === 'ACTIVE').length.toString()],
     ['Blocked accounts', providers.filter((provider) => provider.blockedAt).length.toString()],
+    ['Wallet debt', watchlist.filter((item) => item.walletBalance < 0).length.toString()],
+    [
+      'Onboarding gaps',
+      watchlist
+        .filter((item) => item.signals.some((signal) => ['KYC', 'BANK', 'TAX'].includes(signal.kind)))
+        .length.toString(),
+    ],
   ] as const;
+}
+
+type ProviderRiskWatchItem = {
+  provider: AdminProvider;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  signals: Array<{ kind: string; label: string }>;
+  walletBalance: number;
+  openReportCount: number;
+  hasPayoutHold: boolean;
+  detail: string;
+  nextStep: string;
+};
+
+function buildProviderRiskWatchlist(providers: AdminProvider[]): ProviderRiskWatchItem[] {
+  const deviceUsage = buildDeviceUsage(providers);
+  return providers
+    .map((provider) => buildProviderRiskWatchItem(provider, deviceUsage))
+    .filter((item): item is ProviderRiskWatchItem => Boolean(item))
+    .sort((left, right) => watchSeverityRank(right.severity) - watchSeverityRank(left.severity));
+}
+
+function buildProviderRiskWatchItem(
+  provider: AdminProvider,
+  deviceUsage: Map<string, Set<string>>,
+): ProviderRiskWatchItem | null {
+  const walletBalance = providerUnsettledWalletBalance(provider);
+  const openReportCount = (provider.reports ?? []).filter((report) =>
+    ['OPEN', 'INVESTIGATING'].includes(report.status),
+  ).length;
+  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
+  const hasPayoutHold = activeSanctions.some((sanction) => sanction.type === 'PAYOUT_HOLD');
+  const sharedDeviceCount = providerSharedDeviceCount(provider, deviceUsage);
+  const signals: ProviderRiskWatchItem['signals'] = [];
+
+  if (provider.blockedAt) signals.push({ kind: 'BLOCK', label: 'Account blocked' });
+  if (walletBalance < 0) signals.push({ kind: 'WALLET', label: 'Negative wallet' });
+  if (hasPayoutHold) signals.push({ kind: 'PAYOUT', label: 'Payout hold' });
+  if (openReportCount > 0) signals.push({ kind: 'REPORT', label: `${openReportCount} open report(s)` });
+  if (sharedDeviceCount > 0) signals.push({ kind: 'DEVICE', label: `${sharedDeviceCount} shared device(s)` });
+  if (!provider.kyc || provider.kyc.status !== 'APPROVED')
+    signals.push({ kind: 'KYC', label: 'KYC not approved' });
+  if (!(provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED')) {
+    signals.push({ kind: 'BANK', label: 'Bank not approved' });
+  }
+  if (!provider.taxProfile || provider.taxProfile.status !== 'APPROVED') {
+    signals.push({ kind: 'TAX', label: 'Tax not approved' });
+  }
+
+  if (!signals.length) return null;
+
+  const severity =
+    provider.blockedAt || walletBalance < 0 || hasPayoutHold
+      ? 'CRITICAL'
+      : openReportCount > 0 || sharedDeviceCount > 0
+        ? 'HIGH'
+        : ['KYC', 'BANK'].some((kind) => signals.some((signal) => signal.kind === kind))
+          ? 'MEDIUM'
+          : 'LOW';
+
+  return {
+    provider,
+    severity,
+    signals,
+    walletBalance,
+    openReportCount,
+    hasPayoutHold,
+    detail: providerRiskDetail({ walletBalance, openReportCount, sharedDeviceCount, signals }),
+    nextStep: providerRiskNextStep({ walletBalance, hasPayoutHold, openReportCount, provider }),
+  };
+}
+
+function providerRiskDetail(input: {
+  walletBalance: number;
+  openReportCount: number;
+  sharedDeviceCount: number;
+  signals: Array<{ kind: string }>;
+}) {
+  if (input.walletBalance < 0) {
+    return 'Provider cannot safely accept more cash/direct work until company fee debt is settled.';
+  }
+  if (input.openReportCount > 0) {
+    return 'Open report history needs operator review before trust, payout, or account changes.';
+  }
+  if (input.sharedDeviceCount > 0) {
+    return 'Device overlap can indicate duplicate accounts or account sharing.';
+  }
+  if (input.signals.some((signal) => signal.kind === 'TAX')) {
+    return 'Tax information can stay pending until first earning, but payout must remain gated.';
+  }
+  return 'Provider has onboarding or compliance gaps that need staff follow-up.';
+}
+
+function providerRiskNextStep(input: {
+  walletBalance: number;
+  hasPayoutHold: boolean;
+  openReportCount: number;
+  provider: AdminProvider;
+}) {
+  if (input.walletBalance < 0) {
+    return `Confirm provider deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
+  }
+  if (input.hasPayoutHold) {
+    return 'Resolve payout hold evidence before creating or paying payout batches.';
+  }
+  if (input.openReportCount > 0) {
+    return 'Update report status with resolution note or apply a sanction if needed.';
+  }
+  return 'Complete missing verification data before enabling higher trust or payout features.';
+}
+
+function buildDeviceUsage(providers: AdminProvider[]) {
+  const usage = new Map<string, Set<string>>();
+  for (const provider of providers) {
+    for (const device of provider.devices ?? []) {
+      if (!device.deviceId) continue;
+      const set = usage.get(device.deviceId) ?? new Set<string>();
+      set.add(provider.id);
+      usage.set(device.deviceId, set);
+    }
+  }
+  return usage;
+}
+
+function providerSharedDeviceCount(provider: AdminProvider, deviceUsage: Map<string, Set<string>>) {
+  return (provider.devices ?? []).filter((device) => {
+    const providers = deviceUsage.get(device.deviceId);
+    return providers && providers.size > 1;
+  }).length;
+}
+
+function providerUnsettledWalletBalance(provider: AdminProvider) {
+  return (provider.earnings ?? [])
+    .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status))
+    .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
+}
+
+function adminProviderName(provider: AdminProvider) {
+  return provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id;
+}
+
+function watchSeverityRank(severity: ProviderRiskWatchItem['severity']) {
+  return { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }[severity] ?? 0;
+}
+
+function watchSeverityPill(severity: ProviderRiskWatchItem['severity']) {
+  if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
+  if (severity === 'MEDIUM') return 'pill-warn';
+  return 'pill-neutral';
+}
+
+function watchSignalPill(kind: string) {
+  if (['BLOCK', 'WALLET', 'PAYOUT'].includes(kind)) return 'pill-danger';
+  if (['REPORT', 'DEVICE', 'KYC', 'BANK'].includes(kind)) return 'pill-warn';
+  return 'pill-neutral';
+}
+
+function cashDebtSettlementReference(providerProfileId: string) {
+  return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
+}
+
+function formatMoney(value: number, currency = 'VND') {
+  return `${new Intl.NumberFormat('vi-VN').format(value)} ${currency}`;
 }
 
 function reportSearchText(report: AdminProviderReport) {
