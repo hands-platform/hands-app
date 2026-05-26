@@ -136,6 +136,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="documents">Document review</option>
               <option value="public-media">Public media review</option>
               <option value="bank">Bank payout review</option>
+              <option value="payout-setup">First earning payout setup</option>
               <option value="tax">Tax profile review</option>
               <option value="security">Device/session risk</option>
               <option value="risk">Reports/sanctions</option>
@@ -840,8 +841,7 @@ function buildProviderPriorityLane(providers: AdminProvider[]) {
 function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
   const primaryBank = provider.bankAccounts?.[0];
-  const completedServiceSignal =
-    provider.level === 'LEVEL_3_PAYOUT_ENABLED' || provider.level === 'LEVEL_4_TRUSTED';
+  const firstRevenueSignal = providerHasFirstRevenueSignal(provider);
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const locationState = providerLocationStatus(provider);
   const securityState = providerSecurityStatus(provider);
@@ -856,11 +856,11 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
       priority: 120,
     };
   }
-  if (!provider.displayName?.trim() || !provider.legalName?.trim() || !provider.residentialAddress?.trim()) {
+  if (!provider.displayName?.trim() || !provider.legalName?.trim()) {
     return {
       status: 'PROFILE',
       detail: 'Basic profile is incomplete.',
-      operatorAction: 'Ask provider to complete name, legal name, and address before approval.',
+      operatorAction: 'Ask provider to complete display name and legal name before approval.',
       tone: 'blocked',
       priority: 100,
     };
@@ -919,16 +919,25 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
       priority: primaryBank?.status === 'REJECTED' ? 82 : 80,
     };
   }
-  if (completedServiceSignal && provider.taxProfile?.status !== 'APPROVED') {
+  if (firstRevenueSignal && provider.taxProfile?.status !== 'APPROVED') {
     return {
       status: 'TAX',
-      detail: `Provider has payout-level signal, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
-      operatorAction: 'Approve/reject tax profile before withdrawal.',
+      detail: `Provider has first earning, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
+      operatorAction: 'Approve/reject freelance tax profile before the provider can withdraw earnings.',
       tone: 'blocked',
       priority: provider.taxProfile?.status === 'REJECTED' ? 76 : 74,
     };
   }
-  if (completedServiceSignal && agreementsAccepted < 5) {
+  if (firstRevenueSignal && !provider.residentialAddress?.trim()) {
+    return {
+      status: 'TAX ADDRESS',
+      detail: 'Provider has first earning, but residential/tax address is missing.',
+      operatorAction: 'Ask provider to add the address needed for tax and payout records.',
+      tone: 'blocked',
+      priority: 72,
+    };
+  }
+  if (firstRevenueSignal && agreementsAccepted < 5) {
     return {
       status: 'TERMS',
       detail: `Payout agreements are ${agreementsAccepted}/5.`,
@@ -1096,6 +1105,24 @@ function providerUnsettledWalletBalance(provider: AdminProvider) {
     .reduce((sum, earning) => sum + numberValue(earning.netAmount), 0);
 }
 
+function providerHasFirstRevenueSignal(provider: AdminProvider) {
+  return (provider.earnings ?? []).some((earning) =>
+    ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
+  );
+}
+
+function providerPayoutSetupNeedsReview(provider: AdminProvider) {
+  if (!providerHasFirstRevenueSignal(provider)) {
+    return false;
+  }
+
+  return (
+    provider.taxProfile?.status !== 'APPROVED' ||
+    !provider.residentialAddress?.trim() ||
+    (provider.agreements?.length ?? 0) < 5
+  );
+}
+
 function numberValue(value: unknown) {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') return Number(value) || 0;
@@ -1165,6 +1192,8 @@ function buildProviderSummary(providers: AdminProvider[]) {
     (provider.user?.pushDevices ?? []).some((device) => !device.enabled),
   ).length;
   const publicMediaReview = providers.filter(providerPublicMediaNeedsReview).length;
+  const payoutSetupReview = providers.filter(providerPayoutSetupNeedsReview).length;
+  const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const openRisk = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
   const deviceRisk = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
@@ -1189,6 +1218,8 @@ function buildProviderSummary(providers: AdminProvider[]) {
     ['Push ready', pushReady.toString()],
     ['Push needs review', pushDisabled.toString()],
     ['Public media review', publicMediaReview.toString()],
+    ['First earning setup', payoutSetupReview.toString()],
+    ['Wallet debt', walletDebt.toString()],
     ['Open risk', openRisk.toString()],
     ['Device risk', deviceRisk.toString()],
     ['Ready for dispatch', readyNow.toString()],
@@ -1207,6 +1238,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
   const bankNeedsReview = providers.filter((provider) =>
     (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
   ).length;
+  const payoutSetupNeedsReview = providers.filter(providerPayoutSetupNeedsReview).length;
   const taxNeedsReview = providers.filter(providerTaxNeedsReview).length;
   const locationNeedsReview = providers.filter((provider) =>
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider)),
@@ -1257,6 +1289,13 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       count: bankNeedsReview,
       href: '/providers?review=bank',
       detail: 'Bank accounts must be approved before providers can move toward payout readiness.',
+    },
+    {
+      label: 'First earning payout setup',
+      count: payoutSetupNeedsReview,
+      href: '/providers?review=payout-setup',
+      detail:
+        'Providers with first revenue who still need tax profile, tax address, or payout agreements before withdrawal.',
     },
     {
       label: 'Tax profile review',
@@ -1310,9 +1349,7 @@ function providerTaxNeedsReview(provider: AdminProvider) {
     return true;
   }
 
-  const payoutLevelReached =
-    provider.level === 'LEVEL_3_PAYOUT_ENABLED' || provider.level === 'LEVEL_4_TRUSTED';
-  return payoutLevelReached && taxStatus !== 'APPROVED';
+  return providerHasFirstRevenueSignal(provider) && taxStatus !== 'APPROVED';
 }
 
 function providerTaxPillClass(provider: AdminProvider) {
@@ -1358,6 +1395,12 @@ function providerReviewIssues(provider: AdminProvider) {
   }
   if (providerTaxNeedsReview(provider)) {
     issues.push({ label: `tax ${taxStatus}`, severity: taxStatus === 'REJECTED' ? 'high' : 'medium' });
+  }
+  if (providerHasFirstRevenueSignal(provider) && !provider.residentialAddress?.trim()) {
+    issues.push({ label: 'tax address missing', severity: 'high' });
+  }
+  if (providerHasFirstRevenueSignal(provider) && (provider.agreements?.length ?? 0) < 5) {
+    issues.push({ label: `terms ${(provider.agreements?.length ?? 0).toString()}/5`, severity: 'high' });
   }
   const walletBalance = providerUnsettledWalletBalance(provider);
   if (walletBalance < 0) {
@@ -1539,6 +1582,9 @@ function providerFilterDescription(kind: string, value: string) {
   if (kind === 'review' && value === 'public-media') {
     return 'Public media review highlights uploaded provider photos that are pending or rejected.';
   }
+  if (kind === 'review' && value === 'payout-setup') {
+    return 'First earning payout setup highlights providers who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
+  }
   if (kind === 'review') {
     return 'Review queue focuses the table on one operational approval lane.';
   }
@@ -1609,6 +1655,9 @@ function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
     return (provider.bankAccounts ?? []).some((account) =>
       ['PENDING_REVIEW', 'REJECTED'].includes(account.status),
     );
+  }
+  if (review === 'payout-setup') {
+    return providerPayoutSetupNeedsReview(provider);
   }
   if (review === 'tax') {
     return providerTaxNeedsReview(provider);
