@@ -43,6 +43,10 @@ void main() {
         'Foot Massage / 90 min / 700.000 VND');
     expect(customerServiceOptionPriceLabel(service, amount: 750000),
         'Foot Massage / 90 min / 750.000 VND');
+    expect(customerServiceName(service), 'Foot Massage');
+    expect(customerServiceDurationLabel(service), '90 min');
+    expect(customerServiceDurationLabel({'name': 'Foot Massage'}),
+        'Duration not set');
   });
 
   test('customer service groups hide inactive and payout-missing options', () {

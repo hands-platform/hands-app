@@ -1884,7 +1884,9 @@ class _BookingConfirmationPageState
     final servicePrice = customerServicePrice(service);
     final basePrice = asNum(service['basePrice'])?.toInt() ?? servicePrice;
     final hasProviderPrice = servicePrice != basePrice;
-    final serviceOptionLabel = customerServiceOptionLabel(service);
+    final providerName = provider['displayName'] as String? ?? 'Provider';
+    final serviceName = customerServiceName(service);
+    final durationLabel = customerServiceDurationLabel(service);
     final platformFee = 0;
     final serviceCount = 1;
     final rawTotalAmount = servicePrice + platformFee - couponDiscountAmount;
@@ -1900,6 +1902,48 @@ class _BookingConfirmationPageState
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           children: [
+            BookingSectionCard(
+              title: 'Request summary',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: const [
+                      ServiceTag(label: 'Direct request'),
+                      ServiceTag(label: 'Backup matching if needed'),
+                      ServiceTag(label: 'Chat after service start'),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  BookingSummaryRow(
+                    label: 'Therapist',
+                    value: providerName,
+                  ),
+                  const SizedBox(height: 10),
+                  BookingSummaryRow(
+                    label: 'Service',
+                    value: serviceName,
+                  ),
+                  const SizedBox(height: 10),
+                  BookingSummaryRow(
+                    label: 'Duration',
+                    value: durationLabel,
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    child: Divider(height: 1),
+                  ),
+                  BookingSummaryRow(
+                    label: 'Amount to pay',
+                    value: '${formatCurrency(totalAmount)} VND',
+                    emphasized: true,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
             BookingSectionCard(
               title: 'My address',
               child: Column(
@@ -2018,8 +2062,7 @@ class _BookingConfirmationPageState
                   Row(
                     children: [
                       ProviderThumbnail(
-                          name:
-                              provider['displayName'] as String? ?? 'Provider',
+                          name: providerName,
                           size: 72,
                           imageUrl: providerProfileImageUrl(provider)),
                       const SizedBox(width: 14),
@@ -2028,7 +2071,7 @@ class _BookingConfirmationPageState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              provider['displayName'] as String? ?? 'Provider',
+                              providerName,
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             const SizedBox(height: 4),
@@ -2060,19 +2103,26 @@ class _BookingConfirmationPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          serviceOptionLabel,
+                          serviceName,
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
                               ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          durationLabel,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: Colors.black54),
                         ),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
-                            ServiceTag(
-                                label: '${service['durationMin'] ?? '-'} min'),
+                            ServiceTag(label: durationLabel),
                             ServiceTag(
                                 label: '${formatCurrency(servicePrice)} VND'),
                             if (hasProviderPrice)
@@ -2183,7 +2233,17 @@ class _BookingConfirmationPageState
                   ),
                   const SizedBox(height: 10),
                   BookingSummaryRow(
-                    label: serviceOptionLabel,
+                    label: 'Service type',
+                    value: serviceName,
+                  ),
+                  const SizedBox(height: 10),
+                  BookingSummaryRow(
+                    label: 'Duration',
+                    value: durationLabel,
+                  ),
+                  const SizedBox(height: 10),
+                  BookingSummaryRow(
+                    label: 'Service price',
                     value: '${formatCurrency(servicePrice)} VND',
                   ),
                   const SizedBox(height: 10),
@@ -2232,7 +2292,7 @@ class _BookingConfirmationPageState
                 ? 'Creating booking...'
                 : !locationConfirmed
                     ? 'Confirm location before booking'
-                    : 'Book now - ${formatCurrency(totalAmount)} VND',
+                    : 'Send booking request - ${formatCurrency(totalAmount)} VND',
           ),
         ),
       ),
@@ -5455,12 +5515,22 @@ String customerServiceOptionLabel(Map<String, dynamic>? service) {
   if (service == null) {
     return 'Selected service';
   }
-  final name = service['name']?.toString().trim();
+  final name = customerServiceName(service);
   final duration = asNum(service['durationMin'])?.toInt();
   if (duration == null || duration <= 0) {
-    return name == null || name.isEmpty ? 'Selected service' : name;
+    return name;
   }
-  return '${name == null || name.isEmpty ? 'Selected service' : name} / $duration min';
+  return '$name / $duration min';
+}
+
+String customerServiceName(Map<String, dynamic>? service) {
+  final name = service?['name']?.toString().trim();
+  return name == null || name.isEmpty ? 'Selected service' : name;
+}
+
+String customerServiceDurationLabel(Map<String, dynamic>? service) {
+  final duration = asNum(service?['durationMin'])?.toInt();
+  return duration == null || duration <= 0 ? 'Duration not set' : '$duration min';
 }
 
 String customerServiceOptionPriceLabel(Map<String, dynamic>? service,
