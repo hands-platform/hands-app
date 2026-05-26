@@ -85,7 +85,7 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
     return const ProviderOnboardingPriority(
       title: 'Start with your public profile',
       detail:
-          'Add your legal name, public display name, birthday, address, and service area before taking requests.',
+          'Add your legal name, public display name, birthday, and service area before taking requests. Tax address can wait until first earning.',
       tone: 'warning',
       actionKey: 'BASIC_PROFILE',
       buttonLabel: 'Complete profile',
@@ -156,6 +156,17 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
       tone: 'warning',
       actionKey: 'TAX_PROFILE_REVIEW',
       buttonLabel: taxStatus == 'REJECTED' ? 'Resubmit tax' : 'Add tax',
+    );
+  }
+
+  if (nextActions.contains('RESIDENTIAL_ADDRESS')) {
+    return const ProviderOnboardingPriority(
+      title: 'Add tax address',
+      detail:
+          'First earning is recorded. Save a residential/tax address before withdrawal is available.',
+      tone: 'warning',
+      actionKey: 'RESIDENTIAL_ADDRESS',
+      buttonLabel: 'Update address',
     );
   }
 

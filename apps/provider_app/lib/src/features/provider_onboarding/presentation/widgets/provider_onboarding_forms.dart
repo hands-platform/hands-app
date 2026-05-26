@@ -318,8 +318,8 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
             ),
             _Field(
               controller: residentialAddress,
-              label: 'Residential address',
-              required: true,
+              label: 'Residential / tax address',
+              hint: 'Required after first earning, before withdrawal',
               maxLines: 2,
             ),
             _Field(controller: city, label: 'City / province', required: true),

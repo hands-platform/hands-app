@@ -371,6 +371,24 @@ void main() {
     expect(taxPriority.buttonLabel, 'Resubmit tax');
   });
 
+  test('prioritizes residential tax address after first earning', () {
+    final priority = providerOnboardingPriorityFromSnapshot({
+      'nextRequiredActions': ['RESIDENTIAL_ADDRESS', 'AGREEMENTS'],
+      'completedBookingCount': 1,
+      'payoutGate': {
+        'canWithdraw': false,
+        'missing': {
+          'residentialAddress': true,
+          'agreements': ['PAYOUT'],
+        },
+      },
+    });
+
+    expect(priority.actionKey, 'RESIDENTIAL_ADDRESS');
+    expect(priority.title, 'Add tax address');
+    expect(priority.buttonLabel, 'Update address');
+  });
+
   test('shows ready state after core setup before first booking', () {
     final priority = providerOnboardingPriorityFromSnapshot({
       'nextRequiredActions': <String>[],

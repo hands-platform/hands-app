@@ -3667,6 +3667,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
         providerFirstRevenuePayoutSetupActiveFromSnapshot(snapshot);
     final priorityAction = switch (priority.actionKey) {
       'BASIC_PROFILE' => onFillBasicProfile,
+      'RESIDENTIAL_ADDRESS' => onFillBasicProfile,
       'KYC_REVIEW' => onSubmitKyc,
       'BANK_ACCOUNT_REVIEW' => onAddBankAccount,
       'TAX_PROFILE_REVIEW' => onAddTaxProfile,
@@ -3818,7 +3819,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
               step: '1',
               title: 'Basic profile',
               detail: addressText == null || addressText.isEmpty
-                  ? 'Add legal name, public name, birthday, address, and service area.'
+                  ? 'Add legal name, public name, birthday, and service area. Tax address can wait until first earning.'
                   : addressText,
               status: hasBasicProfile ? 'Complete' : 'Required',
               complete: hasBasicProfile,
