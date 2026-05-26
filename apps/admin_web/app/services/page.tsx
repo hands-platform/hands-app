@@ -237,11 +237,17 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                   </td>
                   {[60, 90, 120].map((duration) => {
                     const cell = matrix.byDuration.get(duration);
+                    const cellCurrency = cell?.baseRule?.currency ?? 'VND';
+                    const cellTaxAndCost = cell?.baseRule
+                      ? cell.finance.vatAmount +
+                        cell.finance.withholdingAmount +
+                        cell.baseRule.otherCostAmount
+                      : 0;
                     return (
                       <td key={`${group.key}-${duration}`}>
                         {cell ? (
                           <div className="service-matrix-cell">
-                            <strong>{formatMoney(cell.service.basePrice, 'VND')}</strong>
+                            <strong>Customer {formatMoney(cell.service.basePrice, cellCurrency)}</strong>
                             <span className={cell.baseRule ? 'pill pill-success' : 'pill pill-danger'}>
                               {cell.baseRule ? 'Payout ready' : 'Payout missing'}
                             </span>
@@ -252,9 +258,17 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                                 : 'not set'}
                             </small>
                             <small>
-                              Commission{' '}
+                              Gross HANDS fee{' '}
+                              {cell.baseRule ? formatMoney(cell.finance.fee, cellCurrency) : '-'}
+                            </small>
+                            <small>
+                              VAT / withholding / cost{' '}
+                              {cell.baseRule ? formatMoney(cellTaxAndCost, cellCurrency) : '-'}
+                            </small>
+                            <small>
+                              Net company fee{' '}
                               {cell.baseRule
-                                ? formatMoney(cell.finance.actualCompanyCommission, cell.baseRule.currency)
+                                ? formatMoney(cell.finance.actualCompanyCommission, cellCurrency)
                                 : '-'}
                             </small>
                           </div>
@@ -271,6 +285,25 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                       </span>
                       <small>{matrix.activeCount} active duration option(s)</small>
                       <small>{matrix.payoutRuleCount} payout rule(s)</small>
+                      <small>
+                        Customer minimum total{' '}
+                        {formatMoney(matrix.totals.customerMinimum, matrix.totals.currency)}
+                      </small>
+                      <small>
+                        Provider payout total{' '}
+                        {formatMoney(matrix.totals.providerPayout, matrix.totals.currency)}
+                      </small>
+                      <small>
+                        Gross HANDS fee total{' '}
+                        {formatMoney(matrix.totals.grossFee, matrix.totals.currency)}
+                      </small>
+                      <small>
+                        Tax / cost total {formatMoney(matrix.totals.taxAndCost, matrix.totals.currency)}
+                      </small>
+                      <small>
+                        Net company fee total{' '}
+                        {formatMoney(matrix.totals.netCompanyFee, matrix.totals.currency)}
+                      </small>
                     </div>
                   </td>
                 </tr>
@@ -1542,6 +1575,35 @@ function serviceDurationMatrix(
   }
 
   const activeItems = items.filter((item) => item.active);
+  const totals = [...byDuration.values()].reduce(
+    (summary, cell) => {
+      if (!cell.baseRule) {
+        return summary;
+      }
+
+      return {
+        currency: cell.baseRule.currency,
+        customerMinimum: summary.customerMinimum + cell.service.basePrice,
+        providerPayout: summary.providerPayout + cell.baseRule.providerPayoutAmount,
+        grossFee: summary.grossFee + cell.finance.fee,
+        taxAndCost:
+          summary.taxAndCost +
+          cell.finance.vatAmount +
+          cell.finance.withholdingAmount +
+          cell.baseRule.otherCostAmount,
+        netCompanyFee: summary.netCompanyFee + cell.finance.actualCompanyCommission,
+      };
+    },
+    {
+      currency: 'VND',
+      customerMinimum: 0,
+      providerPayout: 0,
+      grossFee: 0,
+      taxAndCost: 0,
+      netCompanyFee: 0,
+    },
+  );
+
   return {
     byDuration,
     activeCount: activeItems.length,
@@ -1552,6 +1614,7 @@ function serviceDurationMatrix(
           (rule) => rule.active && rule.customerPrice === item.basePrice,
         ),
     ).length,
+    totals,
   };
 }
 
