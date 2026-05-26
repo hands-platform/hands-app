@@ -41,6 +41,8 @@ void main() {
     expect(customerServiceOptionLabel(service), 'Foot Massage / 90 min');
     expect(customerServiceOptionPriceLabel(service),
         'Foot Massage / 90 min / 700.000 VND');
+    expect(customerServiceOptionPriceLabel(service, amount: 750000),
+        'Foot Massage / 90 min / 750.000 VND');
   });
 
   test('customer service groups hide inactive and payout-missing options', () {

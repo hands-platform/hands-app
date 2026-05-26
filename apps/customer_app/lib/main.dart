@@ -4665,7 +4665,7 @@ class CustomerBookingHistoryCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(service?['name'] as String? ?? 'Massage booking',
+                      Text(customerServiceOptionLabel(service),
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 2),
                       Text(provider?['displayName'] as String? ??
@@ -4686,10 +4686,10 @@ class CustomerBookingHistoryCard extends StatelessWidget {
                     label: formatCustomerScheduleMoment(
                         booking['scheduledStartAt'])),
                 BookingHistoryPill(
-                    label: '${service?['durationMin'] ?? '-'} min'),
-                BookingHistoryPill(
-                    label:
-                        '${formatCurrency(payment?['amount'] ?? service?['basePrice'])} VND'),
+                    label: customerServiceOptionPriceLabel(
+                  service,
+                  amount: payment?['amount'],
+                )),
                 BookingHistoryPill(
                     label: payment?['status']?.toString() ?? 'NO_PAYMENT'),
                 if (chatRoom != null)
@@ -5458,8 +5458,10 @@ String customerServiceOptionLabel(Map<String, dynamic>? service) {
   return '${name == null || name.isEmpty ? 'Selected service' : name} / $duration min';
 }
 
-String customerServiceOptionPriceLabel(Map<String, dynamic>? service) {
-  return '${customerServiceOptionLabel(service)} / ${formatCurrency(customerServicePrice(service))} VND';
+String customerServiceOptionPriceLabel(Map<String, dynamic>? service,
+    {dynamic amount}) {
+  final price = asNum(amount)?.toInt() ?? customerServicePrice(service);
+  return '${customerServiceOptionLabel(service)} / ${formatCurrency(price)} VND';
 }
 
 String providerDisplayName(Map<String, dynamic>? booking) {
