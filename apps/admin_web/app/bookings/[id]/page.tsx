@@ -56,7 +56,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </p>
           <h1>Booking {shortId(booking.id)}</h1>
           <p className="muted">
-            {service?.service?.name ?? 'Service pending'} - {booking.status}
+            {bookingServiceOptionLabel(booking)} - {booking.status}
           </p>
         </div>
         <div className="actions">
@@ -335,12 +335,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
         <div className="card">
           <h2>Service</h2>
+          <InfoRow label="Option" value={bookingServiceOptionLabel(booking)} />
           <InfoRow label="Name" value={service?.service?.name ?? 'Service pending'} />
           <InfoRow label="Duration" value={`${service?.service?.durationMin ?? '-'} min`} />
           <InfoRow
             label="Booking price"
             value={money(service?.price ?? booking.payment?.amount, booking.payment?.currency)}
           />
+          <InfoRow label="Admin minimum" value={money(service?.service?.basePrice, booking.payment?.currency)} />
+          <InfoRow label="Provider payout rule" value={bookingServicePayoutRuleLabel(booking)} />
           <InfoRow label="Notes" value={booking.notes ?? 'No notes'} />
           <InfoRow label="Created" value={formatDate(booking.createdAt)} />
           <InfoRow label="Updated" value={formatDate(booking.updatedAt)} />
@@ -1429,6 +1432,34 @@ function bpsAmount(amount: number, bps?: number | null) {
 
 function providerName(provider?: { displayName?: string | null } | null) {
   return provider?.displayName ?? 'Not selected';
+}
+
+function bookingServiceOptionLabel(booking: AdminBookingDetail) {
+  const bookedService = booking.services?.[0];
+  const service = bookedService?.service;
+  if (!service?.name) {
+    return 'Service pending';
+  }
+
+  const duration = service.durationMin ? `${service.durationMin} min` : 'duration pending';
+  return `${service.name} / ${duration}`;
+}
+
+function bookingServicePayoutRuleLabel(booking: AdminBookingDetail) {
+  const bookedService = booking.services?.[0];
+  const service = bookedService?.service;
+  const currency = booking.payment?.currency ?? booking.earning?.currency ?? 'VND';
+  const customerPrice = bookedService?.price ?? booking.payment?.amount;
+  const payoutRule = service?.payoutRules?.find(
+    (rule) => Number(rule.customerPrice) === Number(customerPrice),
+  );
+
+  if (!payoutRule) {
+    return 'Missing active rule';
+  }
+
+  const platformFee = Number(payoutRule.customerPrice) - Number(payoutRule.providerPayoutAmount);
+  return `${money(Number(payoutRule.providerPayoutAmount), payoutRule.currency ?? currency)} payout / ${money(platformFee, payoutRule.currency ?? currency)} fee`;
 }
 
 function addressLabel(address: unknown) {

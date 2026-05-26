@@ -217,6 +217,8 @@ export function BookingMonitor({ bookings, initialView }: Props) {
             {visibleBookings.map((booking) => {
               const flags = bookingRiskFlags(booking, currentTimeMs);
               const risk = riskLevel(flags);
+              const servicePriceLabel = bookingServicePriceLabel(booking);
+              const servicePayoutLabel = bookingServicePayoutRuleLabel(booking);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -225,7 +227,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                         {shortId(booking.id)}
                       </Link>
                     </strong>
-                    <div className="muted">{booking.services?.[0]?.service?.name ?? 'Service pending'}</div>
+                    <div className="muted">{bookingServiceOptionLabel(booking)}</div>
+                    <div className="muted">{servicePriceLabel}</div>
+                    {servicePayoutLabel && <div className="muted">{servicePayoutLabel}</div>}
                     <div className="muted">{formatDate(booking.scheduledStartAt)}</div>
                     <div className="muted">{recencyLabel(booking, nowMs)}</div>
                   </td>
@@ -647,6 +651,49 @@ function nextAction(booking: AdminBooking) {
 
 function shortId(id: string) {
   return id.slice(0, 8);
+}
+
+function bookingServiceOptionLabel(booking: AdminBooking) {
+  const bookedService = booking.services?.[0];
+  const service = bookedService?.service;
+  if (!service?.name) {
+    return 'Service pending';
+  }
+
+  const duration = service.durationMin ? `${service.durationMin} min` : 'duration pending';
+  return `${service.name} / ${duration}`;
+}
+
+function bookingServicePriceLabel(booking: AdminBooking) {
+  const bookedService = booking.services?.[0];
+  const currency = booking.payment?.currency ?? 'VND';
+  const price = bookedService?.price ?? booking.payment?.amount;
+  if (price === undefined || price === null) {
+    return 'Price pending';
+  }
+
+  const minimum = bookedService?.service?.basePrice;
+  return minimum === undefined || minimum === null
+    ? `Customer ${money(Number(price), currency)}`
+    : `Customer ${money(Number(price), currency)} / min ${money(Number(minimum), currency)}`;
+}
+
+function bookingServicePayoutRuleLabel(booking: AdminBooking) {
+  const bookedService = booking.services?.[0];
+  const service = bookedService?.service;
+  const currency = booking.payment?.currency ?? 'VND';
+  const customerPrice = bookedService?.price ?? booking.payment?.amount;
+  const payoutRule = service?.payoutRules?.find(
+    (rule) => Number(rule.customerPrice) === Number(customerPrice),
+  );
+
+  if (!payoutRule) {
+    return customerPrice === undefined || customerPrice === null ? null : 'Payout rule missing';
+  }
+
+  const providerPayout = Number(payoutRule.providerPayoutAmount);
+  const platformFee = Number(payoutRule.customerPrice) - providerPayout;
+  return `Payout ${money(providerPayout, payoutRule.currency ?? currency)} / fee ${money(platformFee, payoutRule.currency ?? currency)}`;
 }
 
 function money(amount: number, currency = 'VND') {
