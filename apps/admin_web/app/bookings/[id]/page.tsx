@@ -11,6 +11,7 @@ import {
   captureBookingPayment,
   refundBookingPayment,
   releaseBookingPayment,
+  settleBookingCashDebt,
   syncBookingPayment,
   updateBookingOpsTask,
 } from './actions';
@@ -144,6 +145,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 label="Refund"
                 disabled={booking.payment.status === 'REFUNDED' || booking.payment.status === 'RELEASED'}
               />
+              {bookingCashDebtNeedsSettlement(booking) && booking.earning?.id && (
+                <CashDebtSettlementForm booking={booking} />
+              )}
             </>
           ) : (
             <span className="muted">No payment action available.</span>
@@ -411,6 +415,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 : 'Not created'
             }
           />
+          {bookingCashDebtNeedsSettlement(booking) && (
+            <InfoRow
+              label="Cash fee debt"
+              value={`${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / provider blocked`}
+            />
+          )}
           <InfoRow label="Review" value={booking.review ? `${booking.review.rating}/5` : 'Not submitted'} />
         </div>
 
@@ -555,6 +565,31 @@ function PaymentAction({
   );
 }
 
+function CashDebtSettlementForm({ booking }: { booking: AdminBookingDetail }) {
+  const earning = booking.earning;
+  if (!earning) {
+    return null;
+  }
+
+  return (
+    <form action={settleBookingCashDebt} className="inline-form">
+      <input type="hidden" name="bookingId" value={booking.id} />
+      <input type="hidden" name="earningId" value={earning.id} />
+      <input
+        name="settlementRef"
+        placeholder={`HANDS-CASH-${shortId(booking.id)}`}
+        aria-label="Cash debt settlement reference"
+      />
+      <input
+        name="settlementNotes"
+        placeholder={`Provider deposited ${money(Math.abs(earning.netAmount), earning.currency)}`}
+        aria-label="Cash debt settlement notes"
+      />
+      <button type="submit">Settle cash debt</button>
+    </form>
+  );
+}
+
 type RiskFlag = {
   severity: 'high' | 'medium' | 'low';
   title: string;
@@ -594,6 +629,9 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
   if (booking.payment?.status === 'AUTHORIZED' && booking.status === 'COMPLETED') {
     return 'Service is complete. Capture the authorized payment or refund if there was a dispute.';
   }
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    return 'Cash was collected by the provider. Finance must settle the HANDS fee debt before this provider can accept more bookings.';
+  }
   if (booking.payment?.status === 'AUTHORIZED') {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';
   }
@@ -628,6 +666,9 @@ function opsBadges(booking: AdminBookingDetail) {
   }
   if (booking.payment?.status === 'REFUNDED') {
     badges.push({ label: 'Refunded', tone: 'pill-warn' });
+  }
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    badges.push({ label: 'Cash fee debt', tone: 'pill-danger' });
   }
   if (booking.selectedProvider) {
     badges.push({ label: 'Provider selected', tone: 'pill-success' });
@@ -676,6 +717,18 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
       title: 'Completed service still on hold',
       detail: 'The customer payment is authorized but not captured after completion.',
       action: 'Capture payment, or refund if there is an active dispute.',
+    });
+  }
+
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    flags.push({
+      severity: 'high',
+      title: 'Cash fee debt blocks provider',
+      detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} collected cash and still owes ${money(
+        Math.abs(booking.earning?.netAmount ?? 0),
+        booking.earning?.currency,
+      )}.`,
+      action: 'Confirm the provider deposit or admin offset, then settle the earning.',
     });
   }
 
@@ -1147,6 +1200,9 @@ function paymentHint(booking: AdminBookingDetail) {
   if (!booking.payment) {
     return 'No payment record created.';
   }
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    return 'Cash fee debt is still unsettled; provider acceptance is blocked.';
+  }
   if (booking.payment.status === 'AUTHORIZED') {
     return 'Hold is active; capture after service completion.';
   }
@@ -1160,6 +1216,15 @@ function paymentHint(booking: AdminBookingDetail) {
     return 'Refund path is active.';
   }
   return `${booking.payment.method} payment is being monitored.`;
+}
+
+function bookingCashDebtNeedsSettlement(booking: AdminBookingDetail) {
+  return (
+    booking.payment?.method === 'CASH' &&
+    Boolean(booking.earning) &&
+    (booking.earning?.netAmount ?? 0) < 0 &&
+    booking.earning?.status !== 'PAID'
+  );
 }
 
 function providerHint(booking: AdminBookingDetail) {

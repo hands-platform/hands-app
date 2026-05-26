@@ -1,6 +1,6 @@
 import { AdminPayment, adminGet } from '../../lib/admin-api';
 import Link from 'next/link';
-import { capturePayment, refundPayment, releasePayment, syncPayment } from './actions';
+import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
 
 type PaymentsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -179,6 +179,9 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
                       disabled={payment.status === 'REFUNDED' || payment.status === 'RELEASED'}
                     />
                   </div>
+                  {paymentCashDebtNeedsSettlement(payment) && payment.booking?.earning?.id && (
+                    <CashDebtSettlementForm payment={payment} />
+                  )}
                 </td>
               </tr>
             ))}
@@ -428,6 +431,31 @@ function PaymentAction({
       <button type="submit" disabled={disabled}>
         {label}
       </button>
+    </form>
+  );
+}
+
+function CashDebtSettlementForm({ payment }: { payment: AdminPayment }) {
+  const earning = payment.booking?.earning;
+  if (!earning) {
+    return null;
+  }
+
+  const debtAmount = Math.abs(earning.netAmount);
+  return (
+    <form action={settleCashDebt} className="inline-form" style={{ marginTop: 8 }}>
+      <input type="hidden" name="earningId" value={earning.id} />
+      <input
+        name="settlementRef"
+        placeholder={`HANDS-CASH-${shortId(payment.bookingId)}`}
+        aria-label="Cash debt settlement reference"
+      />
+      <input
+        name="settlementNotes"
+        placeholder={`Provider deposited ${money(debtAmount, earning.currency)}`}
+        aria-label="Cash debt settlement notes"
+      />
+      <button type="submit">Settle cash debt</button>
     </form>
   );
 }

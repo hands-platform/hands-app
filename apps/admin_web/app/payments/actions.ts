@@ -26,3 +26,24 @@ export async function releasePayment(formData: FormData) {
   await adminPost(`/admin/payments/${paymentId}/release`, {}, null);
   revalidatePath('/payments');
 }
+
+export async function settleCashDebt(formData: FormData) {
+  const earningId = String(formData.get('earningId') ?? '');
+  if (!earningId) {
+    return;
+  }
+
+  await adminPost(
+    `/admin/earnings/${earningId}/mark-paid`,
+    {
+      settlementRef: String(formData.get('settlementRef') ?? '') || undefined,
+      settlementNotes:
+        String(formData.get('settlementNotes') ?? '') || 'Cash fee debt settled from Payments operations.',
+    },
+    null,
+  );
+  revalidatePath('/payments');
+  revalidatePath('/earnings');
+  revalidatePath('/bookings');
+  revalidatePath('/audit-log');
+}

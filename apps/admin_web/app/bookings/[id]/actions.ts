@@ -19,6 +19,29 @@ export async function refundBookingPayment(formData: FormData) {
   await runPaymentAction(formData, 'refund');
 }
 
+export async function settleBookingCashDebt(formData: FormData) {
+  const bookingId = String(formData.get('bookingId') ?? '');
+  const earningId = String(formData.get('earningId') ?? '');
+  if (!bookingId || !earningId) {
+    return;
+  }
+
+  await adminPost(
+    `/admin/earnings/${earningId}/mark-paid`,
+    {
+      settlementRef: String(formData.get('settlementRef') ?? '') || undefined,
+      settlementNotes:
+        String(formData.get('settlementNotes') ?? '') || 'Cash fee debt settled from Booking operations.',
+    },
+    null,
+  );
+  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath('/bookings');
+  revalidatePath('/payments');
+  revalidatePath('/earnings');
+  revalidatePath('/audit-log');
+}
+
 export async function addBookingOpsNote(formData: FormData) {
   const bookingId = String(formData.get('bookingId') ?? '');
   const note = String(formData.get('note') ?? '');
