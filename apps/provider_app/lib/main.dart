@@ -1527,7 +1527,6 @@ class OpenBookingCard extends StatelessWidget {
     final isMatched = booking['status'] == 'MATCHED';
     final isCashBooking = providerBookingIsCash(booking);
     final customerAmount = payment?['amount'] ?? service?['basePrice'];
-    final preferredProviderName = preferredProvider?['displayName'] as String?;
     final customerAddress = booking['address'] as Map<String, dynamic>?;
     final customerName = customerAddress?['name']?.toString() ?? 'Guest';
     final customerPhone = customerAddress?['phone']?.toString();
@@ -1537,22 +1536,12 @@ class OpenBookingCard extends StatelessWidget {
     final updatedLabel =
         formatRelativeMoment(booking['updatedAt'] ?? booking['createdAt']);
     final scheduledLabel = formatScheduleMoment(booking['scheduledStartAt']);
-    final requestModeLabel = isPreferredRequest
-        ? 'Direct request'
-        : hasPreferredProvider
-            ? 'Backup opportunity'
-            : 'Open shortlist';
-    final nextAction = isPreferredRequest && !isMatched
-        ? 'Reply now so the customer can confirm you directly.'
-        : isPreferredRequest && isMatched && !hasChat
-            ? 'Start the service when you are ready to unlock chat.'
-            : isPreferredRequest && hasChat
-                ? 'Continue with the customer in chat.'
-                : joined
-                    ? 'Stay visible and wait for the customer to choose you.'
-                    : hasPreferredProvider
-                        ? 'Offer backup support if you can cover this request.'
-                        : 'Join this open request to enter the customer shortlist.';
+    final guidance = providerRequestGuidance(
+      booking: booking,
+      isPreferredRequest: isPreferredRequest,
+      joined: joined,
+      walletBlocked: walletBlocked,
+    );
 
     return Card(
       child: Padding(
@@ -1611,7 +1600,7 @@ class OpenBookingCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                ProviderRequestTag(label: requestModeLabel),
+                ProviderRequestTag(label: guidance.modeLabel),
                 ProviderRequestTag(
                     label: 'Booking $shortBookingId', highlighted: true),
                 ProviderRequestTag(
@@ -1665,11 +1654,7 @@ class OpenBookingCard extends StatelessWidget {
                   Expanded(
                     child: InlineRequestFact(
                       label: 'Priority',
-                      value: isPreferredRequest
-                          ? 'Reply first'
-                          : (hasPreferredProvider
-                              ? 'Backup option'
-                              : 'Open queue'),
+                      value: guidance.priorityLabel,
                     ),
                   ),
                 ],
@@ -1681,11 +1666,7 @@ class OpenBookingCard extends StatelessWidget {
                 Expanded(
                   child: RequestSummaryCard(
                     label: 'Role',
-                    value: isPreferredRequest
-                        ? 'First therapist'
-                        : (hasPreferredProvider
-                            ? 'Backup option'
-                            : 'Open candidate'),
+                    value: guidance.roleLabel,
                     tone: isPreferredRequest
                         ? const Color(0xFFEAF5E3)
                         : (hasPreferredProvider
@@ -1697,11 +1678,7 @@ class OpenBookingCard extends StatelessWidget {
                 Expanded(
                   child: RequestSummaryCard(
                     label: 'Decision',
-                    value: isPreferredRequest
-                        ? (isMatched
-                            ? (hasChat ? 'Chat live' : 'Accepted')
-                            : 'Reply now')
-                        : (joined ? 'Visible now' : 'Can join'),
+                    value: guidance.decisionLabel,
                     tone: isMatched
                         ? const Color(0xFFF2EAFE)
                         : const Color(0xFFF7F8FA),
@@ -1729,24 +1706,14 @@ class OpenBookingCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    nextAction,
+                    guidance.nextAction,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-            Text(
-              isPreferredRequest
-                  ? (hasChat
-                      ? 'The customer picked your profile first and the service chat is now live.'
-                      : isMatched
-                          ? 'The customer picked your profile first and is waiting for you to start the service.'
-                          : 'The customer picked your profile first and is waiting for your response.')
-                  : hasPreferredProvider
-                      ? 'Another therapist was chosen first. You can still join as an alternative option.'
-                      : 'This request is open to nearby therapists. The customer will pick the final provider.',
-            ),
+            Text(guidance.contextMessage),
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
@@ -1762,36 +1729,11 @@ class OpenBookingCard extends StatelessWidget {
                       : const Color(0xFFE7D9B7),
                 ),
               ),
-              child: Text(
-                isPreferredRequest
-                    ? (hasChat
-                        ? 'You were chosen first and the service chat is already live.'
-                        : isMatched
-                            ? 'You were chosen first. Start service when you are ready to move this booking into chat.'
-                            : 'You are the first therapist this guest chose. A quick reply protects the booking.')
-                    : hasPreferredProvider
-                        ? 'The guest is still waiting on ${preferredProviderName ?? 'the preferred therapist'}. Join now to appear as a backup option.'
-                        : 'No preferred therapist was set. Nearby therapists can join and wait for the guest selection.',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
+              child: Text(guidance.detailMessage,
+                  style: Theme.of(context).textTheme.bodyMedium),
             ),
             const SizedBox(height: 12),
-            if (isPreferredRequest)
-              InfoCard(
-                text: isMatched
-                    ? (hasChat
-                        ? 'Service started. Chat is ready.'
-                        : 'You accepted this request. Start service to unlock chat.')
-                    : 'The customer already chose you. Accept or decline this request.',
-              )
-            else if (hasPreferredProvider)
-              InfoCard(
-                  text:
-                      'Preferred therapist: ${preferredProviderName ?? 'Another provider'}. Join if you can cover this request.')
-            else
-              const InfoCard(
-                  text:
-                      'Customer is waiting and nearby therapists may volunteer for this request.'),
+            InfoCard(text: guidance.infoMessage),
             if (walletBlocked &&
                 ((isPreferredRequest && !isMatched) ||
                     (!isPreferredRequest && !joined))) ...[
@@ -4726,6 +4668,171 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
     'After admin confirms the deposit or offset, refresh wallet status.',
     'New booking acceptance unlocks only when the wallet is no longer negative.',
   ];
+}
+
+class ProviderRequestGuidance {
+  const ProviderRequestGuidance({
+    required this.modeLabel,
+    required this.priorityLabel,
+    required this.roleLabel,
+    required this.decisionLabel,
+    required this.nextAction,
+    required this.contextMessage,
+    required this.detailMessage,
+    required this.infoMessage,
+  });
+
+  final String modeLabel;
+  final String priorityLabel;
+  final String roleLabel;
+  final String decisionLabel;
+  final String nextAction;
+  final String contextMessage;
+  final String detailMessage;
+  final String infoMessage;
+}
+
+ProviderRequestGuidance providerRequestGuidance({
+  required Map<String, dynamic> booking,
+  required bool isPreferredRequest,
+  required bool joined,
+  required bool walletBlocked,
+}) {
+  final preferredProvider = asMap(booking['preferredProvider']);
+  final hasPreferredProvider = preferredProvider != null;
+  final preferredProviderName =
+      preferredProvider?['displayName']?.toString().trim();
+  final hasChat = booking['chatRoom'] != null;
+  final isMatched = booking['status'] == 'MATCHED';
+  final actionBlockedByWallet =
+      walletBlocked && ((isPreferredRequest && !isMatched) || !joined);
+
+  final modeLabel = isPreferredRequest
+      ? 'Direct request'
+      : hasPreferredProvider
+          ? 'Backup opportunity'
+          : 'Open shortlist';
+  final priorityLabel = isPreferredRequest
+      ? 'Reply first'
+      : hasPreferredProvider
+          ? 'Backup option'
+          : 'Open queue';
+  final roleLabel = isPreferredRequest
+      ? 'First therapist'
+      : hasPreferredProvider
+          ? 'Backup option'
+          : 'Open candidate';
+
+  if (actionBlockedByWallet) {
+    return ProviderRequestGuidance(
+      modeLabel: modeLabel,
+      priorityLabel: priorityLabel,
+      roleLabel: roleLabel,
+      decisionLabel: 'Settlement required',
+      nextAction:
+          'Settle your negative HANDS wallet before accepting or joining this booking.',
+      contextMessage:
+          'This booking is available, but your wallet must be settled before you can take it.',
+      detailMessage: providerWalletBlockFallbackReasonKo,
+      infoMessage: providerWalletBlockHintKo,
+    );
+  }
+
+  if (isPreferredRequest && hasChat) {
+    return ProviderRequestGuidance(
+      modeLabel: modeLabel,
+      priorityLabel: priorityLabel,
+      roleLabel: roleLabel,
+      decisionLabel: 'Chat live',
+      nextAction: 'Continue with the customer in chat.',
+      contextMessage:
+          'The customer picked your profile first and the service chat is now live.',
+      detailMessage:
+          'You were chosen first and the service chat is already live.',
+      infoMessage: 'Service started. Chat is ready.',
+    );
+  }
+
+  if (isPreferredRequest && isMatched) {
+    return ProviderRequestGuidance(
+      modeLabel: modeLabel,
+      priorityLabel: priorityLabel,
+      roleLabel: roleLabel,
+      decisionLabel: 'Accepted',
+      nextAction: 'Start the service when you are ready to unlock chat.',
+      contextMessage:
+          'The customer picked your profile first and is waiting for you to start the service.',
+      detailMessage:
+          'You were chosen first. Start service when you are ready to move this booking into chat.',
+      infoMessage: 'You accepted this request. Start service to unlock chat.',
+    );
+  }
+
+  if (isPreferredRequest) {
+    return ProviderRequestGuidance(
+      modeLabel: modeLabel,
+      priorityLabel: priorityLabel,
+      roleLabel: roleLabel,
+      decisionLabel: 'Reply now',
+      nextAction: 'Reply now so the customer can confirm you directly.',
+      contextMessage:
+          'The customer picked your profile first and is waiting for your response.',
+      detailMessage:
+          'You are the first therapist this guest chose. A quick reply protects the booking.',
+      infoMessage:
+          'The customer already chose you. Accept or decline this request.',
+    );
+  }
+
+  if (joined) {
+    return ProviderRequestGuidance(
+      modeLabel: modeLabel,
+      priorityLabel: priorityLabel,
+      roleLabel: roleLabel,
+      decisionLabel: 'Visible now',
+      nextAction: 'Stay visible and wait for the customer to choose you.',
+      contextMessage: hasPreferredProvider
+          ? 'Another therapist was chosen first. You are visible as a backup option.'
+          : 'You joined this open request. The customer will pick the final provider.',
+      detailMessage:
+          'You are in the shortlist. Keep the app open and wait for customer selection.',
+      infoMessage:
+          'You are visible to the customer now. Wait for the final selection.',
+    );
+  }
+
+  if (hasPreferredProvider) {
+    final name = preferredProviderName == null || preferredProviderName.isEmpty
+        ? 'the preferred therapist'
+        : preferredProviderName;
+    return ProviderRequestGuidance(
+      modeLabel: modeLabel,
+      priorityLabel: priorityLabel,
+      roleLabel: roleLabel,
+      decisionLabel: 'Can join',
+      nextAction: 'Offer backup support if you can cover this request.',
+      contextMessage:
+          'Another therapist was chosen first. You can still join as an alternative option.',
+      detailMessage:
+          'The guest is still waiting on $name. Join now to appear as a backup option.',
+      infoMessage:
+          'Preferred therapist: $name. Join if you can cover this request.',
+    );
+  }
+
+  return ProviderRequestGuidance(
+    modeLabel: modeLabel,
+    priorityLabel: priorityLabel,
+    roleLabel: roleLabel,
+    decisionLabel: 'Can join',
+    nextAction: 'Join this open request to enter the customer shortlist.',
+    contextMessage:
+        'This request is open to nearby therapists. The customer will pick the final provider.',
+    detailMessage:
+        'No preferred therapist was set. Nearby therapists can join and wait for the guest selection.',
+    infoMessage:
+        'Customer is waiting and nearby therapists may volunteer for this request.',
+  );
 }
 
 bool providerBookingIsCash(Map<String, dynamic> booking) {

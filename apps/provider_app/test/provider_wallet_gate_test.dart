@@ -66,6 +66,67 @@ void main() {
     expect(providerCashBookingRiskHint(booking), contains('wallet debt'));
   });
 
+  test('explains direct requests as first therapist decisions', () {
+    final guidance = providerRequestGuidance(
+      booking: {'status': 'OPEN_MATCHING'},
+      isPreferredRequest: true,
+      joined: false,
+      walletBlocked: false,
+    );
+
+    expect(guidance.modeLabel, 'Direct request');
+    expect(guidance.roleLabel, 'First therapist');
+    expect(guidance.decisionLabel, 'Reply now');
+    expect(guidance.nextAction, contains('Reply now'));
+    expect(guidance.infoMessage, contains('Accept or decline'));
+  });
+
+  test('blocks direct request guidance when wallet is negative', () {
+    final guidance = providerRequestGuidance(
+      booking: {'status': 'OPEN_MATCHING'},
+      isPreferredRequest: true,
+      joined: false,
+      walletBlocked: true,
+    );
+
+    expect(guidance.decisionLabel, 'Settlement required');
+    expect(guidance.nextAction, contains('negative HANDS wallet'));
+    expect(guidance.detailMessage, providerWalletBlockFallbackReasonKo);
+  });
+
+  test('explains backup opportunities after preferred provider exists', () {
+    final guidance = providerRequestGuidance(
+      booking: {
+        'status': 'OPEN_MATCHING',
+        'preferredProvider': {'displayName': 'Linh Wellness'},
+      },
+      isPreferredRequest: false,
+      joined: false,
+      walletBlocked: false,
+    );
+
+    expect(guidance.modeLabel, 'Backup opportunity');
+    expect(guidance.roleLabel, 'Backup option');
+    expect(guidance.decisionLabel, 'Can join');
+    expect(guidance.detailMessage, contains('Linh Wellness'));
+  });
+
+  test('explains chat-ready accepted requests', () {
+    final guidance = providerRequestGuidance(
+      booking: {
+        'status': 'MATCHED',
+        'chatRoom': {'id': 'room-1'},
+      },
+      isPreferredRequest: true,
+      joined: true,
+      walletBlocked: false,
+    );
+
+    expect(guidance.decisionLabel, 'Chat live');
+    expect(guidance.nextAction, contains('Continue'));
+    expect(guidance.infoMessage, 'Service started. Chat is ready.');
+  });
+
   test('formats provider booking service option labels consistently', () {
     final service = {
       'name': 'Foot Massage',
