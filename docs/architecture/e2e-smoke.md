@@ -18,6 +18,7 @@
 - Service completion.
 - Customer review with tip.
 - Provider earnings and summary.
+- Service duration option pricing, provider custom price validation, payout-rule fee calculation, and admin finance trace.
 - Admin payout batch creation.
 - Admin payment refund.
 - Admin refund listing.

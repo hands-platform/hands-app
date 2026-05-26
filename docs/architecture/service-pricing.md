@@ -10,6 +10,16 @@ HANDS services are managed as service-type and duration rows. A single service t
 
 The admin controls the minimum customer price for each service duration. Providers can set the same price or a higher price, but never below the admin minimum.
 
+The customer-facing choice is therefore:
+
+1. Choose the service type.
+2. Choose one duration option.
+3. Confirm the booking at the provider's active customer price for that option.
+
+The admin-facing unit of control is the service duration option, not only the top-level service name.
+For example, `Foot Massage / 60 min`, `Foot Massage / 90 min`, and `Foot Massage / 120 min`
+can each have separate minimum prices and payout matrix rows.
+
 ## Price Rules
 
 - Default customer price increment: `100000 VND`.
@@ -71,6 +81,10 @@ The admin earnings ledger shows:
 - Vietnam freelance withholding amount
 - Other cost amount
 - Estimated actual company fee after VAT, withholding, and other costs
+
+The admin booking monitor and booking detail page also show the selected service option,
+customer price, admin minimum, provider payout amount, and platform fee so operations can
+debug a booking without opening the full service matrix first.
 
 Each completed earning stores the selected payout/tax rule snapshot for auditability.
 
