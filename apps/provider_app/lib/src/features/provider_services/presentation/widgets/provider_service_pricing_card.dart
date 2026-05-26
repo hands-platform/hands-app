@@ -442,33 +442,27 @@ class _ProviderServicePriceSheetState
       _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
     );
     final service = widget.service;
-    if (price == null) {
-      setState(() => _error = 'Enter a valid VND amount.');
-      return;
-    }
-    if (price < service.basePrice) {
-      setState(() =>
-          _error = 'Price must be at least ${formatVnd(service.basePrice)}.');
-      return;
-    }
-    if (service.priceStep <= 0 || price % service.priceStep != 0) {
-      setState(() => _error =
-          'Price must increase by ${formatVnd(service.priceStep)} steps.');
-      return;
-    }
-    if (_active &&
-        !service.bookablePayoutOptions
-            .any((option) => option.customerPrice == price)) {
+    final validationMessage =
+        service.validationMessageForPrice(price, active: _active);
+    if (validationMessage != null) {
       final options = service.bookablePayoutOptions
           .map((option) => formatVnd(option.customerPrice))
           .join(', ');
-      setState(() => _error = options.isEmpty
-          ? 'Admin must create a payout rule before this service can be activated.'
-          : 'Admin payout rule is required for exactly ${formatVnd(price)}. Choose one of: $options.');
+      final detailedMessage = price != null &&
+              _active &&
+              service.hasBookablePriceOptions &&
+              service.bookablePayoutOptionForPrice(price) == null
+          ? 'Admin payout rule is required for exactly ${formatVnd(price)}. Choose one of: $options.'
+          : validationMessage == 'Price must be at least the HANDS minimum.'
+              ? 'Price must be at least ${formatVnd(service.basePrice)}.'
+              : validationMessage == 'Price must follow the configured VND step.'
+                  ? 'Price must increase by ${formatVnd(service.priceStep)} steps.'
+                  : validationMessage;
+      setState(() => _error = detailedMessage);
       return;
     }
     Navigator.of(context).pop(
-      ProviderServicePriceInput(price: price, active: _active),
+      ProviderServicePriceInput(price: price!, active: _active),
     );
   }
 
@@ -480,9 +474,8 @@ class _ProviderServicePriceSheetState
           _priceController.text.replaceAll(RegExp(r'[^0-9]'), ''),
         ) ??
         service.effectivePrice;
-    final matchingRule = service.bookablePayoutOptions
-        .any((option) => option.customerPrice == previewPrice);
-    final previewRule = service.payoutOptionForPrice(previewPrice);
+    final previewRule = service.bookablePayoutOptionForPrice(previewPrice);
+    final matchingRule = previewRule != null;
     final recommendedPrice = service.recommendedCustomerPrice;
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
@@ -564,7 +557,7 @@ class _ProviderServicePriceSheetState
                 ? Icons.fact_check_outlined
                 : Icons.admin_panel_settings_outlined,
             text: matchingRule
-                ? 'This price has an admin payout rule. You receive ${formatVnd(previewRule?.providerPayoutAmount ?? 0)} and HANDS fee is ${formatVnd(previewRule?.platformFee ?? 0)}.'
+                ? 'This price has an admin payout rule. You receive ${formatVnd(previewRule.providerPayoutAmount)} and HANDS fee is ${formatVnd(previewRule.platformFee)}.'
                 : service.hasBookablePriceOptions
                     ? 'Active services require one of the listed admin payout prices. Pick a suggested price or save as paused.'
                     : 'Active services require an exact admin payout rule. Save as paused or ask admin to configure this price.',

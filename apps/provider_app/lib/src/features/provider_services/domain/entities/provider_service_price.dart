@@ -97,6 +97,41 @@ class ProviderServicePrice {
 
   bool hasPayoutOptionForPrice(int customerPrice) =>
       payoutOptionForPrice(customerPrice) != null;
+
+  ProviderServicePayoutOption? bookablePayoutOptionForPrice(
+    int customerPrice,
+  ) {
+    for (final option in bookablePayoutOptions) {
+      if (option.customerPrice == customerPrice) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  String? validationMessageForPrice(
+    int? customerPrice, {
+    required bool active,
+  }) {
+    if (customerPrice == null) {
+      return 'Enter a valid VND amount.';
+    }
+    if (customerPrice < basePrice) {
+      return 'Price must be at least the HANDS minimum.';
+    }
+    if (priceStep <= 0 || customerPrice % priceStep != 0) {
+      return 'Price must follow the configured VND step.';
+    }
+    if (active && bookablePayoutOptionForPrice(customerPrice) == null) {
+      return hasBookablePriceOptions
+          ? 'Active services require an exact admin payout rule for this price.'
+          : 'Admin must create a payout rule before this service can be activated.';
+    }
+    return null;
+  }
+
+  bool canSavePrice(int? customerPrice, {required bool active}) =>
+      validationMessageForPrice(customerPrice, active: active) == null;
 }
 
 class ProviderServicePayoutOption {
