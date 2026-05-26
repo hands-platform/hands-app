@@ -1105,6 +1105,16 @@ const cashDebtBookingLedger = cashDebtEarning.walletLedgerEntries?.find(
 if (!cashDebtBookingLedger || cashDebtBookingLedger.amount !== cashDebtEarning.netAmount) {
   throw new Error(`Cash debt booking ledger was not recorded: ${JSON.stringify(cashDebtEarning)}`);
 }
+const adminPaymentsAfterCashDebt = await getJson('/admin/payments', adminAuth.accessToken);
+const cashDebtPayment = adminPaymentsAfterCashDebt.find((payment) => payment.bookingId === walletDebtBooking.id);
+if (
+  cashDebtPayment?.method !== 'CASH' ||
+  cashDebtPayment?.booking?.earning?.id !== cashDebtEarning.id ||
+  cashDebtPayment.booking.earning.netAmount >= 0 ||
+  !cashDebtPayment.booking.earning.walletLedgerEntries?.some((entry) => entry.type === 'BOOKING_EARNING')
+) {
+  throw new Error(`Cash debt payment trace was not visible to admin: ${JSON.stringify(cashDebtPayment)}`);
+}
 const cashDebtSettlementRef = `SMOKE-CASH-FEE-${Date.now()}`;
 await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {
   settlementRef: cashDebtSettlementRef,
