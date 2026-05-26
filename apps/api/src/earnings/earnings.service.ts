@@ -184,16 +184,23 @@ export class EarningsService {
       this.activePayoutHoldForProvider(this.prisma, provider.id),
     ]);
     const walletBalance = summary.pendingNetAmount + summary.availableNetAmount;
+    const walletBlocked = walletBalance < 0;
+    const walletDebtAmount = walletBlocked ? Math.abs(walletBalance) : 0;
     return {
       ...summary,
       walletBalance,
-      walletBlocked: walletBalance < 0,
-      walletDebtAmount: walletBalance < 0 ? Math.abs(walletBalance) : 0,
-      walletBlockReason: walletBalance < 0 ? PROVIDER_WALLET_BLOCK_REASON : null,
-      walletSettlementRequired: walletBalance < 0,
-      walletSettlementMethod: walletBalance < 0 ? 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET' : null,
-      walletSettlementInstruction:
-        walletBalance < 0 ? PROVIDER_WALLET_SETTLEMENT_INSTRUCTION : null,
+      walletBlocked,
+      walletDebtAmount,
+      walletBlockReason: walletBlocked ? PROVIDER_WALLET_BLOCK_REASON : null,
+      walletSettlementRequired: walletBlocked,
+      walletSettlementMethod: walletBlocked ? 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET' : null,
+      walletSettlementReference: walletBlocked
+        ? this.providerWalletSettlementReference(provider.id)
+        : null,
+      walletSettlementInstruction: walletBlocked ? PROVIDER_WALLET_SETTLEMENT_INSTRUCTION : null,
+      walletSettlementSteps: walletBlocked
+        ? this.providerWalletSettlementSteps(walletDebtAmount, summary.currency, provider.id)
+        : [],
       payoutBlocked: Boolean(payoutHold),
       payoutHold,
     };
@@ -517,6 +524,19 @@ export class EarningsService {
       paidNetAmount: paid._sum.netAmount ?? 0,
       currency: 'VND',
     };
+  }
+
+  private providerWalletSettlementReference(providerProfileId: string) {
+    return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
+  }
+
+  private providerWalletSettlementSteps(amount: number, currency: string, providerProfileId: string) {
+    return [
+      `Settle ${amount.toLocaleString('vi-VN')} ${currency} for unpaid HANDS fees.`,
+      `Use reference ${this.providerWalletSettlementReference(providerProfileId)} when reporting the deposit.`,
+      'After admin confirms the deposit or offset, refresh wallet status.',
+      'New booking acceptance unlocks only when the wallet is no longer negative.',
+    ];
   }
 
   private calculateProviderWalletDelta(input: {

@@ -40,6 +40,24 @@ void main() {
     );
   });
 
+  test('uses server settlement steps when provided', () {
+    final summary = {
+      'walletBalance': -60000,
+      'walletBlocked': true,
+      'walletSettlementSteps': [
+        'Settle 60.000 VND for unpaid HANDS fees.',
+        'Use reference HANDS-WALLET-ABC12345 when reporting the deposit.',
+        'Refresh wallet status after admin confirms the deposit.',
+      ],
+    };
+
+    expect(
+      providerWalletSettlementSteps(summary),
+      contains(
+          'Use reference HANDS-WALLET-ABC12345 when reporting the deposit.'),
+    );
+  });
+
   test('allows booking actions when unsettled wallet is non-negative', () {
     final summary = {
       'pendingNetAmount': -50000,

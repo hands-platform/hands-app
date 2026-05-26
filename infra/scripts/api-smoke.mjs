@@ -1207,6 +1207,20 @@ if (!walletDebtProviderEarningsSummary.walletSettlementInstruction.includes('HAN
   );
 }
 if (
+  !walletDebtProviderEarningsSummary.walletSettlementReference?.startsWith('HANDS-WALLET-') ||
+  !Array.isArray(walletDebtProviderEarningsSummary.walletSettlementSteps) ||
+  walletDebtProviderEarningsSummary.walletSettlementSteps.length < 3 ||
+  !walletDebtProviderEarningsSummary.walletSettlementSteps.some((step) =>
+    step.includes(walletDebtProviderEarningsSummary.walletSettlementReference),
+  )
+) {
+  throw new Error(
+    `Negative wallet summary should include deposit reference and operator steps: ${JSON.stringify(
+      walletDebtProviderEarningsSummary,
+    )}`,
+  );
+}
+if (
   walletDebtProviderEarningsSummary.walletBlockReason !==
   '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.'
 ) {

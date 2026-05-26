@@ -4653,6 +4653,13 @@ String providerWalletStatusLabel(Map<String, dynamic> summary) {
 }
 
 List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
+  final serverSteps = asList(summary['walletSettlementSteps'])
+      .map((item) => item?.toString().trim() ?? '')
+      .where((item) => item.isNotEmpty)
+      .toList();
+  if (serverSteps.isNotEmpty) {
+    return serverSteps;
+  }
   if (providerWalletBlockReason(summary) == null) {
     return const [
       'Cash booking fees are settled.',
