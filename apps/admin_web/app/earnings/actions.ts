@@ -4,16 +4,23 @@ import { revalidatePath } from 'next/cache';
 import { adminPost } from '../../lib/admin-api';
 
 export async function markEarningPaid(formData: FormData) {
-  const earningId = String(formData.get('earningId') ?? '');
+  const earningId = String(formData.get('earningId') ?? '').trim();
   if (!earningId) {
     return;
   }
 
+  const settlementRef = String(formData.get('settlementRef') ?? '').trim();
+  const settlementNotes = String(formData.get('settlementNotes') ?? '').trim();
+
   await adminPost(`/admin/earnings/${earningId}/mark-paid`, {
-    settlementRef: String(formData.get('settlementRef') ?? '') || undefined,
-    settlementNotes: String(formData.get('settlementNotes') ?? '') || undefined,
+    settlementRef: settlementRef || undefined,
+    settlementNotes: settlementNotes || undefined,
   }, null);
   revalidatePath('/earnings');
+  revalidatePath('/payouts');
+  revalidatePath('/payments');
+  revalidatePath('/bookings');
+  revalidatePath('/providers');
 }
 
 export async function createProviderPayout(formData: FormData) {

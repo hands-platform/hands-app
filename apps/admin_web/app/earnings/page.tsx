@@ -24,6 +24,7 @@ export default async function EarningsPage() {
   const sortedEarnings = sortEarnings(earnings);
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, payoutBatches);
   const cashDebtQueue = buildCashDebtQueue(sortedEarnings);
+  const cashDebtTotals = buildCashDebtTotals(cashDebtQueue);
   const financeSignals = buildFinanceSignals(sortedEarnings, payoutBatches, payoutQueue, cashDebtQueue);
   const serviceBridge = buildServiceEarningBridge(sortedEarnings);
 
@@ -265,6 +266,30 @@ export default async function EarningsPage() {
           </span>
         </div>
         {cashDebtQueue.length ? (
+          <div className="service-trace-summary">
+            <div>
+              <span>Blocked wallets</span>
+              <strong>{cashDebtQueue.length}</strong>
+            </div>
+            <div>
+              <span>Wallet debt</span>
+              <strong>{formatMoney(cashDebtTotals.debtAmount, summary.currency)}</strong>
+            </div>
+            <div>
+              <span>Booking cash</span>
+              <strong>{formatMoney(cashDebtTotals.bookingAmount, summary.currency)}</strong>
+            </div>
+            <div>
+              <span>HANDS fee</span>
+              <strong>{formatMoney(cashDebtTotals.platformFee, summary.currency)}</strong>
+            </div>
+            <div>
+              <span>Tax</span>
+              <strong>{formatMoney(cashDebtTotals.taxAmount, summary.currency)}</strong>
+            </div>
+          </div>
+        ) : null}
+        {cashDebtQueue.length ? (
           <div className="setup-stage-list">
             {cashDebtQueue.slice(0, 12).map((item) => (
               <div className="setup-stage-item" key={item.earning.id}>
@@ -272,15 +297,26 @@ export default async function EarningsPage() {
                 <div>
                   <strong>{item.providerName}</strong>
                   <p className="muted">
-                    Owes {formatMoney(Math.abs(item.earning.netAmount), item.earning.currency)} from booking{' '}
+                    Owes {formatMoney(item.debtAmount, item.earning.currency)} from booking{' '}
                     <Link className="text-link" href={`/bookings/${item.earning.bookingId}`}>
                       {shortId(item.earning.bookingId)}
                     </Link>
                     {' / '}payment {item.paymentMethod}
                   </p>
                   <p className="muted">
-                    Platform fee {formatMoney(item.earning.platformFee, item.earning.currency)}
-                    {' / '}tax {formatMoney(item.earning.withholdingAmount ?? 0, item.earning.currency)}
+                    Booking cash {formatMoney(item.bookingAmount, item.earning.currency)}
+                    {' / '}HANDS fee {formatMoney(item.platformFee, item.earning.currency)}
+                    {' / '}tax {formatMoney(item.taxAmount, item.earning.currency)}
+                  </p>
+                  <div className="service-matrix-cell">
+                    {item.settlementChecklist.map((step) => (
+                      <small key={step}>{step}</small>
+                    ))}
+                    {item.lastLedgerRef ? <small>Last ledger ref: {item.lastLedgerRef}</small> : null}
+                  </div>
+                  <p className="muted">
+                    Settling this row records the provider cash-fee debt as paid and can reopen booking
+                    acceptance once the wallet is non-negative.
                   </p>
                 </div>
                 <div className="actions">
@@ -468,6 +504,12 @@ type CashDebtQueueItem = {
   earning: AdminEarning;
   providerName: string;
   paymentMethod: string;
+  debtAmount: number;
+  platformFee: number;
+  taxAmount: number;
+  bookingAmount: number;
+  lastLedgerRef?: string | null;
+  settlementChecklist: string[];
 };
 
 type ServiceEarningBridgeItem = {
@@ -490,12 +532,47 @@ type ServiceEarningBridgeItem = {
 function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
   return earnings
     .filter((earning) => isCashDebt(earning))
-    .map((earning) => ({
-      earning,
-      providerName: providerDisplayName(earning),
-      paymentMethod: earning.booking?.payment?.method ?? 'CASH',
-    }))
-    .sort((left, right) => left.earning.netAmount - right.earning.netAmount);
+    .map((earning) => {
+      const debtAmount = Math.abs(earning.netAmount);
+      const platformFee = earning.platformFee;
+      const taxAmount = earning.withholdingAmount ?? 0;
+      const bookingAmount = earning.booking?.payment?.amount ?? earning.grossAmount;
+      const lastLedgerRef = earning.walletLedgerEntries?.[0]?.reference ?? null;
+
+      return {
+        earning,
+        providerName: providerDisplayName(earning),
+        paymentMethod: earning.booking?.payment?.method ?? 'CASH',
+        debtAmount,
+        platformFee,
+        taxAmount,
+        bookingAmount,
+        lastLedgerRef,
+        settlementChecklist: [
+          'Confirm provider deposit or approved offset before settling.',
+          'Record a deposit reference or offset memo.',
+          'Recheck payout queue after settlement.',
+        ],
+      };
+    })
+    .sort((left, right) => right.debtAmount - left.debtAmount);
+}
+
+function buildCashDebtTotals(queue: CashDebtQueueItem[]) {
+  return queue.reduce(
+    (totals, item) => ({
+      debtAmount: totals.debtAmount + item.debtAmount,
+      platformFee: totals.platformFee + item.platformFee,
+      taxAmount: totals.taxAmount + item.taxAmount,
+      bookingAmount: totals.bookingAmount + item.bookingAmount,
+    }),
+    {
+      debtAmount: 0,
+      platformFee: 0,
+      taxAmount: 0,
+      bookingAmount: 0,
+    },
+  );
 }
 
 function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBridgeItem[] {
