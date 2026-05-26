@@ -1261,6 +1261,7 @@ class ProviderWalletGateCard extends StatelessWidget {
         (walletBalance < 0 ? walletBalance.abs() : 0);
     final reason = providerWalletBlockReason(summary);
     final settlementInstruction = providerWalletSettlementInstruction(summary);
+    final settlementSteps = providerWalletSettlementSteps(summary);
     final walletBlocked = reason != null;
 
     if (isLoading) {
@@ -1327,6 +1328,16 @@ class ProviderWalletGateCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
+              providerWalletStatusLabel(summary),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: walletBlocked
+                    ? colorScheme.onErrorContainer
+                    : colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
               walletBlocked ? reason : 'You can accept new booking requests.',
             ),
             if (walletBlocked) ...[
@@ -1339,6 +1350,8 @@ class ProviderWalletGateCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(settlementInstruction),
+              const SizedBox(height: 10),
+              _WalletSettlementChecklist(items: settlementSteps),
               const SizedBox(height: 10),
               FilledButton.tonalIcon(
                 onPressed: onRefresh,
@@ -1358,6 +1371,34 @@ class ProviderWalletGateCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _WalletSettlementChecklist extends StatelessWidget {
+  const _WalletSettlementChecklist({required this.items});
+
+  final List<String> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final item in items)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.check_circle_outline, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(item, style: theme.textTheme.bodySmall)),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1872,6 +1913,10 @@ class EarningsScreen extends ConsumerWidget {
                             (walletBalance < 0 ? walletBalance.abs() : 0);
                     final walletSettlementInstruction =
                         providerWalletSettlementInstruction(summary);
+                    final walletStatusLabel =
+                        providerWalletStatusLabel(summary);
+                    final walletSettlementSteps =
+                        providerWalletSettlementSteps(summary);
 
                     return FutureBuilder<List<dynamic>>(
                       future:
@@ -1905,6 +1950,16 @@ class EarningsScreen extends ConsumerWidget {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
+                                      walletStatusLabel,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
                                       walletBlocked
                                           ? (walletBlockReason ??
                                               'Unsettled cash service fees must be paid before accepting new bookings.')
@@ -1922,6 +1977,10 @@ class EarningsScreen extends ConsumerWidget {
                                       ),
                                       const SizedBox(height: 6),
                                       Text(walletSettlementInstruction),
+                                      const SizedBox(height: 10),
+                                      _WalletSettlementChecklist(
+                                        items: walletSettlementSteps,
+                                      ),
                                     ],
                                   ],
                                 ),
@@ -4602,6 +4661,12 @@ const providerWalletBlockFallbackReasonKo = '수수료에 대한 정산이 되�
 const providerWalletBlockHintKo =
     '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
 
+const providerWalletBlockFallbackReasonReadable =
+    'Unsettled HANDS service fees must be settled before accepting bookings.';
+
+const providerWalletBlockHintReadable =
+    'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, deposit the settlement amount or wait for admin offset before accepting more bookings.';
+
 num providerWalletBalance(Map<String, dynamic> summary) {
   return asNum(summary['walletBalance']) ??
       ((asNum(summary['pendingNetAmount']) ?? 0) +
@@ -4620,7 +4685,7 @@ String? providerWalletBlockReason(Map<String, dynamic> summary) {
     return reason;
   }
 
-  return providerWalletBlockFallbackReasonKo;
+  return providerWalletBlockFallbackReasonReadable;
 }
 
 String providerWalletSettlementInstruction(Map<String, dynamic> summary) {
@@ -4628,7 +4693,36 @@ String providerWalletSettlementInstruction(Map<String, dynamic> summary) {
   if (instruction != null && instruction.isNotEmpty) {
     return instruction;
   }
-  return providerWalletBlockHintKo;
+  return providerWalletBlockHintReadable;
+}
+
+String providerWalletStatusLabel(Map<String, dynamic> summary) {
+  final walletBalance = providerWalletBalance(summary);
+  if (providerWalletBlockReason(summary) != null) {
+    return 'Settlement required';
+  }
+  if (walletBalance == 0) {
+    return 'No unsettled balance';
+  }
+  return walletBalance > 0 ? 'Available for payout review' : 'Under review';
+}
+
+List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
+  if (providerWalletBlockReason(summary) == null) {
+    return const [
+      'Cash booking fees are settled.',
+      'You can accept direct and backup requests.',
+      'Payout still needs tax, bank, and agreement checks.',
+    ];
+  }
+  final debtAmount = asNum(summary['walletDebtAmount']) ??
+      providerWalletBalance(summary).abs();
+  final currency = summary['currency']?.toString() ?? 'VND';
+  return [
+    'Settle ${formatCurrency(debtAmount)} $currency for unpaid HANDS fees.',
+    'After admin confirms the deposit or offset, refresh wallet status.',
+    'New booking acceptance unlocks only when the wallet is no longer negative.',
+  ];
 }
 
 bool providerBookingIsCash(Map<String, dynamic> booking) {

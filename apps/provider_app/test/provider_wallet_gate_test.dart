@@ -12,9 +12,14 @@ void main() {
 
     expect(providerWalletBalance(summary), -120000);
     expect(providerWalletBlockReason(summary), 'Custom settlement message');
+    expect(providerWalletStatusLabel(summary), 'Settlement required');
     expect(
       providerWalletSettlementInstruction(summary),
       'Pay the HANDS fee to reopen requests.',
+    );
+    expect(
+      providerWalletSettlementSteps(summary),
+      contains('Settle 120.000 VND for unpaid HANDS fees.'),
     );
   });
 
@@ -27,11 +32,11 @@ void main() {
     expect(providerWalletBalance(summary), -120000);
     expect(
       providerWalletBlockReason(summary),
-      providerWalletBlockFallbackReasonKo,
+      providerWalletBlockFallbackReasonReadable,
     );
     expect(
       providerWalletSettlementInstruction(summary),
-      providerWalletBlockHintKo,
+      providerWalletBlockHintReadable,
     );
   });
 
@@ -43,6 +48,9 @@ void main() {
 
     expect(providerWalletBalance(summary), 20000);
     expect(providerWalletBlockReason(summary), isNull);
+    expect(providerWalletStatusLabel(summary), 'Available for payout review');
+    expect(providerWalletSettlementSteps(summary),
+        contains('Cash booking fees are settled.'));
   });
 
   test('identifies cash bookings and explains settlement risk', () {
