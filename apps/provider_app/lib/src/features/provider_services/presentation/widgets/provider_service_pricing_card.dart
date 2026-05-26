@@ -91,7 +91,7 @@ class _ProviderServicePricingCardState
             ),
             const SizedBox(height: 8),
             Text(
-              'Set prices at or above the HANDS minimum. Prices must use 100.000 VND steps and need an admin payout rule before activation.',
+              'Each service has time options such as 60, 90, and 120 minutes. Your customer price must stay above the HANDS minimum, follow 100.000 VND steps, and match an admin payout rule before customers can book it.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
@@ -196,8 +196,16 @@ class _ProviderServicePriceGroupCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                '${group.durationSummary} option(s)',
+                'Time options: ${group.durationSummary}',
                 style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Each time option needs its own customer price and admin payout rule.',
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: Colors.black54),
               ),
               if (missingStandardDurations.isNotEmpty) ...[
                 const SizedBox(height: 6),
@@ -246,7 +254,6 @@ class _ProviderServicePriceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final platformFee = service.platformFee ?? 0;
     final availablePrices = service.bookablePayoutOptions
         .map((option) => formatVnd(option.customerPrice))
         .take(4)
@@ -308,9 +315,9 @@ class _ProviderServicePriceTile extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('Customer price ${formatVnd(service.effectivePrice)}'),
+                _ProviderServiceMoneyFlow(service: service),
+                const SizedBox(height: 8),
                 Text(payoutText),
-                Text('HANDS fee ${formatVnd(platformFee)}'),
                 if (service.payoutRuleConfigured)
                   Text(
                     'VAT estimate ${formatVnd(service.estimatedVatAmount)} / other cost ${formatVnd(service.otherCostAmount ?? 0)}',
@@ -325,7 +332,7 @@ class _ProviderServicePriceTile extends StatelessWidget {
                   ),
                 if (!service.hasBookablePriceOptions)
                   Text(
-                    'No valid admin price option is available for this duration yet.',
+                    'Not bookable until admin adds this duration and price to the payout matrix.',
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.error,
                     ),
@@ -341,6 +348,79 @@ class _ProviderServicePriceTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ProviderServiceMoneyFlow extends StatelessWidget {
+  const _ProviderServiceMoneyFlow({required this.service});
+
+  final ProviderServicePrice service;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _MoneyFlowItem(
+        label: 'Customer pays',
+        value: formatVnd(service.effectivePrice),
+      ),
+      _MoneyFlowItem(
+        label: 'You receive',
+        value: service.payoutRuleConfigured
+            ? formatVnd(service.providerPayoutAmount ?? 0)
+            : 'Rule needed',
+      ),
+      _MoneyFlowItem(
+        label: 'HANDS fee',
+        value: service.payoutRuleConfigured
+            ? formatVnd(service.platformFee ?? 0)
+            : 'Pending',
+      ),
+    ];
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final item in items)
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outlineVariant,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    item.label,
+                    style: Theme.of(context).textTheme.labelSmall,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.value,
+                    style: Theme.of(context)
+                        .textTheme
+                        .labelLarge
+                        ?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _MoneyFlowItem {
+  const _MoneyFlowItem({required this.label, required this.value});
+
+  final String label;
+  final String value;
 }
 
 class _PricingChip extends StatelessWidget {
@@ -425,8 +505,8 @@ class _ProviderServicePriceSheetState
   @override
   void initState() {
     super.initState();
-    _selectedPrice =
-        widget.service.recommendedCustomerPrice ?? widget.service.effectivePrice;
+    _selectedPrice = widget.service.recommendedCustomerPrice ??
+        widget.service.effectivePrice;
     _active = widget.service.active;
   }
 
@@ -444,7 +524,8 @@ class _ProviderServicePriceSheetState
           ? 'Admin payout rule is required for exactly ${formatVnd(_selectedPrice)}. Choose one of: $options.'
           : validationMessage == 'Price must be at least the HANDS minimum.'
               ? 'Price must be at least ${formatVnd(service.basePrice)}.'
-              : validationMessage == 'Price must follow the configured VND step.'
+              : validationMessage ==
+                      'Price must follow the configured VND step.'
                   ? 'Price must increase by ${formatVnd(service.priceStep)} steps.'
                   : validationMessage;
       setState(() => _error = detailedMessage);
@@ -551,7 +632,8 @@ class _ProviderServicePriceSheetState
                     ),
             ),
           ),
-          if (recommendedPrice != null && recommendedPrice != _selectedPrice) ...[
+          if (recommendedPrice != null &&
+              recommendedPrice != _selectedPrice) ...[
             const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: () => setState(() {
