@@ -12,6 +12,24 @@ type Props = {
 
 type BookingView = 'active' | 'high-risk' | 'payment' | 'pricing' | 'location' | 'chat' | 'all';
 
+type BookingCommandLane = {
+  title: string;
+  status: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  detail: string;
+  href: string;
+  metrics: Array<{ label: string; value: string }>;
+};
+
+type BookingNextAction = {
+  booking: AdminBooking;
+  title: string;
+  detail: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  href: string;
+  tags: string[];
+};
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
@@ -85,6 +103,15 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Location risk', locationRisk.length.toString()],
     ];
   }, [currentTimeMs, orderedBookings]);
+
+  const commandCenter = useMemo(
+    () => buildBookingCommandCenter(orderedBookings, currentTimeMs),
+    [currentTimeMs, orderedBookings],
+  );
+  const nextActions = useMemo(
+    () => buildBookingNextActions(orderedBookings, currentTimeMs),
+    [currentTimeMs, orderedBookings],
+  );
 
   const visibleBookings = useMemo(() => {
     if (view === 'high-risk') {
@@ -175,6 +202,89 @@ export function BookingMonitor({ bookings, initialView }: Props) {
         <span>{isPending ? 'Refreshing...' : 'Ready'}</span>
         <span suppressHydrationWarning>Last refresh {hasMounted ? lastRefreshLabel : 'pending'}</span>
       </div>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking command center</h2>
+            <p className="muted">
+              One-glance control for dispatch pressure, customer protection, payment closeout, and handoff
+              quality.
+            </p>
+          </div>
+          <span className="pill pill-info">Operator first view</span>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          {commandCenter.map((lane) => (
+            <Link className="card" href={lane.href} key={lane.title}>
+              <p>{lane.title}</p>
+              <h2>{lane.status}</h2>
+              <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {lane.detail}
+              </p>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                {lane.metrics.map((item) => (
+                  <span className="pill" key={item.label}>
+                    {item.label}: {item.value}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Next operator actions</h2>
+            <p className="muted">
+              Highest priority bookings sorted by customer impact, finance risk, and operational aging.
+            </p>
+          </div>
+          <span className={`pill ${nextActions.length > 0 ? 'pill-warn' : 'pill-success'}`}>
+            {nextActions.length > 0 ? `${nextActions.length} action(s)` : 'Clear'}
+          </span>
+        </div>
+        <div className="participant-list" style={{ marginTop: 12 }}>
+          {nextActions.map((item) => (
+            <Link className="card" href={item.href} key={`${item.booking.id}-${item.title}`}>
+              <div className="risk-watch-header">
+                <div>
+                  <p>
+                    {shortId(item.booking.id)} / {bookingServiceOptionLabel(item.booking)}
+                  </p>
+                  <h2>{item.title}</h2>
+                </div>
+                <span className={`signal ${commandToneClass(item.tone)}`}>{commandToneLabel(item.tone)}</span>
+              </div>
+              <p className="muted">{item.detail}</p>
+              <p className="muted">
+                {bookingCustomerLabel(item.booking)} / {bookingProviderLabel(item.booking)}
+              </p>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                <span className="pill">{item.booking.status}</span>
+                <span className="pill">{bookingAgeLabel(item.booking, currentTimeMs)}</span>
+                {item.tags.map((tag) => (
+                  <span className="pill" key={tag}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
+          {nextActions.length === 0 && (
+            <div className="card">
+              <h2>Booking operations are clear</h2>
+              <p className="muted">
+                No expired matching, unresolved payment, stale live location, missing chat, or pricing policy
+                blocker needs immediate review.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="card" style={{ marginTop: 16 }}>
         <div className="risk-watch-header">
@@ -416,6 +526,215 @@ const bookingViewOptions: Array<{
     operatorHint: 'Use this when you need cancelled, completed, refunded, or old matching records.',
   },
 ];
+
+function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): BookingCommandLane[] {
+  const active = bookings.filter((booking) => activeStatuses.has(booking.status));
+  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const noSupply = open.filter((booking) => (booking.participants?.length ?? 0) === 0);
+  const preferredPending = open.filter(
+    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
+  );
+  const expiredMatching = open.filter(
+    (booking) => booking.expiresAt && new Date(booking.expiresAt).getTime() < nowMs,
+  );
+  const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
+  const paymentRisk = bookings.filter((booking) => bookingPaymentNeedsOps(booking));
+  const pricingRisk = bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
+  const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
+  const locationRisk = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
+  const backupSelected = bookings.filter((booking) => isBackupSelected(booking));
+  const quietChat = bookings.filter(
+    (booking) =>
+      booking.chatRoom &&
+      (booking.chatRoom.messages?.length ?? 0) === 0 &&
+      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  );
+
+  return [
+    {
+      title: 'Dispatch pressure',
+      status: noSupply.length > 0 || expiredMatching.length > 0 ? 'Action needed' : 'Stable',
+      tone: expiredMatching.length > 0 ? 'danger' : noSupply.length > 0 ? 'warn' : 'ok',
+      detail:
+        noSupply.length > 0
+          ? 'Open matching has customer demand without provider supply.'
+          : 'Active booking demand has enough current operating signal.',
+      href:
+        noSupply.length > 0 || expiredMatching.length > 0
+          ? '/bookings?view=high-risk'
+          : '/bookings?view=active',
+      metrics: [
+        metric('active', active.length),
+        metric('open', open.length),
+        metric('no supply', noSupply.length),
+        metric('preferred pending', preferredPending.length),
+      ],
+    },
+    {
+      title: 'Customer protection',
+      status: expiredMatching.length > 0 || matchedWithoutChat.length > 0 ? 'Protect now' : 'Clear',
+      tone:
+        expiredMatching.length > 0 || matchedWithoutChat.length > 0
+          ? 'danger'
+          : locationRisk.length > 0
+            ? 'warn'
+            : 'ok',
+      detail:
+        expiredMatching.length > 0
+          ? 'Matching window expired before a final provider was selected.'
+          : 'Customer-facing booking handoff has no critical blocker.',
+      href:
+        expiredMatching.length > 0 || matchedWithoutChat.length > 0
+          ? '/bookings?view=high-risk'
+          : '/bookings?view=location',
+      metrics: [
+        metric('expired', expiredMatching.length),
+        metric('no chat', matchedWithoutChat.length),
+        metric('location risk', locationRisk.length),
+        metric('quiet chat', quietChat.length),
+      ],
+    },
+    {
+      title: 'Payment closeout',
+      status: paymentRisk.length > 0 || pricingRisk.length > 0 ? 'Review' : 'Ready',
+      tone: paymentRisk.length > 0 ? 'danger' : pricingRisk.length > 0 ? 'warn' : 'ok',
+      detail:
+        paymentRisk.length > 0
+          ? 'Some bookings need capture, release, refund, cash debt, or missing reference review.'
+          : 'Payment and service pricing policy signals are aligned.',
+      href: paymentRisk.length > 0 ? '/bookings?view=payment' : '/bookings?view=pricing',
+      metrics: [
+        metric('payment', paymentRisk.length),
+        metric('pricing', pricingRisk.length),
+        metric('cash debt', cashDebt.length),
+        metric(
+          'missing refs',
+          bookings.filter(
+            (booking) => booking.payment?.status === 'AUTHORIZED' && !booking.payment.providerRef,
+          ).length,
+        ),
+      ],
+    },
+    {
+      title: 'Handoff quality',
+      status: locationRisk.length > 0 || quietChat.length > 0 ? 'Watch' : 'Healthy',
+      tone: locationRisk.length > 0 ? 'warn' : quietChat.length > 0 ? 'info' : 'ok',
+      detail:
+        locationRisk.length > 0
+          ? 'Live service state has missing or stale last-known provider location.'
+          : 'Chat, backup selection, and location handoff look normal.',
+      href: locationRisk.length > 0 ? '/bookings?view=location' : '/bookings?view=chat',
+      metrics: [
+        metric('location', locationRisk.length),
+        metric('backup chosen', backupSelected.length),
+        metric('chat live', bookings.filter((booking) => Boolean(booking.chatRoom)).length),
+        metric('quiet chat', quietChat.length),
+      ],
+    },
+  ];
+}
+
+function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): BookingNextAction[] {
+  return bookings
+    .map<BookingNextAction | null>((booking) => {
+      const flags = bookingRiskFlags(booking, nowMs);
+      const highestFlag = flags.sort((left, right) => riskFlagWeight(right) - riskFlagWeight(left))[0];
+
+      if (highestFlag) {
+        return {
+          booking,
+          title: highestFlag.title,
+          detail: nextAction(booking),
+          tone:
+            highestFlag.severity === 'high' ? 'danger' : highestFlag.severity === 'medium' ? 'warn' : 'info',
+          href: `/bookings/${booking.id}`,
+          tags: [
+            booking.payment?.method ? `payment ${booking.payment.method}` : 'payment missing',
+            booking.chatRoom ? 'chat ready' : 'chat pending',
+            selectionLabel(booking),
+          ],
+        } satisfies BookingNextAction;
+      }
+
+      if (activeStatuses.has(booking.status)) {
+        return {
+          booking,
+          title: 'Monitor active booking',
+          detail: nextAction(booking),
+          tone: 'info',
+          href: `/bookings/${booking.id}`,
+          tags: [
+            booking.payment?.status ? `payment ${booking.payment.status}` : 'payment pending',
+            bookingLocationPillLabel(booking, nowMs),
+          ],
+        } satisfies BookingNextAction;
+      }
+
+      return null;
+    })
+    .filter((item): item is BookingNextAction => Boolean(item))
+    .sort((left, right) => {
+      const toneDelta = commandToneWeight(right.tone) - commandToneWeight(left.tone);
+      if (toneDelta !== 0) {
+        return toneDelta;
+      }
+      return bookingTimestamp(right.booking) - bookingTimestamp(left.booking);
+    })
+    .slice(0, 5);
+}
+
+function metric(label: string, value: number) {
+  return { label, value: value.toString() };
+}
+
+function commandToneClass(tone: BookingCommandLane['tone']) {
+  if (tone === 'danger') {
+    return 'signal-warn';
+  }
+  if (tone === 'warn') {
+    return 'signal-warn';
+  }
+  if (tone === 'info') {
+    return 'signal-info';
+  }
+  return 'signal-ok';
+}
+
+function commandToneLabel(tone: BookingCommandLane['tone']) {
+  if (tone === 'danger') {
+    return 'Critical';
+  }
+  if (tone === 'warn') {
+    return 'Watch';
+  }
+  if (tone === 'info') {
+    return 'Info';
+  }
+  return 'Clear';
+}
+
+function commandToneWeight(tone: BookingCommandLane['tone']) {
+  if (tone === 'danger') {
+    return 4;
+  }
+  if (tone === 'warn') {
+    return 3;
+  }
+  if (tone === 'info') {
+    return 2;
+  }
+  return 1;
+}
+
+function riskFlagWeight(flag: BookingRiskFlag) {
+  if (flag.severity === 'high') {
+    return 3;
+  }
+  if (flag.severity === 'medium') {
+    return 2;
+  }
+  return 1;
+}
 
 function bookingPriority(booking: AdminBooking) {
   if (booking.status === 'IN_SERVICE') {
@@ -816,6 +1135,35 @@ function recencyLabel(booking: AdminBooking, nowMs: number | null) {
   }
   const daysAgo = Math.round(hoursAgo / 24);
   return `Updated ${daysAgo}d ago`;
+}
+
+function bookingAgeLabel(booking: AdminBooking, nowMs: number) {
+  const timestamp = booking.createdAt ?? booking.scheduledStartAt ?? booking.expiresAt;
+  if (!timestamp || nowMs <= 0) {
+    return 'age pending';
+  }
+
+  const minutes = Math.max(0, Math.round((nowMs - new Date(timestamp).getTime()) / 60_000));
+  if (minutes < 60) {
+    return `${minutes}m old`;
+  }
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h old`;
+  }
+  return `${Math.round(hours / 24)}d old`;
+}
+
+function bookingCustomerLabel(booking: AdminBooking) {
+  return booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
+}
+
+function bookingProviderLabel(booking: AdminBooking) {
+  const provider =
+    booking.selectedProvider?.displayName ??
+    booking.preferredProvider?.displayName ??
+    fallbackParticipants(booking)[0]?.providerProfile?.displayName;
+  return provider ? `Provider ${provider}` : 'Provider pending';
 }
 
 function isSelectedProviderParticipant(booking: AdminBooking) {
