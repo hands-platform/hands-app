@@ -46,10 +46,13 @@ S3_REGION=auto
 S3_BUCKET=massage-vn
 S3_PRIVATE_BUCKET=
 S3_PUBLIC_BUCKET=
-S3_ACCESS_KEY=minioadmin
-S3_SECRET_KEY=minioadmin
+S3_ACCESS_KEY=<local-minio-access-key>
+S3_SECRET_KEY=<local-minio-secret-key>
 S3_PUBLIC_BASE_URL=http://localhost:9000/massage-vn
 ```
+
+For the local Docker Compose stack, use the MinIO credentials from your ignored local `.env` or
+Docker Compose override. Do not commit real access keys.
 
 Supabase Storage can be used through its S3-compatible endpoint without changing mobile upload flows:
 
