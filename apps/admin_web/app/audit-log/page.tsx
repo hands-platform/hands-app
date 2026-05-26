@@ -91,7 +91,9 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
       <div className="card">
         <div className="toolbar">
           <div>
-            <p className="muted">Recent operational trail for bookings, payments, refunds, provider review, and alerts.</p>
+            <p className="muted">
+              Recent operational trail for bookings, payments, refunds, provider review, and alerts.
+            </p>
           </div>
           <div className="participant-list">
             <span className="pill pill-success">Newest first</span>
@@ -143,6 +145,15 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                   </div>
                 </td>
                 <td>
+                  {metadataHighlights(log).length > 0 && (
+                    <div className="participant-list" style={{ marginBottom: 8 }}>
+                      {metadataHighlights(log).map((item, index) => (
+                        <span className={item.className} key={`${item.label}-${index}`}>
+                          {item.label}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <pre
                     style={{
                       margin: 0,
@@ -223,13 +234,7 @@ function filterAuditLogs(logs: AdminAuditLog[], filters: AuditLogFilters) {
 }
 
 function auditSearchText(log: AdminAuditLog) {
-  return [
-    log.action,
-    log.target,
-    log.actor?.fullName,
-    log.actor?.phone,
-    metadataPreview(log.metadata),
-  ]
+  return [log.action, log.target, log.actor?.fullName, log.actor?.phone, metadataPreview(log.metadata)]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -361,6 +366,90 @@ function metadataPreview(metadata: unknown) {
   }
 }
 
+type MetadataHighlight = {
+  label: string;
+  className: string;
+};
+
+function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
+  if (!isServicePricingAction(log.action)) {
+    return [];
+  }
+
+  const metadata = readMetadataObject(log.metadata);
+  const highlights: MetadataHighlight[] = [];
+  const service = firstRecord(metadata.service, metadata.after, metadata.before, metadata);
+  const before = readRecord(metadata.before);
+  const after = readRecord(metadata.after);
+  const changedFields = readStringList(metadata.changedFields);
+
+  const serviceLabel = serviceOptionLabel(service);
+  if (serviceLabel) {
+    highlights.push({ label: serviceLabel, className: 'pill pill-info' });
+  }
+
+  if (log.action === 'service.duration_set.create') {
+    const durations = readNumberList(metadata.durationMins);
+    if (durations.length > 0) {
+      highlights.push({
+        label: `Durations ${durations.map((duration) => `${duration}m`).join(', ')}`,
+        className: 'pill pill-success',
+      });
+    }
+  }
+
+  const customerPrice = readNumber(after.customerPrice ?? after.basePrice ?? metadata.customerPrice);
+  const previousCustomerPrice = readNumber(before.customerPrice ?? before.basePrice);
+  const currency = readString(after.currency ?? before.currency) ?? 'VND';
+  if (customerPrice !== null) {
+    highlights.push({
+      label:
+        previousCustomerPrice !== null && previousCustomerPrice !== customerPrice
+          ? `Customer ${money(previousCustomerPrice, currency)} -> ${money(customerPrice, currency)}`
+          : `Customer ${money(customerPrice, currency)}`,
+      className: 'pill pill-warn',
+    });
+  }
+
+  const providerPayout = readNumber(after.providerPayoutAmount);
+  const previousProviderPayout = readNumber(before.providerPayoutAmount);
+  if (providerPayout !== null) {
+    highlights.push({
+      label:
+        previousProviderPayout !== null && previousProviderPayout !== providerPayout
+          ? `Provider ${money(previousProviderPayout, currency)} -> ${money(providerPayout, currency)}`
+          : `Provider ${money(providerPayout, currency)}`,
+      className: 'pill pill-success',
+    });
+  }
+
+  const vatBps = readNumber(after.vatBps);
+  const otherCost = readNumber(after.otherCostAmount);
+  if (vatBps !== null || otherCost !== null) {
+    highlights.push({
+      label: `VAT ${formatBps(vatBps)} / other ${money(otherCost ?? 0, currency)}`,
+      className: 'pill pill-info',
+    });
+  }
+
+  const adjustedProviderPrices = readNumber(metadata.adjustedProviderPrices);
+  if (adjustedProviderPrices !== null && adjustedProviderPrices > 0) {
+    highlights.push({
+      label: `${adjustedProviderPrices} provider price(s) adjusted`,
+      className: 'pill pill-warn',
+    });
+  }
+
+  if (changedFields.length > 0) {
+    highlights.push({
+      label: `Changed ${changedFields.join(', ')}`,
+      className: 'pill pill-info',
+    });
+  }
+
+  return highlights.slice(0, 6);
+}
+
 function relatedBoardHref(log: AdminAuditLog) {
   const targetId = log.target?.split(':')[1];
   const metadata = readMetadataObject(log.metadata);
@@ -416,6 +505,70 @@ function readMetadataObject(metadata: unknown): Record<string, unknown> {
     return metadata as Record<string, unknown>;
   }
   return {};
+}
+
+function firstRecord(...values: unknown[]) {
+  for (const value of values) {
+    const record = readRecord(value);
+    if (Object.keys(record).length > 0) {
+      return record;
+    }
+  }
+  return {};
+}
+
+function readRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+function readString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function readNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function readStringList(value: unknown) {
+  return Array.isArray(value)
+    ? value.map((item) => readString(item)).filter((item): item is string => Boolean(item))
+    : [];
+}
+
+function readNumberList(value: unknown) {
+  return Array.isArray(value)
+    ? value.map((item) => readNumber(item)).filter((item): item is number => item !== null)
+    : [];
+}
+
+function serviceOptionLabel(value: Record<string, unknown>) {
+  const name = readString(value.name);
+  const duration = readNumber(value.durationMin);
+  if (!name) {
+    return null;
+  }
+  return duration ? `${name} / ${duration} min` : name;
+}
+
+function money(amount: number, currency = 'VND') {
+  return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
+}
+
+function formatBps(value: number | null) {
+  if (value === null) {
+    return '-';
+  }
+  return `${(value / 100).toFixed(2).replace(/\.00$/, '')}%`;
 }
 
 function reviewPriorityLabel(action: string) {
