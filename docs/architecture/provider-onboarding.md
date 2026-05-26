@@ -57,7 +57,7 @@ cash directly from the customer, HANDS records platform fee and withholding as a
 negative wallet amount. A negative provider wallet blocks new booking acceptance until
 finance confirms provider repayment or an approved admin offset. The booking API returns:
 
-`수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.`
+`수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
 
 ## Tax Policy Rule
 

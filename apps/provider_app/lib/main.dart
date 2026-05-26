@@ -4607,7 +4607,7 @@ const providerWalletBlockHintKo =
     '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
 
 const providerWalletBlockFallbackReasonReadable =
-    'Unsettled HANDS service fees must be settled before accepting bookings.';
+    '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 const providerWalletBlockHintReadable =
     'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, deposit the settlement amount or wait for admin offset before accepting more bookings.';

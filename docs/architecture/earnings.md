@@ -59,7 +59,7 @@ For the MVP, the provider wallet guard still reads unsettled `ProviderEarning.ne
 
 If the unsettled wallet balance is negative, the API blocks joining or accepting new bookings and returns the provider-facing message:
 
-`수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.`
+`수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
 
 This supports two later settlement paths without changing booking flow:
 
@@ -68,7 +68,7 @@ This supports two later settlement paths without changing booking flow:
 
 The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. The admin payments list and booking detail page also expose direct settlement forms for the same debt when finance is reviewing a cash booking from operational context.
 
-After finance confirms the provider deposit or an approved offset, the operator enters a deposit reference or offset memo and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the provider from accepting new requests.
+After finance confirms the provider deposit or an approved offset, the operator must enter a deposit reference or offset reference and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the provider from accepting new requests. The API rejects cash-fee debt settlement without a reference because finance needs an auditable payment or offset trail.
 
 `ProviderWalletLedgerEntry` records the finance audit trail around those earning rows:
 
@@ -81,9 +81,9 @@ These ledger entries are append-friendly audit mirrors for finance and admin rev
 
 ## Payout Batches
 
-`ProviderPayoutBatch` groups one provider's unpaid positive earnings into a single payout record. The MVP marks the batch as `PAID` immediately and links included earnings through `payoutBatchId`.
+`ProviderPayoutBatch` groups one provider's unpaid positive earnings into a single payout record. The admin can move a batch through `DRAFT`, `PROCESSING`, `PAID`, `FAILED`, and `CANCELLED`. A bank transfer reference is required before a batch can be marked `PAID`, and included earnings are linked through `payoutBatchId`.
 
-This keeps the current product simple while preserving the later path for bank transfer references, processing states, failed payouts, and batch-level reconciliation.
+This keeps the current product simple while preserving the later path for real bank transfer execution, failed payout recovery, and batch-level reconciliation.
 
 ## Next Production Work
 

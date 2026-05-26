@@ -96,17 +96,17 @@ If the provider wallet is negative:
 
 - The provider cannot accept new bookings.
 - Admin finance can mark the cash fee as settled from Earnings, Payments, or Booking Detail after deposit or offset.
-- The settlement action stores an optional deposit reference or offset memo on the earning row.
+- The settlement action requires a deposit reference or offset reference on the earning row.
 - The provider app Earnings screen shows the debt amount and settlement instruction
   returned by `GET /provider/earnings/summary`.
 - The provider app warns before accepting cash requests that direct customer cash can create
   wallet debt after completion.
 
-The provider-facing booking block copy is currently:
+The provider-facing booking block copy currently follows the API message:
 
-`Unsettled HANDS service fees must be settled before accepting bookings.`
+`수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
 
-Vietnamese localization should replace this provider-facing fallback after the final UI language pass. The previous Korean draft copy was retired from the fallback path to avoid broken encoding in local emulator builds.
+Vietnamese localization should replace this fallback after the final UI language pass, but the API smoke test keeps the current message stable so the booking guard cannot silently drift.
 
 ## Future Work
 
