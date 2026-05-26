@@ -9,6 +9,7 @@ export default async function PayoutsPage() {
   const serviceEvidence = buildPayoutServiceEvidence(batches);
   const moneyFlowCards = buildPayoutMoneyFlowCards(summary, serviceEvidence);
   const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
+  const releaseQueue = buildPayoutReleaseQueue(batches);
 
   return (
     <>
@@ -108,6 +109,60 @@ export default async function PayoutsPage() {
               <small>{signal.action}</small>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Release blocker queue</h2>
+            <p className="muted">
+              Transfer-facing list of batches that should not be paid until finance, tax, risk, and bank
+              references are clean.
+            </p>
+          </div>
+          <span className={`pill ${releaseQueue.length ? 'pill-danger' : 'pill-success'}`}>
+            {releaseQueue.length ? `${releaseQueue.length} blocker(s)` : 'Clear'}
+          </span>
+        </div>
+        <div className="setup-stage-list">
+          {releaseQueue.map((item) => (
+            <div className="setup-stage-item" key={`${item.batch.id}-${item.reason.label}`}>
+              <span>{item.severity}</span>
+              <div>
+                <strong>
+                  {item.providerLabel} / {formatMoney(item.batch.totalNetAmount, item.batch.currency)}
+                </strong>
+                <p className="muted">
+                  {item.reason.label}: {item.reason.detail}
+                </p>
+                <p className="muted">{item.reason.action}</p>
+                <div className="participant-list" style={{ marginTop: 8 }}>
+                  {payoutBlockingReasons(item.batch).map((reason) => (
+                    <span className={`pill ${reason.pillClass}`} key={reason.label}>
+                      {reason.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <a className="text-link" href={`#${item.batch.id}`}>
+                Row
+              </a>
+            </div>
+          ))}
+          {releaseQueue.length === 0 ? (
+            <div className="setup-stage-item">
+              <span>OK</span>
+              <div>
+                <strong>No payout release blocker</strong>
+                <p className="muted">
+                  Transfer refs, withholding logs, payout holds, and earning attachments are clean for the
+                  current queue.
+                </p>
+              </div>
+              <small>Clear</small>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -554,6 +609,13 @@ type PayoutBlockingReason = {
   pillClass: string;
 };
 
+type PayoutReleaseQueueItem = {
+  batch: AdminPayoutBatch;
+  reason: PayoutBlockingReason;
+  providerLabel: string;
+  severity: 'Block' | 'Check';
+};
+
 type PayoutServiceEvidenceItem = {
   key: string;
   label: string;
@@ -715,6 +777,33 @@ function sumPayoutServiceEvidence(
   >,
 ) {
   return serviceEvidence.reduce((sum, item) => sum + item[field], 0);
+}
+
+function buildPayoutReleaseQueue(batches: AdminPayoutBatch[]): PayoutReleaseQueueItem[] {
+  return batches
+    .map<PayoutReleaseQueueItem | null>((batch) => {
+      const reasons = payoutBlockingReasons(batch);
+      const primaryReason = reasons[0];
+      if (!primaryReason) {
+        return null;
+      }
+
+      return {
+        batch,
+        reason: primaryReason,
+        providerLabel:
+          batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown provider',
+        severity: primaryReason.pillClass === 'pill-danger' ? 'Block' : 'Check',
+      };
+    })
+    .filter((item): item is PayoutReleaseQueueItem => Boolean(item))
+    .sort((left, right) => {
+      if (left.severity !== right.severity) {
+        return left.severity === 'Block' ? -1 : 1;
+      }
+      return Date.parse(right.batch.createdAt) - Date.parse(left.batch.createdAt);
+    })
+    .slice(0, 6);
 }
 
 function batchServiceEvidence(batch: AdminPayoutBatch[]): PayoutServiceEvidenceItem[];
