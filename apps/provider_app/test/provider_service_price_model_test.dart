@@ -94,6 +94,43 @@ void main() {
     expect(service.payoutRuleConfigured, isTrue);
   });
 
+  test('update service handles numeric strings from the service API',
+      () async {
+    final repository = ProviderServicePriceRepositoryImpl(_FakeApiClient(
+      patchResponse: {
+        'id': 'provider-service-1',
+        'price': '600000',
+        'active': true,
+        'service': {
+          'id': 'svc-foot-60',
+          'name': 'Foot Massage',
+          'durationMin': '60',
+          'basePrice': '500000',
+          'priceStep': '100000',
+          'payoutRules': [
+            {
+              'customerPrice': '600000',
+              'providerPayoutAmount': '460000',
+              'currency': 'VND',
+            },
+          ],
+        },
+      },
+    ));
+
+    final service = await repository.updateService(
+      serviceId: 'svc-foot-60',
+      price: 600000,
+      active: true,
+    );
+
+    expect(service.durationMin, 60);
+    expect(service.effectivePrice, 600000);
+    expect(service.providerPayoutAmount, 460000);
+    expect(service.platformFee, 140000);
+    expect(service.payoutOptions.single.platformFee, 140000);
+  });
+
   test('list services flattens grouped provider service catalog response',
       () async {
     final api = _FakeApiClient(

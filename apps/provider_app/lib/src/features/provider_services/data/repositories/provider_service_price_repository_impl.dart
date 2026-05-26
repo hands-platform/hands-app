@@ -40,6 +40,10 @@ class ProviderServicePriceRepositoryImpl
     final selectedPrice =
         _asInt(record['price']) ?? _asInt(service['basePrice']);
     final payoutRule = _payoutRuleForPrice(payoutRules, selectedPrice);
+    final providerPayoutAmount = _asInt(payoutRule?['providerPayoutAmount']);
+    final platformFee = selectedPrice != null && providerPayoutAmount != null
+        ? selectedPrice - providerPayoutAmount
+        : null;
     return ProviderServicePriceModel.fromJson({
       ...service,
       'providerServiceId': record['id'],
@@ -52,22 +56,14 @@ class ProviderServicePriceRepositoryImpl
           : [
               {
                 ...payoutRule,
-                'platformFee': (record['price'] is int &&
-                        payoutRule['providerPayoutAmount'] is int)
-                    ? (record['price'] as int) -
-                        (payoutRule['providerPayoutAmount'] as int)
-                    : null,
+                'platformFee': platformFee,
               }
             ],
       'payoutRule': payoutRule == null
           ? null
           : {
               ...payoutRule,
-              'platformFee': (record['price'] is int &&
-                      payoutRule['providerPayoutAmount'] is int)
-                  ? (record['price'] as int) -
-                      (payoutRule['providerPayoutAmount'] as int)
-                  : null,
+              'platformFee': platformFee,
             },
     });
   }
