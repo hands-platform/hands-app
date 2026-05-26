@@ -30,6 +30,19 @@ void main() {
         450000);
   });
 
+  test('customer service option labels keep service name and duration together',
+      () {
+    final service = {
+      'name': 'Foot Massage',
+      'durationMin': 90,
+      'effectivePrice': 700000,
+    };
+
+    expect(customerServiceOptionLabel(service), 'Foot Massage / 90 min');
+    expect(customerServiceOptionPriceLabel(service),
+        'Foot Massage / 90 min / 700.000 VND');
+  });
+
   test('customer service groups hide inactive and payout-missing options', () {
     final groups = customerServiceOptionGroups([
       {

@@ -1884,6 +1884,7 @@ class _BookingConfirmationPageState
     final servicePrice = customerServicePrice(service);
     final basePrice = asNum(service['basePrice'])?.toInt() ?? servicePrice;
     final hasProviderPrice = servicePrice != basePrice;
+    final serviceOptionLabel = customerServiceOptionLabel(service);
     final platformFee = 0;
     final serviceCount = 1;
     final rawTotalAmount = servicePrice + platformFee - couponDiscountAmount;
@@ -2059,7 +2060,7 @@ class _BookingConfirmationPageState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          service['name'] as String? ?? 'Selected service',
+                          serviceOptionLabel,
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
@@ -2182,7 +2183,7 @@ class _BookingConfirmationPageState
                   ),
                   const SizedBox(height: 10),
                   BookingSummaryRow(
-                    label: service['name'] as String? ?? 'Massage service',
+                    label: serviceOptionLabel,
                     value: '${formatCurrency(servicePrice)} VND',
                   ),
                   const SizedBox(height: 10),
@@ -2664,7 +2665,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           const SizedBox(height: 12),
                           if (service != null)
                             Text(
-                              '${service['name']} - ${service['durationMin']} min - ${formatCurrency(customerServicePrice(service))} VND',
+                              customerServiceOptionPriceLabel(service),
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                           const SizedBox(height: 16),
@@ -5443,6 +5444,22 @@ int customerServicePrice(Map<String, dynamic>? service) {
       asNum(service['bookingPrice'])?.toInt() ??
       asNum(service['basePrice'])?.toInt() ??
       0;
+}
+
+String customerServiceOptionLabel(Map<String, dynamic>? service) {
+  if (service == null) {
+    return 'Selected service';
+  }
+  final name = service['name']?.toString().trim();
+  final duration = asNum(service['durationMin'])?.toInt();
+  if (duration == null || duration <= 0) {
+    return name == null || name.isEmpty ? 'Selected service' : name;
+  }
+  return '${name == null || name.isEmpty ? 'Selected service' : name} / $duration min';
+}
+
+String customerServiceOptionPriceLabel(Map<String, dynamic>? service) {
+  return '${customerServiceOptionLabel(service)} / ${formatCurrency(customerServicePrice(service))} VND';
 }
 
 String providerDisplayName(Map<String, dynamic>? booking) {
