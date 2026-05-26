@@ -28,6 +28,14 @@ type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevic
 type AdminProviderPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
 type ProviderLocationState = 'recent' | 'stale' | 'expired' | 'missing';
 type ProviderSecurityState = 'clear' | 'account-blocked' | 'blocked' | 'suspicious' | 'shared' | 'missing';
+type ProviderCommandLane = {
+  title: string;
+  status: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  detail: string;
+  href: string;
+  metrics: Array<{ label: string; value: string }>;
+};
 type ProviderFilters = {
   q: string;
   verification: string;
@@ -51,6 +59,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const visibleProviders = providers.slice(0, PROVIDER_LIST_RENDER_LIMIT);
   const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
   const summary = buildProviderSummary(providers);
+  const commandCenter = buildProviderCommandCenter(providers);
   const reviewQueue = buildProviderReviewQueue(providers);
   const priorityLane = buildProviderPriorityLane(providers);
   const activeFilters = buildProviderActiveFilters(filters);
@@ -185,6 +194,38 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
         ))}
       </div>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Provider command center</h2>
+            <p className="muted">
+              Operator overview across onboarding, dispatch readiness, payout/tax readiness, and trust risk.
+            </p>
+          </div>
+          <span className="pill pill-info">Daily control view</span>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          {commandCenter.map((lane) => (
+            <Link className="card" href={lane.href} key={lane.title}>
+              <p>{lane.title}</p>
+              <h2>{lane.status}</h2>
+              <span className={`signal ${providerCommandToneClass(lane.tone)}`}>
+                {providerCommandToneLabel(lane.tone)}
+              </span>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {lane.detail}
+              </p>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                {lane.metrics.map((item) => (
+                  <span className="pill" key={item.label}>
+                    {item.label}: {item.value}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -375,33 +416,31 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <td>
                   {provider.verification?.files?.length ? (
                     provider.verification.files.map((file) => (
-                        <div key={file.id} className="provider-file-row">
-                          <div className="participant-list" style={{ marginBottom: 6 }}>
-                            <span className="pill pill-info">{file.purpose ?? 'PROVIDER_VERIFICATION'}</span>
-                            <span
-                              className={`pill ${
-                                file.uploadStatus === 'UPLOADED' ? 'pill-success' : 'pill-warn'
-                              }`}
-                            >
-                              {file.uploadStatus ?? 'PENDING'}
-                            </span>
-                          </div>
-                          <p className="muted">
-                            {file.contentType}
-                            {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
-                            {file.uploadedAt
-                              ? ` / uploaded ${new Date(file.uploadedAt).toLocaleString()}`
-                              : ''}
-                          </p>
-                          <p className="muted">
-                            {file.key}
-                            {' / '}
-                            <Link className="text-link" href={`/providers/${provider.id}`}>
-                              open detail to view
-                            </Link>
-                          </p>
+                      <div key={file.id} className="provider-file-row">
+                        <div className="participant-list" style={{ marginBottom: 6 }}>
+                          <span className="pill pill-info">{file.purpose ?? 'PROVIDER_VERIFICATION'}</span>
+                          <span
+                            className={`pill ${
+                              file.uploadStatus === 'UPLOADED' ? 'pill-success' : 'pill-warn'
+                            }`}
+                          >
+                            {file.uploadStatus ?? 'PENDING'}
+                          </span>
                         </div>
-                      ))
+                        <p className="muted">
+                          {file.contentType}
+                          {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
+                          {file.uploadedAt ? ` / uploaded ${new Date(file.uploadedAt).toLocaleString()}` : ''}
+                        </p>
+                        <p className="muted">
+                          {file.key}
+                          {' / '}
+                          <Link className="text-link" href={`/providers/${provider.id}`}>
+                            open detail to view
+                          </Link>
+                        </p>
+                      </div>
+                    ))
                   ) : (
                     <p className="muted">No private verification files.</p>
                   )}
@@ -465,8 +504,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <tr>
                 <td colSpan={10}>
                   <p className="muted">
-                    {hiddenProviderCount} more provider row(s) are hidden for page speed. Use filters or search
-                    to narrow the queue.
+                    {hiddenProviderCount} more provider row(s) are hidden for page speed. Use filters or
+                    search to narrow the queue.
                   </p>
                 </td>
               </tr>
@@ -1097,11 +1136,7 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
 
 function providerUnsettledWalletBalance(provider: AdminProvider) {
   return (provider.earnings ?? [])
-    .filter(
-      (earning) =>
-        ['PENDING', 'AVAILABLE'].includes(earning.status) &&
-        !earning.payoutBatchId,
-    )
+    .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status) && !earning.payoutBatchId)
     .reduce((sum, earning) => sum + numberValue(earning.netAmount), 0);
 }
 
@@ -1177,6 +1212,143 @@ function providerActionHint(provider: AdminProvider) {
 
 function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
+}
+
+function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommandLane[] {
+  const verificationReview = providers.filter(
+    (provider) => provider.verification?.status !== 'APPROVED',
+  ).length;
+  const kycReview = providers.filter((provider) =>
+    ['PENDING', 'REJECTED', 'MISSING'].includes(provider.kyc?.status ?? 'MISSING'),
+  ).length;
+  const documentsReview = providers.filter((provider) =>
+    (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
+  ).length;
+  const publicMediaReview = providers.filter(providerPublicMediaNeedsReview).length;
+  const readyNow = providers.filter((provider) => providerDispatchReady(provider)).length;
+  const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
+  const locationFresh = providers.filter((provider) => providerLocationStatus(provider) === 'recent').length;
+  const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
+  const bankReview = providers.filter((provider) =>
+    (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
+  ).length;
+  const payoutSetupReview = providers.filter(providerPayoutSetupNeedsReview).length;
+  const taxReview = providers.filter(providerTaxNeedsReview).length;
+  const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
+  const accountBlocks = providers.filter((provider) => Boolean(provider.blockedAt)).length;
+  const openRisk = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
+  const deviceRisk = providers.filter((provider) =>
+    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+  ).length;
+  const supabasePending = providers.filter((provider) => !provider.user?.supabaseUserId).length;
+
+  return [
+    {
+      title: 'Onboarding pipeline',
+      status: verificationReview + kycReview + documentsReview > 0 ? 'Review needed' : 'Clean',
+      tone: verificationReview > 0 || kycReview > 0 ? 'warn' : documentsReview > 0 ? 'info' : 'ok',
+      detail:
+        verificationReview + kycReview + documentsReview > 0
+          ? 'Providers are waiting for identity, verification, or document decisions.'
+          : 'No filtered provider is blocked by onboarding review.',
+      href: verificationReview > 0 ? '/providers?review=kyc' : '/providers?review=documents',
+      metrics: [
+        providerCommandMetric('verification', verificationReview),
+        providerCommandMetric('KYC', kycReview),
+        providerCommandMetric('documents', documentsReview),
+        providerCommandMetric('media', publicMediaReview),
+      ],
+    },
+    {
+      title: 'Dispatch readiness',
+      status: `${readyNow}/${providers.length} ready`,
+      tone: readyNow === providers.length ? 'ok' : readyNow > 0 ? 'info' : 'warn',
+      detail:
+        readyNow > 0
+          ? 'Some providers can receive requests now; keep location and push freshness high.'
+          : 'No provider in this filtered list is fully ready for dispatch.',
+      href: readyNow > 0 ? '/providers?readiness=ready' : '/providers?review=location',
+      metrics: [
+        providerCommandMetric('online', online),
+        providerCommandMetric('fresh location', locationFresh),
+        providerCommandMetric('push ready', pushReady),
+        providerCommandMetric('Supabase pending', supabasePending),
+      ],
+    },
+    {
+      title: 'Payout and tax',
+      status: walletDebt > 0 || payoutSetupReview > 0 ? 'Finance action' : 'Stable',
+      tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
+      detail:
+        walletDebt > 0
+          ? 'Cash fee debt can block providers from accepting new bookings.'
+          : 'First-earning payout, bank, and freelance tax readiness are under control.',
+      href: walletDebt > 0 ? '/payouts' : '/providers?review=payout-setup',
+      metrics: [
+        providerCommandMetric('bank', bankReview),
+        providerCommandMetric('tax', taxReview),
+        providerCommandMetric('first earning', payoutSetupReview),
+        providerCommandMetric('wallet debt', walletDebt),
+      ],
+    },
+    {
+      title: 'Trust and safety',
+      status: accountBlocks > 0 || openRisk > 0 || deviceRisk > 0 ? 'Investigate' : 'Clear',
+      tone: accountBlocks > 0 || openRisk > 0 ? 'danger' : deviceRisk > 0 ? 'warn' : 'ok',
+      detail:
+        accountBlocks > 0 || openRisk > 0
+          ? 'Account blocks, reports, or active sanctions need operator attention.'
+          : 'No filtered provider has a major trust or device risk signal.',
+      href: openRisk > 0 ? '/provider-risk' : '/providers?review=security',
+      metrics: [
+        providerCommandMetric('blocked', accountBlocks),
+        providerCommandMetric('open risk', openRisk),
+        providerCommandMetric('device risk', deviceRisk),
+        providerCommandMetric(
+          'shared device',
+          providers.filter((provider) => providerSecurityStatus(provider) === 'shared').length,
+        ),
+      ],
+    },
+  ];
+}
+
+function providerDispatchReady(provider: AdminProvider) {
+  return (
+    provider.verification?.status === 'APPROVED' &&
+    !provider.blockedAt &&
+    provider.status === 'ONLINE_AVAILABLE' &&
+    providerLocationStatus(provider) === 'recent' &&
+    providerSecurityStatus(provider) === 'clear' &&
+    hasHealthyPush(provider)
+  );
+}
+
+function providerCommandMetric(label: string, value: number) {
+  return { label, value: value.toString() };
+}
+
+function providerCommandToneClass(tone: ProviderCommandLane['tone']) {
+  if (tone === 'danger' || tone === 'warn') {
+    return 'signal-warn';
+  }
+  if (tone === 'info') {
+    return 'signal-info';
+  }
+  return 'signal-ok';
+}
+
+function providerCommandToneLabel(tone: ProviderCommandLane['tone']) {
+  if (tone === 'danger') {
+    return 'Critical';
+  }
+  if (tone === 'warn') {
+    return 'Watch';
+  }
+  if (tone === 'info') {
+    return 'Info';
+  }
+  return 'Clear';
 }
 
 function buildProviderSummary(providers: AdminProvider[]) {
