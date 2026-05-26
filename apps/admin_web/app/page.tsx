@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   AdminBooking,
+  AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
   AdminNotification,
@@ -25,36 +26,46 @@ type OpsQueueItem = {
   detail: string;
   href: string;
   severity: 'high' | 'medium' | 'low';
-  area: 'Booking' | 'Payment' | 'Provider' | 'Notification' | 'Payout';
+  area: 'Booking' | 'Payment' | 'Provider' | 'Notification' | 'Payout' | 'Finance';
 };
 
 export default async function DashboardPage() {
-  const [providers, bookings, payments, earnings, refunds, notifications, payoutBatches, externalReadiness] =
-    await Promise.all([
-      adminGet<AdminProvider[]>('/admin/providers', []),
-      adminGet<AdminBooking[]>('/admin/bookings', []),
-      adminGet<AdminPayment[]>('/admin/payments', []),
-      adminGet<AdminEarningSummary>('/admin/earnings/summary', {
-        count: 0,
-        grossAmount: 0,
-        platformFee: 0,
-        withholdingAmount: 0,
-        tipAmount: 0,
-        netAmount: 0,
-        pendingNetAmount: 0,
-        availableNetAmount: 0,
-        paidNetAmount: 0,
-        currency: 'VND',
-      }),
-      adminGet<AdminRefund[]>('/admin/refunds', []),
-      adminGet<AdminNotification[]>('/admin/notifications', []),
-      adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
-      apiGet<AdminExternalReadiness>('/health/external', {
-        ok: false,
-        timestamp: new Date(0).toISOString(),
-        checks: [],
-      }),
-    ]);
+  const [
+    providers,
+    bookings,
+    payments,
+    earnings,
+    earningRows,
+    refunds,
+    notifications,
+    payoutBatches,
+    externalReadiness,
+  ] = await Promise.all([
+    adminGet<AdminProvider[]>('/admin/providers', []),
+    adminGet<AdminBooking[]>('/admin/bookings', []),
+    adminGet<AdminPayment[]>('/admin/payments', []),
+    adminGet<AdminEarningSummary>('/admin/earnings/summary', {
+      count: 0,
+      grossAmount: 0,
+      platformFee: 0,
+      withholdingAmount: 0,
+      tipAmount: 0,
+      netAmount: 0,
+      pendingNetAmount: 0,
+      availableNetAmount: 0,
+      paidNetAmount: 0,
+      currency: 'VND',
+    }),
+    adminGet<AdminEarning[]>('/admin/earnings', []),
+    adminGet<AdminRefund[]>('/admin/refunds', []),
+    adminGet<AdminNotification[]>('/admin/notifications', []),
+    adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
+    apiGet<AdminExternalReadiness>('/health/external', {
+      ok: false,
+      timestamp: new Date(0).toISOString(),
+      checks: [],
+    }),
+  ]);
 
   const queue = buildOpsQueue({
     providers,
@@ -63,6 +74,7 @@ export default async function DashboardPage() {
     refunds,
     notifications,
     earnings,
+    earningRows,
     payoutBatches,
   });
   const commandSignals = buildDashboardCommandSignals({
@@ -72,6 +84,7 @@ export default async function DashboardPage() {
     refunds,
     notifications,
     earnings,
+    earningRows,
     payoutBatches,
     externalReadiness,
   });
@@ -82,6 +95,8 @@ export default async function DashboardPage() {
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
+  const cashDebtRows = openCashDebtEarnings(earningRows);
+  const cashDebtAmount = sumCashDebt(cashDebtRows);
 
   const metrics = [
     [
@@ -110,6 +125,11 @@ export default async function DashboardPage() {
       'Available payout',
       money(earnings.availableNetAmount, earnings.currency),
       'Provider earnings ready for payout batching.',
+    ],
+    [
+      'Cash debt',
+      money(cashDebtAmount, earnings.currency),
+      'Provider cash fee/tax debt blocking booking acceptance.',
     ],
     [
       'Open payout batches',
@@ -451,6 +471,7 @@ function buildDashboardCommandSignals(input: {
   refunds: AdminRefund[];
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
+  earningRows: AdminEarning[];
   payoutBatches: AdminPayoutBatch[];
   externalReadiness: AdminExternalReadiness;
 }): DashboardCommandSignal[] {
@@ -493,6 +514,8 @@ function buildDashboardCommandSignals(input: {
   const cashPending = input.payments.filter(
     (payment) => payment.method === 'CASH' && payment.status === 'PENDING',
   );
+  const cashDebtRows = openCashDebtEarnings(input.earningRows);
+  const cashDebtAmount = sumCashDebt(cashDebtRows);
   const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
   const paymentReviews =
     completedAuthorized.length + missingGatewayRef.length + cashPending.length + openRefunds.length;
@@ -658,6 +681,39 @@ function buildDashboardCommandSignals(input: {
       ],
     },
     {
+      title: 'Cash settlement lane',
+      status: cashDebtRows.length ? `${cashDebtRows.length} DEBT` : 'CLEAR',
+      detail: cashDebtRows.length
+        ? `${money(cashDebtAmount, input.earnings.currency)} provider cash fee/tax debt must be collected or offset before new booking acceptance.`
+        : 'No open cash fee debt is blocking provider wallets.',
+      action: 'Open cash settlements',
+      href: '/cash-settlements',
+      priority: cashDebtRows.length ? 94 : 12,
+      severity: cashDebtRows.length ? 'high' : 'low',
+      className: cashDebtRows.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: cashDebtRows.length ? 'pill-danger' : 'pill-success',
+      breakdown: [
+        {
+          label: 'Debt rows',
+          value: cashDebtRows.length.toString(),
+          tone: cashDebtRows.length ? 'danger' : 'ok',
+          href: '/cash-settlements',
+        },
+        {
+          label: 'Wallet debt',
+          value: money(cashDebtAmount, input.earnings.currency),
+          tone: cashDebtAmount > 0 ? 'danger' : 'ok',
+          href: '/cash-settlements',
+        },
+        {
+          label: 'Cash pending',
+          value: cashPending.length.toString(),
+          tone: cashPending.length ? 'warn' : 'ok',
+          href: '/payments?review=cash',
+        },
+      ],
+    },
+    {
       title: 'Payout lane',
       status: payoutHolds.length ? `${payoutHolds.length} HELD` : `${payoutReviews.length} OPEN`,
       detail: payoutHolds.length
@@ -805,6 +861,7 @@ function buildOpsQueue(input: {
   refunds: AdminRefund[];
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
+  earningRows: AdminEarning[];
   payoutBatches: AdminPayoutBatch[];
 }) {
   const items: OpsQueueItem[] = [];
@@ -853,6 +910,16 @@ function buildOpsQueue(input: {
         severity: 'medium',
       });
     }
+  }
+
+  for (const earning of openCashDebtEarnings(input.earningRows)) {
+    items.push({
+      area: 'Finance',
+      href: '/cash-settlements',
+      label: 'Provider cash fee debt open',
+      detail: `${earning.providerProfile?.displayName ?? 'Provider'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before accepting more bookings.`,
+      severity: 'high',
+    });
   }
 
   for (const provider of input.providers) {
@@ -958,6 +1025,23 @@ function buildOpsQueue(input: {
   }
 
   return items.sort((left, right) => severityScore(right.severity) - severityScore(left.severity));
+}
+
+function openCashDebtEarnings(earnings: AdminEarning[]) {
+  return earnings.filter(isOpenCashDebtEarning);
+}
+
+function isOpenCashDebtEarning(earning: AdminEarning) {
+  return (
+    earning.netAmount < 0 &&
+    earning.status !== 'PAID' &&
+    earning.status !== 'CANCELLED' &&
+    earning.payoutBatchId == null
+  );
+}
+
+function sumCashDebt(earnings: AdminEarning[]) {
+  return earnings.reduce((sum, earning) => sum + Math.abs(earning.netAmount), 0);
 }
 
 function bookingFlags(booking: AdminBooking) {
