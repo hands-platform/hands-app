@@ -15,6 +15,7 @@ function readBookingView(value: string | string[] | undefined) {
   if (
     view === 'high-risk' ||
     view === 'payment' ||
+    view === 'pricing' ||
     view === 'location' ||
     view === 'chat' ||
     view === 'all'

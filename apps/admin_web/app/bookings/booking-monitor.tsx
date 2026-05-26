@@ -10,7 +10,7 @@ type Props = {
   initialView: BookingView;
 };
 
-type BookingView = 'active' | 'high-risk' | 'payment' | 'location' | 'chat' | 'all';
+type BookingView = 'active' | 'high-risk' | 'payment' | 'pricing' | 'location' | 'chat' | 'all';
 
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
@@ -65,6 +65,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const backupChosen = orderedBookings.filter((booking) => isBackupSelected(booking));
     const chatLive = orderedBookings.filter((booking) => Boolean(booking.chatRoom));
     const paymentRisk = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
+    const pricingRisk = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
     const locationRisk = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
     const highRisk = orderedBookings.filter((booking) =>
       bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
@@ -80,6 +81,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Backup selected', backupChosen.length.toString()],
       ['Chat live', chatLive.length.toString()],
       ['Payment risk', paymentRisk.length.toString()],
+      ['Pricing risk', pricingRisk.length.toString()],
       ['Location risk', locationRisk.length.toString()],
     ];
   }, [currentTimeMs, orderedBookings]);
@@ -92,6 +94,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     }
     if (view === 'payment') {
       return orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
+    }
+    if (view === 'pricing') {
+      return orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
     }
     if (view === 'location') {
       return orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
@@ -219,6 +224,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               const risk = riskLevel(flags);
               const servicePriceLabel = bookingServicePriceLabel(booking);
               const servicePayoutLabel = bookingServicePayoutRuleLabel(booking);
+              const pricingPolicy = bookingPricingPolicySignal(booking);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -230,6 +236,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="muted">{bookingServiceOptionLabel(booking)}</div>
                     <div className="muted">{servicePriceLabel}</div>
                     {servicePayoutLabel && <div className="muted">{servicePayoutLabel}</div>}
+                    {pricingPolicy.status !== 'ready' && (
+                      <span className={`pill ${pricingPolicy.tone}`}>{pricingPolicy.label}</span>
+                    )}
                     <div className="muted">{formatDate(booking.scheduledStartAt)}</div>
                     <div className="muted">{recencyLabel(booking, nowMs)}</div>
                   </td>
@@ -380,6 +389,13 @@ const bookingViewOptions: Array<{
       'Use this to catch completed authorized payments, cancelled unresolved holds, cash pending, and missing refs.',
   },
   {
+    view: 'pricing',
+    label: 'Pricing ops',
+    description: 'bookings whose service price is not backed by the active service payout matrix.',
+    operatorHint:
+      'Use this after changing service prices or payout rules to catch hidden finance mismatches before settlement.',
+  },
+  {
     view: 'location',
     label: 'Location ops',
     description: 'on-the-way or in-service bookings with missing or stale provider location signals.',
@@ -426,6 +442,9 @@ function emptyBookingMessage(view: BookingView) {
   }
   if (view === 'payment') {
     return 'No payment-risk bookings match this queue. Capture, release, refund, cash, and provider refs are clear.';
+  }
+  if (view === 'pricing') {
+    return 'No pricing-risk bookings match this queue. Booking prices match active service payout rules.';
   }
   if (view === 'location') {
     return 'No location-risk bookings match this queue. Live service location signals look acceptable.';
@@ -505,6 +524,12 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
   if (bookingCashDebtNeedsOps(booking)) {
     flags.push({ severity: 'high', title: 'Cash fee debt blocks provider acceptance' });
   }
+  const pricingPolicy = bookingPricingPolicySignal(booking);
+  if (pricingPolicy.status === 'blocked') {
+    flags.push({ severity: 'high', title: pricingPolicy.label });
+  } else if (pricingPolicy.status === 'warning') {
+    flags.push({ severity: 'medium', title: pricingPolicy.label });
+  }
   if (booking.status === 'OPEN_MATCHING' && expired) {
     flags.push({ severity: 'high', title: 'Matching window expired' });
   }
@@ -562,6 +587,53 @@ function bookingPaymentNeedsOps(booking: AdminBooking) {
     return true;
   }
   return false;
+}
+
+function bookingPricingPolicyNeedsOps(booking: AdminBooking) {
+  return bookingPricingPolicySignal(booking).status !== 'ready';
+}
+
+function bookingPricingPolicySignal(booking: AdminBooking): {
+  status: 'ready' | 'warning' | 'blocked';
+  label: string;
+  tone: string;
+} {
+  const bookedService = booking.services?.[0];
+  const service = bookedService?.service;
+  if (!bookedService || !service) {
+    return { status: 'blocked', label: 'Service missing', tone: 'pill-danger' };
+  }
+
+  const customerPrice = readAmount(bookedService.price ?? booking.payment?.amount);
+  if (customerPrice === null) {
+    return { status: 'blocked', label: 'Price missing', tone: 'pill-danger' };
+  }
+
+  const minimum = readAmount(service.basePrice);
+  const priceStep = readAmount(service.priceStep) ?? 100000;
+  if (minimum !== null && customerPrice < minimum) {
+    return { status: 'blocked', label: 'Below admin minimum', tone: 'pill-danger' };
+  }
+  if (priceStep <= 0 || customerPrice % priceStep !== 0) {
+    return { status: 'blocked', label: 'Invalid price step', tone: 'pill-danger' };
+  }
+
+  const payoutRule = service.payoutRules?.find(
+    (rule) => rule.active && Number(rule.customerPrice) === customerPrice,
+  );
+  if (!payoutRule) {
+    return { status: 'blocked', label: 'Active payout rule missing', tone: 'pill-danger' };
+  }
+  if (Number(payoutRule.providerPayoutAmount) > customerPrice) {
+    return { status: 'blocked', label: 'Provider payout exceeds price', tone: 'pill-danger' };
+  }
+
+  const platformFee = customerPrice - Number(payoutRule.providerPayoutAmount);
+  if (platformFee <= 0) {
+    return { status: 'warning', label: 'Zero company gross fee', tone: 'pill-warn' };
+  }
+
+  return { status: 'ready', label: 'Pricing ready', tone: 'pill-success' };
 }
 
 function bookingCashDebtNeedsOps(booking: AdminBooking) {
@@ -684,7 +756,7 @@ function bookingServicePayoutRuleLabel(booking: AdminBooking) {
   const currency = booking.payment?.currency ?? 'VND';
   const customerPrice = bookedService?.price ?? booking.payment?.amount;
   const payoutRule = service?.payoutRules?.find(
-    (rule) => Number(rule.customerPrice) === Number(customerPrice),
+    (rule) => rule.active && Number(rule.customerPrice) === Number(customerPrice),
   );
 
   if (!payoutRule) {
@@ -698,6 +770,17 @@ function bookingServicePayoutRuleLabel(booking: AdminBooking) {
 
 function money(amount: number, currency = 'VND') {
   return `${amount.toLocaleString()} ${currency}`;
+}
+
+function readAmount(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
 }
 
 function formatDate(value?: string | null) {

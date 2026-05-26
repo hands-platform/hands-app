@@ -73,6 +73,52 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         </section>
       ) : null}
 
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer booking exposure guard</h2>
+            <p className="muted">
+              Customer and provider apps only expose service options backed by an active payout rule. Use this
+              guard before opening a new service type or changing provider prices.
+            </p>
+          </div>
+          <div className="actions">
+            <span className={blockedReadinessItems.length ? 'pill pill-danger' : 'pill pill-success'}>
+              {blockedReadinessItems.length} blocked
+            </span>
+            <span className={warningReadinessItems.length ? 'pill pill-warn' : 'pill pill-success'}>
+              {warningReadinessItems.length} warning
+            </span>
+          </div>
+        </div>
+        <div className="service-trace-summary">
+          <div>
+            <span>Active duration options</span>
+            <strong>{activeServices.length}</strong>
+          </div>
+          <div>
+            <span>Rules configured</span>
+            <strong>{payoutRuleCount}</strong>
+          </div>
+          <div>
+            <span>Trace gaps</span>
+            <strong>{bookingTraceSummary.missingTraceCount}</strong>
+          </div>
+          <div>
+            <span>Projected risky scenarios</span>
+            <strong>{pricePolicyPreviewSummary.riskyScenarioCount}</strong>
+          </div>
+        </div>
+        <div className="actions" style={{ marginTop: 12 }}>
+          <a className="text-link" href="/bookings?view=pricing">
+            Open pricing-risk bookings
+          </a>
+          <a className="text-link" href="/audit-log?bucket=Service%2FPricing">
+            Review service pricing audit
+          </a>
+        </div>
+      </section>
+
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
         <div className="risk-watch-header">
           <div>
