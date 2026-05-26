@@ -1208,7 +1208,7 @@ if (!walletDebtProviderEarningsSummary.walletSettlementInstruction.includes('HAN
 }
 if (
   walletDebtProviderEarningsSummary.walletBlockReason !==
-  '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.'
+  '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.'
 ) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(

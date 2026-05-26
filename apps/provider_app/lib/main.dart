@@ -4596,12 +4596,12 @@ class ProviderMvpScreen extends StatelessWidget {
   }
 }
 
-const providerWalletBlockFallbackReason = '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+const providerWalletBlockFallbackReason = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 const providerWalletBlockHint =
     '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
 
-const providerWalletBlockFallbackReasonKo = '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+const providerWalletBlockFallbackReasonKo = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 const providerWalletBlockHintKo =
     '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';

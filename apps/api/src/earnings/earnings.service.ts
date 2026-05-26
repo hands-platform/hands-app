@@ -17,10 +17,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 
 const PROVIDER_WALLET_BLOCK_REASON =
-  '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+  '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
-  '현금 예약으로 발생한 HANDS 수수료와 세금 미정산액입니다. 회사 계좌로 입금하거나 관리자 정산/상계가 완료되면 예약 수락이 다시 가능합니다.';
+  '현금 예약으로 발생한 HANDS 수수료와 원천징수 금액이 미정산 상태입니다. 회사 계좌로 입금하거나 관리자 정산/상계가 완료되면 예약 수락이 다시 가능합니다.';
 
 type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
 type TaxRuleRecord = TaxPolicyWithRules['rules'][number];

@@ -17,7 +17,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { PrismaService } from '../prisma/prisma.service';
 
-const PROVIDER_WALLET_BLOCK_REASON = '수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.';
+const PROVIDER_WALLET_BLOCK_REASON = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 @Injectable()
 export class BookingsService {
