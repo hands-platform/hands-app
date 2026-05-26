@@ -31,6 +31,10 @@ export default async function PayoutsPage() {
           <h2>{summary.payoutHolds}</h2>
         </div>
         <div className="card">
+          <p>Missing refs</p>
+          <h2>{summary.missingTransferRefs}</h2>
+        </div>
+        <div className="card">
           <p>Settled</p>
           <h2>{summary.settled}</h2>
         </div>
@@ -489,6 +493,7 @@ function buildSummary(batches: AdminPayoutBatch[]) {
     needsReview: batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED').length,
     inProgress: batches.filter((batch) => batch.status === 'PROCESSING').length,
     payoutHolds: batches.filter((batch) => Boolean(activePayoutHold(batch))).length,
+    missingTransferRefs: batches.filter((batch) => transferRefRequiredBeforePaid(batch)).length,
     settled: batches.filter((batch) => batch.status === 'PAID').length,
     totalNetAmount: batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
     withholdingAmount: batches.reduce((sum, batch) => sum + batchWithholdingAmount(batch), 0),
@@ -611,6 +616,7 @@ function buildPayoutMoneyFlowChecks(
   const missingServiceEvidence =
     batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length > 0 && !serviceEvidence.length;
   const cashDebtEvidence = sumPayoutServiceEvidence(serviceEvidence, 'cashDebtAmount');
+  const activeMissingRef = batches.filter((batch) => transferRefRequiredBeforePaid(batch));
   const paidMissingRef = batches.filter((batch) => batch.status === 'PAID' && !batch.transferRef);
   const taxOpen = batches.filter((batch) =>
     (batch.withholdingLogs ?? []).some((log) => log.status !== 'PAID'),
@@ -654,14 +660,18 @@ function buildPayoutMoneyFlowChecks(
     },
     {
       title: 'Settlement references',
-      status: `${paidMissingRef.length + taxOpen.length} CHECK`,
-      detail: `${paidMissingRef.length} paid batch missing transfer ref, ${taxOpen.length} batch(es) with open tax logs.`,
+      status: `${activeMissingRef.length + paidMissingRef.length + taxOpen.length} CHECK`,
+      detail: `${activeMissingRef.length} active batch(es) need bank ref before paid, ${paidMissingRef.length} paid missing ref, ${taxOpen.length} batch(es) with open tax logs.`,
       action:
-        paidMissingRef.length || taxOpen.length
+        activeMissingRef.length || paidMissingRef.length || taxOpen.length
           ? 'Complete transfer refs and withholding log status.'
           : 'Transfer references and withholding logs look complete.',
-      className: paidMissingRef.length || taxOpen.length ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: paidMissingRef.length || taxOpen.length ? 'pill-danger' : 'pill-success',
+      className:
+        activeMissingRef.length || paidMissingRef.length || taxOpen.length
+          ? 'ops-task-blocked'
+          : 'ops-task-done',
+      pillClass:
+        activeMissingRef.length || paidMissingRef.length || taxOpen.length ? 'pill-danger' : 'pill-success',
     },
   ];
 }
@@ -755,6 +765,7 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
   const needsReview = batches.filter((batch) => batch.status === 'DRAFT' || batch.status === 'FAILED');
   const processing = batches.filter((batch) => batch.status === 'PROCESSING');
   const held = batches.filter((batch) => Boolean(activePayoutHold(batch)));
+  const activeMissingRef = batches.filter((batch) => transferRefRequiredBeforePaid(batch));
   const missingTransferRef = batches.filter((batch) => batch.status === 'PAID' && !batch.transferRef);
   const missingEarnings = batches.filter((batch) => !batch.earnings?.length);
   const missingWithholdingLogs = batches.filter(
@@ -765,6 +776,7 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
   );
   const reconciliationWarnings =
     missingTransferRef.length +
+    activeMissingRef.length +
     missingEarnings.length +
     missingWithholdingLogs.length +
     pendingWithholding.length;
@@ -813,14 +825,18 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
     {
       title: 'Reconciliation',
       status: `${reconciliationWarnings} CHECK`,
-      detail: `${missingTransferRef.length} paid missing ref, ${pendingWithholding.length} tax open, ${missingWithholdingLogs.length} tax missing, ${missingEarnings.length} empty batch.`,
+      detail: `${activeMissingRef.length} active missing ref, ${missingTransferRef.length} paid missing ref, ${pendingWithholding.length} tax open, ${missingWithholdingLogs.length} tax missing, ${missingEarnings.length} empty batch.`,
       action: reconciliationWarnings
-        ? 'Fix references, withholding status, or empty batch records.'
+        ? 'Fix active transfer refs, withholding status, or empty batch records.'
         : 'Paid batch references and tax logs look consistent.',
       className: reconciliationWarnings ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: reconciliationWarnings ? 'pill-danger' : 'pill-success',
     },
   ];
+}
+
+function transferRefRequiredBeforePaid(batch: AdminPayoutBatch) {
+  return batch.status !== 'PAID' && batch.status !== 'CANCELLED' && !batch.transferRef;
 }
 
 function buildPayoutLanes(batches: AdminPayoutBatch[]): PayoutLane[] {
