@@ -115,10 +115,28 @@ export default async function EarningsPage() {
             </strong>
           </div>
           <div>
+            <span>Provider payout</span>
+            <strong>
+              {formatMoney(
+                serviceBridge.reduce((sum, item) => sum + item.providerPayoutAmount, 0),
+                summary.currency,
+              )}
+            </strong>
+          </div>
+          <div>
             <span>Platform fee</span>
             <strong>
               {formatMoney(
                 serviceBridge.reduce((sum, item) => sum + item.platformFee, 0),
+                summary.currency,
+              )}
+            </strong>
+          </div>
+          <div>
+            <span>VAT / cost</span>
+            <strong>
+              {formatMoney(
+                serviceBridge.reduce((sum, item) => sum + item.vatAmount + item.otherCostAmount, 0),
                 summary.currency,
               )}
             </strong>
@@ -149,9 +167,12 @@ export default async function EarningsPage() {
                 <th>Service option</th>
                 <th>Bookings</th>
                 <th>Gross</th>
+                <th>Provider payout</th>
                 <th>Provider net</th>
                 <th>Platform fee</th>
-                <th>Tax</th>
+                <th>VAT / cost</th>
+                <th>Tax withheld</th>
+                <th>Net company fee</th>
                 <th>Cash debt</th>
                 <th>Payout state</th>
               </tr>
@@ -168,9 +189,22 @@ export default async function EarningsPage() {
                     <p className="muted">{item.cashBookingCount} cash booking(s)</p>
                   </td>
                   <td>{formatMoney(item.grossAmount, item.currency)}</td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <strong>{formatMoney(item.providerPayoutAmount, item.currency)}</strong>
+                      <small>{item.matrixBackedCount} matrix-backed booking(s)</small>
+                    </div>
+                  </td>
                   <td>{formatMoney(item.netAmount, item.currency)}</td>
                   <td>{formatMoney(item.platformFee, item.currency)}</td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <small>VAT {formatMoney(item.vatAmount, item.currency)}</small>
+                      <small>Cost {formatMoney(item.otherCostAmount, item.currency)}</small>
+                    </div>
+                  </td>
                   <td>{formatMoney(item.withholdingAmount, item.currency)}</td>
+                  <td>{formatMoney(item.netCompanyFee, item.currency)}</td>
                   <td>
                     <span className={`pill ${item.cashDebtAmount ? 'pill-danger' : 'pill-success'}`}>
                       {formatMoney(item.cashDebtAmount, item.currency)}
@@ -521,12 +555,26 @@ type ServiceEarningBridgeItem = {
   cashBookingCount: number;
   grossAmount: number;
   netAmount: number;
+  providerPayoutAmount: number;
   platformFee: number;
+  vatAmount: number;
+  otherCostAmount: number;
   withholdingAmount: number;
+  netCompanyFee: number;
   cashDebtAmount: number;
+  matrixBackedCount: number;
   unbatchedCount: number;
   batchedCount: number;
   paidCount: number;
+};
+
+type ServicePayoutSnapshotLine = {
+  serviceId?: string;
+  customerPrice?: number | string;
+  providerPayoutAmount?: number | string;
+  platformFeeAmount?: number | string;
+  vatAmount?: number | string;
+  otherCostAmount?: number | string;
 };
 
 function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
@@ -613,6 +661,13 @@ function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBrid
       const key = service?.id ?? bookingService.serviceId ?? 'unknown-service';
       const duration = service?.durationMin ? `${service.durationMin} min` : 'duration not linked';
       const label = service?.name ? `${service.name} / ${duration}` : 'Unlinked service option';
+      const payoutLine = servicePayoutLineFor(earning, bookingService);
+      const providerPayoutAmount =
+        readAmount(payoutLine?.providerPayoutAmount) || Math.max(0, serviceGross - Math.round(earning.platformFee * allocationShare));
+      const platformFeeAmount = readAmount(payoutLine?.platformFeeAmount) || Math.round(earning.platformFee * allocationShare);
+      const vatAmount = readAmount(payoutLine?.vatAmount);
+      const otherCostAmount = readAmount(payoutLine?.otherCostAmount);
+      const withholdingAmount = Math.round((earning.withholdingAmount ?? 0) * allocationShare);
       const item = grouped.get(key) ?? {
         key,
         label,
@@ -622,9 +677,14 @@ function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBrid
         cashBookingCount: 0,
         grossAmount: 0,
         netAmount: 0,
+        providerPayoutAmount: 0,
         platformFee: 0,
+        vatAmount: 0,
+        otherCostAmount: 0,
         withholdingAmount: 0,
+        netCompanyFee: 0,
         cashDebtAmount: 0,
+        matrixBackedCount: 0,
         unbatchedCount: 0,
         batchedCount: 0,
         paidCount: 0,
@@ -636,8 +696,15 @@ function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBrid
       }
       item.grossAmount += Math.round(earning.grossAmount * allocationShare);
       item.netAmount += Math.round(earning.netAmount * allocationShare);
-      item.platformFee += Math.round(earning.platformFee * allocationShare);
-      item.withholdingAmount += Math.round((earning.withholdingAmount ?? 0) * allocationShare);
+      item.providerPayoutAmount += providerPayoutAmount;
+      item.platformFee += platformFeeAmount;
+      item.vatAmount += vatAmount;
+      item.otherCostAmount += otherCostAmount;
+      item.withholdingAmount += withholdingAmount;
+      item.netCompanyFee += platformFeeAmount - vatAmount - otherCostAmount - withholdingAmount;
+      if (payoutLine) {
+        item.matrixBackedCount += 1;
+      }
       if (earning.netAmount < 0) {
         item.cashDebtAmount += Math.round(Math.abs(earning.netAmount) * allocationShare);
       }
@@ -656,6 +723,37 @@ function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBrid
   return [...grouped.values()]
     .sort((left, right) => right.grossAmount - left.grossAmount || left.label.localeCompare(right.label))
     .slice(0, 12);
+}
+
+function servicePayoutLineFor(
+  earning: AdminEarning,
+  bookingService: NonNullable<NonNullable<AdminEarning['booking']>['services']>[number],
+) {
+  const latestFeeLog = earning.platformFeeLogs?.[0];
+  const snapshot = latestFeeLog?.ruleSnapshot as
+    | { source?: string; lines?: ServicePayoutSnapshotLine[] }
+    | undefined;
+  if (snapshot?.source !== 'SERVICE_PAYOUT_RULE' || !Array.isArray(snapshot.lines)) {
+    return null;
+  }
+  const serviceId = bookingService.service?.id ?? bookingService.serviceId;
+  const customerPrice = readAmount(bookingService.price);
+  return (
+    snapshot.lines.find(
+      (line) => line.serviceId === serviceId && readAmount(line.customerPrice) === customerPrice,
+    ) ?? null
+  );
+}
+
+function readAmount(value: unknown) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (typeof value === 'string') {
+    const number = Number(value);
+    return Number.isFinite(number) ? number : 0;
+  }
+  return 0;
 }
 
 function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: AdminPayoutBatch[]) {
