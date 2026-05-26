@@ -119,4 +119,53 @@ void main() {
     expect(groups.single.options, hasLength(1));
     expect(groups.single.options.single['id'], 'service-foot-60');
   });
+
+  test('customer service groups tolerate numeric strings from API responses',
+      () {
+    final groups = customerServiceOptionGroups([
+      {
+        'id': 'provider-service-90',
+        'price': '700000',
+        'active': true,
+        'service': {
+          'id': 'service-foot-90',
+          'serviceGroupKey': 'foot_massage',
+          'name': 'Foot Massage',
+          'durationMin': '90',
+          'basePrice': '700000',
+          'priceStep': '100000',
+          'active': true,
+          'payoutRules': [
+            {'customerPrice': '700000'},
+          ],
+        },
+      },
+      {
+        'id': 'provider-service-60',
+        'price': '600000',
+        'active': true,
+        'service': {
+          'id': 'service-foot-60',
+          'serviceGroupKey': 'foot_massage',
+          'name': 'Foot Massage',
+          'durationMin': '60',
+          'basePrice': '500000',
+          'priceStep': '100000',
+          'active': true,
+          'payoutRules': [
+            {'customerPrice': '600000'},
+          ],
+        },
+      },
+    ]);
+
+    expect(groups, hasLength(1));
+    expect(groups.single.options.map((option) => option['id']), [
+      'service-foot-60',
+      'service-foot-90',
+    ]);
+    expect(customerServiceOptionLabel(groups.single.options.first),
+        'Foot Massage / 60 min');
+    expect(customerServicePrice(groups.single.options.last), 700000);
+  });
 }
