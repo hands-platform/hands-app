@@ -1300,13 +1300,13 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
   const hasRecentLocation = locationMinutes <= 30;
   const hasEnabledPush = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
   const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
-  const hasCompletedService = (provider.earnings ?? []).length > 0;
+  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const payoutAgreementsReady = agreementsAccepted >= 5;
   const nextAction = nextProviderAction(provider);
   const payoutHold = activePayoutHold(provider);
   const payoutReady =
-    hasCompletedService &&
+    hasFirstRevenue &&
     primaryBank?.status === 'APPROVED' &&
     provider.taxProfile?.status === 'APPROVED' &&
     Boolean(provider.residentialAddress?.trim()) &&
@@ -1379,22 +1379,22 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
     },
     {
       title: 'Payout readiness',
-      status: payoutHold ? 'HELD' : payoutReady ? 'UNLOCKED' : hasCompletedService ? 'BLOCKED' : 'DEFERRED',
+      status: payoutHold ? 'HELD' : payoutReady ? 'UNLOCKED' : hasFirstRevenue ? 'BLOCKED' : 'DEFERRED',
       detail: payoutHold
         ? `Active payout hold: ${payoutHold.reason}`
         : payoutReady
           ? 'Provider has completed service, approved bank, approved tax profile, address, and agreements.'
-          : hasCompletedService
+          : hasFirstRevenue
             ? payoutBlockers(provider).join(' ')
-            : 'Tax profile and full payout gate stay deferred until the first completed service.',
+            : 'Tax profile, tax address, and full payout gate stay deferred until first earning.',
       action: payoutHold
         ? 'Lift the sanction only after finance/risk follow-up is resolved.'
         : payoutReady
           ? 'Provider can request payout when earnings are available.'
-          : hasCompletedService
+          : hasFirstRevenue
             ? 'Clear payout blockers before approving withdrawal.'
-            : 'No action until first completed service.',
-      tone: payoutReady ? 'done' : hasCompletedService || payoutHold ? 'blocked' : 'pending',
+            : 'No action until first earning.',
+      tone: payoutReady ? 'done' : hasFirstRevenue || payoutHold ? 'blocked' : 'pending',
     },
     {
       title: 'Next admin action',
@@ -1417,14 +1417,14 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
   const payoutBatches = provider.payoutBatches ?? [];
   const payoutHold = activePayoutHold(provider);
   const agreementsAccepted = provider.agreements?.length ?? 0;
-  const hasCompletedService = earnings.length > 0;
+  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
   const hasAddress = Boolean(provider.residentialAddress?.trim());
   const bankApproved = primaryBank?.status === 'APPROVED';
   const taxApproved = provider.taxProfile?.status === 'APPROVED';
   const agreementsReady = agreementsAccepted >= 5;
   const payoutReady =
-    hasCompletedService && bankApproved && taxApproved && hasAddress && agreementsReady && !payoutHold;
-  const blockers = hasCompletedService ? payoutBlockers(provider) : [];
+    hasFirstRevenue && bankApproved && taxApproved && hasAddress && agreementsReady && !payoutHold;
+  const blockers = hasFirstRevenue ? payoutBlockers(provider) : [];
   const unpaidEarnings = earnings.filter(
     (earning) => !['PAID', 'CANCELLED', 'REFUNDED'].includes(earning.status),
   );
@@ -1439,12 +1439,12 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
     ? 'HELD'
     : payoutReady
       ? 'UNLOCKED'
-      : hasCompletedService
+      : hasFirstRevenue
         ? 'BLOCKED'
         : 'DEFERRED';
   const tone: ProviderOpsCard['tone'] = payoutReady
     ? 'done'
-    : payoutHold || hasCompletedService
+    : payoutHold || hasFirstRevenue
       ? 'blocked'
       : 'pending';
 
@@ -1464,7 +1464,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       detail: formatCurrency(withholdingAmount),
       action: earnings.length
         ? 'Tax is calculated from active policy rules.'
-        : 'No completed service earning yet.',
+        : 'No first earning yet.',
       tone: earnings.length ? 'done' : 'pending',
     },
     {
@@ -1485,14 +1485,14 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
         ? `Active hold: ${payoutHold.reason}`
         : payoutReady
           ? 'Bank, tax, address, agreements, and first service are complete.'
-          : hasCompletedService
+          : hasFirstRevenue
             ? blockers.join(' ')
-            : 'Deferred until the first completed service.',
+            : 'Deferred until first earning.',
       action: payoutHold
         ? 'Resolve the risk/finance reason before lifting the hold.'
         : payoutReady
           ? 'Provider may be paid when an eligible batch exists.'
-          : hasCompletedService
+          : hasFirstRevenue
             ? 'Clear blockers before payment.'
             : 'No payout request should be approved yet.',
       tone,
@@ -1602,8 +1602,7 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
   const hasBasicProfile = Boolean(
     provider.displayName?.trim() &&
     provider.legalName?.trim() &&
-    provider.user?.phone?.trim() &&
-    provider.residentialAddress?.trim(),
+    provider.user?.phone?.trim(),
   );
   const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
   const kycReady = provider.kyc?.status === 'APPROVED' && requiredDocumentsReady;
@@ -1624,7 +1623,7 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
       level: 'LEVEL 1 - Signup possible',
       status: hasBasicProfile ? 'READY' : 'PROFILE',
       detail: hasBasicProfile
-        ? 'Phone, display name, legal name, and residential address are present.'
+        ? 'Phone, display name, and legal name are present.'
         : 'The provider can sign up, but basic profile data is incomplete.',
       operatorAction: hasBasicProfile
         ? 'Continue identity and payout review.'
@@ -1804,13 +1803,14 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
     hasProfileQuality,
   );
   const addressComplete = Boolean(provider.residentialAddress?.trim() && provider.city?.trim());
+  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
   const serviceAreaComplete =
     Boolean(provider.serviceArea) || Boolean(provider.currentLat && provider.currentLng);
   const identityComplete = provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider);
   const bankComplete = provider.bankAccounts?.[0]?.status === 'APPROVED';
   const taxDeferredOrComplete =
-    (provider.earnings ?? []).length === 0 || provider.taxProfile?.status === 'APPROVED';
-  const agreementsComplete = (provider.agreements?.length ?? 0) >= 5;
+    !hasFirstRevenue || provider.taxProfile?.status === 'APPROVED';
+  const agreementsDeferredOrComplete = !hasFirstRevenue || (provider.agreements?.length ?? 0) >= 5;
   const securityClear =
     !provider.blockedAt &&
     !(provider.devices ?? []).some((device) => device.blockedAt) &&
@@ -1845,16 +1845,22 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
     },
     {
       label: 'Address and service area',
-      ok: addressComplete && serviceAreaComplete,
-      status: addressComplete && serviceAreaComplete ? 'READY' : 'MISSING',
+      ok: serviceAreaComplete && (!hasFirstRevenue || addressComplete),
+      status: serviceAreaComplete && (!hasFirstRevenue || addressComplete) ? 'READY' : 'MISSING',
       detail:
-        addressComplete && serviceAreaComplete
-          ? 'Residential address, city, and a service area/location signal are available.'
-          : 'Residential address, service city, GPS location, or service area still needs confirmation.',
+        serviceAreaComplete && (!hasFirstRevenue || addressComplete)
+          ? hasFirstRevenue
+            ? 'Residential/tax address, city, and a service area/location signal are available.'
+            : 'Service area/location signal is available. Residential tax address can stay deferred until first earning.'
+          : hasFirstRevenue
+            ? 'Residential/tax address, service city, GPS location, or service area still needs confirmation.'
+            : 'GPS location or service area still needs confirmation before dispatch.',
       operatorAction:
-        addressComplete && serviceAreaComplete
+        serviceAreaComplete && (!hasFirstRevenue || addressComplete)
           ? 'Use location freshness before dispatching.'
-          : 'Ask provider to complete address and open the app for location sync.',
+          : hasFirstRevenue
+            ? 'Ask provider to complete tax address and open the app for location sync.'
+            : 'Ask provider to open the app for location sync.',
     },
     {
       label: 'KYC evidence',
@@ -1884,11 +1890,11 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
     {
       label: 'Freelancer tax profile',
       ok: taxDeferredOrComplete,
-      status: provider.taxProfile?.status ?? ((provider.earnings ?? []).length ? 'MISSING' : 'DEFERRED'),
+      status: provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED'),
       detail: taxDeferredOrComplete
-        ? (provider.earnings ?? []).length
+        ? hasFirstRevenue
           ? 'Tax profile is approved after provider earned revenue.'
-          : 'Tax collection is intentionally deferred until first completed service.'
+          : 'Tax collection is intentionally deferred until first earning.'
         : 'Provider has earning history, so tax profile must be approved before payout.',
       operatorAction: taxDeferredOrComplete
         ? 'Follow the staged UX: do not force tax fields before first earning.'
@@ -1896,14 +1902,25 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
     },
     {
       label: 'Legal agreements',
-      ok: agreementsComplete,
-      status: agreementsComplete ? 'READY' : `${provider.agreements?.length ?? 0}/5`,
-      detail: agreementsComplete
-        ? 'Required terms, privacy, location, payout, and tax consents are accepted.'
-        : 'Provider must accept service, privacy, location, payout, and tax policy versions.',
-      operatorAction: agreementsComplete
-        ? 'Keep agreement versions visible for audit.'
-        : 'Show agreement completion flow before payout-level access.',
+      ok: agreementsDeferredOrComplete,
+      status:
+        (provider.agreements?.length ?? 0) >= 5
+          ? 'READY'
+          : hasFirstRevenue
+            ? `${provider.agreements?.length ?? 0}/5`
+            : 'DEFERRED',
+      detail:
+        (provider.agreements?.length ?? 0) >= 5
+          ? 'Required terms, privacy, location, payout, and tax consents are accepted.'
+          : hasFirstRevenue
+            ? 'Provider has first earning and must accept service, privacy, location, payout, and tax policy versions.'
+            : 'Payout and tax agreement collection is intentionally deferred until first earning.',
+      operatorAction:
+        (provider.agreements?.length ?? 0) >= 5
+          ? 'Keep agreement versions visible for audit.'
+          : hasFirstRevenue
+            ? 'Show agreement completion flow before payout-level access.'
+            : 'Do not force payout/tax agreements during initial signup.',
     },
     {
       label: 'Device and safety',
@@ -2001,12 +2018,12 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
       tone: 'blocked',
     };
   }
-  if (!provider.displayName?.trim() || !provider.legalName?.trim() || !provider.residentialAddress?.trim()) {
+  if (!provider.displayName?.trim() || !provider.legalName?.trim()) {
     return {
       title: 'Next admin action',
       status: 'PROFILE',
-      detail: 'Basic identity, public display name, or residential address is incomplete.',
-      action: 'Ask provider to complete profile in the Provider app.',
+      detail: 'Basic identity or public display name is incomplete.',
+      action: 'Ask provider to complete display name and legal name in the Provider app.',
       tone: 'blocked',
     };
   }
@@ -2037,12 +2054,30 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
       tone: 'blocked',
     };
   }
-  if ((provider.earnings ?? []).length > 0 && provider.taxProfile?.status !== 'APPROVED') {
+  if (providerHasFirstRevenueSignal(provider) && provider.taxProfile?.status !== 'APPROVED') {
     return {
       title: 'Next admin action',
       status: 'TAX',
       detail: `Provider has earnings, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
       action: 'Approve or reject tax profile before withdrawal.',
+      tone: 'blocked',
+    };
+  }
+  if (providerHasFirstRevenueSignal(provider) && !provider.residentialAddress?.trim()) {
+    return {
+      title: 'Next admin action',
+      status: 'TAX ADDRESS',
+      detail: 'Provider has first earning, but residential/tax address is missing.',
+      action: 'Ask provider to add tax address before withdrawal.',
+      tone: 'blocked',
+    };
+  }
+  if (providerHasFirstRevenueSignal(provider) && (provider.agreements?.length ?? 0) < 5) {
+    return {
+      title: 'Next admin action',
+      status: 'TERMS',
+      detail: `Required payout/tax agreements are ${provider.agreements?.length ?? 0}/5.`,
+      action: 'Ask provider to accept missing policy versions before withdrawal.',
       tone: 'blocked',
     };
   }
@@ -2093,9 +2128,9 @@ function buildReviewChecklist(provider: ProviderDetail) {
   const hasBasicProfile = Boolean(
     provider.displayName?.trim() &&
     provider.legalName?.trim() &&
-    provider.user?.phone?.trim() &&
-    provider.residentialAddress?.trim(),
+    provider.user?.phone?.trim(),
   );
+  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
 
   const items = [
     {
@@ -2111,8 +2146,8 @@ function buildReviewChecklist(provider: ProviderDetail) {
       ok: hasBasicProfile,
       status: hasBasicProfile ? 'Complete' : 'Missing',
       detail: hasBasicProfile
-        ? 'Display name, legal name, phone, and address are saved.'
-        : 'Confirm display name, legal name, phone, and residential address.',
+        ? 'Display name, legal name, and phone are saved.'
+        : 'Confirm display name, legal name, and phone.',
     },
     {
       label: 'KYC status',
@@ -2142,12 +2177,20 @@ function buildReviewChecklist(provider: ProviderDetail) {
     },
     {
       label: 'Tax and payout gate',
-      ok: provider.taxProfile?.status === 'APPROVED' || (provider.earnings ?? []).length === 0,
-      status: provider.taxProfile?.status ?? 'DEFERRED',
+      ok:
+        !hasFirstRevenue ||
+        (provider.taxProfile?.status === 'APPROVED' &&
+          Boolean(provider.residentialAddress?.trim()) &&
+          (provider.agreements?.length ?? 0) >= 5),
+      status: provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED'),
       detail:
-        provider.taxProfile?.status === 'APPROVED'
-          ? 'Tax profile has been approved.'
-          : 'Tax profile can stay deferred until first completed service, then blocks payout.',
+        !hasFirstRevenue
+          ? 'Tax profile, tax address, and payout agreements can stay deferred until first earning.'
+          : provider.taxProfile?.status === 'APPROVED' &&
+              Boolean(provider.residentialAddress?.trim()) &&
+              (provider.agreements?.length ?? 0) >= 5
+            ? 'Tax profile, tax address, and payout agreements are ready.'
+            : 'First earning exists, so tax profile, tax address, and payout agreements now block payout.',
     },
     {
       label: 'Location freshness',
@@ -2276,6 +2319,12 @@ function amountValue(value?: number | string | null) {
     return Number.isFinite(parsed) ? parsed : 0;
   }
   return 0;
+}
+
+function providerHasFirstRevenueSignal(provider: ProviderDetail) {
+  return (provider.earnings ?? []).some((earning) =>
+    ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
+  );
 }
 
 function isCashFeeDebt(earning: NonNullable<ProviderDetail['earnings']>[number]) {
