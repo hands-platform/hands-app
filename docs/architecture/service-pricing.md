@@ -102,9 +102,11 @@ If the provider wallet is negative:
 - The provider app warns before accepting cash requests that direct customer cash can create
   wallet debt after completion.
 
-The provider-facing booking block copy is:
+The provider-facing booking block copy is currently:
 
-`수수료에 대한 정산이 되지 않아 예약을 받을 수 없습니다.`
+`Unsettled HANDS service fees must be settled before accepting bookings.`
+
+Vietnamese localization should replace this provider-facing fallback after the final UI language pass. The previous Korean draft copy was retired from the fallback path to avoid broken encoding in local emulator builds.
 
 ## Future Work
 
