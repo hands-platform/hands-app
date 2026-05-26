@@ -27,6 +27,8 @@ export default async function EarningsPage() {
   const cashDebtTotals = buildCashDebtTotals(cashDebtQueue);
   const financeSignals = buildFinanceSignals(sortedEarnings, payoutBatches, payoutQueue, cashDebtQueue);
   const serviceBridge = buildServiceEarningBridge(sortedEarnings);
+  const moneyFlowCards = buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals);
+  const moneyFlowChecks = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue);
 
   const metrics = [
     ['Gross', summary.grossAmount],
@@ -50,6 +52,42 @@ export default async function EarningsPage() {
           </div>
         ))}
       </section>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Money flow command center</h2>
+            <p className="muted">
+              Same finance language as booking detail: customer charge, provider payout, HANDS fee, tax,
+              company net, and cash debt before payout.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings">
+            Trace bookings
+          </Link>
+        </div>
+        <div className="service-trace-summary">
+          {moneyFlowCards.map((card) => (
+            <div key={card.label}>
+              <span>{card.label}</span>
+              <strong>{formatMoney(card.amount, summary.currency)}</strong>
+              <small>{card.detail}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 16 }}>
+          {moneyFlowChecks.map((check) => (
+            <div className={`ops-task-card ${check.className}`} key={check.title}>
+              <div>
+                <span className={`pill ${check.pillClass}`}>{check.status}</span>
+                <h3>{check.title}</h3>
+                <p className="muted">{check.detail}</p>
+              </div>
+              <small>{check.action}</small>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
@@ -534,6 +572,12 @@ type FinanceSignal = {
   pillClass: string;
 };
 
+type MoneyFlowCard = {
+  label: string;
+  amount: number;
+  detail: string;
+};
+
 type CashDebtQueueItem = {
   earning: AdminEarning;
   providerName: string;
@@ -623,6 +667,135 @@ function buildCashDebtTotals(queue: CashDebtQueueItem[]) {
   );
 }
 
+function buildEarningsMoneyFlowCards(
+  summary: AdminEarningSummary,
+  serviceBridge: ServiceEarningBridgeItem[],
+  cashDebtTotals: ReturnType<typeof buildCashDebtTotals>,
+): MoneyFlowCard[] {
+  const bridgeGross = sumServiceBridge(serviceBridge, 'grossAmount');
+  const providerPayout = sumServiceBridge(serviceBridge, 'providerPayoutAmount');
+  const netCompanyFee = sumServiceBridge(serviceBridge, 'netCompanyFee');
+  const vatAndCost =
+    sumServiceBridge(serviceBridge, 'vatAmount') + sumServiceBridge(serviceBridge, 'otherCostAmount');
+
+  return [
+    {
+      label: 'Customer charge',
+      amount: bridgeGross || summary.grossAmount,
+      detail: 'Gross customer payment across completed earning rows.',
+    },
+    {
+      label: 'Provider payout',
+      amount: providerPayout || summary.netAmount,
+      detail: 'Service pricing matrix payout before wallet debt and batch status.',
+    },
+    {
+      label: 'HANDS fee',
+      amount: summary.platformFee,
+      detail: 'Total platform fee before VAT, withholding, and operating cost allocation.',
+    },
+    {
+      label: 'Tax withheld',
+      amount: summary.withholdingAmount,
+      detail: 'Freelancer withholding already attached to earning records.',
+    },
+    {
+      label: 'Company net',
+      amount: netCompanyFee || Math.max(0, summary.platformFee - summary.withholdingAmount - vatAndCost),
+      detail: 'Estimated HANDS fee after configured tax and cost deductions.',
+    },
+    {
+      label: 'Cash debt',
+      amount: cashDebtTotals.debtAmount,
+      detail: 'Negative wallet amount from cash jobs that must be settled before new work.',
+    },
+  ];
+}
+
+function buildEarningsMoneyFlowChecks(
+  summary: AdminEarningSummary,
+  serviceBridge: ServiceEarningBridgeItem[],
+  cashDebtQueue: CashDebtQueueItem[],
+): FinanceSignal[] {
+  const bridgeGross = sumServiceBridge(serviceBridge, 'grossAmount');
+  const bridgePlatformFee = sumServiceBridge(serviceBridge, 'platformFee');
+  const unlinkedOptions = serviceBridge.filter((item) => item.label === 'Unlinked service option');
+  const grossGap = Math.abs(summary.grossAmount - bridgeGross);
+  const feeGap = Math.abs(summary.platformFee - bridgePlatformFee);
+  const hasBridgeRows = serviceBridge.length > 0;
+
+  return [
+    {
+      title: 'Booking service link',
+      status: `${unlinkedOptions.length} UNLINKED`,
+      detail: unlinkedOptions.length
+        ? 'Some earning rows still do not point to a configured service duration option.'
+        : 'Every visible earning can be traced to a service option or fallback row.',
+      action: unlinkedOptions.length
+        ? 'Open service pricing and reconnect missing booking service references.'
+        : 'Service option trace is ready for finance review.',
+      className: unlinkedOptions.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: unlinkedOptions.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Gross reconciliation',
+      status: hasBridgeRows && grossGap > 0 ? 'CHECK' : 'MATCHED',
+      detail: hasBridgeRows
+        ? `Summary versus service bridge gap: ${formatMoney(grossGap, summary.currency)}.`
+        : 'No service bridge rows are available yet.',
+      action:
+        hasBridgeRows && grossGap > 0
+          ? 'Review cancelled rows, manual earning edits, or missing service links.'
+          : 'Customer charge totals reconcile with the service bridge.',
+      className: hasBridgeRows && grossGap > 0 ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: hasBridgeRows && grossGap > 0 ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Fee reconciliation',
+      status: hasBridgeRows && feeGap > 0 ? 'CHECK' : 'MATCHED',
+      detail: hasBridgeRows
+        ? `Platform fee bridge gap: ${formatMoney(feeGap, summary.currency)}.`
+        : 'No fee bridge rows are available yet.',
+      action:
+        hasBridgeRows && feeGap > 0
+          ? 'Confirm fee policy snapshots before payout approval.'
+          : 'HANDS fee totals are aligned across earnings and service rows.',
+      className: hasBridgeRows && feeGap > 0 ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: hasBridgeRows && feeGap > 0 ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Cash job lock',
+      status: `${cashDebtQueue.length} PROVIDER(S)`,
+      detail: cashDebtQueue.length
+        ? 'Negative wallet providers must settle company fee before receiving more bookings.'
+        : 'No cash fee debt currently blocks provider work.',
+      action: cashDebtQueue.length
+        ? 'Use cash debt queue to confirm deposit or approved offset.'
+        : 'Provider booking lock is clear for listed earnings.',
+      className: cashDebtQueue.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: cashDebtQueue.length ? 'pill-danger' : 'pill-success',
+    },
+  ];
+}
+
+function sumServiceBridge(
+  serviceBridge: ServiceEarningBridgeItem[],
+  field: keyof Pick<
+    ServiceEarningBridgeItem,
+    | 'grossAmount'
+    | 'netAmount'
+    | 'providerPayoutAmount'
+    | 'platformFee'
+    | 'vatAmount'
+    | 'otherCostAmount'
+    | 'withholdingAmount'
+    | 'netCompanyFee'
+    | 'cashDebtAmount'
+  >,
+) {
+  return serviceBridge.reduce((sum, item) => sum + item[field], 0);
+}
+
 function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBridgeItem[] {
   const grouped = new Map<string, ServiceEarningBridgeItem>();
 
@@ -663,8 +836,10 @@ function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBrid
       const label = service?.name ? `${service.name} / ${duration}` : 'Unlinked service option';
       const payoutLine = servicePayoutLineFor(earning, bookingService);
       const providerPayoutAmount =
-        readAmount(payoutLine?.providerPayoutAmount) || Math.max(0, serviceGross - Math.round(earning.platformFee * allocationShare));
-      const platformFeeAmount = readAmount(payoutLine?.platformFeeAmount) || Math.round(earning.platformFee * allocationShare);
+        readAmount(payoutLine?.providerPayoutAmount) ||
+        Math.max(0, serviceGross - Math.round(earning.platformFee * allocationShare));
+      const platformFeeAmount =
+        readAmount(payoutLine?.platformFeeAmount) || Math.round(earning.platformFee * allocationShare);
       const vatAmount = readAmount(payoutLine?.vatAmount);
       const otherCostAmount = readAmount(payoutLine?.otherCostAmount);
       const withholdingAmount = Math.round((earning.withholdingAmount ?? 0) * allocationShare);

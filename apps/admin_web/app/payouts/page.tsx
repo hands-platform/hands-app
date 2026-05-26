@@ -7,6 +7,8 @@ export default async function PayoutsPage() {
   const commandSignals = buildPayoutCommandSignals(batches);
   const payoutLanes = buildPayoutLanes(batches);
   const serviceEvidence = buildPayoutServiceEvidence(batches);
+  const moneyFlowCards = buildPayoutMoneyFlowCards(summary, serviceEvidence);
+  const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
 
   return (
     <>
@@ -41,6 +43,42 @@ export default async function PayoutsPage() {
           <h2>{formatMoney(summary.withholdingAmount, summary.currency)}</h2>
         </div>
       </section>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payout money flow</h2>
+            <p className="muted">
+              Reconciles payout batches against service pricing evidence before transfer: gross represented,
+              provider payout, HANDS fee, withholding, and cash debt.
+            </p>
+          </div>
+          <a className="text-link" href="/bookings">
+            Trace bookings
+          </a>
+        </div>
+        <div className="service-trace-summary">
+          {moneyFlowCards.map((card) => (
+            <div key={card.label}>
+              <span>{card.label}</span>
+              <strong>{formatMoney(card.amount, summary.currency)}</strong>
+              <small>{card.detail}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 16 }}>
+          {moneyFlowChecks.map((check) => (
+            <div className={`ops-task-card ${check.className}`} key={check.title}>
+              <div>
+                <span className={`pill ${check.pillClass}`}>{check.status}</span>
+                <h3>{check.title}</h3>
+                <p className="muted">{check.detail}</p>
+              </div>
+              <small>{check.action}</small>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -93,20 +131,38 @@ export default async function PayoutsPage() {
           </div>
           <div>
             <span>Gross</span>
-            <strong>{formatMoney(serviceEvidence.reduce((sum, item) => sum + item.grossAmount, 0), summary.currency)}</strong>
+            <strong>
+              {formatMoney(
+                serviceEvidence.reduce((sum, item) => sum + item.grossAmount, 0),
+                summary.currency,
+              )}
+            </strong>
           </div>
           <div>
             <span>Provider net</span>
-            <strong>{formatMoney(serviceEvidence.reduce((sum, item) => sum + item.netAmount, 0), summary.currency)}</strong>
+            <strong>
+              {formatMoney(
+                serviceEvidence.reduce((sum, item) => sum + item.netAmount, 0),
+                summary.currency,
+              )}
+            </strong>
           </div>
           <div>
             <span>Platform fee</span>
-            <strong>{formatMoney(serviceEvidence.reduce((sum, item) => sum + item.platformFee, 0), summary.currency)}</strong>
+            <strong>
+              {formatMoney(
+                serviceEvidence.reduce((sum, item) => sum + item.platformFee, 0),
+                summary.currency,
+              )}
+            </strong>
           </div>
           <div>
             <span>Tax withheld</span>
             <strong>
-              {formatMoney(serviceEvidence.reduce((sum, item) => sum + item.withholdingAmount, 0), summary.currency)}
+              {formatMoney(
+                serviceEvidence.reduce((sum, item) => sum + item.withholdingAmount, 0),
+                summary.currency,
+              )}
             </strong>
           </div>
         </div>
@@ -444,6 +500,12 @@ type PayoutCommandSignal = {
   pillClass: string;
 };
 
+type MoneyFlowCard = {
+  label: string;
+  amount: number;
+  detail: string;
+};
+
 type PayoutLane = {
   title: string;
   batches: AdminPayoutBatch[];
@@ -489,6 +551,126 @@ function buildPayoutServiceEvidence(batches: AdminPayoutBatch[]): PayoutServiceE
     .slice(0, 12);
 }
 
+function buildPayoutMoneyFlowCards(
+  summary: ReturnType<typeof buildSummary>,
+  serviceEvidence: PayoutServiceEvidenceItem[],
+): MoneyFlowCard[] {
+  const grossRepresented = sumPayoutServiceEvidence(serviceEvidence, 'grossAmount');
+  const providerNetRepresented = sumPayoutServiceEvidence(serviceEvidence, 'netAmount');
+  const platformFeeRepresented = sumPayoutServiceEvidence(serviceEvidence, 'platformFee');
+  const taxRepresented = sumPayoutServiceEvidence(serviceEvidence, 'withholdingAmount');
+  const cashDebtRepresented = sumPayoutServiceEvidence(serviceEvidence, 'cashDebtAmount');
+
+  return [
+    {
+      label: 'Gross represented',
+      amount: grossRepresented,
+      detail: 'Customer charge attached to earnings inside payout batches.',
+    },
+    {
+      label: 'Provider payout',
+      amount: summary.totalNetAmount,
+      detail: 'Batch net amount scheduled for provider transfer.',
+    },
+    {
+      label: 'Provider net evidence',
+      amount: providerNetRepresented,
+      detail: 'Service evidence net amount used to cross-check batch totals.',
+    },
+    {
+      label: 'HANDS fee',
+      amount: platformFeeRepresented,
+      detail: 'Platform fee represented by earnings inside payout batches.',
+    },
+    {
+      label: 'Tax withheld',
+      amount: taxRepresented || summary.withholdingAmount,
+      detail: 'Withholding logs and earning tax amount before final settlement.',
+    },
+    {
+      label: 'Cash debt represented',
+      amount: cashDebtRepresented,
+      detail: 'Negative wallet amount that should not be paid out as provider net.',
+    },
+  ];
+}
+
+function buildPayoutMoneyFlowChecks(
+  batches: AdminPayoutBatch[],
+  serviceEvidence: PayoutServiceEvidenceItem[],
+): PayoutCommandSignal[] {
+  const currency = batches[0]?.currency ?? 'VND';
+  const serviceNet = sumPayoutServiceEvidence(serviceEvidence, 'netAmount');
+  const batchNet = batches.reduce((sum, batch) => sum + batch.totalNetAmount, 0);
+  const netGap = Math.abs(batchNet - serviceNet);
+  const missingServiceEvidence =
+    batches.filter((batch) => (batch.earnings?.length ?? 0) > 0).length > 0 && !serviceEvidence.length;
+  const cashDebtEvidence = sumPayoutServiceEvidence(serviceEvidence, 'cashDebtAmount');
+  const paidMissingRef = batches.filter((batch) => batch.status === 'PAID' && !batch.transferRef);
+  const taxOpen = batches.filter((batch) =>
+    (batch.withholdingLogs ?? []).some((log) => log.status !== 'PAID'),
+  );
+
+  return [
+    {
+      title: 'Batch net reconciliation',
+      status: netGap > 0 ? 'CHECK' : 'MATCHED',
+      detail: `Batch net versus service evidence gap: ${formatMoney(netGap, currency)}.`,
+      action:
+        netGap > 0
+          ? 'Review batch composition before marking bank transfer complete.'
+          : 'Batch net aligns with service evidence.',
+      className: netGap > 0 ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: netGap > 0 ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Service evidence',
+      status: missingServiceEvidence ? 'MISSING' : `${serviceEvidence.length} OPTION(S)`,
+      detail: missingServiceEvidence
+        ? 'At least one payout batch has earnings but no service evidence was generated.'
+        : 'Payout batches are traceable to service duration options where available.',
+      action: missingServiceEvidence
+        ? 'Check booking service links before approving payout.'
+        : 'Service trace is ready for finance review.',
+      className: missingServiceEvidence ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: missingServiceEvidence ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Cash debt exclusion',
+      status: cashDebtEvidence > 0 ? 'CHECK' : 'CLEAR',
+      detail: cashDebtEvidence
+        ? `${formatMoney(cashDebtEvidence, currency)} negative wallet amount appears in payout evidence.`
+        : 'No negative wallet amount is represented in payout evidence.',
+      action: cashDebtEvidence
+        ? 'Remove or settle cash debt before transfer.'
+        : 'Cash payment fee debt is not leaking into payout transfer.',
+      className: cashDebtEvidence > 0 ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: cashDebtEvidence > 0 ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Settlement references',
+      status: `${paidMissingRef.length + taxOpen.length} CHECK`,
+      detail: `${paidMissingRef.length} paid batch missing transfer ref, ${taxOpen.length} batch(es) with open tax logs.`,
+      action:
+        paidMissingRef.length || taxOpen.length
+          ? 'Complete transfer refs and withholding log status.'
+          : 'Transfer references and withholding logs look complete.',
+      className: paidMissingRef.length || taxOpen.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: paidMissingRef.length || taxOpen.length ? 'pill-danger' : 'pill-success',
+    },
+  ];
+}
+
+function sumPayoutServiceEvidence(
+  serviceEvidence: PayoutServiceEvidenceItem[],
+  field: keyof Pick<
+    PayoutServiceEvidenceItem,
+    'grossAmount' | 'netAmount' | 'platformFee' | 'withholdingAmount' | 'cashDebtAmount'
+  >,
+) {
+  return serviceEvidence.reduce((sum, item) => sum + item[field], 0);
+}
+
 function batchServiceEvidence(batch: AdminPayoutBatch[]): PayoutServiceEvidenceItem[];
 function batchServiceEvidence(batch: AdminPayoutBatch): PayoutServiceEvidenceItem[];
 function batchServiceEvidence(batch: AdminPayoutBatch | AdminPayoutBatch[]) {
@@ -522,7 +704,9 @@ function addEarningToServiceEvidence(
       (sum, bookingService) =>
         sum + Number(bookingService.price ?? 0) * Math.max(1, Number(bookingService.quantity ?? 1)),
       0,
-    ) || earning.grossAmount || 1;
+    ) ||
+    earning.grossAmount ||
+    1;
 
   bookingServices.forEach((bookingService) => {
     const quantity = Math.max(1, Number(bookingService.quantity ?? 1));
@@ -532,23 +716,21 @@ function addEarningToServiceEvidence(
     const key = service?.id ?? bookingService.serviceId ?? 'unknown-service';
     const duration = service?.durationMin ? `${service.durationMin} min` : 'duration not linked';
     const label = service?.name ? `${service.name} / ${duration}` : 'Unlinked service option';
-    const item =
-      grouped.get(key) ??
-      {
-        key,
-        label,
-        groupKey: service?.serviceGroupKey ?? bookingService.serviceId ?? 'unknown',
-        currency: earning.currency,
-        batchCount: 0,
-        earningCount: 0,
-        grossAmount: 0,
-        netAmount: 0,
-        platformFee: 0,
-        withholdingAmount: 0,
-        cashDebtAmount: 0,
-        batchIds: new Set<string>(),
-        earningIds: new Set<string>(),
-      };
+    const item = grouped.get(key) ?? {
+      key,
+      label,
+      groupKey: service?.serviceGroupKey ?? bookingService.serviceId ?? 'unknown',
+      currency: earning.currency,
+      batchCount: 0,
+      earningCount: 0,
+      grossAmount: 0,
+      netAmount: 0,
+      platformFee: 0,
+      withholdingAmount: 0,
+      cashDebtAmount: 0,
+      batchIds: new Set<string>(),
+      earningIds: new Set<string>(),
+    };
 
     item.batchIds.add(batchId);
     item.earningIds.add(earning.id);
