@@ -45,9 +45,7 @@ export default async function EarningsPage() {
         {metrics.map(([label, value]) => (
           <div className="card" key={label}>
             <p>{label}</p>
-            <h2>
-              {formatMoney(Number(value), summary.currency)}
-            </h2>
+            <h2>{formatMoney(Number(value), summary.currency)}</h2>
           </div>
         ))}
       </section>
@@ -57,7 +55,8 @@ export default async function EarningsPage() {
           <div>
             <h2>Finance queue</h2>
             <p className="muted">
-              Operator summary for provider payout readiness, batched earnings, tax logs, and stale pending revenue.
+              Operator summary for provider payout readiness, batched earnings, tax logs, and stale pending
+              revenue.
             </p>
           </div>
           <Link className="text-link" href="/payouts">
@@ -98,25 +97,48 @@ export default async function EarningsPage() {
           </div>
           <div>
             <span>Gross</span>
-            <strong>{formatMoney(serviceBridge.reduce((sum, item) => sum + item.grossAmount, 0), summary.currency)}</strong>
+            <strong>
+              {formatMoney(
+                serviceBridge.reduce((sum, item) => sum + item.grossAmount, 0),
+                summary.currency,
+              )}
+            </strong>
           </div>
           <div>
             <span>Provider net</span>
-            <strong>{formatMoney(serviceBridge.reduce((sum, item) => sum + item.netAmount, 0), summary.currency)}</strong>
+            <strong>
+              {formatMoney(
+                serviceBridge.reduce((sum, item) => sum + item.netAmount, 0),
+                summary.currency,
+              )}
+            </strong>
           </div>
           <div>
             <span>Platform fee</span>
-            <strong>{formatMoney(serviceBridge.reduce((sum, item) => sum + item.platformFee, 0), summary.currency)}</strong>
+            <strong>
+              {formatMoney(
+                serviceBridge.reduce((sum, item) => sum + item.platformFee, 0),
+                summary.currency,
+              )}
+            </strong>
           </div>
           <div>
             <span>Tax withheld</span>
             <strong>
-              {formatMoney(serviceBridge.reduce((sum, item) => sum + item.withholdingAmount, 0), summary.currency)}
+              {formatMoney(
+                serviceBridge.reduce((sum, item) => sum + item.withholdingAmount, 0),
+                summary.currency,
+              )}
             </strong>
           </div>
           <div>
             <span>Cash debt</span>
-            <strong>{formatMoney(serviceBridge.reduce((sum, item) => sum + item.cashDebtAmount, 0), summary.currency)}</strong>
+            <strong>
+              {formatMoney(
+                serviceBridge.reduce((sum, item) => sum + item.cashDebtAmount, 0),
+                summary.currency,
+              )}
+            </strong>
           </div>
         </div>
         {serviceBridge.length ? (
@@ -187,7 +209,8 @@ export default async function EarningsPage() {
                 <div>
                   <strong>{group.providerName}</strong>
                   <p className="muted">
-                    {group.unbatchedCount} unbatched earning(s) / net {formatMoney(group.unbatchedNet, group.currency)}
+                    {group.unbatchedCount} unbatched earning(s) / net{' '}
+                    {formatMoney(group.unbatchedNet, group.currency)}
                     {' / '}withholding {formatMoney(group.withholdingAmount, group.currency)}
                   </p>
                   <p className="muted">
@@ -203,7 +226,11 @@ export default async function EarningsPage() {
                   {group.canBatch ? (
                     <form action={createProviderPayout}>
                       <input type="hidden" name="providerProfileId" value={group.providerProfileId} />
-                      <input type="hidden" name="transferRef" value={`HANDS-${shortId(group.providerProfileId)}`} />
+                      <input
+                        type="hidden"
+                        name="transferRef"
+                        value={`HANDS-${shortId(group.providerProfileId)}`}
+                      />
                       <button type="submit">Batch payout</button>
                     </form>
                   ) : (
@@ -223,7 +250,8 @@ export default async function EarningsPage() {
           <div>
             <h2>Cash fee debt queue</h2>
             <p className="muted">
-              Cash bookings create a negative provider wallet until the provider deposits the HANDS fee or finance offsets it.
+              Cash bookings create a negative provider wallet until the provider deposits the HANDS fee or
+              finance offsets it.
             </p>
           </div>
           <span className={cashDebtQueue.length ? 'pill pill-danger' : 'pill pill-success'}>
@@ -281,7 +309,8 @@ export default async function EarningsPage() {
           <div>
             <h2>Recent earnings ledger</h2>
             <p className="muted">
-              Raw earning rows remain visible for booking traceability, tax audit, and direct finance correction.
+              Raw earning rows remain visible for booking traceability, tax audit, and direct finance
+              correction.
             </p>
           </div>
         </div>
@@ -299,7 +328,7 @@ export default async function EarningsPage() {
           </thead>
           <tbody>
             {sortedEarnings.map((earning) => (
-              <tr key={earning.id}>
+              <tr id={`earning-${earning.id}`} key={earning.id}>
                 <td>
                   <div>
                     {earning.providerProfile?.displayName ??
@@ -487,7 +516,9 @@ function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBrid
         (sum, bookingService) =>
           sum + Number(bookingService.price ?? 0) * Math.max(1, Number(bookingService.quantity ?? 1)),
         0,
-      ) || earning.grossAmount || 1;
+      ) ||
+      earning.grossAmount ||
+      1;
 
     bookingServices.forEach((bookingService) => {
       const quantity = Math.max(1, Number(bookingService.quantity ?? 1));
@@ -497,24 +528,22 @@ function buildServiceEarningBridge(earnings: AdminEarning[]): ServiceEarningBrid
       const key = service?.id ?? bookingService.serviceId ?? 'unknown-service';
       const duration = service?.durationMin ? `${service.durationMin} min` : 'duration not linked';
       const label = service?.name ? `${service.name} / ${duration}` : 'Unlinked service option';
-      const item =
-        grouped.get(key) ??
-        {
-          key,
-          label,
-          groupKey: service?.serviceGroupKey ?? bookingService.serviceId ?? 'unknown',
-          currency: earning.currency,
-          bookingCount: 0,
-          cashBookingCount: 0,
-          grossAmount: 0,
-          netAmount: 0,
-          platformFee: 0,
-          withholdingAmount: 0,
-          cashDebtAmount: 0,
-          unbatchedCount: 0,
-          batchedCount: 0,
-          paidCount: 0,
-        };
+      const item = grouped.get(key) ?? {
+        key,
+        label,
+        groupKey: service?.serviceGroupKey ?? bookingService.serviceId ?? 'unknown',
+        currency: earning.currency,
+        bookingCount: 0,
+        cashBookingCount: 0,
+        grossAmount: 0,
+        netAmount: 0,
+        platformFee: 0,
+        withholdingAmount: 0,
+        cashDebtAmount: 0,
+        unbatchedCount: 0,
+        batchedCount: 0,
+        paidCount: 0,
+      };
 
       item.bookingCount += 1;
       if (earning.booking?.payment?.method === 'CASH') {
@@ -566,20 +595,18 @@ function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: Admin
     const existing = grouped.get(earning.providerProfileId);
     const activeBatch = activeBatchByProvider.get(earning.providerProfileId);
     const providerName = providerDisplayName(earning);
-    const item =
-      existing ??
-      {
-        providerProfileId: earning.providerProfileId,
-        providerName,
-        currency: earning.currency,
-        unbatchedCount: 0,
-        unbatchedNet: 0,
-        withholdingAmount: 0,
-        status: activeBatch ? 'BATCHED' : 'READY',
-        canBatch: false,
-        nextAction: 'Create a payout batch after finance review.',
-        activeBatch,
-      };
+    const item = existing ?? {
+      providerProfileId: earning.providerProfileId,
+      providerName,
+      currency: earning.currency,
+      unbatchedCount: 0,
+      unbatchedNet: 0,
+      withholdingAmount: 0,
+      status: activeBatch ? 'BATCHED' : 'READY',
+      canBatch: false,
+      nextAction: 'Create a payout batch after finance review.',
+      activeBatch,
+    };
 
     item.withholdingAmount += earning.withholdingAmount ?? 0;
     if (!earning.payoutBatchId) {
@@ -629,7 +656,9 @@ function buildFinanceSignals(
     }
     return Date.parse(earning.availableAt) < Date.now();
   });
-  const activeBatches = payoutBatches.filter((batch) => batch.status !== 'PAID' && batch.status !== 'CANCELLED');
+  const activeBatches = payoutBatches.filter(
+    (batch) => batch.status !== 'PAID' && batch.status !== 'CANCELLED',
+  );
 
   return [
     {
@@ -639,14 +668,19 @@ function buildFinanceSignals(
         readyProviders.reduce((sum, item) => sum + item.unbatchedNet, 0),
         'VND',
       ),
-      action: readyProviders.length ? 'Create batches from the provider queue below.' : 'No provider is ready to batch.',
+      action: readyProviders.length
+        ? 'Create batches from the provider queue below.'
+        : 'No provider is ready to batch.',
       className: readyProviders.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: readyProviders.length ? 'pill-warn' : 'pill-success',
     },
     {
       title: 'Active batches',
       status: `${activeBatches.length} OPEN`,
-      detail: formatMoney(activeBatches.reduce((sum, batch) => sum + batch.totalNetAmount, 0), 'VND'),
+      detail: formatMoney(
+        activeBatches.reduce((sum, batch) => sum + batch.totalNetAmount, 0),
+        'VND',
+      ),
       action: activeBatches.length ? 'Move DRAFT/PROCESSING batches from payouts.' : 'No open payout batch.',
       className: activeBatches.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: activeBatches.length ? 'pill-info' : 'pill-success',
@@ -654,8 +688,13 @@ function buildFinanceSignals(
     {
       title: 'Batched unpaid rows',
       status: `${batchedUnpaid.length} ROW(S)`,
-      detail: formatMoney(batchedUnpaid.reduce((sum, earning) => sum + earning.netAmount, 0), 'VND'),
-      action: batchedUnpaid.length ? 'Follow the payout batch, not direct paid action.' : 'No batched unpaid row.',
+      detail: formatMoney(
+        batchedUnpaid.reduce((sum, earning) => sum + earning.netAmount, 0),
+        'VND',
+      ),
+      action: batchedUnpaid.length
+        ? 'Follow the payout batch, not direct paid action.'
+        : 'No batched unpaid row.',
       className: batchedUnpaid.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: batchedUnpaid.length ? 'pill-info' : 'pill-success',
     },
@@ -798,8 +837,7 @@ function netCompanyFeeHint(earning: AdminEarning) {
     | undefined;
   const vatAmount = snapshot?.vatAmount ?? 0;
   const otherCostAmount = snapshot?.otherCostAmount ?? 0;
-  const netCompanyFee =
-    earning.platformFee - (earning.withholdingAmount ?? 0) - vatAmount - otherCostAmount;
+  const netCompanyFee = earning.platformFee - (earning.withholdingAmount ?? 0) - vatAmount - otherCostAmount;
   if (snapshot?.source === 'SERVICE_PAYOUT_RULE') {
     return `Net company fee after VAT/tax/cost: ${formatMoney(netCompanyFee, earning.currency)}`;
   }

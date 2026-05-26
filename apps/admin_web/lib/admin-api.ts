@@ -420,6 +420,17 @@ export type AdminPayment = {
     status?: string;
     customerProfile?: { user?: { phone?: string; fullName?: string | null } };
     selectedProvider?: { displayName?: string | null };
+    earning?: {
+      id: string;
+      status: string;
+      grossAmount: number;
+      platformFee: number;
+      withholdingAmount: number;
+      netAmount: number;
+      currency: string;
+      settlementRef?: string | null;
+      walletLedgerEntries?: AdminProviderWalletLedgerEntry[];
+    } | null;
   };
   refunds?: Array<{ id: string; amount: number; status: string; createdAt?: string }>;
 };

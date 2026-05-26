@@ -28,6 +28,10 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
           </h2>
         </div>
         <div className="card">
+          <p>Cash debt</p>
+          <h2>{allPayments.filter(paymentCashDebtNeedsSettlement).length}</h2>
+        </div>
+        <div className="card">
           <p>Captured</p>
           <h2>{allPayments.filter((payment) => payment.status === 'CAPTURED').length}</h2>
         </div>
@@ -111,10 +115,21 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
                   <div className="muted">
                     {payment.booking?.customerProfile?.user?.phone ?? 'No customer phone'}
                   </div>
+                  {paymentCashDebtNeedsSettlement(payment) && (
+                    <div className="muted">
+                      Cash fee debt{' '}
+                      {money(Math.abs(payment.booking?.earning?.netAmount ?? 0), payment.currency)}
+                    </div>
+                  )}
                   <div className="actions" style={{ marginTop: 8 }}>
                     <Link className="text-link" href={`/bookings/${payment.bookingId}`}>
                       Open booking
                     </Link>
+                    {payment.booking?.earning?.id && (
+                      <Link className="text-link" href={`/earnings#earning-${payment.booking.earning.id}`}>
+                        Open earning
+                      </Link>
+                    )}
                     {payment.refunds?.at(0)?.id && (
                       <Link className="text-link" href={`/refunds#refund-${payment.refunds[0].id}`}>
                         Open refund
@@ -222,6 +237,9 @@ function paymentMatchesReview(payment: AdminPayment, review: string) {
   if (review === 'cash') {
     return payment.method === 'CASH' && payment.status === 'PENDING';
   }
+  if (review === 'cash-debt') {
+    return paymentCashDebtNeedsSettlement(payment);
+  }
   if (review === 'needs-action') {
     return paymentOpsState(payment) !== 'settled';
   }
@@ -238,6 +256,7 @@ function paymentFilterLinks() {
     { label: 'Missing refs', href: '/payments?review=missing-ref', review: 'missing-ref' },
     { label: 'Authorized holds', href: '/payments?review=authorized', review: 'authorized' },
     { label: 'Cash collection', href: '/payments?review=cash', review: 'cash' },
+    { label: 'Cash fee debt', href: '/payments?review=cash-debt', review: 'cash-debt' },
     { label: 'Needs action', href: '/payments?review=needs-action', review: 'needs-action' },
     { label: 'Refunded', href: '/payments?review=refunded', review: 'refunded' },
   ];
@@ -256,6 +275,9 @@ function paymentFilterDescription(review: string) {
   if (review === 'cash') {
     return 'cash bookings waiting for collection confirmation.';
   }
+  if (review === 'cash-debt') {
+    return 'completed cash bookings where the provider still owes HANDS fee or tax wallet debt.';
+  }
   if (review === 'needs-action') {
     return 'payments that are not settled, released, or refunded yet.';
   }
@@ -273,6 +295,9 @@ function emptyPaymentMessage(review: string) {
 }
 
 function paymentPriority(payment: AdminPayment) {
+  if (paymentCashDebtNeedsSettlement(payment)) {
+    return 6;
+  }
   if (payment.status === 'AUTHORIZED') {
     return 5;
   }
@@ -289,6 +314,9 @@ function paymentPriority(payment: AdminPayment) {
 }
 
 function paymentOpsState(payment: AdminPayment) {
+  if (paymentCashDebtNeedsSettlement(payment)) {
+    return 'cash-debt';
+  }
   if (payment.status === 'CAPTURED' || payment.status === 'RELEASED' || payment.status === 'REFUNDED') {
     return 'settled';
   }
@@ -302,6 +330,9 @@ function paymentOpsState(payment: AdminPayment) {
 }
 
 function paymentStateLabel(payment: AdminPayment) {
+  if (paymentCashDebtNeedsSettlement(payment)) {
+    return 'Cash collected, provider wallet debt is still unsettled.';
+  }
   if (payment.status === 'AUTHORIZED') {
     return 'Hold placed, waiting for service completion.';
   }
@@ -321,6 +352,9 @@ function paymentStateLabel(payment: AdminPayment) {
 }
 
 function paymentOpsSignal(payment: AdminPayment) {
+  if (paymentCashDebtNeedsSettlement(payment)) {
+    return <span className="signal signal-warn">Cash fee debt</span>;
+  }
   if (payment.status === 'AUTHORIZED') {
     return <span className="signal signal-warn">Capture after service</span>;
   }
@@ -337,6 +371,13 @@ function paymentOpsSignal(payment: AdminPayment) {
 }
 
 function paymentOpsHint(payment: AdminPayment) {
+  if (paymentCashDebtNeedsSettlement(payment)) {
+    const debt = Math.abs(payment.booking?.earning?.netAmount ?? 0);
+    return `Cash was collected by the provider. Settle ${money(
+      debt,
+      payment.currency,
+    )} HANDS fee/tax debt from Earnings before they can keep accepting bookings.`;
+  }
   if (payment.status === 'AUTHORIZED') {
     return 'Keep this on hold until the therapist completes the service, then capture or refund.';
   }
@@ -350,6 +391,20 @@ function paymentOpsHint(payment: AdminPayment) {
     return 'Booking did not convert. Confirm the customer sees the hold release.';
   }
   return 'No urgent action required.';
+}
+
+function paymentCashDebtNeedsSettlement(payment: AdminPayment) {
+  const earning = payment.booking?.earning;
+  return (
+    payment.method === 'CASH' &&
+    Boolean(earning) &&
+    (earning?.netAmount ?? 0) < 0 &&
+    earning?.status !== 'PAID'
+  );
+}
+
+function money(amount: number, currency = 'VND') {
+  return `${amount.toLocaleString()} ${currency}`;
 }
 
 function shortId(value: string) {

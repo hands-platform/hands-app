@@ -883,7 +883,17 @@ export class AdminService {
       orderBy: { id: 'desc' },
       take: 100,
       include: {
-        booking: { include: { customerProfile: { include: { user: true } }, selectedProvider: true } },
+        booking: {
+          include: {
+            customerProfile: { include: { user: true } },
+            selectedProvider: true,
+            earning: {
+              include: {
+                walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+              },
+            },
+          },
+        },
         refunds: true,
       },
     });
