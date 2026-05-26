@@ -54,6 +54,34 @@ async function expectRequestFailure(label, fn, expectedStatus) {
   throw new Error(`${label} unexpectedly succeeded`);
 }
 
+function firstBookingServiceLine(booking) {
+  const services = Array.isArray(booking?.services) ? booking.services : [];
+  return services.length > 0 && services[0] && typeof services[0] === 'object' ? services[0] : null;
+}
+
+function assertBookingPricing(label, booking, expected) {
+  const serviceLine = firstBookingServiceLine(booking);
+  const payment = booking?.payment;
+  if (!serviceLine || serviceLine.price !== expected.customerPrice) {
+    throw new Error(
+      `${label} booking service price mismatch: ${JSON.stringify({
+        expected,
+        serviceLine,
+        bookingId: booking?.id,
+      })}`,
+    );
+  }
+  if (payment?.amount !== expected.paymentAmount) {
+    throw new Error(
+      `${label} payment amount mismatch: ${JSON.stringify({
+        expected,
+        payment,
+        bookingId: booking?.id,
+      })}`,
+    );
+  }
+}
+
 const health = await request('/health');
 const readiness = await request('/health/ready');
 if (!health.ok || !readiness.ok) {
@@ -280,6 +308,12 @@ if (
   !adminService.payoutRules?.some((rule) => rule.customerPrice === service.basePrice && rule.active)
 ) {
   throw new Error(`Admin service matrix is missing the base payout rule: ${JSON.stringify(adminService)}`);
+}
+const basePayoutRule = adminService.payoutRules.find(
+  (rule) => rule.customerPrice === service.basePrice && rule.active,
+);
+if (!basePayoutRule) {
+  throw new Error(`Base payout rule could not be selected: ${JSON.stringify(adminService)}`);
 }
 const adminServiceGroups = await getJson('/admin/services/groups', adminAuth.accessToken);
 const adminServiceGroup = adminServiceGroups.find((group) =>
@@ -952,6 +986,11 @@ const booking = await postJson('/customer/bookings', customerAuth.accessToken, {
   lng: 106.7009,
   paymentMethod: 'MOMO',
 });
+const bookingDetail = await getJson(`/customer/bookings/${booking.id}`, customerAuth.accessToken);
+assertBookingPricing('Open matching base-price', bookingDetail, {
+  customerPrice: service.basePrice,
+  paymentAmount: service.basePrice,
+});
 
 const hybridBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -961,6 +1000,14 @@ const hybridBooking = await postJson('/customer/bookings', customerAuth.accessTo
   lat: 10.7783,
   lng: 106.6994,
   paymentMethod: 'CASH',
+});
+const hybridBookingDetail = await getJson(
+  `/customer/bookings/${hybridBooking.id}`,
+  customerAuth.accessToken,
+);
+assertBookingPricing('Direct provider custom-price', hybridBookingDetail, {
+  customerPrice: higherCustomerPrice,
+  paymentAmount: higherCustomerPrice,
 });
 
 const momoBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
@@ -1246,6 +1293,20 @@ if (providerEarningsSummary.withholdingAmount <= 0) {
 const adminCompletedEarning = (await getJson('/admin/earnings', adminAuth.accessToken)).find(
   (earning) => earning.bookingId === booking.id,
 );
+const expectedBasePlatformFee = service.basePrice - basePayoutRule.providerPayoutAmount;
+if (
+  completedEarning.grossAmount !== service.basePrice ||
+  completedEarning.platformFee !== expectedBasePlatformFee
+) {
+  throw new Error(
+    `Completed earning did not use the service payout matrix amounts: ${JSON.stringify({
+      completedEarning,
+      serviceBasePrice: service.basePrice,
+      basePayoutRule,
+      expectedBasePlatformFee,
+    })}`,
+  );
+}
 if (
   !adminCompletedEarning?.platformFeeLogs?.length ||
   adminCompletedEarning.platformFeeLogs[0].platformFeeAmount !== completedEarning.platformFee
