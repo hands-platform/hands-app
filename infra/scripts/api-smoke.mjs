@@ -570,6 +570,24 @@ await expectRequestFailure(
     }),
   400,
 );
+await expectRequestFailure(
+  'Provider price outside the admin price step is rejected',
+  () =>
+    patchJson(`/provider/services/${service.id}`, providerAuth.accessToken, {
+      price: service.basePrice + Math.round(service.priceStep / 2),
+      active: true,
+    }),
+  400,
+);
+await expectRequestFailure(
+  'Provider cannot activate a service price without an exact admin payout rule',
+  () =>
+    patchJson(`/provider/services/${serviceWithoutPayoutRule.id}`, providerAuth.accessToken, {
+      price: serviceWithoutPayoutRule.basePrice,
+      active: true,
+    }),
+  400,
+);
 const updatedProviderService = await patchJson(`/provider/services/${service.id}`, providerAuth.accessToken, {
   price: higherCustomerPrice,
   active: true,
