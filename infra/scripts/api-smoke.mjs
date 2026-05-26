@@ -419,6 +419,28 @@ if (
     `Atomic service duration set was not created correctly: ${JSON.stringify(smokeDurationSet)}`,
   );
 }
+const vietnameseServiceSuffix = Date.now();
+const vietnameseServiceName = `Mát xa đá chân ${vietnameseServiceSuffix}`;
+const vietnameseServiceKey = `mat_xa_da_chan_${vietnameseServiceSuffix}`;
+const vietnameseDurationSet = await postJson('/admin/services/duration-sets', adminAuth.accessToken, {
+  name: vietnameseServiceName,
+  description: 'Smoke test Vietnamese service-name slug generation.',
+  priceStep: 100000,
+  displayOrder: 999,
+  vatBps: 0,
+  otherCostAmount: 0,
+  active: true,
+  durations: [{ durationMin: 60, basePrice: 600000, providerPayoutAmount: 460000 }],
+});
+if (
+  !Array.isArray(vietnameseDurationSet) ||
+  vietnameseDurationSet.length !== 1 ||
+  vietnameseDurationSet[0].serviceGroupKey !== vietnameseServiceKey
+) {
+  throw new Error(
+    `Vietnamese service names should generate stable group keys: ${JSON.stringify(vietnameseDurationSet)}`,
+  );
+}
 await expectRequestFailure(
   'Admin duplicate service duration set is rejected atomically',
   () =>
