@@ -1382,6 +1382,53 @@ if (adminCompletedEarning.platformFeeLogs[0].ruleSnapshot?.source !== 'SERVICE_P
     )}`,
   );
 }
+const servicePayoutLog = adminCompletedEarning.platformFeeLogs[0];
+const servicePayoutSnapshot = servicePayoutLog.ruleSnapshot ?? {};
+const servicePayoutLines = Array.isArray(servicePayoutSnapshot.lines)
+  ? servicePayoutSnapshot.lines
+  : [];
+const servicePayoutLine = servicePayoutLines.find(
+  (line) => line.serviceId === service.id && line.customerPrice === service.basePrice,
+);
+const expectedBaseVatAmount = Math.round((expectedBasePlatformFee * basePayoutRule.vatBps) / 10_000);
+const expectedBaseOtherCostAmount = basePayoutRule.otherCostAmount;
+const expectedNetCompanyFeeBeforeWithholding =
+  expectedBasePlatformFee - expectedBaseVatAmount - expectedBaseOtherCostAmount;
+if (
+  servicePayoutSnapshot.providerPayoutAmount !== basePayoutRule.providerPayoutAmount ||
+  servicePayoutSnapshot.vatAmount !== expectedBaseVatAmount ||
+  servicePayoutSnapshot.otherCostAmount !== expectedBaseOtherCostAmount ||
+  servicePayoutSnapshot.netCompanyFeeBeforeWithholding !== expectedNetCompanyFeeBeforeWithholding
+) {
+  throw new Error(
+    `Completed earning service payout snapshot does not match the admin pricing rule: ${JSON.stringify({
+      servicePayoutLog,
+      basePayoutRule,
+      expectedBasePlatformFee,
+      expectedBaseVatAmount,
+      expectedBaseOtherCostAmount,
+      expectedNetCompanyFeeBeforeWithholding,
+    })}`,
+  );
+}
+if (
+  !servicePayoutLine ||
+  servicePayoutLine.customerAmount !== service.basePrice ||
+  servicePayoutLine.providerPayoutAmount !== basePayoutRule.providerPayoutAmount ||
+  servicePayoutLine.platformFeeAmount !== expectedBasePlatformFee ||
+  servicePayoutLine.vatAmount !== expectedBaseVatAmount ||
+  servicePayoutLine.otherCostAmount !== expectedBaseOtherCostAmount ||
+  servicePayoutLine.ruleId !== basePayoutRule.id
+) {
+  throw new Error(
+    `Completed earning service payout line does not match the selected service option: ${JSON.stringify({
+      servicePayoutLine,
+      servicePayoutLines,
+      service,
+      basePayoutRule,
+    })}`,
+  );
+}
 if (providerEarningsSummary.walletBlocked === true || providerEarningsSummary.walletBalance <= 0) {
   throw new Error(
     `Online payment earning should keep provider wallet positive: ${JSON.stringify(providerEarningsSummary)}`,
