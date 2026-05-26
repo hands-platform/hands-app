@@ -203,4 +203,30 @@ void main() {
         'Foot Massage / 60 min');
     expect(customerServicePrice(groups.single.options.last), 700000);
   });
+
+  test('waiting customer action explains backup choices and confirmed bookings',
+      () {
+    final backupAction = waitingCustomerAction(
+      status: 'OPEN_MATCHING',
+      fallbackCount: 1,
+      hasChatRoom: false,
+    );
+    expect(backupAction.title, 'Backup options are ready');
+    expect(backupAction.body, contains('switch to a backup therapist'));
+
+    final waitingAction = waitingCustomerAction(
+      status: 'OPEN_MATCHING',
+      fallbackCount: 0,
+      hasChatRoom: false,
+    );
+    expect(waitingAction.title, 'Waiting for therapist response');
+    expect(waitingAction.body, contains('No action is needed yet'));
+
+    final confirmedAction = waitingCustomerAction(
+      status: 'MATCHED',
+      fallbackCount: 0,
+      hasChatRoom: true,
+    );
+    expect(confirmedAction.title, 'Booking confirmed');
+  });
 }

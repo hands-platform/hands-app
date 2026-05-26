@@ -2630,6 +2630,11 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     final chatRoom = asMap(currentBooking?['chatRoom']);
     final chatRoomId = chatRoom?['id']?.toString();
     final timeLeft = formatRemainingTime(expiresAt);
+    final action = waitingCustomerAction(
+      status: status,
+      fallbackCount: fallbackCount,
+      hasChatRoom: chatRoomId != null,
+    );
     final waitingHeadline = status == 'OPEN_MATCHING'
         ? '${providerDisplayName(currentBooking)} confirmation pending'
         : status == 'MATCHED'
@@ -2809,12 +2814,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           ),
                           const SizedBox(height: 12),
                           WaitingInfoBanner(
-                            title: status == 'OPEN_MATCHING'
-                                ? 'Therapist confirmation window'
-                                : 'Booking progress',
-                            body: status == 'OPEN_MATCHING'
-                                ? 'Your chosen therapist gets the first response window. If they take too long, other nearby therapists can appear below.'
-                                : 'Your therapist is confirmed. Keep this page open until service start, or move to Chat when the room is ready.',
+                            title: action.title,
+                            body: action.body,
                           ),
                           if (chatRoomId != null) ...[
                             const SizedBox(height: 12),
@@ -2850,8 +2851,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                               detail:
                                   'This therapist is getting the first confirmation window for your request.',
                               subtitle: fallbackCount == 0
-                                  ? 'Checking availability - $timeLeft remaining'
-                                  : 'Checking availability - $timeLeft remaining before backup options open',
+                                  ? 'Checking availability - $timeLeft'
+                                  : 'Checking availability - $timeLeft with backup options open',
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -2863,7 +2864,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                                     ?.copyWith(fontWeight: FontWeight.w700)),
                             const SizedBox(height: 4),
                             Text(
-                              '$fallbackCount therapist(s) can take this request if you want to switch.',
+                              '$fallbackCount therapist(s) can take this request now. You can keep waiting or switch.',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -2993,8 +2994,8 @@ class TherapistSelectionCard extends StatelessWidget {
                   backgroundColor: const Color(0xFF5E8E4A),
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Select backup'),
-              ),
+                                child: const Text('Switch to this therapist'),
+                              ),
             ),
           ],
         ),
@@ -5866,6 +5867,55 @@ String waitingSignalLabel(String status, int fallbackCount) {
     return 'Options open';
   }
   return 'Pending';
+}
+
+WaitingCustomerAction waitingCustomerAction({
+  required String status,
+  required int fallbackCount,
+  required bool hasChatRoom,
+}) {
+  if (status == 'OPEN_MATCHING' && fallbackCount > 0) {
+    return const WaitingCustomerAction(
+      title: 'Backup options are ready',
+      body:
+          'Your first therapist is still being checked. You can keep waiting or switch to a backup therapist below.',
+    );
+  }
+  if (status == 'OPEN_MATCHING') {
+    return const WaitingCustomerAction(
+      title: 'Waiting for therapist response',
+      body:
+          'No action is needed yet. HANDS is waiting for your chosen therapist, and backup therapists can appear if they are slow.',
+    );
+  }
+  if (hasChatRoom && (status == 'MATCHED' || status == 'PROVIDER_ON_THE_WAY')) {
+    return const WaitingCustomerAction(
+      title: 'Booking confirmed',
+      body:
+          'Your therapist is confirmed. Chat will help coordinate service start and location details.',
+    );
+  }
+  if (status == 'IN_SERVICE') {
+    return const WaitingCustomerAction(
+      title: 'Service is live',
+      body:
+          'Continue in chat if you need help during the service. Review and tip become available after completion.',
+    );
+  }
+  return WaitingCustomerAction(
+    title: 'Booking progress',
+    body: 'Current booking status: $status.',
+  );
+}
+
+class WaitingCustomerAction {
+  const WaitingCustomerAction({
+    required this.title,
+    required this.body,
+  });
+
+  final String title;
+  final String body;
 }
 
 String chatActionLabel(String status) {
