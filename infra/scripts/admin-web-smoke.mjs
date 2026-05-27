@@ -8,6 +8,7 @@ const pages = [
   { path: '/bookings?view=no-show', markers: ['Booking Monitor', 'No-show'] },
   { path: '/operations-policy', markers: ['Operations Policy', 'Live matching policy'] },
   { path: '/cash-settlements', markers: ['Cash Settlements', 'Settlement command queue'] },
+  { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },

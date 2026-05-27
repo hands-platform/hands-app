@@ -1,4 +1,5 @@
 import { AdminCoupon, adminGet } from '../../lib/admin-api';
+import Link from 'next/link';
 import { createCoupon, toggleCoupon } from './actions';
 
 export default async function CouponsPage() {
@@ -10,6 +11,13 @@ export default async function CouponsPage() {
   const expiredCoupons = orderedCoupons.filter((coupon) => couponWindowState(coupon) === 'expired');
   const pausedCoupons = orderedCoupons.filter((coupon) => !coupon.active);
   const needsReview = orderedCoupons.filter((coupon) => couponNeedsReview(coupon));
+  const campaignBoard = buildCampaignCommandBoard({
+    liveCoupons,
+    scheduledCoupons,
+    expiredCoupons,
+    pausedCoupons,
+    needsReview,
+  });
 
   return (
     <>
@@ -28,6 +36,49 @@ export default async function CouponsPage() {
         <SummaryCard label="Scheduled" value={String(scheduledCoupons.length)} hint="Approved, but start time is still ahead." />
         <SummaryCard label="Expired" value={String(expiredCoupons.length)} hint="Candidates for pause or cleanup." />
         <SummaryCard label="Needs review" value={String(needsReview.length)} hint="Expired active codes or paused campaigns." />
+      </section>
+      <section className="card" style={{ marginBottom: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Campaign command board</h2>
+            <p className="muted">
+              Promotion control for customer acquisition, booking conversion, and codes that should not
+              accidentally remain visible in checkout.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              needsReview.length > 0 || expiredCoupons.some((coupon) => coupon.active)
+                ? 'pill-warn'
+                : 'pill-success'
+            }`}
+          >
+            {needsReview.length} review item(s)
+          </span>
+        </div>
+        <div className="ops-task-grid">
+          {campaignBoard.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={item.title}>
+              <span className={`signal ${campaignToneClass(item.tone)}`}>{campaignToneLabel(item.tone)}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <div className="participant-list">
+                <span className="pill">{item.status}</span>
+                <span className="pill">{item.coupons.length} code(s)</span>
+              </div>
+              {item.coupons.length > 0 ? (
+                <div className="stack">
+                  {item.coupons.slice(0, 3).map((coupon) => (
+                    <span className="muted" key={`${item.title}-${coupon.id}`}>
+                      {coupon.code} / {formatDiscount(coupon.discount)} / {couponStatusLabel(coupon)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <small>{item.operatorAction}</small>
+            </Link>
+          ))}
+        </div>
       </section>
       <section className="card">
         <h2>Create Coupon</h2>
@@ -117,6 +168,71 @@ function SummaryCard({ label, value, hint }: { label: string; value: string; hin
       <div style={{ color: '#6b7280', marginTop: 8 }}>{hint}</div>
     </section>
   );
+}
+
+type CampaignCommandTone = 'warn' | 'info' | 'ok';
+
+type CampaignCommandItem = {
+  title: string;
+  detail: string;
+  status: string;
+  operatorAction: string;
+  href: string;
+  tone: CampaignCommandTone;
+  coupons: AdminCoupon[];
+};
+
+function buildCampaignCommandBoard({
+  liveCoupons,
+  scheduledCoupons,
+  expiredCoupons,
+  pausedCoupons,
+  needsReview,
+}: {
+  liveCoupons: AdminCoupon[];
+  scheduledCoupons: AdminCoupon[];
+  expiredCoupons: AdminCoupon[];
+  pausedCoupons: AdminCoupon[];
+  needsReview: AdminCoupon[];
+}): CampaignCommandItem[] {
+  return [
+    {
+      title: 'Live checkout codes',
+      detail: 'Codes customers can use right now while booking. Monitor discount exposure and booking lift.',
+      status: 'Live',
+      operatorAction: 'Confirm each live code has an intended campaign owner and end condition.',
+      href: '/coupons',
+      tone: liveCoupons.length > 0 ? 'info' : 'ok',
+      coupons: liveCoupons,
+    },
+    {
+      title: 'Upcoming campaigns',
+      detail: 'Scheduled codes should be ready before marketing pushes or partner demand planning.',
+      status: 'Scheduled',
+      operatorAction: 'Check start time, discount amount, and support briefing before launch.',
+      href: '/coupons',
+      tone: scheduledCoupons.length > 0 ? 'info' : 'ok',
+      coupons: scheduledCoupons,
+    },
+    {
+      title: 'Expired active codes',
+      detail: 'Expired codes that remain active create customer confusion and checkout rejection noise.',
+      status: 'Expired',
+      operatorAction: 'Pause, replace, or archive these before the next campaign review.',
+      href: '/coupons',
+      tone: expiredCoupons.some((coupon) => coupon.active) ? 'warn' : 'ok',
+      coupons: expiredCoupons.filter((coupon) => coupon.active),
+    },
+    {
+      title: 'Paused or review queue',
+      detail: 'Paused campaigns and review candidates need a deliberate activate, replace, or cleanup decision.',
+      status: 'Needs decision',
+      operatorAction: 'Decide whether each code should return, stay paused, or be replaced.',
+      href: '/coupons',
+      tone: needsReview.length > 0 || pausedCoupons.length > 0 ? 'warn' : 'ok',
+      coupons: needsReview.length > 0 ? needsReview : pausedCoupons,
+    },
+  ];
 }
 
 function couponPriority(coupon: AdminCoupon) {
@@ -251,4 +367,24 @@ function formatDate(value: string) {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(value));
+}
+
+function campaignToneClass(tone: CampaignCommandTone) {
+  if (tone === 'warn') {
+    return 'signal-warn';
+  }
+  if (tone === 'ok') {
+    return 'signal-ok';
+  }
+  return 'signal-info';
+}
+
+function campaignToneLabel(tone: CampaignCommandTone) {
+  if (tone === 'warn') {
+    return 'Needs decision';
+  }
+  if (tone === 'ok') {
+    return 'Clear';
+  }
+  return 'Watch';
 }
