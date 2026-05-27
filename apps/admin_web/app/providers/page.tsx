@@ -146,6 +146,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="public-media">Public media review</option>
               <option value="bank">Bank payout review</option>
               <option value="payout-setup">First earning payout setup</option>
+              <option value="cash-debt">Cash fee debt</option>
               <option value="tax">Tax profile review</option>
               <option value="security">Device/session risk</option>
               <option value="risk">Reports/sanctions</option>
@@ -1283,7 +1284,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
         walletDebt > 0
           ? 'Cash fee debt can block partners from accepting new bookings.'
           : 'First-earning payout, bank, and freelance tax readiness are under control.',
-      href: walletDebt > 0 ? '/payouts' : '/providers?review=payout-setup',
+      href: walletDebt > 0 ? '/providers?review=cash-debt' : '/providers?review=payout-setup',
       metrics: [
         providerCommandMetric('bank', bankReview),
         providerCommandMetric('tax', taxReview),
@@ -1411,6 +1412,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
     (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
   ).length;
   const payoutSetupNeedsReview = providers.filter(providerPayoutSetupNeedsReview).length;
+  const cashDebtNeedsReview = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const taxNeedsReview = providers.filter(providerTaxNeedsReview).length;
   const locationNeedsReview = providers.filter((provider) =>
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider)),
@@ -1468,6 +1470,13 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       href: '/providers?review=payout-setup',
       detail:
         'Partners with first revenue who still need tax profile, tax address, or payout agreements before withdrawal.',
+    },
+    {
+      label: 'Cash fee debt',
+      count: cashDebtNeedsReview,
+      href: '/providers?review=cash-debt',
+      detail:
+        'Partners with negative wallet balance cannot accept bookings until HANDS fee settlement is confirmed.',
     },
     {
       label: 'Tax profile review',
@@ -1757,6 +1766,9 @@ function providerFilterDescription(kind: string, value: string) {
   if (kind === 'review' && value === 'payout-setup') {
     return 'First earning payout setup highlights partners who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
   }
+  if (kind === 'review' && value === 'cash-debt') {
+    return 'Cash fee debt highlights partners blocked from accepting bookings because HANDS commission was not settled.';
+  }
   if (kind === 'review') {
     return 'Review queue focuses the table on one operational approval lane.';
   }
@@ -1830,6 +1842,9 @@ function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
   }
   if (review === 'payout-setup') {
     return providerPayoutSetupNeedsReview(provider);
+  }
+  if (review === 'cash-debt') {
+    return providerUnsettledWalletBalance(provider) < 0;
   }
   if (review === 'tax') {
     return providerTaxNeedsReview(provider);
