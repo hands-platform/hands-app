@@ -216,8 +216,12 @@ export default async function NotificationsPage({
                   <div className="muted">{notification.user?.phone ?? 'No phone on file'}</div>
                   {notification.user?.providerProfile ? (
                     <div className="muted">
-                      Partner {notification.user.providerProfile.displayName ?? shortId(notification.user.providerProfile.id)} /{' '}
-                      {notification.user.providerProfile.status ?? 'status unknown'}
+                      <Link className="text-link" href={`/providers/${notification.user.providerProfile.id}`}>
+                        Partner{' '}
+                        {notification.user.providerProfile.displayName ??
+                          shortId(notification.user.providerProfile.id)}
+                      </Link>{' '}
+                      / {notification.user.providerProfile.status ?? 'status unknown'}
                     </div>
                   ) : null}
                 </td>
@@ -278,9 +282,28 @@ export default async function NotificationsPage({
                     : 'No devices / not attempted'}
                 </td>
                 <td>
+                  {notificationBookingId(notification) ? (
+                    <Link
+                      className="pill pill-neutral"
+                      href={`/bookings/${notificationBookingId(notification)}`}
+                    >
+                      Open booking
+                    </Link>
+                  ) : null}
+                  {notification.user?.providerProfile?.id ? (
+                    <Link
+                      className="pill pill-neutral"
+                      href={`/providers/${notification.user.providerProfile.id}`}
+                      style={{ marginTop: 6 }}
+                    >
+                      Open partner
+                    </Link>
+                  ) : null}
                   <form action={retryNotification}>
                     <input type="hidden" name="notificationId" value={notification.id} />
-                    <button type="submit">Retry</button>
+                    <button type="submit" style={{ marginTop: 6 }}>
+                      Retry
+                    </button>
                   </form>
                 </td>
               </tr>
