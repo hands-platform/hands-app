@@ -35,6 +35,9 @@ type BookingNextAction = {
   booking: AdminBooking;
   title: string;
   detail: string;
+  operatorAction: string;
+  owner: 'Dispatch' | 'Finance' | 'Support' | 'Safety';
+  priority: 'P0' | 'P1' | 'P2' | 'P3';
   tone: 'ok' | 'info' | 'warn' | 'danger';
   href: string;
   tags: string[];
@@ -285,11 +288,16 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                 <span className={`signal ${commandToneClass(item.tone)}`}>{commandToneLabel(item.tone)}</span>
               </div>
               <p className="muted">{item.detail}</p>
+              <p>
+                <strong>{item.owner}</strong> / {item.priority}: {item.operatorAction}
+              </p>
               <p className="muted">
                 {bookingCustomerLabel(item.booking)} / {bookingProviderLabel(item.booking)}
               </p>
               <div className="participant-list" style={{ marginTop: 10 }}>
                 <span className="pill">{item.booking.status}</span>
+                <span className="pill">{item.owner}</span>
+                <span className="pill">{item.priority}</span>
                 <span className="pill">{bookingAgeLabel(item.booking, currentTimeMs)}</span>
                 {item.tags.map((tag) => (
                   <span className="pill" key={tag}>
@@ -718,6 +726,9 @@ function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): Booki
           booking,
           title: highestFlag.title,
           detail: nextAction(booking),
+          operatorAction: bookingOperatorAction(booking, nowMs, highestFlag),
+          owner: bookingActionOwner(booking, highestFlag),
+          priority: bookingActionPriority(booking, nowMs, highestFlag),
           tone:
             highestFlag.severity === 'high' ? 'danger' : highestFlag.severity === 'medium' ? 'warn' : 'info',
           href: `/bookings/${booking.id}`,
@@ -734,6 +745,9 @@ function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): Booki
           booking,
           title: 'Monitor active booking',
           detail: nextAction(booking),
+          operatorAction: bookingOperatorAction(booking, nowMs),
+          owner: bookingActionOwner(booking),
+          priority: bookingActionPriority(booking, nowMs),
           tone: 'info',
           href: `/bookings/${booking.id}`,
           tags: [
@@ -807,6 +821,100 @@ function riskFlagWeight(flag: BookingRiskFlag) {
     return 2;
   }
   return 1;
+}
+
+function bookingActionPriority(
+  booking: AdminBooking,
+  nowMs: number,
+  flag?: BookingRiskFlag,
+): BookingNextAction['priority'] {
+  if (flag?.severity === 'high') {
+    return 'P0';
+  }
+  if (
+    booking.status === 'NO_SHOW' ||
+    booking.status === 'EXPIRED' ||
+    bookingPaymentNeedsOps(booking) ||
+    bookingCompletedCloseoutNeedsOps(booking)
+  ) {
+    return 'P0';
+  }
+  if (
+    flag?.severity === 'medium' ||
+    booking.status === 'MATCHED' ||
+    booking.status === 'PROVIDER_ON_THE_WAY' ||
+    bookingLocationNeedsOps(booking, nowMs)
+  ) {
+    return 'P1';
+  }
+  if (booking.status === 'OPEN_MATCHING' || booking.status === 'ARRIVED' || booking.status === 'IN_SERVICE') {
+    return 'P2';
+  }
+  return 'P3';
+}
+
+function bookingActionOwner(booking: AdminBooking, flag?: BookingRiskFlag): BookingNextAction['owner'] {
+  if (
+    flag?.title.toLowerCase().includes('payment') ||
+    flag?.title.toLowerCase().includes('closeout') ||
+    flag?.title.toLowerCase().includes('cash') ||
+    flag?.title.toLowerCase().includes('payout') ||
+    bookingPaymentNeedsOps(booking) ||
+    bookingCompletedCloseoutNeedsOps(booking)
+  ) {
+    return 'Finance';
+  }
+  if (booking.status === 'NO_SHOW' || flag?.title.toLowerCase().includes('no-show')) {
+    return 'Safety';
+  }
+  if (
+    booking.status === 'CANCELLED' ||
+    booking.status === 'EXPIRED' ||
+    flag?.title.toLowerCase().includes('chat')
+  ) {
+    return 'Support';
+  }
+  return 'Dispatch';
+}
+
+function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingRiskFlag) {
+  if (bookingCashDebtNeedsOps(booking)) {
+    return 'Confirm partner wallet debt, request company fee settlement, and block further acceptance until paid.';
+  }
+  if (bookingCompletedCloseoutNeedsOps(booking)) {
+    return 'Run closeout reconciliation so payment, earning, tax, fee, and wallet records match.';
+  }
+  if (bookingPaymentNeedsOps(booking)) {
+    return 'Open the booking payment panel and decide capture, release, refund, cash debt, or missing reference handling.';
+  }
+  if (booking.status === 'NO_SHOW') {
+    return 'Record customer and partner notes, then close payment and safety follow-up.';
+  }
+  if (booking.status === 'EXPIRED') {
+    return 'Release the hold, notify the customer, and confirm no partner remains assigned.';
+  }
+  if (
+    booking.status === 'OPEN_MATCHING' &&
+    booking.preferredProvider &&
+    isPreferredAwaitingDecision(booking)
+  ) {
+    return 'Watch the preferred partner response window and prepare fallback partner selection.';
+  }
+  if (booking.status === 'OPEN_MATCHING') {
+    return 'Check nearby partner supply and notification delivery until the customer has options.';
+  }
+  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+    return 'Create or repair chat handoff before the service moves forward.';
+  }
+  if (bookingLocationNeedsOps(booking, nowMs)) {
+    return 'Ask the partner to refresh location once; use last-known location only, no live routing.';
+  }
+  if (booking.status === 'IN_SERVICE') {
+    return 'Monitor completion timing and prepare payment capture or cash fee ledger closeout.';
+  }
+  return flag
+    ? `Review ${flag.title.toLowerCase()} and add an ops note before closing.`
+    : 'Keep watching status, chat, and partner handoff.';
 }
 
 function bookingPriority(booking: AdminBooking) {
