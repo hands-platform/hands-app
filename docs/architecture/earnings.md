@@ -1,14 +1,14 @@
-# Provider Earnings
+# Partner Earnings
 
-The MVP creates a provider earning record when the selected provider completes a booking.
+The MVP creates a partner earning record when the selected partner completes a booking.
 
 ## Flow
 
-1. Provider calls `POST /provider/bookings/:id/complete`.
+1. Partner calls `POST /provider/bookings/:id/complete`.
 2. Booking status changes to `COMPLETED`.
 3. Payment status changes to `CAPTURED`.
 4. `ProviderEarning` is upserted by `bookingId`.
-5. Provider can view earnings in the provider app.
+5. Partner can view earnings in the partner app.
 6. Admin can monitor earnings, settle cash fee debt, and create payout batches.
 
 ## Calculation
@@ -18,10 +18,10 @@ The MVP creates a provider earning record when the selected provider completes a
 - `withholdingAmount`: calculated from the active versioned tax policy.
 - `tipAmount`: review tip amount, applied after the customer submits a review.
 - `netAmount` for MoMo/VNPay: `grossAmount - platformFee - withholdingAmount + tipAmount`.
-- `netAmount` for cash: `-(platformFee + withholdingAmount)` because the provider already received the customer cash directly.
+- `netAmount` for cash: `-(platformFee + withholdingAmount)` because the partner already received the customer cash directly.
 - `availableAt`: 24 hours after completion for MVP payout review.
 
-Cash bookings therefore create a company receivable instead of a provider payout. The provider wallet can go negative when cash-service platform fees or tax withholding have not been settled.
+Cash bookings therefore create a company receivable instead of a partner payout. The partner wallet can go negative when cash-service platform fees or tax withholding have not been settled.
 
 ## Service Payout Matrix
 
@@ -30,9 +30,9 @@ Completed earnings prefer the `ServicePayoutRule` matrix before falling back to 
 The matrix is configured per service duration and customer price:
 
 - Admin sets the minimum customer price on `MassageService.basePrice`.
-- Provider prices must stay at or above that minimum and follow the service `priceStep`, currently `100000 VND`.
-- Admin maps each configured customer price to a provider payout amount.
-- The platform fee is calculated as customer price minus provider payout.
+- Partner prices must stay at or above that minimum and follow the service `priceStep`, currently `100000 VND`.
+- Admin maps each configured customer price to a partner payout amount.
+- The platform fee is calculated as customer price minus partner payout.
 - VAT, withholding, other costs, and estimated net company commission are shown in the admin earnings ledger.
 
 Every earning stores a platform fee rule snapshot, so future policy edits do not rewrite historical finance records.
@@ -50,44 +50,44 @@ Platform fees are versioned like tax policies. The MVP seeds an active default p
 
 Admin refunds cancel unpaid earnings and set their net amount to zero. If an earning is already paid, the MVP preserves it and records the skip reason in the audit log.
 
-## Provider Wallet Guard
+## Partner Wallet Guard
 
-For the MVP, the provider wallet guard still reads unsettled `ProviderEarning.netAmount` totals because that keeps booking acceptance fast and simple:
+For the MVP, the partner wallet guard still reads unsettled `ProviderEarning.netAmount` totals because that keeps booking acceptance fast and simple:
 
-- Positive delta: HANDS owes money to the provider.
-- Negative delta: the provider owes HANDS fees/tax from cash bookings.
+- Positive delta: HANDS owes money to the partner.
+- Negative delta: the partner owes HANDS fees/tax from cash bookings.
 
-If the unsettled wallet balance is negative, the API blocks joining or accepting new bookings and returns the provider-facing message:
+If the unsettled wallet balance is negative, the API blocks joining or accepting new bookings and returns the partner-facing message:
 
 `수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
 
 This supports two later settlement paths without changing booking flow:
 
-- Provider transfers the owed fee/tax amount directly to HANDS.
+- Partner transfers the owed fee/tax amount directly to HANDS.
 - HANDS offsets the negative balance against later positive online-payment payouts.
 
 The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. The admin payments list and booking detail page also expose direct settlement forms for the same debt when finance is reviewing a cash booking from operational context.
 
-After finance confirms the provider deposit or an approved offset, the operator must enter a deposit reference or offset reference and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the provider from accepting new requests. The API rejects cash-fee debt settlement without a reference because finance needs an auditable payment or offset trail.
+After finance confirms the partner deposit or an approved offset, the operator must enter a deposit reference or offset reference and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the partner from accepting new requests. The API rejects cash-fee debt settlement without a reference because finance needs an auditable payment or offset trail.
 
 `ProviderWalletLedgerEntry` records the finance audit trail around those earning rows:
 
 - `BOOKING_EARNING`: created when a booking completion creates or updates the earning.
-- `CASH_FEE_DEBT_SETTLED`: created when finance confirms a provider repayment or offset for a negative cash earning.
-- `PAYOUT_PAID`: created when admin payout processing moves provider money out of the wallet.
+- `CASH_FEE_DEBT_SETTLED`: created when finance confirms a partner repayment or offset for a negative cash earning.
+- `PAYOUT_PAID`: created when admin payout processing moves partner money out of the wallet.
 - `REFUND_REVERSAL`: created when an unpaid earning is cancelled after a refund.
 
 These ledger entries are append-friendly audit mirrors for finance and admin review. The direct guard can later move from earning totals to ledger totals once deposits, admin adjustments, and bank payout retries become richer.
 
 ## Payout Batches
 
-`ProviderPayoutBatch` groups one provider's unpaid positive earnings into a single payout record. The admin can move a batch through `DRAFT`, `PROCESSING`, `PAID`, `FAILED`, and `CANCELLED`. A bank transfer reference is required before a batch can be marked `PAID`, and included earnings are linked through `payoutBatchId`.
+`ProviderPayoutBatch` groups one partner's unpaid positive earnings into a single payout record. The admin can move a batch through `DRAFT`, `PROCESSING`, `PAID`, `FAILED`, and `CANCELLED`. A bank transfer reference is required before a batch can be marked `PAID`, and included earnings are linked through `payoutBatchId`.
 
 This keeps the current product simple while preserving the later path for real bank transfer execution, failed payout recovery, and batch-level reconciliation.
 
 ## Next Production Work
 
 - Add admin adjustment entries for manual wallet corrections.
-- Add provider payout account verification.
+- Add partner payout account verification.
 - Add real bank transfer execution and failure retry.
 - Add paid-earning reversal entries for post-payout refunds and disputes.

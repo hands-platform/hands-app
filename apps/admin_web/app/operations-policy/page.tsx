@@ -618,7 +618,8 @@ function buildPolicySimulation(
     policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
   const preferredAcceptMode =
     policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
-  const alertChannel = policyStringValue(settings, 'notification.partner_alert_channel') ?? 'PUSH_ONLY';
+  const alertChannel =
+    policyStringValue(settings, 'notification.partner_alert_channel') ?? 'IN_APP_WITH_PUSH_LATER';
   const reference = referenceBookingCoordinate(bookings);
   const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE'));
   const partnerCandidates = onlinePartners
@@ -682,7 +683,11 @@ function buildPolicySimulation(
       {
         label: 'Partner alert',
         value: policyDisplayByKey(settings, 'notification.partner_alert_channel'),
-        helper: `${alertChannel === 'PUSH_AND_IN_APP' ? 'Push and in-app listing' : 'Configured alert channel'} for eligible partners.`,
+        helper: `${
+          alertChannel === 'ONESIGNAL_FOR_ALL_BOOKINGS'
+            ? 'OS push plus in-app listing'
+            : 'In-app listing now, OS push later'
+        } for eligible partners.`,
       },
     ],
     timeline: [
@@ -746,7 +751,7 @@ function buildPolicySimulation(
           ? 'Customers can see backup interest during the first response window.'
           : 'Customers may see an empty waiting screen until the first partner times out.',
         operatorAction: immediateBackup
-          ? 'Keep monitoring whether customers understand preferred vs backup partner choice.'
+          ? 'Keep monitoring whether customers understand first-pick vs backup partner choice.'
           : 'Use only if first-pick response rate is high enough to avoid empty waiting.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
@@ -1116,7 +1121,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     {
       key: 'open-matching',
       title: 'Open matching watchlist',
-      helper: 'Bookings currently waiting for preferred and backup partner decisions.',
+      helper: 'Bookings currently waiting for first-pick and backup partner decisions.',
       className: openMatchingRows.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: openMatchingRows.length ? 'pill-warn' : 'pill-success',
       emptyText: 'No open matching booking needs policy review right now.',
