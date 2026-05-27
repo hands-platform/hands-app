@@ -10,6 +10,9 @@ import {
 
 type ServicesPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+const SERVICE_GROUP_RENDER_LIMIT = 40;
+const SERVICE_ROW_RENDER_LIMIT = 80;
+
 export default async function ServicesPage({ searchParams }: { searchParams?: ServicesPageSearchParams }) {
   const params = (await searchParams) ?? {};
   const [services, taxPolicies, auditLogs] = await Promise.all([
@@ -29,6 +32,16 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   const bookingTraceSummary = serviceBookingTraceSummary(bookingTraceRows);
   const pricePolicyPreviewRows = servicePricePolicyPreviewRows(activeServices, activeTaxPolicy);
   const pricePolicyPreviewSummary = servicePricePolicyPreviewSummary(pricePolicyPreviewRows);
+  const payoutLedgerRows = servicePayoutLedgerRows(activeServices, activeTaxPolicy);
+  const visibleGroupedServices = groupedServices.slice(0, SERVICE_GROUP_RENDER_LIMIT);
+  const hiddenServiceGroupCount = Math.max(groupedServices.length - visibleGroupedServices.length, 0);
+  const visiblePayoutLedgerRows = payoutLedgerRows.slice(0, SERVICE_ROW_RENDER_LIMIT);
+  const hiddenPayoutLedgerRowCount = Math.max(payoutLedgerRows.length - visiblePayoutLedgerRows.length, 0);
+  const visiblePricePolicyPreviewRows = pricePolicyPreviewRows.slice(0, SERVICE_ROW_RENDER_LIMIT);
+  const hiddenPricePolicyPreviewRowCount = Math.max(
+    pricePolicyPreviewRows.length - visiblePricePolicyPreviewRows.length,
+    0,
+  );
   const pricingAuditRows = servicePricingAuditRows(auditLogs);
   const actionNotice = serviceActionNotice(params);
 
@@ -272,7 +285,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             </tr>
           </thead>
           <tbody>
-            {groupedServices.map((group) => {
+            {visibleGroupedServices.map((group) => {
               const matrix = serviceDurationMatrix(group.items, activeTaxPolicy);
               return (
                 <tr key={group.key}>
@@ -355,6 +368,12 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             })}
           </tbody>
         </table>
+        {hiddenServiceGroupCount ? (
+          <p className="muted">
+            Showing first {visibleGroupedServices.length} of {groupedServices.length} service type(s) to keep
+            the operations page responsive. Full totals above still use the complete catalog.
+          </p>
+        ) : null}
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
@@ -383,7 +402,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             </tr>
           </thead>
           <tbody>
-            {servicePayoutLedgerRows(activeServices, activeTaxPolicy).map((row) => (
+            {visiblePayoutLedgerRows.map((row) => (
               <tr key={row.service.id}>
                 <td>
                   <strong>{row.service.name}</strong>
@@ -427,6 +446,12 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             ))}
           </tbody>
         </table>
+        {hiddenPayoutLedgerRowCount ? (
+          <p className="muted">
+            Showing first {visiblePayoutLedgerRows.length} of {payoutLedgerRows.length} active option(s). Full
+            finance totals still include every active option.
+          </p>
+        ) : null}
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
@@ -501,7 +526,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
               </tr>
             </thead>
             <tbody>
-              {pricePolicyPreviewRows.map((row) => (
+              {visiblePricePolicyPreviewRows.map((row) => (
                 <tr key={row.service.id}>
                   <td>
                     <strong>{row.service.name}</strong>
@@ -542,6 +567,12 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         ) : (
           <p className="muted">No active service option is available for price policy preview.</p>
         )}
+        {hiddenPricePolicyPreviewRowCount ? (
+          <p className="muted">
+            Showing first {visiblePricePolicyPreviewRows.length} of {pricePolicyPreviewRows.length} preview
+            row(s). Risk summaries above still use the full active catalog.
+          </p>
+        ) : null}
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
@@ -798,7 +829,17 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       </section>
 
       <section className="grid">
-        {groupedServices.map((group) => (
+        {hiddenServiceGroupCount ? (
+          <article className="card">
+            <h2>Large catalog mode</h2>
+            <p className="muted">
+              Editing is capped to the first {visibleGroupedServices.length} service type(s) on this page so
+              admin operations stay fast. The full catalog remains included in health, booking readiness, and
+              finance summaries.
+            </p>
+          </article>
+        ) : null}
+        {visibleGroupedServices.map((group) => (
           <article className="card" key={group.key}>
             <div className="toolbar" style={{ marginBottom: 12 }}>
               <div>
