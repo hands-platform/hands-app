@@ -23,6 +23,9 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   const activeServices = services.filter((service) => service.active);
   const payoutRuleCount = services.reduce((sum, service) => sum + (service.payoutRules?.length ?? 0), 0);
   const groupedServices = groupServices(services);
+  const serviceSearchQuery = (readSingleParam(params.q) ?? '').trim();
+  const filteredGroupedServices = filterServiceGroups(groupedServices, serviceSearchQuery);
+  const filteredActiveServices = filterServices(activeServices, serviceSearchQuery);
   const activeTaxPolicy = selectActiveTaxPolicy(taxPolicies);
   const healthItems = buildPricingHealth(services, activeTaxPolicy);
   const readinessItems = buildBookingReadinessQueue(services, activeTaxPolicy);
@@ -30,11 +33,11 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   const warningReadinessItems = readinessItems.filter((item) => item.tone === 'warning');
   const bookingTraceRows = serviceBookingTraceRows(services);
   const bookingTraceSummary = serviceBookingTraceSummary(bookingTraceRows);
-  const pricePolicyPreviewRows = servicePricePolicyPreviewRows(activeServices, activeTaxPolicy);
+  const pricePolicyPreviewRows = servicePricePolicyPreviewRows(filteredActiveServices, activeTaxPolicy);
   const pricePolicyPreviewSummary = servicePricePolicyPreviewSummary(pricePolicyPreviewRows);
-  const payoutLedgerRows = servicePayoutLedgerRows(activeServices, activeTaxPolicy);
-  const visibleGroupedServices = groupedServices.slice(0, SERVICE_GROUP_RENDER_LIMIT);
-  const hiddenServiceGroupCount = Math.max(groupedServices.length - visibleGroupedServices.length, 0);
+  const payoutLedgerRows = servicePayoutLedgerRows(filteredActiveServices, activeTaxPolicy);
+  const visibleGroupedServices = filteredGroupedServices.slice(0, SERVICE_GROUP_RENDER_LIMIT);
+  const hiddenServiceGroupCount = Math.max(filteredGroupedServices.length - visibleGroupedServices.length, 0);
   const visiblePayoutLedgerRows = payoutLedgerRows.slice(0, SERVICE_ROW_RENDER_LIMIT);
   const hiddenPayoutLedgerRowCount = Math.max(payoutLedgerRows.length - visiblePayoutLedgerRows.length, 0);
   const visiblePricePolicyPreviewRows = pricePolicyPreviewRows.slice(0, SERVICE_ROW_RENDER_LIMIT);
@@ -44,6 +47,9 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   );
   const pricingAuditRows = servicePricingAuditRows(auditLogs);
   const actionNotice = serviceActionNotice(params);
+  const catalogScopeLabel = serviceSearchQuery
+    ? `Filtered by "${serviceSearchQuery}"`
+    : 'All service types';
 
   return (
     <>
@@ -63,6 +69,26 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             {activeTaxPolicy ? `Tax: ${activeTaxPolicy.name}` : 'No active tax policy'}
           </span>
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <form className="form-grid compact-form" action="/services">
+          <label className="full-span">
+            Find service type, duration, group key, or price
+            <input name="q" placeholder="foot massage, 90, 450000, deep_tissue" defaultValue={serviceSearchQuery} />
+          </label>
+          <button type="submit">Search catalog</button>
+          {serviceSearchQuery ? (
+            <a className="pill pill-neutral" href="/services">
+              Clear search
+            </a>
+          ) : null}
+        </form>
+        <p className="muted" style={{ marginTop: 10 }}>
+          {catalogScopeLabel}: showing {filteredGroupedServices.length} service type(s) and{' '}
+          {filteredActiveServices.length} active duration option(s). Dashboard readiness cards still check the
+          full catalog.
+        </p>
       </section>
 
       {actionNotice ? (
@@ -1125,6 +1151,50 @@ function groupServices(services: AdminServiceCatalogItem[]) {
     label: items[0]?.name ?? key,
     items: items.sort((left, right) => left.durationMin - right.durationMin),
   }));
+}
+
+function filterServiceGroups(groups: ReturnType<typeof groupServices>, query: string) {
+  if (!query) {
+    return groups;
+  }
+
+  const search = query.toLowerCase();
+  return groups
+    .map((group) => {
+      const groupMatches = [group.key, group.label].join(' ').toLowerCase().includes(search);
+      if (groupMatches) {
+        return group;
+      }
+
+      const items = group.items.filter((service) => serviceSearchText(service).includes(search));
+      return items.length ? { ...group, items } : null;
+    })
+    .filter(Boolean) as ReturnType<typeof groupServices>;
+}
+
+function filterServices(services: AdminServiceCatalogItem[], query: string) {
+  if (!query) {
+    return services;
+  }
+  const search = query.toLowerCase();
+  return services.filter((service) => serviceSearchText(service).includes(search));
+}
+
+function serviceSearchText(service: AdminServiceCatalogItem) {
+  return [
+    service.id,
+    service.name,
+    service.description,
+    service.serviceGroupKey,
+    service.durationMin,
+    service.basePrice,
+    service.priceStep,
+    service.active ? 'active' : 'inactive',
+  ]
+    .filter((value) => value !== null && value !== undefined)
+    .map(String)
+    .join(' ')
+    .toLowerCase();
 }
 
 function serviceActionNotice(params: Record<string, string | string[] | undefined>) {
