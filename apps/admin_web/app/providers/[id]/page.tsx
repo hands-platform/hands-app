@@ -37,12 +37,18 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 type PartnerDispatchPolicy = {
+  responseWindowMinutes: number;
+  backupRadiusMeters: number;
   locationFreshnessMinutes: number;
 };
 
+const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
+const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
+  responseWindowMinutes: 10,
+  backupRadiusMeters: 10_000,
   locationFreshnessMinutes: 30,
 };
 
@@ -234,6 +240,18 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <strong>{bookingAcceptance.bookableServices}</strong>
             <small>Bookable price options</small>
           </div>
+        </div>
+        <div className="participant-list" style={{ marginTop: 12 }}>
+          <span className="pill pill-info">
+            First response window: {dispatchPolicy.responseWindowMinutes}m
+          </span>
+          <span className="pill pill-info">Backup radius: {formatDistance(dispatchPolicy.backupRadiusMeters)}</span>
+          <span className="pill pill-info">
+            Backup location: {dispatchPolicy.locationFreshnessMinutes}m fresh
+          </span>
+          <Link className="text-link" href="/operations-policy">
+            Edit matching policy
+          </Link>
         </div>
         <div className="setup-stage-list" style={{ marginTop: 16 }}>
           {bookingAcceptance.gates.map((gate) => (
@@ -2430,6 +2448,12 @@ function formatDateOnly(value?: string | null) {
 
 function buildPartnerDispatchPolicy(settings: AdminOperationalPolicySetting[]): PartnerDispatchPolicy {
   return {
+    responseWindowMinutes:
+      readPolicyNumber(settings, MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY) ??
+      DEFAULT_PARTNER_DISPATCH_POLICY.responseWindowMinutes,
+    backupRadiusMeters:
+      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY) ??
+      DEFAULT_PARTNER_DISPATCH_POLICY.backupRadiusMeters,
     locationFreshnessMinutes:
       readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
       DEFAULT_PARTNER_DISPATCH_POLICY.locationFreshnessMinutes,
@@ -2480,6 +2504,13 @@ function formatBytes(value: number) {
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function formatDistance(value: number) {
+  if (value >= 1000) {
+    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+  }
+  return `${value.toLocaleString('en')} m`;
 }
 
 function locationAgeMinutes(value?: string | null) {
