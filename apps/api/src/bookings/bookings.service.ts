@@ -21,6 +21,8 @@ import {
   CANCELLATION_AFTER_MATCH_POLICY_KEY,
   CANCELLATION_AUTO_FEE_AFTER_MATCH,
   CANCELLATION_ADMIN_REVIEW_FOR_MVP,
+  MatchingPolicy,
+  PREFERRED_ACCEPT_AUTO_MATCH,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
   WALLET_ALLOW_ONE_RECOVERY_BOOKING,
   WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
@@ -182,6 +184,7 @@ export class BookingsService {
       lng: Number(booking.lng),
       preferredProviderId: preferredProvider?.id,
       backupOpenMode: matchingPolicy.backupOpenMode,
+      policy: matchingPolicy,
     });
     const result = this.matching.openBooking({
       booking,
@@ -537,10 +540,12 @@ export class BookingsService {
       return bookings;
     }
 
-    const matchingPolicy = await this.matching.getPolicy();
+    const fallbackPolicy = await this.matching.getPolicy();
     return bookings
       .map((booking) => addProviderMatchingDistance(booking, provider))
-      .filter((booking) => this.canProviderSeeOpenBooking(booking, provider, matchingPolicy));
+      .filter((booking) =>
+        this.canProviderSeeOpenBooking(booking, provider, this.bookingPolicy(booking, fallbackPolicy)),
+      );
   }
 
   async listProviderBookings(providerUserId: string) {
@@ -579,7 +584,7 @@ export class BookingsService {
       throw new BadRequestException('Booking request is expired');
     }
     await this.ensureProviderWalletCanAccept(provider.id);
-    const matchingPolicy = await this.matching.getPolicy();
+    const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
     const participant = await this.prisma.bookingParticipant.upsert({
@@ -595,7 +600,7 @@ export class BookingsService {
       include: { providerProfile: true },
     });
 
-    await this.matching.registerParticipant(bookingId, provider.id);
+    await this.matching.registerParticipant(bookingId, provider.id, matchingPolicy);
     const result = this.matching.joinBooking(bookingId, participant);
     const customerUserId = await this.getCustomerUserIdForBooking(bookingId);
     await this.notifications.create({
@@ -684,7 +689,7 @@ export class BookingsService {
 
     if (booking.preferredProviderId === provider.id) {
       if (status === ParticipantStatus.ACCEPTED) {
-        const matchingPolicy = await this.matching.getPolicy();
+        const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
         if (matchingPolicy.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM) {
           const updated = await this.prisma.booking.update({
             where: { id: bookingId },
@@ -756,10 +761,10 @@ export class BookingsService {
           userId: booking.customerProfile.userId,
           type: 'booking.rejected',
           title: 'Partner declined your booking',
-          body: 'We are still looking for another available therapist.',
+          body: 'We are still looking for another available partner.',
           data: { bookingId, providerProfileId: provider.id },
         });
-        const matchingPolicy = await this.matching.getPolicy();
+        const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
         const serviceId = booking.services[0]?.serviceId;
         const eligibleBackupProviders = serviceId
           ? await this.findEligibleBackupProviders({
@@ -770,6 +775,7 @@ export class BookingsService {
               preferredProviderId: provider.id,
               backupOpenMode: matchingPolicy.backupOpenMode,
               forceOpen: true,
+              policy: matchingPolicy,
             })
           : [];
         const result = this.matching.openBooking({
@@ -834,6 +840,39 @@ export class BookingsService {
     );
   }
 
+  private bookingPolicy(
+    booking: { metadata?: Prisma.JsonValue | null },
+    fallback: Awaited<ReturnType<MatchingService['getPolicy']>>,
+  ): Awaited<ReturnType<MatchingService['getPolicy']>> {
+    const metadata = readPlainRecord(booking.metadata);
+    const snapshot = readPlainRecord(metadata?.matchingPolicy);
+    if (!snapshot) {
+      return fallback;
+    }
+
+    return {
+      providerResponseWindowMinutes: readSnapshotInteger(
+        snapshot.providerResponseWindowMinutes,
+        fallback.providerResponseWindowMinutes,
+      ),
+      backupProviderRadiusMeters: readSnapshotInteger(
+        snapshot.backupProviderRadiusMeters,
+        fallback.backupProviderRadiusMeters,
+      ),
+      travelBufferMinutes: readSnapshotInteger(snapshot.travelBufferMinutes, fallback.travelBufferMinutes),
+      preferredAcceptMode:
+        snapshot.preferredAcceptMode === PREFERRED_ACCEPT_AUTO_MATCH ||
+        snapshot.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM
+          ? snapshot.preferredAcceptMode
+          : fallback.preferredAcceptMode,
+      backupOpenMode:
+        snapshot.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY ||
+        snapshot.backupOpenMode === BACKUP_OPEN_IMMEDIATE
+          ? snapshot.backupOpenMode
+          : fallback.backupOpenMode,
+    };
+  }
+
   private async findEligibleBackupProviders(input: {
     bookingId: string;
     serviceId: string;
@@ -842,12 +881,13 @@ export class BookingsService {
     preferredProviderId?: string;
     backupOpenMode?: Awaited<ReturnType<MatchingService['getPolicy']>>['backupOpenMode'];
     forceOpen?: boolean;
+    policy?: MatchingPolicy;
   }) {
     if (!input.forceOpen && input.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY) {
       return [];
     }
 
-    const policy = await this.matching.getPolicy();
+    const policy = input.policy ?? (await this.matching.getPolicy());
     const providers = await this.prisma.providerProfile.findMany({
       where: {
         id: input.preferredProviderId ? { not: input.preferredProviderId } : undefined,
@@ -1241,4 +1281,15 @@ function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingServic
     backupOpenMode: policy.backupOpenMode,
     travelBufferMinutes: policy.travelBufferMinutes,
   };
+}
+
+function readPlainRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function readSnapshotInteger(value: unknown, fallback: number) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
 }

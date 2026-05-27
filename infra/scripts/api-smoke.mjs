@@ -61,7 +61,9 @@ async function assertOperationalPolicyMetadata(accessToken) {
   ];
   const settingsByKey = new Map(settings.map((setting) => [setting.key, setting]));
   const missingLivePolicies = requiredLivePolicyKeys.filter((key) => !settingsByKey.has(key));
-  const unenforcedLivePolicies = requiredLivePolicyKeys.filter((key) => settingsByKey.get(key)?.enforced !== true);
+  const unenforcedLivePolicies = requiredLivePolicyKeys.filter(
+    (key) => settingsByKey.get(key)?.enforced !== true,
+  );
   const optionPolicyKeys = [
     'matching.preferred_accept_mode',
     'matching.backup_open_mode',
@@ -1175,6 +1177,11 @@ try {
     lng: 106.6994,
     paymentMethod: 'CASH',
   });
+  await patchOperationalPolicyValue(
+    adminAuth.accessToken,
+    'matching.preferred_accept_mode',
+    'AUTO_MATCH_ON_ACCEPT',
+  );
   const acceptedButWaiting = await postJson(
     `/provider/bookings/${preferredAcceptPolicyBooking.id}/accept`,
     providerAuth.accessToken,
@@ -1236,10 +1243,15 @@ try {
     lng: 106.6994,
     paymentMethod: 'CASH',
   });
+  await patchOperationalPolicyValue(
+    adminAuth.accessToken,
+    'matching.backup_open_mode',
+    'IMMEDIATE_WITHIN_WINDOW',
+  );
   const delayedBackupOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
   if (delayedBackupOpenBookings.some((item) => item.id === delayedBackupBooking.id)) {
     throw new Error(
-      `Delayed backup policy should hide request from non-preferred partner: ${JSON.stringify(
+      `Delayed backup booking snapshot should hide request from non-preferred partner even after live policy changes: ${JSON.stringify(
         delayedBackupOpenBookings,
       )}`,
     );
@@ -1626,9 +1638,7 @@ if (
 }
 const expectedProviderWalletBlockReason =
   'You cannot accept new bookings because unpaid HANDS cash-service fees are still pending settlement.';
-if (
-  walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason
-) {
+if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
       walletDebtProviderEarningsSummary,

@@ -73,12 +73,16 @@ export class MatchingService {
   }
 
   async registerActiveBooking(bookingId: string, payload: unknown) {
-    const policy = await this.getPolicy();
+    const policy = getPolicyFromPayload(payload) ?? (await this.getPolicy());
     await this.redisState.openMatching(bookingId, payload, policy.providerResponseWindowMinutes * 60);
   }
 
-  async registerParticipant(bookingId: string, providerId: string) {
-    const policy = await this.getPolicy();
+  async registerParticipant(
+    bookingId: string,
+    providerId: string,
+    policy?: Awaited<ReturnType<MatchingService['getPolicy']>>,
+  ) {
+    policy ??= await this.getPolicy();
     await this.redisState.addParticipant(bookingId, providerId, policy.providerResponseWindowMinutes * 60);
   }
 
@@ -104,4 +108,55 @@ function getRecordId(value: unknown) {
     return value.id;
   }
   return undefined;
+}
+
+function getPolicyFromPayload(
+  payload: unknown,
+): Awaited<ReturnType<MatchingService['getPolicy']>> | undefined {
+  if (!payload || typeof payload !== 'object' || !('matchingPolicy' in payload)) {
+    return undefined;
+  }
+  const policy = payload.matchingPolicy;
+  if (!policy || typeof policy !== 'object') {
+    return undefined;
+  }
+  const providerResponseWindowMinutes = Number(
+    'preferredProviderResponseWindowMinutes' in policy
+      ? policy.preferredProviderResponseWindowMinutes
+      : 'providerResponseWindowMinutes' in policy
+        ? policy.providerResponseWindowMinutes
+        : undefined,
+  );
+  const backupProviderRadiusMeters = Number(
+    'backupProviderRadiusMeters' in policy ? policy.backupProviderRadiusMeters : undefined,
+  );
+  const travelBufferMinutes = Number(
+    'travelBufferMinutes' in policy ? policy.travelBufferMinutes : undefined,
+  );
+  const preferredAcceptMode =
+    'preferredAcceptMode' in policy && typeof policy.preferredAcceptMode === 'string'
+      ? policy.preferredAcceptMode
+      : undefined;
+  const backupOpenMode =
+    'backupOpenMode' in policy && typeof policy.backupOpenMode === 'string'
+      ? policy.backupOpenMode
+      : undefined;
+
+  if (
+    !Number.isFinite(providerResponseWindowMinutes) ||
+    !Number.isFinite(backupProviderRadiusMeters) ||
+    !Number.isFinite(travelBufferMinutes) ||
+    !preferredAcceptMode ||
+    !backupOpenMode
+  ) {
+    return undefined;
+  }
+
+  return {
+    providerResponseWindowMinutes,
+    backupProviderRadiusMeters,
+    travelBufferMinutes,
+    preferredAcceptMode,
+    backupOpenMode,
+  } as Awaited<ReturnType<MatchingService['getPolicy']>>;
 }
