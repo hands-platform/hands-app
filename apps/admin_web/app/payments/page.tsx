@@ -93,7 +93,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
               <th>Amount</th>
               <th>Booking</th>
               <th>Ops hint</th>
-              <th>Provider ref</th>
+              <th>Gateway ref</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -270,7 +270,7 @@ function paymentFilterDescription(review: string) {
     return 'authorized payments tied to completed services, ready for capture review.';
   }
   if (review === 'missing-ref') {
-    return 'authorized payments that do not yet have a gateway/provider reference.';
+    return 'authorized payments that do not yet have a gateway reference.';
   }
   if (review === 'authorized') {
     return 'active authorization holds that still need service or payment resolution.';
@@ -279,7 +279,7 @@ function paymentFilterDescription(review: string) {
     return 'cash bookings waiting for collection confirmation.';
   }
   if (review === 'cash-debt') {
-    return 'completed cash bookings where the provider still owes HANDS fee or tax wallet debt.';
+    return 'completed cash bookings where the partner still owes HANDS fee or tax wallet debt.';
   }
   if (review === 'needs-action') {
     return 'payments that are not settled, released, or refunded yet.';
@@ -334,7 +334,7 @@ function paymentOpsState(payment: AdminPayment) {
 
 function paymentStateLabel(payment: AdminPayment) {
   if (paymentCashDebtNeedsSettlement(payment)) {
-    return 'Cash collected, provider wallet debt is still unsettled.';
+    return 'Cash collected, partner wallet debt is still unsettled.';
   }
   if (payment.status === 'AUTHORIZED') {
     return 'Hold placed, waiting for service completion.';
@@ -376,16 +376,16 @@ function paymentOpsSignal(payment: AdminPayment) {
 function paymentOpsHint(payment: AdminPayment) {
   if (paymentCashDebtNeedsSettlement(payment)) {
     const debt = Math.abs(payment.booking?.earning?.netAmount ?? 0);
-    return `Cash was collected by the provider. Settle ${money(
+    return `Cash was collected by the partner. Settle ${money(
       debt,
       payment.currency,
     )} HANDS fee/tax debt from Earnings before they can keep accepting bookings.`;
   }
   if (payment.status === 'AUTHORIZED') {
-    return 'Keep this on hold until the therapist completes the service, then capture or refund.';
+    return 'Keep this on hold until the partner completes the service, then capture or refund.';
   }
   if (payment.method === 'CASH' && payment.status === 'PENDING') {
-    return 'Cash booking. Confirm therapist arrival and mark the booking complete after payment is collected.';
+    return 'Cash booking. Confirm partner arrival and mark the booking complete after payment is collected.';
   }
   if (payment.status === 'REFUNDED') {
     return 'Check the linked refund record and customer communication.';
@@ -454,8 +454,8 @@ function CashDebtSettlementForm({ payment }: { payment: AdminPayment }) {
       />
       <input
         name="settlementNotes"
-        defaultValue={`Provider deposited ${money(debtAmount, earning.currency)} with ${settlementRef}`}
-        placeholder={`Provider deposited ${money(debtAmount, earning.currency)}`}
+        defaultValue={`Partner deposited ${money(debtAmount, earning.currency)} with ${settlementRef}`}
+        placeholder={`Partner deposited ${money(debtAmount, earning.currency)}`}
         aria-label="Cash debt settlement notes"
       />
       <button type="submit">Settle cash debt</button>
