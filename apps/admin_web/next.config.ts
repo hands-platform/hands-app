@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         destination: '/partner-risk',
         permanent: false,
       },
+      {
+        source: '/providers/:path*',
+        destination: '/partners/:path*',
+        permanent: false,
+      },
     ];
   },
 };
