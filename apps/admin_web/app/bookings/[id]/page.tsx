@@ -199,6 +199,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </Link>
           </div>
         </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {policySnapshot.decisionCards.map((decision) => (
+            <div className={`ops-task-card ${decision.className}`} key={decision.key}>
+              <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
+              <h3>{decision.label}</h3>
+              <p>{decision.value}</p>
+              <small>{decision.helper}</small>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card risk-watch" style={{ marginBottom: 16 }}>
@@ -1870,6 +1880,11 @@ function bookingOperationalPolicySnapshot(
   const backupRadius = byKey.get('matching.backup_provider_radius_meters');
   const travelBuffer = byKey.get('matching.travel_buffer_minutes');
   const acceptMode = byKey.get('matching.preferred_accept_mode');
+  const backupOpenMode = byKey.get('matching.backup_open_mode');
+  const walletGate = byKey.get('wallet.negative_balance_gate');
+  const cancellationPolicy = byKey.get('cancellation.after_match_policy');
+  const noShowPolicy = byKey.get('no_show.partner_report_policy');
+  const partnerAlertPolicy = byKey.get('notification.partner_alert_channel');
   const expiresAt = booking.expiresAt ? new Date(booking.expiresAt).getTime() : null;
   const minutesLeft =
     expiresAt === null || Number.isNaN(expiresAt)
@@ -1903,6 +1918,58 @@ function bookingOperationalPolicySnapshot(
     decisionStatus,
     decisionTone,
     decisionDetail,
+    decisionCards: [
+      bookingPolicyDecisionCard({
+        setting: backupOpenMode,
+        key: 'matching.backup_open_mode',
+        label: 'Backup participation',
+        helper:
+          String(backupOpenMode?.value) === 'AFTER_FIRST_PICK_DELAY'
+            ? 'Backup partners are hidden until the preferred partner window passes.'
+            : 'Eligible nearby partners can join while the preferred partner is still deciding.',
+        enforced: true,
+      }),
+      bookingPolicyDecisionCard({
+        setting: walletGate,
+        key: 'wallet.negative_balance_gate',
+        label: 'Wallet debt gate',
+        helper:
+          String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
+            ? 'Negative wallet partners can hold one active recovery booking before being blocked again.'
+            : 'Negative wallet partners are blocked from joining, accepting, or being selected.',
+        enforced: false,
+      }),
+      bookingPolicyDecisionCard({
+        setting: cancellationPolicy,
+        key: 'cancellation.after_match_policy',
+        label: 'After-match cancellation',
+        helper:
+          booking.status === 'CANCELLED'
+            ? 'Use this policy to decide release, refund, or fee review for this cancelled booking.'
+            : 'Applies if the customer cancels after a partner has accepted or been selected.',
+        enforced: false,
+      }),
+      bookingPolicyDecisionCard({
+        setting: noShowPolicy,
+        key: 'no_show.partner_report_policy',
+        label: 'No-show handling',
+        helper:
+          booking.status === 'NO_SHOW'
+            ? 'Use this policy before applying customer or partner penalties.'
+            : 'Applies if the partner reports a customer no-show later.',
+        enforced: false,
+      }),
+      bookingPolicyDecisionCard({
+        setting: partnerAlertPolicy,
+        key: 'notification.partner_alert_channel',
+        label: 'Partner alert route',
+        helper:
+          String(partnerAlertPolicy?.value) === 'ONESIGNAL_FOR_ALL_BOOKINGS'
+            ? 'Booking and backup alerts should create OneSignal delivery logs.'
+            : 'Partner alerts are kept in the app inbox until production push is ready.',
+        enforced: false,
+      }),
+    ],
     metrics: [
       {
         label: 'Response window',
@@ -1953,6 +2020,30 @@ function bookingPolicyOptionLabel(setting?: AdminOperationalPolicySetting) {
 
   const value = String(setting.value);
   return setting.options?.find((option) => option.value === value)?.label ?? bookingPolicyValueLabel(setting);
+}
+
+function bookingPolicyDecisionCard(input: {
+  setting?: AdminOperationalPolicySetting;
+  key: string;
+  label: string;
+  helper: string;
+  enforced: boolean;
+}) {
+  const settingEnforced = input.setting?.enforced ?? input.enforced;
+  const aligned =
+    input.setting?.recommendedValue === null || input.setting?.recommendedValue === undefined
+      ? true
+      : String(input.setting?.value) === String(input.setting?.recommendedValue);
+
+  return {
+    key: input.key,
+    label: input.label,
+    value: bookingPolicyOptionLabel(input.setting),
+    helper: input.helper,
+    status: settingEnforced ? 'Live' : aligned ? 'Recommended' : 'Owner choice',
+    className: aligned ? 'ops-task-done' : 'ops-task-pending',
+    pillClass: settingEnforced ? 'pill-success' : aligned ? 'pill-info' : 'pill-warn',
+  };
 }
 
 type ServicePayoutSnapshotLine = {

@@ -120,7 +120,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'When backup partners can join',
     description:
-      'Choose whether nearby backup partners can join immediately during the first 10 minutes or only after a delay.',
+      'Choose whether nearby backup partners can join during the preferred response window or only after that timer passes.',
     value: BACKUP_OPEN_IMMEDIATE,
     recommendedValue: BACKUP_OPEN_IMMEDIATE,
     options: [
