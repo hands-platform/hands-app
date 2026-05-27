@@ -9,6 +9,7 @@ import {
 import {
   addBookingOpsNote,
   captureBookingPayment,
+  expireBooking,
   markBookingNoShow,
   refundBookingPayment,
   releaseBookingPayment,
@@ -319,6 +320,31 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </button>
           </div>
         </form>
+      </section>
+
+      <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+        <div>
+          <h2>Matching expiry handling</h2>
+          <p className="muted">
+            Close an open matching request when the customer should stop waiting. This releases any active
+            payment hold and leaves a customer-contact task for follow-up.
+          </p>
+        </div>
+        {canExpireBooking(booking.status) ? (
+          <form action={expireBooking} className="ops-note-form">
+            <input type="hidden" name="bookingId" value={booking.id} />
+            <textarea
+              aria-label="Expiry reason"
+              name="reason"
+              placeholder="Example: Matching window passed and no suitable partner was available."
+            />
+            <button type="submit">Expire matching</button>
+          </form>
+        ) : (
+          <span className={`pill ${booking.status === 'EXPIRED' ? 'pill-warn' : 'pill-neutral'}`}>
+            {booking.status === 'EXPIRED' ? 'Already expired' : 'Expiry not available for this status'}
+          </span>
+        )}
       </section>
 
       <section className="card ops-command-center" style={{ marginBottom: 16 }}>
@@ -693,6 +719,11 @@ function RiskItem({ flag }: { flag: RiskFlag }) {
 }
 
 function primaryOpsInstruction(booking: AdminBookingDetail) {
+  if (booking.status === 'EXPIRED') {
+    return booking.payment?.status === 'RELEASED'
+      ? 'Matching expired and the payment hold is released. Confirm customer communication before closing.'
+      : 'Matching expired but payment still needs review. Release or refund before closing.';
+  }
   if (booking.status === 'NO_SHOW') {
     return 'Booking is marked no-show. Review customer communication, payment release/refund, and any partner fee impact before closing.';
   }
@@ -727,6 +758,9 @@ function opsBadges(booking: AdminBookingDetail) {
   const flags = bookingRiskFlags(booking);
   if (booking.status === 'NO_SHOW') {
     badges.push({ label: 'No-show', tone: 'pill-danger' });
+  }
+  if (booking.status === 'EXPIRED') {
+    badges.push({ label: 'Expired', tone: 'pill-warn' });
   }
   if (flags.some((flag) => flag.severity === 'high')) {
     badges.push({ label: 'High risk', tone: 'pill-danger' });
@@ -785,6 +819,15 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
       severity: 'high',
       title: 'Cancelled payment unresolved',
       detail: `Booking is cancelled but payment is still ${paymentStatus}.`,
+      action: 'Release the authorization or refund before closing the ticket.',
+    });
+  }
+
+  if (status === 'EXPIRED' && booking.payment && !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')) {
+    flags.push({
+      severity: 'high',
+      title: 'Expired payment unresolved',
+      detail: `Booking is expired but payment is still ${paymentStatus}.`,
       action: 'Release the authorization or refund before closing the ticket.',
     });
   }
@@ -1280,6 +1323,9 @@ function bookingStatusHint(status: string) {
   if (status === 'CANCELLED') {
     return 'Confirm payment release or refund.';
   }
+  if (status === 'EXPIRED') {
+    return 'Matching closed; confirm payment release and customer communication.';
+  }
   if (status === 'NO_SHOW') {
     return 'Review customer/partner communication and payment outcome.';
   }
@@ -1289,6 +1335,9 @@ function bookingStatusHint(status: string) {
 function paymentHint(booking: AdminBookingDetail) {
   if (!booking.payment) {
     return 'No payment record created.';
+  }
+  if (booking.status === 'EXPIRED' && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)) {
+    return 'Expired booking requires payment release/refund before closing.';
   }
   if (booking.status === 'NO_SHOW' && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)) {
     return 'No-show requires payment decision before closing.';
@@ -1313,6 +1362,10 @@ function paymentHint(booking: AdminBookingDetail) {
 
 function canMarkNoShow(status: string) {
   return ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED'].includes(status);
+}
+
+function canExpireBooking(status: string) {
+  return status === 'OPEN_MATCHING';
 }
 
 function bookingCashDebtNeedsSettlement(booking: AdminBookingDetail) {

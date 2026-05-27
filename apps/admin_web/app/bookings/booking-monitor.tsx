@@ -83,6 +83,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const backupChosen = orderedBookings.filter((booking) => isBackupSelected(booking));
     const chatLive = orderedBookings.filter((booking) => Boolean(booking.chatRoom));
     const noShow = orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
+    const expired = orderedBookings.filter((booking) => booking.status === 'EXPIRED');
     const paymentRisk = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
     const pricingRisk = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
     const locationRisk = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
@@ -100,6 +101,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Backup selected', backupChosen.length.toString()],
       ['Chat live', chatLive.length.toString()],
       ['No-show', noShow.length.toString()],
+      ['Expired', expired.length.toString()],
       ['Payment risk', paymentRisk.length.toString()],
       ['Pricing risk', pricingRisk.length.toString()],
       ['Location risk', locationRisk.length.toString()],
@@ -825,6 +827,13 @@ function opsSignal(booking: AdminBooking) {
       <span className="signal signal-ok">No-show closed</span>
     );
   }
+  if (booking.status === 'EXPIRED') {
+    return booking.payment?.status === 'RELEASED' ? (
+      <span className="signal signal-ok">Expired and released</span>
+    ) : (
+      <span className="signal signal-warn">Expired, check payment</span>
+    );
+  }
   if (booking.status === 'CANCELLED') {
     return booking.payment?.status === 'RELEASED' ? (
       <span className="signal signal-ok">Cancelled and released</span>
@@ -877,6 +886,13 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
     !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')
   ) {
     flags.push({ severity: 'high', title: 'Cancelled payment unresolved' });
+  }
+  if (
+    booking.status === 'EXPIRED' &&
+    booking.payment &&
+    !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')
+  ) {
+    flags.push({ severity: 'high', title: 'Expired payment unresolved' });
   }
   if (booking.status === 'COMPLETED' && paymentStatus === 'AUTHORIZED') {
     flags.push({ severity: 'high', title: 'Completed service still on hold' });
@@ -939,6 +955,9 @@ function bookingPaymentNeedsOps(booking: AdminBooking) {
     return ['CREATED', 'OPEN_MATCHING', 'MATCHED'].includes(booking.status);
   }
   if (booking.status === 'CANCELLED' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
+    return true;
+  }
+  if (booking.status === 'EXPIRED' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
     return true;
   }
   if (booking.status === 'NO_SHOW' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
@@ -1053,6 +1072,11 @@ function nextAction(booking: AdminBooking) {
     return booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)
       ? 'No-show is marked. Decide payment release, refund, or fee handling before closing.'
       : 'No-show is marked and payment outcome is already closed. Confirm customer and partner notes.';
+  }
+  if (booking.status === 'EXPIRED') {
+    return booking.payment?.status === 'RELEASED'
+      ? 'Matching expired and the payment hold is released. Confirm customer communication.'
+      : 'Matching expired. Release or refund the linked payment before closing.';
   }
   if (booking.status === 'CANCELLED') {
     return booking.payment?.status === 'RELEASED'

@@ -9,6 +9,7 @@ import {
   FileUploadStatus,
   FileVisibility,
   PayoutBatchStatus,
+  PaymentStatus,
   Prisma,
   ProviderReportSeverity,
   ProviderReportSource,
@@ -936,6 +937,82 @@ export class AdminService {
       bookingId,
       previousStatus: booking.status,
       paymentStatus: booking.payment?.status,
+      reason,
+    });
+
+    return updated;
+  }
+
+  async expireBooking(actorId: string, bookingId: string, input: { reason?: string }) {
+    const reason = normalizeNullable(input.reason);
+    const booking = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: { payment: true },
+    });
+
+    if (booking.status !== BookingStatus.OPEN_MATCHING) {
+      throw new BadRequestException(`Booking status ${booking.status} cannot be expired`);
+    }
+
+    const entry = `[${new Date().toISOString()}] Matching expired by operations${
+      reason ? `: ${reason}` : '.'
+    }`;
+    const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+    const terminalPaymentStatuses: PaymentStatus[] = [
+      PaymentStatus.CAPTURED,
+      PaymentStatus.REFUNDED,
+      PaymentStatus.RELEASED,
+    ];
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      if (booking.payment && !terminalPaymentStatuses.includes(booking.payment.status)) {
+        await tx.payment.update({
+          where: { id: booking.payment.id },
+          data: { status: PaymentStatus.RELEASED },
+        });
+      }
+
+      return tx.booking.update({
+        where: { id: bookingId },
+        data: {
+          status: BookingStatus.EXPIRED,
+          expiresAt: new Date(),
+          notes,
+          opsTasks: {
+            upsert: {
+              where: { bookingId_type: { bookingId, type: BookingOpsTaskType.CUSTOMER_CONTACTED } },
+              update: {
+                status: BookingOpsTaskStatus.PENDING,
+                note: reason ?? 'Matching expired; customer communication should be confirmed.',
+                actorId,
+              },
+              create: {
+                type: BookingOpsTaskType.CUSTOMER_CONTACTED,
+                status: BookingOpsTaskStatus.PENDING,
+                note: reason ?? 'Matching expired; customer communication should be confirmed.',
+                actorId,
+              },
+            },
+          },
+        },
+        include: {
+          payment: true,
+          customerProfile: { include: { user: true } },
+          selectedProvider: { include: { user: true } },
+          preferredProvider: { include: { user: true } },
+          services: { include: { service: true } },
+          participants: { include: { providerProfile: { include: { user: true } } } },
+          opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
+        },
+      });
+    });
+
+    await this.redisState.closeMatching(bookingId);
+    await this.writeAudit(actorId, 'booking.expire.manual', `booking:${bookingId}`, {
+      bookingId,
+      previousStatus: booking.status,
+      paymentId: booking.payment?.id,
+      paymentReleased: Boolean(booking.payment && !terminalPaymentStatuses.includes(booking.payment.status)),
       reason,
     });
 

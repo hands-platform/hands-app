@@ -1147,6 +1147,27 @@ if (markedNoShowBooking.status !== 'NO_SHOW') {
   throw new Error(`Admin no-show action did not update status: ${JSON.stringify(markedNoShowBooking)}`);
 }
 
+const manuallyExpiredBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  scheduledStartAt: new Date(Date.now() + 135 * 60_000).toISOString(),
+  address: { line1: 'Manual expiry operations smoke flow' },
+  lat: 10.7769,
+  lng: 106.7009,
+  paymentMethod: 'MOMO',
+});
+const expiredByAdminBooking = await postJson(
+  `/admin/bookings/${manuallyExpiredBooking.id}/expire`,
+  adminAuth.accessToken,
+  {
+    reason: 'Smoke test manual expiry',
+  },
+);
+if (expiredByAdminBooking.status !== 'EXPIRED' || expiredByAdminBooking.payment?.status !== 'RELEASED') {
+  throw new Error(
+    `Admin expiry action did not expire booking and release payment: ${JSON.stringify(expiredByAdminBooking)}`,
+  );
+}
+
 await postJson(`/provider/bookings/${booking.id}/join`, providerAuth.accessToken);
 await postJson(`/provider/bookings/${hybridBooking.id}/join`, backupProviderAuth.accessToken);
 
@@ -1654,6 +1675,12 @@ const adminNoShowBooking = adminBookings.find((item) => item.id === noShowBookin
 if (adminNoShowBooking?.status !== 'NO_SHOW') {
   throw new Error(
     `Admin booking monitor did not expose no-show state: ${JSON.stringify(adminNoShowBooking)}`,
+  );
+}
+const adminExpiredBooking = adminBookings.find((item) => item.id === manuallyExpiredBooking.id);
+if (adminExpiredBooking?.status !== 'EXPIRED' || adminExpiredBooking?.payment?.status !== 'RELEASED') {
+  throw new Error(
+    `Admin booking monitor did not expose manual expiry release state: ${JSON.stringify(adminExpiredBooking)}`,
   );
 }
 const adminUsers = await getJson('/admin/users', adminAuth.accessToken);

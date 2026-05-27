@@ -73,6 +73,21 @@ export async function markBookingNoShow(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function expireBooking(formData: FormData) {
+  const bookingId = String(formData.get('bookingId') ?? '');
+  const reason = String(formData.get('reason') ?? '');
+  if (!bookingId) {
+    return;
+  }
+
+  await adminPost(`/admin/bookings/${bookingId}/expire`, { reason }, null);
+  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath('/bookings');
+  revalidatePath('/payments');
+  revalidatePath('/refunds');
+  revalidatePath('/audit-log');
+}
+
 export async function updateBookingOpsTask(formData: FormData) {
   const bookingId = String(formData.get('bookingId') ?? '');
   const type = String(formData.get('type') ?? '');
