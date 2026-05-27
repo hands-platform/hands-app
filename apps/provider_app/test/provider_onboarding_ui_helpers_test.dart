@@ -118,6 +118,44 @@ void main() {
     expect(readyItems[1].detail, contains('approved by admin'));
   });
 
+  test('builds KYC decision checklist from onboarding snapshot', () {
+    final missingItems = providerKycDecisionChecklistFromSnapshot({
+      'kyc': {'status': 'PENDING_REVIEW'},
+      'basicProfile': {'legalName': '   '},
+      'documents': const [
+        {'type': 'CCCD_FRONT', 'status': 'APPROVED'},
+        {
+          'type': 'CCCD_BACK',
+          'status': 'REJECTED',
+          'rejectionReason': 'Back side is blurry',
+        },
+      ],
+    });
+
+    expect(missingItems, hasLength(5));
+    expect(missingItems[0].complete, isTrue);
+    expect(missingItems[1].complete, isFalse);
+    expect(missingItems[2].detail, contains('Vietnamese identity number'));
+    expect(missingItems[3].detail, '1 of 3 required photo(s) approved.');
+    expect(missingItems[4].detail, contains('Back side is blurry'));
+
+    final readyItems = providerKycDecisionChecklistFromSnapshot({
+      'kyc': {
+        'status': 'APPROVED',
+        'legalName': 'Nguyen Thi Thuy',
+        'identityNumber': '079123456789',
+      },
+      'documents': const [
+        {'type': 'CCCD_FRONT', 'status': 'APPROVED'},
+        {'type': 'CCCD_BACK', 'status': 'APPROVED'},
+        {'type': 'SELFIE', 'status': 'APPROVED'},
+      ],
+    });
+
+    expect(readyItems.every((item) => item.complete), isTrue);
+    expect(readyItems[1].detail, 'Nguyen Thi Thuy');
+  });
+
   test('activates payout setup only after first revenue', () {
     expect(
       providerFirstRevenuePayoutSetupActiveFromSnapshot({

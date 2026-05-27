@@ -3696,6 +3696,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
         (addressText?.trim().isNotEmpty ?? false) &&
         missingAgreementCount == 0;
     final payoutGateItems = providerPayoutGateItemsFromSnapshot(snapshot);
+    final kycDecisionItems = providerKycDecisionChecklistFromSnapshot(snapshot);
     final levelMilestones = providerLevelMilestonesFromSnapshot(snapshot);
     final priority = providerOnboardingPriorityFromSnapshot(snapshot);
     final firstRevenuePayoutSetupActive =
@@ -3881,6 +3882,10 @@ class _ProviderOnboardingCard extends StatelessWidget {
                       ? 'Submit KYC'
                       : 'Open KYC checklist',
               onPressed: isSaving ? null : onSubmitKyc,
+            ),
+            _KycDecisionChecklist(
+              items: kycDecisionItems,
+              reviewStatus: kycStatus ?? 'Not submitted',
             ),
             _OnboardingStepCard(
               step: '3',
@@ -4277,6 +4282,94 @@ class _PayoutGateChecklistRow extends StatelessWidget {
         Icon(
           item.complete ? Icons.check_circle_outline : Icons.lock_outline,
           color: iconColor,
+          size: 22,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(item.label, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 2),
+              Text(
+                item.detail,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _KycDecisionChecklist extends StatelessWidget {
+  const _KycDecisionChecklist({
+    required this.items,
+    required this.reviewStatus,
+  });
+
+  final List<ProviderKycDecisionItem> items;
+  final String reviewStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final completeCount = items.where((item) => item.complete).length;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.assignment_ind_outlined, color: colorScheme.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'KYC review checklist',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              Chip(label: Text('$completeCount/${items.length}')),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'HANDS operations checks these items before Level 2 work access. Review status: $reviewStatus.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 10),
+          for (final item in items) ...[
+            _KycDecisionChecklistRow(item: item),
+            if (item != items.last) const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _KycDecisionChecklistRow extends StatelessWidget {
+  const _KycDecisionChecklistRow({required this.item});
+
+  final ProviderKycDecisionItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          item.complete ? Icons.check_circle_outline : Icons.error_outline,
+          color: item.complete ? colorScheme.primary : colorScheme.error,
           size: 22,
         ),
         const SizedBox(width: 10),

@@ -28,6 +28,18 @@ class ProviderOnboardingGateItem {
   final bool complete;
 }
 
+class ProviderKycDecisionItem {
+  const ProviderKycDecisionItem({
+    required this.label,
+    required this.detail,
+    required this.complete,
+  });
+
+  final String label;
+  final String detail;
+  final bool complete;
+}
+
 class ProviderOnboardingLevelMilestone {
   const ProviderOnboardingLevelMilestone({
     required this.level,
@@ -283,6 +295,78 @@ List<ProviderOnboardingLevelMilestone> providerLevelMilestonesFromSnapshot(
   ];
 }
 
+List<ProviderKycDecisionItem> providerKycDecisionChecklistFromSnapshot(
+    Map<String, dynamic> snapshot) {
+  final kyc = _asMap(snapshot['kyc']);
+  final verification = _asMap(snapshot['verification']);
+  final basicProfile = _asMap(snapshot['basicProfile']) ?? <String, dynamic>{};
+  final documents = _asList(snapshot['documents']);
+  final requiredTypes = requiredKycDocumentTypesFromSnapshot(snapshot);
+  final kycStatus =
+      kyc?['status']?.toString() ?? verification?['status']?.toString();
+  final legalName = _firstNonEmptyString([
+    kyc?['legalName'],
+    kyc?['fullName'],
+    basicProfile['legalName'],
+    basicProfile['fullName'],
+  ]);
+  final identityNumber = _firstNonEmptyString([
+    kyc?['identityNumber'],
+    kyc?['cccdNumber'],
+    kyc?['cmndNumber'],
+    kyc?['documentNumber'],
+    verification?['identityNumber'],
+  ]);
+  final approvedRequiredTypes = documents
+      .map(_asMap)
+      .whereType<Map<String, dynamic>>()
+      .where((document) => document['status']?.toString() == 'APPROVED')
+      .map((document) => document['type']?.toString())
+      .where((type) => requiredTypes.contains(type))
+      .toSet();
+  final rejectedRequiredSummaries = providerRejectedKycDocumentSummaries(
+    submittedDocuments: documents,
+    uploadedDocumentIds: const {},
+    requiredTypes: requiredTypes,
+  );
+  final approvedCount = approvedRequiredTypes.length;
+
+  return [
+    ProviderKycDecisionItem(
+      label: 'KYC request submitted',
+      detail: kycStatus == null
+          ? 'Upload identity photos, then submit KYC for HANDS review.'
+          : 'Current review status: $kycStatus.',
+      complete: kycStatus != null,
+    ),
+    ProviderKycDecisionItem(
+      label: 'Legal name captured',
+      detail:
+          legalName ?? 'Add the legal name exactly as shown on CCCD/CMND.',
+      complete: legalName != null,
+    ),
+    ProviderKycDecisionItem(
+      label: 'CCCD/CMND number captured',
+      detail: identityNumber ??
+          'Add the Vietnamese identity number before admin approval.',
+      complete: identityNumber != null,
+    ),
+    ProviderKycDecisionItem(
+      label: 'Required identity photos approved',
+      detail:
+          '$approvedCount of ${requiredTypes.length} required photo(s) approved.',
+      complete: approvedCount >= requiredTypes.length,
+    ),
+    ProviderKycDecisionItem(
+      label: 'Rejected evidence resolved',
+      detail: rejectedRequiredSummaries.isEmpty
+          ? 'No rejected required KYC photo needs replacement.'
+          : rejectedRequiredSummaries.join('; '),
+      complete: rejectedRequiredSummaries.isEmpty,
+    ),
+  ];
+}
+
 List<ProviderOnboardingGateItem> providerPayoutGateItemsFromSnapshot(
     Map<String, dynamic> snapshot) {
   final payoutGate = _asMap(snapshot['payoutGate']) ?? <String, dynamic>{};
@@ -500,6 +584,16 @@ num? _asNum(dynamic value) {
   }
   if (value is String) {
     return num.tryParse(value);
+  }
+  return null;
+}
+
+String? _firstNonEmptyString(List<dynamic> values) {
+  for (final value in values) {
+    final text = value?.toString().trim();
+    if (text != null && text.isNotEmpty) {
+      return text;
+    }
   }
   return null;
 }
