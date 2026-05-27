@@ -126,7 +126,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <div>
           <p className="muted">
             <Link className="text-link" href="/providers">
-              Back to providers
+              Back to partners
             </Link>
           </p>
           <h1>{provider.displayName || provider.user?.fullName || provider.user?.phone}</h1>
@@ -138,18 +138,18 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <div className="actions">
           <form action={approveProvider}>
             <input type="hidden" name="providerId" value={provider.id} />
-            <button type="submit">Approve provider</button>
+            <button type="submit">Approve partner</button>
           </form>
           <form action={rejectProvider}>
             <input type="hidden" name="providerId" value={provider.id} />
             <input
               name="reason"
-              placeholder="Provider rejection reason"
+              placeholder="Partner rejection reason"
               required
               minLength={12}
               maxLength={500}
             />
-            <button type="submit">Reject provider</button>
+            <button type="submit">Reject partner</button>
           </form>
           <form action={syncSupabaseProviderRole}>
             <input type="hidden" name="providerId" value={provider.id} />
@@ -180,7 +180,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
 
       <div className="grid" style={{ marginBottom: 16 }}>
         <StatusCard label="Level" value={provider.level ?? 'LEVEL_1_SIGNUP'} />
-        <StatusCard label="Provider status" value={provider.status} />
+        <StatusCard label="Partner status" value={provider.status} />
         <StatusCard label="KYC" value={provider.kyc?.status ?? 'DRAFT'} />
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
         <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
@@ -190,7 +190,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Provider ops command center</h2>
+            <h2>Partner ops command center</h2>
             <p className="muted">
               One-page operating view for dispatch, payout, risk, and the next admin action.
             </p>
@@ -348,7 +348,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 ))}
               </div>
             ) : (
-              <p className="muted">No payout batch has been created for this provider yet.</p>
+              <p className="muted">No payout batch has been created for this partner yet.</p>
             )}
           </div>
         </div>
@@ -359,7 +359,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <h2>Approval checklist</h2>
             <p className="muted">
-              Review these gates before approving the provider or relying on this therapist for dispatch.
+              Review these gates before approving the partner or relying on this partner for dispatch.
             </p>
           </div>
           <span className={`pill ${reviewChecklist.ready ? 'pill-success' : 'pill-warn'}`}>
@@ -383,11 +383,11 @@ export default async function ProviderDetailPage({ params }: PageProps) {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Provider registration dossier</h2>
+            <h2>Partner registration dossier</h2>
             <p className="muted">
               Structured view of the signup profile, public working profile, identity evidence, payout gate,
               legal consent, and operational safety. Use this as the first review map before approving or
-              rejecting a therapist.
+              rejecting a partner.
             </p>
           </div>
           <span className={`pill ${registrationDossier.ready ? 'pill-success' : 'pill-warn'}`}>
@@ -505,7 +505,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 ))}
               </div>
             ) : (
-              <p className="muted">No provider session log yet.</p>
+              <p className="muted">No partner session log yet.</p>
             )}
           </div>
         </div>
@@ -517,7 +517,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 <div>
                   <strong>{maskDeviceId(match.deviceId)}</strong>
                   <p className="muted">
-                    Also used by {match.providerProfile?.displayName ?? 'another provider'} (
+                    Also used by {match.providerProfile?.displayName ?? 'another partner'} (
                     {match.providerProfile?.user?.phone ?? 'no phone'}) / last seen{' '}
                     {formatDate(match.lastSeenAt)}
                   </p>
@@ -535,7 +535,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <h2>Risk reports and sanctions</h2>
             <p className="muted">
               Keep customer complaints, staff findings, payout holds, and account blocks visible on the
-              provider profile.
+              partner profile.
             </p>
           </div>
           <Link className="text-link" href={`/provider-risk?q=${encodeURIComponent(provider.id)}`}>
@@ -562,7 +562,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <select name="source" defaultValue="ADMIN">
               <option value="ADMIN">Admin</option>
               <option value="CUSTOMER">Customer</option>
-              <option value="PROVIDER">Provider</option>
+              <option value="PROVIDER">Partner</option>
               <option value="SYSTEM">System</option>
             </select>
           </label>
@@ -707,7 +707,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 ))}
               </div>
             ) : (
-              <p className="muted">No provider reports recorded yet.</p>
+              <p className="muted">No partner reports recorded yet.</p>
             )}
           </div>
           <div>
@@ -750,7 +750,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Provider level path</h2>
+            <h2>Partner level path</h2>
             <p className="muted">
               Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and Level 4 trust badge
               gates.
@@ -778,7 +778,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <h2>Resubmission guidance</h2>
             <p className="muted">
-              Use this when a provider asks what to fix after rejection. Keep the message specific and
+              Use this when a partner asks what to fix after rejection. Keep the message specific and
               auditable.
             </p>
           </div>
@@ -805,7 +805,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               <div>
                 <strong>No resubmission request needed</strong>
                 <p className="muted">
-                  There are no rejected provider documents, bank accounts, KYC, or tax profiles.
+                  There are no rejected partner documents, bank accounts, KYC, or tax profiles.
                 </p>
               </div>
               <small>OK</small>
@@ -819,7 +819,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <h2>Review history</h2>
             <p className="muted">
-              Provider, KYC, document, bank, and tax review decisions are shown here for handoff and audit.
+              Partner, KYC, document, bank, and tax review decisions are shown here for handoff and audit.
             </p>
           </div>
           <span className="pill pill-info">{provider.verificationLogs?.length ?? 0} recent event(s)</span>
@@ -925,7 +925,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <div className="card">
           <h2>Service price readiness</h2>
           <p className="muted">
-            Customer apps only show options with an active provider service and an exact active payout rule.
+            Customer apps only show options with an active partner service and an exact active payout rule.
           </p>
           <InfoLine
             label="Bookable options"
@@ -959,7 +959,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               ))}
             </div>
           ) : (
-            <p className="muted">No provider service prices are connected yet.</p>
+            <p className="muted">No partner service prices are connected yet.</p>
           )}
         </div>
 
@@ -1262,7 +1262,7 @@ function buildProviderServicePricing(provider: ProviderDetail): {
     const active = connection.active !== false && service?.active !== false;
     const bookable = active && Boolean(matchingRule);
     const issue = !active
-      ? 'Provider or service option is inactive.'
+      ? 'Partner or service option is inactive.'
       : matchingRule
         ? 'Ready for customer booking. Partner price has an exact payout rule.'
         : 'Hidden from customer app until admin creates a payout rule for this exact customer price.';
@@ -1328,24 +1328,24 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
       detail: !accountClear
         ? `Partner account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
         : provider.verification?.status !== 'APPROVED'
-          ? 'Provider verification is not approved yet.'
+          ? 'Partner verification is not approved yet.'
           : provider.status !== 'ONLINE_AVAILABLE'
-            ? 'Provider is approved but not online for direct booking or backup matching.'
+            ? 'Partner is approved but not online for direct booking or backup matching.'
             : !hasRecentLocation
               ? `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`
               : !hasEnabledPush
                 ? 'No enabled push device is registered for request alerts.'
-                : 'Provider can receive customer direct requests and backup matching alerts.',
+                : 'Partner can receive customer direct requests and backup matching alerts.',
       action: !accountClear
         ? 'Unblock only after the account-level issue is resolved.'
         : provider.verification?.status !== 'APPROVED'
           ? 'Finish verification review first.'
           : provider.status !== 'ONLINE_AVAILABLE'
-            ? 'Ask provider to open the app and go online.'
+            ? 'Ask partner to open the app and go online.'
             : !hasRecentLocation
-              ? 'Ask provider to refresh location.'
+              ? 'Ask partner to refresh location.'
               : !hasEnabledPush
-                ? 'Ask provider to reopen the app and register alerts.'
+                ? 'Ask partner to reopen the app and register alerts.'
                 : 'No dispatch blocker.',
       tone: !accountClear
         ? 'blocked'
@@ -1383,14 +1383,14 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
       detail: payoutHold
         ? `Active payout hold: ${payoutHold.reason}`
         : payoutReady
-          ? 'Provider has completed service, approved bank, approved tax profile, address, and agreements.'
+          ? 'Partner has completed service, approved bank, approved tax profile, address, and agreements.'
           : hasFirstRevenue
             ? payoutBlockers(provider).join(' ')
             : 'Tax profile, tax address, and full payout gate stay deferred until first earning.',
       action: payoutHold
         ? 'Lift the sanction only after finance/risk follow-up is resolved.'
         : payoutReady
-          ? 'Provider can request payout when earnings are available.'
+          ? 'Partner can request payout when earnings are available.'
           : hasFirstRevenue
             ? 'Clear payout blockers before approving withdrawal.'
             : 'No action until first earning.',
@@ -1483,7 +1483,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       action: payoutHold
         ? 'Resolve the risk/finance reason before lifting the hold.'
         : payoutReady
-          ? 'Provider may be paid when an eligible batch exists.'
+          ? 'Partner may be paid when an eligible batch exists.'
           : hasFirstRevenue
             ? 'Clear blockers before payment.'
             : 'No payout request should be approved yet.',
@@ -1536,16 +1536,16 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       action:
         devices.length || sessions.length
           ? staleAppActivity
-            ? 'Ask provider to open the app before dispatching work.'
+            ? 'Ask partner to open the app before dispatching work.'
             : 'Partner app activity is visible.'
-          : 'Provider should sign in on the real app once onboarding starts.',
+          : 'Partner should sign in on the real app once onboarding starts.',
       tone: devices.length || sessions.length ? (staleAppActivity ? 'pending' : 'done') : 'pending',
     },
     {
       title: 'Blocked devices',
       status: blockedDevices.length ? `${blockedDevices.length} BLOCKED` : 'CLEAR',
       detail: blockedDevices.length
-        ? 'One or more provider devices are disabled or blocked from use.'
+        ? 'One or more partner devices are disabled or blocked from use.'
         : 'No partner app device is currently blocked.',
       action: blockedDevices.length ? 'Review whether the device can be safely unblocked.' : 'No action.',
       tone: blockedDevices.length ? 'blocked' : 'done',
@@ -1565,8 +1565,8 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       title: 'Shared device signal',
       status: sharedDeviceMatches.length ? `${sharedDeviceMatches.length} MATCH` : 'CLEAR',
       detail: sharedDeviceMatches.length
-        ? 'The same device identifier appears on another provider profile.'
-        : 'No cross-provider device match is visible.',
+        ? 'The same device identifier appears on another partner profile.'
+        : 'No cross-partner device match is visible.',
       action: sharedDeviceMatches.length
         ? 'Check for multi-account behavior before approval or payout.'
         : 'No action.',
@@ -1614,10 +1614,10 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
       status: hasBasicProfile ? 'READY' : 'PROFILE',
       detail: hasBasicProfile
         ? 'Phone, display name, and legal name are present.'
-        : 'The provider can sign up, but basic profile data is incomplete.',
+        : 'The partner can sign up, but basic profile data is incomplete.',
       operatorAction: hasBasicProfile
         ? 'Continue identity and payout review.'
-        : 'Ask provider to complete basic profile in the Partner app.',
+        : 'Ask partner to complete basic profile in the Partner app.',
       ready: hasBasicProfile,
       blocked: !hasBasicProfile,
     },
@@ -1625,7 +1625,7 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
       level: 'LEVEL 2 - Activity possible',
       status: level2Ready ? 'READY' : 'REVIEW',
       detail: level2Ready
-        ? 'KYC, required documents, primary bank account, and provider verification are approved.'
+        ? 'KYC, required documents, primary bank account, and partner verification are approved.'
         : level2Blockers({
             hasBasicProfile,
             kycReady,
@@ -1634,8 +1634,8 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
             verificationReady,
           }).join(' '),
       operatorAction: level2Ready
-        ? 'Provider can receive direct booking and backup matching work.'
-        : 'Clear these items before relying on the provider for customer requests.',
+        ? 'Partner can receive direct booking and backup matching work.'
+        : 'Clear these items before relying on the partner for customer requests.',
       ready: level2Ready,
       blocked: !level2Ready,
     },
@@ -1653,7 +1653,7 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
         ? 'Payout can be approved when an eligible batch exists.'
         : hasCompletedService
           ? 'Resolve payout blockers before approving withdrawal.'
-          : 'Keep this deferred until the provider earns revenue.',
+          : 'Keep this deferred until the partner earns revenue.',
       ready: level3Ready,
       blocked: hasCompletedService && !level3Ready,
     },
@@ -1661,9 +1661,9 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
       level: 'LEVEL 4 - Trust badge',
       status: trustedReady ? 'TRUSTED' : level3Ready ? 'OPTIONAL' : 'LOCKED',
       detail: trustedReady
-        ? 'Provider has the trusted badge level.'
+        ? 'Partner has the trusted badge level.'
         : level3Ready
-          ? 'Provider is eligible for manual trust review after service quality checks.'
+          ? 'Partner is eligible for manual trust review after service quality checks.'
           : 'Trust badge should wait until payout-level compliance and service quality are proven.',
       operatorAction: trustedReady
         ? 'Monitor reviews and reports.'
@@ -1693,7 +1693,7 @@ function level2Blockers(input: {
   if (!input.requiredDocumentsReady) blockers.push('Required CCCD/selfie documents are not all approved.');
   if (!input.kycReady) blockers.push('KYC is not approved.');
   if (!input.bankReady) blockers.push('Primary bank account is not approved.');
-  if (!input.verificationReady) blockers.push('Provider verification is not approved.');
+  if (!input.verificationReady) blockers.push('Partner verification is not approved.');
   return blockers.length ? blockers : ['Activity gate needs operator refresh.'];
 }
 
@@ -1729,7 +1729,7 @@ function buildProviderResubmissionPlan(provider: ProviderDetail) {
       status: 'REJECTED',
       reason: provider.kyc.rejectionReason ?? 'No rejection reason was saved.',
       providerInstruction:
-        'Ask the provider to check CCCD/CMND number, legal name, and selfie match before resubmitting.',
+        'Ask the partner to check CCCD/CMND number, legal name, and selfie match before resubmitting.',
       operatorAction: 'KYC',
     });
   }
@@ -1815,14 +1815,14 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
         : 'Real name, date of birth, gender, phone, and public display name should be collected before approval.',
       operatorAction: profileComplete
         ? 'Continue KYC and public profile review.'
-        : 'Ask provider to complete basic profile fields in the Partner app.',
+        : 'Ask partner to complete basic profile fields in the Partner app.',
     },
     {
       label: 'Public working profile',
       ok: publicProfileComplete,
       status: publicProfileComplete ? 'READY' : 'DRAFT',
       detail: publicProfileComplete
-        ? `Provider has public-facing profile material for customer review. Quality fields: ${
+        ? `Partner has public-facing profile material for customer review. Quality fields: ${
             hasProfileQuality
               ? `${provider.experienceYears} year(s), ${specialties.length} specialty, ${languages.length} language.`
               : 'partial quality profile.'
@@ -1848,8 +1848,8 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
         serviceAreaComplete && (!hasFirstRevenue || addressComplete)
           ? 'Use location freshness before dispatching.'
           : hasFirstRevenue
-            ? 'Ask provider to complete tax address and open the app for location sync.'
-            : 'Ask provider to open the app for location sync.',
+            ? 'Ask partner to complete tax address and open the app for location sync.'
+            : 'Ask partner to open the app for location sync.',
     },
     {
       label: 'KYC evidence',
@@ -1873,7 +1873,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
         ? 'Primary bank account is approved for future payouts.'
         : 'Bank name, masked account number, account holder, and QR evidence should be approved before withdrawal.',
       operatorAction: bankComplete
-        ? 'No bank action unless provider changes account.'
+        ? 'No bank action unless partner changes account.'
         : 'Approve or reject the submitted bank account with a clear reason.',
     },
     {
@@ -1882,9 +1882,9 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
       status: provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED'),
       detail: taxDeferredOrComplete
         ? hasFirstRevenue
-          ? 'Tax profile is approved after provider earned revenue.'
+          ? 'Tax profile is approved after partner earned revenue.'
           : 'Tax collection is intentionally deferred until first earning.'
-        : 'Provider has earning history, so tax profile must be approved before payout.',
+        : 'Partner has earning history, so tax profile must be approved before payout.',
       operatorAction: taxDeferredOrComplete
         ? 'Follow the staged UX: do not force tax fields before first earning.'
         : 'Request MST/tax code, legal name, and registered address before withdrawal.',
@@ -1902,7 +1902,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
         (provider.agreements?.length ?? 0) >= 5
           ? 'Required terms, privacy, location, payout, and tax consents are accepted.'
           : hasFirstRevenue
-            ? 'Provider has first earning and must accept service, privacy, location, payout, and tax policy versions.'
+            ? 'Partner has first earning and must accept service, privacy, location, payout, and tax policy versions.'
             : 'Payout and tax agreement collection is intentionally deferred until first earning.',
       operatorAction:
         (provider.agreements?.length ?? 0) >= 5
@@ -1916,7 +1916,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
       ok: securityClear,
       status: securityClear ? 'CLEAR' : 'WATCH',
       detail: securityClear
-        ? 'No account block, blocked provider device, or suspicious session is active.'
+        ? 'No account block, blocked partner device, or suspicious session is active.'
         : 'A block, device issue, or suspicious session needs admin review.',
       operatorAction: securityClear
         ? 'Continue normal monitoring.'
@@ -1944,7 +1944,7 @@ function providerDocumentResubmissionInstruction(type?: string | null) {
   if (type === 'BANK_QR') {
     return 'Ask for a readable bank QR image, but still verify the typed bank account fields.';
   }
-  return 'Ask the provider to upload a clearer replacement image for review.';
+  return 'Ask the partner to upload a clearer replacement image for review.';
 }
 
 function riskSeverityPill(severity: string) {
@@ -2012,7 +2012,7 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
       title: 'Next admin action',
       status: 'PROFILE',
       detail: 'Basic identity or public display name is incomplete.',
-      action: 'Ask provider to complete display name and legal name in the Partner app.',
+      action: 'Ask partner to complete display name and legal name in the Partner app.',
       tone: 'blocked',
     };
   }
@@ -2047,7 +2047,7 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
     return {
       title: 'Next admin action',
       status: 'TAX',
-      detail: `Provider has earnings, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
+      detail: `Partner has earnings, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
       action: 'Approve or reject tax profile before withdrawal.',
       tone: 'blocked',
     };
@@ -2056,8 +2056,8 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
     return {
       title: 'Next admin action',
       status: 'TAX ADDRESS',
-      detail: 'Provider has first earning, but residential/tax address is missing.',
-      action: 'Ask provider to add tax address before withdrawal.',
+      detail: 'Partner has first earning, but residential/tax address is missing.',
+      action: 'Ask partner to add tax address before withdrawal.',
       tone: 'blocked',
     };
   }
@@ -2066,7 +2066,7 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
       title: 'Next admin action',
       status: 'TERMS',
       detail: `Required payout/tax agreements are ${provider.agreements?.length ?? 0}/5.`,
-      action: 'Ask provider to accept missing policy versions before withdrawal.',
+      action: 'Ask partner to accept missing policy versions before withdrawal.',
       tone: 'blocked',
     };
   }
@@ -2075,7 +2075,7 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
       title: 'Next admin action',
       status: 'LOCATION',
       detail: `Location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`,
-      action: 'Ask provider to open the app and refresh location.',
+      action: 'Ask partner to open the app and refresh location.',
       tone: 'pending',
     };
   }
@@ -2083,8 +2083,8 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
     return {
       title: 'Next admin action',
       status: 'PUSH',
-      detail: 'Provider has no enabled push device.',
-      action: 'Ask provider to reopen app and re-register alerts.',
+      detail: 'Partner has no enabled push device.',
+      action: 'Ask partner to reopen app and re-register alerts.',
       tone: 'pending',
     };
   }
@@ -2129,7 +2129,7 @@ function buildReviewChecklist(provider: ProviderDetail) {
         : 'Partner account is not blocked.',
     },
     {
-      label: 'Basic provider identity',
+      label: 'Basic partner identity',
       ok: hasBasicProfile,
       status: hasBasicProfile ? 'Complete' : 'Missing',
       detail: hasBasicProfile
@@ -2160,7 +2160,7 @@ function buildReviewChecklist(provider: ProviderDetail) {
       status: primaryBank?.status ?? 'MISSING',
       detail: primaryBank
         ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'}`
-        : 'Provider has not submitted a payout account.',
+        : 'Partner has not submitted a payout account.',
     },
     {
       label: 'Tax and payout gate',
@@ -2192,7 +2192,7 @@ function buildReviewChecklist(provider: ProviderDetail) {
       status: hasPushDevice ? 'READY' : 'MISSING',
       detail: hasPushDevice
         ? 'At least one enabled device token exists.'
-        : 'Ask provider to open the app so alerts can register.',
+        : 'Ask partner to open the app so alerts can register.',
     },
   ];
 
