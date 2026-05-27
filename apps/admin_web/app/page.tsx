@@ -86,11 +86,14 @@ export default async function DashboardPage() {
     earningRows,
     payoutBatches,
   });
+  const cashDebtRows = openCashDebtEarnings(earningRows);
+  const cashDebtAmount = sumCashDebt(cashDebtRows);
   const queueSummary = buildOpsQueueSummary(queue);
   const bookingOps = buildBookingOpsInsights(bookings);
   const appPresence = buildAppPresence(users, bookings, appSessions);
   const hourlyDemand = buildHourlyBookingDemand(bookings);
   const regionalDemand = buildRegionalBookingDemand(bookings);
+  const partnerSupply = buildPartnerSupplyInsights(providers, bookings, appSessions, cashDebtRows);
   const commandSignals = buildDashboardCommandSignals({
     providers,
     bookings,
@@ -109,8 +112,6 @@ export default async function DashboardPage() {
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
-  const cashDebtRows = openCashDebtEarnings(earningRows);
-  const cashDebtAmount = sumCashDebt(cashDebtRows);
 
   const metrics = [
     [
@@ -408,6 +409,112 @@ export default async function DashboardPage() {
             ))}
             {regionalDemand.length === 0 && <p className="muted">No booking address data loaded yet.</p>}
           </div>
+        </div>
+      </section>
+
+      <section className="detail-grid" style={{ marginTop: 20 }}>
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Partner supply health</h2>
+              <p className="muted">
+                Current operational capacity, app presence, location freshness, and finance blockers.
+              </p>
+            </div>
+            <Link className="text-link" href="/providers">
+              Open partners
+            </Link>
+          </div>
+          <div className="service-trace-summary">
+            <div>
+              <span>Total partners</span>
+              <strong>{partnerSupply.total}</strong>
+              <small>All registered partner profiles</small>
+            </div>
+            <div>
+              <span>Online supply</span>
+              <strong>{partnerSupply.online}</strong>
+              <small>{partnerSupply.onlineAvailable} available now</small>
+            </div>
+            <div>
+              <span>Live app partners</span>
+              <strong>{partnerSupply.liveSessions}</strong>
+              <small>Active session heartbeat</small>
+            </div>
+            <div>
+              <span>Supply pressure</span>
+              <strong>{partnerSupply.supplyPressureLabel}</strong>
+              <small>Active demand / available supply</small>
+            </div>
+            <div>
+              <span>Stale location</span>
+              <strong>{partnerSupply.staleLocation}</strong>
+              <small>Last pin older than 30m</small>
+            </div>
+            <div>
+              <span>Cash debt blocked</span>
+              <strong>{partnerSupply.cashDebtPartners}</strong>
+              <small>Must settle before accepting</small>
+            </div>
+            <div>
+              <span>Verification queue</span>
+              <strong>{partnerSupply.pendingVerification}</strong>
+              <small>Submitted for review</small>
+            </div>
+            <div>
+              <span>Risk blocked</span>
+              <strong>{partnerSupply.blocked}</strong>
+              <small>Account or sanction blockers</small>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Partner readiness funnel</h2>
+              <p className="muted">
+                Funnel view for signup, KYC, banking, first revenue tax readiness, and trust badge.
+              </p>
+            </div>
+            <Link className="text-link" href="/provider-risk">
+              Risk queue
+            </Link>
+          </div>
+          <table className="table">
+            <tbody>
+              <InfoRow
+                label="Approved verification"
+                value={partnerSupply.approvedVerification.toString()}
+                detail="Partners whose admin verification can support work activation."
+              />
+              <InfoRow
+                label="KYC approved"
+                value={partnerSupply.kycApproved.toString()}
+                detail="Identity review approved for Level 2 activity."
+              />
+              <InfoRow
+                label="Bank approved"
+                value={partnerSupply.bankApproved.toString()}
+                detail="Primary bank account ready for payout routing."
+              />
+              <InfoRow
+                label="First revenue partners"
+                value={partnerSupply.firstRevenue.toString()}
+                detail="Partners who should now complete tax/address/agreement requirements."
+              />
+              <InfoRow
+                label="Tax ready after revenue"
+                value={partnerSupply.taxReadyAfterRevenue.toString()}
+                detail="First-revenue partners with approved tax profile."
+              />
+              <InfoRow
+                label="Trusted badge"
+                value={partnerSupply.trusted.toString()}
+                detail="Partners promoted into the trusted operating level."
+              />
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -777,6 +884,76 @@ function buildAppPresence(users: AdminUser[], bookings: AdminBooking[], sessions
     disabledPushCustomers,
     activeBookingCustomers,
   };
+}
+
+function buildPartnerSupplyInsights(
+  providers: AdminProvider[],
+  bookings: AdminBooking[],
+  sessions: AdminAppSession[],
+  cashDebtRows: AdminEarning[],
+) {
+  const now = Date.now();
+  const partnerSessions = sessions.filter((session) => session.role === 'PROVIDER');
+  const livePartnerUserIds = new Set(
+    partnerSessions.filter((session) => appSessionState(session) === 'live').map((session) => session.userId),
+  );
+  const cashDebtPartnerIds = new Set(cashDebtRows.map((earning) => earning.providerProfileId));
+  const activeDemand = bookings.filter((booking) => activeBookingStatuses.has(booking.status)).length;
+  const onlineAvailable = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
+  const firstRevenuePartners = providers.filter(providerHasFirstRevenue);
+
+  const staleLocation = providers.filter((provider) => {
+    if (!provider.currentLocationUpdatedAt) {
+      return false;
+    }
+    const updatedAt = Date.parse(provider.currentLocationUpdatedAt);
+    return Number.isFinite(updatedAt) && now - updatedAt > 30 * 60_000;
+  }).length;
+
+  const noLocation = providers.filter(
+    (provider) =>
+      provider.currentLat === null ||
+      provider.currentLat === undefined ||
+      provider.currentLng === null ||
+      provider.currentLng === undefined,
+  ).length;
+
+  return {
+    total: providers.length,
+    online: providers.filter((provider) => provider.status.startsWith('ONLINE')).length,
+    onlineAvailable,
+    onlineBusy: providers.filter((provider) => provider.status === 'ONLINE_BUSY').length,
+    onlineAvailableSoon: providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE_SOON').length,
+    offline: providers.filter((provider) => provider.status === 'OFFLINE').length,
+    liveSessions: livePartnerUserIds.size,
+    staleLocation,
+    noLocation,
+    cashDebtPartners: cashDebtPartnerIds.size,
+    pendingVerification: providers.filter((provider) => provider.verification?.status === 'SUBMITTED').length,
+    approvedVerification: providers.filter((provider) => provider.verification?.status === 'APPROVED').length,
+    kycApproved: providers.filter((provider) => provider.kyc?.status === 'APPROVED').length,
+    bankApproved: providers.filter((provider) =>
+      (provider.bankAccounts ?? []).some((account) => account.isPrimary && account.status === 'APPROVED'),
+    ).length,
+    firstRevenue: firstRevenuePartners.length,
+    taxReadyAfterRevenue: firstRevenuePartners.filter(
+      (provider) => provider.taxProfile?.status === 'APPROVED',
+    ).length,
+    trusted: providers.filter((provider) => provider.level === 'LEVEL_4_TRUSTED' || provider.trustedAt)
+      .length,
+    blocked: providers.filter((provider) => {
+      const activeSanction = (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE');
+      return Boolean(provider.blockedAt) || activeSanction || cashDebtPartnerIds.has(provider.id);
+    }).length,
+    supplyPressureLabel:
+      onlineAvailable > 0 ? `${(activeDemand / onlineAvailable).toFixed(1)}x` : 'No supply',
+  };
+}
+
+function providerHasFirstRevenue(provider: AdminProvider) {
+  return (provider.earnings ?? []).some((earning) =>
+    ['AVAILABLE', 'PENDING', 'PAID', 'HELD'].includes(earning.status),
+  );
 }
 
 function appSessionState(session: AdminAppSession) {
