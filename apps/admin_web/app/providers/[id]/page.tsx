@@ -142,7 +142,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
     }),
   );
 
-  const primaryBank = provider.bankAccounts?.[0];
+  const primaryBank = primaryBankAccount(provider);
   const reviewChecklist = buildReviewChecklist(provider, dispatchPolicy);
   const opsSummary = buildProviderOpsSummary(provider, dispatchPolicy);
   const payoutOps = buildProviderPayoutOps(provider);
@@ -1443,7 +1443,7 @@ function buildProviderBookingAcceptance(
   const hasPushDevice = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
   const hasRecentLocation =
     locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
-  const primaryBank = provider.bankAccounts?.[0];
+  const primaryBank = primaryBankAccount(provider);
   const pricingReady = pricing.readyCount > 0;
   const hasRequiredDocuments = hasApprovedRequiredKycDocuments(provider);
   const hasAccountBlock = Boolean(provider.blockedAt);
@@ -1493,12 +1493,12 @@ function buildProviderBookingAcceptance(
     },
     {
       label: 'Bank account',
-      ok: primaryBank?.status === 'APPROVED',
+      ok: hasApprovedBankAccount(provider),
       detail:
         primaryBank?.status === 'APPROVED'
-          ? `Primary bank is approved: ${primaryBank.bankName}.`
-          : `Primary bank is ${primaryBank?.status ?? 'missing'}.`,
-      action: primaryBank?.status === 'APPROVED' ? 'Clear' : 'Approve bank',
+          ? `Approved bank is available: ${primaryBank.bankName}.`
+          : `Bank account is ${primaryBank?.status ?? 'missing'}.`,
+      action: hasApprovedBankAccount(provider) ? 'Clear' : 'Approve bank',
     },
     {
       label: 'Online and reachable',
@@ -1548,7 +1548,6 @@ function buildProviderOpsSummary(
   provider: ProviderDetail,
   dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY,
 ) {
-  const primaryBank = provider.bankAccounts?.[0];
   const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
   const hasRecentLocation = locationMinutes <= dispatchPolicy.locationFreshnessMinutes;
   const hasEnabledPush = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
@@ -1560,7 +1559,7 @@ function buildProviderOpsSummary(
   const payoutHold = activePayoutHold(provider);
   const payoutReady =
     hasFirstRevenue &&
-    primaryBank?.status === 'APPROVED' &&
+    hasApprovedBankAccount(provider) &&
     provider.taxProfile?.status === 'APPROVED' &&
     Boolean(provider.residentialAddress?.trim()) &&
     payoutAgreementsReady &&
@@ -1665,14 +1664,13 @@ function buildProviderOpsSummary(
 }
 
 function buildProviderPayoutOps(provider: ProviderDetail) {
-  const primaryBank = provider.bankAccounts?.[0];
   const earnings = provider.earnings ?? [];
   const payoutBatches = provider.payoutBatches ?? [];
   const payoutHold = activePayoutHold(provider);
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
   const hasAddress = Boolean(provider.residentialAddress?.trim());
-  const bankApproved = primaryBank?.status === 'APPROVED';
+  const bankApproved = hasApprovedBankAccount(provider);
   const taxApproved = provider.taxProfile?.status === 'APPROVED';
   const agreementsReady = agreementsAccepted >= 5;
   const payoutReady =
@@ -1843,13 +1841,12 @@ type ProviderLevelPathItem = {
 };
 
 function buildProviderLevelPlan(provider: ProviderDetail) {
-  const primaryBank = provider.bankAccounts?.[0];
   const hasBasicProfile = Boolean(
     provider.displayName?.trim() && provider.legalName?.trim() && provider.user?.phone?.trim(),
   );
   const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
   const kycReady = provider.kyc?.status === 'APPROVED' && requiredDocumentsReady;
-  const bankReady = primaryBank?.status === 'APPROVED';
+  const bankReady = hasApprovedBankAccount(provider);
   const hasCompletedService = (provider.earnings ?? []).length > 0;
   const taxReady = provider.taxProfile?.status === 'APPROVED';
   const agreementCount = provider.agreements?.length ?? 0;
@@ -1878,7 +1875,7 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
       level: 'LEVEL 2 - Activity possible',
       status: level2Ready ? 'READY' : 'REVIEW',
       detail: level2Ready
-        ? 'KYC, required documents, primary bank account, and partner verification are approved.'
+        ? 'KYC, required documents, approved bank account, and partner verification are approved.'
         : level2Blockers({
             hasBasicProfile,
             kycReady,
@@ -1945,7 +1942,7 @@ function level2Blockers(input: {
   if (!input.hasBasicProfile) blockers.push('Basic profile is incomplete.');
   if (!input.requiredDocumentsReady) blockers.push('Required CCCD/selfie documents are not all approved.');
   if (!input.kycReady) blockers.push('KYC is not approved.');
-  if (!input.bankReady) blockers.push('Primary bank account is not approved.');
+  if (!input.bankReady) blockers.push('No approved bank account is available.');
   if (!input.verificationReady) blockers.push('Partner verification is not approved.');
   return blockers.length ? blockers : ['Activity gate needs operator refresh.'];
 }
@@ -2050,7 +2047,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
   const serviceAreaComplete =
     Boolean(provider.serviceArea) || Boolean(provider.currentLat && provider.currentLng);
   const identityComplete = provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider);
-  const bankComplete = provider.bankAccounts?.[0]?.status === 'APPROVED';
+  const bankComplete = hasApprovedBankAccount(provider);
   const taxDeferredOrComplete = !hasFirstRevenue || provider.taxProfile?.status === 'APPROVED';
   const agreementsDeferredOrComplete = !hasFirstRevenue || (provider.agreements?.length ?? 0) >= 5;
   const securityClear =
@@ -2121,9 +2118,9 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
     {
       label: 'Bank and payout account',
       ok: bankComplete,
-      status: provider.bankAccounts?.[0]?.status ?? 'MISSING',
+      status: bankAccountStatusLabel(provider),
       detail: bankComplete
-        ? 'Primary bank account is approved for future payouts.'
+        ? 'An approved bank account is available for future payouts.'
         : 'Bank name, masked account number, account holder, and QR evidence should be approved before withdrawal.',
       operatorAction: bankComplete
         ? 'No bank action unless partner changes account.'
@@ -2218,15 +2215,14 @@ function shortRiskId(value: string) {
 
 function payoutBlockers(provider: ProviderDetail) {
   const blockers: string[] = [];
-  const primaryBank = provider.bankAccounts?.[0];
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const payoutHold = activePayoutHold(provider);
 
   if (payoutHold) {
     blockers.push(`Active payout hold: ${payoutHold.reason}.`);
   }
-  if (primaryBank?.status !== 'APPROVED') {
-    blockers.push(`Bank ${primaryBank?.status ?? 'MISSING'}.`);
+  if (!hasApprovedBankAccount(provider)) {
+    blockers.push(`Bank ${bankAccountStatusLabel(provider)}.`);
   }
   if (provider.taxProfile?.status !== 'APPROVED') {
     blockers.push(`Tax ${provider.taxProfile?.status ?? 'MISSING'}.`);
@@ -2290,11 +2286,11 @@ function nextProviderAction(
       tone: 'blocked',
     };
   }
-  if (provider.bankAccounts?.[0]?.status !== 'APPROVED') {
+  if (!hasApprovedBankAccount(provider)) {
     return {
       title: 'Next admin action',
       status: 'BANK',
-      detail: `Primary bank account is ${provider.bankAccounts?.[0]?.status ?? 'missing'}.`,
+      detail: `Bank account is ${bankAccountStatusLabel(provider).toLowerCase()}.`,
       action: 'Approve or reject the bank account with a clear reason.',
       tone: 'blocked',
     };
@@ -2369,7 +2365,7 @@ function cardClass(tone: ProviderOpsCard['tone']) {
 
 function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY) {
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
-  const primaryBank = provider.bankAccounts?.[0];
+  const primaryBank = primaryBankAccount(provider);
   const hasRecentLocation =
     locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const hasPushDevice = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
@@ -2415,8 +2411,8 @@ function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT
     },
     {
       label: 'Bank account',
-      ok: primaryBank?.status === 'APPROVED',
-      status: primaryBank?.status ?? 'MISSING',
+      ok: hasApprovedBankAccount(provider),
+      status: bankAccountStatusLabel(provider),
       detail: primaryBank
         ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'}`
         : 'Partner has not submitted a payout account.',
@@ -2460,6 +2456,22 @@ function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT
     blockers: items.filter((item) => !item.ok).length,
     ready: items.every((item) => item.ok),
   };
+}
+
+function approvedBankAccount(provider: ProviderDetail) {
+  return (provider.bankAccounts ?? []).find((bankAccount) => bankAccount.status === 'APPROVED') ?? null;
+}
+
+function primaryBankAccount(provider: ProviderDetail) {
+  return approvedBankAccount(provider) ?? provider.bankAccounts?.[0] ?? null;
+}
+
+function hasApprovedBankAccount(provider: ProviderDetail) {
+  return Boolean(approvedBankAccount(provider));
+}
+
+function bankAccountStatusLabel(provider: ProviderDetail) {
+  return approvedBankAccount(provider)?.status ?? provider.bankAccounts?.[0]?.status ?? 'MISSING';
 }
 
 function hasApprovedRequiredKycDocuments(provider: ProviderDetail) {
