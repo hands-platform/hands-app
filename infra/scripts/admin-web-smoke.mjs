@@ -76,4 +76,17 @@ if (providerLinkMatch) {
   }
 }
 
+const bookingsBody = await fetchPage('/bookings');
+const bookingLinkMatch = bookingsBody.match(/href="\/bookings\/([^"]+)"/);
+if (bookingLinkMatch) {
+  const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
+  const bookingBody = await fetchPage(bookingPath);
+  const bookingMarkers = ['Applied operations policy', 'Backup partner supply for this booking'];
+  const missing = bookingMarkers.filter((marker) => !bookingBody.includes(marker));
+  if (missing.length > 0) {
+    throw new Error(`${bookingPath} is missing expected markers: ${missing.join(', ')}`);
+  }
+  console.log(`PASS ${bookingPath}`);
+}
+
 console.log(`Admin web smoke passed for ${pages.length} page(s) at ${baseUrl}.`);

@@ -7,6 +7,7 @@ import {
   AdminLocationSnapshot,
   AdminNotification,
   AdminOperationalPolicySetting,
+  AdminProvider,
   adminGet,
 } from '../../../lib/admin-api';
 import {
@@ -31,10 +32,11 @@ const EXPIRED_LOCATION_HOURS = 24;
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [booking, operationalPolicies, rawNotifications] = await Promise.all([
+  const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminNotification[]>('/admin/notifications', []),
+    adminGet<AdminProvider[]>('/admin/providers', []),
   ]);
 
   if (!booking) {
@@ -57,6 +59,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
   const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
+  const backupSupply = bookingBackupPartnerSupply(booking, providers, operationalPolicies);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
   const operationsTrace = bookingOperationsTrace(booking, booking.auditLogs ?? []);
 
@@ -213,6 +216,67 @@ export default async function BookingDetailPage({ params }: PageProps) {
               <small>{decision.helper}</small>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Backup partner supply for this booking</h2>
+            <p className="muted">
+              Booking-pin view of who can join as a backup partner, and exactly why others are excluded.
+            </p>
+          </div>
+          <span className={`pill ${backupSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>
+            {backupSupply.eligibleCount} eligible
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {backupSupply.metrics.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className="ops-row">
+            <div>
+              <span className={`pill ${backupSupply.decisionTone}`}>{backupSupply.decisionStatus}</span>
+              <strong>{backupSupply.decisionTitle}</strong>
+              <p className="muted">{backupSupply.decisionDetail}</p>
+            </div>
+            <Link className="text-link" href="/partners">
+              Open partners
+            </Link>
+          </div>
+        </div>
+        <div className="stack" style={{ marginTop: 14 }}>
+          {backupSupply.rows.map((row) => (
+            <div className="ops-row" key={row.id}>
+              <div>
+                <strong>
+                  <Link className="text-link" href={`/partners/${row.id}`}>
+                    {row.name}
+                  </Link>
+                </strong>
+                <p className="muted">
+                  {row.role} / {row.status} / {row.locationAge}
+                </p>
+                <p className="muted">{row.detail}</p>
+              </div>
+              <div>
+                <span className={`pill ${row.eligible ? 'pill-success' : 'pill-warn'}`}>
+                  {row.eligible ? 'Can join' : 'Excluded'}
+                </span>
+                <div className="muted">{row.distance}</div>
+              </div>
+            </div>
+          ))}
+          {backupSupply.rows.length === 0 ? (
+            <p className="muted">No partner supply can be evaluated until the booking has a customer pin.</p>
+          ) : null}
         </div>
       </section>
 
@@ -1971,6 +2035,165 @@ function bookingFinanceTrace(booking: AdminBookingDetail) {
       ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
       : 'Not created',
   };
+}
+
+function bookingBackupPartnerSupply(
+  booking: AdminBookingDetail,
+  providers: AdminProvider[],
+  settings: AdminOperationalPolicySetting[],
+) {
+  const savedPolicy = readBookingMatchingPolicySnapshot(booking);
+  const byKey = new Map(settings.map((setting) => [setting.key, setting]));
+  const radiusMeters =
+    savedPolicy.backupProviderRadiusMeters ??
+    readOptionalNumber(byKey.get('matching.backup_provider_radius_meters')?.value) ??
+    10000;
+  const freshnessMinutes =
+    savedPolicy.backupProviderLocationMaxAgeMinutes ??
+    readOptionalNumber(byKey.get('matching.backup_provider_location_max_age_minutes')?.value) ??
+    STALE_LOCATION_MINUTES;
+  const customerLat = Number(booking.lat);
+  const customerLng = Number(booking.lng);
+  const hasCustomerPin = Number.isFinite(customerLat) && Number.isFinite(customerLng);
+  const participantProviderIds = new Set(
+    (booking.participants ?? [])
+      .map((participant) => participant.providerProfile?.id)
+      .filter(Boolean),
+  );
+  const preferredProviderId = booking.preferredProvider?.id;
+  const selectedProviderId = booking.selectedProvider?.id;
+
+  const rows = hasCustomerPin
+    ? providers
+        .map((provider) => {
+          const lat = Number(provider.currentLat);
+          const lng = Number(provider.currentLng);
+          const distanceMeters =
+            Number.isFinite(lat) && Number.isFinite(lng)
+              ? approximateDistanceMeters(customerLat, customerLng, lat, lng)
+              : null;
+          const locationAgeMinutes = providerLocationAgeMinutes(provider.currentLocationUpdatedAt);
+          const blockers: string[] = [];
+
+          if (provider.blockedAt) {
+            blockers.push('account blocked');
+          }
+          if (provider.verification?.status !== 'APPROVED') {
+            blockers.push(`verification ${provider.verification?.status ?? 'DRAFT'}`);
+          }
+          if (provider.status !== 'ONLINE_AVAILABLE') {
+            blockers.push(`status ${provider.status}`);
+          }
+          if (distanceMeters === null) {
+            blockers.push('no current coordinates');
+          } else if (distanceMeters > radiusMeters) {
+            blockers.push(`outside ${formatDistanceMeters(radiusMeters)} radius`);
+          }
+          if (locationAgeMinutes === null) {
+            blockers.push('location missing');
+          } else if (locationAgeMinutes > freshnessMinutes) {
+            blockers.push(`location older than ${freshnessMinutes}m`);
+          }
+
+          const role =
+            provider.id === selectedProviderId
+              ? 'Selected partner'
+              : provider.id === preferredProviderId
+                ? 'Preferred partner'
+                : participantProviderIds.has(provider.id)
+                  ? 'Shortlist partner'
+                  : 'Backup candidate';
+
+          return {
+            id: provider.id,
+            name: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+            role,
+            status: provider.status,
+            eligible: blockers.length === 0,
+            blockers,
+            distanceMeters,
+            distance: distanceMeters === null ? 'Unknown distance' : distanceLabel(Math.round(distanceMeters)),
+            locationAge:
+              locationAgeMinutes === null
+                ? 'No location timestamp'
+                : locationAgeMinutes < 1
+                  ? 'Location just now'
+                  : `Location ${locationAgeMinutes}m old`,
+            detail: blockers.length
+              ? `Excluded: ${blockers.join(', ')}.`
+              : `Inside ${formatDistanceMeters(radiusMeters)} radius and location is within ${freshnessMinutes}m.`,
+          };
+        })
+        .sort((left, right) => {
+          if (left.eligible !== right.eligible) return left.eligible ? -1 : 1;
+          const leftDistance = left.distanceMeters ?? Number.POSITIVE_INFINITY;
+          const rightDistance = right.distanceMeters ?? Number.POSITIVE_INFINITY;
+          if (leftDistance !== rightDistance) return leftDistance - rightDistance;
+          return left.name.localeCompare(right.name);
+        })
+        .slice(0, 8)
+    : [];
+
+  const eligibleCount = rows.filter((row) => row.eligible).length;
+  const nearbyExcluded = rows.filter(
+    (row) => !row.eligible && row.distanceMeters !== null && row.distanceMeters <= radiusMeters,
+  ).length;
+  const outOfRadius = rows.filter(
+    (row) => (row.distanceMeters ?? Number.POSITIVE_INFINITY) > radiusMeters,
+  ).length;
+  const staleOrMissing = rows.filter((row) =>
+    row.blockers.some((blocker) => blocker.startsWith('location')),
+  ).length;
+
+  return {
+    rows,
+    eligibleCount,
+    decisionStatus: hasCustomerPin ? (eligibleCount ? 'Supply available' : 'Supply risk') : 'Missing pin',
+    decisionTone: hasCustomerPin ? (eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
+    decisionTitle: hasCustomerPin
+      ? eligibleCount
+        ? 'Backup matching has usable nearby supply'
+        : 'No evaluated partner can join under current policy'
+      : 'Customer pin is required before partner radius can be checked',
+    decisionDetail: hasCustomerPin
+      ? eligibleCount
+        ? 'Operators can use the eligible partners as backup recovery candidates while the customer waits.'
+        : 'Review radius, partner online status, location freshness, and verification before extending the waiting window.'
+      : 'Ask the customer to confirm location or edit booking coordinates before dispatching partners.',
+    metrics: [
+      {
+        label: 'Eligible partners',
+        value: eligibleCount.toString(),
+        helper: `Online, verified, fresh location, and within ${formatDistanceMeters(radiusMeters)}.`,
+      },
+      {
+        label: 'Nearby excluded',
+        value: nearbyExcluded.toString(),
+        helper: 'Inside radius but blocked by status, verification, or location freshness.',
+      },
+      {
+        label: 'Out of radius',
+        value: outOfRadius.toString(),
+        helper: 'Too far from this booking pin for backup matching.',
+      },
+      {
+        label: 'Location stale/missing',
+        value: staleOrMissing.toString(),
+        helper: `Current policy requires location within ${freshnessMinutes} minutes.`,
+      },
+    ],
+  };
+}
+
+function providerLocationAgeMinutes(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return null;
+  }
+  return Math.max(0, Math.round((Date.now() - timestamp) / 60_000));
 }
 
 function bookingOperationalPolicySnapshot(
