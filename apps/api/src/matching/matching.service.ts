@@ -4,7 +4,11 @@ import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
-import { MATCHING_PREFERRED_ACCEPT_MODE_KEY, resolveMatchingPolicy } from './matching.policy';
+import {
+  MATCHING_BACKUP_OPEN_MODE_KEY,
+  MATCHING_PREFERRED_ACCEPT_MODE_KEY,
+  resolveMatchingPolicy,
+} from './matching.policy';
 
 @Injectable()
 export class MatchingService {
@@ -18,7 +22,10 @@ export class MatchingService {
   async getPolicy() {
     const settings = await this.prisma.operationalPolicySetting.findMany({
       where: {
-        OR: [{ category: { in: ['Matching'] } }, { key: MATCHING_PREFERRED_ACCEPT_MODE_KEY }],
+        OR: [
+          { category: { in: ['Matching'] } },
+          { key: { in: [MATCHING_PREFERRED_ACCEPT_MODE_KEY, MATCHING_BACKUP_OPEN_MODE_KEY] } },
+        ],
       },
       select: { key: true, value: true },
     });
@@ -40,6 +47,7 @@ export class MatchingService {
         preferredProviderResponseWindowMinutes: policy.providerResponseWindowMinutes,
         backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
         preferredAcceptMode: policy.preferredAcceptMode,
+        backupOpenMode: policy.backupOpenMode,
         finalSelection: 'CUSTOMER_SELECTS_PROVIDER',
       },
       input,

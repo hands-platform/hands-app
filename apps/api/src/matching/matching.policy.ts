@@ -8,6 +8,9 @@ export const MATCHING_TRAVEL_BUFFER_MINUTES_KEY = 'matching.travel_buffer_minute
 export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
+export const MATCHING_BACKUP_OPEN_MODE_KEY = 'matching.backup_open_mode';
+export const BACKUP_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
+export const BACKUP_OPEN_AFTER_FIRST_PICK_DELAY = 'AFTER_FIRST_PICK_DELAY';
 export const CANCELLATION_AFTER_MATCH_POLICY_KEY = 'cancellation.after_match_policy';
 export const CANCELLATION_ADMIN_REVIEW_FOR_MVP = 'ADMIN_REVIEW_FOR_MVP';
 export const CANCELLATION_AUTO_FEE_AFTER_MATCH = 'AUTO_FEE_AFTER_MATCH';
@@ -26,6 +29,7 @@ export type MatchingPolicy = {
   providerResponseWindowMinutes: number;
   backupProviderRadiusMeters: number;
   preferredAcceptMode: PreferredAcceptMode;
+  backupOpenMode: typeof BACKUP_OPEN_IMMEDIATE | typeof BACKUP_OPEN_AFTER_FIRST_PICK_DELAY;
 };
 
 export type OperationalPolicyDefinition = {
@@ -106,26 +110,26 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
   {
-    key: 'matching.backup_open_mode',
+    key: MATCHING_BACKUP_OPEN_MODE_KEY,
     category: 'Decision',
     label: 'When backup partners can join',
     description:
       'Choose whether nearby backup partners can join immediately during the first 10 minutes or only after a delay.',
-    value: 'IMMEDIATE_WITHIN_WINDOW',
-    recommendedValue: 'IMMEDIATE_WITHIN_WINDOW',
+    value: BACKUP_OPEN_IMMEDIATE,
+    recommendedValue: BACKUP_OPEN_IMMEDIATE,
     options: [
       {
-        value: 'IMMEDIATE_WITHIN_WINDOW',
+        value: BACKUP_OPEN_IMMEDIATE,
         label: 'Open backups immediately',
         tradeoff: 'Reduces customer waiting anxiety and creates visible alternatives.',
       },
       {
-        value: 'AFTER_FIRST_PICK_DELAY',
+        value: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
         label: 'Delay backup visibility',
         tradeoff: 'Less partner noise, but slower recovery if the preferred partner is late.',
       },
     ],
-    enforced: false,
+    enforced: true,
   },
   {
     key: 'wallet.negative_balance_gate',
@@ -249,6 +253,10 @@ export function resolveMatchingPolicy(
       30000,
     ),
     preferredAcceptMode: readPreferredAcceptMode(settings[MATCHING_PREFERRED_ACCEPT_MODE_KEY]),
+    backupOpenMode:
+      settings[MATCHING_BACKUP_OPEN_MODE_KEY] === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY
+        ? BACKUP_OPEN_AFTER_FIRST_PICK_DELAY
+        : BACKUP_OPEN_IMMEDIATE,
   };
 }
 

@@ -16,6 +16,8 @@ import { EarningsService } from '../earnings/earnings.service';
 import { MatchingGateway } from '../matching/matching.gateway';
 import { MatchingService } from '../matching/matching.service';
 import {
+  BACKUP_OPEN_IMMEDIATE,
+  BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   CANCELLATION_AFTER_MATCH_POLICY_KEY,
   CANCELLATION_AUTO_FEE_AFTER_MATCH,
   CANCELLATION_ADMIN_REVIEW_FOR_MVP,
@@ -173,6 +175,7 @@ export class BookingsService {
       lat: Number(booking.lat),
       lng: Number(booking.lng),
       preferredProviderId: preferredProvider?.id,
+      backupOpenMode: matchingPolicy.backupOpenMode,
     });
     const result = this.matching.openBooking({
       booking,
@@ -218,12 +221,15 @@ export class BookingsService {
         userId: backupProvider.userId,
         type: 'booking.backup_available',
         title: 'Nearby booking available',
-        body: 'A customer request within 10km is open for backup participation.',
+        body: `A customer request within ${Math.round(
+          matchingPolicy.backupProviderRadiusMeters / 1000,
+        )}km is open for backup participation.`,
         data: {
           bookingId: booking.id,
           providerProfileId: backupProvider.id,
           distanceMeters: backupProvider.distanceMeters,
           backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+          backupOpenMode: matchingPolicy.backupOpenMode,
         },
       });
     }
@@ -778,7 +784,12 @@ export class BookingsService {
     lat: number;
     lng: number;
     preferredProviderId?: string;
+    backupOpenMode?: Awaited<ReturnType<MatchingService['getPolicy']>>['backupOpenMode'];
   }) {
+    if (input.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY) {
+      return [];
+    }
+
     const policy = await this.matching.getPolicy();
     const providers = await this.prisma.providerProfile.findMany({
       where: {
@@ -836,12 +847,15 @@ export class BookingsService {
   }
 
   private canProviderSeeOpenBooking(
-    booking: { preferredProviderId: string | null; distanceMeters?: number | null },
+    booking: { preferredProviderId: string | null; openedAt?: Date | string | null; distanceMeters?: number | null },
     provider: { id: string },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
     if (booking.preferredProviderId === provider.id) {
       return true;
+    }
+    if (!this.isBackupWindowOpen(booking, policy)) {
+      return false;
     }
     return typeof booking.distanceMeters === 'number'
       ? booking.distanceMeters <= policy.backupProviderRadiusMeters
@@ -849,7 +863,7 @@ export class BookingsService {
   }
 
   private requireProviderWithinMatchingRadius(
-    booking: { lat: unknown; lng: unknown; preferredProviderId: string | null },
+    booking: { lat: unknown; lng: unknown; openedAt?: Date | string | null; preferredProviderId: string | null },
     provider: { id: string; currentLat: unknown; currentLng: unknown },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
@@ -862,6 +876,9 @@ export class BookingsService {
     if (booking.preferredProviderId === provider.id) {
       return distanceMeters;
     }
+    if (!this.isBackupWindowOpen(booking, policy)) {
+      throw new BadRequestException('Backup partners can join after the preferred response window opens');
+    }
     if (distanceMeters === null) {
       throw new BadRequestException('Provider location is required before joining this booking');
     }
@@ -869,6 +886,21 @@ export class BookingsService {
       throw new BadRequestException('Only providers within 10km can join this booking');
     }
     return distanceMeters;
+  }
+
+  private isBackupWindowOpen(
+    booking: { openedAt?: Date | string | null },
+    policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
+  ) {
+    if (policy.backupOpenMode === BACKUP_OPEN_IMMEDIATE) {
+      return true;
+    }
+    const openedAt = booking.openedAt ? new Date(booking.openedAt).getTime() : NaN;
+    if (Number.isNaN(openedAt)) {
+      return false;
+    }
+    const backupOpensAt = openedAt + policy.providerResponseWindowMinutes * 60_000;
+    return Date.now() >= backupOpensAt;
   }
 
   private async ensureProviderWalletCanAccept(providerProfileId: string) {

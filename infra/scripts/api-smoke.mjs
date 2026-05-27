@@ -1157,6 +1157,43 @@ try {
   );
 }
 
+let delayedBackupBooking;
+await patchJson(
+  `/admin/operational-policy/${encodeURIComponent('matching.backup_open_mode')}`,
+  adminAuth.accessToken,
+  { value: 'AFTER_FIRST_PICK_DELAY' },
+);
+try {
+  delayedBackupBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+    serviceId: service.id,
+    providerId: providerAuth.user.providerProfile.id,
+    scheduledStartAt: new Date(Date.now() + 85 * 60_000).toISOString(),
+    address: { line1: 'Delayed backup visibility smoke flow' },
+    lat: 10.7783,
+    lng: 106.6994,
+    paymentMethod: 'CASH',
+  });
+  const delayedBackupOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
+  if (delayedBackupOpenBookings.some((item) => item.id === delayedBackupBooking.id)) {
+    throw new Error(
+      `Delayed backup policy should hide request from non-preferred partner: ${JSON.stringify(
+        delayedBackupOpenBookings,
+      )}`,
+    );
+  }
+  await expectRequestFailure(
+    'Delayed backup partner join',
+    () => postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken),
+    400,
+  );
+} finally {
+  await patchJson(
+    `/admin/operational-policy/${encodeURIComponent('matching.backup_open_mode')}`,
+    adminAuth.accessToken,
+    { value: 'IMMEDIATE_WITHIN_WINDOW' },
+  );
+}
+
 const momoBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   scheduledStartAt: new Date(Date.now() + 90 * 60_000).toISOString(),
