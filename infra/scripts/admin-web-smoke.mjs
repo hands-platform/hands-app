@@ -1,7 +1,7 @@
 const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101';
 
 const pages = [
-  { path: '/', markers: ['HANDS Admin', 'Partner dispatch control', 'API source'] },
+  { path: '/', markers: ['HANDS Admin', 'Shift command briefing', 'Partner dispatch control', 'API source'] },
   { path: '/bookings', markers: ['Booking Monitor', 'Booking operation filters'] },
   { path: '/bookings?view=closeout', markers: ['Booking Monitor', 'Closeout ops'] },
   { path: '/bookings?view=expired', markers: ['Booking Monitor', 'Expired'] },
@@ -16,6 +16,7 @@ const pages = [
   { path: '/provider-risk', markers: ['Partner Risk', 'Risk operation filters'] },
   { path: '/app-sessions', markers: ['App Sessions', 'Latest app sessions'] },
   { path: '/providers', markers: ['Partner Verification', 'Review queue'] },
+  { path: '/providers?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
   { path: '/setup', markers: ['External setup', 'External registration handoff'] },
   { path: '/tax-policy', markers: ['Tax policy', 'Policy health'] },
