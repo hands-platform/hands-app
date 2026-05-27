@@ -79,6 +79,14 @@ type PartnerKycReviewBoard = {
   openCount: number;
   readyToApprove: number;
   blockedByDocuments: number;
+  playbook: Array<{
+    status: string;
+    title: string;
+    count: number;
+    detail: string;
+    operatorAction: string;
+    href: string;
+  }>;
   cards: Array<{
     title: string;
     count: number;
@@ -411,6 +419,21 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 )}
               </div>
             </Link>
+          ))}
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 14 }}>
+          {kycReviewBoard.playbook.map((step) => (
+            <div className="setup-stage-item" key={step.title}>
+              <span>{step.status}</span>
+              <div>
+                <strong>{step.title}</strong>
+                <p className="muted">{step.detail}</p>
+                <p className="muted">{step.operatorAction}</p>
+              </div>
+              <Link className="text-link" href={step.href}>
+                {step.count}
+              </Link>
+            </div>
           ))}
         </div>
       </section>
@@ -2092,6 +2115,48 @@ function buildPartnerKycReviewBoard(providers: AdminProvider[]): PartnerKycRevie
     openCount,
     readyToApprove: readyToApprove.length,
     blockedByDocuments: blockedByDocuments.length,
+    playbook: [
+      {
+        status: pendingRequiredDocuments.length ? '1ST' : 'OK',
+        title: 'Review uploaded identity files first',
+        count: pendingRequiredDocuments.length,
+        detail:
+          'CCCD front/back and selfie evidence should be approved or rejected before the final KYC decision.',
+        operatorAction:
+          'Check file type, face/ID consistency, image clarity, and reject with a specific resubmission reason when unclear.',
+        href: '/partners?review=documents',
+      },
+      {
+        status: readyToApprove.length ? '2ND' : 'OK',
+        title: 'Approve complete KYC records',
+        count: readyToApprove.length,
+        detail:
+          'These partners already have approved required evidence and only need the final KYC status decision.',
+        operatorAction:
+          'Approve when legal name, CCCD last four, selfie, and profile identity are consistent.',
+        href: '/partners?review=kyc',
+      },
+      {
+        status: rejectedKyc.length ? 'FOLLOW' : 'OK',
+        title: 'Follow up rejected KYC',
+        count: rejectedKyc.length,
+        detail:
+          'Rejected KYC should not disappear from operations until the partner has clear instructions and uploads corrected evidence.',
+        operatorAction:
+          'Use the partner detail resubmission guidance so support can send a precise message.',
+        href: '/partners?review=kyc',
+      },
+      {
+        status: missingKyc.length ? 'BLOCK' : 'OK',
+        title: 'Keep missing KYC out of paid dispatch',
+        count: missingKyc.length,
+        detail:
+          'Minimal signup is allowed, but partners without KYC cannot accept paid requests or backup matching.',
+        operatorAction:
+          'Let onboarding stay light, then prompt KYC before the partner becomes activity-ready.',
+        href: '/partners?review=acceptance-blocked',
+      },
+    ],
     cards: [
       {
         title: 'Ready to approve',
