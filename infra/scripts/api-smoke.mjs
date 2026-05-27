@@ -51,6 +51,7 @@ async function assertOperationalPolicyMetadata(accessToken) {
   const requiredLivePolicyKeys = [
     'matching.provider_response_window_minutes',
     'matching.backup_provider_radius_meters',
+    'matching.backup_provider_location_max_age_minutes',
     'matching.travel_buffer_minutes',
     'matching.preferred_accept_mode',
     'matching.backup_open_mode',
@@ -1220,6 +1221,53 @@ try {
     adminAuth.accessToken,
     'matching.preferred_accept_mode',
     preferredAcceptModeBeforeSmoke ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+  );
+}
+
+const backupRadiusBeforeSmoke = await getOperationalPolicyValue(
+  adminAuth.accessToken,
+  'matching.backup_provider_radius_meters',
+);
+await patchOperationalPolicyValue(adminAuth.accessToken, 'matching.backup_provider_radius_meters', 1000);
+try {
+  await postJson('/provider/location', backupProviderAuth.accessToken, {
+    lat: 10.805,
+    lng: 106.7009,
+  });
+  const narrowRadiusBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+    serviceId: service.id,
+    providerId: providerAuth.user.providerProfile.id,
+    scheduledStartAt: new Date(Date.now() + 82 * 60_000).toISOString(),
+    address: { line1: 'Narrow backup radius smoke flow' },
+    lat: 10.7769,
+    lng: 106.7009,
+    paymentMethod: 'CASH',
+  });
+  const narrowRadiusOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
+  if (narrowRadiusOpenBookings.some((item) => item.id === narrowRadiusBooking.id)) {
+    throw new Error(
+      `Narrow backup radius should hide far backup partner request: ${JSON.stringify(
+        narrowRadiusOpenBookings,
+      )}`,
+    );
+  }
+  const narrowRadiusJoinError = await expectRequestFailure(
+    'Narrow backup radius partner join',
+    () => postJson(`/provider/bookings/${narrowRadiusBooking.id}/join`, backupProviderAuth.accessToken),
+    400,
+  );
+  if (!narrowRadiusJoinError.includes('Only partners within 1km can join this booking')) {
+    throw new Error(`Narrow backup radius returned an unexpected error: ${narrowRadiusJoinError}`);
+  }
+} finally {
+  await postJson('/provider/location', backupProviderAuth.accessToken, {
+    lat: 10.7825,
+    lng: 106.6951,
+  });
+  await patchOperationalPolicyValue(
+    adminAuth.accessToken,
+    'matching.backup_provider_radius_meters',
+    backupRadiusBeforeSmoke ?? 10000,
   );
 }
 
