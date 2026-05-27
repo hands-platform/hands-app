@@ -84,8 +84,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     key: MATCHING_TRAVEL_BUFFER_MINUTES_KEY,
     category: 'Matching',
     label: 'Travel buffer after a booking',
-    description:
-      'Buffer minutes after the current booking before a partner is considered available again.',
+    description: 'Buffer minutes after the current booking before a partner is considered available again.',
     value: DEFAULT_TRAVEL_BUFFER_MINUTES,
     recommendedValue: DEFAULT_TRAVEL_BUFFER_MINUTES,
     unit: 'minutes',
@@ -99,7 +98,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     label: 'When the preferred partner accepts',
     description:
       'Choose whether a preferred partner acceptance immediately matches the booking or still asks the customer to confirm.',
-    value: PREFERRED_ACCEPT_AUTO_MATCH,
+    value: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     recommendedValue: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     options: [
       {
@@ -154,7 +153,8 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,
         label: 'Allow one recovery booking',
-        tradeoff: 'More partner-friendly by allowing one active recovery booking, but increases unpaid-fee risk.',
+        tradeoff:
+          'More partner-friendly by allowing one active recovery booking, but increases unpaid-fee risk.',
       },
     ],
     enforced: false,
@@ -185,8 +185,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     key: NO_SHOW_PARTNER_REPORT_POLICY_KEY,
     category: 'Decision',
     label: 'No-show handling',
-    description:
-      'Choose how no-show reports should move from partner report to operational decision.',
+    description: 'Choose how no-show reports should move from partner report to operational decision.',
     value: NO_SHOW_ADMIN_REVIEW_REQUIRED,
     recommendedValue: NO_SHOW_ADMIN_REVIEW_REQUIRED,
     options: [
@@ -207,8 +206,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     key: NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
     category: 'Decision',
     label: 'Partner alert channel',
-    description:
-      'Choose how partners should receive urgent booking and backup participation alerts.',
+    description: 'Choose how partners should receive urgent booking and backup participation alerts.',
     value: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
     recommendedValue: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
     options: [
@@ -290,9 +288,9 @@ export function readPolicyInteger(value: unknown, fallback: number, min: number,
 }
 
 function readPreferredAcceptMode(value: unknown): PreferredAcceptMode {
-  return value === PREFERRED_ACCEPT_CUSTOMER_CONFIRM
-    ? PREFERRED_ACCEPT_CUSTOMER_CONFIRM
-    : PREFERRED_ACCEPT_AUTO_MATCH;
+  return value === PREFERRED_ACCEPT_AUTO_MATCH
+    ? PREFERRED_ACCEPT_AUTO_MATCH
+    : PREFERRED_ACCEPT_CUSTOMER_CONFIRM;
 }
 
 function toRadians(value: number) {
