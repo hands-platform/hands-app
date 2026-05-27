@@ -32,7 +32,7 @@ const pages = [
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
   { path: '/partner-risk', markers: ['Partner Risk', 'Booking acceptance unblock board', 'Risk operation filters'] },
   { path: '/provider-risk', markers: ['Partner Risk', 'Booking acceptance unblock board', 'Risk operation filters'] },
-  { path: '/app-sessions', markers: ['App Sessions', 'Latest app sessions'] },
+  { path: '/app-sessions', markers: ['App Sessions', 'Session command board', 'Latest app sessions'] },
   { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
   {
     path: '/partners',

@@ -2,6 +2,14 @@ import Link from 'next/link';
 import { AdminAppSession, adminGet } from '../../lib/admin-api';
 
 type SessionState = 'live' | 'recent' | 'stale' | 'expired';
+type SessionCommandCard = {
+  title: string;
+  value: string;
+  status: string;
+  detail: string;
+  action: string;
+  tone: 'ops-task-done' | 'ops-task-pending' | 'ops-task-blocked';
+};
 
 const LIVE_WINDOW_MS = 5 * 60_000;
 const RECENT_WINDOW_MS = 30 * 60_000;
@@ -14,6 +22,7 @@ export default async function AppSessionsPage() {
   const platformRows = buildPlatformRows(sessions);
   const versionRows = buildVersionRows(sessions);
   const riskRows = buildSessionRiskRows(sessions);
+  const commandCards = buildSessionCommandCards(sessions, riskRows);
 
   return (
     <>
@@ -42,6 +51,31 @@ export default async function AppSessionsPage() {
             <span className="muted">{detail}</span>
           </div>
         ))}
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Session command board</h2>
+            <p className="muted">
+              Live demand, partner supply, push reachability, and shared-device risk for the current shift.
+            </p>
+          </div>
+          <span className={`pill ${riskRows.length ? 'pill-warn' : 'pill-success'}`}>
+            {riskRows.length ? `${riskRows.length} risk item(s)` : 'Clear'}
+          </span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {commandCards.map((card) => (
+            <div className={`ops-task-card ${card.tone}`} key={card.title}>
+              <small>{card.status}</small>
+              <h3>{card.title}</h3>
+              <strong>{card.value}</strong>
+              <p>{card.detail}</p>
+              <span className="ops-task-card-action">{card.action}</span>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="detail-grid" style={{ marginBottom: 16 }}>
@@ -207,6 +241,74 @@ function buildSessionSummary(sessions: AdminAppSession[]): Array<[string, string
     ['Stale sessions', stale.toString(), 'Seen within 24 hours but outside the recent window.'],
     ['Expired sessions', expired.toString(), 'Older than the operational freshness window.'],
     ['Loaded sessions', sessions.length.toString(), `${live} live session(s) in this snapshot.`],
+  ];
+}
+
+function buildSessionCommandCards(
+  sessions: AdminAppSession[],
+  riskRows: ReturnType<typeof buildSessionRiskRows>,
+): SessionCommandCard[] {
+  const liveCustomers = sessions.filter(
+    (session) => session.role === 'CUSTOMER' && sessionState(session) === 'live',
+  );
+  const recentCustomers = sessions.filter(
+    (session) => session.role === 'CUSTOMER' && sessionState(session) === 'recent',
+  );
+  const livePartners = sessions.filter(
+    (session) => session.role === 'PROVIDER' && sessionState(session) === 'live',
+  );
+  const recentPartners = sessions.filter(
+    (session) => session.role === 'PROVIDER' && sessionState(session) === 'recent',
+  );
+  const disabledPushUsers = sessions.filter(
+    (session) =>
+      (session.user?.pushDevices ?? []).length > 0 &&
+      !(session.user?.pushDevices ?? []).some((device) => device.enabled),
+  );
+  const sharedDeviceRisk = riskRows.filter((row) => row.status === 'SHARED DEVICE').length;
+  const expiredSessions = sessions.filter((session) => sessionState(session) === 'expired');
+
+  return [
+    {
+      title: 'Customer demand signal',
+      value: `${liveCustomers.length} live`,
+      status: liveCustomers.length ? 'ACTIVE' : 'QUIET',
+      detail: `${recentCustomers.length} customer session(s) were seen recently but are not live now.`,
+      action: liveCustomers.length ? 'Watch matching wait and payment holds' : 'Monitor campaign and support channels',
+      tone: liveCustomers.length ? 'ops-task-pending' : 'ops-task-done',
+    },
+    {
+      title: 'Partner supply signal',
+      value: `${livePartners.length} live`,
+      status: livePartners.length ? 'AVAILABLE' : 'LOW SUPPLY',
+      detail: `${recentPartners.length} partner session(s) were recently active but not live now.`,
+      action: livePartners.length ? 'Compare against open matching demand' : 'Prompt partners to open the app',
+      tone: livePartners.length ? 'ops-task-done' : 'ops-task-blocked',
+    },
+    {
+      title: 'Push reachability',
+      value: `${disabledPushUsers.length} issue(s)`,
+      status: disabledPushUsers.length ? 'FIX TOKENS' : 'READY',
+      detail: 'Users with only disabled push tokens may miss booking, chat, payout, or KYC updates.',
+      action: disabledPushUsers.length ? 'Open notifications and refresh app tokens' : 'No push action needed',
+      tone: disabledPushUsers.length ? 'ops-task-pending' : 'ops-task-done',
+    },
+    {
+      title: 'Shared device safety',
+      value: `${sharedDeviceRisk} device(s)`,
+      status: sharedDeviceRisk ? 'REVIEW' : 'CLEAR',
+      detail: 'Multiple accounts on one device can indicate family phones, staff testing, or account misuse.',
+      action: sharedDeviceRisk ? 'Review account safety before dispatching' : 'No duplicate device risk visible',
+      tone: sharedDeviceRisk ? 'ops-task-blocked' : 'ops-task-done',
+    },
+    {
+      title: 'Expired app heartbeat',
+      value: `${expiredSessions.length} expired`,
+      status: expiredSessions.length ? 'STALE' : 'FRESH',
+      detail: 'Old sessions should not be treated as live customer demand or partner supply.',
+      action: expiredSessions.length ? 'Use current location and push state before dispatch' : 'Session snapshot is fresh',
+      tone: expiredSessions.length ? 'ops-task-pending' : 'ops-task-done',
+    },
   ];
 }
 
