@@ -41,11 +41,25 @@ type PartnerDispatchPolicy = {
   backupRadiusMeters: number;
   locationFreshnessMinutes: number;
 };
+type PartnerKycEvidence = {
+  allRequiredApproved: boolean;
+  missingDocuments: string[];
+  nextAction: string;
+  rows: Array<{
+    type: string;
+    label: string;
+    status: string;
+    uploadedAt?: string | null;
+    rejectionReason?: string | null;
+    fileLabel: string;
+  }>;
+};
 
 const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
+const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10_000,
@@ -138,7 +152,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const registrationDossier = buildProviderRegistrationDossier(provider);
   const providerServicePricing = buildProviderServicePricing(provider);
   const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing, dispatchPolicy);
-  const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
+  const kycEvidence = buildPartnerKycEvidence(provider);
+  const canApproveKyc = kycEvidence.allRequiredApproved;
   const payoutHold = activePayoutHold(provider);
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
 
@@ -976,6 +991,14 @@ export default async function ProviderDetailPage({ params }: PageProps) {
 
         <div className="card">
           <h2>KYC decision</h2>
+          <div className="participant-list" style={{ marginBottom: 10 }}>
+            <span className={`pill ${provider.kyc?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
+              KYC {provider.kyc?.status ?? 'MISSING'}
+            </span>
+            <span className={`pill ${kycEvidence.allRequiredApproved ? 'pill-success' : 'pill-danger'}`}>
+              {kycEvidence.allRequiredApproved ? 'Evidence complete' : 'Evidence incomplete'}
+            </span>
+          </div>
           <p className="muted">
             CCCD last 4: {provider.kyc?.cccdNumberLast4 ? `****${provider.kyc.cccdNumberLast4}` : 'Missing'}
           </p>
@@ -1010,6 +1033,25 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               Approve the required CCCD front, CCCD back, and selfie documents before approving KYC.
             </p>
           ) : null}
+          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+            {kycEvidence.rows.map((row) => (
+              <div className="setup-stage-item" key={row.type}>
+                <span>{row.status === 'APPROVED' ? 'OK' : 'CHECK'}</span>
+                <div>
+                  <strong>{row.label}</strong>
+                  <p className="muted">
+                    {row.status} / {row.fileLabel}
+                    {row.uploadedAt ? ` / uploaded ${formatDate(row.uploadedAt)}` : ''}
+                  </p>
+                  {row.rejectionReason ? <p className="muted">Rejection: {row.rejectionReason}</p> : null}
+                </div>
+                <small>{row.status}</small>
+              </div>
+            ))}
+          </div>
+          <p className="muted" style={{ marginTop: 10 }}>
+            {kycEvidence.nextAction}
+          </p>
         </div>
 
         <div className="card">
@@ -2424,14 +2466,47 @@ function hasApprovedRequiredKycDocuments(provider: ProviderDetail) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
 }
 
+function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
+  const rows = REQUIRED_KYC_DOCUMENTS.map((type) => {
+    const document = (provider.documents ?? []).find((item) => item.type === type);
+    return {
+      type,
+      label: providerDocumentLabel(type),
+      status: document?.status ?? 'MISSING',
+      uploadedAt: document?.fileAsset?.uploadedAt,
+      rejectionReason: document?.rejectionReason,
+      fileLabel: document?.fileAsset?.contentType ?? document?.fileAsset?.key ?? 'No file uploaded',
+    };
+  });
+  const missingDocuments = rows
+    .filter((row) => row.status !== 'APPROVED')
+    .map((row) => row.type);
+  const allRequiredApproved = missingDocuments.length === 0;
+
+  let nextAction = 'No KYC action required.';
+  if (!provider.kyc) {
+    nextAction = 'Ask the partner to submit CCCD/CMND number plus front, back, and selfie evidence.';
+  } else if (!allRequiredApproved) {
+    nextAction = `Approve or reject missing evidence first: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`;
+  } else if (provider.kyc.status !== 'APPROVED') {
+    nextAction = 'All required evidence is approved. Make the final KYC decision.';
+  }
+
+  return {
+    allRequiredApproved,
+    missingDocuments,
+    nextAction,
+    rows,
+  };
+}
+
 function missingApprovedRequiredKycDocuments(provider: ProviderDetail) {
-  const requiredDocuments = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
   const approvedDocuments = new Set(
     (provider.documents ?? [])
       .filter((document) => document.status === 'APPROVED')
       .map((document) => document.type),
   );
-  return requiredDocuments.filter((type) => !approvedDocuments.has(type));
+  return REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
 }
 
 function formatDate(value?: string | null) {
