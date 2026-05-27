@@ -986,7 +986,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           : 'Backup partners wait until the first window closes',
         detail: immediateBackup
           ? 'Eligible partners inside the radius can appear while the first-pick partner is still deciding.'
-          : 'Backup visibility and join checks stay delayed until the preferred response window passes.',
+          : 'Backup visibility and join checks stay delayed until the first-pick response window passes.',
         operatorAction: customerConfirm
           ? 'Customer confirmation mode is active, so accepted partners still require customer final choice.'
           : 'Auto-match mode is active, so accepted first-pick partners can lock faster.',
@@ -1519,7 +1519,7 @@ function policyImpactDetails(key: string) {
       area: 'Backup flow',
       title: 'Controls when other partners can participate',
       detail:
-        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks backup join until the preferred response window has passed.',
+        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks backup join until the first-pick response window has passed.',
     },
     'wallet.negative_balance_gate': {
       area: 'Wallet risk',

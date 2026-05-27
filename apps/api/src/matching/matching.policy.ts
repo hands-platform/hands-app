@@ -57,9 +57,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
     category: 'Matching',
-    label: 'Preferred partner response window',
+    label: 'First-pick partner response window',
     description:
-      'Minutes the first-picked partner has to accept before the request should be treated as at-risk.',
+      'Minutes the first-pick partner has to accept before the request should be treated as at-risk.',
     value: DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
     recommendedValue: DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
     unit: 'minutes',
@@ -95,15 +95,15 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_PREFERRED_ACCEPT_MODE_KEY,
     category: 'Decision',
-    label: 'When the preferred partner accepts',
+    label: 'When the first-pick partner accepts',
     description:
-      'Choose whether a preferred partner acceptance immediately matches the booking or still asks the customer to confirm.',
+      'Choose whether a first-pick partner acceptance immediately matches the booking or still asks the customer to confirm.',
     value: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     recommendedValue: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     options: [
       {
         value: PREFERRED_ACCEPT_AUTO_MATCH,
-        label: 'Auto match on partner accept',
+        label: 'Auto match on first-pick accept',
         tradeoff: 'Fastest MVP flow, but the customer has less final control.',
       },
       {
@@ -119,7 +119,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'When backup partners can join',
     description:
-      'Choose whether nearby backup partners can join during the preferred response window or only after that timer passes.',
+      'Choose whether nearby backup partners can join during the first-pick response window or only after that timer passes.',
     value: BACKUP_OPEN_IMMEDIATE,
     recommendedValue: BACKUP_OPEN_IMMEDIATE,
     options: [
@@ -131,7 +131,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
         label: 'Delay backup visibility',
-        tradeoff: 'Less partner noise, but slower recovery if the preferred partner is late.',
+        tradeoff: 'Less partner noise, but slower recovery if the first-pick partner is late.',
       },
     ],
     enforced: true,

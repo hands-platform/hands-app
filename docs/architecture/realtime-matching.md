@@ -10,11 +10,11 @@
 
 ## Matching Policy
 
-- Preferred partner response window: 10 minutes.
+- First-pick partner response window: 10 minutes.
 - Backup partner radius: 10km from the booking location.
 - Backup eligibility uses the partner's last stored location; the MVP does not run route or live navigation APIs.
 - Eligible backup partners receive `booking.backup_available` and can join through `POST /provider/bookings/:id/join`.
-- Customer final selection remains the source of truth. The first-picked partner can accept first, but
+- Customer final selection remains the source of truth. The first-pick partner can accept first, but
   the customer still confirms the final partner before the booking is matched.
 
 ## Admin-Operable Policy
@@ -32,7 +32,7 @@ Enforced settings:
 - `matching.backup_open_mode`
 
 Existing open bookings keep their stored `expiresAt` timestamp so operators do not accidentally change a
-live customer countdown. `matching.preferred_accept_mode` controls whether the first-picked partner
+live customer countdown. `matching.preferred_accept_mode` controls whether the first-pick partner
 acceptance immediately matches the booking or keeps the booking open until the customer confirms that
 partner as the final selection.
 
