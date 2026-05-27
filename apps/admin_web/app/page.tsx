@@ -352,8 +352,12 @@ export default async function DashboardPage() {
           ))}
         </div>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
-          {shiftBriefing.nextActions.map((item) => (
-            <Link className={`ops-task-card ${opsQueueCardClass(item.severity)}`} href={item.href} key={item.label}>
+          {shiftBriefing.nextActions.map((item, index) => (
+            <Link
+              className={`ops-task-card ${opsQueueCardClass(item.severity)}`}
+              href={item.href}
+              key={`${item.area}-${item.href}-${item.label}-${index}`}
+            >
               <small>
                 {item.owner} / {item.area}
               </small>

@@ -72,9 +72,20 @@ export class HealthService {
       ]),
       this.pushProviderExternalReadiness(),
     ];
+    const currentStageChecks = checks.filter((check) => !isDeferredExternalCategory(check.category));
+    const blockingCategories = currentStageChecks
+      .filter((check) => check.status !== 'READY')
+      .map((check) => check.category);
+    const deferredCategories = checks
+      .filter((check) => isDeferredExternalCategory(check.category) && check.status !== 'READY')
+      .map((check) => check.category);
 
     return {
       ok: checks.every((check) => check.status === 'READY'),
+      currentStageOk: blockingCategories.length === 0,
+      productionE2EOk: checks.every((check) => check.status === 'READY'),
+      blockingCategories,
+      deferredCategories,
       timestamp: new Date().toISOString(),
       checks,
     };
@@ -414,4 +425,8 @@ function isHttpsUrl(value: string) {
 
 function isSecretLikeValue(value: string) {
   return value.length >= 16 && !/^change-me$/i.test(value);
+}
+
+function isDeferredExternalCategory(category: string) {
+  return ['mobile-release', 'supabase-auth', 'sms', 'payments', 'push', 'storage'].includes(category);
 }

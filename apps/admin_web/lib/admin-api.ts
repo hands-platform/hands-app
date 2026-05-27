@@ -825,6 +825,10 @@ export type AdminNotification = {
 
 export type AdminExternalReadiness = {
   ok: boolean;
+  currentStageOk?: boolean;
+  productionE2EOk?: boolean;
+  blockingCategories?: string[];
+  deferredCategories?: string[];
   timestamp: string;
   checks: Array<{
     name: string;

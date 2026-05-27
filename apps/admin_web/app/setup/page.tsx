@@ -728,12 +728,15 @@ function buildCurrentStageStatus(readiness: AdminExternalReadiness, readinessUna
   }
 
   const blockers = buildNextOperatorActions(readiness, false).length;
+  const apiBlockingCount = readiness.blockingCategories?.length;
+  const effectiveBlockers = typeof apiBlockingCount === 'number' ? apiBlockingCount : blockers;
+  const currentStageOk = readiness.currentStageOk ?? effectiveBlockers === 0;
   return {
-    ok: blockers === 0,
-    blockers,
-    label: blockers === 0 ? 'Current stage clear' : 'Current stage blocked',
+    ok: currentStageOk,
+    blockers: effectiveBlockers,
+    label: currentStageOk ? 'Current stage clear' : 'Current stage blocked',
     helper:
-      blockers === 0
+      currentStageOk
         ? 'Local MVP work can continue; deferred production integrations remain tracked separately.'
         : 'These are non-deferred setup gaps that can block current local/staging E2E work.',
   };

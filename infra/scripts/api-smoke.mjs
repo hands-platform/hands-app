@@ -2330,5 +2330,8 @@ console.log({
   retryDeliveryObserved: (retriedNotification?.deliveries?.length ?? 0) > retryBeforeDeliveryCount,
   readiness,
   externalReadinessOk: externalReadiness.ok,
+  externalCurrentStageOk: externalReadiness.currentStageOk,
+  externalBlockingCategories: externalReadiness.blockingCategories ?? [],
+  externalDeferredCategories: externalReadiness.deferredCategories ?? [],
   externalReadinessCategories: [...externalCategories].sort(),
 });
