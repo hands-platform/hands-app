@@ -14,6 +14,7 @@ type BookingMatchingPolicySnapshot = {
   providerResponseWindowMinutes: number | null;
   backupProviderRadiusMeters: number | null;
   backupProviderLocationMaxAgeMinutes: number | null;
+  backupProviderInvitationLimit: number | null;
   preferredAcceptMode: string | null;
   backupOpenMode: string | null;
   travelBufferMinutes: number | null;
@@ -2145,6 +2146,7 @@ function operationsOwnerDecisionBacklog() {
 function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
   const responseWindow = policyDisplayByKey(settings, 'matching.provider_response_window_minutes');
   const backupRadius = policyDisplayByKey(settings, 'matching.backup_provider_radius_meters');
+  const backupLimit = policyDisplayByKey(settings, 'matching.backup_provider_invitation_limit');
   const backupOpenMode = policyDisplayByKey(settings, 'matching.backup_open_mode');
   const preferredAcceptMode = policyDisplayByKey(settings, 'matching.preferred_accept_mode');
   const walletGate = policyDisplayByKey(settings, 'wallet.negative_balance_gate');
@@ -2175,10 +2177,11 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
     {
       step: '3',
       title: 'Backup partners can participate by policy',
-      detail: `Partners inside ${backupRadius} can see or join the backup lane according to "${backupOpenMode}".`,
+      detail: `Up to ${backupLimit} partners inside ${backupRadius} can see or join the backup lane according to "${backupOpenMode}".`,
       className: 'timeline-active',
       tags: [
         { label: backupRadius, tone: 'pill-info' },
+        { label: backupLimit, tone: 'pill-info' },
         { label: backupOpenMode, tone: 'pill-warn' },
       ],
     },
@@ -2267,6 +2270,12 @@ function policyImpactDetails(key: string) {
       title: 'Controls who can see and join backup requests',
       detail:
         'Partner open-booking lists, join validation, backup notifications, and customer shortlist visibility use this radius.',
+    },
+    'matching.backup_provider_invitation_limit': {
+      area: 'Partner supply',
+      title: 'Controls how many backup partners are exposed',
+      detail:
+        'Eligible backup partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.',
     },
     'matching.travel_buffer_minutes': {
       area: 'Availability',
@@ -2386,6 +2395,7 @@ function readBookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchi
     backupProviderLocationMaxAgeMinutes: readOptionalNumber(
       policy.backupProviderLocationMaxAgeMinutes,
     ),
+    backupProviderInvitationLimit: readOptionalNumber(policy.backupProviderInvitationLimit),
     preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
@@ -2445,6 +2455,11 @@ function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperat
       label: 'backup location freshness',
       saved: snapshot.backupProviderLocationMaxAgeMinutes,
       live: policyRawValue(settings, 'matching.backup_provider_location_max_age_minutes'),
+    },
+    {
+      label: 'backup invitation limit',
+      saved: snapshot.backupProviderInvitationLimit,
+      live: policyRawValue(settings, 'matching.backup_provider_invitation_limit'),
     },
     {
       label: 'accept mode',

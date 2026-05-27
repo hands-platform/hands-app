@@ -4,12 +4,15 @@ export const DEFAULT_TRAVEL_BUFFER_MINUTES = 30;
 export const DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES = 10;
 export const DEFAULT_BACKUP_PROVIDER_RADIUS_METERS = 10000;
 export const DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES = 30;
+export const DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT = 50;
 
 export const MATCHING_TRAVEL_BUFFER_MINUTES_KEY = 'matching.travel_buffer_minutes';
 export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 export const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
+export const MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY =
+  'matching.backup_provider_invitation_limit';
 export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
 export const MATCHING_BACKUP_OPEN_MODE_KEY = 'matching.backup_open_mode';
 export const BACKUP_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
@@ -38,6 +41,7 @@ export type MatchingPolicy = {
   providerResponseWindowMinutes: number;
   backupProviderRadiusMeters: number;
   backupProviderLocationMaxAgeMinutes: number;
+  backupProviderInvitationLimit: number;
   preferredAcceptMode: PreferredAcceptMode;
   backupOpenMode: typeof BACKUP_OPEN_IMMEDIATE | typeof BACKUP_OPEN_AFTER_FIRST_PICK_DELAY;
 };
@@ -95,6 +99,19 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     unit: 'minutes',
     min: 5,
     max: 1440,
+    enforced: true,
+  },
+  {
+    key: MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY,
+    category: 'Matching',
+    label: 'Backup partner invitation limit',
+    description:
+      'Maximum number of nearby eligible backup partners that can be exposed to the request and notified for participation.',
+    value: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
+    recommendedValue: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
+    unit: 'partners',
+    min: 1,
+    max: 200,
     enforced: true,
   },
   {
@@ -283,6 +300,16 @@ export function resolveMatchingPolicy(
       ),
       5,
       1440,
+    ),
+    backupProviderInvitationLimit: readPolicyInteger(
+      settings[MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY],
+      readPositiveInteger(
+        config,
+        'MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT',
+        DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
+      ),
+      1,
+      200,
     ),
     preferredAcceptMode: readPreferredAcceptMode(settings[MATCHING_PREFERRED_ACCEPT_MODE_KEY]),
     backupOpenMode:

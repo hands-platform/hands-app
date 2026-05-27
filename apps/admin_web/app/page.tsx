@@ -71,6 +71,7 @@ type DashboardBookingMatchingPolicySnapshot = {
   providerResponseWindowMinutes: number | null;
   backupProviderRadiusMeters: number | null;
   backupProviderLocationMaxAgeMinutes: number | null;
+  backupProviderInvitationLimit: number | null;
   preferredAcceptMode: string | null;
   backupOpenMode: string | null;
   travelBufferMinutes: number | null;
@@ -1389,6 +1390,8 @@ function buildMatchingControlRoom(
     dashboardPolicyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
   const backupLocationMaxAgeMinutes =
     dashboardPolicyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+  const backupInvitationLimit =
+    dashboardPolicyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
   const backupOpenMode =
     dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
   const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
@@ -1410,12 +1413,15 @@ function buildMatchingControlRoom(
     const bookingBackupRadiusMeters = savedPolicy?.backupProviderRadiusMeters ?? backupRadiusMeters;
     const bookingBackupLocationMaxAgeMinutes =
       savedPolicy?.backupProviderLocationMaxAgeMinutes ?? backupLocationMaxAgeMinutes;
+    const bookingBackupInvitationLimit =
+      savedPolicy?.backupProviderInvitationLimit ?? backupInvitationLimit;
     const bookingBackupOpenMode = savedPolicy?.backupOpenMode ?? backupOpenMode;
     const bookingImmediateBackup = bookingBackupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
     const coordinate = parseCoordinatePair(booking.lat, booking.lng);
-    const eligiblePartners = coordinate
+    const eligiblePartnersAll = coordinate
       ? providersWithinRadius(providers, coordinate.lat, coordinate.lng, bookingBackupRadiusMeters)
       : [];
+    const eligiblePartners = eligiblePartnersAll.slice(0, bookingBackupInvitationLimit);
     const freshEligible = eligiblePartners.filter(
       (item) => (item.ageMinutes ?? Infinity) <= bookingBackupLocationMaxAgeMinutes,
     );
@@ -1459,7 +1465,10 @@ function buildMatchingControlRoom(
       `first-pick ${booking.preferredProvider?.displayName ?? 'none'}`,
       `${participantCount} joined`,
       firstPickDeclined ? 'first-pick declined' : backupWindowOpen ? 'backup open' : 'backup waiting',
-      coordinate ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible` : 'no customer pin',
+      coordinate
+        ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible / ${eligiblePartnersAll.length} in radius`
+        : 'no customer pin',
+      `${bookingBackupInvitationLimit} invite cap`,
       `${formatDistance(bookingBackupRadiusMeters)} radius`,
       `${bookingBackupLocationMaxAgeMinutes}m freshness`,
       `${bookingResponseWindowMinutes}m window`,
@@ -1511,6 +1520,11 @@ function buildMatchingControlRoom(
         label: 'Backup radius',
         value: formatDistance(backupRadiusMeters),
         helper: `${averageEligible} average eligible partner(s) using row-level saved radius when available.`,
+      },
+      {
+        label: 'Backup invite cap',
+        value: String(backupInvitationLimit),
+        helper: 'Maximum nearest eligible partners opened for backup participation on new bookings.',
       },
       {
         label: 'Backup open rule',
@@ -1617,6 +1631,7 @@ function dashboardBookingPolicySnapshot(booking: AdminBooking): DashboardBooking
     backupProviderLocationMaxAgeMinutes: readOptionalNumber(
       policy.backupProviderLocationMaxAgeMinutes,
     ),
+    backupProviderInvitationLimit: readOptionalNumber(policy.backupProviderInvitationLimit),
     preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
@@ -3427,6 +3442,11 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
       byKey.get('matching.backup_provider_radius_meters'),
       'Backup radius',
       'Partners inside this radius can join.',
+    ),
+    policyMetric(
+      byKey.get('matching.backup_provider_invitation_limit'),
+      'Backup invite cap',
+      'Nearest eligible partners opened for backup participation.',
     ),
     policyMetric(
       byKey.get('matching.travel_buffer_minutes'),

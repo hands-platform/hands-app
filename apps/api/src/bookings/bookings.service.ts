@@ -883,6 +883,10 @@ export class BookingsService {
         snapshot.backupProviderLocationMaxAgeMinutes,
         fallback.backupProviderLocationMaxAgeMinutes,
       ),
+      backupProviderInvitationLimit: readSnapshotInteger(
+        snapshot.backupProviderInvitationLimit,
+        fallback.backupProviderInvitationLimit,
+      ),
       preferredAcceptMode:
         snapshot.preferredAcceptMode === PREFERRED_ACCEPT_AUTO_MATCH ||
         snapshot.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM
@@ -983,7 +987,7 @@ export class BookingsService {
       )
       .map((provider) => ({ ...provider, distanceMeters: provider.distanceMeters as number }))
       .sort((left, right) => left.distanceMeters - right.distanceMeters)
-      .slice(0, 50);
+      .slice(0, policy.backupProviderInvitationLimit);
   }
 
   private canProviderSeeOpenBooking(
@@ -1405,6 +1409,7 @@ function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingServic
     providerResponseWindowMinutes: policy.providerResponseWindowMinutes,
     backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
     backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
+    backupProviderInvitationLimit: policy.backupProviderInvitationLimit,
     preferredAcceptMode: policy.preferredAcceptMode,
     backupOpenMode: policy.backupOpenMode,
     travelBufferMinutes: policy.travelBufferMinutes,

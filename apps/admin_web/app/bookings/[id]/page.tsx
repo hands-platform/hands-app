@@ -2094,6 +2094,10 @@ function bookingBackupPartnerSupply(
     savedPolicy.backupProviderLocationMaxAgeMinutes ??
     readOptionalNumber(byKey.get('matching.backup_provider_location_max_age_minutes')?.value) ??
     STALE_LOCATION_MINUTES;
+  const invitationLimit =
+    savedPolicy.backupProviderInvitationLimit ??
+    readOptionalNumber(byKey.get('matching.backup_provider_invitation_limit')?.value) ??
+    50;
   const customerLat = Number(booking.lat);
   const customerLng = Number(booking.lng);
   const hasCustomerPin = Number.isFinite(customerLat) && Number.isFinite(customerLng);
@@ -2222,6 +2226,11 @@ function bookingBackupPartnerSupply(
         label: 'Location stale/missing',
         value: staleOrMissing.toString(),
         helper: `Current policy requires location within ${freshnessMinutes} minutes.`,
+      },
+      {
+        label: 'Invite cap',
+        value: invitationLimit.toString(),
+        helper: 'Nearest eligible backup partners opened for this request before notifications are created.',
       },
     ],
   };
@@ -2661,6 +2670,7 @@ function readBookingMatchingPolicySnapshot(booking: AdminBookingDetail) {
     backupProviderLocationMaxAgeMinutes: readOptionalNumber(
       policy?.backupProviderLocationMaxAgeMinutes,
     ),
+    backupProviderInvitationLimit: readOptionalNumber(policy?.backupProviderInvitationLimit),
     preferredAcceptMode: readOptionalString(policy?.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy?.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy?.travelBufferMinutes),

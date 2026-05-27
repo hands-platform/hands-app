@@ -51,6 +51,7 @@ export class MatchingService {
         preferredProviderResponseWindowMinutes: policy.providerResponseWindowMinutes,
         backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
         backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
+        backupProviderInvitationLimit: policy.backupProviderInvitationLimit,
         preferredAcceptMode: policy.preferredAcceptMode,
         backupOpenMode: policy.backupOpenMode,
         finalSelection: 'CUSTOMER_SELECTS_PARTNER',
@@ -139,6 +140,9 @@ function getPolicyFromPayload(
       ? policy.backupProviderLocationMaxAgeMinutes
       : undefined,
   );
+  const backupProviderInvitationLimit = Number(
+    'backupProviderInvitationLimit' in policy ? policy.backupProviderInvitationLimit : undefined,
+  );
   const preferredAcceptMode =
     'preferredAcceptMode' in policy && typeof policy.preferredAcceptMode === 'string'
       ? policy.preferredAcceptMode
@@ -153,6 +157,7 @@ function getPolicyFromPayload(
     !Number.isFinite(backupProviderRadiusMeters) ||
     !Number.isFinite(travelBufferMinutes) ||
     !Number.isFinite(backupProviderLocationMaxAgeMinutes) ||
+    !Number.isFinite(backupProviderInvitationLimit) ||
     !preferredAcceptMode ||
     !backupOpenMode
   ) {
@@ -163,6 +168,7 @@ function getPolicyFromPayload(
     providerResponseWindowMinutes,
     backupProviderRadiusMeters,
     backupProviderLocationMaxAgeMinutes,
+    backupProviderInvitationLimit,
     travelBufferMinutes,
     preferredAcceptMode,
     backupOpenMode,
