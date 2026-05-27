@@ -229,6 +229,13 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
       </div>
 
+      <PartnerDetailReadinessSnapshot
+        provider={provider}
+        bookingAcceptance={bookingAcceptance}
+        payoutOps={payoutOps}
+        dispatchPolicy={dispatchPolicy}
+      />
+
       <div className={`card ${cardClass(bookingAcceptance.tone)}`} style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -1450,6 +1457,60 @@ type BookingAcceptanceGate = {
   action: string;
 };
 
+type PartnerDetailOpsBadge = {
+  label: string;
+  detail: string;
+  tone: ProviderOpsCard['tone'];
+};
+
+function PartnerDetailReadinessSnapshot({
+  provider,
+  bookingAcceptance,
+  payoutOps,
+  dispatchPolicy,
+}: {
+  provider: ProviderDetail;
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>;
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>;
+  dispatchPolicy: PartnerDispatchPolicy;
+}) {
+  const badges = buildPartnerDetailOpsBadges(provider, bookingAcceptance, payoutOps, dispatchPolicy);
+
+  return (
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div className="risk-watch-header">
+        <div>
+          <h2>Partner readiness snapshot</h2>
+          <p className="muted">
+            Fast operating badges for dispatch, backup matching, cash settlement, KYC, payout, and service
+            readiness.
+          </p>
+        </div>
+        <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
+      </div>
+      <div className="participant-list" style={{ marginTop: 12 }}>
+        {badges.map((badge) => (
+          <span className={`pill ${pillClass(badge.tone)}`} key={badge.label} title={badge.detail}>
+            {badge.label}
+          </span>
+        ))}
+      </div>
+      <div className="setup-stage-item" style={{ marginTop: 16 }}>
+        <span>{bookingAcceptance.canAccept ? 'GO' : 'HOLD'}</span>
+        <div>
+          <strong>{bookingAcceptance.canAccept ? 'Ready for dispatch' : 'Top blocker'}</strong>
+          <p className="muted">{bookingAcceptance.primaryReason}</p>
+        </div>
+        <small>
+          {bookingAcceptance.canAccept
+            ? `Backup radius ${formatDistance(dispatchPolicy.backupRadiusMeters)}`
+            : 'Resolve gate'}
+        </small>
+      </div>
+    </div>
+  );
+}
+
 function buildProviderBookingAcceptance(
   provider: ProviderDetail,
   pricing: ReturnType<typeof buildProviderServicePricing>,
@@ -1559,6 +1620,84 @@ function buildProviderBookingAcceptance(
     bookableServices: `${pricing.readyCount}/${pricing.rows.length}`,
     gates,
   };
+}
+
+function buildPartnerDetailOpsBadges(
+  provider: ProviderDetail,
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+  dispatchPolicy: PartnerDispatchPolicy,
+): PartnerDetailOpsBadge[] {
+  const cashDebt = cashFeeDebtAmount(provider);
+  const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
+  const locationFresh =
+    locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
+  const gate = (label: string) => bookingAcceptance.gates.find((item) => item.label === label);
+  const identityGate = gate('Identity and approval');
+  const bankGate = gate('Bank account');
+  const onlineGate = gate('Online and reachable');
+  const serviceGate = gate('Bookable services');
+
+  return [
+    {
+      label: bookingAcceptance.canAccept ? 'Direct accept ready' : 'Direct accept blocked',
+      tone: bookingAcceptance.canAccept ? 'done' : 'blocked',
+      detail: bookingAcceptance.primaryReason,
+    },
+    {
+      label: bookingAcceptance.canAccept ? 'Backup candidate' : 'Backup not ready',
+      tone: bookingAcceptance.canAccept ? 'done' : 'pending',
+      detail: bookingAcceptance.canAccept
+        ? `Can be considered inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
+        : 'Backup matching uses the same safety gates, plus booking-distance filtering.',
+    },
+    {
+      label: cashDebt > 0 ? 'Cash debt' : 'Wallet clear',
+      tone: cashDebt > 0 ? 'blocked' : 'done',
+      detail:
+        cashDebt > 0
+          ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash settlement.`
+          : 'No cash-settlement debt is blocking acceptance.',
+    },
+    {
+      label: identityGate?.ok ? 'KYC and docs ok' : 'KYC/doc review',
+      tone: identityGate?.ok ? 'done' : 'blocked',
+      detail: identityGate?.detail ?? 'Identity gate has not been evaluated.',
+    },
+    {
+      label: bankGate?.ok ? 'Bank approved' : 'Bank pending',
+      tone: bankGate?.ok ? 'done' : 'pending',
+      detail: bankGate?.detail ?? 'Bank gate has not been evaluated.',
+    },
+    {
+      label: locationFresh ? 'Location fresh' : 'Refresh location',
+      tone: locationFresh ? 'done' : 'pending',
+      detail: `Last location is ${locationAgeLabel(
+        provider.currentLocationUpdatedAt,
+      )}; policy is ${dispatchPolicy.locationFreshnessMinutes}m.`,
+    },
+    {
+      label: enabledPushCount > 0 ? 'Push ready' : 'Push missing',
+      tone: enabledPushCount > 0 ? 'done' : 'pending',
+      detail:
+        enabledPushCount > 0
+          ? `${enabledPushCount} enabled push device(s) can receive booking alerts.`
+          : onlineGate?.detail ?? 'No enabled push device is registered.',
+    },
+    {
+      label: serviceGate?.ok ? 'Services bookable' : 'Pricing needed',
+      tone: serviceGate?.ok ? 'done' : 'blocked',
+      detail: serviceGate?.detail ?? 'Service pricing gate has not been evaluated.',
+    },
+    {
+      label: payoutOps.status === 'UNLOCKED' ? 'Payout unlocked' : `Payout ${payoutOps.status.toLowerCase()}`,
+      tone: payoutOps.tone,
+      detail:
+        payoutOps.blockers[0] ??
+        payoutOps.hold?.reason ??
+        'Payout gate is deferred until first earning or already clear.',
+    },
+  ];
 }
 
 function buildProviderOpsSummary(
