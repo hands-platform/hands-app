@@ -54,7 +54,7 @@ Local MVP auth uses `POST /auth/verify-otp` with dev OTP `123456`.
 - `GET /chat/rooms/:id/messages`
 - `POST /chat/rooms/:id/messages`
 
-Chat access is limited to the booking customer, the selected provider, and admins.
+Chat access is limited to the booking customer, the selected partner, and admins.
 
 ## Files
 

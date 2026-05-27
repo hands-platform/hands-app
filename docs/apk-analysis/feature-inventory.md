@@ -42,4 +42,4 @@
 
 The MVP keeps the broad screen order and navigation hierarchy, but changes the core booking model into open matching:
 
-`service -> provider list/detail -> booking confirmation -> open matching -> provider participants -> customer selects final provider -> chat/location/service lifecycle -> review/tip`
+`service -> partner list/detail -> booking confirmation -> open matching -> partner participants -> customer selects final partner -> chat/location/service lifecycle -> review/tip`

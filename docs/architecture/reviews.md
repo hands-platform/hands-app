@@ -4,7 +4,7 @@
 
 - A customer can review only their own booking.
 - Booking must be `COMPLETED`.
-- Booking must have a selected provider.
+- Booking must have a selected partner.
 - Rating must be between 1 and 5.
 - One review per booking is enforced by the unique `bookingId` relation.
 
@@ -26,4 +26,3 @@ Admin can update review status:
 - `REPORTED`
 
 Moderation writes an `AdminAuditLog` entry and recalculates provider rating.
-

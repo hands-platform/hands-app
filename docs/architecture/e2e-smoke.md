@@ -13,7 +13,7 @@
 - Booking creation with cash payment.
 - Provider online/location update.
 - Provider joins open matching job.
-- Customer selects final provider.
+- Customer selects final partner.
 - Chat message creation.
 - Service completion.
 - Customer review with tip.

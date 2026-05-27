@@ -35,7 +35,11 @@ export class MatchingService {
     );
   }
 
-  openBooking(input: { booking?: unknown; payload?: unknown; policy?: Awaited<ReturnType<MatchingService['getPolicy']>> }) {
+  openBooking(input: {
+    booking?: unknown;
+    payload?: unknown;
+    policy?: Awaited<ReturnType<MatchingService['getPolicy']>>;
+  }) {
     const policy = input.policy ?? resolveMatchingPolicy(this.config);
     return {
       id: getRecordId(input.booking) ?? 'dev-booking-id',
@@ -48,7 +52,7 @@ export class MatchingService {
         backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
         preferredAcceptMode: policy.preferredAcceptMode,
         backupOpenMode: policy.backupOpenMode,
-        finalSelection: 'CUSTOMER_SELECTS_PROVIDER',
+        finalSelection: 'CUSTOMER_SELECTS_PARTNER',
       },
       input,
     };

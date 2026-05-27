@@ -102,7 +102,7 @@ If the provider wallet is negative:
 - The provider app warns before accepting cash requests that direct customer cash can create
   wallet debt after completion.
 
-The provider-facing booking block copy currently follows the API message:
+The partner-facing booking block copy currently follows the API message:
 
 `수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
 

@@ -893,7 +893,7 @@ export class BookingsService {
       return distanceMeters;
     }
     if (!this.isBackupWindowOpen(booking, policy)) {
-      throw new BadRequestException('Backup partners can join after the preferred response window opens');
+      throw new BadRequestException('Backup partners can join after the first-pick response window opens');
     }
     if (distanceMeters === null) {
       throw new BadRequestException('Partner location is required before joining this booking');

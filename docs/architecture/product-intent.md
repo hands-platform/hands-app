@@ -10,7 +10,7 @@ The first MVP flow is intentionally simple:
 - the customer opens one provider detail page
 - the customer reviews profile, reviews, and services
 - the customer chooses one service and sends one direct booking request
-- the selected provider accepts or rejects that request
+- the selected partner accepts or rejects that request
 - chat opens after the provider accepts and starts the service flow
 
 This is the primary Phase 1 direction.

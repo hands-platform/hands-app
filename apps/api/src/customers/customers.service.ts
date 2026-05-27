@@ -27,7 +27,7 @@ export class CustomersService {
       throw new BadRequestException('Review is allowed only after service completion');
     }
     if (!booking.selectedProviderId) {
-      throw new BadRequestException('Booking has no selected provider');
+      throw new BadRequestException('Booking has no selected partner');
     }
     if (input.rating < 1 || input.rating > 5) {
       throw new BadRequestException('Rating must be between 1 and 5');
@@ -53,9 +53,7 @@ export class CustomersService {
     return review;
   }
 
-  async previewCoupon(
-    input: { code: string; serviceId: string; subtotal: number },
-  ): Promise<{
+  async previewCoupon(input: { code: string; serviceId: string; subtotal: number }): Promise<{
     valid: boolean;
     code: string;
     discountAmount: number;
