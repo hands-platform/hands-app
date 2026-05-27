@@ -160,7 +160,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               Clear filters
             </Link>
             <span className="muted">
-              Showing {visibleProviders.length} of {providers.length} matching therapists
+              Showing {visibleProviders.length} of {providers.length} matching partners
               {providers.length !== allProviders.length ? ` (${allProviders.length} total)` : ''}
             </span>
           </div>
@@ -231,7 +231,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Review queue</h2>
             <p className="muted">
-              Prioritized provider issues for KYC, documents, payout readiness, device alerts, and dispatch
+              Prioritized partner issues for KYC, documents, payout readiness, device alerts, and dispatch
               location freshness.
             </p>
           </div>
@@ -261,9 +261,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Provider priority lane</h2>
+            <h2>Partner priority lane</h2>
             <p className="muted">
-              The next operators should open these provider profiles first. This is derived from profile, KYC,
+              The next operators should open these partner profiles first. This is derived from profile, KYC,
               document, bank, tax, location, and push readiness.
             </p>
           </div>
@@ -293,8 +293,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <div className="setup-stage-item">
               <span>OK</span>
               <div>
-                <strong>No providers need immediate attention</strong>
-                <p className="muted">The current filtered list has no blocking provider operation items.</p>
+                <strong>No partners need immediate attention</strong>
+                <p className="muted">The current filtered list has no blocking partner operation items.</p>
               </div>
               <small>Clear</small>
             </div>
@@ -305,7 +305,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         <table className="table">
           <thead>
             <tr>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Status</th>
               <th>Onboarding</th>
               <th>Ops readiness</th>
@@ -462,7 +462,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                       <input type="hidden" name="providerId" value={provider.id} />
                       <input
                         name="reason"
-                        placeholder="Provider rejection reason"
+                        placeholder="Partner rejection reason"
                         required
                         minLength={12}
                         maxLength={500}
@@ -504,8 +504,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <tr>
                 <td colSpan={10}>
                   <p className="muted">
-                    {hiddenProviderCount} more provider row(s) are hidden for page speed. Use filters or
-                    search to narrow the queue.
+                    {hiddenProviderCount} more partner row(s) are hidden for page speed. Use filters or search
+                    to narrow the queue.
                   </p>
                 </td>
               </tr>
@@ -623,7 +623,7 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
         </div>
       ) : (
         <p className="muted" style={{ marginBottom: 8 }}>
-          No typed provider documents yet.
+          No typed partner documents yet.
         </p>
       )}
       <div className="actions">
@@ -899,7 +899,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
     return {
       status: 'PROFILE',
       detail: 'Basic profile is incomplete.',
-      operatorAction: 'Ask provider to complete display name and legal name before approval.',
+      operatorAction: 'Ask partner to complete display name and legal name before approval.',
       tone: 'blocked',
       priority: 100,
     };
@@ -925,8 +925,8 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   if (provider.verification?.status !== 'APPROVED') {
     return {
       status: 'VERIFY',
-      detail: `Provider verification is ${provider.verification?.status ?? 'DRAFT'}.`,
-      operatorAction: 'Approve provider verification when identity review is complete.',
+      detail: `Partner verification is ${provider.verification?.status ?? 'DRAFT'}.`,
+      operatorAction: 'Approve partner verification when identity review is complete.',
       tone: 'blocked',
       priority: 86,
     };
@@ -935,7 +935,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
     return {
       status: 'CASH DEBT',
       detail: `Wallet is negative by ${formatProviderMoney(Math.abs(walletBalance))}.`,
-      operatorAction: 'Confirm provider fee deposit or settle the cash fee debt from Earnings.',
+      operatorAction: 'Confirm partner fee deposit or settle the cash fee debt from Earnings.',
       tone: 'blocked',
       priority: 85,
     };
@@ -961,8 +961,8 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   if (firstRevenueSignal && provider.taxProfile?.status !== 'APPROVED') {
     return {
       status: 'TAX',
-      detail: `Provider has first earning, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
-      operatorAction: 'Approve/reject freelance tax profile before the provider can withdraw earnings.',
+      detail: `Partner has first earning, but tax profile is ${provider.taxProfile?.status ?? 'missing'}.`,
+      operatorAction: 'Approve/reject freelance tax profile before the partner can withdraw earnings.',
       tone: 'blocked',
       priority: provider.taxProfile?.status === 'REJECTED' ? 76 : 74,
     };
@@ -970,8 +970,8 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   if (firstRevenueSignal && !provider.residentialAddress?.trim()) {
     return {
       status: 'TAX ADDRESS',
-      detail: 'Provider has first earning, but residential/tax address is missing.',
-      operatorAction: 'Ask provider to add the address needed for tax and payout records.',
+      detail: 'Partner has first earning, but residential/tax address is missing.',
+      operatorAction: 'Ask partner to add the address needed for tax and payout records.',
       tone: 'blocked',
       priority: 72,
     };
@@ -980,7 +980,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
     return {
       status: 'TERMS',
       detail: `Payout agreements are ${agreementsAccepted}/5.`,
-      operatorAction: 'Ask provider to accept missing payout/tax/location agreements.',
+      operatorAction: 'Ask partner to accept missing payout/tax/location agreements.',
       tone: 'blocked',
       priority: 70,
     };
@@ -989,7 +989,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
     return {
       status: 'ACCOUNT',
       detail: 'The partner account is blocked by admin policy.',
-      operatorAction: 'Open provider detail and unblock only after the recorded issue is resolved.',
+      operatorAction: 'Open partner detail and unblock only after the recorded issue is resolved.',
       tone: 'blocked',
       priority: 69,
     };
@@ -998,7 +998,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
     return {
       status: 'DEVICE',
       detail: 'At least one partner app device is blocked.',
-      operatorAction: 'Open provider detail and decide whether to unblock or keep the device blocked.',
+      operatorAction: 'Open partner detail and decide whether to unblock or keep the device blocked.',
       tone: 'blocked',
       priority: 68,
     };
@@ -1008,9 +1008,9 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
       status: 'SECURITY',
       detail:
         securityState === 'shared'
-          ? 'A device appears on more than one provider profile.'
-          : 'Recent provider session has a suspicious risk flag.',
-      operatorAction: 'Review device/session history before relying on this provider for dispatch.',
+          ? 'A device appears on more than one partner profile.'
+          : 'Recent partner session has a suspicious risk flag.',
+      operatorAction: 'Review device/session history before relying on this partner for dispatch.',
       tone: 'blocked',
       priority: 67,
     };
@@ -1019,7 +1019,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
     return {
       status: 'LOCATION',
       detail: providerLocationAgeLabel(provider.currentLocationUpdatedAt),
-      operatorAction: 'Ask provider to open the app and refresh current location.',
+      operatorAction: 'Ask partner to open the app and refresh current location.',
       tone: locationState === 'missing' ? 'blocked' : 'pending',
       priority: locationState === 'missing' ? 66 : 58,
     };
@@ -1028,7 +1028,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
     return {
       status: 'PUSH',
       detail: 'No enabled push device is available for request alerts.',
-      operatorAction: 'Ask provider to reopen the app and register alerts.',
+      operatorAction: 'Ask partner to reopen the app and register alerts.',
       tone: 'pending',
       priority: 54,
     };
@@ -1036,7 +1036,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   if (!provider.user?.supabaseUserId) {
     return {
       status: 'SUPABASE',
-      detail: 'Provider is still on Nest auth only.',
+      detail: 'Partner is still on Nest auth only.',
       operatorAction: 'Sync/link Supabase role after Supabase OTP login is active.',
       tone: 'pending',
       priority: 35,
@@ -1044,7 +1044,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   }
   return {
     status: 'CLEAR',
-    detail: 'No provider operation blocker is visible.',
+    detail: 'No partner operation blocker is visible.',
     operatorAction: 'Monitor dispatch and service quality.',
     tone: 'done',
     priority: 0,
@@ -1173,41 +1173,41 @@ function providerActionHint(provider: AdminProvider) {
     return 'This partner account is blocked and cannot go online, update location, or appear to customers.';
   }
   if (provider.verification?.status !== 'APPROVED') {
-    return 'Review verification before this therapist can safely take customer requests.';
+    return 'Review verification before this partner can safely take customer requests.';
   }
   if (providerPublicMediaNeedsReview(provider)) {
     return 'Approve public profile media before customers can see the latest uploaded images.';
   }
   const walletBalance = providerUnsettledWalletBalance(provider);
   if (walletBalance < 0) {
-    return `Provider wallet is negative by ${formatProviderMoney(
+    return `Partner wallet is negative by ${formatProviderMoney(
       Math.abs(walletBalance),
     )}. New booking acceptance stays blocked until finance settles the cash fee debt.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
-    return 'Therapist is approved but not currently online for direct or backup requests.';
+    return 'Partner is approved but not currently online for direct or backup requests.';
   }
   const locationState = providerLocationStatus(provider);
   if (locationState === 'missing') {
-    return 'Therapist is online, but no location has been saved yet. Ask them to reopen the Partner app.';
+    return 'Partner is online, but no location has been saved yet. Ask them to reopen the Partner app.';
   }
   if (locationState === 'expired') {
-    return 'Therapist has an old saved location. They should go online again before dispatch.';
+    return 'Partner has an old saved location. They should go online again before dispatch.';
   }
   if (locationState === 'stale') {
-    return 'Therapist is live, but the last location is older than 30 minutes. Confirm before dispatch.';
+    return 'Partner is live, but the last location is older than 30 minutes. Confirm before dispatch.';
   }
   if (!hasHealthyPush(provider)) {
-    return 'Therapist is live, but push registration should be checked before relying on alerts.';
+    return 'Partner is live, but push registration should be checked before relying on alerts.';
   }
   const securityState = providerSecurityStatus(provider);
   if (securityState !== 'clear') {
-    return 'Therapist has a device/session security item. Review it before dispatching high-risk bookings.';
+    return 'Partner has a device/session security item. Review it before dispatching high-risk bookings.';
   }
   if (!provider.user?.supabaseUserId) {
-    return 'Therapist is operational in Nest auth. Supabase role sync will become available after Supabase OTP login links this phone.';
+    return 'Partner is operational in Nest auth. Supabase role sync will become available after Supabase OTP login links this phone.';
   }
-  return 'Therapist is ready for direct requests and fallback matching.';
+  return 'Partner is ready for direct requests and fallback matching.';
 }
 
 function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
@@ -1249,8 +1249,8 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
       tone: verificationReview > 0 || kycReview > 0 ? 'warn' : documentsReview > 0 ? 'info' : 'ok',
       detail:
         verificationReview + kycReview + documentsReview > 0
-          ? 'Providers are waiting for identity, verification, or document decisions.'
-          : 'No filtered provider is blocked by onboarding review.',
+          ? 'Partners are waiting for identity, verification, or document decisions.'
+          : 'No filtered partner is blocked by onboarding review.',
       href: verificationReview > 0 ? '/providers?review=kyc' : '/providers?review=documents',
       metrics: [
         providerCommandMetric('verification', verificationReview),
@@ -1265,8 +1265,8 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
       tone: readyNow === providers.length ? 'ok' : readyNow > 0 ? 'info' : 'warn',
       detail:
         readyNow > 0
-          ? 'Some providers can receive requests now; keep location and push freshness high.'
-          : 'No provider in this filtered list is fully ready for dispatch.',
+          ? 'Some partners can receive requests now; keep location and push freshness high.'
+          : 'No partner in this filtered list is fully ready for dispatch.',
       href: readyNow > 0 ? '/providers?readiness=ready' : '/providers?review=location',
       metrics: [
         providerCommandMetric('online', online),
@@ -1281,7 +1281,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
       tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
       detail:
         walletDebt > 0
-          ? 'Cash fee debt can block providers from accepting new bookings.'
+          ? 'Cash fee debt can block partners from accepting new bookings.'
           : 'First-earning payout, bank, and freelance tax readiness are under control.',
       href: walletDebt > 0 ? '/payouts' : '/providers?review=payout-setup',
       metrics: [
@@ -1298,7 +1298,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
       detail:
         accountBlocks > 0 || openRisk > 0
           ? 'Account blocks, reports, or active sanctions need operator attention.'
-          : 'No filtered provider has a major trust or device risk signal.',
+          : 'No filtered partner has a major trust or device risk signal.',
       href: openRisk > 0 ? '/provider-risk' : '/providers?review=security',
       metrics: [
         providerCommandMetric('blocked', accountBlocks),
@@ -1381,7 +1381,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
   ).length;
 
   return [
-    ['Total therapists', providers.length.toString()],
+    ['Total partners', providers.length.toString()],
     ['Account blocked', accountBlocked.toString()],
     ['Approved', approved.toString()],
     ['Online now', online.toString()],
@@ -1436,13 +1436,13 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       count: accountBlocks,
       href: '/providers?review=blocked',
       detail:
-        'Providers blocked by admin cannot go online, refresh location, or appear in customer discovery.',
+        'Partners blocked by admin cannot go online, refresh location, or appear in customer discovery.',
     },
     {
       label: 'KYC updates',
       count: kycNeedsReview,
       href: '/providers?review=kyc',
-      detail: 'Providers with pending or rejected identity verification need admin review or resubmission.',
+      detail: 'Partners with pending or rejected identity verification need admin review or resubmission.',
     },
     {
       label: 'Document review',
@@ -1460,14 +1460,14 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       label: 'Bank payout review',
       count: bankNeedsReview,
       href: '/providers?review=bank',
-      detail: 'Bank accounts must be approved before providers can move toward payout readiness.',
+      detail: 'Bank accounts must be approved before partners can move toward payout readiness.',
     },
     {
       label: 'First earning payout setup',
       count: payoutSetupNeedsReview,
       href: '/providers?review=payout-setup',
       detail:
-        'Providers with first revenue who still need tax profile, tax address, or payout agreements before withdrawal.',
+        'Partners with first revenue who still need tax profile, tax address, or payout agreements before withdrawal.',
     },
     {
       label: 'Tax profile review',
@@ -1492,19 +1492,19 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       count: locationNeedsReview,
       href: '/providers?review=location',
       detail:
-        'Providers with missing, stale, or expired locations should reopen the Partner app before dispatch.',
+        'Partners with missing, stale, or expired locations should reopen the Partner app before dispatch.',
     },
     {
       label: 'Push alert readiness',
       count: pushNeedsReview,
       href: '/providers?review=push',
-      detail: 'Providers without enabled push devices may miss direct requests and backup matching alerts.',
+      detail: 'Partners without enabled push devices may miss direct requests and backup matching alerts.',
     },
     {
       label: 'Ready for dispatch',
       count: readyForDispatch,
       href: '/providers?readiness=ready',
-      detail: 'Approved, online providers with recent location and push registration.',
+      detail: 'Approved, online partners with recent location and push registration.',
     },
   ];
 
@@ -1658,7 +1658,7 @@ function buildProviderActiveFilters(filters: ProviderFilters) {
           kind: 'search',
           value: filters.q,
           label: `Search: ${filters.q}`,
-          description: 'Provider list is narrowed by name, phone, location, service, or risk text.',
+          description: 'Partner list is narrowed by name, phone, location, service, or risk text.',
         }
       : null,
     filters.verification
@@ -1725,49 +1725,49 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Submitted identity files are waiting for admin approval or rejection.';
   }
   if (kind === 'verification' && value === 'APPROVED') {
-    return 'Approved providers can progress toward dispatch if other readiness checks pass.';
+    return 'Approved partners can progress toward dispatch if other readiness checks pass.';
   }
   if (kind === 'verification' && value === 'BLOCKED') {
     return 'Blocked partner accounts cannot receive customer requests.';
   }
   if (kind === 'providerStatus') {
-    return 'Provider availability is narrowed to the selected online/offline state.';
+    return 'Partner availability is narrowed to the selected online/offline state.';
   }
   if (kind === 'kyc') {
     return 'KYC review is narrowed to the selected identity state.';
   }
   if (kind === 'location') {
-    return 'Location freshness is narrowed so dispatch can check stale or missing provider pins.';
+    return 'Location freshness is narrowed so dispatch can check stale or missing partner pins.';
   }
   if (kind === 'security') {
     return 'Security review is narrowed to device, session, or account risk state.';
   }
   if (kind === 'readiness') {
-    return 'Readiness shows whether a provider can safely appear in customer discovery and dispatch.';
+    return 'Readiness shows whether a partner can safely appear in customer discovery and dispatch.';
   }
   if (kind === 'review' && value === 'push') {
-    return 'Push readiness highlights providers whose devices cannot reliably receive booking alerts.';
+    return 'Push readiness highlights partners whose devices cannot reliably receive booking alerts.';
   }
   if (kind === 'review' && value === 'risk') {
-    return 'Risk review highlights providers with open reports or active sanctions.';
+    return 'Risk review highlights partners with open reports or active sanctions.';
   }
   if (kind === 'review' && value === 'public-media') {
-    return 'Public media review highlights uploaded provider photos that are pending or rejected.';
+    return 'Public media review highlights uploaded partner photos that are pending or rejected.';
   }
   if (kind === 'review' && value === 'payout-setup') {
-    return 'First earning payout setup highlights providers who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
+    return 'First earning payout setup highlights partners who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
   }
   if (kind === 'review') {
     return 'Review queue focuses the table on one operational approval lane.';
   }
-  return 'Provider list is narrowed by the active filter.';
+  return 'Partner list is narrowed by the active filter.';
 }
 
 function emptyProviderMessage(activeFilters: Array<{ description: string }>) {
   if (activeFilters.length === 0) {
-    return 'No providers loaded. Start the API and seed data to populate this table.';
+    return 'No partners loaded. Start the API and seed data to populate this table.';
   }
-  return 'No providers match the active filters. Clear filters or switch to another review lane.';
+  return 'No partners match the active filters. Clear filters or switch to another review lane.';
 }
 
 function readParam(value: string | string[] | undefined) {
