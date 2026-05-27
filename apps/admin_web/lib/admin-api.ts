@@ -348,6 +348,7 @@ export type AdminBooking = {
   scheduledStartAt?: string;
   scheduledEndAt?: string;
   expiresAt?: string | null;
+  metadata?: unknown;
   address?: unknown;
   lat?: string | number;
   lng?: string | number;

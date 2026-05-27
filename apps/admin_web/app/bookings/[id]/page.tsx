@@ -1876,6 +1876,7 @@ function bookingOperationalPolicySnapshot(
   settings: AdminOperationalPolicySetting[],
 ) {
   const byKey = new Map(settings.map((setting) => [setting.key, setting]));
+  const savedMatchingPolicy = readBookingMatchingPolicySnapshot(booking);
   const responseWindow = byKey.get('matching.provider_response_window_minutes');
   const backupRadius = byKey.get('matching.backup_provider_radius_meters');
   const travelBuffer = byKey.get('matching.travel_buffer_minutes');
@@ -1973,29 +1974,121 @@ function bookingOperationalPolicySnapshot(
     metrics: [
       {
         label: 'Response window',
-        value: bookingPolicyValueLabel(responseWindow),
+        value:
+          bookingPolicySnapshotNumberLabel(savedMatchingPolicy.providerResponseWindowMinutes, 'minutes') ??
+          bookingPolicyValueLabel(responseWindow),
         helper:
           minutesLeft === null
-            ? 'No active countdown saved.'
-            : `${minutesLeft} min left on this booking countdown.`,
+            ? bookingPolicySnapshotHelper(
+                savedMatchingPolicy.providerResponseWindowMinutes,
+                responseWindow,
+                'No active countdown saved.',
+              )
+            : `${minutesLeft} min left. ${bookingPolicySnapshotHelper(
+                savedMatchingPolicy.providerResponseWindowMinutes,
+                responseWindow,
+                'Live policy fallback.',
+              )}`,
       },
       {
         label: 'Backup radius',
-        value: bookingPolicyValueLabel(backupRadius),
-        helper: 'Nearby partners outside this distance cannot join.',
+        value:
+          bookingPolicySnapshotNumberLabel(savedMatchingPolicy.backupProviderRadiusMeters, 'meters') ??
+          bookingPolicyValueLabel(backupRadius),
+        helper: bookingPolicySnapshotHelper(
+          savedMatchingPolicy.backupProviderRadiusMeters,
+          backupRadius,
+          'Nearby partners outside this distance cannot join.',
+        ),
       },
       {
         label: 'Travel buffer',
-        value: bookingPolicyValueLabel(travelBuffer),
-        helper: 'Applied before nearby availability is calculated.',
+        value:
+          bookingPolicySnapshotNumberLabel(savedMatchingPolicy.travelBufferMinutes, 'minutes') ??
+          bookingPolicyValueLabel(travelBuffer),
+        helper: bookingPolicySnapshotHelper(
+          savedMatchingPolicy.travelBufferMinutes,
+          travelBuffer,
+          'Applied before nearby availability is calculated.',
+        ),
       },
       {
         label: 'Accept mode',
-        value: bookingPolicyOptionLabel(acceptMode),
-        helper: selected ? 'Booking has a final partner.' : 'Booking is still waiting for final selection.',
+        value: bookingPolicySnapshotOptionLabel(savedMatchingPolicy.preferredAcceptMode, acceptMode),
+        helper: selected
+          ? `Booking has a final partner. ${bookingPolicySnapshotHelper(
+              savedMatchingPolicy.preferredAcceptMode,
+              acceptMode,
+              'Live policy fallback.',
+            )}`
+          : `Booking is still waiting for final selection. ${bookingPolicySnapshotHelper(
+              savedMatchingPolicy.preferredAcceptMode,
+              acceptMode,
+              'Live policy fallback.',
+            )}`,
       },
     ],
   };
+}
+
+function readBookingMatchingPolicySnapshot(booking: AdminBookingDetail) {
+  const metadata = readPlainRecord(booking.metadata);
+  const policy = readPlainRecord(metadata?.matchingPolicy);
+  return {
+    providerResponseWindowMinutes: readOptionalNumber(policy?.providerResponseWindowMinutes),
+    backupProviderRadiusMeters: readOptionalNumber(policy?.backupProviderRadiusMeters),
+    preferredAcceptMode: readOptionalString(policy?.preferredAcceptMode),
+    backupOpenMode: readOptionalString(policy?.backupOpenMode),
+    travelBufferMinutes: readOptionalNumber(policy?.travelBufferMinutes),
+  };
+}
+
+function readPlainRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function readOptionalNumber(value: unknown) {
+  const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readOptionalString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function bookingPolicySnapshotNumberLabel(value: number | null, unit: 'meters' | 'minutes') {
+  if (value === null) {
+    return null;
+  }
+  if (unit === 'meters') {
+    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+  }
+  return `${value} min`;
+}
+
+function bookingPolicySnapshotOptionLabel(value: string | null, setting?: AdminOperationalPolicySetting) {
+  if (!value) {
+    return bookingPolicyOptionLabel(setting);
+  }
+  return setting?.options?.find((option) => option.value === value)?.label ?? value;
+}
+
+function bookingPolicySnapshotHelper(
+  savedValue: number | string | null,
+  liveSetting: AdminOperationalPolicySetting | undefined,
+  fallback: string,
+) {
+  if (savedValue === null) {
+    return fallback;
+  }
+  const liveValue = liveSetting?.value;
+  if (liveValue !== undefined && liveValue !== null && String(liveValue) !== String(savedValue)) {
+    return `Saved on booking open. Current policy is ${bookingPolicyOptionLabel(liveSetting)}.`;
+  }
+  return 'Saved on booking open and aligned with current policy.';
 }
 
 function bookingPolicyValueLabel(setting?: AdminOperationalPolicySetting) {
