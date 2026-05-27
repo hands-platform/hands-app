@@ -9,6 +9,14 @@ import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+type BookingMatchingPolicySnapshot = {
+  providerResponseWindowMinutes: number | null;
+  backupProviderRadiusMeters: number | null;
+  preferredAcceptMode: string | null;
+  backupOpenMode: string | null;
+  travelBufferMinutes: number | null;
+};
+
 export default async function OperationsPolicyPage({
   searchParams,
 }: {
@@ -265,6 +273,43 @@ export default async function OperationsPolicyPage({
           {impactDashboard.metrics.map((metric) => (
             <MetricCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
           ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {impactDashboard.snapshotSummary.map((item) => (
+            <div className="ops-task-card ops-task-done" key={item.label} style={{ minHeight: 0 }}>
+              <span className="pill pill-info">{item.scope}</span>
+              <h3>{item.label}</h3>
+              <p>{item.value}</p>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Policy</th>
+                <th>Current live value</th>
+                <th>Saved booking snapshot</th>
+                <th>Operator meaning</th>
+              </tr>
+            </thead>
+            <tbody>
+              {impactDashboard.snapshotRows.map((row) => (
+                <tr key={row.policy}>
+                  <td>
+                    <strong>{row.policy}</strong>
+                    <p className="muted">{row.scope}</p>
+                  </td>
+                  <td>{row.liveValue}</td>
+                  <td>{row.savedValue}</td>
+                  <td>
+                    <p style={{ margin: 0 }}>{row.operatorMeaning}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {impactDashboard.cards.map((card) => (
@@ -1113,10 +1158,15 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
   );
   const negativeCashDebtBookings = bookings.filter((booking) => bookingWalletLedgerTotal(booking) < 0);
+  const withSnapshot = bookings.filter((booking) => readBookingMatchingPolicySnapshot(booking));
   const snapshotDrift = bookings.filter(
     (booking) => bookingPolicySnapshotDrift(booking, settings).length > 0,
   );
   const withoutSnapshot = bookings.filter((booking) => !readBookingMatchingPolicySnapshot(booking));
+  const openMatchingWithSnapshot = openMatching.filter((booking) => readBookingMatchingPolicySnapshot(booking));
+  const openMatchingWithoutSnapshot = openMatching.length - openMatchingWithSnapshot.length;
+  const snapshotCoverage =
+    bookings.length > 0 ? `${Math.round((withSnapshot.length / bookings.length) * 100)}%` : 'No sample';
   const immediateBackup = policyRawValue(settings, 'matching.backup_open_mode') === 'IMMEDIATE_WITHIN_WINDOW';
   const customerConfirm =
     policyRawValue(settings, 'matching.preferred_accept_mode') === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
@@ -1126,7 +1176,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         label: 'Open matching now',
         value: String(openMatching.length),
-        helper: 'These bookings may feel radius, backup-open, and partner alert changes immediately.',
+        helper: 'Existing open bookings keep their saved policy snapshot; new bookings use the current live policy.',
       },
       {
         label: 'Active dispatch',
@@ -1136,12 +1186,101 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         label: 'Policy drift',
         value: String(snapshotDrift.length),
-        helper: 'Bookings whose saved matching snapshot differs from current Admin policy.',
+        helper: 'Expected when Admin policy changed after a booking opened; use booking detail before manual action.',
       },
       {
         label: 'Legacy bookings',
         value: String(withoutSnapshot.length),
         helper: 'Older bookings without metadata fall back to live policy explanations.',
+      },
+    ],
+    snapshotSummary: [
+      {
+        scope: 'Forward-only',
+        label: 'Live policy applies to new bookings',
+        value: 'Create time snapshot',
+        helper:
+          'When a customer books, HANDS copies the active matching policy into booking metadata for later audit.',
+      },
+      {
+        scope: 'Open now',
+        label: 'Open bookings with saved policy',
+        value: `${openMatchingWithSnapshot.length}/${openMatching.length}`,
+        helper:
+          openMatchingWithoutSnapshot > 0
+            ? `${openMatchingWithoutSnapshot} open legacy booking(s) still need manual policy interpretation.`
+            : 'Every open matching booking in this sample has a saved policy snapshot.',
+      },
+      {
+        scope: 'Coverage',
+        label: 'Snapshot coverage',
+        value: snapshotCoverage,
+        helper: `${withSnapshot.length}/${bookings.length} sampled booking(s) include metadata.matchingPolicy.`,
+      },
+      {
+        scope: 'Review',
+        label: 'Policy drift meaning',
+        value: snapshotDrift.length ? `${snapshotDrift.length} changed` : 'Aligned',
+        helper:
+          'Drift is not an error. It tells operators that the booking was opened under an older policy value.',
+      },
+    ],
+    snapshotRows: [
+      {
+        policy: 'First-pick response timer',
+        scope: 'Timer / expiry',
+        liveValue: policyDisplayByKey(settings, 'matching.provider_response_window_minutes'),
+        savedValue: summarizeSnapshotValues(
+          bookings,
+          (snapshot) => snapshot.providerResponseWindowMinutes,
+          (value) => `${value} min`,
+        ),
+        operatorMeaning:
+          'Saved at booking open. Existing countdowns and Redis matching TTL should not be recalculated after a policy edit.',
+      },
+      {
+        policy: 'Backup partner radius',
+        scope: 'Partner eligibility',
+        liveValue: policyDisplayByKey(settings, 'matching.backup_provider_radius_meters'),
+        savedValue: summarizeSnapshotValues(
+          bookings,
+          (snapshot) => snapshot.backupProviderRadiusMeters,
+          (value) => formatDistance(Number(value)),
+        ),
+        operatorMeaning:
+          'Controls which nearby partners can participate for each booking. New bookings copy the latest radius.',
+      },
+      {
+        policy: 'Partner accept mode',
+        scope: 'Final matching',
+        liveValue: policyDisplayByKey(settings, 'matching.preferred_accept_mode'),
+        savedValue: summarizeSnapshotValues(bookings, (snapshot) => snapshot.preferredAcceptMode, (value) =>
+          formatSnapshotPolicyValue(settings, 'matching.preferred_accept_mode', value),
+        ),
+        operatorMeaning:
+          'Explains whether an accepted first-pick partner locks automatically or still waits for customer confirmation.',
+      },
+      {
+        policy: 'Backup opening mode',
+        scope: 'Backup visibility',
+        liveValue: policyDisplayByKey(settings, 'matching.backup_open_mode'),
+        savedValue: summarizeSnapshotValues(bookings, (snapshot) => snapshot.backupOpenMode, (value) =>
+          formatSnapshotPolicyValue(settings, 'matching.backup_open_mode', value),
+        ),
+        operatorMeaning:
+          'Explains whether backup partners were allowed to join during the first-pick response window.',
+      },
+      {
+        policy: 'Travel buffer',
+        scope: 'Availability',
+        liveValue: policyDisplayByKey(settings, 'matching.travel_buffer_minutes'),
+        savedValue: summarizeSnapshotValues(
+          bookings,
+          (snapshot) => snapshot.travelBufferMinutes,
+          (value) => `${value} min`,
+        ),
+        operatorMeaning:
+          'Used for availability explanations and partner supply planning around back-to-back bookings.',
       },
     ],
     cards: [
@@ -1645,6 +1784,16 @@ function policyDisplayByKey(settings: AdminOperationalPolicySetting[], key: stri
   return setting ? policyDisplayValue(setting) : 'Not configured';
 }
 
+function formatSnapshotPolicyValue(
+  settings: AdminOperationalPolicySetting[],
+  key: string,
+  value: string | number,
+) {
+  const setting = settings.find((item) => item.key === key);
+  const stringValue = String(value);
+  return setting?.options?.find((option) => option.value === stringValue)?.label ?? formatPolicyValue(value, setting?.unit);
+}
+
 function policyRawValue(settings: AdminOperationalPolicySetting[], key: string) {
   return settings.find((item) => item.key === key)?.value;
 }
@@ -1788,7 +1937,7 @@ function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function readBookingMatchingPolicySnapshot(booking: AdminBooking) {
+function readBookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPolicySnapshot | null {
   const metadata = readPlainRecord(booking.metadata);
   const policy = readPlainRecord(metadata?.matchingPolicy);
   if (!policy) {
@@ -1801,6 +1950,39 @@ function readBookingMatchingPolicySnapshot(booking: AdminBooking) {
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
   };
+}
+
+function summarizeSnapshotValues(
+  bookings: AdminBooking[],
+  readValue: (snapshot: BookingMatchingPolicySnapshot) => string | number | null,
+  formatValue: (value: string | number) => string,
+) {
+  const counts = new Map<string, number>();
+  for (const booking of bookings) {
+    const snapshot = readBookingMatchingPolicySnapshot(booking);
+    if (!snapshot) {
+      continue;
+    }
+    const value = readValue(snapshot);
+    if (value === null || value === undefined) {
+      continue;
+    }
+    const label = formatValue(value);
+    counts.set(label, (counts.get(label) ?? 0) + 1);
+  }
+
+  const entries = Array.from(counts.entries()).sort((left, right) => right[1] - left[1]);
+  if (!entries.length) {
+    return 'No saved value';
+  }
+  if (entries.length === 1) {
+    return `${entries[0][0]} (${entries[0][1]})`;
+  }
+  const preview = entries
+    .slice(0, 2)
+    .map(([label, count]) => `${label} (${count})`)
+    .join(', ');
+  return entries.length > 2 ? `${preview}, +${entries.length - 2} more` : preview;
 }
 
 function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperationalPolicySetting[]) {
