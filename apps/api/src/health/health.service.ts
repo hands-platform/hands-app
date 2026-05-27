@@ -73,12 +73,14 @@ export class HealthService {
       this.pushProviderExternalReadiness(),
     ];
     const currentStageChecks = checks.filter((check) => !isDeferredExternalCategory(check.category));
-    const blockingCategories = currentStageChecks
-      .filter((check) => check.status !== 'READY')
-      .map((check) => check.category);
-    const deferredCategories = checks
-      .filter((check) => isDeferredExternalCategory(check.category) && check.status !== 'READY')
-      .map((check) => check.category);
+    const blockingCategories = uniqueCategories(
+      currentStageChecks.filter((check) => check.status !== 'READY').map((check) => check.category),
+    );
+    const deferredCategories = uniqueCategories(
+      checks
+        .filter((check) => isDeferredExternalCategory(check.category) && check.status !== 'READY')
+        .map((check) => check.category),
+    );
 
     return {
       ok: checks.every((check) => check.status === 'READY'),
@@ -429,4 +431,8 @@ function isSecretLikeValue(value: string) {
 
 function isDeferredExternalCategory(category: string) {
   return ['mobile-release', 'supabase-auth', 'sms', 'payments', 'push', 'storage'].includes(category);
+}
+
+function uniqueCategories(categories: string[]) {
+  return [...new Set(categories)];
 }
