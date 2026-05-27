@@ -8,7 +8,7 @@
 - Push device token registration.
 - Provider verification upload contract.
 - Provider verification submission.
-- Admin provider approval.
+- Admin partner approval.
 - Private verification file read-url.
 - Booking creation with cash payment.
 - Provider online/location update.

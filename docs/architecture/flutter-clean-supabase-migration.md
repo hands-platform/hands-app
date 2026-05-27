@@ -123,7 +123,7 @@ Use RLS as a second guardrail, but keep critical booking/payment/matching decisi
 | Area          | Policy direction                                                                                                |
 | ------------- | --------------------------------------------------------------------------------------------------------------- |
 | Profiles      | Users can read/update their own profile. Admins can read all.                                                   |
-| Providers     | Public approved profile fields are readable by customers. Providers can update their own private profile.       |
+| Partners      | Public approved profile fields are readable by customers. Partners can update their own private profile.        |
 | Bookings      | Customers see their own bookings. Providers see assigned, preferred, or open eligible bookings. Admins see all. |
 | Messages      | Only chat room participants and admins can read/write messages.                                                 |
 | Notifications | Users read/update their own notification rows. Admins can inspect all.                                          |

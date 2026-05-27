@@ -17,7 +17,7 @@
 - `PROVIDER` can go online/offline, update location, join/respond to bookings, and update service lifecycle.
 - `ADMIN` can review providers, inspect users/bookings/payments/reviews, create services, and refund payments.
 - Supabase exchange does not trust a mobile-requested role by itself. Provider exchange requires a token/provider mapping that is already trusted by the backend, either through Supabase metadata set by a trusted process or an existing local provider account linked by phone.
-- Admin provider approval attempts a server-side Supabase Auth metadata sync when `SUPABASE_SERVICE_ROLE_KEY` is configured and the user is linked to Supabase. Missing keys or missing Supabase user links are recorded as skipped audit events rather than blocking local MVP operations.
+- Admin partner approval attempts a server-side Supabase Auth metadata sync when `SUPABASE_SERVICE_ROLE_KEY` is configured and the user is linked to Supabase. Missing keys or missing Supabase user links are recorded as skipped audit events rather than blocking local MVP operations.
 
 ## Next Hardening
 

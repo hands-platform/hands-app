@@ -4,13 +4,13 @@
 
 Customer app uses five tabs:
 
-- Home: location, service categories, nearby providers
-- Providers: searchable provider list and provider profile
+- Home: location, service categories, nearby partners
+- Partners: searchable partner list and partner profile
 - Bookings: active booking, matching, history
 - Chat: rooms and messages
 - Profile: account, addresses, wallet, support
 
-Provider app uses five tabs:
+Partner app uses five tabs:
 
 - Requests: open matching jobs and invitations
 - Schedule: availability and upcoming services
@@ -22,7 +22,7 @@ Admin web uses sidebar navigation:
 
 - Dashboard
 - Customers
-- Providers
+- Partners
 - Verification
 - Bookings
 - Matching
@@ -37,19 +37,21 @@ Admin web uses sidebar navigation:
 ```mermaid
 flowchart TD
   A["Launch"] --> B["Location Permission"]
-  B --> C["Nearby Providers"]
-  C --> D["Provider Detail"]
+  B --> C["Nearby Partners"]
+  C --> D["Partner Detail"]
   D --> E["Review Profile / Reviews / Services"]
   E --> F["Customer Selects One Service"]
-  F --> G["Direct Booking Request"]
-  G --> H["Provider Accepts Or Rejects"]
-  H --> I["Provider Starts Service Flow"]
-  I --> J["Chat Created"]
-  J --> K["Provider Location Shared"]
-  K --> L["Provider On The Way"]
-  L --> M["In Service"]
-  M --> N["Complete"]
-  N --> O["Review And Tip"]
+  F --> G["First-Pick Booking Request"]
+  G --> H["10 Minute Response Window"]
+  H --> I["Backup Partners Within 10km Can Join"]
+  I --> J["Customer Selects Final Partner"]
+  J --> K["Matched Partner Starts Service Flow"]
+  K --> L["Chat Created"]
+  L --> M["Partner Location Shared"]
+  M --> N["Partner On The Way"]
+  N --> O["In Service"]
+  O --> P["Complete"]
+  P --> Q["Review And Tip"]
 ```
 
 ## Reference Dynamic Flow Notes
@@ -61,33 +63,37 @@ flowchart TD
   A["Explore Home"] --> B["Service Category Card"]
   B --> C["Provider List"]
   C --> D["Search And Filter"]
-  C --> E["Provider Card"]
+  C --> E["Partner Card"]
   E --> F["Booking CTA"]
   F --> G["Authentication Gate"]
   G --> H["Google Or Phone Login"]
 ```
 
-MVP Phase 1 keeps the same broad order: explore first, provider browse second, provider detail third, booking action fourth. The intentional product choice for the first MVP is a simpler direct-booking request instead of multi-provider realtime selection.
+MVP Phase 1 keeps the same broad order: explore first, partner browse second, partner detail third, booking action fourth. HANDS adds a controlled matching window after the first-pick request so backup partners can appear without removing the customer's final choice.
 
-## Provider Sequence
+## Partner Sequence
 
 ```mermaid
 flowchart TD
   A["Login"] --> B["Verification Check"]
   B --> C["Online Toggle"]
-  C --> D["Realtime Location"]
-  D --> E["Direct Booking Request Inbox"]
-  E --> F["Accept Or Reject"]
-  F --> G["Start Service Flow"]
-  G --> H["Chat And Navigate"]
-  H --> I["Arrived"]
-  I --> J["Start Service"]
-  J --> K["Complete Service"]
-  K --> L["Earnings Updated"]
+  C --> D["Location Update On App Open / Every 10 Min"]
+  D --> E["First-Pick Request Inbox"]
+  D --> F["Backup Request List Within 10km"]
+  E --> G["Accept Or Reject"]
+  F --> H["Join Open Request"]
+  G --> I["Start Service Flow"]
+  H --> J["Wait For Customer Final Selection"]
+  J --> I
+  I --> K["Chat And Navigate"]
+  K --> L["Arrived"]
+  L --> M["Start Service"]
+  M --> N["Complete Service"]
+  N --> O["Earnings Updated"]
 ```
 
 ## UX Comparison Principles
 
-- Preserve: onboarding/auth/location prompts, tab-based IA, provider browsing before booking, booking detail/status timeline, chat placement, provider verification sequence.
+- Preserve: onboarding/auth/location prompts, tab-based IA, partner browsing before booking, booking detail/status timeline, chat placement, partner verification sequence.
 - Change: original branding, artwork, copy, colors, icons, and the original matching implementation.
-- Improve: make provider response state explicit and keep the booking path easy to understand for customers, providers, and operators.
+- Improve: make first-pick, backup participation, final customer choice, wallet debt blocks, and partner response state explicit for customers, partners, and operators.

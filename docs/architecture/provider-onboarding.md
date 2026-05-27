@@ -1,28 +1,30 @@
-# Provider Onboarding, KYC, Tax, and Payout Architecture
+# Partner Onboarding, KYC, Tax, and Payout Architecture
 
-HANDS provider onboarding is split into small domains so legal, tax, payout, and verification rules can change without rewriting booking or chat flows.
+HANDS partner onboarding is split into small domains so legal, tax, payout, and verification rules can change without rewriting booking or chat flows.
 
 ## Goals
 
-- Register Vietnam-based providers such as massage therapists, drivers, and freelancers.
-- Keep existing booking, matching, chat, and provider verification flows working while onboarding becomes richer.
+- Register Vietnam-based partners such as massage therapists, drivers, and freelancers.
+- Keep existing booking, matching, chat, and partner verification flows working while onboarding becomes richer.
 - Move toward Supabase Auth, PostgreSQL, Storage, and Realtime without letting screens call Supabase directly.
 - Avoid hardcoded tax rates, payout rules, or legal versions in mobile code.
 
 ## Domain Boundaries
 
-| Domain        | Responsibility                                                             | Main Tables                                                                             |
-| ------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| Provider core | Public/provider identity, activity name, profile quality fields, city, service area, level, status | `ProviderProfile`                                                                       |
-| KYC           | CCCD/CMND hash, review state, resubmission state                           | `ProviderKyc`                                                                           |
-| Documents     | Typed uploaded files for CCCD front/back, selfie, work photos, bank QR     | `ProviderDocument`, `FileAsset`                                                         |
-| Bank accounts | Masked account data, QR banking metadata, admin review                     | `ProviderBankAccount`                                                                   |
-| Tax           | Provider MST/tax profile, versioned policy rules, withholding logs         | `ProviderTaxProfile`, `TaxPolicyVersion`, `TaxRule`, `ProviderTaxLog`, `WithholdingLog` |
-| Agreements    | Terms, privacy, location, payout, and tax policy consent versions          | `ProviderAgreement`                                                                     |
-| Security      | Device, session, IP, app version, suspicious activity hooks                | `ProviderDevice`, `ProviderSession`                                                     |
-| Admin ops     | KYC, bank, tax, payout approval and audit trail                            | `ProviderVerificationLog`, `AdminAuditLog`                                              |
+| Domain        | Responsibility                                                            | Main Tables                                                                             |
+| ------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Partner core  | Public partner identity, activity name, profile quality fields, city, service area, level, status | `ProviderProfile`                                                                       |
+| KYC           | CCCD/CMND hash, review state, resubmission state                          | `ProviderKyc`                                                                           |
+| Documents     | Typed uploaded files for CCCD front/back, selfie, work photos, bank QR    | `ProviderDocument`, `FileAsset`                                                         |
+| Bank accounts | Masked account data, QR banking metadata, admin review                    | `ProviderBankAccount`                                                                   |
+| Tax           | Partner MST/tax profile, versioned policy rules, withholding logs         | `ProviderTaxProfile`, `TaxPolicyVersion`, `TaxRule`, `ProviderTaxLog`, `WithholdingLog` |
+| Agreements    | Terms, privacy, location, payout, and tax policy consent versions         | `ProviderAgreement`                                                                     |
+| Security      | Device, session, IP, app version, suspicious activity hooks               | `ProviderDevice`, `ProviderSession`                                                     |
+| Admin ops     | KYC, bank, tax, payout approval and audit trail                           | `ProviderVerificationLog`, `AdminAuditLog`                                              |
 
-## Provider Levels
+Internal table and route names still use `Provider*` for compatibility. User-facing product language should say partner.
+
+## Partner Levels
 
 | Level                    | Meaning                                  | Gate                                                                        |
 | ------------------------ | ---------------------------------------- | --------------------------------------------------------------------------- |
@@ -31,7 +33,7 @@ HANDS provider onboarding is split into small domains so legal, tax, payout, and
 | `LEVEL_3_PAYOUT_ENABLED` | Can request payouts                      | First earned revenue, tax profile, residential address, required agreements |
 | `LEVEL_4_TRUSTED`        | Trusted badge                            | Admin career/profile review                                                 |
 
-Tax fields are intentionally not required during signup. They appear when the provider earns revenue for the first time, not before the first job. This keeps signup light while still moving tax and settlement compliance forward as soon as money exists.
+Tax fields are intentionally not required during signup. They appear when the partner earns revenue for the first time, not before the first job. This keeps signup light while still moving tax and settlement compliance forward as soon as money exists.
 
 The public profile keeps lightweight quality fields early in onboarding because
 they directly affect customer trust before booking:
@@ -41,21 +43,21 @@ they directly affect customer trust before booking:
 - `languages`
 - `serviceStyle`
 
-These fields are editable from the Provider app basic profile sheet and are
-shown on the customer provider detail page alongside bio, services, reviews,
+These fields are editable from the Partner app basic profile sheet and are
+shown on the customer partner detail page alongside bio, services, reviews,
 and public photos. They are not tax or payout gates.
 
 The onboarding snapshot follows the same staged rule. Before the first completed service,
 `payoutGate.missing` should only report `firstCompletedService`. Tax profile,
 residential address, and payout/tax agreement gaps stay deferred in the API payload so
-the Provider app does not pressure new signups to complete revenue paperwork too early.
+the Partner app does not pressure new signups to complete revenue paperwork too early.
 After the first completed service or first earned revenue, tax/profile/address/agreement
 requirements become active gates for payout and settlement readiness.
 
-Cash bookings are handled differently from online payments. When a provider receives
+Cash bookings are handled differently from online payments. When a partner receives
 cash directly from the customer, HANDS records platform fee and withholding as a
-negative wallet amount. A negative provider wallet blocks new booking acceptance until
-finance confirms provider repayment or an approved admin offset. The booking API returns:
+negative wallet amount. A negative partner wallet blocks new booking acceptance until
+finance confirms partner repayment or an approved admin offset. The booking API returns:
 
 `수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
 
@@ -78,13 +80,13 @@ To keep tax calculation deterministic, the API rejects risky active rule setups:
 - Overlapping active `AMOUNT_BAND` ranges in the same policy version.
 
 Tax and platform-fee policies must exist before the first booking is completed, even when
-the provider has not submitted a tax profile yet. If tax profile data is missing, the
+the partner has not submitted a tax profile yet. If tax profile data is missing, the
 system can request it after first revenue while preserving the policy version that was
 active for that booking.
 
 ## API Foundation
 
-Provider routes:
+Partner mobile routes currently keep the `/provider` prefix for API compatibility:
 
 - `GET /provider/onboarding`
 - `PATCH /provider/onboarding/basic-profile`
@@ -109,10 +111,10 @@ Operational gates that should not be duplicated across services live in `apps/ap
 Current policy constants:
 
 - Required KYC documents: `CCCD_FRONT`, `CCCD_BACK`, `SELFIE`
-- Optional provider documents: `PROFILE_PHOTO`, `WORK_PHOTO`, `BANK_QR`
+- Optional partner documents: `PROFILE_PHOTO`, `WORK_PHOTO`, `BANK_QR`
 - Required payout agreements: `TERMS`, `PRIVACY`, `LOCATION`, `PAYOUT`, `TAX`
-- Provider agreement version: `PROVIDER_AGREEMENT_VERSION` from the API environment
-- Provider level requirement copy for Level 1 to Level 4
+- Partner agreement version: `PROVIDER_AGREEMENT_VERSION` from the API environment
+- Partner level requirement copy for Level 1 to Level 4
 
 `GET /provider/onboarding` returns these requirements in the snapshot so mobile screens can progressively move away from hardcoded onboarding gates. The API also rejects KYC submission if required identity documents are missing, so client-side checks are not the only protection.
 
@@ -120,9 +122,9 @@ Current policy constants:
 
 Supabase should mirror these domains with RLS:
 
-- Providers can read/write only their own onboarding records.
-- Admins can read and review all provider onboarding records.
-- Private documents are visible only to the owner provider and admins.
+- Partners can read/write only their own onboarding records.
+- Admins can read and review all partner onboarding records.
+- Private documents are visible only to the owner partner and admins.
 - Tax policy versions and rules are writable by admins only and readable by admins/API service role.
 
 ## Production Hardening

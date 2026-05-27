@@ -47,8 +47,8 @@ C:\dev\massage-vn-workspace\repo\infra\setup\.generated\hands-external-registrat
 
 - Local MVP services: ready on API `3100` and Admin `3101`
 - Firebase mobile SDKs: removed
-- Android upload signing: ready locally for customer and provider apps
-- Release APK build: verified for customer and provider apps
+- Android upload signing: ready locally for customer and partner apps
+- Release APK build: verified for customer and partner apps
 - Local storage: ready through MinIO-compatible S3 settings
 - GitHub business repository: moved to `hands-platform/hands-app`
 - Supabase staging: created and SQL applied
@@ -285,7 +285,7 @@ npm.cmd run external:check:storage
 
 Purpose:
 
-- Customer/provider apps have separate release upload keys and package names.
+- Customer/partner apps have separate release upload keys and package names.
 - Fingerprints are needed for stores or external providers that support Android app restrictions.
 
 Already generated locally:

@@ -32,7 +32,7 @@ C:\dev\massage-vn-workspace\repo\infra\env\hands-staging.env.example
 - Current GitHub migration status: connected and pushed from local `develop`
 - Service area: all Vietnam, starting with local MVP flows around Ho Chi Minh City
 - Customer app languages planned later: Vietnamese, English, Korean, Chinese, Japanese
-- Provider app language planned later: Vietnamese
+- Partner app language planned later: Vietnamese
 - Admin languages planned later: Korean, Vietnamese, English
 
 ## 1. Push Notifications
@@ -54,7 +54,7 @@ ONESIGNAL_APP_ID=
 ONESIGNAL_REST_API_KEY=
 ```
 
-Use this only after the provider app, customer app, and backend adapter are ready for production-like push E2E:
+Use this only after the partner app, customer app, and backend adapter are ready for production-like push E2E:
 
 ```dotenv
 PUSH_PROVIDER=onesignal
@@ -163,7 +163,7 @@ Supabase Auth setup:
 2. Enable Phone provider in Authentication.
 3. Configure the SMS provider supported by Supabase for Vietnam delivery.
 4. Copy `Project URL`, `anon public`, and the JWT secret into the local `.env`.
-5. Keep `AUTH_BACKEND=nest` until OTP sending is verified, then test `AUTH_BACKEND=supabase` on customer and provider apps.
+5. Keep `AUTH_BACKEND=nest` until OTP sending is verified, then test `AUTH_BACKEND=supabase` on customer and partner apps.
 6. Provider Supabase login must not rely on a client-selected role. A provider can exchange a Supabase session only if the phone number already belongs to an approved/local HANDS provider account or the admin provider-role sync has placed `PROVIDER` in Supabase user metadata.
 7. After setting `SUPABASE_JWT_SECRET`, run `npm.cmd run auth:supabase-smoke` against the API to verify customer mapping, provider mapping, invalid audience rejection, and role escalation rejection. The full local verifier also runs this flow with a temporary dev JWT secret against its managed API.
 8. Keep `SUPABASE_SERVICE_ROLE_KEY` only in the API environment. It is needed for admin provider-role sync and must never be sent to Flutter, browser JavaScript, or Git.
@@ -290,7 +290,7 @@ Before launch:
 - disable demo OTP
 - rotate JWT secrets
 - define owner / operator / finance permissions
-- enable audit log review for payout, refund, provider approval, and coupon changes
+- enable audit log review for payout, refund, partner approval, and coupon changes
 
 ## 8. Android Store Signing
 
@@ -303,11 +303,11 @@ C:\dev\massage-vn-workspace\repo\docs\architecture\android-release-signing.md
 Current local app IDs:
 
 - Customer app: `com.massagevn.customer.customer_app`
-- Provider app: `com.massagevn.provider.provider_app`
+- Partner app: `com.massagevn.provider.provider_app`
 
 Local MVP builds intentionally use the debug signing key so emulator/device testing stays simple. Before Play Store or production distribution:
 
-- create separate upload keys for customer and provider apps
+- create separate upload keys for customer and partner apps
 - store keystores outside Git, preferably under `C:\dev\massage-vn-workspace\secrets`
 - copy `apps/customer_app/android/key.properties.example` to `apps/customer_app/android/key.properties` and fill local secret values
 - copy `apps/provider_app/android/key.properties.example` to `apps/provider_app/android/key.properties` and fill local secret values

@@ -6,7 +6,7 @@ HANDS will move away from Firebase and keep the Flutter apps behind Clean Archit
 
 ## Current Status
 
-- Customer and Provider apps now have feature repositories for auth, discovery, booking, chat, map, notification, coupons, provider profile, earnings, and verification.
+- Customer and Partner apps now have feature repositories for auth, discovery, booking, chat, map, notification, coupons, partner profile, earnings, and verification.
 - `app_state.dart` is now a compatibility facade for existing screens rather than a direct API integration layer.
 - Mobile Firebase packages, Android Google Services config, and Flutter Firebase imports have been removed.
 - API FCM HTTP delivery has been removed and replaced with in-app-only delivery records.
@@ -61,7 +61,7 @@ Provider role metadata sync:
 
 - Required API values: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
 - The service role key must stay server-side only and must never be passed to Flutter or Admin Web.
-- Admin provider approval automatically attempts a provider role sync when the HANDS user is already linked to `supabaseUserId`.
+- Admin partner approval automatically attempts a provider role sync when the HANDS user is already linked to `supabaseUserId`.
 - If the provider has not signed in through Supabase yet, the sync is skipped and recorded in the audit log. The provider can still operate through the existing Nest auth flow until Supabase OTP is enabled.
 
 Mobile auth code is now split by Clean Architecture boundaries:

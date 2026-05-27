@@ -1,6 +1,6 @@
 # HANDS Android Release Signing
 
-This runbook prepares Android upload signing for the HANDS customer and provider apps.
+This runbook prepares Android upload signing for the HANDS customer and partner apps.
 
 Do not commit keystores, passwords, `key.properties`, Play Console credentials, or screenshot-visible secrets.
 
@@ -70,7 +70,7 @@ npm.cmd run external:check:production
 
 ## Play Console Notes
 
-Create the customer and provider apps separately in Play Console because they use different package names.
+Create the customer and partner apps separately in Play Console because they use different package names.
 
 For each app:
 

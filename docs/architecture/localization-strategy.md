@@ -20,7 +20,7 @@ Reason:
 - foreign travelers visiting Vietnam
 - reduced booking friction for non-Vietnamese customers
 
-### Provider App
+### Partner App
 
 Required language:
 
@@ -28,8 +28,8 @@ Required language:
 
 Reason:
 
-- providers are expected to be Vietnam-based service professionals
-- provider operations should stay direct and low-friction
+- partners are expected to be Vietnam-based service professionals
+- partner operations should stay direct and low-friction
 
 ### Admin Web
 
@@ -55,12 +55,12 @@ Recommended default behavior:
 2. otherwise use device language when supported
 3. otherwise fall back to English
 
-### Provider App
+### Partner App
 
 Recommended default behavior:
 
 1. Vietnamese by default
-2. allow future extension only if provider operations require it
+2. allow future extension only if partner operations require it
 
 ### Admin Web
 
@@ -75,7 +75,7 @@ Recommended default behavior:
 During localization work:
 
 - customer copy should be calm, simple, and booking-oriented
-- provider copy should be short, operational, and action-first
+- partner copy should be short, operational, and action-first
 - admin copy should be explicit and audit-friendly
 
 Avoid:
@@ -102,7 +102,7 @@ Recommended locale files:
 - `app_zh.arb`
 - `app_ja.arb`
 
-### Provider App
+### Partner App
 
 Planned stack:
 
@@ -132,7 +132,7 @@ Recommended dictionaries:
 Recommended ownership model:
 
 - product/source copy defined first in English or Korean planning docs
-- Vietnamese customer/provider copy reviewed by native Vietnamese operator
+- Vietnamese customer/partner copy reviewed by native Vietnamese operator
 - Korean admin copy reviewed by Korean decision-maker
 - customer-facing travel copy reviewed for natural English
 

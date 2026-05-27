@@ -19,7 +19,7 @@ Required tools:
 - Node.js and npm for the monorepo, API, shared packages, and Admin Web.
 - Git for GitHub backup, branch workflow, diffs, and stable commits.
 - Docker Desktop for PostgreSQL/PostGIS, Redis, MinIO, Nginx, and production-style compose tests.
-- Flutter and Dart for customer and provider mobile apps.
+- Flutter and Dart for customer and partner mobile apps.
 
 Recommended tools:
 
@@ -30,7 +30,7 @@ Current local status after setup:
 
 - Git, Docker Desktop, Flutter, Dart, Node.js, npm, Java, Android Studio, Android SDK, and Android Emulator are available.
 - `verify-local.ps1 -WithServices` passes Docker, Prisma, API smoke, Admin build, and Flutter analyze checks.
-- Customer and Provider apps build, install, and launch on the Android emulator from an ASCII-only path such as `C:\dev\massage-vn-workspace\repo`.
+- Customer and Partner apps build, install, and launch on the Android emulator from an ASCII-only path such as `C:\dev\massage-vn-workspace\repo`.
 - The source workspace path contains Korean characters. Flutter analyze/test works there, but Android Gradle builds can fail on Windows unless the project is run from an ASCII-only path.
 
 If required tools are missing and Chocolatey is available, open PowerShell as Administrator and run:
@@ -109,7 +109,7 @@ cd C:\dev\massage-vn-workspace\repo\apps\customer_app
 flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:3100/api --dart-define=SOCKET_BASE_URL=http://10.0.2.2:3100
 ```
 
-If you want the HANDS customer/provider apps to render real MapTiler maps and Geoapify address search instead of fallback panels, set `MAPTILER_API_KEY` and `GEOAPIFY_API_KEY` in the ignored root `.env` or in your shell. The helper scripts pass them as Flutter defines:
+If you want the HANDS customer/partner apps to render real MapTiler maps and Geoapify address search instead of fallback panels, set `MAPTILER_API_KEY` and `GEOAPIFY_API_KEY` in the ignored root `.env` or in your shell. The helper scripts pass them as Flutter defines:
 
 ```powershell
 $env:MAPTILER_API_KEY="your-maptiler-key"

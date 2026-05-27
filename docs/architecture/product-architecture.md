@@ -7,7 +7,7 @@ This is a modular monorepo, not microservices. The NestJS API owns REST endpoint
 ```mermaid
 flowchart LR
   C["Customer Flutter"] --> API["NestJS API"]
-  P["Provider Flutter"] --> API
+  P["Partner Flutter"] --> API
   A["Next.js Admin"] --> API
   API --> DB["PostgreSQL + PostGIS"]
   API --> R["Redis"]
@@ -42,8 +42,8 @@ Defaults:
 
 ## Redis Responsibilities
 
-- Provider online status
-- Provider latest realtime location
+- Partner online status
+- Partner latest stored location
 - Active booking matching state
 - Socket.IO scale-out adapter state
 - Timeout and no-response job coordination
@@ -59,7 +59,7 @@ Defaults:
 ## Security
 
 - OTP login, JWT access token, refresh token
-- Role guards for customer/provider/admin
+- Role guards for customer/partner/admin
 - Private verification files
-- Public provider images through CDN
+- Public partner images through CDN
 - No hardcoded secrets

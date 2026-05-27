@@ -25,10 +25,10 @@ Each adapter supports:
 6. If booking expires before match, the timeout processor calls `PaymentsService.release`.
 7. If service completes, booking completion captures the payment in the current skeleton.
 
-For cash bookings, the provider receives the customer payment directly. HANDS therefore
-records platform fee and withholding as a provider wallet debt instead of treating the
-full booking amount as money owed to the provider. A negative provider wallet blocks new
-booking acceptance until the provider settles the fee with HANDS or the balance is offset
+For cash bookings, the partner receives the customer payment directly. HANDS therefore
+records platform fee and withholding as a partner wallet debt instead of treating the
+full booking amount as money owed to the partner. A negative partner wallet blocks new
+booking acceptance until the partner settles the fee with HANDS or the balance is offset
 against later online-payment payouts.
 
 ## Callback Routes
@@ -39,11 +39,11 @@ POST /api/payments/VNPAY/callback
 POST /api/payments/CASH/callback
 ```
 
-The routes parse provider payloads and update the payment by `providerRef`.
+The routes parse payment-provider payloads and update the payment by `providerRef`.
 
 ## Refund Flow
 
-Admin refunds update the payment to `REFUNDED`, move the booking to `REFUNDED`, create a `Refund` row, and cancel unpaid provider earnings. If the earning is already `PAID`, the MVP keeps it unchanged and writes the skip reason to `AdminAuditLog`.
+Admin refunds update the payment to `REFUNDED`, move the booking to `REFUNDED`, create a `Refund` row, and cancel unpaid partner earnings. If the earning is already `PAID`, the MVP keeps it unchanged and writes the skip reason to `AdminAuditLog`.
 
 ## Production Hardening
 
@@ -51,5 +51,5 @@ Admin refunds update the payment to `REFUNDED`, move the booking to `REFUNDED`, 
 - Verify VNPay secure hash.
 - Store callback attempts for auditability.
 - Replace placeholder status polling with provider API calls.
-- Separate `AUTHORIZED`, `CAPTURED`, `RELEASED`, `REFUNDED` semantics by provider.
+- Separate `AUTHORIZED`, `CAPTURED`, `RELEASED`, `REFUNDED` semantics by payment provider.
 - Do not trust client-provided callback status.

@@ -37,7 +37,7 @@ If the API is unavailable during build or local UI development, pages render emp
 ## Next Admin Work
 
 - Add real admin login UI and session cookies.
-- Add provider approve/reject actions.
+- Add partner approve/reject actions.
 - Add refund action wiring.
 - Add coupon CRUD.
 - Add audit log writes and audit log list API.
