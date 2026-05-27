@@ -1,4 +1,4 @@
-import { AdminBooking, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
+import { AdminAuditLog, AdminBooking, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
 import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -9,9 +9,10 @@ export default async function OperationsPolicyPage({
   searchParams?: OperationsPolicySearchParams;
 }) {
   const params = (await searchParams) ?? {};
-  const [settings, bookings] = await Promise.all([
+  const [settings, bookings, auditLogs] = await Promise.all([
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminBooking[]>('/admin/bookings', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
   ]);
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
@@ -20,6 +21,7 @@ export default async function OperationsPolicyPage({
   const ownerDecisionBacklog = operationsOwnerDecisionBacklog();
   const matchingPlaybook = buildMatchingPlaybook(settings);
   const impactDashboard = buildPolicyImpactDashboard(settings, bookings);
+  const policyAuditRows = operationalPolicyAuditRows(auditLogs);
 
   return (
     <>
@@ -104,6 +106,62 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Recent policy audit trail</h2>
+            <p className="muted">
+              Shows who changed a policy, the previous value, the new value, and whether the setting is
+              already enforced by live booking logic.
+            </p>
+          </div>
+          <a className="text-link" href="/audit-log?bucket=Operations%2FPolicy">
+            Open policy audit
+          </a>
+        </div>
+        {policyAuditRows.length ? (
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Policy</th>
+                <th>Actor</th>
+                <th>Before</th>
+                <th>After</th>
+                <th>Ops effect</th>
+              </tr>
+            </thead>
+            <tbody>
+              {policyAuditRows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{relativeTime(row.createdAt)}</strong>
+                    <p className="muted">{new Date(row.createdAt).toLocaleString()}</p>
+                  </td>
+                  <td>
+                    <strong>{row.label}</strong>
+                    <p className="muted">{row.key}</p>
+                  </td>
+                  <td>{row.actorName}</td>
+                  <td>{row.previousValue}</td>
+                  <td>{row.value}</td>
+                  <td>
+                    <span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>
+                      {row.enforced ? 'Live behavior' : 'Decision log'}
+                    </span>
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      {row.effect}
+                    </p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted">No policy change has been audited yet.</p>
+        )}
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -438,6 +496,54 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
   };
 }
 
+function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
+  return logs
+    .filter((log) => log.action === 'operational_policy.update')
+    .map((log) => {
+      const metadata = readPlainRecord(log.metadata);
+      const key = readOptionalString(metadata?.key) ?? targetPolicyKey(log.target);
+      const details = policyImpactDetails(key);
+      const enforced = Boolean(metadata?.enforced);
+      return {
+        id: log.id,
+        createdAt: log.createdAt,
+        key,
+        label: policyKeyLabel(key),
+        actorName: log.actor?.fullName ?? log.actor?.phone ?? 'System',
+        previousValue: compactAuditValue(metadata?.previousValue),
+        value: compactAuditValue(metadata?.value),
+        enforced,
+        effect: enforced
+          ? details.detail
+          : `${details.title}. This is stored as an owner decision until enforced.`,
+      };
+    })
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .slice(0, 8);
+}
+
+function targetPolicyKey(target: string) {
+  return target.startsWith('operational_policy:') ? target.slice('operational_policy:'.length) : target;
+}
+
+function policyKeyLabel(key: string) {
+  const label = key
+    .split('.')
+    .map((part) => part.replace(/_/g, ' '))
+    .join(' / ');
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function compactAuditValue(value: unknown) {
+  if (value === null || value === undefined) {
+    return '-';
+  }
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  return String(value);
+}
+
 function operationsOwnerDecisionBacklog() {
   return [
     {
@@ -677,6 +783,25 @@ function formatDate(value: string) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(new Date(value));
+}
+
+function relativeTime(value: string) {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return 'Unknown time';
+  }
+  const diffMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
+  if (diffMinutes < 1) {
+    return 'Just now';
+  }
+  if (diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+  return `${Math.floor(diffHours / 24)}d ago`;
 }
 
 function policyNotice(params: Record<string, string | string[] | undefined>) {
