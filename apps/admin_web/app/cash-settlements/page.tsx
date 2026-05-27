@@ -1,13 +1,16 @@
 import Link from 'next/link';
-import { AdminEarning, adminGet } from '../../lib/admin-api';
+import { AdminCashSettlementSummary, AdminEarning, adminGet } from '../../lib/admin-api';
 import { settleCashFeeDebt } from './actions';
 
 export default async function CashSettlementsPage() {
-  const earnings = await adminGet<AdminEarning[]>('/admin/cash-settlement-earnings', []);
+  const [earnings, apiSummary] = await Promise.all([
+    adminGet<AdminEarning[]>('/admin/cash-settlement-earnings', []),
+    adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
+  ]);
   const rows = buildCashSettlementRows(earnings);
   const providers = buildProviderGroups(rows);
-  const summary = buildSummary(rows, providers);
-  const commandCards = buildCommandCards(rows, providers, summary.currency);
+  const summary = mergeAuthoritativeSummary(buildSummary(rows, providers), apiSummary);
+  const commandCards = buildCommandCards(rows, providers, summary);
 
   return (
     <>
@@ -42,6 +45,16 @@ export default async function CashSettlementsPage() {
         <div className="card">
           <p>Oldest open</p>
           <h2>{summary.oldestOpenLabel}</h2>
+        </div>
+        <div className="card">
+          <p>Over 24h</p>
+          <h2>{summary.staleDebtRowCount}</h2>
+        </div>
+        <div className="card">
+          <p>Payment evidence</p>
+          <h2>
+            {summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'OK'}
+          </h2>
         </div>
       </section>
 
@@ -250,6 +263,20 @@ type CommandCard = {
   pillClass: string;
 };
 
+type CashSettlementSummary = {
+  providerCount: number;
+  rowCount: number;
+  debtAmount: number;
+  platformFee: number;
+  taxAmount: number;
+  currency: string;
+  oldestOpenLabel: string;
+  staleDebtRowCount: number;
+  highDebtProviderCount: number;
+  missingPaymentEvidenceCount: number;
+  cashPaymentRowCount: number;
+};
+
 function buildCashSettlementRows(earnings: AdminEarning[]): CashSettlementRow[] {
   return earnings
     .filter((earning) => isOpenCashDebt(earning))
@@ -329,38 +356,63 @@ function buildSummary(rows: CashSettlementRow[], providers: CashSettlementProvid
     taxAmount: rows.reduce((sum, row) => sum + row.taxAmount, 0),
     currency: rows[0]?.earning.currency ?? 'VND',
     oldestOpenLabel: rows.length ? relativeTime(new Date(oldestMs).toISOString()) : '-',
+    staleDebtRowCount: rows.filter((row) => {
+      const createdMs = Date.parse(row.earning.createdAt ?? '');
+      return Number.isFinite(createdMs) && Date.now() - createdMs > 24 * 60 * 60 * 1000;
+    }).length,
+    highDebtProviderCount: providers.filter((provider) => provider.debtAmount >= 500_000).length,
+    missingPaymentEvidenceCount: rows.filter((row) => !row.earning.booking?.payment).length,
+    cashPaymentRowCount: rows.filter((row) => row.earning.booking?.payment?.method === 'CASH').length,
+  };
+}
+
+function mergeAuthoritativeSummary(
+  visibleSummary: CashSettlementSummary,
+  apiSummary: AdminCashSettlementSummary | null,
+): CashSettlementSummary {
+  if (!apiSummary) {
+    return visibleSummary;
+  }
+
+  return {
+    providerCount: apiSummary.providerCount,
+    rowCount: apiSummary.rowCount,
+    debtAmount: apiSummary.totalDebtAmount,
+    platformFee: apiSummary.totalPlatformFee,
+    taxAmount: apiSummary.totalTaxAmount,
+    currency: apiSummary.currency,
+    oldestOpenLabel: apiSummary.oldestOpenAt ? relativeTime(apiSummary.oldestOpenAt) : '-',
+    staleDebtRowCount: apiSummary.staleDebtRowCount,
+    highDebtProviderCount: apiSummary.highDebtProviderCount,
+    missingPaymentEvidenceCount: apiSummary.missingPaymentEvidenceCount,
+    cashPaymentRowCount: apiSummary.cashPaymentRowCount,
   };
 }
 
 function buildCommandCards(
   rows: CashSettlementRow[],
   providers: CashSettlementProviderGroup[],
-  currency: string,
+  summary: CashSettlementSummary,
 ): CommandCard[] {
-  const staleRows = rows.filter((row) => {
-    const createdMs = Date.parse(row.earning.createdAt ?? '');
-    return Number.isFinite(createdMs) && Date.now() - createdMs > 24 * 60 * 60 * 1000;
-  });
   const highDebtProviders = providers.filter((provider) => provider.debtAmount >= 500_000);
-  const missingEvidenceRows = rows.filter((row) => !row.earning.booking?.payment);
 
   return [
     {
       title: 'Blocked wallets',
-      status: `${providers.length} PARTNER(S)`,
-      detail: `${rows.length} open cash settlement row(s), ${formatMoney(
-        rows.reduce((sum, row) => sum + row.debtAmount, 0),
-        currency,
-      )} total.`,
-      action: providers.length
+      status: `${summary.providerCount} PARTNER(S)`,
+      detail: `${summary.rowCount} open cash settlement row(s), ${formatMoney(
+        summary.debtAmount,
+        summary.currency,
+      )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
+      action: summary.providerCount
         ? 'Collect partner deposit or approve admin offset before reopening booking acceptance.'
         : 'No wallet is currently blocked by cash fee debt.',
-      className: providers.length ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: providers.length ? 'pill-danger' : 'pill-success',
+      className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
     },
     {
       title: 'High debt priority',
-      status: `${highDebtProviders.length} HIGH`,
+      status: `${summary.highDebtProviderCount} HIGH`,
       detail: highDebtProviders.length
         ? highDebtProviders
             .slice(0, 2)
@@ -378,27 +430,27 @@ function buildCommandCards(
     },
     {
       title: 'Aging debt',
-      status: `${staleRows.length} OLD`,
-      detail: staleRows.length
+      status: `${summary.staleDebtRowCount} OLD`,
+      detail: summary.staleDebtRowCount
         ? 'One or more cash debts have been open longer than 24 hours.'
         : 'No cash fee debt is older than 24 hours.',
-      action: staleRows.length
+      action: summary.staleDebtRowCount
         ? 'Contact partner and record deposit or offset evidence.'
         : 'No aging escalation needed.',
-      className: staleRows.length ? 'ops-task-pending' : 'ops-task-done',
-      pillClass: staleRows.length ? 'pill-warn' : 'pill-success',
+      className: summary.staleDebtRowCount ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: summary.staleDebtRowCount ? 'pill-warn' : 'pill-success',
     },
     {
       title: 'Payment evidence',
-      status: `${missingEvidenceRows.length} CHECK`,
-      detail: missingEvidenceRows.length
+      status: `${summary.missingPaymentEvidenceCount} CHECK`,
+      detail: summary.missingPaymentEvidenceCount
         ? 'Some rows lack linked payment evidence in the admin payload.'
         : 'Every visible row has booking payment evidence attached.',
-      action: missingEvidenceRows.length
+      action: summary.missingPaymentEvidenceCount
         ? 'Open booking detail before settling these rows.'
         : 'Rows are ready for finance confirmation.',
-      className: missingEvidenceRows.length ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: missingEvidenceRows.length ? 'pill-danger' : 'pill-success',
+      className: summary.missingPaymentEvidenceCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: summary.missingPaymentEvidenceCount ? 'pill-danger' : 'pill-success',
     },
   ];
 }

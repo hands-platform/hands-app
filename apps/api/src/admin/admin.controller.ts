@@ -247,6 +247,11 @@ export class AdminController {
     return this.admin.listCashSettlementEarnings();
   }
 
+  @Get('cash-settlement-summary')
+  cashSettlementSummary() {
+    return this.admin.cashSettlementSummary();
+  }
+
   @Get('earnings/summary')
   earningsSummary() {
     return this.admin.earningsSummary();

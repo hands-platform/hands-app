@@ -1178,6 +1178,10 @@ export class AdminService {
     return this.earnings.listCashSettlementDebtForAdmin();
   }
 
+  cashSettlementSummary() {
+    return this.earnings.cashSettlementSummaryForAdmin();
+  }
+
   earningsSummary() {
     return this.earnings.adminSummary();
   }

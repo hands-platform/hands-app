@@ -241,6 +241,112 @@ export class EarningsService {
     });
   }
 
+  async cashSettlementSummaryForAdmin() {
+    const debtRows = await this.prisma.providerEarning.findMany({
+      where: {
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+        netAmount: { lt: 0 },
+      },
+      orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
+      select: {
+        id: true,
+        providerProfileId: true,
+        bookingId: true,
+        grossAmount: true,
+        platformFee: true,
+        withholdingAmount: true,
+        netAmount: true,
+        currency: true,
+        createdAt: true,
+        booking: { select: { payment: { select: { id: true, method: true, amount: true, status: true } } } },
+        providerProfile: {
+          select: {
+            id: true,
+            displayName: true,
+            user: { select: { phone: true, fullName: true } },
+          },
+        },
+      },
+    });
+    const now = Date.now();
+    const providerGroups = new Map<
+      string,
+      {
+        providerProfileId: string;
+        providerName: string;
+        providerPhone: string | null;
+        rowCount: number;
+        debtAmount: number;
+        platformFee: number;
+        taxAmount: number;
+        currency: string;
+        oldestOpenAt: Date;
+        latestOpenAt: Date;
+        settlementReference: string;
+      }
+    >();
+
+    for (const row of debtRows) {
+      const providerName =
+        row.providerProfile.displayName ?? row.providerProfile.user?.fullName ?? 'Unknown partner';
+      const existing = providerGroups.get(row.providerProfileId);
+      const group = existing ?? {
+        providerProfileId: row.providerProfileId,
+        providerName,
+        providerPhone: row.providerProfile.user?.phone ?? null,
+        rowCount: 0,
+        debtAmount: 0,
+        platformFee: 0,
+        taxAmount: 0,
+        currency: row.currency,
+        oldestOpenAt: row.createdAt,
+        latestOpenAt: row.createdAt,
+        settlementReference: providerWalletSettlementReference(row.providerProfileId),
+      };
+
+      group.rowCount += 1;
+      group.debtAmount += Math.abs(row.netAmount);
+      group.platformFee += row.platformFee;
+      group.taxAmount += row.withholdingAmount;
+      if (row.createdAt < group.oldestOpenAt) {
+        group.oldestOpenAt = row.createdAt;
+      }
+      if (row.createdAt > group.latestOpenAt) {
+        group.latestOpenAt = row.createdAt;
+      }
+      providerGroups.set(row.providerProfileId, group);
+    }
+
+    const sortedProviderGroups = [...providerGroups.values()].sort(
+      (left, right) => right.debtAmount - left.debtAmount,
+    );
+    const oldestOpenAt = debtRows[0]?.createdAt ?? null;
+    const staleCutoffMs = 24 * 60 * 60 * 1000;
+    const highDebtThreshold = 500_000;
+
+    return {
+      generatedAt: new Date(),
+      currency: debtRows[0]?.currency ?? 'VND',
+      rowCount: debtRows.length,
+      providerCount: providerGroups.size,
+      totalDebtAmount: debtRows.reduce((sum, row) => sum + Math.abs(row.netAmount), 0),
+      totalPlatformFee: debtRows.reduce((sum, row) => sum + row.platformFee, 0),
+      totalTaxAmount: debtRows.reduce((sum, row) => sum + row.withholdingAmount, 0),
+      oldestOpenAt,
+      oldestOpenAgeMinutes: oldestOpenAt
+        ? Math.max(0, Math.round((now - oldestOpenAt.getTime()) / 60_000))
+        : 0,
+      staleDebtRowCount: debtRows.filter((row) => now - row.createdAt.getTime() > staleCutoffMs).length,
+      highDebtProviderCount: sortedProviderGroups.filter((group) => group.debtAmount >= highDebtThreshold)
+        .length,
+      missingPaymentEvidenceCount: debtRows.filter((row) => !row.booking?.payment).length,
+      cashPaymentRowCount: debtRows.filter((row) => row.booking?.payment?.method === PaymentMethod.CASH)
+        .length,
+      topProviderGroups: sortedProviderGroups.slice(0, 20),
+    };
+  }
+
   adminSummary() {
     return this.summaryWhere({});
   }

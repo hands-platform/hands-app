@@ -1372,6 +1372,23 @@ if (!cashSettlementDebtRow || cashSettlementDebtRow.payoutBatchId) {
     )}`,
   );
 }
+const adminCashSettlementSummary = await getJson('/admin/cash-settlement-summary', adminAuth.accessToken);
+if (
+  adminCashSettlementSummary.rowCount < 1 ||
+  adminCashSettlementSummary.providerCount < 1 ||
+  adminCashSettlementSummary.totalDebtAmount < Math.abs(cashSettlementDebtRow.netAmount) ||
+  adminCashSettlementSummary.cashPaymentRowCount < 1 ||
+  !adminCashSettlementSummary.topProviderGroups?.some(
+    (group) =>
+      group.providerProfileId === walletDebtProviderAuth.user.providerProfile.id && group.debtAmount > 0,
+  )
+) {
+  throw new Error(
+    `Cash settlement summary did not expose open wallet debt totals: ${JSON.stringify(
+      adminCashSettlementSummary,
+    )}`,
+  );
+}
 const adminPaymentsAfterCashDebt = await getJson('/admin/payments', adminAuth.accessToken);
 const cashDebtPayment = adminPaymentsAfterCashDebt.find(
   (payment) => payment.bookingId === walletDebtBooking.id,

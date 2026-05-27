@@ -545,6 +545,35 @@ export type AdminEarningSummary = {
   currency: string;
 };
 
+export type AdminCashSettlementSummary = {
+  generatedAt: string;
+  currency: string;
+  rowCount: number;
+  providerCount: number;
+  totalDebtAmount: number;
+  totalPlatformFee: number;
+  totalTaxAmount: number;
+  oldestOpenAt?: string | null;
+  oldestOpenAgeMinutes: number;
+  staleDebtRowCount: number;
+  highDebtProviderCount: number;
+  missingPaymentEvidenceCount: number;
+  cashPaymentRowCount: number;
+  topProviderGroups: Array<{
+    providerProfileId: string;
+    providerName: string;
+    providerPhone?: string | null;
+    rowCount: number;
+    debtAmount: number;
+    platformFee: number;
+    taxAmount: number;
+    currency: string;
+    oldestOpenAt: string;
+    latestOpenAt: string;
+    settlementReference: string;
+  }>;
+};
+
 export type AdminRefund = {
   id: string;
   bookingId: string;
