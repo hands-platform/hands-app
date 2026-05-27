@@ -142,7 +142,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
         <form className="form-grid" action="/provider-risk">
           <label>
             Search
-            <input name="q" defaultValue={filters.q} placeholder="Provider, phone, category, reason" />
+            <input name="q" defaultValue={filters.q} placeholder="Partner, phone, category, reason" />
           </label>
           <label>
             Report status
@@ -197,16 +197,16 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <div>
             <h2>System risk watchlist</h2>
             <p className="muted">
-              Automatic provider signals from wallet debt, sanctions, onboarding gaps, devices, and recent
+              Automatic partner signals from wallet debt, sanctions, onboarding gaps, devices, and recent
               report history.
             </p>
           </div>
-          <span className="pill pill-info">{providerWatchlist.length} provider(s)</span>
+          <span className="pill pill-info">{providerWatchlist.length} partner(s)</span>
         </div>
         <table className="table">
           <thead>
             <tr>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Risk signals</th>
               <th>Money / access</th>
               <th>Operator next step</th>
@@ -245,7 +245,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                 <td>
                   <div className="actions">
                     <Link className="text-link" href={`/providers/${item.provider.id}`}>
-                      Provider detail
+                      Partner detail
                     </Link>
                     {item.walletBalance < 0 ? (
                       <Link className="text-link" href="/earnings">
@@ -267,7 +267,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             ))}
             {!providerWatchlist.length ? (
               <tr>
-                <td colSpan={4}>No automatic provider risk signals are active.</td>
+                <td colSpan={4}>No automatic partner risk signals are active.</td>
               </tr>
             ) : null}
           </tbody>
@@ -277,7 +277,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Create provider report</h2>
+            <h2>Create partner report</h2>
             <p className="muted">
               Use this for customer complaints, staff findings, payout risks, or safety notes.
             </p>
@@ -285,9 +285,9 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
         </div>
         <form className="form-grid" action={createProviderReport}>
           <label>
-            Provider
+            Partner
             <select name="providerProfileId" required>
-              <option value="">Choose provider</option>
+              <option value="">Choose partner</option>
               {providerOptions.map((provider) => (
                 <option value={provider.id} key={provider.id}>
                   {provider.label}
@@ -313,7 +313,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             <select name="source" defaultValue="ADMIN">
               <option value="ADMIN">Admin</option>
               <option value="CUSTOMER">Customer</option>
-              <option value="PROVIDER">Provider</option>
+              <option value="PROVIDER">Partner</option>
               <option value="SYSTEM">System</option>
             </select>
           </label>
@@ -343,7 +343,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <div>
             <h2>Reports</h2>
             <p className="muted">
-              Open and investigating reports should be cleared before provider trust upgrades.
+              Open and investigating reports should be cleared before partner trust upgrades.
             </p>
           </div>
           <span className="pill pill-info">{visibleReports.length} shown</span>
@@ -352,7 +352,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <thead>
             <tr>
               <th>Report</th>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Status</th>
               <th>Sanction</th>
               <th>Action</th>
@@ -458,7 +458,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <thead>
             <tr>
               <th>Sanction</th>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Linked report</th>
               <th>Timeline</th>
               <th>Action</th>
@@ -573,8 +573,8 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       title: 'Safety triage',
       status: urgentReports.length ? 'URGENT' : 'CLEAR',
       detail: urgentReports.length
-        ? 'Critical or high reports need evidence review and a decision before provider trust changes.'
-        : 'No critical or high provider report is currently open.',
+        ? 'Critical or high reports need evidence review and a decision before partner trust changes.'
+        : 'No critical or high partner report is currently open.',
       href: urgentReports.length ? '/provider-risk?severity=HIGH' : '/provider-risk?status=OPEN',
       action: urgentReports.length ? 'Open high severity lane' : 'Review open reports',
       className: urgentReports.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -588,8 +588,8 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       title: 'Finance block',
       status: walletDebtItems.length ? 'BLOCKED' : 'CLEAR',
       detail: walletDebtItems.length
-        ? 'Negative wallet providers must settle cash fee debt before accepting more bookings.'
-        : 'No provider wallet is currently blocked by cash fee debt.',
+        ? 'Negative wallet partners must settle cash fee debt before accepting more bookings.'
+        : 'No partner wallet is currently blocked by cash fee debt.',
       href: walletDebtItems.length ? '/cash-settlements' : '/earnings',
       action: walletDebtItems.length ? 'Open cash settlements' : 'Review earnings',
       className: walletDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -608,7 +608,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       status: activeSanctions.length ? 'LIVE' : 'CLEAR',
       detail: activeSanctions.length
         ? 'Active sanctions are live operating controls and need clean audit follow-up.'
-        : 'No active sanction is currently restricting provider operations.',
+        : 'No active sanction is currently restricting partner operations.',
       href: activeSanctions.length ? '/provider-risk?sanction=ACTIVE' : '/provider-risk',
       action: activeSanctions.length ? 'Review active sanctions' : 'Open risk board',
       className: activeSanctions.length ? 'ops-task-pending' : 'ops-task-done',
@@ -623,7 +623,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       status: overdueReports.length ? 'OVERDUE' : 'ON TRACK',
       detail: overdueReports.length
         ? 'Some open investigations have passed the target review window.'
-        : 'Open provider reports are inside their review windows.',
+        : 'Open partner reports are inside their review windows.',
       href: overdueReports.length ? '/provider-risk?status=OPEN' : '/provider-risk?status=INVESTIGATING',
       action: overdueReports.length ? 'Clear overdue reports' : 'Review investigations',
       className: overdueReports.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -754,7 +754,7 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
           kind: 'search',
           value: filters.q,
           label: `Search: ${filters.q}`,
-          description: 'Risk rows are narrowed by provider, phone, category, reason, or report text.',
+          description: 'Risk rows are narrowed by partner, phone, category, reason, or report text.',
         }
       : null,
     filters.status
@@ -786,7 +786,7 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
 
 function riskFilterDescription(kind: string, value: string) {
   if (kind === 'status' && value === 'OPEN') {
-    return 'Open reports need triage before provider trust or payout decisions.';
+    return 'Open reports need triage before partner trust or payout decisions.';
   }
   if (kind === 'status' && value === 'INVESTIGATING') {
     return 'Investigating reports need evidence, customer notes, or staff follow-up.';
@@ -804,7 +804,7 @@ function riskFilterDescription(kind: string, value: string) {
 }
 
 function emptyRiskMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
-  const subject = kind === 'report' ? 'provider reports' : 'provider sanctions';
+  const subject = kind === 'report' ? 'partner reports' : 'partner sanctions';
   if (activeFilters.length === 0) {
     return `No ${subject} loaded yet.`;
   }
@@ -935,7 +935,7 @@ function providerRiskDetail(input: {
   signals: Array<{ kind: string }>;
 }) {
   if (input.walletBalance < 0) {
-    return 'Provider cannot safely accept more cash/direct work until company fee debt is settled.';
+    return 'Partner cannot safely accept more cash/direct work until company fee debt is settled.';
   }
   if (input.openReportCount > 0) {
     return 'Open report history needs operator review before trust, payout, or account changes.';
@@ -946,7 +946,7 @@ function providerRiskDetail(input: {
   if (input.signals.some((signal) => signal.kind === 'TAX')) {
     return 'Tax information can stay pending until first earning, but payout must remain gated.';
   }
-  return 'Provider has onboarding or compliance gaps that need staff follow-up.';
+  return 'Partner has onboarding or compliance gaps that need staff follow-up.';
 }
 
 function providerRiskNextStep(input: {
@@ -956,7 +956,7 @@ function providerRiskNextStep(input: {
   provider: AdminProvider;
 }) {
   if (input.walletBalance < 0) {
-    return `Confirm provider deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
+    return `Confirm partner deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
   }
   if (input.hasPayoutHold) {
     return 'Resolve payout hold evidence before creating or paying payout batches.';
