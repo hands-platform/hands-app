@@ -46,6 +46,46 @@ async function getOperationalPolicyValue(accessToken, key) {
   return settings.find((setting) => setting.key === key)?.value;
 }
 
+async function assertOperationalPolicyMetadata(accessToken) {
+  const settings = await getJson('/admin/operational-policy', accessToken);
+  const requiredLivePolicyKeys = [
+    'matching.provider_response_window_minutes',
+    'matching.backup_provider_radius_meters',
+    'matching.travel_buffer_minutes',
+    'matching.preferred_accept_mode',
+    'matching.backup_open_mode',
+    'wallet.negative_balance_gate',
+    'cancellation.after_match_policy',
+    'no_show.partner_report_policy',
+    'notification.partner_alert_channel',
+  ];
+  const settingsByKey = new Map(settings.map((setting) => [setting.key, setting]));
+  const missingLivePolicies = requiredLivePolicyKeys.filter((key) => !settingsByKey.has(key));
+  const unenforcedLivePolicies = requiredLivePolicyKeys.filter((key) => settingsByKey.get(key)?.enforced !== true);
+  const optionPolicyKeys = [
+    'matching.preferred_accept_mode',
+    'matching.backup_open_mode',
+    'wallet.negative_balance_gate',
+    'cancellation.after_match_policy',
+    'no_show.partner_report_policy',
+    'notification.partner_alert_channel',
+  ];
+  const missingPolicyOptions = optionPolicyKeys.filter((key) => {
+    const options = settingsByKey.get(key)?.options;
+    return !Array.isArray(options) || options.length < 2;
+  });
+
+  if (missingLivePolicies.length || unenforcedLivePolicies.length || missingPolicyOptions.length) {
+    throw new Error(
+      `Operational policy metadata is incomplete: ${JSON.stringify({
+        missingLivePolicies,
+        unenforcedLivePolicies,
+        missingPolicyOptions,
+      })}`,
+    );
+  }
+}
+
 const patchOperationalPolicyValue = (accessToken, key, value) =>
   patchJson(operationalPolicyPath(key), accessToken, { value });
 
@@ -167,6 +207,8 @@ const adminAuth = await request('/auth/verify-otp', {
   method: 'POST',
   body: JSON.stringify({ phone: '+84900000099', otp: '123456', role: 'ADMIN' }),
 });
+
+await assertOperationalPolicyMetadata(adminAuth.accessToken);
 
 const customerAppSession = await postJson('/app/session', customerAuth.accessToken, {
   role: 'CUSTOMER',
@@ -1579,9 +1621,10 @@ if (
     )}`,
   );
 }
+const expectedProviderWalletBlockReason =
+  'You cannot accept new bookings because unpaid HANDS cash-service fees are still pending settlement.';
 if (
-  walletDebtProviderEarningsSummary.walletBlockReason !==
-  '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.'
+  walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason
 ) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
