@@ -889,7 +889,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   if (provider.blockedAt) {
     return {
       status: 'ACCOUNT',
-      detail: `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`,
+      detail: `Partner account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`,
       operatorAction: 'Unblock only after identity, safety, payout, or policy issue is resolved.',
       tone: 'blocked',
       priority: 120,
@@ -988,7 +988,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   if (securityState === 'account-blocked') {
     return {
       status: 'ACCOUNT',
-      detail: 'The provider account is blocked by admin policy.',
+      detail: 'The partner account is blocked by admin policy.',
       operatorAction: 'Open provider detail and unblock only after the recorded issue is resolved.',
       tone: 'blocked',
       priority: 69,
@@ -997,7 +997,7 @@ function nextProviderListAction(provider: AdminProvider): ProviderListAction {
   if (securityState === 'blocked') {
     return {
       status: 'DEVICE',
-      detail: 'At least one provider app device is blocked.',
+      detail: 'At least one partner app device is blocked.',
       operatorAction: 'Open provider detail and decide whether to unblock or keep the device blocked.',
       tone: 'blocked',
       priority: 68,
@@ -1110,7 +1110,7 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
       <p className="muted" style={{ marginBottom: 4 }}>
         {latestDevice
           ? `Last app device: ${maskToken(latestDevice.deviceId)} / ${latestDevice.platform ?? 'unknown'}`
-          : 'No provider app device recorded yet.'}
+          : 'No partner app device recorded yet.'}
       </p>
       {provider.blockedAt ? (
         <p className="muted" style={{ marginBottom: 4 }}>
@@ -1170,7 +1170,7 @@ function formatProviderMoney(value: number, currency = 'VND') {
 
 function providerActionHint(provider: AdminProvider) {
   if (provider.blockedAt) {
-    return 'This provider account is blocked and cannot go online, update location, or appear to customers.';
+    return 'This partner account is blocked and cannot go online, update location, or appear to customers.';
   }
   if (provider.verification?.status !== 'APPROVED') {
     return 'Review verification before this therapist can safely take customer requests.';
@@ -1189,7 +1189,7 @@ function providerActionHint(provider: AdminProvider) {
   }
   const locationState = providerLocationStatus(provider);
   if (locationState === 'missing') {
-    return 'Therapist is online, but no location has been saved yet. Ask them to reopen the Provider app.';
+    return 'Therapist is online, but no location has been saved yet. Ask them to reopen the Partner app.';
   }
   if (locationState === 'expired') {
     return 'Therapist has an old saved location. They should go online again before dispatch.';
@@ -1479,7 +1479,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       label: 'Device/session risk',
       count: securityNeedsReview,
       href: '/providers?review=security',
-      detail: 'Blocked, shared, or suspicious provider app devices need operator review.',
+      detail: 'Blocked, shared, or suspicious partner app devices need operator review.',
     },
     {
       label: 'Reports and sanctions',
@@ -1492,7 +1492,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       count: locationNeedsReview,
       href: '/providers?review=location',
       detail:
-        'Providers with missing, stale, or expired locations should reopen the Provider app before dispatch.',
+        'Providers with missing, stale, or expired locations should reopen the Partner app before dispatch.',
     },
     {
       label: 'Push alert readiness',
@@ -1728,7 +1728,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Approved providers can progress toward dispatch if other readiness checks pass.';
   }
   if (kind === 'verification' && value === 'BLOCKED') {
-    return 'Blocked provider accounts cannot receive customer requests.';
+    return 'Blocked partner accounts cannot receive customer requests.';
   }
   if (kind === 'providerStatus') {
     return 'Provider availability is narrowed to the selected online/offline state.';
@@ -2018,7 +2018,7 @@ function providerLocationPillClass(status: ProviderLocationState) {
 
 function providerLocationAgeLabel(value?: string | null) {
   if (!value) {
-    return 'Provider app has not shared a location.';
+    return 'Partner app has not shared a location.';
   }
 
   const updatedAt = new Date(value).getTime();

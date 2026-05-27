@@ -106,7 +106,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Open matching', open.length.toString()],
       ['Matched', matched.length.toString()],
       ['High risk', highRisk.length.toString()],
-      ['No providers yet', noParticipants.length.toString()],
+      ['No partners yet', noParticipants.length.toString()],
       ['Preferred pending', preferredPending.length.toString()],
       ['Fallback options', waitingSelection.length.toString()],
       ['Backup selected', backupChosen.length.toString()],
@@ -347,7 +347,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               <th>Booking</th>
               <th>Flow</th>
               <th>Customer</th>
-              <th>Providers</th>
+              <th>Partners</th>
               <th>Payment</th>
               <th>Risk</th>
               <th>Ops signal</th>
@@ -394,7 +394,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="muted">
                       {booking.preferredProvider?.user?.phone
                         ? `Preferred phone ${booking.preferredProvider.user.phone}`
-                        : 'Preferred provider not set'}
+                        : 'Preferred partner not set'}
                     </div>
                     <div className="muted">{selectionPathLabel(booking)}</div>
                     <div className="muted">{bookingLocationSignalLabel(booking, currentTimeMs)}</div>
@@ -540,14 +540,14 @@ const bookingViewOptions: Array<{
   {
     view: 'location',
     label: 'Location ops',
-    description: 'on-the-way or in-service bookings with missing or stale provider location signals.',
+    description: 'on-the-way or in-service bookings with missing or stale partner location signals.',
     operatorHint:
       'Use this only for live service states. The MVP tracks last-known location, not live route streaming.',
   },
   {
     view: 'chat',
     label: 'Chat live',
-    description: 'bookings where customer/provider communication is already available.',
+    description: 'bookings where customer/partner communication is already available.',
     operatorHint:
       'Use this to inspect service handoff quality, quiet chats, and route/location expectations.',
   },
@@ -605,7 +605,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
       tone: expiredMatching.length > 0 ? 'danger' : noSupply.length > 0 ? 'warn' : 'ok',
       detail:
         noSupply.length > 0
-          ? 'Open matching has customer demand without provider supply.'
+          ? 'Open matching has customer demand without partner supply.'
           : 'Active booking demand has enough current operating signal.',
       href:
         noSupply.length > 0 || expiredMatching.length > 0
@@ -629,7 +629,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
             : 'ok',
       detail:
         expiredMatching.length > 0
-          ? 'Matching window expired before a final provider was selected.'
+          ? 'Matching window expired before a final partner was selected.'
           : 'Customer-facing booking handoff has no critical blocker.',
       href:
         expiredMatching.length > 0 || matchedWithoutChat.length > 0
@@ -694,7 +694,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
       tone: locationRisk.length > 0 ? 'warn' : quietChat.length > 0 ? 'info' : 'ok',
       detail:
         locationRisk.length > 0
-          ? 'Live service state has missing or stale last-known provider location.'
+          ? 'Live service state has missing or stale last-known partner location.'
           : 'Chat, backup selection, and location handoff look normal.',
       href: locationRisk.length > 0 ? '/bookings?view=location' : '/bookings?view=chat',
       metrics: [
@@ -836,7 +836,7 @@ function emptyBookingMessage(view: BookingView) {
     return 'No high-risk bookings match this queue. Expired matching, missing chat, and payment closeout are clear.';
   }
   if (view === 'payment') {
-    return 'No payment-risk bookings match this queue. Capture, release, refund, cash, and provider refs are clear.';
+    return 'No payment-risk bookings match this queue. Capture, release, refund, cash, and partner refs are clear.';
   }
   if (view === 'closeout') {
     return 'No completed closeout-risk bookings match this queue. Capture, earning, tax, fee, and wallet records are aligned.';
@@ -848,7 +848,7 @@ function emptyBookingMessage(view: BookingView) {
     return 'No location-risk bookings match this queue. Live service location signals look acceptable.';
   }
   if (view === 'chat') {
-    return 'No chat-live bookings match this queue. No active customer/provider conversation needs review.';
+    return 'No chat-live bookings match this queue. No active customer/partner conversation needs review.';
   }
   if (view === 'expired') {
     return 'No expired bookings need review. Timeout closeout and customer communication are clear.';
@@ -901,10 +901,10 @@ function opsSignal(booking: AdminBooking) {
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return <span className="signal signal-warn">Preferred provider pending</span>;
+    return <span className="signal signal-warn">Preferred partner pending</span>;
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    return <span className="signal signal-warn">No fallback providers yet</span>;
+    return <span className="signal signal-warn">No fallback partners yet</span>;
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
     return <span className="signal signal-info">Fallback options ready</span>;
@@ -972,20 +972,20 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
     flags.push({ severity: 'medium', title: 'Preferred provider pending' });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    flags.push({ severity: 'medium', title: 'No provider supply' });
+    flags.push({ severity: 'medium', title: 'No partner supply' });
   }
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
     flags.push({ severity: 'high', title: 'Matched without chat' });
   }
   if (locationRequiredStatuses.has(booking.status) && !hasProviderLocation(booking)) {
-    flags.push({ severity: 'medium', title: 'No provider location signal' });
+    flags.push({ severity: 'medium', title: 'No partner location signal' });
   }
   if (
     locationRequiredStatuses.has(booking.status) &&
     hasProviderLocation(booking) &&
     providerLocationFreshness(booking, nowMs) !== 'recent'
   ) {
-    flags.push({ severity: 'medium', title: 'Provider location is stale' });
+    flags.push({ severity: 'medium', title: 'Partner location is stale' });
   }
   if (
     booking.chatRoom &&
@@ -1086,7 +1086,7 @@ function bookingPricingPolicySignal(booking: AdminBooking): {
     return { status: 'blocked', label: 'Active payout rule missing', tone: 'pill-danger' };
   }
   if (Number(payoutRule.providerPayoutAmount) > customerPrice) {
-    return { status: 'blocked', label: 'Provider payout exceeds price', tone: 'pill-danger' };
+    return { status: 'blocked', label: 'Partner payout exceeds price', tone: 'pill-danger' };
   }
 
   const platformFee = customerPrice - Number(payoutRule.providerPayoutAmount);
@@ -1159,7 +1159,7 @@ function nextAction(booking: AdminBooking) {
     return 'Refund is recorded. Check the refund board and customer communication.';
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Provider collected cash. Finance must settle the HANDS fee debt before this provider can accept more bookings.';
+    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner can accept more bookings.';
   }
   if (
     booking.status === 'OPEN_MATCHING' &&
@@ -1169,7 +1169,7 @@ function nextAction(booking: AdminBooking) {
     return 'Wait for the preferred provider, but monitor fallback therapist supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    return 'Watch notifications and nearby provider supply.';
+    return 'Watch notifications and nearby partner supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
     return 'Customer can keep waiting or switch to a backup therapist.';
@@ -1480,16 +1480,16 @@ function preferredProviderStateLabel(booking: AdminBooking) {
 function bookingLocationSignalLabel(booking: AdminBooking, nowMs: number) {
   const provider = providerWithLocation(booking);
   if (!provider) {
-    return 'Provider location: not shared yet';
+    return 'Partner location: not shared yet';
   }
 
   const updatedAt = provider.currentLocationUpdatedAt;
   if (!updatedAt) {
-    return 'Provider location: saved pin without timestamp';
+    return 'Partner location: saved pin without timestamp';
   }
 
   const age = locationAgeLabel(updatedAt, nowMs);
-  return `Provider location: ${age}`;
+  return `Partner location: ${age}`;
 }
 
 function bookingLocationPillLabel(booking: AdminBooking, nowMs: number) {

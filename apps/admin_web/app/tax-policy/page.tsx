@@ -64,7 +64,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <div>
             <h2>Withholding preview</h2>
             <p className="muted">
-              Check the active rule result before changing provider payout or service pricing. This is only a
+              Check the active rule result before changing partner payout or service pricing. This is only a
               calculation preview; completed earnings still store their own immutable rule snapshot.
             </p>
           </div>

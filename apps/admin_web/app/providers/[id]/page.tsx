@@ -414,7 +414,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <h2>Device and session security</h2>
             <p className="muted">
-              Watch for shared devices, suspicious sessions, blocked devices, and stale provider app activity.
+              Watch for shared devices, suspicious sessions, blocked devices, and stale partner app activity.
             </p>
           </div>
           <span className={`pill ${securitySummary.risky ? 'pill-danger' : 'pill-success'}`}>
@@ -435,7 +435,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         </div>
         <div className="detail-grid" style={{ marginTop: 16 }}>
           <div>
-            <h3>Provider app devices</h3>
+            <h3>Partner app devices</h3>
             {(provider.devices ?? []).length ? (
               <div className="setup-stage-list">
                 {provider.devices?.map((device) => (
@@ -479,7 +479,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               </div>
             ) : (
               <p className="muted">
-                No provider app device record yet. It should appear after provider app sign-in.
+                No partner app device record yet. It should appear after partner app sign-in.
               </p>
             )}
           </div>
@@ -845,7 +845,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </div>
         ) : (
           <p className="muted">
-            No provider review logs yet. New approval, rejection, and resubmission actions will appear here.
+            No partner review logs yet. New approval, rejection, and resubmission actions will appear here.
           </p>
         )}
       </div>
@@ -951,7 +951,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                     Customer {formatCurrency(row.customerPrice)} / admin minimum{' '}
                     {formatCurrency(row.basePrice)}
                     {row.providerPayoutAmount !== null
-                      ? ` / provider payout ${formatCurrency(row.providerPayoutAmount)}`
+                      ? ` / partner payout ${formatCurrency(row.providerPayoutAmount)}`
                       : ''}
                   </p>
                   <p className="muted">{row.issue}</p>
@@ -1264,7 +1264,7 @@ function buildProviderServicePricing(provider: ProviderDetail): {
     const issue = !active
       ? 'Provider or service option is inactive.'
       : matchingRule
-        ? 'Ready for customer booking. Provider price has an exact payout rule.'
+        ? 'Ready for customer booking. Partner price has an exact payout rule.'
         : 'Hidden from customer app until admin creates a payout rule for this exact customer price.';
 
     return {
@@ -1326,7 +1326,7 @@ function buildProviderOpsSummary(provider: ProviderDetail) {
           ? 'READY'
           : 'CHECK',
       detail: !accountClear
-        ? `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
+        ? `Partner account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
         : provider.verification?.status !== 'APPROVED'
           ? 'Provider verification is not approved yet.'
           : provider.status !== 'ONLINE_AVAILABLE'
@@ -1435,13 +1435,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
   );
   const latestBatch = payoutBatches[0];
 
-  const status = payoutHold
-    ? 'HELD'
-    : payoutReady
-      ? 'UNLOCKED'
-      : hasFirstRevenue
-        ? 'BLOCKED'
-        : 'DEFERRED';
+  const status = payoutHold ? 'HELD' : payoutReady ? 'UNLOCKED' : hasFirstRevenue ? 'BLOCKED' : 'DEFERRED';
   const tone: ProviderOpsCard['tone'] = payoutReady
     ? 'done'
     : payoutHold || hasFirstRevenue
@@ -1462,9 +1456,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       title: 'Withholding',
       status: earnings.length ? 'TRACKED' : 'NONE',
       detail: formatCurrency(withholdingAmount),
-      action: earnings.length
-        ? 'Tax is calculated from active policy rules.'
-        : 'No first earning yet.',
+      action: earnings.length ? 'Tax is calculated from active policy rules.' : 'No first earning yet.',
       tone: earnings.length ? 'done' : 'pending',
     },
     {
@@ -1527,25 +1519,25 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       title: 'Account block',
       status: provider.blockedAt ? 'BLOCKED' : 'CLEAR',
       detail: provider.blockedAt
-        ? `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
-        : 'Provider account is not blocked.',
+        ? `Partner account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
+        : 'Partner account is not blocked.',
       action: provider.blockedAt
         ? 'Unblock only after identity, safety, payout, or policy issue is resolved.'
         : 'No account block action.',
       tone: provider.blockedAt ? 'blocked' : 'done',
     },
     {
-      title: 'Provider app activity',
+      title: 'Partner app activity',
       status: devices.length || sessions.length ? (staleAppActivity ? 'STALE' : 'RECENT') : 'MISSING',
       detail:
         devices.length || sessions.length
-          ? `Latest provider app signal is ${Number.isFinite(lastSeenMinutes) ? `${lastSeenMinutes}m old` : 'missing'}.`
-          : 'No provider app device or session has been recorded yet.',
+          ? `Latest partner app signal is ${Number.isFinite(lastSeenMinutes) ? `${lastSeenMinutes}m old` : 'missing'}.`
+          : 'No partner app device or session has been recorded yet.',
       action:
         devices.length || sessions.length
           ? staleAppActivity
             ? 'Ask provider to open the app before dispatching work.'
-            : 'Provider app activity is visible.'
+            : 'Partner app activity is visible.'
           : 'Provider should sign in on the real app once onboarding starts.',
       tone: devices.length || sessions.length ? (staleAppActivity ? 'pending' : 'done') : 'pending',
     },
@@ -1554,7 +1546,7 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       status: blockedDevices.length ? `${blockedDevices.length} BLOCKED` : 'CLEAR',
       detail: blockedDevices.length
         ? 'One or more provider devices are disabled or blocked from use.'
-        : 'No provider app device is currently blocked.',
+        : 'No partner app device is currently blocked.',
       action: blockedDevices.length ? 'Review whether the device can be safely unblocked.' : 'No action.',
       tone: blockedDevices.length ? 'blocked' : 'done',
     },
@@ -1600,9 +1592,7 @@ type ProviderLevelPathItem = {
 function buildProviderLevelPlan(provider: ProviderDetail) {
   const primaryBank = provider.bankAccounts?.[0];
   const hasBasicProfile = Boolean(
-    provider.displayName?.trim() &&
-    provider.legalName?.trim() &&
-    provider.user?.phone?.trim(),
+    provider.displayName?.trim() && provider.legalName?.trim() && provider.user?.phone?.trim(),
   );
   const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
   const kycReady = provider.kyc?.status === 'APPROVED' && requiredDocumentsReady;
@@ -1627,7 +1617,7 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
         : 'The provider can sign up, but basic profile data is incomplete.',
       operatorAction: hasBasicProfile
         ? 'Continue identity and payout review.'
-        : 'Ask provider to complete basic profile in the Provider app.',
+        : 'Ask provider to complete basic profile in the Partner app.',
       ready: hasBasicProfile,
       blocked: !hasBasicProfile,
     },
@@ -1808,8 +1798,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
     Boolean(provider.serviceArea) || Boolean(provider.currentLat && provider.currentLng);
   const identityComplete = provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider);
   const bankComplete = provider.bankAccounts?.[0]?.status === 'APPROVED';
-  const taxDeferredOrComplete =
-    !hasFirstRevenue || provider.taxProfile?.status === 'APPROVED';
+  const taxDeferredOrComplete = !hasFirstRevenue || provider.taxProfile?.status === 'APPROVED';
   const agreementsDeferredOrComplete = !hasFirstRevenue || (provider.agreements?.length ?? 0) >= 5;
   const securityClear =
     !provider.blockedAt &&
@@ -1826,7 +1815,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
         : 'Real name, date of birth, gender, phone, and public display name should be collected before approval.',
       operatorAction: profileComplete
         ? 'Continue KYC and public profile review.'
-        : 'Ask provider to complete basic profile fields in the Provider app.',
+        : 'Ask provider to complete basic profile fields in the Partner app.',
     },
     {
       label: 'Public working profile',
@@ -2004,7 +1993,7 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
     return {
       title: 'Next admin action',
       status: 'ACCOUNT',
-      detail: `Provider account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`,
+      detail: `Partner account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`,
       action: 'Unblock only after the recorded account-level issue is resolved.',
       tone: 'blocked',
     };
@@ -2023,7 +2012,7 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
       title: 'Next admin action',
       status: 'PROFILE',
       detail: 'Basic identity or public display name is incomplete.',
-      action: 'Ask provider to complete display name and legal name in the Provider app.',
+      action: 'Ask provider to complete display name and legal name in the Partner app.',
       tone: 'blocked',
     };
   }
@@ -2126,9 +2115,7 @@ function buildReviewChecklist(provider: ProviderDetail) {
   const hasRecentLocation = locationAgeMinutes(provider.currentLocationUpdatedAt) <= 30;
   const hasPushDevice = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
   const hasBasicProfile = Boolean(
-    provider.displayName?.trim() &&
-    provider.legalName?.trim() &&
-    provider.user?.phone?.trim(),
+    provider.displayName?.trim() && provider.legalName?.trim() && provider.user?.phone?.trim(),
   );
   const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
 
@@ -2139,7 +2126,7 @@ function buildReviewChecklist(provider: ProviderDetail) {
       status: provider.blockedAt ? 'BLOCKED' : 'CLEAR',
       detail: provider.blockedAt
         ? `Blocked reason: ${provider.blockedReason ?? 'No reason saved'}.`
-        : 'Provider account is not blocked.',
+        : 'Partner account is not blocked.',
     },
     {
       label: 'Basic provider identity',
@@ -2183,14 +2170,13 @@ function buildReviewChecklist(provider: ProviderDetail) {
           Boolean(provider.residentialAddress?.trim()) &&
           (provider.agreements?.length ?? 0) >= 5),
       status: provider.taxProfile?.status ?? (hasFirstRevenue ? 'MISSING' : 'DEFERRED'),
-      detail:
-        !hasFirstRevenue
-          ? 'Tax profile, tax address, and payout agreements can stay deferred until first earning.'
-          : provider.taxProfile?.status === 'APPROVED' &&
-              Boolean(provider.residentialAddress?.trim()) &&
-              (provider.agreements?.length ?? 0) >= 5
-            ? 'Tax profile, tax address, and payout agreements are ready.'
-            : 'First earning exists, so tax profile, tax address, and payout agreements now block payout.',
+      detail: !hasFirstRevenue
+        ? 'Tax profile, tax address, and payout agreements can stay deferred until first earning.'
+        : provider.taxProfile?.status === 'APPROVED' &&
+            Boolean(provider.residentialAddress?.trim()) &&
+            (provider.agreements?.length ?? 0) >= 5
+          ? 'Tax profile, tax address, and payout agreements are ready.'
+          : 'First earning exists, so tax profile, tax address, and payout agreements now block payout.',
     },
     {
       label: 'Location freshness',
@@ -2198,7 +2184,7 @@ function buildReviewChecklist(provider: ProviderDetail) {
       status: hasRecentLocation ? 'RECENT' : 'STALE',
       detail: provider.currentLocationUpdatedAt
         ? `Last shared at ${formatDate(provider.currentLocationUpdatedAt)}.`
-        : 'Provider app has not shared a location.',
+        : 'Partner app has not shared a location.',
     },
     {
       label: 'Push device',

@@ -184,8 +184,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Finance command center</h2>
             <p className="muted">
-              One-booking money flow from customer price to provider payout, HANDS fee, tax, and wallet
-              impact.
+              One-booking money flow from customer price to partner payout, HANDS fee, tax, and wallet impact.
             </p>
           </div>
           <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
@@ -455,7 +454,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             label="Admin minimum"
             value={money(service?.service?.basePrice, booking.payment?.currency)}
           />
-          <InfoRow label="Provider payout rule" value={bookingServicePayoutRuleLabel(booking)} />
+          <InfoRow label="Partner payout rule" value={bookingServicePayoutRuleLabel(booking)} />
           <InfoRow label="Notes" value={booking.notes ?? 'No notes'} />
           <InfoRow label="Created" value={formatDate(booking.createdAt)} />
           <InfoRow label="Updated" value={formatDate(booking.updatedAt)} />
@@ -547,14 +546,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Admin minimum" value={financeTrace.adminMinimum} />
           <InfoRow label="Payout rule" value={financeTrace.payoutRuleStatus} />
           <InfoRow label="Rule line" value={financeTrace.payoutRuleLine} />
-          <InfoRow label="Provider payout" value={financeTrace.providerPayout} />
+          <InfoRow label="Partner payout" value={financeTrace.providerPayout} />
           <InfoRow label="Platform fee" value={financeTrace.platformFee} />
           <InfoRow label="VAT / other costs" value={financeTrace.feeCosts} />
           <InfoRow label="Net HANDS fee" value={financeTrace.netHandsFee} />
           <InfoRow label="Withholding" value={financeTrace.withholding} />
           <InfoRow label="Company fee after tax" value={financeTrace.companyFeeAfterTax} />
           <InfoRow label="Wallet ledger" value={financeTrace.walletLedger} />
-          <InfoRow label="Provider net" value={financeTrace.providerNet} />
+          <InfoRow label="Partner net" value={financeTrace.providerNet} />
         </div>
 
         <div className="card">
@@ -584,7 +583,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               </div>
             ))}
             {locationTrail(booking).length === 0 && (
-              <p className="muted">No provider location snapshots linked to this booking yet.</p>
+              <p className="muted">No partner location snapshots linked to this booking yet.</p>
             )}
           </div>
         </div>
@@ -913,7 +912,7 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
   if (status === 'OPEN_MATCHING' && participantCount === 0) {
     flags.push({
       severity: 'medium',
-      title: 'No provider supply',
+      title: 'No partner supply',
       detail: 'No provider has joined the request yet.',
       action: 'Watch nearby online providers and consider operational outreach.',
     });
@@ -931,9 +930,9 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
   if (activeWithLocationNeed && !latestProviderLocation(booking)) {
     flags.push({
       severity: 'medium',
-      title: 'No provider location signal',
+      title: 'No partner location signal',
       detail: `Booking is ${status}, but the provider has not shared a live pin.`,
-      action: 'Ask the provider to share current location from the Provider app.',
+      action: 'Ask the provider to share current location from the Partner app.',
     });
   }
 
@@ -944,9 +943,9 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
   ) {
     flags.push({
       severity: 'medium',
-      title: 'Provider location is stale',
+      title: 'Partner location is stale',
       detail: `The latest provider pin is ${providerLocationMetricHelper(booking).toLowerCase()}.`,
-      action: 'Ask the provider to share location again from the Provider app.',
+      action: 'Ask the provider to share location again from the Partner app.',
     });
   }
 
@@ -1084,7 +1083,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
   if (activeWithLocationNeed && !latestProviderLocation(booking)) {
     steps.push({
       priority: 'Now',
-      title: 'Request provider location',
+      title: 'Request partner location',
       detail: 'The provider has not shared a saved service pin for this active booking.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
@@ -1127,7 +1126,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     steps.push({
       priority: 'Done',
       title: 'Provider handoff locked',
-      detail: `${providerName(booking.selectedProvider)} is the current final provider for this booking.`,
+      detail: `${providerName(booking.selectedProvider)} is the current final partner for this booking.`,
       owner: 'Dispatch operator',
       tone: 'pill-success',
       actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
@@ -1188,7 +1187,7 @@ function bookingOpsTaskCards(booking: AdminBookingDetail) {
     {
       type: 'LOCATION_CHECKED',
       label: 'Location checked',
-      helper: 'Confirm saved customer/provider pins are reasonable. No route or continuous tracking is used.',
+      helper: 'Confirm saved customer/partner pins are reasonable. No route or continuous tracking is used.',
     },
     {
       type: 'PAYMENT_REVIEWED',
@@ -1319,7 +1318,7 @@ function flowStages(booking: AdminBookingDetail) {
     {
       label: 'Matched',
       value: providerName(booking.selectedProvider),
-      hint: booking.chatRoom ? 'Chat room is ready.' : 'Waiting for final provider selection.',
+      hint: booking.chatRoom ? 'Chat room is ready.' : 'Waiting for final partner selection.',
       done: Boolean(booking.selectedProvider),
     },
     {
@@ -1449,7 +1448,7 @@ function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinan
       helper: financeTrace.serviceOption,
     },
     {
-      label: 'Provider payout',
+      label: 'Partner payout',
       value: money(financeTrace.providerPayoutAmount, financeTrace.currency),
       helper: financeTrace.earningStatus
         ? `Earning ${financeTrace.earningStatus}`
@@ -1516,7 +1515,7 @@ function bookingFinanceFlags(
   ) {
     flags.push({
       severity: 'high',
-      title: 'Provider payout exceeds customer price',
+      title: 'Partner payout exceeds customer price',
       detail: 'The payout rule would pay more than the customer charge.',
       action: 'Disable or correct the service payout rule immediately.',
     });
@@ -1562,7 +1561,7 @@ function bookingFinanceFlags(
 
 function providerHint(booking: AdminBookingDetail) {
   if (booking.selectedProvider) {
-    return `Final provider: ${providerName(booking.selectedProvider)}.`;
+    return `Final partner: ${providerName(booking.selectedProvider)}.`;
   }
   if (booking.preferredProvider && (booking.participants?.length ?? 0) === 0) {
     return 'Preferred provider has first response window.';
@@ -1668,12 +1667,12 @@ function providerLocationMetricValue(booking: AdminBookingDetail) {
 function providerLocationMetricHelper(booking: AdminBookingDetail) {
   const latest = latestProviderLocation(booking);
   if (!latest?.recordedAt) {
-    return 'No provider location shared yet';
+    return 'No partner location shared yet';
   }
 
   const recordedAt = new Date(latest.recordedAt).getTime();
   if (!Number.isFinite(recordedAt)) {
-    return 'Provider location timestamp is invalid';
+    return 'Partner location timestamp is invalid';
   }
 
   const ageMinutes = Math.max(0, Math.round((Date.now() - recordedAt) / 60_000));

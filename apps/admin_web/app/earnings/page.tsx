@@ -35,7 +35,7 @@ export default async function EarningsPage() {
     ['Platform fee', summary.platformFee],
     ['Tax withheld', summary.withholdingAmount],
     ['Tips', summary.tipAmount],
-    ['Provider net', summary.netAmount],
+    ['Partner net', summary.netAmount],
     ['Pending net', summary.pendingNetAmount],
     ['Available net', summary.availableNetAmount],
     ['Paid net', summary.paidNetAmount],
@@ -43,7 +43,7 @@ export default async function EarningsPage() {
 
   return (
     <>
-      <h1>Provider Earnings</h1>
+      <h1>Partner Earnings</h1>
       <section className="grid">
         {metrics.map(([label, value]) => (
           <div className="card" key={label}>
@@ -58,7 +58,7 @@ export default async function EarningsPage() {
           <div>
             <h2>Money flow command center</h2>
             <p className="muted">
-              Same finance language as booking detail: customer charge, provider payout, HANDS fee, tax,
+              Same finance language as booking detail: customer charge, partner payout, HANDS fee, tax,
               company net, and cash debt before payout.
             </p>
           </div>
@@ -94,7 +94,7 @@ export default async function EarningsPage() {
           <div>
             <h2>Finance queue</h2>
             <p className="muted">
-              Operator summary for provider payout readiness, batched earnings, tax logs, and stale pending
+              Operator summary for partner payout readiness, batched earnings, tax logs, and stale pending
               revenue.
             </p>
           </div>
@@ -121,7 +121,7 @@ export default async function EarningsPage() {
           <div>
             <h2>Service to earnings bridge</h2>
             <p className="muted">
-              Confirms which service duration options are creating provider net, HANDS platform fee, tax
+              Confirms which service duration options are creating partner net, HANDS platform fee, tax
               withholding, cash wallet debt, and payout-batch pressure.
             </p>
           </div>
@@ -144,7 +144,7 @@ export default async function EarningsPage() {
             </strong>
           </div>
           <div>
-            <span>Provider net</span>
+            <span>Partner net</span>
             <strong>
               {formatMoney(
                 serviceBridge.reduce((sum, item) => sum + item.netAmount, 0),
@@ -153,7 +153,7 @@ export default async function EarningsPage() {
             </strong>
           </div>
           <div>
-            <span>Provider payout</span>
+            <span>Partner payout</span>
             <strong>
               {formatMoney(
                 serviceBridge.reduce((sum, item) => sum + item.providerPayoutAmount, 0),
@@ -205,8 +205,8 @@ export default async function EarningsPage() {
                 <th>Service option</th>
                 <th>Bookings</th>
                 <th>Gross</th>
-                <th>Provider payout</th>
-                <th>Provider net</th>
+                <th>Partner payout</th>
+                <th>Partner net</th>
                 <th>Platform fee</th>
                 <th>VAT / cost</th>
                 <th>Tax withheld</th>
@@ -267,7 +267,7 @@ export default async function EarningsPage() {
       <div className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Provider payout queue</h2>
+            <h2>Partner payout queue</h2>
             <p className="muted">
               Grouped by provider so finance can create one payout batch for all eligible unpaid earnings.
             </p>
@@ -694,7 +694,7 @@ function buildEarningsMoneyFlowCards(
       detail: 'Gross customer payment across completed earning rows.',
     },
     {
-      label: 'Provider payout',
+      label: 'Partner payout',
       amount: providerPayout || summary.netAmount,
       detail: 'Service pricing matrix payout before wallet debt and batch status.',
     },
@@ -1196,7 +1196,7 @@ function platformFeePolicyHint(earning: AdminEarning) {
       }
     | undefined;
   if (snapshot?.source === 'SERVICE_PAYOUT_RULE') {
-    return `Fee policy: service payout matrix / provider payout ${formatMoney(
+    return `Fee policy: service payout matrix / partner payout ${formatMoney(
       snapshot.providerPayoutAmount ?? 0,
       earning.currency,
     )}`;

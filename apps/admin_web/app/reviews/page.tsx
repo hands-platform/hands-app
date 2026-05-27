@@ -34,7 +34,9 @@ export default async function ReviewsPage() {
       <div className="card">
         <div className="toolbar">
           <div>
-            <p className="muted">Moderation board for guest feedback, dispute signals, and therapist quality monitoring.</p>
+            <p className="muted">
+              Moderation board for guest feedback, dispute signals, and therapist quality monitoring.
+            </p>
           </div>
           <div className="participant-list">
             <span className="pill pill-success">Newest flagged first</span>
@@ -62,7 +64,7 @@ export default async function ReviewsPage() {
                   <div>{starRow(review.rating)}</div>
                   <div className="muted" style={{ marginTop: 6 }}>
                     {review.rating}/5
-                    {review.tipAmount > 0 ? ` • Tip ${review.tipAmount}` : ''}
+                    {review.tipAmount > 0 ? ` - Tip ${review.tipAmount}` : ''}
                   </div>
                 </td>
                 <td>
@@ -70,7 +72,11 @@ export default async function ReviewsPage() {
                   <div className="muted">{providerReviewHint(review)}</div>
                 </td>
                 <td>
-                  <div>{review.customerProfile?.user?.fullName ?? review.customerProfile?.user?.phone ?? 'Unknown'}</div>
+                  <div>
+                    {review.customerProfile?.user?.fullName ??
+                      review.customerProfile?.user?.phone ??
+                      'Unknown'}
+                  </div>
                   <div className="muted">{review.customerProfile?.user?.phone ?? 'No phone on file'}</div>
                 </td>
                 <td>

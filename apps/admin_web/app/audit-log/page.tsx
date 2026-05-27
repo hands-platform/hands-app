@@ -61,7 +61,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               <option value="Payment">Payment</option>
               <option value="Service/Pricing">Service/Pricing</option>
               <option value="Notification">Notification</option>
-              <option value="Provider">Provider</option>
+              <option value="Provider">Partner</option>
               <option value="Tax">Tax</option>
               <option value="System">System</option>
             </select>
@@ -92,7 +92,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
         <div className="toolbar">
           <div>
             <p className="muted">
-              Recent operational trail for bookings, payments, refunds, provider review, and alerts.
+              Recent operational trail for bookings, payments, refunds, partner review, and alerts.
             </p>
           </div>
           <div className="participant-list">
@@ -435,7 +435,7 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const adjustedProviderPrices = readNumber(metadata.adjustedProviderPrices);
   if (adjustedProviderPrices !== null && adjustedProviderPrices > 0) {
     highlights.push({
-      label: `${adjustedProviderPrices} provider price(s) adjusted`,
+      label: `${adjustedProviderPrices} partner price(s) adjusted`,
       className: 'pill pill-warn',
     });
   }
@@ -613,7 +613,7 @@ function opsHint(action: string, target: string) {
     return 'Structured booking handling status was updated by an operator.';
   }
   if (action.startsWith('booking.')) {
-    return 'Trace booking state changes and verify customer/provider handoff.';
+    return 'Trace booking state changes and verify customer/partner handoff.';
   }
   if (action.startsWith('payment.')) {
     return 'Confirm the money state matches the booking state before closing the loop.';
@@ -622,7 +622,7 @@ function opsHint(action: string, target: string) {
     return 'Check retry or delivery health if the customer or therapist missed an alert.';
   }
   if (isServicePricingAction(action)) {
-    return 'Review service price, provider payout, VAT, costs, and before/after changes.';
+    return 'Review service price, partner payout, VAT, costs, and before/after changes.';
   }
   if (action.startsWith('provider.')) {
     return 'Review therapist readiness, moderation, or queue movement.';
@@ -632,7 +632,7 @@ function opsHint(action: string, target: string) {
 
 function opsDetail(action: string) {
   if (action === 'booking.ops_note.add') {
-    return 'Use the note to understand customer/provider contact history before taking the next action.';
+    return 'Use the note to understand customer/partner contact history before taking the next action.';
   }
   if (action === 'booking.ops_task.update') {
     return 'Use the status to see which handoff checks are done, pending, or blocked.';
@@ -647,10 +647,10 @@ function opsDetail(action: string) {
     return 'Retry events are useful when push, SMS, or webhook delivery needed another pass.';
   }
   if (isServicePricingAction(action)) {
-    return 'Price policy changes affect customer price, provider payout, tax withholding, cash debt, and payout batches.';
+    return 'Price policy changes affect customer price, partner payout, tax withholding, cash debt, and payout batches.';
   }
   if (action.endsWith('.approve') || action.endsWith('.reject')) {
-    return 'Provider review actions should match verification evidence and moderation notes.';
+    return 'Partner review actions should match verification evidence and moderation notes.';
   }
   return 'Use this row to confirm who acted, when they acted, and what object changed.';
 }

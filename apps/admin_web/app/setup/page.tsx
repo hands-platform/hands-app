@@ -25,7 +25,7 @@ const setupOrder = [
     title: 'Android release signing',
     phase: 'Store release preparation',
     operatorAction:
-      'Create separate customer/provider upload keystores, store them outside Git, and fill local key.properties files.',
+      'Create separate customer/partner upload keystores, store them outside Git, and fill local key.properties files.',
     exitCriteria: 'Customer and provider release APK builds succeed with local upload signing enabled.',
     purpose: 'Required before Play Console upload and any Android provider that requires SHA fingerprints.',
     env: ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'],
@@ -81,7 +81,7 @@ const setupOrder = [
       'Keep AUTH_BACKEND=nest and SMS_PROVIDER=dev until Vonage credentials and real Supabase Phone Auth OTP are ready.',
     exitCriteria: 'Vonage OTP delivery works and Supabase access tokens exchange into HANDS API tokens.',
     purpose:
-      'Required before replacing local Nest/dev OTP with Supabase Phone Auth in customer and provider apps.',
+      'Required before replacing local Nest/dev OTP with Supabase Phone Auth in customer and partner apps.',
     env: ['AUTH_BACKEND', 'SMS_PROVIDER', 'SMS_API_URL', 'SMS_API_KEY'],
     notes: [
       'This step is intentionally deferred so product development can continue without breaking login.',
@@ -276,7 +276,7 @@ const externalRegistrationPlan = [
     provider: 'Google Play Console',
     owner: 'administration@hands.vn',
     detail:
-      'Create separate customer/provider signing keys outside Git, then use fingerprints for Android provider consoles.',
+      'Create separate customer/partner signing keys outside Git, then use fingerprints for Android provider consoles.',
     env: ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'],
   },
 ];

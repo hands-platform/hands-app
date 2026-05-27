@@ -13,7 +13,7 @@ export default async function PayoutsPage() {
 
   return (
     <>
-      <h1>Provider Payouts</h1>
+      <h1>Partner Payouts</h1>
       <section className="grid" style={{ marginBottom: 16 }}>
         <div className="card">
           <p>Total batches</p>
@@ -55,7 +55,7 @@ export default async function PayoutsPage() {
             <h2>Payout money flow</h2>
             <p className="muted">
               Reconciles payout batches against service pricing evidence before transfer: gross represented,
-              provider payout, HANDS fee, withholding, and cash debt.
+              partner payout, HANDS fee, withholding, and cash debt.
             </p>
           </div>
           <a className="text-link" href="/bookings">
@@ -171,8 +171,8 @@ export default async function PayoutsPage() {
           <div>
             <h2>Payout service evidence</h2>
             <p className="muted">
-              Shows which service duration options are inside payout batches, so finance can reconcile
-              provider net, HANDS fee, tax withholding, and cash wallet debt before bank transfer.
+              Shows which service duration options are inside payout batches, so finance can reconcile partner
+              net, HANDS fee, tax withholding, and cash wallet debt before bank transfer.
             </p>
           </div>
           <a className="text-link" href="/services">
@@ -198,7 +198,7 @@ export default async function PayoutsPage() {
             </strong>
           </div>
           <div>
-            <span>Provider net</span>
+            <span>Partner net</span>
             <strong>
               {formatMoney(
                 serviceEvidence.reduce((sum, item) => sum + item.netAmount, 0),
@@ -233,7 +233,7 @@ export default async function PayoutsPage() {
                 <th>Batches</th>
                 <th>Earnings</th>
                 <th>Gross</th>
-                <th>Provider net</th>
+                <th>Partner net</th>
                 <th>Platform fee</th>
                 <th>Tax</th>
                 <th>Cash debt</th>
@@ -671,12 +671,12 @@ function buildPayoutMoneyFlowCards(
       detail: 'Customer charge attached to earnings inside payout batches.',
     },
     {
-      label: 'Provider payout',
+      label: 'Partner payout',
       amount: summary.totalNetAmount,
       detail: 'Batch net amount scheduled for provider transfer.',
     },
     {
-      label: 'Provider net evidence',
+      label: 'Partner net evidence',
       amount: providerNetRepresented,
       detail: 'Service evidence net amount used to cross-check batch totals.',
     },
@@ -693,7 +693,7 @@ function buildPayoutMoneyFlowCards(
     {
       label: 'Cash debt represented',
       amount: cashDebtRepresented,
-      detail: 'Negative wallet amount that should not be paid out as provider net.',
+      detail: 'Negative wallet amount that should not be paid out as partner net.',
     },
   ];
 }
@@ -970,7 +970,7 @@ function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] 
     reasons.push({
       label: 'Payout hold',
       detail: payoutHold.reason,
-      action: 'Lift the provider payout hold before changing this payout.',
+      action: 'Lift the partner payout hold before changing this payout.',
       pillClass: 'pill-danger',
     });
   }

@@ -329,7 +329,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             Details
             <textarea
               name="details"
-              placeholder="Evidence, timeline, customer/provider statements, next step"
+              placeholder="Evidence, timeline, customer/partner statements, next step"
             />
           </label>
           <div className="actions full-span">
