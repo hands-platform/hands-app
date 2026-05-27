@@ -603,7 +603,20 @@ export default async function DashboardPage() {
               High-risk bookings
             </Link>
           </div>
+          <div className="participant-list" style={{ marginTop: 8 }}>
+            <Link className="text-link" href="/bookings?view=matching">
+              Matching ops
+            </Link>
+            <Link className="text-link" href="/bookings?view=high-risk">
+              High-risk bookings
+            </Link>
+          </div>
           <div className="service-trace-summary">
+            <div>
+              <span>Matching escalations</span>
+              <strong>{bookingDeepDive.matchingEscalations}</strong>
+              <small>First-pick, backup, final choice, or chat handoff</small>
+            </div>
             <div>
               <span>Expired matching</span>
               <strong>{bookingDeepDive.expiredOpenMatching}</strong>
@@ -1719,6 +1732,14 @@ function buildBookingOperationsDeepDive(bookings: AdminBooking[], payments: Admi
   const matchedWithoutChat = bookings.filter(
     (booking) => booking.status === 'MATCHED' && !booking.chatRoom,
   ).length;
+  const customerFinalSelection = bookings.filter(
+    (booking) =>
+      booking.status === 'OPEN_MATCHING' &&
+      !booking.selectedProvider &&
+      (booking.participants ?? []).some(
+        (participant) => participant.status === 'ACCEPTED' || participant.status === 'SELECTED',
+      ),
+  ).length;
   const quietActiveChats = bookings.filter(
     (booking) =>
       Boolean(booking.chatRoom) &&
@@ -1737,9 +1758,12 @@ function buildBookingOperationsDeepDive(bookings: AdminBooking[], payments: Admi
   ).length;
 
   return {
+    matchingEscalations:
+      expiredOpenMatching + openWithoutParticipants + matchedWithoutChat + customerFinalSelection,
     expiredOpenMatching,
     openWithoutParticipants,
     matchedWithoutChat,
+    customerFinalSelection,
     quietActiveChats,
     releaseRisk,
     captureRisk,
