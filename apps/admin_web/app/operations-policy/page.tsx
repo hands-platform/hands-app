@@ -1239,6 +1239,7 @@ function buildPartnerAcceptancePolicyImpact(
   const readyPartners = providers.filter((provider) => partnerCanAcceptUnderCurrentPolicy(provider, policy));
   const walletBlocked = providers.filter((provider) => partnerWalletBalance(provider) < 0);
   const identityBlocked = providers.filter((provider) => !partnerIdentityReady(provider));
+  const bankBlocked = providers.filter((provider) => !partnerBankReady(provider));
   const locationBlocked = providers.filter(
     (provider) => !partnerLocationFresh(provider, policy.backupLocationFreshnessMinutes),
   );
@@ -1252,12 +1253,12 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Can accept now',
       value: readyPartners.length.toString(),
-      helper: `${onlinePartners.length} online partner(s), filtered by identity, wallet, location, push, and risk gates.`,
+      helper: `${onlinePartners.length} online partner(s), filtered by identity, bank, wallet, location, push, and risk gates.`,
     },
     {
       label: 'Hard blocked',
       value: providers.filter((provider) => partnerHardBlocked(provider, policy)).length.toString(),
-      helper: 'Account risk, identity failure, or negative wallet under the current wallet policy.',
+      helper: 'Account risk, identity failure, missing approved bank, or negative wallet under the current wallet policy.',
     },
     {
       label: 'Cash debt block',
@@ -1270,6 +1271,11 @@ function buildPartnerAcceptancePolicyImpact(
       label: 'Identity block',
       value: identityBlocked.length.toString(),
       helper: 'Partner approval, KYC, and required CCCD/selfie documents are not all approved.',
+    },
+    {
+      label: 'Bank block',
+      value: bankBlocked.length.toString(),
+      helper: 'No approved bank account is available, so paid work acceptance should stay blocked.',
     },
     {
       label: 'Location block',
@@ -1313,6 +1319,7 @@ function partnerHardBlocked(
   return (
     partnerAccountRisk(provider) ||
     !partnerIdentityReady(provider) ||
+    !partnerBankReady(provider) ||
     (policy.hardWalletBlock && partnerWalletBalance(provider) < 0)
   );
 }
@@ -1328,6 +1335,10 @@ function partnerIdentityReady(provider: AdminProvider) {
     provider.kyc?.status === 'APPROVED' &&
     REQUIRED_KYC_DOCUMENTS.every((type) => approvedDocuments.has(type))
   );
+}
+
+function partnerBankReady(provider: AdminProvider) {
+  return (provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED');
 }
 
 function partnerWalletBalance(provider: AdminProvider) {

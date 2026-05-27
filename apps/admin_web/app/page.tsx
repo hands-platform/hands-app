@@ -1964,7 +1964,7 @@ function buildPartnerSupplyInsights(
     approvedVerification: providers.filter((provider) => provider.verification?.status === 'APPROVED').length,
     kycApproved: providers.filter((provider) => provider.kyc?.status === 'APPROVED').length,
     bankApproved: providers.filter((provider) =>
-      (provider.bankAccounts ?? []).some((account) => account.isPrimary && account.status === 'APPROVED'),
+      (provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED'),
     ).length,
     firstRevenue: firstRevenuePartners.length,
     taxReadyAfterRevenue: firstRevenuePartners.filter(
