@@ -35,11 +35,11 @@ void main() {
     expect(providerWalletBalance(summary), -120000);
     expect(
       providerWalletBlockReason(summary),
-      providerWalletBlockFallbackReasonReadable,
+      providerWalletBlockFallbackReasonClean,
     );
     expect(
       providerWalletSettlementInstruction(summary),
-      providerWalletBlockHintReadable,
+      providerWalletBlockHintClean,
     );
     expect(providerWalletSettlementReference(summary), isNull);
   });
@@ -139,7 +139,7 @@ void main() {
 
     expect(guidance.decisionLabel, 'Settlement required');
     expect(guidance.nextAction, contains('negative HANDS wallet'));
-    expect(guidance.detailMessage, providerWalletBlockFallbackReasonKo);
+    expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
   });
 
   test('explains backup opportunities after preferred provider exists', () {

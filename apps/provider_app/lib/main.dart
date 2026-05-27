@@ -1821,9 +1821,9 @@ class OpenBookingCard extends StatelessWidget {
                     (!isPreferredRequest && !joined))) ...[
               const SizedBox(height: 12),
               const ProviderErrorCard(
-                  text: providerWalletBlockFallbackReasonKo),
+                  text: providerWalletBlockFallbackReasonClean),
               const SizedBox(height: 8),
-              const InfoCard(text: providerWalletBlockHintKo),
+              const InfoCard(text: providerWalletBlockHintClean),
             ] else if (isCashBooking &&
                 ((isPreferredRequest && !isMatched) ||
                     (!isPreferredRequest && !joined))) ...[
@@ -4705,6 +4705,12 @@ const providerWalletBlockFallbackReasonReadable =
 const providerWalletBlockHintReadable =
     'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, deposit the settlement amount or wait for admin offset before accepting more bookings.';
 
+const providerWalletBlockFallbackReasonClean =
+    'HANDS fee settlement is incomplete, so new booking requests are locked.';
+
+const providerWalletBlockHintClean =
+    'Cash jobs are paid directly to you. Settle unpaid HANDS fees or wait for an admin offset, then refresh wallet status.';
+
 num providerWalletBalance(Map<String, dynamic> summary) {
   return asNum(summary['walletBalance']) ??
       ((asNum(summary['pendingNetAmount']) ?? 0) +
@@ -4723,7 +4729,7 @@ String? providerWalletBlockReason(Map<String, dynamic> summary) {
     return reason;
   }
 
-  return providerWalletBlockFallbackReasonReadable;
+  return providerWalletBlockFallbackReasonClean;
 }
 
 String providerWalletSettlementInstruction(Map<String, dynamic> summary) {
@@ -4731,7 +4737,7 @@ String providerWalletSettlementInstruction(Map<String, dynamic> summary) {
   if (instruction != null && instruction.isNotEmpty) {
     return instruction;
   }
-  return providerWalletBlockHintReadable;
+  return providerWalletBlockHintClean;
 }
 
 String? providerWalletSettlementReference(Map<String, dynamic> summary) {
@@ -4857,8 +4863,8 @@ ProviderRequestGuidance providerRequestGuidance({
           'Settle your negative HANDS wallet before accepting or joining this booking.',
       contextMessage:
           'This booking is available, but your wallet must be settled before you can take it.',
-      detailMessage: providerWalletBlockFallbackReasonKo,
-      infoMessage: providerWalletBlockHintKo,
+      detailMessage: providerWalletBlockFallbackReasonClean,
+      infoMessage: providerWalletBlockHintClean,
     );
   }
 
@@ -5182,6 +5188,20 @@ class InfoCard extends StatelessWidget {
   }
 }
 
+class ProviderActionBlockCopy {
+  const ProviderActionBlockCopy({
+    required this.title,
+    required this.detail,
+    required this.nextStep,
+    required this.icon,
+  });
+
+  final String title;
+  final String detail;
+  final String nextStep;
+  final IconData icon;
+}
+
 class ProviderErrorCard extends StatelessWidget {
   const ProviderErrorCard({super.key, required this.text});
 
@@ -5189,12 +5209,26 @@ class ProviderErrorCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isProviderBlockedMessage(text)) {
+    final actionBlock = providerActionBlockCopy(text);
+    if (actionBlock == null && !isProviderBlockedMessage(text)) {
       return ErrorCard(text: text);
     }
 
     final colorScheme = Theme.of(context).colorScheme;
     final accountBlocked = isProviderAccountBlockedMessage(text);
+    final title = actionBlock?.title ??
+        (accountBlocked
+            ? 'Partner account blocked by admin'
+            : 'Device blocked by admin');
+    final detail = actionBlock?.detail ?? text;
+    final nextStep = actionBlock?.nextStep ??
+        (accountBlocked
+            ? 'Contact HANDS operations. This account cannot go online or share location until an admin unblocks it.'
+            : 'Do not create a new account. Contact HANDS operations so this device can be reviewed or unblocked.');
+    final icon = actionBlock?.icon ??
+        (accountBlocked
+            ? Icons.admin_panel_settings_outlined
+            : Icons.phonelink_lock_outlined);
     return Card(
       color: colorScheme.errorContainer,
       child: Padding(
@@ -5203,9 +5237,7 @@ class ProviderErrorCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              accountBlocked
-                  ? Icons.admin_panel_settings_outlined
-                  : Icons.phonelink_lock_outlined,
+              icon,
               color: colorScheme.error,
             ),
             const SizedBox(width: 12),
@@ -5214,9 +5246,7 @@ class ProviderErrorCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    accountBlocked
-                        ? 'Partner account blocked by admin'
-                        : 'Device blocked by admin',
+                    title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: colorScheme.onErrorContainer,
                           fontWeight: FontWeight.w800,
@@ -5224,14 +5254,12 @@ class ProviderErrorCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    text,
+                    detail,
                     style: TextStyle(color: colorScheme.onErrorContainer),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    accountBlocked
-                        ? 'Contact HANDS operations. This account cannot go online or share location until an admin unblocks it.'
-                        : 'Do not create a new account. Contact HANDS operations so this device can be reviewed or unblocked.',
+                    nextStep,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onErrorContainer,
                         ),
@@ -5267,13 +5295,9 @@ class ErrorCard extends StatelessWidget {
 
 String providerAppErrorMessage(Object error) {
   if (error is ApiException) {
-    final message = error.body['message'];
-    if (message is String && message.trim().isNotEmpty) {
-      return message.trim();
-    }
-    final apiError = error.body['error'];
-    if (apiError is String && apiError.trim().isNotEmpty) {
-      return apiError.trim();
+    final apiMessage = providerApiExceptionMessage(error.body);
+    if (apiMessage != null) {
+      return apiMessage;
     }
   }
   final raw = error.toString();
@@ -5296,9 +5320,126 @@ String providerAppErrorMessage(Object error) {
   return normalized;
 }
 
+String? providerApiExceptionMessage(Map<String, dynamic> body) {
+  final directCode = body['code']?.toString().trim();
+  final directMessage = body['message'];
+  final directReadable = providerReadableApiMessage(
+    code: directCode,
+    message: directMessage,
+    fallbackError: directMessage is Map ? null : body['error'],
+  );
+  if (directReadable != null) {
+    return directReadable;
+  }
+
+  if (directMessage is Map) {
+    final nestedCode = directMessage['code']?.toString().trim();
+    final nestedReadable = providerReadableApiMessage(
+      code: nestedCode,
+      message: directMessage['message'],
+      fallbackError: directMessage['error'],
+    );
+    if (nestedReadable != null) {
+      return nestedReadable;
+    }
+  }
+
+  final apiError = body['error'];
+  if (apiError is String && apiError.trim().isNotEmpty) {
+    return apiError.trim();
+  }
+  return null;
+}
+
+String? providerReadableApiMessage({
+  required String? code,
+  required Object? message,
+  required Object? fallbackError,
+}) {
+  if (code == 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT') {
+    return providerWalletBlockFallbackReasonClean;
+  }
+  if (message is String && message.trim().isNotEmpty) {
+    return message.trim();
+  }
+  if (fallbackError is String && fallbackError.trim().isNotEmpty) {
+    return fallbackError.trim();
+  }
+  return null;
+}
+
 bool isProviderBlockedMessage(String value) {
   return isProviderDeviceBlockedMessage(value) ||
       isProviderAccountBlockedMessage(value);
+}
+
+ProviderActionBlockCopy? providerActionBlockCopy(String value) {
+  final normalized = value.toLowerCase();
+  if (normalized.contains('wallet') ||
+      normalized.contains('settlement') ||
+      normalized.contains('hands fee') ||
+      normalized.contains('unpaid hands cash-service fees')) {
+    return const ProviderActionBlockCopy(
+      title: 'Fee settlement required',
+      detail: providerWalletBlockFallbackReasonClean,
+      nextStep:
+          'Open Earnings, copy the settlement reference, then refresh wallet status after HANDS confirms payment.',
+      icon: Icons.account_balance_wallet_outlined,
+    );
+  }
+  if (normalized.contains('kyc must be approved')) {
+    return const ProviderActionBlockCopy(
+      title: 'KYC approval required',
+      detail:
+          'Your identity verification must be approved before you can accept booking requests.',
+      nextStep:
+          'Open Profile, submit CCCD and selfie verification, then wait for HANDS operations approval.',
+      icon: Icons.badge_outlined,
+    );
+  }
+  if (normalized.contains('required kyc document') ||
+      normalized.contains('cccd') ||
+      normalized.contains('selfie')) {
+    return const ProviderActionBlockCopy(
+      title: 'Identity document approval required',
+      detail:
+          'Required CCCD front, CCCD back, and selfie documents must be approved first.',
+      nextStep:
+          'Upload clear identity photos in Profile and ask HANDS operations to review them.',
+      icon: Icons.assignment_ind_outlined,
+    );
+  }
+  if (normalized.contains('bank account must be approved')) {
+    return const ProviderActionBlockCopy(
+      title: 'Bank account approval required',
+      detail:
+          'Your payout bank account must be approved before you can accept booking requests.',
+      nextStep:
+          'Add or correct your bank account in Profile. HANDS must approve it before work starts.',
+      icon: Icons.account_balance_outlined,
+    );
+  }
+  if (normalized.contains('verification must be approved')) {
+    return const ProviderActionBlockCopy(
+      title: 'Partner verification required',
+      detail:
+          'Your partner profile verification must be approved before receiving work.',
+      nextStep:
+          'Complete the basic profile and wait for HANDS operations to approve your account.',
+      icon: Icons.verified_user_outlined,
+    );
+  }
+  if (normalized.contains('must be online')) {
+    return const ProviderActionBlockCopy(
+      title: 'Go online first',
+      detail:
+          'You must be online and sharing your current location before accepting requests.',
+      nextStep:
+          'Tap Go online, allow location permission, then refresh the request list.',
+      icon: Icons.power_settings_new,
+    );
+  }
+  return null;
 }
 
 bool isProviderDeviceBlockedMessage(String value) {

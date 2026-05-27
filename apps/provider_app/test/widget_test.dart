@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider_app/main.dart';
+import 'package:provider_app/src/core/api_client.dart';
 
 void main() {
   testWidgets('renders provider requests screen', (tester) async {
@@ -37,5 +38,37 @@ void main() {
     expect(providerWalletStatusLabel(summary), 'Settlement required');
     expect(providerWalletSettlementSteps(summary).first,
         'Settle 120.000 VND for unpaid HANDS fees.');
+  });
+
+  test('provider booking gate errors are converted to readable action blocks',
+      () {
+    final walletMessage = providerAppErrorMessage(ApiException(400, {
+      'message': {
+        'code': 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
+        'message': 'Provider has unpaid HANDS cash-service fees',
+      },
+      'error': 'Bad Request',
+      'statusCode': 400,
+    }));
+
+    expect(walletMessage, providerWalletBlockFallbackReasonClean);
+    expect(providerActionBlockCopy(walletMessage)?.title,
+        'Fee settlement required');
+
+    final kycMessage = providerAppErrorMessage(ApiException(403, {
+      'message': 'Provider KYC must be approved before accepting bookings.',
+      'error': 'Forbidden',
+      'statusCode': 403,
+    }));
+
+    expect(providerActionBlockCopy(kycMessage)?.title, 'KYC approval required');
+
+    final bankMessage = providerAppErrorMessage(ApiException(403, {
+      'message':
+          'Provider bank account must be approved before accepting bookings.',
+    }));
+
+    expect(providerActionBlockCopy(bankMessage)?.title,
+        'Bank account approval required');
   });
 }
