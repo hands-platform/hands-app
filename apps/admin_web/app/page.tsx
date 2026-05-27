@@ -28,6 +28,9 @@ type OpsQueueItem = {
   href: string;
   severity: 'high' | 'medium' | 'low';
   area: 'Booking' | 'Payment' | 'Partner' | 'Notification' | 'Payout' | 'Finance';
+  owner: 'Dispatch' | 'Finance' | 'Partner Ops' | 'Support' | 'System';
+  priority: number;
+  recommendedAction: string;
 };
 
 export default async function DashboardPage() {
@@ -80,6 +83,7 @@ export default async function DashboardPage() {
     earningRows,
     payoutBatches,
   });
+  const queueSummary = buildOpsQueueSummary(queue);
   const bookingOps = buildBookingOpsInsights(bookings);
   const customerPresence = buildCustomerPresence(users, bookings);
   const hourlyDemand = buildHourlyBookingDemand(bookings);
@@ -460,28 +464,72 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="risk-watch-header">
             <div>
-              <h2>Priority action queue</h2>
+              <h2>Operations priority queue</h2>
               <p className="muted">
-                Generated from the latest admin API snapshot. Tackle high severity first.
+                Generated from the latest admin API snapshot. It ranks customer protection, partner safety,
+                payment release, cash debt, and payout recovery together.
               </p>
             </div>
-            <span
-              className={`signal ${queue.some((item) => item.severity === 'high') ? 'signal-warn' : 'signal-ok'}`}
-            >
-              {queue.some((item) => item.severity === 'high') ? 'Attention needed' : 'No high risk'}
+            <span className={`signal ${queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}>
+              {queueSummary.high > 0 ? `${queueSummary.high} critical` : 'No high risk'}
             </span>
           </div>
+          <div className="service-trace-summary">
+            <div>
+              <span>Critical</span>
+              <strong>{queueSummary.high}</strong>
+              <small>High severity actions</small>
+            </div>
+            <div>
+              <span>Customer protection</span>
+              <strong>{queueSummary.customerProtection}</strong>
+              <small>Booking risks</small>
+            </div>
+            <div>
+              <span>Finance risk</span>
+              <strong>{queueSummary.financeCritical}</strong>
+              <small>Payment, payout, debt</small>
+            </div>
+            <div>
+              <span>Partner ops</span>
+              <strong>{queueSummary.partnerCritical}</strong>
+              <small>Risk or verification</small>
+            </div>
+          </div>
+          {queueSummary.first && (
+            <div className="ops-task-note" style={{ marginTop: 14 }}>
+              <div>
+                <span
+                  className={`pill ${queueSummary.first.severity === 'high' ? 'pill-danger' : 'pill-warn'}`}
+                >
+                  First action
+                </span>
+                <h3>{queueSummary.first.label}</h3>
+                <p>{queueSummary.first.recommendedAction}</p>
+                <p className="muted">
+                  Owner: {queueSummary.first.owner} - Priority {queueSummary.first.priority} -{' '}
+                  {queueSummary.first.detail}
+                </p>
+              </div>
+              <Link className="text-link" href={queueSummary.first.href}>
+                Open task
+              </Link>
+            </div>
+          )}
           <div className="risk-list">
-            {queue.slice(0, 8).map((item) => (
+            {queue.slice(0, 10).map((item) => (
               <Link
                 className={`risk-item risk-${item.severity}`}
                 href={item.href}
                 key={`${item.area}-${item.label}-${item.href}`}
               >
                 <div>
-                  <span className="muted">{item.area}</span>
+                  <span className="muted">
+                    {item.area} - {item.owner} - Priority {item.priority}
+                  </span>
                   <strong>{item.label}</strong>
                   <p className="muted">{item.detail}</p>
+                  <p className="muted">{item.recommendedAction}</p>
                 </div>
                 <p>{item.severity.toUpperCase()}</p>
               </Link>
@@ -1291,6 +1339,9 @@ function buildOpsQueue(input: {
         label: flag.label,
         detail: `${booking.services?.[0]?.service?.name ?? 'Booking'} - ${shortId(booking.id)}`,
         severity: flag.severity,
+        owner: 'Dispatch',
+        priority: flag.priority,
+        recommendedAction: flag.recommendedAction,
       });
     }
   }
@@ -1303,6 +1354,9 @@ function buildOpsQueue(input: {
         label: 'Payment hold missing gateway reference',
         detail: `${money(payment.amount, payment.currency)} for booking ${shortId(payment.bookingId)}`,
         severity: 'medium',
+        owner: 'Finance',
+        priority: 66,
+        recommendedAction: 'Check the gateway/admin reference before capture, release, or refund.',
       });
     }
     if (payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED') {
@@ -1312,6 +1366,9 @@ function buildOpsQueue(input: {
         label: 'Completed service still authorized',
         detail: `${money(payment.amount, payment.currency)} should be captured or reviewed.`,
         severity: 'high',
+        owner: 'Finance',
+        priority: 96,
+        recommendedAction: 'Capture the completed service payment or open a manual payment review.',
       });
     }
   }
@@ -1324,6 +1381,9 @@ function buildOpsQueue(input: {
         label: 'Refund not completed',
         detail: `${money(refund.amount, refund.payment?.currency ?? 'VND')} for booking ${shortId(refund.bookingId)}`,
         severity: 'medium',
+        owner: 'Finance',
+        priority: 62,
+        recommendedAction: 'Confirm refund status with the payment channel and update the refund record.',
       });
     }
   }
@@ -1335,6 +1395,9 @@ function buildOpsQueue(input: {
       label: 'Partner cash fee debt open',
       detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before accepting more bookings.`,
       severity: 'high',
+      owner: 'Finance',
+      priority: 98,
+      recommendedAction: 'Collect the company fee deposit or offset it before this partner accepts bookings.',
     });
   }
 
@@ -1346,6 +1409,9 @@ function buildOpsQueue(input: {
         label: 'Partner verification waiting',
         detail: provider.displayName,
         severity: 'medium',
+        owner: 'Partner Ops',
+        priority: 56,
+        recommendedAction: 'Open the partner profile and approve, reject, or request resubmission evidence.',
       });
     }
     const disabledDevices = provider.user?.pushDevices?.filter((device) => device.enabled === false) ?? [];
@@ -1356,6 +1422,9 @@ function buildOpsQueue(input: {
         label: 'Partner has disabled push device',
         detail: `${provider.displayName} has ${disabledDevices.length} disabled device(s).`,
         severity: 'low',
+        owner: 'Support',
+        priority: 28,
+        recommendedAction: 'Review device delivery history and ask the partner to re-enable notifications.',
       });
     }
     const openReports = (provider.reports ?? []).filter((report) =>
@@ -1370,6 +1439,9 @@ function buildOpsQueue(input: {
         severity: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity))
           ? 'high'
           : 'medium',
+        owner: 'Partner Ops',
+        priority: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity)) ? 89 : 64,
+        recommendedAction: 'Open the risk case, contact support evidence, and decide sanction or closure.',
       });
     }
     const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
@@ -1384,6 +1456,14 @@ function buildOpsQueue(input: {
         )
           ? 'high'
           : 'medium',
+        owner: 'Partner Ops',
+        priority: activeSanctions.some(
+          (sanction) => sanction.type === 'PAYOUT_HOLD' || sanction.type === 'ACCOUNT_BLOCK',
+        )
+          ? 94
+          : 67,
+        recommendedAction:
+          'Confirm whether the sanction should continue before dispatch or payout decisions.',
       });
     }
   }
@@ -1397,6 +1477,9 @@ function buildOpsQueue(input: {
         label: 'Notification delivery failed',
         detail: `${notification.title} - ${failed.length} failed attempt(s)`,
         severity: 'medium',
+        owner: 'Support',
+        priority: 46,
+        recommendedAction: 'Retry delivery or disable stale devices so operations do not assume delivery.',
       });
     }
   }
@@ -1408,6 +1491,9 @@ function buildOpsQueue(input: {
       label: 'Partner payout can be prepared',
       detail: `${money(input.earnings.availableNetAmount, input.earnings.currency)} available for batching.`,
       severity: 'low',
+      owner: 'Finance',
+      priority: 24,
+      recommendedAction: 'Create the next payout batch after checking holds, cash debt, and tax logs.',
     });
   }
 
@@ -1420,6 +1506,9 @@ function buildOpsQueue(input: {
         label: 'Payout batch blocked by hold',
         detail: `${batch.providerProfile?.displayName ?? 'Partner'} - ${payoutHold.reason}`,
         severity: 'high',
+        owner: 'Finance',
+        priority: 97,
+        recommendedAction: 'Resolve the active payout hold or keep the batch paused with an audit note.',
       });
     } else if (batch.status === 'FAILED') {
       items.push({
@@ -1428,6 +1517,9 @@ function buildOpsQueue(input: {
         label: 'Failed payout needs recovery',
         detail: `${money(batch.totalNetAmount, batch.currency)} for ${batch.providerProfile?.displayName ?? 'partner'}`,
         severity: 'high',
+        owner: 'Finance',
+        priority: 92,
+        recommendedAction: 'Check bank reference, retry transfer, or mark manual recovery with evidence.',
       });
     } else if (batch.status === 'PROCESSING') {
       items.push({
@@ -1436,11 +1528,48 @@ function buildOpsQueue(input: {
         label: 'Payout transfer in progress',
         detail: `${money(batch.totalNetAmount, batch.currency)} needs bank confirmation.`,
         severity: 'medium',
+        owner: 'Finance',
+        priority: 52,
+        recommendedAction: 'Confirm bank settlement status before marking the payout as paid.',
       });
     }
   }
 
-  return items.sort((left, right) => severityScore(right.severity) - severityScore(left.severity));
+  return items.sort(
+    (left, right) =>
+      right.priority - left.priority ||
+      severityScore(right.severity) - severityScore(left.severity) ||
+      left.area.localeCompare(right.area),
+  );
+}
+
+function buildOpsQueueSummary(queue: OpsQueueItem[]) {
+  const high = queue.filter((item) => item.severity === 'high').length;
+  const medium = queue.filter((item) => item.severity === 'medium').length;
+  const low = queue.filter((item) => item.severity === 'low').length;
+  const financeCritical = queue.filter(
+    (item) => item.severity === 'high' && ['Payment', 'Finance', 'Payout'].includes(item.area),
+  ).length;
+  const partnerCritical = queue.filter((item) => item.severity === 'high' && item.area === 'Partner').length;
+  const customerProtection = queue.filter((item) => item.area === 'Booking').length;
+  const byArea = queue.reduce(
+    (counts, item) => {
+      counts[item.area] = (counts[item.area] ?? 0) + 1;
+      return counts;
+    },
+    {} as Record<OpsQueueItem['area'], number>,
+  );
+
+  return {
+    high,
+    medium,
+    low,
+    financeCritical,
+    partnerCritical,
+    customerProtection,
+    byArea,
+    first: queue[0],
+  };
 }
 
 function openCashDebtEarnings(earnings: AdminEarning[]) {
@@ -1461,7 +1590,12 @@ function sumCashDebt(earnings: AdminEarning[]) {
 }
 
 function bookingFlags(booking: AdminBooking) {
-  const flags: Array<{ label: string; severity: OpsQueueItem['severity'] }> = [];
+  const flags: Array<{
+    label: string;
+    severity: OpsQueueItem['severity'];
+    priority: number;
+    recommendedAction: string;
+  }> = [];
   const paymentStatus = booking.payment?.status;
   const participantCount = booking.participants?.length ?? 0;
   const expired = booking.expiresAt ? new Date(booking.expiresAt).getTime() < Date.now() : false;
@@ -1471,35 +1605,82 @@ function bookingFlags(booking: AdminBooking) {
     booking.payment &&
     !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')
   ) {
-    flags.push({ label: 'Cancelled booking has unresolved payment', severity: 'high' });
+    flags.push({
+      label: 'Cancelled booking has unresolved payment',
+      severity: 'high',
+      priority: 99,
+      recommendedAction: 'Open the booking and release or refund the customer payment before closing.',
+    });
   }
   if (booking.status === 'EXPIRED' && unresolvedReleasePayment(booking)) {
-    flags.push({ label: 'Expired booking has unresolved payment release', severity: 'high' });
+    flags.push({
+      label: 'Expired booking has unresolved payment release',
+      severity: 'high',
+      priority: 99,
+      recommendedAction:
+        'Release the authorization or create the refund path before customer support follows up.',
+    });
   }
   if (booking.status === 'NO_SHOW' && unresolvedReleasePayment(booking)) {
-    flags.push({ label: 'No-show booking has unresolved payment release', severity: 'high' });
+    flags.push({
+      label: 'No-show booking has unresolved payment release',
+      severity: 'high',
+      priority: 98,
+      recommendedAction: 'Review no-show evidence, then settle payment release, refund, or fee collection.',
+    });
   }
   if (completedCloseoutNeedsOps(booking)) {
-    flags.push({ label: 'Completed booking missing closeout records', severity: 'high' });
+    flags.push({
+      label: 'Completed booking missing closeout records',
+      severity: 'high',
+      priority: 97,
+      recommendedAction:
+        'Run completed booking closeout: captured payment, earning, tax, fee, and wallet ledgers.',
+    });
   }
   if (booking.status === 'OPEN_MATCHING' && expired) {
-    flags.push({ label: 'Open matching window expired', severity: 'high' });
+    flags.push({
+      label: 'Open matching window expired',
+      severity: 'high',
+      priority: 90,
+      recommendedAction: 'Expire the request or contact the customer before it stays visible to partners.',
+    });
   }
   if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && participantCount === 0) {
-    flags.push({ label: 'Preferred partner has not replied yet', severity: 'medium' });
+    flags.push({
+      label: 'Preferred partner has not replied yet',
+      severity: 'medium',
+      priority: 61,
+      recommendedAction: 'Ask the preferred partner to reply or prepare backup matching for the customer.',
+    });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    flags.push({ label: 'No partner has joined yet', severity: 'medium' });
+    flags.push({
+      label: 'No partner has joined yet',
+      severity: 'medium',
+      priority: 58,
+      recommendedAction: 'Check nearby partner supply and widen backup matching if the customer is waiting.',
+    });
   }
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
-    flags.push({ label: 'Matched booking has no chat room', severity: 'high' });
+    flags.push({
+      label: 'Matched booking has no chat room',
+      severity: 'high',
+      priority: 88,
+      recommendedAction: 'Create or repair the chat room so customer and partner can coordinate.',
+    });
   }
   if (
     booking.chatRoom &&
     (booking.chatRoom.messages?.length ?? 0) === 0 &&
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
   ) {
-    flags.push({ label: 'Chat room is ready but still quiet', severity: 'low' });
+    flags.push({
+      label: 'Chat room is ready but still quiet',
+      severity: 'low',
+      priority: 30,
+      recommendedAction: 'Monitor the room and nudge the partner if service start is approaching.',
+    });
   }
 
   return flags;
