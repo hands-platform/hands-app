@@ -43,6 +43,7 @@ export async function syncSupabaseProviderRole(formData: FormData) {
 export async function enablePushDevice(formData: FormData) {
   const pushDeviceId = String(formData.get('pushDeviceId'));
   await adminPost(`/admin/push-devices/${pushDeviceId}/enable`, {}, null);
+  revalidatePath('/partners');
   revalidatePath('/providers');
   revalidatePath('/notifications');
 }
@@ -161,8 +162,10 @@ function readOptionalProviderId(formData: FormData) {
 }
 
 function revalidateProviderPaths(providerId?: string | null) {
+  revalidatePath('/partners');
   revalidatePath('/providers');
   if (providerId) {
+    revalidatePath(`/partners/${providerId}`);
     revalidatePath(`/providers/${providerId}`);
   }
 }

@@ -127,7 +127,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
       <section className="toolbar">
         <div>
           <p className="muted">
-            <Link className="text-link" href="/providers">
+            <Link className="text-link" href="/partners">
               Back to partners
             </Link>
           </p>

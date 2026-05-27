@@ -300,7 +300,7 @@ export default async function DashboardPage() {
           <Link className="text-link" href="/payments">
             Payments
           </Link>
-          <Link className="text-link" href="/providers">
+          <Link className="text-link" href="/partners">
             Partner review
           </Link>
           <Link className="text-link" href="/tax-policy">
@@ -868,7 +868,7 @@ export default async function DashboardPage() {
                 Current operational capacity, app presence, location freshness, and finance blockers.
               </p>
             </div>
-            <Link className="text-link" href="/providers">
+            <Link className="text-link" href="/partners">
               Open partners
             </Link>
           </div>
@@ -974,7 +974,7 @@ export default async function DashboardPage() {
               requirements, and app contactability.
             </p>
           </div>
-          <Link className="text-link" href="/providers">
+          <Link className="text-link" href="/partners">
             Partner queue
           </Link>
         </div>
@@ -1911,7 +1911,7 @@ function buildPartnerOpsQueueItem(
   const locationState = partnerLocationState(partner);
   const contactState = partnerContactState(partner, livePartnerUserIds);
   const name = partnerDisplayName(partner);
-  const href = `/providers/${partner.id}`;
+  const href = `/partners/${partner.id}`;
   const metrics = [
     partnerOpsMetric('status', partner.status.replace('ONLINE_', '').toLowerCase(), 'info'),
     partnerOpsMetric('location', locationState, locationState === 'recent' ? 'ok' : 'warn'),
@@ -1984,7 +1984,7 @@ function buildPartnerOpsQueueItem(
       detail:
         'Partner is waiting for admin review. Clear KYC, documents, and bank readiness to expand supply.',
       action: 'Open review',
-      href: '/providers?verification=SUBMITTED',
+      href: '/partners?verification=SUBMITTED',
       className: 'ops-task-pending',
       priority: 70,
       metrics: [
@@ -2006,7 +2006,7 @@ function buildPartnerOpsQueueItem(
       status: 'Location weak',
       detail: 'Partner is online but location is stale, expired, or missing. Dispatch distance may be wrong.',
       action: 'Open location review',
-      href: '/providers?review=location',
+      href: '/partners?review=location',
       className: 'ops-task-pending',
       priority: 55,
       metrics,
@@ -2021,7 +2021,7 @@ function buildPartnerOpsQueueItem(
       detail:
         'Partner appears online but app session or push readiness is weak. Booking alerts may not arrive.',
       action: 'Open push/session review',
-      href: '/providers?review=push',
+      href: '/partners?review=push',
       className: 'ops-task-pending',
       priority: 45,
       metrics,
@@ -2417,7 +2417,7 @@ function buildDashboardCommandSignals(input: {
         ? 'Partner verification, risk reports, sanctions, or KYC needs admin attention.'
         : 'No partner review blocker in the current snapshot.',
       action: 'Open partners',
-      href: '/providers',
+      href: '/partners',
       priority:
         activeProviderSanctions.length || openProviderReports.length ? 90 : providerReviews.length ? 65 : 20,
       severity:
@@ -2433,13 +2433,13 @@ function buildDashboardCommandSignals(input: {
           label: 'Verification',
           value: submittedVerification.length.toString(),
           tone: submittedVerification.length ? 'warn' : 'ok',
-          href: '/providers?verification=SUBMITTED',
+          href: '/partners?verification=SUBMITTED',
         },
         {
           label: 'KYC',
           value: submittedKyc.length.toString(),
           tone: submittedKyc.length ? 'warn' : 'ok',
-          href: '/providers?review=kyc',
+          href: '/partners?review=kyc',
         },
         {
           label: 'Risk reports',
@@ -2641,7 +2641,7 @@ function buildDashboardCommandSignals(input: {
           label: 'Disabled devices',
           value: disabledPushProviders.length.toString(),
           tone: disabledPushProviders.length ? 'info' : 'ok',
-          href: '/providers?review=push',
+          href: '/partners?review=push',
         },
       ],
     },
@@ -2809,7 +2809,7 @@ function buildOpsQueue(input: {
     if (provider.verification?.status === 'SUBMITTED') {
       items.push({
         area: 'Partner',
-        href: `/providers/${provider.id}`,
+        href: `/partners/${provider.id}`,
         label: 'Partner verification waiting',
         detail: provider.displayName,
         severity: 'medium',
@@ -2822,7 +2822,7 @@ function buildOpsQueue(input: {
     if (disabledDevices.length > 0) {
       items.push({
         area: 'Notification',
-        href: `/providers/${provider.id}`,
+        href: `/partners/${provider.id}`,
         label: 'Partner has disabled push device',
         detail: `${provider.displayName} has ${disabledDevices.length} disabled device(s).`,
         severity: 'low',
@@ -2837,7 +2837,7 @@ function buildOpsQueue(input: {
     if (openReports.length > 0) {
       items.push({
         area: 'Partner',
-        href: `/providers/${provider.id}`,
+        href: `/partners/${provider.id}`,
         label: 'Partner risk report open',
         detail: `${provider.displayName} has ${openReports.length} open report(s).`,
         severity: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity))
@@ -2852,7 +2852,7 @@ function buildOpsQueue(input: {
     if (activeSanctions.length > 0) {
       items.push({
         area: 'Partner',
-        href: `/providers/${provider.id}`,
+        href: `/partners/${provider.id}`,
         label: 'Partner active sanction',
         detail: `${provider.displayName} has ${activeSanctions.length} active sanction(s).`,
         severity: activeSanctions.some(
@@ -3005,7 +3005,7 @@ function buildShiftCommandBriefing(input: {
         value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online}`,
         helper: `${input.partnerSupply.staleLocation} stale location, ${input.partnerSupply.supplyPressureLabel} pressure`,
         tone: input.partnerSupply.onlineAvailable ? 'ok' : 'warn',
-        href: '/providers',
+        href: '/partners',
       },
       {
         label: 'Cash debt block',

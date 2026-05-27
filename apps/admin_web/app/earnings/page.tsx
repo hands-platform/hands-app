@@ -299,7 +299,7 @@ export default async function EarningsPage() {
                   </p>
                 </div>
                 <div className="actions">
-                  <Link className="text-link" href={`/providers/${group.providerProfileId}`}>
+                  <Link className="text-link" href={`/partners/${group.providerProfileId}`}>
                     Partner
                   </Link>
                   {group.canBatch ? (
@@ -393,7 +393,7 @@ export default async function EarningsPage() {
                   </p>
                 </div>
                 <div className="actions">
-                  <Link className="text-link" href={`/providers/${item.earning.providerProfileId}`}>
+                  <Link className="text-link" href={`/partners/${item.earning.providerProfileId}`}>
                     Partner
                   </Link>
                   <form action={markEarningPaid}>

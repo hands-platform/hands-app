@@ -216,7 +216,7 @@ export default async function NotificationsPage({
                   <div className="muted">{notification.user?.phone ?? 'No phone on file'}</div>
                   {notification.user?.providerProfile ? (
                     <div className="muted">
-                      <Link className="text-link" href={`/providers/${notification.user.providerProfile.id}`}>
+                      <Link className="text-link" href={`/partners/${notification.user.providerProfile.id}`}>
                         Partner{' '}
                         {notification.user.providerProfile.displayName ??
                           shortId(notification.user.providerProfile.id)}
@@ -293,7 +293,7 @@ export default async function NotificationsPage({
                   {notification.user?.providerProfile?.id ? (
                     <Link
                       className="pill pill-neutral"
-                      href={`/providers/${notification.user.providerProfile.id}`}
+                      href={`/partners/${notification.user.providerProfile.id}`}
                       style={{ marginTop: 6 }}
                     >
                       Open partner

@@ -114,7 +114,7 @@ export default async function CashSettlementsPage() {
                   {formatMoney(provider.taxAmount, provider.currency)} tax.
                 </p>
                 <div className="participant-list" style={{ marginTop: 8 }}>
-                  <Link className="pill" href={`/providers/${provider.providerProfileId}`}>
+                  <Link className="pill" href={`/partners/${provider.providerProfileId}`}>
                     Partner
                   </Link>
                   <span className="pill pill-warn">Suggested ref {provider.settlementReference}</span>
@@ -159,7 +159,7 @@ export default async function CashSettlementsPage() {
                   <strong>{row.providerName}</strong>
                   <div className="muted">{row.providerPhone}</div>
                   <div className="participant-list" style={{ marginTop: 8 }}>
-                    <Link className="pill" href={`/providers/${row.earning.providerProfileId}`}>
+                    <Link className="pill" href={`/partners/${row.earning.providerProfileId}`}>
                       Partner
                     </Link>
                     <span className="pill pill-danger">Wallet blocked</span>

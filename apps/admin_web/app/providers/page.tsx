@@ -68,7 +68,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     <>
       <h1>Partner Verification</h1>
       <div className="card" style={{ marginBottom: 16 }}>
-        <form className="form-grid" action="/providers">
+        <form className="form-grid" action="/partners">
           <label>
             Search
             <input name="q" defaultValue={filters.q} placeholder="Name, phone, city, partner id" />
@@ -157,7 +157,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </label>
           <div className="actions full-span">
             <button type="submit">Apply filters</button>
-            <Link className="text-link" href="/providers">
+            <Link className="text-link" href="/partners">
               Clear filters
             </Link>
             <span className="muted">
@@ -278,7 +278,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <span>{item.action.status}</span>
               <div>
                 <strong>
-                  <Link className="text-link" href={`/providers/${item.provider.id}`}>
+                  <Link className="text-link" href={`/partners/${item.provider.id}`}>
                     {providerDisplayName(item.provider)}
                   </Link>
                 </strong>
@@ -322,7 +322,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             {visibleProviders.map((provider) => (
               <tr id={`provider-${provider.id}`} key={provider.id}>
                 <td>
-                  <Link className="text-link" href={`/providers/${provider.id}`}>
+                  <Link className="text-link" href={`/partners/${provider.id}`}>
                     {provider.displayName || provider.user?.fullName || provider.user?.phone}
                   </Link>
                   <p className="muted">{provider.user?.phone ?? provider.id}</p>
@@ -436,7 +436,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                         <p className="muted">
                           {file.key}
                           {' / '}
-                          <Link className="text-link" href={`/providers/${provider.id}`}>
+                          <Link className="text-link" href={`/partners/${provider.id}`}>
                             open detail to view
                           </Link>
                         </p>
@@ -494,7 +494,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                         <button type="submit">Block account</button>
                       </form>
                     )}
-                    <Link className="text-link" href={`/providers/${provider.id}`}>
+                    <Link className="text-link" href={`/partners/${provider.id}`}>
                       Open detail
                     </Link>
                   </div>
@@ -590,7 +590,7 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
                 {document.fileAsset?.id ? (
                   <>
                     {' / '}
-                    <Link className="text-link" href={`/providers/${provider.id}`}>
+                    <Link className="text-link" href={`/partners/${provider.id}`}>
                       open detail to view
                     </Link>
                   </>
@@ -767,7 +767,7 @@ function ProviderPublicMediaQueueCell({ provider }: { provider: AdminProvider })
         </div>
       ))}
       {media.length > 4 ? (
-        <Link className="text-link" href={`/providers/${provider.id}`}>
+        <Link className="text-link" href={`/partners/${provider.id}`}>
           Review {media.length - 4} more media item(s)
         </Link>
       ) : null}
@@ -1128,7 +1128,7 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
         <p className="muted">{suspiciousSessions.length} suspicious session(s)</p>
       ) : null}
       {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
-      <Link className="text-link" href={`/providers/${provider.id}`}>
+      <Link className="text-link" href={`/partners/${provider.id}`}>
         Review security
       </Link>
     </div>
@@ -1252,7 +1252,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
         verificationReview + kycReview + documentsReview > 0
           ? 'Partners are waiting for identity, verification, or document decisions.'
           : 'No filtered partner is blocked by onboarding review.',
-      href: verificationReview > 0 ? '/providers?review=kyc' : '/providers?review=documents',
+      href: verificationReview > 0 ? '/partners?review=kyc' : '/partners?review=documents',
       metrics: [
         providerCommandMetric('verification', verificationReview),
         providerCommandMetric('KYC', kycReview),
@@ -1268,7 +1268,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
         readyNow > 0
           ? 'Some partners can receive requests now; keep location and push freshness high.'
           : 'No partner in this filtered list is fully ready for dispatch.',
-      href: readyNow > 0 ? '/providers?readiness=ready' : '/providers?review=location',
+      href: readyNow > 0 ? '/partners?readiness=ready' : '/partners?review=location',
       metrics: [
         providerCommandMetric('online', online),
         providerCommandMetric('fresh location', locationFresh),
@@ -1284,7 +1284,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
         walletDebt > 0
           ? 'Cash fee debt can block partners from accepting new bookings.'
           : 'First-earning payout, bank, and freelance tax readiness are under control.',
-      href: walletDebt > 0 ? '/providers?review=cash-debt' : '/providers?review=payout-setup',
+      href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
       metrics: [
         providerCommandMetric('bank', bankReview),
         providerCommandMetric('tax', taxReview),
@@ -1300,7 +1300,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
         accountBlocks > 0 || openRisk > 0
           ? 'Account blocks, reports, or active sanctions need operator attention.'
           : 'No filtered partner has a major trust or device risk signal.',
-      href: openRisk > 0 ? '/partner-risk' : '/providers?review=security',
+      href: openRisk > 0 ? '/partner-risk' : '/partners?review=security',
       metrics: [
         providerCommandMetric('blocked', accountBlocks),
         providerCommandMetric('open risk', openRisk),
@@ -1436,83 +1436,83 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
     {
       label: 'Account blocks',
       count: accountBlocks,
-      href: '/providers?review=blocked',
+      href: '/partners?review=blocked',
       detail:
         'Partners blocked by admin cannot go online, refresh location, or appear in customer discovery.',
     },
     {
       label: 'KYC updates',
       count: kycNeedsReview,
-      href: '/providers?review=kyc',
+      href: '/partners?review=kyc',
       detail: 'Partners with pending or rejected identity verification need admin review or resubmission.',
     },
     {
       label: 'Document review',
       count: documentNeedsReview,
-      href: '/providers?review=documents',
+      href: '/partners?review=documents',
       detail: 'Typed CCCD, selfie, or portfolio documents are waiting for approval or rejection handling.',
     },
     {
       label: 'Public media review',
       count: publicMediaNeedsReview,
-      href: '/providers?review=public-media',
+      href: '/partners?review=public-media',
       detail: 'Uploaded public profile and gallery images must be approved before customers can see them.',
     },
     {
       label: 'Bank payout review',
       count: bankNeedsReview,
-      href: '/providers?review=bank',
+      href: '/partners?review=bank',
       detail: 'Bank accounts must be approved before partners can move toward payout readiness.',
     },
     {
       label: 'First earning payout setup',
       count: payoutSetupNeedsReview,
-      href: '/providers?review=payout-setup',
+      href: '/partners?review=payout-setup',
       detail:
         'Partners with first revenue who still need tax profile, tax address, or payout agreements before withdrawal.',
     },
     {
       label: 'Cash fee debt',
       count: cashDebtNeedsReview,
-      href: '/providers?review=cash-debt',
+      href: '/partners?review=cash-debt',
       detail:
         'Partners with negative wallet balance cannot accept bookings until HANDS fee settlement is confirmed.',
     },
     {
       label: 'Tax profile review',
       count: taxNeedsReview,
-      href: '/providers?review=tax',
+      href: '/partners?review=tax',
       detail: 'Freelance tax profiles should be approved only after MST and registered address are checked.',
     },
     {
       label: 'Device/session risk',
       count: securityNeedsReview,
-      href: '/providers?review=security',
+      href: '/partners?review=security',
       detail: 'Blocked, shared, or suspicious partner app devices need operator review.',
     },
     {
       label: 'Reports and sanctions',
       count: riskNeedsReview,
-      href: '/providers?review=risk',
+      href: '/partners?review=risk',
       detail: 'Open reports or active sanctions should be reviewed before dispatch and trust badge changes.',
     },
     {
       label: 'Location freshness',
       count: locationNeedsReview,
-      href: '/providers?review=location',
+      href: '/partners?review=location',
       detail:
         'Partners with missing, stale, or expired locations should reopen the Partner app before dispatch.',
     },
     {
       label: 'Push alert readiness',
       count: pushNeedsReview,
-      href: '/providers?review=push',
+      href: '/partners?review=push',
       detail: 'Partners without enabled push devices may miss direct requests and backup matching alerts.',
     },
     {
       label: 'Ready for dispatch',
       count: readyForDispatch,
-      href: '/providers?readiness=ready',
+      href: '/partners?readiness=ready',
       detail: 'Approved, online partners with recent location and push registration.',
     },
   ];

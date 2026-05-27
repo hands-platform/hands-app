@@ -1163,7 +1163,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
       detail: 'No partner has joined yet. Keep partner availability and notification delivery visible.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
-      actionHref: '/providers',
+      actionHref: '/partners',
       actionLabel: 'Open partners',
     });
   }

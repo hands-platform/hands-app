@@ -152,7 +152,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                   <Link className="text-link" href={block.href}>
                     Open
                   </Link>
-                  <Link className="text-link" href={`/providers/${block.providerId}`}>
+                  <Link className="text-link" href={`/partners/${block.providerId}`}>
                     Profile
                   </Link>
                 </div>
@@ -263,7 +263,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             {providerWatchlist.map((item) => (
               <tr key={item.provider.id}>
                 <td>
-                  <Link className="text-link" href={`/providers/${item.provider.id}`}>
+                  <Link className="text-link" href={`/partners/${item.provider.id}`}>
                     {adminProviderName(item.provider)}
                   </Link>
                   <p className="muted">{item.provider.user?.phone ?? 'No phone'}</p>
@@ -291,7 +291,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                 </td>
                 <td>
                   <div className="actions">
-                    <Link className="text-link" href={`/providers/${item.provider.id}`}>
+                    <Link className="text-link" href={`/partners/${item.provider.id}`}>
                       Partner detail
                     </Link>
                     {item.walletBalance < 0 ? (
@@ -422,7 +422,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                 </td>
                 <td>
                   {report.providerProfile ? (
-                    <Link className="text-link" href={`/providers/${report.providerProfile.id}`}>
+                    <Link className="text-link" href={`/partners/${report.providerProfile.id}`}>
                       {providerName(report.providerProfile)}
                     </Link>
                   ) : (
@@ -525,7 +525,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                 </td>
                 <td>
                   {sanction.providerProfile ? (
-                    <Link className="text-link" href={`/providers/${sanction.providerProfile.id}`}>
+                    <Link className="text-link" href={`/partners/${sanction.providerProfile.id}`}>
                       {providerName(sanction.providerProfile)}
                     </Link>
                   ) : (
@@ -743,7 +743,7 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         title: `${partner} account is blocked`,
         reason: item.provider.blockedReason || 'Partner account is restricted by an admin control.',
         operatorAction: 'Review evidence and unblock only when the audit trail clearly explains the decision.',
-        href: `/providers/${item.provider.id}`,
+        href: `/partners/${item.provider.id}`,
         priority: 105,
       });
     }
@@ -793,7 +793,7 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         reason:
           'Distance sorting and configured invitation-radius decisions can be wrong when online location is missing or stale.',
         operatorAction: 'Ask the partner to reopen the app and refresh location before accepting dispatch-sensitive bookings.',
-        href: `/providers/${item.provider.id}`,
+        href: `/partners/${item.provider.id}`,
         priority: 64,
       });
     }
@@ -809,7 +809,7 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         title: `${partner} KYC is not approved`,
         reason: 'Partner can remain in onboarding, but activity level should not be upgraded without identity approval.',
         operatorAction: 'Review CCCD/CMND and selfie documents, then approve, reject, or request reupload.',
-        href: `/providers/${item.provider.id}`,
+        href: `/partners/${item.provider.id}`,
         priority: 56,
       });
     }
@@ -825,7 +825,7 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         title: `${partner} bank account is not approved`,
         reason: 'Partner may work only if policy allows it, but payout cannot be released without a verified account.',
         operatorAction: 'Review bank name, account holder, QR/banking data, and account-change history.',
-        href: `/providers/${item.provider.id}`,
+        href: `/partners/${item.provider.id}`,
         priority: 48,
       });
     }

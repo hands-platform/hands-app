@@ -219,7 +219,7 @@ export default async function OperationsPolicyPage({
               {policySimulation.partnerRows.map((partner) => (
                 <div className="ops-row" key={partner.id}>
                   <div>
-                    <a className="text-link" href={`/providers/${partner.id}`}>
+                    <a className="text-link" href={`/partners/${partner.id}`}>
                       {partner.name}
                     </a>
                     <p className="muted">

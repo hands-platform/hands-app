@@ -56,7 +56,7 @@ for (const page of pages) {
 }
 
 const providersBody = await fetchPage('/providers');
-const providerLinkMatch = providersBody.match(/href="\/providers\/([^"]+)"/);
+const providerLinkMatch = providersBody.match(/href="\/(?:partners|providers)\/([^"]+)"/);
 if (providerLinkMatch) {
   const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
   for (const providerPath of providerDetailPaths) {

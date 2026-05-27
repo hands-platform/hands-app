@@ -14,6 +14,7 @@ export async function enablePushDevice(formData: FormData) {
   const pushDeviceId = readRequiredFormString(formData, 'pushDeviceId');
   await adminPost(`/admin/push-devices/${pushDeviceId}/enable`, {}, null);
   revalidatePath('/notifications');
+  revalidatePath('/partners');
   revalidatePath('/providers');
   revalidatePath('/audit-log');
 }

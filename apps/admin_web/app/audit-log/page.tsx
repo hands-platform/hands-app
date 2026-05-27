@@ -595,7 +595,7 @@ function relatedBoardHref(log: AdminAuditLog) {
         : typeof metadata.providerProfileId === 'string'
           ? metadata.providerProfileId
           : null;
-    return providerId ? `/providers/${providerId}` : '/providers';
+    return providerId ? `/partners/${providerId}` : '/partners';
   }
   if (log.action.startsWith('coupon.')) {
     return '/coupons';
@@ -611,7 +611,7 @@ function relatedBoardLabel(log: AdminAuditLog) {
   if (href === '/audit-log') {
     return 'Audit';
   }
-  if (href.startsWith('/providers/')) {
+  if (href.startsWith('/partners/')) {
     return 'partner detail';
   }
   if (href.startsWith('/bookings/')) {

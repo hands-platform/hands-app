@@ -160,7 +160,7 @@ export default async function AppSessionsPage() {
                     <code>{shortDeviceId(session.deviceId)}</code>
                     <div className="muted">{session.ipAddress ?? 'no ip'}</div>
                     {partnerId ? (
-                      <Link className="text-link" href={`/providers/${partnerId}`}>
+                      <Link className="text-link" href={`/partners/${partnerId}`}>
                         Open partner
                       </Link>
                     ) : null}

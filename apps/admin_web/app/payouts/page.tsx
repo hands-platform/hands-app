@@ -489,7 +489,7 @@ export default async function PayoutsPage() {
                         <PayoutStatusForm action={markPayoutFailed} batch={batch} label="Failed" />
                       )}
                       {payoutHold && (
-                        <a className="pill pill-danger" href={`/providers/${batch.providerProfileId}`}>
+                        <a className="pill pill-danger" href={`/partners/${batch.providerProfileId}`}>
                           Open partner risk
                         </a>
                       )}
