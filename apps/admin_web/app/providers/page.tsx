@@ -37,6 +37,30 @@ type ProviderCommandLane = {
   href: string;
   metrics: Array<{ label: string; value: string }>;
 };
+type PartnerDispatchForecast = {
+  totals: Array<{
+    label: string;
+    value: string;
+    detail: string;
+    tone: ProviderCommandLane['tone'];
+    href: string;
+  }>;
+  blockers: Array<{
+    label: string;
+    count: number;
+    detail: string;
+    href: string;
+    tone: ProviderCommandLane['tone'];
+  }>;
+  supplyLanes: Array<{
+    city: string;
+    total: number;
+    ready: number;
+    online: number;
+    locationNeedsRefresh: number;
+    blocked: number;
+  }>;
+};
 type ProviderFilters = {
   q: string;
   verification: string;
@@ -76,6 +100,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const commandCenter = buildProviderCommandCenter(providers, opsPolicy);
   const reviewQueue = buildProviderReviewQueue(providers, opsPolicy);
   const priorityLane = buildProviderPriorityLane(providers, opsPolicy);
+  const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
 
   return (
@@ -242,6 +267,87 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               </div>
             </Link>
           ))}
+        </div>
+      </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Dispatch capacity forecast</h2>
+            <p className="muted">
+              Converts the filtered partner list into dispatch capacity, recovery work, and city-level supply
+              signals for direct requests and 10km backup matching.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy">
+            Policy: fresh location {'<='} {opsPolicy.staleLocationMinutes}m
+          </Link>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          {dispatchForecast.totals.map((item) => (
+            <Link className="card" href={item.href} key={item.label}>
+              <p>{item.label}</p>
+              <h2>{item.value}</h2>
+              <span className={`signal ${providerCommandToneClass(item.tone)}`}>
+                {providerCommandToneLabel(item.tone)}
+              </span>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {item.detail}
+              </p>
+            </Link>
+          ))}
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          <div className="card">
+            <h3>Dispatch blockers</h3>
+            <div className="setup-stage-list" style={{ marginTop: 12 }}>
+              {dispatchForecast.blockers.map((item) => (
+                <div className="setup-stage-item" key={item.label}>
+                  <span>{item.count ? 'FIX' : 'OK'}</span>
+                  <div>
+                    <strong>{item.label}</strong>
+                    <p className="muted">{item.detail}</p>
+                  </div>
+                  <Link className="text-link" href={item.href}>
+                    {item.count}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <h3>City supply lanes</h3>
+            <p className="muted">
+              Use this to decide where partner onboarding, location refresh, or push registration should be
+              pushed first.
+            </p>
+            <div className="setup-stage-list" style={{ marginTop: 12 }}>
+              {dispatchForecast.supplyLanes.map((lane) => (
+                <div className="setup-stage-item" key={lane.city}>
+                  <span>{lane.ready ? 'LIVE' : 'WATCH'}</span>
+                  <div>
+                    <strong>{lane.city}</strong>
+                    <p className="muted">
+                      {lane.ready}/{lane.total} ready, {lane.online} online, {lane.locationNeedsRefresh}{' '}
+                      need location refresh, {lane.blocked} blocked.
+                    </p>
+                  </div>
+                  <Link className="text-link" href={`/partners?q=${encodeURIComponent(lane.city)}`}>
+                    Open
+                  </Link>
+                </div>
+              ))}
+              {dispatchForecast.supplyLanes.length === 0 ? (
+                <div className="setup-stage-item">
+                  <span>EMPTY</span>
+                  <div>
+                    <strong>No city signal yet</strong>
+                    <p className="muted">Partner city data will appear here once profiles are filled.</p>
+                  </div>
+                  <small>0</small>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </div>
       </section>
       <section className="card" style={{ marginBottom: 16 }}>
@@ -1390,6 +1496,168 @@ function providerCommandToneLabel(tone: ProviderCommandLane['tone']) {
     return 'Info';
   }
   return 'Clear';
+}
+
+function buildPartnerDispatchForecast(
+  providers: AdminProvider[],
+  opsPolicy: ProviderOpsPolicy,
+): PartnerDispatchForecast {
+  const readyNow = providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length;
+  const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
+  const approved = providers.filter((provider) => provider.verification?.status === 'APPROVED').length;
+  const locationNeedsRefresh = providers.filter((provider) =>
+    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
+  ).length;
+  const pushMissing = providers.filter((provider) => !hasHealthyPush(provider)).length;
+  const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
+  const securityRisk = providers.filter((provider) =>
+    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+  ).length;
+  const onboardingBlocked = providers.filter((provider) => provider.verification?.status !== 'APPROVED').length;
+  const payoutLocked = providers.filter(providerPayoutSetupNeedsReview).length;
+  const approvedOffline = providers.filter(
+    (provider) => provider.verification?.status === 'APPROVED' && provider.status !== 'ONLINE_AVAILABLE',
+  ).length;
+  const recoverableNow = providers.filter((provider) => {
+    if (providerDispatchReady(provider, opsPolicy)) return false;
+    if (provider.verification?.status !== 'APPROVED') return false;
+    if (provider.blockedAt) return false;
+    if (providerUnsettledWalletBalance(provider) < 0) return false;
+    if (!['clear', 'missing'].includes(providerSecurityStatus(provider))) return false;
+    return (
+      provider.status !== 'ONLINE_AVAILABLE' ||
+      providerLocationStatus(provider, opsPolicy) !== 'recent' ||
+      !hasHealthyPush(provider)
+    );
+  }).length;
+
+  return {
+    totals: [
+      {
+        label: 'Ready now',
+        value: `${readyNow}/${providers.length}`,
+        detail: 'Approved, online, fresh location, clean device risk, and push-ready partners.',
+        tone: readyNow > 0 ? 'ok' : 'warn',
+        href: '/partners?readiness=ready',
+      },
+      {
+        label: 'Recoverable today',
+        value: recoverableNow.toString(),
+        detail: 'Approved partners likely recoverable by going online, refreshing location, or enabling push.',
+        tone: recoverableNow > 0 ? 'info' : 'ok',
+        href: recoverableNow > 0 ? '/partners?readiness=approved-offline' : '/partners',
+      },
+      {
+        label: 'Online capacity',
+        value: `${online}/${approved}`,
+        detail: 'Approved partner pool currently online versus total approved partners in this filtered view.',
+        tone: online > 0 ? 'info' : approved > 0 ? 'warn' : 'danger',
+        href: '/partners?providerStatus=ONLINE_AVAILABLE',
+      },
+      {
+        label: 'Hard blockers',
+        value: (walletDebt + securityRisk + onboardingBlocked).toString(),
+        detail: 'Identity, account, cash debt, or security blockers that should not be bypassed by dispatch.',
+        tone: walletDebt + securityRisk + onboardingBlocked > 0 ? 'danger' : 'ok',
+        href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=security',
+      },
+    ],
+    blockers: [
+      {
+        label: 'Location refresh',
+        count: locationNeedsRefresh,
+        detail: `Partner location is missing, expired, or older than ${opsPolicy.staleLocationMinutes} minutes.`,
+        href: '/partners?review=location',
+        tone: locationNeedsRefresh > 0 ? 'warn' : 'ok',
+      },
+      {
+        label: 'Push alerts missing',
+        count: pushMissing,
+        detail: 'Direct booking and backup matching alerts may not reach these partners.',
+        href: '/partners?review=push',
+        tone: pushMissing > 0 ? 'warn' : 'ok',
+      },
+      {
+        label: 'Approved but offline',
+        count: approvedOffline,
+        detail: 'Approved partners who can become useful supply once they open the Partner app.',
+        href: '/partners?readiness=approved-offline',
+        tone: approvedOffline > 0 ? 'info' : 'ok',
+      },
+      {
+        label: 'Wallet debt',
+        count: walletDebt,
+        detail: 'Cash fee debt blocks accepting bookings until settlement is confirmed.',
+        href: '/partners?review=cash-debt',
+        tone: walletDebt > 0 ? 'danger' : 'ok',
+      },
+      {
+        label: 'Payout/tax lock',
+        count: payoutLocked,
+        detail: 'First-earning partners who still need tax, bank, address, or agreement completion.',
+        href: '/partners?review=payout-setup',
+        tone: payoutLocked > 0 ? 'warn' : 'ok',
+      },
+      {
+        label: 'Security review',
+        count: securityRisk,
+        detail: 'Blocked, shared, suspicious, or account-blocked partner devices/sessions.',
+        href: '/partners?review=security',
+        tone: securityRisk > 0 ? 'danger' : 'ok',
+      },
+    ],
+    supplyLanes: buildPartnerSupplyLanes(providers, opsPolicy),
+  };
+}
+
+function buildPartnerSupplyLanes(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
+  const lanes = new Map<
+    string,
+    PartnerDispatchForecast['supplyLanes'][number]
+  >();
+
+  for (const provider of providers) {
+    const city = provider.city?.trim() || 'Unknown city';
+    const lane =
+      lanes.get(city) ??
+      {
+        city,
+        total: 0,
+        ready: 0,
+        online: 0,
+        locationNeedsRefresh: 0,
+        blocked: 0,
+      };
+
+    lane.total += 1;
+    if (providerDispatchReady(provider, opsPolicy)) {
+      lane.ready += 1;
+    }
+    if (provider.status === 'ONLINE_AVAILABLE') {
+      lane.online += 1;
+    }
+    if (providerLocationStatus(provider, opsPolicy) !== 'recent') {
+      lane.locationNeedsRefresh += 1;
+    }
+    if (
+      provider.blockedAt ||
+      provider.verification?.status !== 'APPROVED' ||
+      providerUnsettledWalletBalance(provider) < 0 ||
+      ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))
+    ) {
+      lane.blocked += 1;
+    }
+    lanes.set(city, lane);
+  }
+
+  return Array.from(lanes.values())
+    .sort((left, right) => {
+      if (left.ready !== right.ready) return right.ready - left.ready;
+      if (left.online !== right.online) return right.online - left.online;
+      if (left.total !== right.total) return right.total - left.total;
+      return left.city.localeCompare(right.city);
+    })
+    .slice(0, 6);
 }
 
 function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
