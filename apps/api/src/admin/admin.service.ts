@@ -22,7 +22,12 @@ import {
 } from '@prisma/client';
 import { SupabaseAdminService } from '../auth/supabase-admin.service';
 import { EarningsService } from '../earnings/earnings.service';
-import { OPERATIONAL_POLICY_DEFINITIONS } from '../matching/matching.policy';
+import {
+  NO_SHOW_ADMIN_REVIEW_REQUIRED,
+  NO_SHOW_AUTO_AFTER_EVIDENCE,
+  NO_SHOW_PARTNER_REPORT_POLICY_KEY,
+  OPERATIONAL_POLICY_DEFINITIONS,
+} from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
@@ -898,8 +903,23 @@ export class AdminService {
       throw new BadRequestException(`Booking status ${booking.status} cannot be marked as no-show`);
     }
 
-    const entry = `[${new Date().toISOString()}] No-show marked by operations${reason ? `: ${reason}` : '.'}`;
+    const noShowPolicy = await this.readOperationalPolicyValue(
+      NO_SHOW_PARTNER_REPORT_POLICY_KEY,
+      NO_SHOW_ADMIN_REVIEW_REQUIRED,
+    );
+    const policyNote =
+      noShowPolicy === NO_SHOW_AUTO_AFTER_EVIDENCE
+        ? 'Policy: evidence-backed no-show automation is active; verify evidence trail before payment closeout.'
+        : 'Policy: admin review required before customer or partner penalty.';
+    const entry = `[${new Date().toISOString()}] No-show marked by operations${
+      reason ? `: ${reason}. ` : '. '
+    }${policyNote}`;
     const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+    const paymentReviewNote =
+      reason ??
+      (noShowPolicy === NO_SHOW_AUTO_AFTER_EVIDENCE
+        ? 'No-show marked; evidence-backed policy active, verify evidence before closeout.'
+        : 'No-show requires payment and customer communication review.');
 
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
@@ -911,13 +931,13 @@ export class AdminService {
             where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
             update: {
               status: BookingOpsTaskStatus.BLOCKED,
-              note: reason ?? 'No-show requires payment and customer communication review.',
+              note: paymentReviewNote,
               actorId,
             },
             create: {
               type: BookingOpsTaskType.PAYMENT_REVIEWED,
               status: BookingOpsTaskStatus.BLOCKED,
-              note: reason ?? 'No-show requires payment and customer communication review.',
+              note: paymentReviewNote,
               actorId,
             },
           },
@@ -939,6 +959,7 @@ export class AdminService {
       previousStatus: booking.status,
       paymentStatus: booking.payment?.status,
       reason,
+      noShowPolicy,
     });
 
     return updated;
@@ -1876,6 +1897,14 @@ export class AdminService {
       updatedAt: setting.updatedAt,
       updatedBy: setting.updatedBy,
     };
+  }
+
+  private async readOperationalPolicyValue(key: string, fallback: string) {
+    const setting = await this.prisma.operationalPolicySetting.findUnique({
+      where: { key },
+      select: { value: true },
+    });
+    return typeof setting?.value === 'string' ? setting.value : fallback;
   }
 
   private validateOperationalPolicyValue(

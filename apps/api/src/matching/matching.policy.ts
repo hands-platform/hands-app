@@ -8,6 +8,12 @@ export const MATCHING_TRAVEL_BUFFER_MINUTES_KEY = 'matching.travel_buffer_minute
 export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
+export const CANCELLATION_AFTER_MATCH_POLICY_KEY = 'cancellation.after_match_policy';
+export const CANCELLATION_ADMIN_REVIEW_FOR_MVP = 'ADMIN_REVIEW_FOR_MVP';
+export const CANCELLATION_AUTO_FEE_AFTER_MATCH = 'AUTO_FEE_AFTER_MATCH';
+export const NO_SHOW_PARTNER_REPORT_POLICY_KEY = 'no_show.partner_report_policy';
+export const NO_SHOW_ADMIN_REVIEW_REQUIRED = 'ADMIN_REVIEW_REQUIRED';
+export const NO_SHOW_AUTO_AFTER_EVIDENCE = 'AUTO_NO_SHOW_AFTER_EVIDENCE';
 export const PREFERRED_ACCEPT_AUTO_MATCH = 'AUTO_MATCH_ON_ACCEPT';
 export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 
@@ -144,21 +150,21 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: false,
   },
   {
-    key: 'cancellation.after_match_policy',
+    key: CANCELLATION_AFTER_MATCH_POLICY_KEY,
     category: 'Decision',
     label: 'Customer cancellation after match',
     description:
       'Choose how HANDS should handle customer cancellation after a partner has accepted or been selected.',
-    value: 'ADMIN_REVIEW_FOR_MVP',
-    recommendedValue: 'ADMIN_REVIEW_FOR_MVP',
+    value: CANCELLATION_ADMIN_REVIEW_FOR_MVP,
+    recommendedValue: CANCELLATION_ADMIN_REVIEW_FOR_MVP,
     options: [
       {
-        value: 'ADMIN_REVIEW_FOR_MVP',
+        value: CANCELLATION_ADMIN_REVIEW_FOR_MVP,
         label: 'Admin review for MVP',
         tradeoff: 'Safest while operations learn real cancellation reasons and edge cases.',
       },
       {
-        value: 'AUTO_FEE_AFTER_MATCH',
+        value: CANCELLATION_AUTO_FEE_AFTER_MATCH,
         label: 'Auto fee after match',
         tradeoff: 'Protects partner time, but needs clear customer-facing rules and refund handling.',
       },
@@ -166,21 +172,21 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: false,
   },
   {
-    key: 'no_show.partner_report_policy',
+    key: NO_SHOW_PARTNER_REPORT_POLICY_KEY,
     category: 'Decision',
     label: 'No-show handling',
     description:
       'Choose how no-show reports should move from partner report to operational decision.',
-    value: 'ADMIN_REVIEW_REQUIRED',
-    recommendedValue: 'ADMIN_REVIEW_REQUIRED',
+    value: NO_SHOW_ADMIN_REVIEW_REQUIRED,
+    recommendedValue: NO_SHOW_ADMIN_REVIEW_REQUIRED,
     options: [
       {
-        value: 'ADMIN_REVIEW_REQUIRED',
+        value: NO_SHOW_ADMIN_REVIEW_REQUIRED,
         label: 'Admin review required',
         tradeoff: 'Reduces false penalties while the marketplace is young.',
       },
       {
-        value: 'AUTO_NO_SHOW_AFTER_EVIDENCE',
+        value: NO_SHOW_AUTO_AFTER_EVIDENCE,
         label: 'Auto no-show after evidence',
         tradeoff: 'Faster operations, but requires strong evidence upload and dispute flows.',
       },

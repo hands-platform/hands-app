@@ -1217,6 +1217,63 @@ if (cancelledPaymentAfterSync?.status !== 'RELEASED') {
   );
 }
 
+let afterMatchCancellationBooking;
+await patchJson(
+  `/admin/operational-policy/${encodeURIComponent('cancellation.after_match_policy')}`,
+  adminAuth.accessToken,
+  { value: 'AUTO_FEE_AFTER_MATCH' },
+);
+try {
+  afterMatchCancellationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+    serviceId: service.id,
+    providerId: providerAuth.user.providerProfile.id,
+    scheduledStartAt: new Date(Date.now() + 220 * 60_000).toISOString(),
+    address: { line1: 'After match cancellation policy smoke flow' },
+    lat: 10.7769,
+    lng: 106.7009,
+    paymentMethod: 'MOMO',
+  });
+  const acceptedAfterMatchCancellation = await postJson(
+    `/provider/bookings/${afterMatchCancellationBooking.id}/accept`,
+    providerAuth.accessToken,
+  );
+  if (acceptedAfterMatchCancellation.status !== 'MATCHED') {
+    throw new Error(
+      `After-match cancellation smoke booking was not matched before cancel: ${JSON.stringify(
+        acceptedAfterMatchCancellation,
+      )}`,
+    );
+  }
+  const cancelledAfterMatch = await postJson(
+    `/customer/bookings/${afterMatchCancellationBooking.id}/cancel`,
+    customerAuth.accessToken,
+  );
+  if (cancelledAfterMatch.status !== 'CANCELLED' || cancelledAfterMatch.payment?.status !== 'AUTHORIZED') {
+    throw new Error(
+      `After-match cancellation policy should keep payment hold for admin review: ${JSON.stringify(
+        cancelledAfterMatch,
+      )}`,
+    );
+  }
+  const cancellationReviewTask = await getJson(
+    `/admin/bookings/${afterMatchCancellationBooking.id}`,
+    adminAuth.accessToken,
+  ).then((item) => item.opsTasks?.find((task) => task.type === 'PAYMENT_REVIEWED'));
+  if (cancellationReviewTask?.status !== 'PENDING') {
+    throw new Error(
+      `After-match cancellation policy did not create pending payment review task: ${JSON.stringify(
+        cancellationReviewTask,
+      )}`,
+    );
+  }
+} finally {
+  await patchJson(
+    `/admin/operational-policy/${encodeURIComponent('cancellation.after_match_policy')}`,
+    adminAuth.accessToken,
+    { value: 'ADMIN_REVIEW_FOR_MVP' },
+  );
+}
+
 const noShowBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   scheduledStartAt: new Date(Date.now() + 130 * 60_000).toISOString(),

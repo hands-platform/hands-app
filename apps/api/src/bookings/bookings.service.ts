@@ -1,6 +1,8 @@
 ﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   BookingStatus,
+  BookingOpsTaskStatus,
+  BookingOpsTaskType,
   EarningStatus,
   ParticipantStatus,
   PaymentMethod,
@@ -13,7 +15,14 @@ import {
 import { EarningsService } from '../earnings/earnings.service';
 import { MatchingGateway } from '../matching/matching.gateway';
 import { MatchingService } from '../matching/matching.service';
-import { PREFERRED_ACCEPT_CUSTOMER_CONFIRM, haversineMeters, roundTo100Meters } from '../matching/matching.policy';
+import {
+  CANCELLATION_AFTER_MATCH_POLICY_KEY,
+  CANCELLATION_AUTO_FEE_AFTER_MATCH,
+  CANCELLATION_ADMIN_REVIEW_FOR_MVP,
+  PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
+  haversineMeters,
+  roundTo100Meters,
+} from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
@@ -358,6 +367,7 @@ export class BookingsService {
         preferredProvider: true,
         participants: { include: { providerProfile: true } },
         selectedProvider: true,
+        payment: true,
       },
     });
 
@@ -370,11 +380,58 @@ export class BookingsService {
       throw new BadRequestException('Booking cannot be cancelled in its current state');
     }
 
+    const cancellationPolicy = await this.readOperationalPolicyValue(
+      CANCELLATION_AFTER_MATCH_POLICY_KEY,
+      CANCELLATION_ADMIN_REVIEW_FOR_MVP,
+    );
+    const hasAcceptedPartner = booking.participants.some(
+      (participant) => participant.status === ParticipantStatus.ACCEPTED,
+    );
+    const afterPartnerCommitmentStatuses = new Set<BookingStatus>([
+      BookingStatus.MATCHED,
+      BookingStatus.PROVIDER_ON_THE_WAY,
+      BookingStatus.ARRIVED,
+    ]);
+    const isAfterPartnerCommitment =
+      afterPartnerCommitmentStatuses.has(booking.status) ||
+      Boolean(booking.selectedProviderId) ||
+      hasAcceptedPartner;
+    const holdPaymentForCancellationFeeReview =
+      isAfterPartnerCommitment && cancellationPolicy === CANCELLATION_AUTO_FEE_AFTER_MATCH;
+    const cancellationPolicyNote = holdPaymentForCancellationFeeReview
+      ? `[${new Date().toISOString()}] Cancellation after partner commitment: payment hold kept for admin fee review.`
+      : null;
+    const nextNotes =
+      cancellationPolicyNote && booking.notes?.trim()
+        ? `${booking.notes.trim()}\n${cancellationPolicyNote}`
+        : cancellationPolicyNote ?? booking.notes;
+
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
         status: BookingStatus.CANCELLED,
         expiresAt: new Date(),
+        notes: nextNotes,
+        ...(holdPaymentForCancellationFeeReview
+          ? {
+              opsTasks: {
+                upsert: {
+                  where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
+                  update: {
+                    status: BookingOpsTaskStatus.PENDING,
+                    note: 'Customer cancelled after partner commitment; review cancellation fee before releasing or refunding payment.',
+                    actorId: customerUserId,
+                  },
+                  create: {
+                    type: BookingOpsTaskType.PAYMENT_REVIEWED,
+                    status: BookingOpsTaskStatus.PENDING,
+                    note: 'Customer cancelled after partner commitment; review cancellation fee before releasing or refunding payment.',
+                    actorId: customerUserId,
+                  },
+                },
+              },
+            }
+          : {}),
       },
       include: {
         preferredProvider: true,
@@ -385,7 +442,8 @@ export class BookingsService {
         payment: true,
       },
     });
-    const releasedPayment = updated.payment ? await this.payments.release(updated.payment.id) : null;
+    const releasedPayment =
+      updated.payment && !holdPaymentForCancellationFeeReview ? await this.payments.release(updated.payment.id) : null;
     const result = releasedPayment ? { ...updated, payment: releasedPayment } : updated;
 
     await this.matching.closeBooking(bookingId);
@@ -407,7 +465,9 @@ export class BookingsService {
         userId: providerUserId,
         type: 'booking.cancelled',
         title: 'Booking cancelled',
-        body: 'The customer cancelled this booking request.',
+        body: holdPaymentForCancellationFeeReview
+          ? 'The customer cancelled this request. HANDS operations will review the cancellation fee.'
+          : 'The customer cancelled this booking request.',
         data: { bookingId },
       });
     }
@@ -416,13 +476,23 @@ export class BookingsService {
       userId: customerUserId,
       type: 'booking.cancelled',
       title: 'Booking cancelled',
-      body: releasedPayment
-        ? 'Your request has been cancelled and the payment hold was released.'
-        : 'Your request has been cancelled.',
+      body: holdPaymentForCancellationFeeReview
+        ? 'Your request has been cancelled. HANDS operations will review the cancellation fee before payment is released.'
+        : releasedPayment
+          ? 'Your request has been cancelled and the payment hold was released.'
+          : 'Your request has been cancelled.',
       data: { bookingId },
     });
     this.matchingGateway.emitBookingExpired(bookingId, result);
     return result;
+  }
+
+  private async readOperationalPolicyValue(key: string, fallback: string) {
+    const setting = await this.prisma.operationalPolicySetting.findUnique({
+      where: { key },
+      select: { value: true },
+    });
+    return typeof setting?.value === 'string' ? setting.value : fallback;
   }
 
   async getOpenBookings(providerUserId?: string) {
