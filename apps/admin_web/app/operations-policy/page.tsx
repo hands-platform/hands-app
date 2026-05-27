@@ -187,7 +187,7 @@ export default async function OperationsPolicyPage({
                       {partner.name}
                     </a>
                     <p className="muted">
-                      {partner.distanceLabel} · location {partner.locationAgeLabel}
+                      {partner.distanceLabel} / location {partner.locationAgeLabel}
                     </p>
                   </div>
                   <span className={`pill ${partner.pillClass}`}>{partner.status}</span>
@@ -367,9 +367,9 @@ export default async function OperationsPolicyPage({
         <h2>Recommended next choices</h2>
         <div className="booking-radar">
           <DecisionHint
-            title="Preferred partner acceptance"
+            title="First-pick partner acceptance"
             recommendation="For the stable product, customer final confirmation is stronger."
-            detail="MVP can keep auto-match for speed, but the long-term flow should let the customer pick from the preferred partner plus backup partners."
+            detail="MVP can keep auto-match for speed, but the long-term flow should let the customer pick from the first-pick partner plus backup partners."
           />
           <DecisionHint
             title="Backup participation"
@@ -846,7 +846,7 @@ function policyRecommendationPosture(
     return {
       status: shorter ? 'Faster than baseline' : 'Slower than baseline',
       detail: shorter
-        ? 'This can reduce waiting time but may make first-picked partners miss requests.'
+        ? 'This can reduce waiting time but may make first-pick partners miss requests.'
         : 'This gives partners more time but increases customer waiting anxiety.',
       operatorAction: `${liveContext} Existing booking countdowns do not recalculate.`,
       alignedAction: 'Keep monitoring first-pick response rate and cancellation during the waiting window.',
@@ -894,7 +894,7 @@ function policyRecommendationPosture(
       detail:
         value === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'This reduces empty waiting screens and lets nearby partners show interest early.'
-          : 'This protects the preferred partner window but may leave customers with no visible alternatives.',
+          : 'This protects the first-pick partner window but may leave customers with no visible alternatives.',
       operatorAction: `${liveContext} If delayed mode is kept, support should watch waiting-screen complaints.`,
       alignedAction:
         'Immediate backup participation supports lower customer anxiety during the first window.',
@@ -971,7 +971,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'New bookings',
         title: 'Response timer changes are forward-only',
         detail:
-          'Changing the preferred partner response window affects new booking expiry and Redis TTL. Existing bookings keep their saved expiresAt value.',
+          'Changing the first-pick partner response window affects new booking expiry and Redis TTL. Existing bookings keep their saved expiresAt value.',
         operatorAction:
           openMatching.length > 0
             ? `There are ${openMatching.length} open booking(s); do not expect their countdown to recalculate.`
@@ -985,11 +985,11 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           ? 'Backup partners can join during the first window'
           : 'Backup partners wait until the first window closes',
         detail: immediateBackup
-          ? 'Eligible partners inside the radius can appear while the preferred partner is still deciding.'
+          ? 'Eligible partners inside the radius can appear while the first-pick partner is still deciding.'
           : 'Backup visibility and join checks stay delayed until the preferred response window passes.',
         operatorAction: customerConfirm
           ? 'Customer confirmation mode is active, so accepted partners still require customer final choice.'
-          : 'Auto-match mode is active, so accepted preferred partners can lock faster.',
+          : 'Auto-match mode is active, so accepted first-pick partners can lock faster.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
@@ -1326,9 +1326,9 @@ function operationsOwnerDecisionBacklog() {
   return [
     {
       owner: 'Dispatch',
-      title: 'Preferred partner timer',
+      title: 'First-pick partner timer',
       question:
-        'Should the first-picked partner keep the full response window, or should backup partners become more prominent earlier?',
+        'Should the first-pick partner keep the full response window, or should backup partners become more prominent earlier?',
       signal:
         'Review open matching wait time, first-pick response rate, and customer cancellation before changing the timer.',
       className: 'ops-task-pending',
@@ -1398,7 +1398,7 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
   return [
     {
       step: '1',
-      title: 'Customer picks one preferred partner',
+      title: 'Customer picks one first-pick partner',
       detail:
         'The customer chooses a partner profile and service option first. This creates a direct booking request and opens the matching window.',
       className: 'timeline-done',
@@ -1409,8 +1409,8 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
     },
     {
       step: '2',
-      title: 'Preferred partner response window starts',
-      detail: `The first-picked partner has ${responseWindow} to accept. Existing open bookings keep their saved expiry time.`,
+      title: 'First-pick partner response window starts',
+      detail: `The first-pick partner has ${responseWindow} to accept. Existing open bookings keep their saved expiry time.`,
       className: 'timeline-active',
       tags: [
         { label: responseWindow, tone: 'pill-info' },
@@ -1495,7 +1495,7 @@ function policyImpactDetails(key: string) {
       area: 'Booking timer',
       title: 'Affects new booking expiry windows',
       detail:
-        'New requests use this value for the preferred partner response timer and Redis matching TTL. Existing open bookings keep their saved expiry.',
+        'New requests use this value for the first-pick partner response timer and Redis matching TTL. Existing open bookings keep their saved expiry.',
     },
     'matching.backup_provider_radius_meters': {
       area: 'Partner supply',

@@ -112,7 +112,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Matched', matched.length.toString()],
       ['High risk', highRisk.length.toString()],
       ['No partners yet', noParticipants.length.toString()],
-      ['Preferred pending', preferredPending.length.toString()],
+      ['First-pick pending', preferredPending.length.toString()],
       ['Fallback options', waitingSelection.length.toString()],
       ['Backup selected', backupChosen.length.toString()],
       ['Chat live', chatLive.length.toString()],
@@ -408,11 +408,11 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                   </td>
                   <td>
                     <strong>{booking.participants?.length ?? 0} joined</strong>
-                    <div className="muted">Preferred {booking.preferredProvider?.displayName ?? 'none'}</div>
+                    <div className="muted">First-pick {booking.preferredProvider?.displayName ?? 'none'}</div>
                     <div className="muted">
                       {booking.preferredProvider?.user?.phone
-                        ? `Preferred phone ${booking.preferredProvider.user.phone}`
-                        : 'Preferred partner not set'}
+                        ? `First-pick phone ${booking.preferredProvider.user.phone}`
+                        : 'First-pick partner not set'}
                     </div>
                     <div className="muted">{selectionPathLabel(booking)}</div>
                     <div className="muted">{bookingLocationSignalLabel(booking, currentTimeMs)}</div>
@@ -426,7 +426,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="participant-list" style={{ marginTop: 8 }}>
                       {booking.preferredProvider && (
                         <span className="pill" style={{ background: '#eef6e8', borderColor: '#b9d4a8' }}>
-                          Preferred: {booking.preferredProvider.displayName ?? 'Partner'}{' '}
+                          First-pick: {booking.preferredProvider.displayName ?? 'Partner'}{' '}
                           {preferredProviderStateLabel(booking)}
                         </span>
                       )}
@@ -926,7 +926,7 @@ function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: Book
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return 'Watch the preferred partner response window and prepare fallback partner selection.';
+    return 'Watch the first-pick partner response window and prepare fallback partner selection.';
   }
   if (booking.status === 'OPEN_MATCHING') {
     return 'Check nearby partner supply and notification delivery until the customer has options.';
@@ -1043,7 +1043,7 @@ function opsSignal(booking: AdminBooking) {
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return <span className="signal signal-warn">Preferred partner pending</span>;
+    return <span className="signal signal-warn">First-pick partner pending</span>;
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
     return <span className="signal signal-warn">No fallback partners yet</span>;
@@ -1111,7 +1111,7 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
     flags.push({ severity: 'high', title: 'Matching window expired' });
   }
   if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && participantCount === 0) {
-    flags.push({ severity: 'medium', title: 'Preferred partner pending' });
+    flags.push({ severity: 'medium', title: 'First-pick partner pending' });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
     flags.push({ severity: 'medium', title: 'No partner supply' });
@@ -1308,7 +1308,7 @@ function nextAction(booking: AdminBooking) {
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return 'Wait for the preferred partner, but monitor fallback partner supply.';
+    return 'Wait for the first-pick partner, but monitor fallback partner supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
     return 'Watch notifications and nearby partner supply.';
@@ -1317,7 +1317,7 @@ function nextAction(booking: AdminBooking) {
     return 'Customer can keep waiting or switch to a backup partner.';
   }
   if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
-    return 'Customer switched away from the preferred partner. Confirm chat, route, and partner handoff.';
+    return 'Customer switched away from the first-pick partner. Confirm chat, route, and partner handoff.';
   }
   if (booking.status === 'MATCHED') {
     return 'Customer selection is locked. Check chat creation, route tracking, and partner departure.';
@@ -1495,7 +1495,7 @@ function fallbackParticipants(booking: AdminBooking) {
 
 function selectionLabel(booking: AdminBooking) {
   if (!booking.preferredProvider) {
-    return 'No preferred partner';
+    return 'No first-pick partner';
   }
 
   if (isBackupSelected(booking)) {
@@ -1503,11 +1503,11 @@ function selectionLabel(booking: AdminBooking) {
   }
 
   if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
-    return 'Preferred partner pending';
+    return 'First-pick partner pending';
   }
 
   if (preferredProviderStateLabel(booking) == 'declined') {
-    return 'Preferred partner declined';
+    return 'First-pick partner declined';
   }
 
   if (booking.status === 'MATCHED') {
@@ -1515,10 +1515,10 @@ function selectionLabel(booking: AdminBooking) {
   }
 
   if (isSelectedProviderParticipant(booking)) {
-    return 'Preferred partner is active';
+    return 'First-pick partner is active';
   }
 
-  return 'Preferred partner requested';
+  return 'First-pick partner requested';
 }
 
 function selectionPathLabel(booking: AdminBooking) {
@@ -1531,7 +1531,7 @@ function selectionPathLabel(booking: AdminBooking) {
   if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
     return fallbackCount > 0
       ? 'Direct request first, with backup partners already waiting'
-      : 'Direct request first, waiting on the preferred partner';
+      : 'Direct request first, waiting on the first-pick partner';
   }
 
   if (isBackupSelected(booking)) {
@@ -1539,11 +1539,11 @@ function selectionPathLabel(booking: AdminBooking) {
   }
 
   if (booking.status === 'MATCHED') {
-    return 'Direct request confirmed by the preferred partner';
+    return 'Direct request confirmed by the first-pick partner';
   }
 
   if (fallbackCount > 0) {
-    return 'Backup partners are available while the preferred partner stays in the flow';
+    return 'Backup partners are available while the first-pick partner stays in the flow';
   }
 
   return 'Direct request remains the active path';
