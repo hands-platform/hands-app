@@ -22,8 +22,11 @@ flowchart LR
 - A booking starts as `CREATED`.
 - Payment is authorized or marked cash-pending.
 - Booking moves to `OPEN_MATCHING`.
-- Providers join as `BookingParticipant` records.
-- Providers are sorted by server-side distance and availability.
+- A customer may choose a preferred partner first. That partner has a 10 minute response window.
+- During that same 10 minute window, other online partners within 10km can join as backup candidates.
+- Eligible backup partners receive a notification and can also see the request in the Partner app open-request list.
+- Partners join as `BookingParticipant` records with the server-calculated distance snapshot.
+- Partners are sorted by server-side distance and availability.
 - Customer selects the final provider.
 - Booking moves to `MATCHED`; chat room is created.
 
@@ -34,7 +37,8 @@ flowchart LR
 Defaults:
 
 - `travel_buffer_minutes = 30`
-- `early_accept_window_minutes = 20`
+- `early_accept_window_minutes = 10`
+- `backup_provider_radius_meters = 10000`
 
 ## Redis Responsibilities
 

@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
+import { haversineMeters, roundTo100Meters } from '../matching/matching.policy';
 
 @Injectable()
 export class ProvidersService {
@@ -23,7 +24,7 @@ export class ProvidersService {
   async findNearby(lat: number, lng: number) {
     assertVietnamCoordinate(lat, lng, 'lat and lng query params are required');
 
-    const radiusMeters = Number(this.config.get<string>('PROVIDER_SEARCH_RADIUS_METERS') ?? 5000);
+    const radiusMeters = Number(this.config.get<string>('PROVIDER_SEARCH_RADIUS_METERS') ?? 10000);
     const staleAfterMinutes = Number(this.config.get<string>('PROVIDER_STALE_AFTER_MINUTES') ?? 30);
     const hideAfterHours = Number(this.config.get<string>('PROVIDER_HIDE_AFTER_HOURS') ?? 24);
     const hideBefore = new Date(Date.now() - hideAfterHours * 60 * 60_000);
@@ -458,23 +459,6 @@ export class ProvidersService {
     }
     return provider;
   }
-}
-
-function roundTo100Meters(value: number) {
-  return Math.round(value / 100) * 100;
-}
-
-function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
-  const earthRadius = 6371000;
-  const dLat = toRadians(lat2 - lat1);
-  const dLng = toRadians(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
-  return earthRadius * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function toRadians(value: number) {
-  return (value * Math.PI) / 180;
 }
 
 function assertVietnamCoordinate(lat: number, lng: number, message: string) {

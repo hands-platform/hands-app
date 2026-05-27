@@ -5,8 +5,16 @@
 - `providers:status` - provider id to status hash.
 - `provider:{providerId}:location` - latest provider location, 10 minute TTL.
 - `matching:active` - set of active matching booking ids.
-- `matching:{bookingId}` - active matching payload, 20 minute TTL.
+- `matching:{bookingId}` - active matching payload, 10 minute TTL by default.
 - `matching:{bookingId}:participants` - providers who joined a booking.
+
+## Matching Policy
+
+- Preferred partner response window: 10 minutes.
+- Backup partner radius: 10km from the booking location.
+- Backup eligibility uses the partner's last stored location; the MVP does not run route or live navigation APIs.
+- Eligible backup partners receive `booking.backup_available` and can join through `POST /provider/bookings/:id/join`.
+- Customer final selection remains the source of truth for switching from first-pick to a backup partner.
 
 ## BullMQ Queues
 

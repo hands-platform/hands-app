@@ -40,7 +40,10 @@ The provider Flutter app now includes:
 ## Realtime MVP Behavior
 
 - Provider sockets join a shared `providers:online` room after JWT authentication.
-- When a booking opens, the backend emits `booking.opened` to the booking room and the provider broadcast room.
+- When a booking opens, the backend emits `booking.opened` to the booking room, the preferred partner, and eligible backup partners.
+- The preferred partner response window is 10 minutes.
+- Backup partners can join only when their last stored location is within 10km of the booking location.
+- Eligible backup partners receive a `booking.backup_available` notification and see the request in `GET /api/provider/bookings/open`.
 - Customer app refreshes the active booking when a provider joins or the booking status changes.
 - Provider app refreshes open jobs when a new booking opens or a matching job changes state.
 

@@ -8,10 +8,12 @@ import {
   Prisma,
   ProviderTaxProfileStatus,
   ProviderStatus,
+  VerificationStatus,
 } from '@prisma/client';
 import { EarningsService } from '../earnings/earnings.service';
 import { MatchingGateway } from '../matching/matching.gateway';
 import { MatchingService } from '../matching/matching.service';
+import { haversineMeters, roundTo100Meters } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
@@ -88,9 +90,18 @@ export class BookingsService {
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
     const scheduledStartAt = new Date(input.scheduledStartAt);
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + service.durationMin * 60_000);
-    const expiresAt = new Date(Date.now() + 15 * 60_000);
+    const matchingPolicy = this.matching.getPolicy();
+    const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
     const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
     const finalAmount = Math.max(0, customerPrice - discountAmount);
+    const preferredProviderDistanceMeters = preferredProvider
+      ? calculateDistanceMeters(
+          input.lat,
+          input.lng,
+          preferredProvider.currentLat,
+          preferredProvider.currentLng,
+        )
+      : null;
 
     let booking = await this.prisma.booking.create({
       data: {
@@ -102,6 +113,8 @@ export class BookingsService {
         lat: input.lat,
         lng: input.lng,
         notes: input.notes,
+        travelBufferMin: matchingPolicy.travelBufferMinutes,
+        earlyAcceptMin: matchingPolicy.providerResponseWindowMinutes,
         preferredProviderId: preferredProvider?.id,
         openedAt: new Date(),
         expiresAt,
@@ -125,6 +138,7 @@ export class BookingsService {
               create: {
                 providerProfileId: preferredProvider.id,
                 status: ParticipantStatus.JOINED,
+                distanceMeters: preferredProviderDistanceMeters,
                 providerStatusAtJoin: preferredProvider.status,
               },
             }
@@ -144,7 +158,20 @@ export class BookingsService {
       booking = { ...booking, payment };
     }
 
-    const result = this.matching.openBooking({ booking });
+    const eligibleBackupProviders = await this.findEligibleBackupProviders({
+      bookingId: booking.id,
+      serviceId: service.id,
+      lat: Number(booking.lat),
+      lng: Number(booking.lng),
+      preferredProviderId: preferredProvider?.id,
+    });
+    const result = this.matching.openBooking({
+      booking,
+      payload: {
+        eligibleBackupProviderCount: eligibleBackupProviders.length,
+        backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+      },
+    });
     if (booking.payment?.id) {
       await this.payments.scheduleStatusCheck(booking.payment.id);
     }
@@ -175,6 +202,27 @@ export class BookingsService {
       this.matchingGateway.emitDirectBookingRequested(preferredProvider.userId, booking.id, result);
     } else {
       this.matchingGateway.emitBookingOpened(booking.id, result);
+    }
+    for (const backupProvider of eligibleBackupProviders) {
+      await this.notifications.create({
+        userId: backupProvider.userId,
+        type: 'booking.backup_available',
+        title: 'Nearby booking available',
+        body: 'A customer request within 10km is open for backup participation.',
+        data: {
+          bookingId: booking.id,
+          providerProfileId: backupProvider.id,
+          distanceMeters: backupProvider.distanceMeters,
+          backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+        },
+      });
+    }
+    if (eligibleBackupProviders.length > 0) {
+      this.matchingGateway.emitBackupBookingAvailable(
+        eligibleBackupProviders.map((provider) => provider.userId),
+        booking.id,
+        result,
+      );
     }
     return result;
   }
@@ -378,7 +426,7 @@ export class BookingsService {
 
   async getOpenBookings(providerUserId?: string) {
     const provider = providerUserId ? await this.requireProvider(providerUserId) : null;
-    return this.prisma.booking.findMany({
+    const bookings = await this.prisma.booking.findMany({
       where: {
         status: BookingStatus.OPEN_MATCHING,
         expiresAt: { gt: new Date() },
@@ -416,6 +464,14 @@ export class BookingsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    if (!provider) {
+      return bookings;
+    }
+
+    return bookings
+      .map((booking) => addProviderMatchingDistance(booking, provider))
+      .filter((booking) => this.canProviderSeeOpenBooking(booking, provider));
   }
 
   async listProviderBookings(providerUserId: string) {
@@ -447,15 +503,20 @@ export class BookingsService {
     if (booking.status !== BookingStatus.OPEN_MATCHING) {
       throw new BadRequestException('Booking is not open for matching');
     }
+    if (booking.expiresAt && booking.expiresAt.getTime() <= Date.now()) {
+      throw new BadRequestException('Booking request is expired');
+    }
     await this.ensureProviderWalletCanAccept(provider.id);
+    const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider);
 
     const participant = await this.prisma.bookingParticipant.upsert({
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
-      update: { status: ParticipantStatus.JOINED, respondedAt: new Date() },
+      update: { status: ParticipantStatus.JOINED, respondedAt: new Date(), distanceMeters },
       create: {
         bookingId,
         providerProfileId: provider.id,
         status: ParticipantStatus.JOINED,
+        distanceMeters,
         providerStatusAtJoin: provider.status,
       },
       include: { providerProfile: true },
@@ -596,7 +657,8 @@ export class BookingsService {
         await this.matching.registerActiveBooking(bookingId, result);
         await this.matching.scheduleBookingTimeout(
           bookingId,
-          updated.expiresAt ?? new Date(Date.now() + 10 * 60_000),
+          updated.expiresAt ??
+            new Date(Date.now() + this.matching.getPolicy().providerResponseWindowMinutes * 60_000),
         );
         this.matchingGateway.emitBookingOpened(bookingId, result);
         return updated;
@@ -607,6 +669,103 @@ export class BookingsService {
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
       data: { status, respondedAt: new Date() },
     });
+  }
+
+  private async findEligibleBackupProviders(input: {
+    bookingId: string;
+    serviceId: string;
+    lat: number;
+    lng: number;
+    preferredProviderId?: string;
+  }) {
+    const policy = this.matching.getPolicy();
+    const providers = await this.prisma.providerProfile.findMany({
+      where: {
+        id: input.preferredProviderId ? { not: input.preferredProviderId } : undefined,
+        status: { in: [ProviderStatus.ONLINE_AVAILABLE, ProviderStatus.ONLINE_AVAILABLE_SOON] },
+        blockedAt: null,
+        currentLat: { not: null },
+        currentLng: { not: null },
+        verification: { status: VerificationStatus.APPROVED },
+        participants: {
+          none: {
+            bookingId: input.bookingId,
+            status: ParticipantStatus.REJECTED,
+          },
+        },
+        OR: [
+          { services: { none: {} } },
+          {
+            services: {
+              some: {
+                serviceId: input.serviceId,
+                active: true,
+                service: { active: true },
+              },
+            },
+          },
+        ],
+      },
+      select: {
+        id: true,
+        userId: true,
+        currentLat: true,
+        currentLng: true,
+      },
+      take: 100,
+    });
+
+    return providers
+      .map((provider) => ({
+        ...provider,
+        distanceMeters: calculateDistanceMeters(
+          input.lat,
+          input.lng,
+          provider.currentLat,
+          provider.currentLng,
+        ),
+      }))
+      .filter(
+        (provider) =>
+          provider.distanceMeters !== null && provider.distanceMeters <= policy.backupProviderRadiusMeters,
+      )
+      .map((provider) => ({ ...provider, distanceMeters: provider.distanceMeters as number }))
+      .sort((left, right) => left.distanceMeters - right.distanceMeters)
+      .slice(0, 50);
+  }
+
+  private canProviderSeeOpenBooking(
+    booking: { preferredProviderId: string | null; distanceMeters?: number | null },
+    provider: { id: string },
+  ) {
+    if (booking.preferredProviderId === provider.id) {
+      return true;
+    }
+    return typeof booking.distanceMeters === 'number'
+      ? booking.distanceMeters <= this.matching.getPolicy().backupProviderRadiusMeters
+      : false;
+  }
+
+  private requireProviderWithinMatchingRadius(
+    booking: { lat: unknown; lng: unknown; preferredProviderId: string | null },
+    provider: { id: string; currentLat: unknown; currentLng: unknown },
+  ) {
+    const distanceMeters = calculateDistanceMeters(
+      Number(booking.lat),
+      Number(booking.lng),
+      provider.currentLat,
+      provider.currentLng,
+    );
+    if (booking.preferredProviderId === provider.id) {
+      return distanceMeters;
+    }
+    if (distanceMeters === null) {
+      throw new BadRequestException('Provider location is required before joining this booking');
+    }
+    if (distanceMeters > this.matching.getPolicy().backupProviderRadiusMeters) {
+      throw new BadRequestException('Only providers within 10km can join this booking');
+    }
+    return distanceMeters;
   }
 
   private async ensureProviderWalletCanAccept(providerProfileId: string) {
@@ -781,4 +940,38 @@ export class BookingsService {
     });
     return booking.customerProfile.userId;
   }
+}
+
+function addProviderMatchingDistance<T extends { lat: unknown; lng: unknown }>(
+  booking: T,
+  provider: { currentLat: unknown; currentLng: unknown },
+) {
+  return {
+    ...booking,
+    distanceMeters: calculateDistanceMeters(
+      Number(booking.lat),
+      Number(booking.lng),
+      provider.currentLat,
+      provider.currentLng,
+    ),
+  };
+}
+
+function calculateDistanceMeters(
+  bookingLat: number,
+  bookingLng: number,
+  providerLat: unknown,
+  providerLng: unknown,
+) {
+  const lat = Number(providerLat);
+  const lng = Number(providerLng);
+  if (
+    !Number.isFinite(bookingLat) ||
+    !Number.isFinite(bookingLng) ||
+    !Number.isFinite(lat) ||
+    !Number.isFinite(lng)
+  ) {
+    return null;
+  }
+  return roundTo100Meters(haversineMeters(bookingLat, bookingLng, lat, lng));
 }

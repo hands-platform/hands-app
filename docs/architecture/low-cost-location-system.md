@@ -5,6 +5,7 @@ HANDS now avoids Google Maps Directions, routing APIs, and realtime location str
 ## Runtime Flow
 
 Customer app:
+
 - Loads MapTiler only on map screens.
 - Requests GPS once when choosing a service location.
 - Shows a fixed center pin over the MapLibre map.
@@ -15,6 +16,7 @@ Customer app:
 - Demo Ho Chi Minh City coordinates can be used for local provider discovery, but booking confirmation requires explicit map/address confirmation before saving a booking location.
 
 Provider app:
+
 - Requests GPS when the provider logs in and goes online.
 - Sends one location update immediately.
 - Sends another update every 10 minutes while the app is open.
@@ -23,9 +25,10 @@ Provider app:
 - If GPS is denied, reuses the last valid stored provider location only; it does not overwrite the server with a fake/demo coordinate.
 
 Backend:
+
 - Stores `ProviderProfile.currentLat`, `currentLng`, and `currentLocationUpdatedAt`.
 - Stores customer-confirmed pins in `CustomerSelectedLocation`.
-- Filters nearby providers with a 5 km default radius.
+- Filters nearby providers with a 10 km default radius for the current matching MVP.
 - Marks locations older than 30 minutes as not recent.
 - Hides provider locations older than 24 hours from discovery.
 

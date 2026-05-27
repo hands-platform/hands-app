@@ -82,6 +82,30 @@ function assertBookingPricing(label, booking, expected) {
   }
 }
 
+function assertBookingMatchingWindow(label, booking, expectedMinutes) {
+  const expiresAtMs = Date.parse(booking?.expiresAt ?? '');
+  const openedAtMs = Date.parse(booking?.openedAt ?? booking?.createdAt ?? '');
+  if (!Number.isFinite(expiresAtMs) || !Number.isFinite(openedAtMs)) {
+    throw new Error(`${label} matching window is missing timestamps: ${JSON.stringify(booking)}`);
+  }
+  const windowMinutes = Math.round((expiresAtMs - openedAtMs) / 60_000);
+  if (windowMinutes !== expectedMinutes) {
+    throw new Error(
+      `${label} matching window mismatch: ${JSON.stringify({
+        expectedMinutes,
+        windowMinutes,
+        openedAt: booking.openedAt,
+        expiresAt: booking.expiresAt,
+      })}`,
+    );
+  }
+  if (booking.earlyAcceptMin !== expectedMinutes) {
+    throw new Error(
+      `${label} earlyAcceptMin should match the provider response window: ${JSON.stringify(booking)}`,
+    );
+  }
+}
+
 const health = await request('/health');
 const readiness = await request('/health/ready');
 if (!health.ok || !readiness.ok) {
@@ -981,6 +1005,11 @@ await postJson('/provider/location', backupProviderAuth.accessToken, {
   lng: 106.6951,
 });
 
+await postJson('/provider/location', walletDebtProviderAuth.accessToken, {
+  lat: 10.7801,
+  lng: 106.6992,
+});
+
 const savedSelectedLocation = await postJson('/customer/locations/selected', customerAuth.accessToken, {
   lat: 10.7769,
   lng: 106.7009,
@@ -1052,6 +1081,7 @@ assertBookingPricing('Open matching base-price', bookingDetail, {
   customerPrice: service.basePrice,
   paymentAmount: service.basePrice,
 });
+assertBookingMatchingWindow('Open matching base-price', bookingDetail, 10);
 
 const hybridBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -1067,6 +1097,7 @@ assertBookingPricing('Direct provider custom-price', hybridBookingDetail, {
   customerPrice: higherCustomerPrice,
   paymentAmount: higherCustomerPrice,
 });
+assertBookingMatchingWindow('Direct provider custom-price', hybridBookingDetail, 10);
 
 const momoBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -1220,6 +1251,13 @@ const cashOpenBooking = walletDebtProviderOpenBookings.find(
 if (cashOpenBooking?.payment?.method !== 'CASH') {
   throw new Error(
     `Provider open bookings must include cash payment metadata: ${JSON.stringify(cashOpenBooking)}`,
+  );
+}
+if (typeof cashOpenBooking.distanceMeters !== 'number' || cashOpenBooking.distanceMeters > 10000) {
+  throw new Error(
+    `Provider open bookings must expose only joinable 10km requests with distance metadata: ${JSON.stringify(
+      cashOpenBooking,
+    )}`,
   );
 }
 await postJson(`/provider/bookings/${walletDebtBooking.id}/accept`, walletDebtProviderAuth.accessToken);

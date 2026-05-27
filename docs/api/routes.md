@@ -106,9 +106,12 @@ Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUND
 ## Phase 1 Direct Booking Notes
 
 - `POST /customer/bookings` can include an optional `providerId` for the first MVP direct-booking flow.
-- When `providerId` is present, the booking is treated as a direct request to one provider rather than a public open-matching job.
+- When `providerId` is present, the booking is treated as a direct first-pick request, but the matching window still stays open for nearby backup partners.
+- A direct first-pick request waits 10 minutes by default.
+- Online partners within 10km of the booking location receive `booking.backup_available` notifications and can join before the customer selects the final partner.
 - `GET /provider/bookings/open` returns:
   - direct requests targeted to the authenticated provider
-  - general open-matching jobs when no direct target is set
+  - open requests within 10km where the authenticated partner can join as backup
 - `POST /provider/bookings/:id/accept` confirms a direct request.
+- `POST /provider/bookings/:id/join` records a backup participant and stores the server-calculated distance snapshot.
 - `POST /provider/bookings/:id/start` creates the chat room when the provider starts the service flow.

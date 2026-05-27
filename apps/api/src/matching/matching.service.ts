@@ -1,26 +1,33 @@
 import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { RedisStateService } from '../redis/redis-state.service';
-
-const DEFAULT_TRAVEL_BUFFER_MINUTES = 30;
-const DEFAULT_EARLY_ACCEPT_WINDOW_MINUTES = 20;
+import { resolveMatchingPolicy } from './matching.policy';
 
 @Injectable()
 export class MatchingService {
   constructor(
     private readonly redisState: RedisStateService,
+    private readonly config: ConfigService,
     @InjectQueue('booking-timeouts') private readonly bookingTimeoutQueue: Queue,
   ) {}
 
+  getPolicy() {
+    return resolveMatchingPolicy(this.config);
+  }
+
   openBooking(input: { booking?: unknown; payload?: unknown }) {
+    const policy = this.getPolicy();
     return {
       id: getRecordId(input.booking) ?? 'dev-booking-id',
       status: 'OPEN_MATCHING',
       matchingPolicy: {
         sort: ['distance', 'availability'],
-        travelBufferMinutes: DEFAULT_TRAVEL_BUFFER_MINUTES,
-        earlyAcceptWindowMinutes: DEFAULT_EARLY_ACCEPT_WINDOW_MINUTES,
+        travelBufferMinutes: policy.travelBufferMinutes,
+        earlyAcceptWindowMinutes: policy.providerResponseWindowMinutes,
+        preferredProviderResponseWindowMinutes: policy.providerResponseWindowMinutes,
+        backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
         finalSelection: 'CUSTOMER_SELECTS_PROVIDER',
       },
       input,
