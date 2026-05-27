@@ -117,6 +117,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
   const registrationDossier = buildProviderRegistrationDossier(provider);
   const providerServicePricing = buildProviderServicePricing(provider);
+  const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing);
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
   const payoutHold = activePayoutHold(provider);
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
@@ -186,6 +187,52 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
         <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
+      </div>
+
+      <div className={`card ${cardClass(bookingAcceptance.tone)}`} style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking acceptance decision</h2>
+            <p className="muted">
+              Operator-facing decision for whether this partner can accept a customer booking right now.
+            </p>
+          </div>
+          <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Decision</span>
+            <strong>{bookingAcceptance.canAccept ? 'Can accept' : 'Blocked'}</strong>
+            <small>{bookingAcceptance.primaryReason}</small>
+          </div>
+          <div>
+            <span>Cash debt</span>
+            <strong>{formatCurrency(bookingAcceptance.cashDebt)}</strong>
+            <small>Negative wallet blocks booking</small>
+          </div>
+          <div>
+            <span>Location</span>
+            <strong>{bookingAcceptance.locationAge}</strong>
+            <small>Must be fresh for dispatch</small>
+          </div>
+          <div>
+            <span>Services</span>
+            <strong>{bookingAcceptance.bookableServices}</strong>
+            <small>Bookable price options</small>
+          </div>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          {bookingAcceptance.gates.map((gate) => (
+            <div className="setup-stage-item" key={gate.label}>
+              <span>{gate.ok ? 'OK' : 'BLOCK'}</span>
+              <div>
+                <strong>{gate.label}</strong>
+                <p className="muted">{gate.detail}</p>
+              </div>
+              <small>{gate.action}</small>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -1302,6 +1349,122 @@ type ProviderOpsCard = {
   tone: 'done' | 'pending' | 'blocked';
 };
 
+type BookingAcceptanceGate = {
+  label: string;
+  ok: boolean;
+  detail: string;
+  action: string;
+};
+
+function buildProviderBookingAcceptance(
+  provider: ProviderDetail,
+  pricing: ReturnType<typeof buildProviderServicePricing>,
+) {
+  const cashDebt = cashFeeDebtAmount(provider);
+  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
+  const hasPushDevice = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
+  const hasRecentLocation = locationAgeMinutes(provider.currentLocationUpdatedAt) <= 30;
+  const primaryBank = provider.bankAccounts?.[0];
+  const pricingReady = pricing.readyCount > 0;
+  const hasRequiredDocuments = hasApprovedRequiredKycDocuments(provider);
+  const hasAccountBlock = Boolean(provider.blockedAt);
+
+  const gates: BookingAcceptanceGate[] = [
+    {
+      label: 'Wallet and cash debt',
+      ok: cashDebt <= 0,
+      detail:
+        cashDebt > 0
+          ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash fee/tax settlement.`
+          : 'No open negative wallet debt is visible.',
+      action: cashDebt > 0 ? 'Record partner deposit or admin offset before allowing acceptance.' : 'Clear',
+    },
+    {
+      label: 'Account and sanctions',
+      ok: !hasAccountBlock && activeSanctions.length === 0,
+      detail: hasAccountBlock
+        ? `Account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
+        : activeSanctions.length > 0
+          ? `${activeSanctions.length} active sanction(s) require risk review.`
+          : 'No account block or active sanction is visible.',
+      action: hasAccountBlock || activeSanctions.length > 0 ? 'Review risk desk' : 'Clear',
+    },
+    {
+      label: 'Identity and approval',
+      ok:
+        provider.verification?.status === 'APPROVED' &&
+        provider.kyc?.status === 'APPROVED' &&
+        hasRequiredDocuments,
+      detail:
+        provider.verification?.status !== 'APPROVED'
+          ? `Verification is ${provider.verification?.status ?? 'DRAFT'}.`
+          : provider.kyc?.status !== 'APPROVED'
+            ? `KYC is ${provider.kyc?.status ?? 'DRAFT'}.`
+            : !hasRequiredDocuments
+              ? `Missing approved documents: ${missingApprovedRequiredKycDocuments(provider)
+                  .map(providerDocumentLabel)
+                  .join(', ')}.`
+              : 'Verification, KYC, and required documents are approved.',
+      action:
+        provider.verification?.status === 'APPROVED' &&
+        provider.kyc?.status === 'APPROVED' &&
+        hasRequiredDocuments
+          ? 'Clear'
+          : 'Finish review',
+    },
+    {
+      label: 'Bank account',
+      ok: primaryBank?.status === 'APPROVED',
+      detail:
+        primaryBank?.status === 'APPROVED'
+          ? `Primary bank is approved: ${primaryBank.bankName}.`
+          : `Primary bank is ${primaryBank?.status ?? 'missing'}.`,
+      action: primaryBank?.status === 'APPROVED' ? 'Clear' : 'Approve bank',
+    },
+    {
+      label: 'Online and reachable',
+      ok: provider.status === 'ONLINE_AVAILABLE' && hasPushDevice,
+      detail:
+        provider.status !== 'ONLINE_AVAILABLE'
+          ? `Partner status is ${provider.status}.`
+          : !hasPushDevice
+            ? 'No enabled push device is registered for booking alerts.'
+            : 'Partner is online and has an enabled alert device.',
+      action: provider.status === 'ONLINE_AVAILABLE' && hasPushDevice ? 'Clear' : 'Ask partner to open app',
+    },
+    {
+      label: 'Location freshness',
+      ok: hasRecentLocation,
+      detail: hasRecentLocation
+        ? `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`
+        : `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`,
+      action: hasRecentLocation ? 'Clear' : 'Refresh location',
+    },
+    {
+      label: 'Bookable services',
+      ok: pricingReady,
+      detail: pricingReady
+        ? `${pricing.readyCount} service price option(s) can be booked.`
+        : 'No active provider service has a valid payout rule and customer price.',
+      action: pricingReady ? 'Clear' : 'Fix service pricing',
+    },
+  ];
+
+  const blockers = gates.filter((gate) => !gate.ok);
+  const primaryReason = blockers[0]?.detail ?? 'All booking acceptance gates are clear.';
+
+  return {
+    canAccept: blockers.length === 0,
+    status: blockers.length === 0 ? 'CAN ACCEPT' : `${blockers.length} BLOCKER(S)`,
+    tone: blockers.length === 0 ? ('done' as const) : ('blocked' as const),
+    primaryReason,
+    cashDebt,
+    locationAge: locationAgeLabel(provider.currentLocationUpdatedAt),
+    bookableServices: `${pricing.readyCount}/${pricing.rows.length}`,
+    gates,
+  };
+}
+
 function buildProviderOpsSummary(provider: ProviderDetail) {
   const primaryBank = provider.bankAccounts?.[0];
   const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
@@ -2323,6 +2486,12 @@ function providerHasFirstRevenueSignal(provider: ProviderDetail) {
 
 function isCashFeeDebt(earning: NonNullable<ProviderDetail['earnings']>[number]) {
   return earning.netAmount < 0 && earning.booking?.payment?.method === 'CASH' && earning.status !== 'PAID';
+}
+
+function cashFeeDebtAmount(provider: ProviderDetail) {
+  return (provider.earnings ?? [])
+    .filter(isCashFeeDebt)
+    .reduce((total, earning) => total + Math.abs(amountValue(earning.netAmount)), 0);
 }
 
 function walletLedgerLabel(type: string) {

@@ -37,4 +37,17 @@ for (const page of pages) {
   console.log(`PASS ${page.path}`);
 }
 
+const providersBody = await fetchPage('/providers');
+const providerLinkMatch = providersBody.match(/href="\/providers\/([^"]+)"/);
+if (providerLinkMatch) {
+  const providerPath = `/providers/${providerLinkMatch[1]}`;
+  const providerBody = await fetchPage(providerPath);
+  const providerMarkers = ['Partner ops command center', 'Booking acceptance decision'];
+  const missing = providerMarkers.filter((marker) => !providerBody.includes(marker));
+  if (missing.length > 0) {
+    throw new Error(`${providerPath} is missing expected markers: ${missing.join(', ')}`);
+  }
+  console.log(`PASS ${providerPath}`);
+}
+
 console.log(`Admin web smoke passed for ${pages.length} page(s) at ${baseUrl}.`);
