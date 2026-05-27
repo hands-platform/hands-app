@@ -55,6 +55,14 @@ type BookingProtectionLane = {
   bookings: AdminBooking[];
 };
 
+type BookingMatchingPolicySnapshot = {
+  providerResponseWindowMinutes: number | null;
+  backupProviderRadiusMeters: number | null;
+  preferredAcceptMode: string | null;
+  backupOpenMode: string | null;
+  travelBufferMinutes: number | null;
+};
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
@@ -109,6 +117,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const chatLive = orderedBookings.filter((booking) => Boolean(booking.chatRoom));
     const noShow = orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
     const expired = orderedBookings.filter((booking) => booking.status === 'EXPIRED');
+    const policySnapshots = orderedBookings.filter((booking) => bookingMatchingPolicySnapshot(booking));
     const paymentRisk = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
     const closeoutRisk = orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
     const pricingRisk = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
@@ -128,6 +137,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Chat live', chatLive.length.toString()],
       ['No-show', noShow.length.toString()],
       ['Expired', expired.length.toString()],
+      ['Policy snapshots', policySnapshots.length.toString()],
       ['Payment risk', paymentRisk.length.toString()],
       ['Closeout risk', closeoutRisk.length.toString()],
       ['Pricing risk', pricingRisk.length.toString()],
@@ -434,6 +444,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               const servicePriceLabel = bookingServicePriceLabel(booking);
               const servicePayoutLabel = bookingServicePayoutRuleLabel(booking);
               const pricingPolicy = bookingPricingPolicySignal(booking);
+              const matchingPolicy = bookingMatchingPolicySnapshot(booking);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -457,6 +468,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="muted">
                       {booking.expiresAt ? `Expires ${formatDate(booking.expiresAt)}` : 'No expiry set'}
                     </div>
+                    <div className="muted">{matchingPolicySummaryLabel(matchingPolicy)}</div>
                   </td>
                   <td>
                     {booking.customerProfile?.user?.fullName ?? 'Customer'}
@@ -475,6 +487,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="participant-list" style={{ marginTop: 8 }}>
                       <span className={`pill ${selectionToneClass(booking)}`}>{selectionLabel(booking)}</span>
                       {booking.chatRoom && <span className="pill pill-success">Chat ready</span>}
+                      <span className={`pill ${matchingPolicy ? 'pill-info' : 'pill-warn'}`}>
+                        {matchingPolicy ? 'Saved policy' : 'Live fallback'}
+                      </span>
                       <span className={`pill ${bookingLocationToneClass(booking, currentTimeMs)}`}>
                         {bookingLocationPillLabel(booking, currentTimeMs)}
                       </span>
@@ -1526,6 +1541,44 @@ function bookingServicePayoutRuleLabel(booking: AdminBooking) {
   return `Payout ${money(providerPayout, payoutRule.currency ?? currency)} / fee ${money(platformFee, payoutRule.currency ?? currency)}`;
 }
 
+function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | null) {
+  if (!snapshot) {
+    return 'Matching policy: live fallback';
+  }
+  const timer = snapshot.providerResponseWindowMinutes ? `${snapshot.providerResponseWindowMinutes}m` : 'timer ?';
+  const radius = snapshot.backupProviderRadiusMeters
+    ? `${(snapshot.backupProviderRadiusMeters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`
+    : 'radius ?';
+  const backupMode =
+    snapshot.backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
+      ? 'backup immediate'
+      : snapshot.backupOpenMode === 'DELAYED_UNTIL_FIRST_WINDOW_END'
+        ? 'backup delayed'
+        : 'backup ?';
+  const acceptMode =
+    snapshot.preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
+      ? 'customer final'
+      : snapshot.preferredAcceptMode === 'AUTO_MATCH_ON_ACCEPT'
+        ? 'auto match'
+        : 'accept ?';
+  return `Saved policy: ${timer} / ${radius} / ${backupMode} / ${acceptMode}`;
+}
+
+function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPolicySnapshot | null {
+  const metadata = readPlainRecord(booking.metadata);
+  const policy = readPlainRecord(metadata?.matchingPolicy);
+  if (!policy) {
+    return null;
+  }
+  return {
+    providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
+    backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
+    preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
+    backupOpenMode: readOptionalString(policy.backupOpenMode),
+    travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
+  };
+}
+
 function money(amount: number, currency = 'VND') {
   return `${amount.toLocaleString()} ${currency}`;
 }
@@ -1539,6 +1592,22 @@ function readAmount(value: unknown) {
     return Number.isFinite(parsed) ? parsed : null;
   }
   return null;
+}
+
+function readPlainRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function readOptionalNumber(value: unknown) {
+  const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readOptionalString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function formatDate(value?: string | null) {
