@@ -615,6 +615,7 @@ model Booking {
   lat                 Decimal                     @db.Decimal(10, 7)
   lng                 Decimal                     @db.Decimal(10, 7)
   notes               String?
+  metadata            Json?
   travelBufferMin     Int                         @default(30)
   earlyAcceptMin      Int                         @default(20)
   openedAt            DateTime?

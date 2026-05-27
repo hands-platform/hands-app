@@ -36,6 +36,7 @@ begin
     'IN_SERVICE',
     'COMPLETED',
     'CANCELLED',
+    'NO_SHOW',
     'EXPIRED',
     'REFUNDED'
   );

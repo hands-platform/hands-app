@@ -2486,7 +2486,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
 
     final eventMessages = <String, String>{
       'provider.joined': 'A backup therapist joined this request.',
-      'provider.accepted': 'A therapist accepted. Confirm this therapist or choose another available option.',
+      'provider.accepted':
+          'A therapist accepted. Confirm this therapist or choose another available option.',
       'booking.matched': 'Your therapist confirmed the booking.',
       'booking.opened': 'The request is still open for therapist responses.',
       'booking.expired': 'This booking expired or was cancelled.',
@@ -2646,11 +2647,13 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     final providerPoint = deriveRealtimeLatLng(latestProviderLocation);
     final chatRoom = asMap(currentBooking?['chatRoom']);
     final chatRoomId = chatRoom?['id']?.toString();
+    final matchingPolicy = bookingMatchingPolicy(currentBooking);
     final timeLeft = formatRemainingTime(expiresAt);
     final action = waitingCustomerAction(
       status: status,
       fallbackCount: fallbackCount,
       hasChatRoom: chatRoomId != null,
+      matchingPolicy: matchingPolicy,
     );
     final waitingHeadline = status == 'OPEN_MATCHING'
         ? '${providerDisplayName(currentBooking)} confirmation pending'
@@ -2828,6 +2831,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                             preferredProviderName:
                                 preferredProvider?['displayName'] as String?,
                             expiresAt: expiresAt,
+                            matchingPolicy: matchingPolicy,
                           ),
                           const SizedBox(height: 12),
                           WaitingInfoBanner(
@@ -2865,11 +2869,10 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                             TherapistDisplayCard(
                               provider: preferredProvider,
                               badgeLabel: 'Chosen first',
-                              detail:
-                                  'This therapist is getting the first confirmation window for your request.',
+                              detail: directRequestDetail(matchingPolicy),
                               subtitle: fallbackCount == 0
                                   ? 'Checking availability - $timeLeft'
-                                  : 'Checking availability - $timeLeft with backup options open',
+                                  : 'Checking availability - $timeLeft with ${backupParticipationLabel(matchingPolicy)}',
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -3229,12 +3232,14 @@ class WaitingStagePanel extends StatelessWidget {
     required this.fallbackCount,
     required this.preferredProviderName,
     required this.expiresAt,
+    this.matchingPolicy = const {},
   });
 
   final String status;
   final int fallbackCount;
   final String? preferredProviderName;
   final String? expiresAt;
+  final Map<String, dynamic> matchingPolicy;
 
   @override
   Widget build(BuildContext context) {
@@ -3245,7 +3250,7 @@ class WaitingStagePanel extends StatelessWidget {
             : 'Chosen therapist first',
         body: preferredProviderName == null
             ? 'Nearby therapists are being checked now.'
-            : '$preferredProviderName gets the first response window before backup therapists are invited in.',
+            : '$preferredProviderName gets ${responseWindowLabel(matchingPolicy)} while ${backupWindowDescription(matchingPolicy)}.',
         accent: const Color(0xFF5E8E4A),
         caption: preferredProviderName == null
             ? 'Stage 1'
@@ -3256,7 +3261,7 @@ class WaitingStagePanel extends StatelessWidget {
             ? 'No backup yet'
             : '$fallbackCount backup option(s) ready',
         body: fallbackCount == 0
-            ? 'If the chosen therapist is slow, backup therapists can join this request.'
+            ? backupStandbyDescription(matchingPolicy)
             : 'You can switch to another available therapist below without restarting the booking.',
         accent: const Color(0xFFB9852F),
         caption: fallbackCount == 0
@@ -5965,6 +5970,7 @@ WaitingCustomerAction waitingCustomerAction({
   required String status,
   required int fallbackCount,
   required bool hasChatRoom,
+  Map<String, dynamic> matchingPolicy = const {},
 }) {
   if (status == 'OPEN_MATCHING' && fallbackCount > 0) {
     return const WaitingCustomerAction(
@@ -5974,10 +5980,10 @@ WaitingCustomerAction waitingCustomerAction({
     );
   }
   if (status == 'OPEN_MATCHING') {
-    return const WaitingCustomerAction(
+    return WaitingCustomerAction(
       title: 'Waiting for therapist response',
       body:
-          'No action is needed yet. HANDS is waiting for your chosen therapist, and backup therapists can appear if they are slow.',
+          'No action is needed yet. HANDS is waiting for your chosen therapist. ${backupStandbyDescription(matchingPolicy)}',
     );
   }
   if (hasChatRoom && (status == 'MATCHED' || status == 'PROVIDER_ON_THE_WAY')) {
@@ -5998,6 +6004,69 @@ WaitingCustomerAction waitingCustomerAction({
     title: 'Booking progress',
     body: 'Current booking status: $status.',
   );
+}
+
+Map<String, dynamic> bookingMatchingPolicy(Map<String, dynamic>? booking) {
+  final metadata = asMap(booking?['metadata']);
+  final policy = asMap(metadata?['matchingPolicy']);
+  final earlyAcceptMin = asNum(booking?['earlyAcceptMin'])?.toInt();
+  return {
+    if (policy != null) ...policy,
+    if (earlyAcceptMin != null) 'providerResponseWindowMinutes': earlyAcceptMin,
+  };
+}
+
+String responseWindowLabel(Map<String, dynamic> policy) {
+  final minutes = asNum(policy['providerResponseWindowMinutes'])?.toInt();
+  if (minutes == null || minutes <= 0) {
+    return 'the first response window';
+  }
+  return 'the first $minutes minute response window';
+}
+
+String backupRadiusLabel(Map<String, dynamic> policy) {
+  final meters = asNum(policy['backupProviderRadiusMeters'])?.toInt();
+  if (meters == null || meters <= 0) {
+    return 'nearby';
+  }
+  if (meters >= 1000) {
+    final km = meters / 1000;
+    final text = km == km.roundToDouble()
+        ? km.toInt().toString()
+        : km.toStringAsFixed(1);
+    return 'within ${text}km';
+  }
+  return 'within ${meters}m';
+}
+
+bool backupOpensImmediately(Map<String, dynamic> policy) {
+  return policy['backupOpenMode']?.toString() == 'IMMEDIATE_WITHIN_WINDOW';
+}
+
+String backupWindowDescription(Map<String, dynamic> policy) {
+  final radius = backupRadiusLabel(policy);
+  if (backupOpensImmediately(policy)) {
+    return 'backup therapists $radius can also join during this window';
+  }
+  return 'backup therapists $radius can join after this window if needed';
+}
+
+String backupStandbyDescription(Map<String, dynamic> policy) {
+  final radius = backupRadiusLabel(policy);
+  if (backupOpensImmediately(policy)) {
+    return 'Backup therapists $radius can appear as soon as they offer support.';
+  }
+  return 'Backup therapists $radius can appear after the first response window if the chosen therapist is slow.';
+}
+
+String backupParticipationLabel(Map<String, dynamic> policy) {
+  return backupOpensImmediately(policy)
+      ? 'backup options open'
+      : 'backup options on standby';
+}
+
+String directRequestDetail(Map<String, dynamic> policy) {
+  return 'This therapist is getting ${responseWindowLabel(policy)} for your request.';
 }
 
 class WaitingCustomerAction {

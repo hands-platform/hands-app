@@ -132,6 +132,9 @@ export class BookingsService {
         preferredProviderId: preferredProvider?.id,
         openedAt: new Date(),
         expiresAt,
+        metadata: {
+          matchingPolicy: bookingMatchingPolicySnapshot(matchingPolicy),
+        },
         services: {
           create: {
             serviceId: service.id,
@@ -1143,4 +1146,14 @@ function formatMatchingRadius(radiusMeters: number) {
     return `${(radiusMeters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`;
   }
   return `${radiusMeters.toLocaleString('en')}m`;
+}
+
+function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingService['getPolicy']>>) {
+  return {
+    providerResponseWindowMinutes: policy.providerResponseWindowMinutes,
+    backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
+    preferredAcceptMode: policy.preferredAcceptMode,
+    backupOpenMode: policy.backupOpenMode,
+    travelBufferMinutes: policy.travelBufferMinutes,
+  };
 }
