@@ -222,30 +222,13 @@ export class BookingsService {
     } else {
       this.matchingGateway.emitBookingOpened(booking.id, result);
     }
-    for (const backupProvider of eligibleBackupProviders) {
-      await this.notifications.create({
-        userId: backupProvider.userId,
-        type: 'booking.backup_available',
-        title: 'Nearby booking available',
-        body: `A customer request within ${Math.round(
-          matchingPolicy.backupProviderRadiusMeters / 1000,
-        )}km is open for backup participation.`,
-        data: {
-          bookingId: booking.id,
-          providerProfileId: backupProvider.id,
-          distanceMeters: backupProvider.distanceMeters,
-          backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
-          backupOpenMode: matchingPolicy.backupOpenMode,
-        },
-      });
-    }
-    if (eligibleBackupProviders.length > 0) {
-      this.matchingGateway.emitBackupBookingAvailable(
-        eligibleBackupProviders.map((provider) => provider.userId),
-        booking.id,
-        result,
-      );
-    }
+    await this.notifyBackupProviders({
+      bookingId: booking.id,
+      providers: eligibleBackupProviders,
+      backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+      backupOpenMode: matchingPolicy.backupOpenMode,
+      matchingPayload: result,
+    });
     return result;
   }
 
@@ -585,7 +568,10 @@ export class BookingsService {
 
   async joinBooking(bookingId: string, providerUserId: string | undefined) {
     const provider = await this.requireProvider(providerUserId);
-    const booking = await this.prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
+    const booking = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: { participants: { select: { providerProfileId: true, status: true } } },
+    });
     if (booking.status !== BookingStatus.OPEN_MATCHING) {
       throw new BadRequestException('Booking is not open for matching');
     }
@@ -687,7 +673,13 @@ export class BookingsService {
     }
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
-      include: { customerProfile: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
+      include: {
+        customerProfile: true,
+        preferredProvider: true,
+        selectedProvider: true,
+        chatRoom: true,
+        services: { select: { serviceId: true } },
+      },
     });
 
     if (booking.preferredProviderId === provider.id) {
@@ -768,13 +760,39 @@ export class BookingsService {
           data: { bookingId, providerProfileId: provider.id },
         });
         const matchingPolicy = await this.matching.getPolicy();
-        const result = this.matching.openBooking({ booking: updated, policy: matchingPolicy });
+        const serviceId = booking.services[0]?.serviceId;
+        const eligibleBackupProviders = serviceId
+          ? await this.findEligibleBackupProviders({
+              bookingId,
+              serviceId,
+              lat: Number(updated.lat),
+              lng: Number(updated.lng),
+              preferredProviderId: provider.id,
+              backupOpenMode: matchingPolicy.backupOpenMode,
+              forceOpen: true,
+            })
+          : [];
+        const result = this.matching.openBooking({
+          booking: updated,
+          policy: matchingPolicy,
+          payload: {
+            eligibleBackupProviderCount: eligibleBackupProviders.length,
+            backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+            firstPickDeclined: true,
+          },
+        });
         await this.matching.registerActiveBooking(bookingId, result);
         await this.matching.scheduleBookingTimeout(
           bookingId,
           updated.expiresAt ?? new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
         );
-        this.matchingGateway.emitBookingOpened(bookingId, result);
+        await this.notifyBackupProviders({
+          bookingId,
+          providers: eligibleBackupProviders,
+          backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+          backupOpenMode: matchingPolicy.backupOpenMode,
+          matchingPayload: result,
+        });
         return updated;
       }
     }
@@ -785,6 +803,37 @@ export class BookingsService {
     });
   }
 
+  private async notifyBackupProviders(input: {
+    bookingId: string;
+    providers: Array<{ id: string; userId: string; distanceMeters: number }>;
+    backupProviderRadiusMeters: number;
+    backupOpenMode: string;
+    matchingPayload: unknown;
+  }) {
+    for (const backupProvider of input.providers) {
+      await this.notifications.create({
+        userId: backupProvider.userId,
+        type: 'booking.backup_available',
+        title: 'Nearby booking available',
+        body: `A customer request within ${Math.round(
+          input.backupProviderRadiusMeters / 1000,
+        )}km is open for backup participation.`,
+        data: {
+          bookingId: input.bookingId,
+          providerProfileId: backupProvider.id,
+          distanceMeters: backupProvider.distanceMeters,
+          backupProviderRadiusMeters: input.backupProviderRadiusMeters,
+          backupOpenMode: input.backupOpenMode,
+        },
+      });
+    }
+    this.matchingGateway.emitBackupBookingAvailable(
+      input.providers.map((provider) => provider.userId),
+      input.bookingId,
+      input.matchingPayload,
+    );
+  }
+
   private async findEligibleBackupProviders(input: {
     bookingId: string;
     serviceId: string;
@@ -792,8 +841,9 @@ export class BookingsService {
     lng: number;
     preferredProviderId?: string;
     backupOpenMode?: Awaited<ReturnType<MatchingService['getPolicy']>>['backupOpenMode'];
+    forceOpen?: boolean;
   }) {
-    if (input.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY) {
+    if (!input.forceOpen && input.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY) {
       return [];
     }
 
@@ -858,6 +908,7 @@ export class BookingsService {
       preferredProviderId: string | null;
       openedAt?: Date | string | null;
       distanceMeters?: number | null;
+      participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
     },
     provider: { id: string },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
@@ -879,6 +930,7 @@ export class BookingsService {
       lng: unknown;
       openedAt?: Date | string | null;
       preferredProviderId: string | null;
+      participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
     },
     provider: { id: string; currentLat: unknown; currentLng: unknown },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
@@ -907,10 +959,17 @@ export class BookingsService {
   }
 
   private isBackupWindowOpen(
-    booking: { openedAt?: Date | string | null },
+    booking: {
+      preferredProviderId?: string | null;
+      openedAt?: Date | string | null;
+      participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
+    },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
     if (policy.backupOpenMode === BACKUP_OPEN_IMMEDIATE) {
+      return true;
+    }
+    if (!booking.preferredProviderId || this.firstPickPartnerDeclined(booking)) {
       return true;
     }
     const openedAt = booking.openedAt ? new Date(booking.openedAt).getTime() : NaN;
@@ -919,6 +978,22 @@ export class BookingsService {
     }
     const backupOpensAt = openedAt + policy.providerResponseWindowMinutes * 60_000;
     return Date.now() >= backupOpensAt;
+  }
+
+  private firstPickPartnerDeclined(booking: {
+    preferredProviderId?: string | null;
+    participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
+  }) {
+    if (!booking.preferredProviderId) {
+      return false;
+    }
+    return Boolean(
+      booking.participants?.some(
+        (participant) =>
+          participant.providerProfileId === booking.preferredProviderId &&
+          participant.status === ParticipantStatus.REJECTED,
+      ),
+    );
   }
 
   private async ensureProviderWalletCanAccept(providerProfileId: string) {

@@ -1204,6 +1204,27 @@ try {
     () => postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken),
     400,
   );
+  await postJson(`/provider/bookings/${delayedBackupBooking.id}/reject`, providerAuth.accessToken);
+  const delayedBackupOpenAfterDecline = await getJson(
+    '/provider/bookings/open',
+    backupProviderAuth.accessToken,
+  );
+  const declinedRequest = delayedBackupOpenAfterDecline.find((item) => item.id === delayedBackupBooking.id);
+  if (!declinedRequest) {
+    throw new Error(
+      `First-pick decline should immediately expose delayed backup request: ${JSON.stringify(
+        delayedBackupOpenAfterDecline,
+      )}`,
+    );
+  }
+  if (typeof declinedRequest.distanceMeters !== 'number' || declinedRequest.distanceMeters > 10000) {
+    throw new Error(
+      `Declined first-pick backup request should keep 10km distance metadata: ${JSON.stringify(
+        declinedRequest,
+      )}`,
+    );
+  }
+  await postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken);
 } finally {
   await patchOperationalPolicyValue(
     adminAuth.accessToken,
