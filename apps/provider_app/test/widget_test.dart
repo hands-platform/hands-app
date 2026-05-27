@@ -7,7 +7,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: ProviderApp()));
 
     expect(find.text('Direct booking requests'), findsOneWidget);
-    expect(find.text('Demo provider login'), findsOneWidget);
+    expect(find.text('Demo partner login'), findsOneWidget);
   });
 
   test('provider service option labels tolerate numeric strings', () {

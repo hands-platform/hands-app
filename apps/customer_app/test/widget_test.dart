@@ -6,8 +6,8 @@ void main() {
   testWidgets('renders customer booking entry screen', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: CustomerApp()));
 
-    expect(find.text('Demo customer login'), findsOneWidget);
-    expect(find.text('Providers'), findsWidgets);
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Partners'), findsWidgets);
   });
 
   test('customer service price prefers provider and booking prices', () {
@@ -207,7 +207,7 @@ void main() {
     expect(customerServiceGroupPriceRangeLabel(groups.single),
         '600.000-700.000 VND');
     expect(customerServicePricePolicyLabel(groups.single.options.first),
-        'Provider price');
+        'Partner price');
     expect(customerServicePricePolicyLabel(groups.single.options.last),
         'Admin minimum');
   });
