@@ -3,6 +3,8 @@ const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101';
 const pages = [
   { path: '/', markers: ['HANDS Admin', 'API source'] },
   { path: '/bookings', markers: ['Booking Monitor', 'Booking operation filters'] },
+  { path: '/bookings?view=closeout', markers: ['Booking Monitor', 'Closeout ops'] },
+  { path: '/bookings?view=expired', markers: ['Booking Monitor', 'Expired'] },
   { path: '/bookings?view=no-show', markers: ['Booking Monitor', 'No-show'] },
   { path: '/cash-settlements', markers: ['Cash Settlements', 'Settlement command queue'] },
   { path: '/earnings', markers: ['Provider Earnings', 'Money flow command center'] },

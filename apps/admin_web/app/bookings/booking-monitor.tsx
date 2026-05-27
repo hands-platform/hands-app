@@ -10,7 +10,17 @@ type Props = {
   initialView: BookingView;
 };
 
-type BookingView = 'active' | 'high-risk' | 'payment' | 'pricing' | 'location' | 'chat' | 'no-show' | 'all';
+type BookingView =
+  | 'active'
+  | 'high-risk'
+  | 'payment'
+  | 'closeout'
+  | 'pricing'
+  | 'location'
+  | 'chat'
+  | 'expired'
+  | 'no-show'
+  | 'all';
 
 type BookingCommandLane = {
   title: string;
@@ -128,6 +138,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     if (view === 'payment') {
       return orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
     }
+    if (view === 'closeout') {
+      return orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
+    }
     if (view === 'pricing') {
       return orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
     }
@@ -136,6 +149,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     }
     if (view === 'chat') {
       return orderedBookings.filter((booking) => Boolean(booking.chatRoom));
+    }
+    if (view === 'expired') {
+      return orderedBookings.filter((booking) => booking.status === 'EXPIRED');
     }
     if (view === 'no-show') {
       return orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
@@ -508,6 +524,13 @@ const bookingViewOptions: Array<{
       'Use this to catch completed authorized payments, cancelled unresolved holds, cash pending, and missing refs.',
   },
   {
+    view: 'closeout',
+    label: 'Closeout ops',
+    description: 'completed bookings missing capture, earning, tax, platform fee, or wallet ledger records.',
+    operatorHint:
+      'Use this after service completion to reconcile payment capture, partner earning, tax logs, and wallet ledger entries.',
+  },
+  {
     view: 'pricing',
     label: 'Pricing ops',
     description: 'bookings whose service price is not backed by the active service payout matrix.',
@@ -527,6 +550,13 @@ const bookingViewOptions: Array<{
     description: 'bookings where customer/provider communication is already available.',
     operatorHint:
       'Use this to inspect service handoff quality, quiet chats, and route/location expectations.',
+  },
+  {
+    view: 'expired',
+    label: 'Expired',
+    description: 'bookings closed by timeout and waiting for payment release or customer follow-up review.',
+    operatorHint:
+      'Use this after manual or automatic expiry to confirm payment release, refund decision, and customer communication.',
   },
   {
     view: 'no-show',
@@ -619,9 +649,9 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
           ? 'Review'
           : 'Ready',
       tone:
-        paymentRisk.length > 0
+        closeoutRisk.length > 0
           ? 'danger'
-          : closeoutRisk.length > 0
+          : paymentRisk.length > 0
             ? 'danger'
             : noShow.length > 0
               ? 'warn'
@@ -629,17 +659,17 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
                 ? 'warn'
                 : 'ok',
       detail:
-        paymentRisk.length > 0
-          ? 'Some bookings need capture, release, refund, cash debt, or missing reference review.'
-          : closeoutRisk.length > 0
-            ? 'Completed bookings are missing earning, tax, platform fee, or wallet closeout records.'
+        closeoutRisk.length > 0
+          ? 'Completed bookings are missing earning, tax, platform fee, or wallet closeout records.'
+          : paymentRisk.length > 0
+            ? 'Some bookings need capture, release, refund, cash debt, or missing reference review.'
             : noShow.length > 0
               ? 'No-show bookings need a clear payment and customer communication outcome.'
               : 'Payment and service pricing policy signals are aligned.',
       href:
-        paymentRisk.length > 0
-          ? '/bookings?view=payment'
-          : closeoutRisk.length > 0
+        closeoutRisk.length > 0
+          ? '/bookings?view=closeout'
+          : paymentRisk.length > 0
             ? '/bookings?view=payment'
             : noShow.length > 0
               ? '/bookings?view=no-show'
@@ -808,6 +838,9 @@ function emptyBookingMessage(view: BookingView) {
   if (view === 'payment') {
     return 'No payment-risk bookings match this queue. Capture, release, refund, cash, and provider refs are clear.';
   }
+  if (view === 'closeout') {
+    return 'No completed closeout-risk bookings match this queue. Capture, earning, tax, fee, and wallet records are aligned.';
+  }
   if (view === 'pricing') {
     return 'No pricing-risk bookings match this queue. Booking prices match active service payout rules.';
   }
@@ -816,6 +849,9 @@ function emptyBookingMessage(view: BookingView) {
   }
   if (view === 'chat') {
     return 'No chat-live bookings match this queue. No active customer/provider conversation needs review.';
+  }
+  if (view === 'expired') {
+    return 'No expired bookings need review. Timeout closeout and customer communication are clear.';
   }
   if (view === 'no-show') {
     return 'No no-show bookings need review. Customer protection and payment closeout are clear.';
