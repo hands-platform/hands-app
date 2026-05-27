@@ -30,6 +30,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
     sanctions,
     watchlist: providerWatchlist,
   });
+  const operatingBlocks = buildPartnerOperatingBlocks(providerWatchlist);
 
   return (
     <>
@@ -116,6 +117,51 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
         ) : (
           <p className="muted" style={{ marginTop: 12 }}>
             No risk action currently needs operator review.
+          </p>
+        )}
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner operating block matrix</h2>
+            <p className="muted">
+              Explains why a partner may be blocked from accepting bookings, payout, or dispatch-sensitive
+              work, with the exact screen an operator should open next.
+            </p>
+          </div>
+          <span className={`pill ${operatingBlocks.length ? 'pill-warn' : 'pill-success'}`}>
+            {operatingBlocks.length ? `${operatingBlocks.length} block signal(s)` : 'No block signal'}
+          </span>
+        </div>
+        {operatingBlocks.length ? (
+          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+            {operatingBlocks.map((block) => (
+              <div className="setup-stage-item" key={block.id}>
+                <span>{block.impact}</span>
+                <div>
+                  <strong>{block.title}</strong>
+                  <p className="muted">{block.reason}</p>
+                  <p className="muted">{block.operatorAction}</p>
+                  <div className="participant-list">
+                    <span className={`pill ${block.tone}`}>{block.severity}</span>
+                    <span className="pill pill-info">{block.partner}</span>
+                  </div>
+                </div>
+                <div className="actions">
+                  <Link className="text-link" href={block.href}>
+                    Open
+                  </Link>
+                  <Link className="text-link" href={`/providers/${block.providerId}`}>
+                    Profile
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No partner currently has a risk signal that should block operations.
           </p>
         )}
       </section>
@@ -557,6 +603,20 @@ type RiskNextAction = {
   tags: Array<{ label: string; tone: string }>;
 };
 
+type PartnerOperatingBlock = {
+  id: string;
+  providerId: string;
+  partner: string;
+  impact: string;
+  severity: string;
+  tone: string;
+  title: string;
+  reason: string;
+  operatorAction: string;
+  href: string;
+  priority: number;
+};
+
 function buildRiskCommandCenter(input: RiskCommandCenterInput) {
   const openReports = input.reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status));
   const urgentReports = openReports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity));
@@ -649,6 +709,145 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       watchlist: input.watchlist,
     }),
   };
+}
+
+function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
+  const blocks: PartnerOperatingBlock[] = [];
+
+  for (const item of watchlist) {
+    const partner = adminProviderName(item.provider);
+    if (item.walletBalance < 0) {
+      blocks.push({
+        id: `${item.provider.id}-wallet`,
+        providerId: item.provider.id,
+        partner,
+        impact: 'ACCEPTANCE BLOCK',
+        severity: 'Wallet debt',
+        tone: 'pill-danger',
+        title: `${partner} cannot accept new paid work`,
+        reason: `${formatMoney(Math.abs(item.walletBalance))} cash/company fee debt is still open.`,
+        operatorAction: `Confirm partner deposit, admin offset, or finance adjustment using ${cashDebtSettlementReference(item.provider.id)}.`,
+        href: '/cash-settlements',
+        priority: 110 + Math.min(20, Math.abs(item.walletBalance) / 100000),
+      });
+    }
+
+    if (item.provider.blockedAt) {
+      blocks.push({
+        id: `${item.provider.id}-account-block`,
+        providerId: item.provider.id,
+        partner,
+        impact: 'ACCOUNT BLOCK',
+        severity: 'Blocked',
+        tone: 'pill-danger',
+        title: `${partner} account is blocked`,
+        reason: item.provider.blockedReason || 'Partner account is restricted by an admin control.',
+        operatorAction: 'Review evidence and unblock only when the audit trail clearly explains the decision.',
+        href: `/providers/${item.provider.id}`,
+        priority: 105,
+      });
+    }
+
+    if (item.hasPayoutHold) {
+      blocks.push({
+        id: `${item.provider.id}-payout-hold`,
+        providerId: item.provider.id,
+        partner,
+        impact: 'PAYOUT BLOCK',
+        severity: 'Payout hold',
+        tone: 'pill-danger',
+        title: `${partner} payout is on hold`,
+        reason: 'Active payout hold prevents normal payout processing until the underlying risk is cleared.',
+        operatorAction: 'Open the payout and risk lanes, resolve evidence, then lift the sanction if appropriate.',
+        href: '/payouts',
+        priority: 92,
+      });
+    }
+
+    if (item.openReportCount > 0) {
+      blocks.push({
+        id: `${item.provider.id}-open-report`,
+        providerId: item.provider.id,
+        partner,
+        impact: 'TRUST REVIEW',
+        severity: `${item.openReportCount} report(s)`,
+        tone: item.severity === 'CRITICAL' || item.severity === 'HIGH' ? 'pill-danger' : 'pill-warn',
+        title: `${partner} has open risk reports`,
+        reason: 'Open reports can affect partner trust level, payout release, and future dispatch decisions.',
+        operatorAction: 'Move the report to investigating, resolve with notes, dismiss with evidence, or apply a sanction.',
+        href: `/partner-risk?q=${encodeURIComponent(item.provider.id)}`,
+        priority: item.severity === 'CRITICAL' ? 88 : 78,
+      });
+    }
+
+    const locationSignal = item.signals.find((signal) => signal.kind === 'LOCATION');
+    if (locationSignal) {
+      blocks.push({
+        id: `${item.provider.id}-location`,
+        providerId: item.provider.id,
+        partner,
+        impact: 'DISPATCH RISK',
+        severity: locationSignal.label,
+        tone: 'pill-warn',
+        title: `${partner} location needs refresh`,
+        reason:
+          'Distance sorting and configured invitation-radius decisions can be wrong when online location is missing or stale.',
+        operatorAction: 'Ask the partner to reopen the app and refresh location before accepting dispatch-sensitive bookings.',
+        href: `/providers/${item.provider.id}`,
+        priority: 64,
+      });
+    }
+
+    if (item.signals.some((signal) => signal.kind === 'KYC')) {
+      blocks.push({
+        id: `${item.provider.id}-kyc`,
+        providerId: item.provider.id,
+        partner,
+        impact: 'LEVEL GATE',
+        severity: 'KYC pending',
+        tone: 'pill-warn',
+        title: `${partner} KYC is not approved`,
+        reason: 'Partner can remain in onboarding, but activity level should not be upgraded without identity approval.',
+        operatorAction: 'Review CCCD/CMND and selfie documents, then approve, reject, or request reupload.',
+        href: `/providers/${item.provider.id}`,
+        priority: 56,
+      });
+    }
+
+    if (item.signals.some((signal) => signal.kind === 'BANK')) {
+      blocks.push({
+        id: `${item.provider.id}-bank`,
+        providerId: item.provider.id,
+        partner,
+        impact: 'PAYOUT SETUP',
+        severity: 'Bank pending',
+        tone: 'pill-warn',
+        title: `${partner} bank account is not approved`,
+        reason: 'Partner may work only if policy allows it, but payout cannot be released without a verified account.',
+        operatorAction: 'Review bank name, account holder, QR/banking data, and account-change history.',
+        href: `/providers/${item.provider.id}`,
+        priority: 48,
+      });
+    }
+
+    if (item.signals.some((signal) => signal.kind === 'TAX')) {
+      blocks.push({
+        id: `${item.provider.id}-tax`,
+        providerId: item.provider.id,
+        partner,
+        impact: 'FIRST EARNING',
+        severity: 'Tax pending',
+        tone: 'pill-info',
+        title: `${partner} tax profile is not approved`,
+        reason: 'Tax data should be requested after first earning, but tax rules must already exist in the system.',
+        operatorAction: 'Keep earning calculation policy active, then require tax profile before payout or wallet withdrawal.',
+        href: '/tax-policy',
+        priority: 36,
+      });
+    }
+  }
+
+  return blocks.sort((left, right) => right.priority - left.priority).slice(0, 18);
 }
 
 function metric(
