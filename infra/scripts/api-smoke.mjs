@@ -1638,6 +1638,19 @@ if (!adminCustomerUser?.appSessions?.some((session) => session.id === customerAp
     `Admin user payload is missing customer app session heartbeat: ${JSON.stringify(adminCustomerUser)}`,
   );
 }
+const adminAppSessions = await getJson('/admin/app-sessions', adminAuth.accessToken);
+if (
+  !adminAppSessions.some((session) => session.id === customerAppSession.id) ||
+  !adminAppSessions.some((session) => session.id === providerAppSession.id)
+) {
+  throw new Error(
+    `Admin app session payload is missing expected heartbeats: ${JSON.stringify({
+      customerAppSession,
+      providerAppSession,
+      adminAppSessions: adminAppSessions.slice(0, 5),
+    })}`,
+  );
+}
 const adminProviders = await getJson('/admin/providers', adminAuth.accessToken);
 const adminProvider = adminProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
 if (!adminProvider?.user?.pushDevices?.some((device) => device.token === 'demo-provider-device-token')) {
@@ -1756,6 +1769,7 @@ console.log({
   customerAppSessionId: customerAppSession.id,
   providerAppSessionId: providerAppSession.id,
   adminCustomerAppSessionReady: true,
+  adminAppSessionCount: adminAppSessions.length,
   adminProviderPushDeviceCount: adminProvider?.user?.pushDevices?.length ?? 0,
   adminBackupProviderPushDeviceCount: adminBackupProvider?.user?.pushDevices?.length ?? 0,
   providerDeviceSessionId: providerDeviceSession.session?.id ?? null,

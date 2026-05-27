@@ -6,6 +6,7 @@ const links = [
   ['/', 'Dashboard'],
   ['/providers', 'Partners'],
   ['/provider-risk', 'Partner Risk'],
+  ['/app-sessions', 'App Sessions'],
   ['/bookings', 'Bookings'],
   ['/services', 'Services'],
   ['/payments', 'Payments'],

@@ -40,6 +40,22 @@ export type AdminUser = {
   }>;
 };
 
+export type AdminAppSession = {
+  id: string;
+  userId: string;
+  role: string;
+  deviceId: string;
+  platform?: string | null;
+  appVersion?: string | null;
+  ipAddress?: string | null;
+  active: boolean;
+  lastSeenAt: string;
+  expiresAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: AdminUser | null;
+};
+
 export type AdminProvider = {
   id: string;
   displayName: string;

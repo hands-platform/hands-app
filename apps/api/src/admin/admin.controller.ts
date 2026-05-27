@@ -30,6 +30,11 @@ export class AdminController {
     return this.admin.listUsers();
   }
 
+  @Get('app-sessions')
+  appSessions() {
+    return this.admin.listAppSessions();
+  }
+
   @Get('providers')
   providers() {
     return this.admin.listProviders();
@@ -123,7 +128,13 @@ export class AdminController {
   createProviderSanction(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { type?: ProviderSanctionType; reason?: string; reportId?: string | null; expiresAt?: string | null },
+    @Body()
+    body: {
+      type?: ProviderSanctionType;
+      reason?: string;
+      reportId?: string | null;
+      expiresAt?: string | null;
+    },
   ) {
     return this.admin.createProviderSanction(user.id, providerProfileId, body);
   }

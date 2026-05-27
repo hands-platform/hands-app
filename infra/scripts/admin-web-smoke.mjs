@@ -8,6 +8,7 @@ const pages = [
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/payouts', markers: ['Provider Payouts', 'Payout command queue'] },
   { path: '/provider-risk', markers: ['Partner Risk', 'Risk operation filters'] },
+  { path: '/app-sessions', markers: ['App Sessions', 'Latest app sessions'] },
   { path: '/providers', markers: ['Partner Verification', 'Review queue'] },
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
   { path: '/setup', markers: ['External setup', 'External registration handoff'] },

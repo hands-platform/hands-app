@@ -61,6 +61,25 @@ export class AdminService {
     });
   }
 
+  listAppSessions() {
+    return this.prisma.appSession.findMany({
+      orderBy: { lastSeenAt: 'desc' },
+      take: 500,
+      include: {
+        user: {
+          include: {
+            customerProfile: true,
+            providerProfile: true,
+            pushDevices: {
+              orderBy: { updatedAt: 'desc' },
+              take: 3,
+            },
+          },
+        },
+      },
+    });
+  }
+
   listProviders() {
     return this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
