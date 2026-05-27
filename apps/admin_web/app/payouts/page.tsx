@@ -293,7 +293,7 @@ export default async function PayoutsPage() {
                         <strong>
                           {batch.providerProfile?.displayName ??
                             batch.providerProfile?.user?.phone ??
-                            'Unknown provider'}
+                            'Unknown partner'}
                         </strong>
                         <p className="muted">
                           {formatMoney(batch.totalNetAmount, batch.currency)} / {batch.earnings?.length ?? 0}{' '}
@@ -319,7 +319,7 @@ export default async function PayoutsPage() {
         <div className="toolbar">
           <div>
             <p className="muted">
-              Provider settlement batches ordered so unresolved money movement stays at the top.
+              Partner settlement batches ordered so unresolved money movement stays at the top.
             </p>
           </div>
           <div className="participant-list">
@@ -336,7 +336,7 @@ export default async function PayoutsPage() {
           <thead>
             <tr>
               <th>Batch</th>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Status</th>
               <th>Ops signal</th>
               <th>Blocking reasons</th>
@@ -490,7 +490,7 @@ export default async function PayoutsPage() {
                       )}
                       {payoutHold && (
                         <a className="pill pill-danger" href={`/providers/${batch.providerProfileId}`}>
-                          Open provider risk
+                          Open partner risk
                         </a>
                       )}
                       {paidBlockedByMissingRef && (
@@ -673,7 +673,7 @@ function buildPayoutMoneyFlowCards(
     {
       label: 'Partner payout',
       amount: summary.totalNetAmount,
-      detail: 'Batch net amount scheduled for provider transfer.',
+      detail: 'Batch net amount scheduled for partner transfer.',
     },
     {
       label: 'Partner net evidence',
@@ -792,7 +792,7 @@ function buildPayoutReleaseQueue(batches: AdminPayoutBatch[]): PayoutReleaseQueu
         batch,
         reason: primaryReason,
         providerLabel:
-          batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown provider',
+          batch.providerProfile?.displayName ?? batch.providerProfile?.user?.phone ?? 'Unknown partner',
         severity: primaryReason.pillClass === 'pill-danger' ? 'Block' : 'Check',
       };
     })
@@ -938,7 +938,7 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
             .slice(0, 2)
             .join(' ')
         : 'No active payout hold on listed batches.',
-      action: held.length ? 'Open provider risk before attempting payout.' : 'No risk hold action.',
+      action: held.length ? 'Open partner risk before attempting payout.' : 'No risk hold action.',
       className: held.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: held.length ? 'pill-danger' : 'pill-success',
     },
@@ -1024,7 +1024,7 @@ function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] 
     reasons.push({
       label: 'Earning mismatch',
       detail: 'The batch is paid but at least one attached earning is not paid.',
-      action: 'Repair earning status so provider ledger matches payout.',
+      action: 'Repair earning status so partner ledger matches payout.',
       pillClass: 'pill-danger',
     });
   }
@@ -1146,7 +1146,7 @@ function opsHint(batch: AdminPayoutBatch) {
   }
   switch (batch.status) {
     case 'DRAFT':
-      return 'Check included earnings, confirm the therapist, and release only if totals look right.';
+      return 'Check included earnings, confirm the partner, and release only if totals look right.';
     case 'PROCESSING':
       return 'Watch for banking confirmation before marking the batch complete.';
     case 'PAID':
@@ -1158,7 +1158,7 @@ function opsHint(batch: AdminPayoutBatch) {
     case 'CANCELLED':
       return 'Make sure related earnings are reassigned or rebatched if still payable.';
     default:
-      return 'Use this row to understand payout readiness and reconcile provider earnings.';
+      return 'Use this row to understand payout readiness and reconcile partner earnings.';
   }
 }
 
@@ -1187,8 +1187,8 @@ function payoutChecklist(batch: AdminPayoutBatch) {
       label: payoutHold ? 'Held' : 'No hold',
       ok: !payoutHold,
       detail: payoutHold
-        ? `Provider has an active payout hold: ${payoutHold.reason}`
-        : 'No active payout hold is attached to this provider.',
+        ? `Partner has an active payout hold: ${payoutHold.reason}`
+        : 'No active payout hold is attached to this partner.',
     },
     {
       label: earningsAttached ? 'Earnings linked' : 'No earnings',

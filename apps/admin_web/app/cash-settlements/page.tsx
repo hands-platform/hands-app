@@ -13,14 +13,14 @@ export default async function CashSettlementsPage() {
     <>
       <h1>Cash Settlements</h1>
       <p className="muted">
-        Finance queue for cash bookings where the provider collected customer cash and still owes HANDS
+        Finance queue for cash bookings where the partner collected customer cash and still owes HANDS
         platform fee or withholding. A negative wallet blocks new booking acceptance until this debt is
         settled with a bank reference or approved offset.
       </p>
 
       <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
         <div className="card">
-          <p>Blocked providers</p>
+          <p>Blocked partners</p>
           <h2>{summary.providerCount}</h2>
         </div>
         <div className="card">
@@ -51,7 +51,7 @@ export default async function CashSettlementsPage() {
             <h2>Settlement command queue</h2>
             <p className="muted">
               Work from the highest debt and oldest debt first. Every settlement needs an auditable reference
-              before the provider wallet can reopen.
+              before the partner wallet can reopen.
             </p>
           </div>
           <Link className="text-link" href="/earnings">
@@ -75,14 +75,14 @@ export default async function CashSettlementsPage() {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Provider wallet debt groups</h2>
+            <h2>Partner wallet debt groups</h2>
             <p className="muted">
-              Provider-level view for deciding whether to collect a direct deposit or approve an offset
-              against later positive earnings.
+              Partner-level view for deciding whether to collect a direct deposit or approve an offset against
+              later positive earnings.
             </p>
           </div>
           <Link className="text-link" href="/provider-risk">
-            Provider risk
+            Partner risk
           </Link>
         </div>
         {providers.length ? (
@@ -102,7 +102,7 @@ export default async function CashSettlementsPage() {
                 </p>
                 <div className="participant-list" style={{ marginTop: 8 }}>
                   <Link className="pill" href={`/providers/${provider.providerProfileId}`}>
-                    Provider
+                    Partner
                   </Link>
                   <span className="pill pill-warn">Suggested ref {provider.settlementReference}</span>
                   <span className="pill pill-info">{provider.oldestOpenLabel}</span>
@@ -111,7 +111,7 @@ export default async function CashSettlementsPage() {
             ))}
           </div>
         ) : (
-          <p className="muted">No provider has open cash settlement debt.</p>
+          <p className="muted">No partner has open cash settlement debt.</p>
         )}
       </div>
 
@@ -120,8 +120,8 @@ export default async function CashSettlementsPage() {
           <div>
             <h2>Open cash fee debt rows</h2>
             <p className="muted">
-              Settle only after confirming a provider deposit or a documented admin offset. The backend
-              rejects missing references.
+              Settle only after confirming a partner deposit or a documented admin offset. The backend rejects
+              missing references.
             </p>
           </div>
           <Link className="text-link" href="/payments?review=cash-debt">
@@ -131,7 +131,7 @@ export default async function CashSettlementsPage() {
         <table className="table">
           <thead>
             <tr>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Booking</th>
               <th>Debt</th>
               <th>Fee / Tax</th>
@@ -147,7 +147,7 @@ export default async function CashSettlementsPage() {
                   <div className="muted">{row.providerPhone}</div>
                   <div className="participant-list" style={{ marginTop: 8 }}>
                     <Link className="pill" href={`/providers/${row.earning.providerProfileId}`}>
-                      Provider
+                      Partner
                     </Link>
                     <span className="pill pill-danger">Wallet blocked</span>
                   </div>
@@ -190,7 +190,7 @@ export default async function CashSettlementsPage() {
                       aria-label="Settlement notes"
                       name="settlementNotes"
                       placeholder="Settlement notes"
-                      defaultValue={`Provider deposit or approved offset for ${formatMoney(
+                      defaultValue={`Partner deposit or approved offset for ${formatMoney(
                         row.debtAmount,
                         row.earning.currency,
                       )} using ${row.settlementReference}`}
@@ -269,7 +269,7 @@ function buildCashSettlementRows(earnings: AdminEarning[]): CashSettlementRow[] 
         lastLedgerRef: earning.walletLedgerEntries?.[0]?.reference ?? null,
         serviceLabel: bookingServiceLabel(earning),
         createdAtLabel: earning.createdAt ? relativeTime(earning.createdAt) : 'No created date',
-        nextAction: `Confirm provider deposit or approved offset before settling ${settlementReference}.`,
+        nextAction: `Confirm partner deposit or approved offset before settling ${settlementReference}.`,
       };
     })
     .sort((left, right) => {
@@ -347,13 +347,13 @@ function buildCommandCards(
   return [
     {
       title: 'Blocked wallets',
-      status: `${providers.length} PROVIDER(S)`,
+      status: `${providers.length} PARTNER(S)`,
       detail: `${rows.length} open cash settlement row(s), ${formatMoney(
         rows.reduce((sum, row) => sum + row.debtAmount, 0),
         currency,
       )} total.`,
       action: providers.length
-        ? 'Collect provider deposit or approve admin offset before reopening booking acceptance.'
+        ? 'Collect partner deposit or approve admin offset before reopening booking acceptance.'
         : 'No wallet is currently blocked by cash fee debt.',
       className: providers.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: providers.length ? 'pill-danger' : 'pill-success',
@@ -369,9 +369,9 @@ function buildCommandCards(
                 `${provider.providerName}: ${formatMoney(provider.debtAmount, provider.currency)}`,
             )
             .join(' / ')
-        : 'No provider is above the high-debt review threshold.',
+        : 'No partner is above the high-debt review threshold.',
       action: highDebtProviders.length
-        ? 'Prioritize these providers before allowing more cash work.'
+        ? 'Prioritize these partners before allowing more cash work.'
         : 'Normal settlement queue priority.',
       className: highDebtProviders.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: highDebtProviders.length ? 'pill-warn' : 'pill-success',
@@ -383,7 +383,7 @@ function buildCommandCards(
         ? 'One or more cash debts have been open longer than 24 hours.'
         : 'No cash fee debt is older than 24 hours.',
       action: staleRows.length
-        ? 'Contact provider and record deposit or offset evidence.'
+        ? 'Contact partner and record deposit or offset evidence.'
         : 'No aging escalation needed.',
       className: staleRows.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: staleRows.length ? 'pill-warn' : 'pill-success',
@@ -411,9 +411,7 @@ function isOpenCashDebt(earning: AdminEarning) {
 }
 
 function providerDisplayName(earning: AdminEarning) {
-  return (
-    earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Unknown provider'
-  );
+  return earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Unknown partner';
 }
 
 function bookingServiceLabel(earning: AdminEarning) {
