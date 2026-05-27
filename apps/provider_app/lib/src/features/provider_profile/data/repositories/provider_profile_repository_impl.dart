@@ -73,7 +73,7 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
     final lng = resolved['lng'];
     if (lat == null || lng == null) {
       throw StateError(
-          'Location permission is required before sharing provider location.');
+          'Location permission is required before sharing partner location.');
     }
     await _api.postJson('/provider/location', {'lat': lat, 'lng': lng});
     _socket.updateLocation(lat: lat, lng: lng, bookingId: bookingId);

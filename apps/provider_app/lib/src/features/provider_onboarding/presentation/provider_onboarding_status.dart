@@ -145,7 +145,7 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
               status: bankStatus,
               rejectionReason: bankRejectionReason,
             )
-          : 'Bank account approval is required before this provider can become fully active.',
+          : 'Bank account approval is required before this partner can become fully active.',
       tone: 'warning',
       actionKey: 'BANK_ACCOUNT_REVIEW',
       buttonLabel: bankStatus == 'REJECTED' ? 'Resubmit bank' : 'Add bank',
@@ -197,7 +197,7 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
     return const ProviderOnboardingPriority(
       title: 'Partner setup is complete',
       detail:
-          'This provider can receive bookings and request payouts when earnings are available.',
+          'This partner can receive bookings and request payouts when earnings are available.',
       tone: 'success',
     );
   }
