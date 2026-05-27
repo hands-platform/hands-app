@@ -4312,7 +4312,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         customerAddress = location.addressText ?? customerAddress;
         customerLocationIsDemo = location.isDemoLocation;
         notice = location.isDemoLocation
-            ? 'Using demo Ho Chi Minh City location for nearby provider discovery.'
+            ? 'Using demo Ho Chi Minh City location for nearby partner discovery.'
             : null;
       });
     } catch (exception) {
@@ -4503,7 +4503,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
           ],
           const SizedBox(height: 16),
           if (auth == null)
-            const EmptyPanel(text: 'Login first to load nearby provider cards.')
+            const EmptyPanel(text: 'Login first to load nearby partner cards.')
           else if (providers.isEmpty)
             const EmptyPanel(
                 text:
@@ -5021,7 +5021,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         'IN_SERVICE' =>
           'The service is already in progress. Reload chat to join the live room.',
         _ =>
-          'No service chat yet. The provider has to start the service first.',
+          'No service chat yet. The partner has to start the service first.',
       };
       setState(() => statusMessage = nextMessage);
       return;
@@ -5642,7 +5642,7 @@ String providerDisplayName(Map<String, dynamic>? booking) {
   }
   final provider = activeBookingProvider(booking);
   if (provider != null) {
-    return provider['displayName'] as String? ?? 'Selected provider';
+    return provider['displayName'] as String? ?? 'Selected partner';
   }
   final participants = booking['participants'] is List<dynamic>
       ? booking['participants'] as List<dynamic>
