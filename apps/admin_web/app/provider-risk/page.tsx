@@ -1010,18 +1010,18 @@ function buildBookingAcceptanceUnblockBoard(
     {
       id: 'verification-readiness',
       title: 'KYC and bank readiness',
-      status: verificationItems.length ? 'LEVEL GATE' : 'READY',
+      status: verificationItems.length ? 'BOOKING BLOCK' : 'READY',
       detail: verificationItems.length
-        ? 'Identity and bank gaps should keep the partner below full activity or payout level until cleared.'
+        ? 'Identity or bank gaps block paid booking acceptance and backup participation until cleared.'
         : 'KYC and bank approval gaps are not blocking listed partners.',
-      action: verificationItems.length ? 'Open verification queue' : 'Review partner levels',
-      href: verificationItems.length ? '/partners' : '/partners',
-      className: verificationItems.length ? 'ops-task-pending' : 'ops-task-done',
-      blockingCount: 0,
+      action: verificationItems.length ? 'Open acceptance-blocked partners' : 'Review partner levels',
+      href: verificationItems.length ? '/partners?review=acceptance-blocked' : '/partners',
+      className: verificationItems.length ? 'ops-task-blocked' : 'ops-task-done',
+      blockingCount: verificationItems.length,
       partnerSamples: partnerSamples(verificationItems),
       metrics: [
-        metric('KYC/bank', verificationItems.length, verificationItems.length ? 'warn' : 'ok'),
-        metric('Work level', 'Level 2 gate', verificationItems.length ? 'warn' : 'ok'),
+        metric('Blocked', verificationItems.length, verificationItems.length ? 'danger' : 'ok'),
+        metric('Work level', 'Level 2 gate', verificationItems.length ? 'danger' : 'ok'),
         metric('Payout', 'Requires bank', verificationItems.length ? 'warn' : 'ok'),
       ],
     },
