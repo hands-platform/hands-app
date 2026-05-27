@@ -307,6 +307,21 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Active overrides</span>
+            <strong>{policySummary.activeOverrideCount}</strong>
+            <small>Values different from recommended baseline.</small>
+          </div>
+          <div>
+            <span>Recent changes</span>
+            <strong>{policySummary.recentChangeCount}</strong>
+            <small>Policy records changed in the last 7 days.</small>
+          </div>
+          <div>
+            <span>Policy health</span>
+            <strong>{policySummary.healthLabel}</strong>
+            <small>{policySummary.healthHelper}</small>
+          </div>
           {policySummary.enforced.map((item) => (
             <div key={item.label}>
               <span>{item.label}</span>
@@ -315,6 +330,70 @@ export default async function DashboardPage() {
             </div>
           ))}
         </div>
+        {policySummary.activeOverrides.length || policySummary.recentChanges.length ? (
+          <div className="detail-grid" style={{ marginTop: 14 }}>
+            <div className="ops-task-note">
+              <div className="ops-row">
+                <div>
+                  <strong>Active policy overrides</strong>
+                  <p className="muted">
+                    These owner choices are currently different from the recommended operating baseline.
+                  </p>
+                </div>
+                <span className={`pill ${policySummary.activeOverrideCount ? 'pill-warn' : 'pill-success'}`}>
+                  {policySummary.activeOverrideCount} override(s)
+                </span>
+              </div>
+              <div className="stack" style={{ marginTop: 10 }}>
+                {policySummary.activeOverrides.slice(0, 4).map((override) => (
+                  <div className="ops-row" key={override.key}>
+                    <div>
+                      <strong>{override.label}</strong>
+                      <p className="muted">
+                        Current {override.current} / recommended {override.recommended}
+                      </p>
+                    </div>
+                    <span className="pill pill-info">{override.category}</span>
+                  </div>
+                ))}
+                {policySummary.activeOverrides.length === 0 ? (
+                  <p className="muted">No active policy override is different from the recommended baseline.</p>
+                ) : null}
+              </div>
+            </div>
+            <div className="ops-task-note">
+              <div className="ops-row">
+                <div>
+                  <strong>Recent policy changes</strong>
+                  <p className="muted">
+                    Use this as a quick audit signal before investigating dispatch, payment, or alert behavior.
+                  </p>
+                </div>
+                <Link className="text-link" href="/audit-log?bucket=Operations%2FPolicy">
+                  Policy audit
+                </Link>
+              </div>
+              <div className="stack" style={{ marginTop: 10 }}>
+                {policySummary.recentChanges.slice(0, 4).map((change) => (
+                  <div className="ops-row" key={change.key}>
+                    <div>
+                      <strong>{change.label}</strong>
+                      <p className="muted">
+                        {change.current} changed {change.changedAtLabel}
+                      </p>
+                    </div>
+                    <span className={`pill ${change.enforced ? 'pill-success' : 'pill-warn'}`}>
+                      {change.enforced ? 'Live' : 'Planning'}
+                    </span>
+                  </div>
+                ))}
+                {policySummary.recentChanges.length === 0 ? (
+                  <p className="muted">No policy setting was changed in the last 7 days.</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {policySummary.decisions.map((decision) => (
             <div className={`ops-task-card ${decision.className}`} key={decision.key}>
@@ -2616,6 +2695,30 @@ function completedCloseoutNeedsOps(booking: AdminBooking) {
 
 function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]) {
   const byKey = new Map(settings.map((setting) => [setting.key, setting]));
+  const activeOverrides = settings
+    .filter((setting) => isOperationalPolicyOverride(setting))
+    .map((setting) => ({
+      key: setting.key,
+      category: setting.category,
+      label: setting.label,
+      current: policyOptionLabel(setting),
+      recommended: policyOptionLabel(setting, true),
+      enforced: setting.enforced,
+    }));
+  const recentChanges = settings
+    .filter((setting) => isRecentOperationalPolicyChange(setting.updatedAt))
+    .sort((left, right) => new Date(right.updatedAt ?? 0).getTime() - new Date(left.updatedAt ?? 0).getTime())
+    .map((setting) => ({
+      key: setting.key,
+      label: setting.label,
+      current: policyOptionLabel(setting),
+      changedAtLabel: relativeTimeLabel(setting.updatedAt),
+      enforced: setting.enforced,
+    }));
+  const healthLabel = activeOverrides.length ? `${activeOverrides.length} override(s)` : 'Baseline';
+  const healthHelper = activeOverrides.length
+    ? 'Owner-selected overrides are active. Confirm each still matches current operating intent.'
+    : 'All loaded policies match the recommended baseline.';
   const enforced = [
     policyMetric(
       byKey.get('matching.provider_response_window_minutes'),
@@ -2659,7 +2762,36 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
       };
     });
 
-  return { enforced, decisions };
+  return {
+    enforced,
+    decisions,
+    activeOverrides,
+    recentChanges,
+    activeOverrideCount: activeOverrides.length,
+    recentChangeCount: recentChanges.length,
+    healthLabel,
+    healthHelper,
+  };
+}
+
+function isOperationalPolicyOverride(setting: AdminOperationalPolicySetting) {
+  return (
+    setting.recommendedValue !== null &&
+    setting.recommendedValue !== undefined &&
+    String(setting.value) !== String(setting.recommendedValue)
+  );
+}
+
+function isRecentOperationalPolicyChange(updatedAt?: string | null) {
+  if (!updatedAt) {
+    return false;
+  }
+  const updatedTime = new Date(updatedAt).getTime();
+  if (Number.isNaN(updatedTime)) {
+    return false;
+  }
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+  return Date.now() - updatedTime <= sevenDaysMs;
 }
 
 function policyMetric(setting: AdminOperationalPolicySetting | undefined, label: string, helper: string) {
@@ -2686,6 +2818,26 @@ function formatPolicyValue(value: unknown, unit?: string | null) {
     return `${value} min`;
   }
   return String(value);
+}
+
+function relativeTimeLabel(value?: string | null) {
+  if (!value) {
+    return 'unknown time';
+  }
+  const timestamp = new Date(value).getTime();
+  if (Number.isNaN(timestamp)) {
+    return 'unknown time';
+  }
+  const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000));
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }
 
 function activePayoutHold(batch: AdminPayoutBatch) {
