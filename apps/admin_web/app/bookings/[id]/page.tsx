@@ -1981,6 +1981,7 @@ function bookingOperationalPolicySnapshot(
   const savedMatchingPolicy = readBookingMatchingPolicySnapshot(booking);
   const responseWindow = byKey.get('matching.provider_response_window_minutes');
   const backupRadius = byKey.get('matching.backup_provider_radius_meters');
+  const backupLocationFreshness = byKey.get('matching.backup_provider_location_max_age_minutes');
   const travelBuffer = byKey.get('matching.travel_buffer_minutes');
   const acceptMode = byKey.get('matching.preferred_accept_mode');
   const backupOpenMode = byKey.get('matching.backup_open_mode');
@@ -2104,6 +2105,19 @@ function bookingOperationalPolicySnapshot(
         ),
       },
       {
+        label: 'Location freshness',
+        value:
+          bookingPolicySnapshotNumberLabel(
+            savedMatchingPolicy.backupProviderLocationMaxAgeMinutes,
+            'minutes',
+          ) ?? bookingPolicyValueLabel(backupLocationFreshness),
+        helper: bookingPolicySnapshotHelper(
+          savedMatchingPolicy.backupProviderLocationMaxAgeMinutes,
+          backupLocationFreshness,
+          'Backup partners with older locations cannot join.',
+        ),
+      },
+      {
         label: 'Travel buffer',
         value:
           bookingPolicySnapshotNumberLabel(savedMatchingPolicy.travelBufferMinutes, 'minutes') ??
@@ -2139,6 +2153,9 @@ function readBookingMatchingPolicySnapshot(booking: AdminBookingDetail) {
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy?.providerResponseWindowMinutes),
     backupProviderRadiusMeters: readOptionalNumber(policy?.backupProviderRadiusMeters),
+    backupProviderLocationMaxAgeMinutes: readOptionalNumber(
+      policy?.backupProviderLocationMaxAgeMinutes,
+    ),
     preferredAcceptMode: readOptionalString(policy?.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy?.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy?.travelBufferMinutes),

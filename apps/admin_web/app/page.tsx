@@ -70,6 +70,7 @@ type PartnerOpsQueueItem = {
 type DashboardBookingMatchingPolicySnapshot = {
   providerResponseWindowMinutes: number | null;
   backupProviderRadiusMeters: number | null;
+  backupProviderLocationMaxAgeMinutes: number | null;
   preferredAcceptMode: string | null;
   backupOpenMode: string | null;
   travelBufferMinutes: number | null;
@@ -1365,6 +1366,8 @@ function buildMatchingControlRoom(
     dashboardPolicyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
   const backupRadiusMeters =
     dashboardPolicyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const backupLocationMaxAgeMinutes =
+    dashboardPolicyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
   const backupOpenMode =
     dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
   const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
@@ -1377,20 +1380,24 @@ function buildMatchingControlRoom(
       !provider.blockedAt &&
       parseCoordinatePair(provider.currentLat, provider.currentLng) &&
       locationAgeMinutes(provider.currentLocationUpdatedAt) !== null &&
-      (locationAgeMinutes(provider.currentLocationUpdatedAt) ?? Infinity) <= 30,
+      (locationAgeMinutes(provider.currentLocationUpdatedAt) ?? Infinity) <= backupLocationMaxAgeMinutes,
   );
   const openRows = openMatching.slice(0, 8).map((booking) => {
     const savedPolicy = dashboardBookingPolicySnapshot(booking);
     const bookingResponseWindowMinutes =
       savedPolicy?.providerResponseWindowMinutes ?? responseWindowMinutes;
     const bookingBackupRadiusMeters = savedPolicy?.backupProviderRadiusMeters ?? backupRadiusMeters;
+    const bookingBackupLocationMaxAgeMinutes =
+      savedPolicy?.backupProviderLocationMaxAgeMinutes ?? backupLocationMaxAgeMinutes;
     const bookingBackupOpenMode = savedPolicy?.backupOpenMode ?? backupOpenMode;
     const bookingImmediateBackup = bookingBackupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
     const coordinate = parseCoordinatePair(booking.lat, booking.lng);
     const eligiblePartners = coordinate
       ? providersWithinRadius(providers, coordinate.lat, coordinate.lng, bookingBackupRadiusMeters)
       : [];
-    const freshEligible = eligiblePartners.filter((item) => (item.ageMinutes ?? Infinity) <= 30);
+    const freshEligible = eligiblePartners.filter(
+      (item) => (item.ageMinutes ?? Infinity) <= bookingBackupLocationMaxAgeMinutes,
+    );
     const participantCount = booking.participants?.length ?? 0;
     const expired = booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false;
     const firstPickDeclined = Boolean(
@@ -1410,6 +1417,7 @@ function buildMatchingControlRoom(
       firstPickDeclined ? 'first-pick declined' : backupWindowOpen ? 'backup open' : 'backup waiting',
       coordinate ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible` : 'no customer pin',
       `${formatDistance(bookingBackupRadiusMeters)} radius`,
+      `${bookingBackupLocationMaxAgeMinutes}m freshness`,
       `${bookingResponseWindowMinutes}m window`,
       savedPolicy ? 'saved policy' : 'live fallback',
       booking.expiresAt ? `timer ${timeUntilLabel(booking.expiresAt)}` : 'no timer',
@@ -1523,7 +1531,7 @@ function buildMatchingControlRoom(
         status: freshOnlinePartners.length ? 'Location ready' : 'Location gap',
         title: 'Partner app location freshness',
         detail: freshOnlinePartners.length
-          ? `${freshOnlinePartners.length} online partner(s) have fresh location data.`
+          ? `${freshOnlinePartners.length} online partner(s) have location data fresh within ${backupLocationMaxAgeMinutes} minutes.`
           : 'No online partner has a fresh location update in the current admin sample.',
         operatorAction: freshOnlinePartners.length
           ? 'This is enough to validate the low-cost last-location model.'
@@ -1555,6 +1563,9 @@ function dashboardBookingPolicySnapshot(booking: AdminBooking): DashboardBooking
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
     backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
+    backupProviderLocationMaxAgeMinutes: readOptionalNumber(
+      policy.backupProviderLocationMaxAgeMinutes,
+    ),
     preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),

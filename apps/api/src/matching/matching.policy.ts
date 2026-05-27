@@ -3,10 +3,13 @@ import { ConfigService } from '@nestjs/config';
 export const DEFAULT_TRAVEL_BUFFER_MINUTES = 30;
 export const DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES = 10;
 export const DEFAULT_BACKUP_PROVIDER_RADIUS_METERS = 10000;
+export const DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES = 30;
 
 export const MATCHING_TRAVEL_BUFFER_MINUTES_KEY = 'matching.travel_buffer_minutes';
 export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
+export const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
+  'matching.backup_provider_location_max_age_minutes';
 export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
 export const MATCHING_BACKUP_OPEN_MODE_KEY = 'matching.backup_open_mode';
 export const BACKUP_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
@@ -34,6 +37,7 @@ export type MatchingPolicy = {
   travelBufferMinutes: number;
   providerResponseWindowMinutes: number;
   backupProviderRadiusMeters: number;
+  backupProviderLocationMaxAgeMinutes: number;
   preferredAcceptMode: PreferredAcceptMode;
   backupOpenMode: typeof BACKUP_OPEN_IMMEDIATE | typeof BACKUP_OPEN_AFTER_FIRST_PICK_DELAY;
 };
@@ -78,6 +82,19 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     unit: 'meters',
     min: 1000,
     max: 30000,
+    enforced: true,
+  },
+  {
+    key: MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY,
+    category: 'Matching',
+    label: 'Backup partner location freshness',
+    description:
+      'Maximum age of a partner location before they are excluded from backup participation alerts.',
+    value: DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
+    recommendedValue: DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
+    unit: 'minutes',
+    min: 5,
+    max: 1440,
     enforced: true,
   },
   {
@@ -256,6 +273,16 @@ export function resolveMatchingPolicy(
       ),
       1000,
       30000,
+    ),
+    backupProviderLocationMaxAgeMinutes: readPolicyInteger(
+      settings[MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY],
+      readPositiveInteger(
+        config,
+        'MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES',
+        DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
+      ),
+      5,
+      1440,
     ),
     preferredAcceptMode: readPreferredAcceptMode(settings[MATCHING_PREFERRED_ACCEPT_MODE_KEY]),
     backupOpenMode:

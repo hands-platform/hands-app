@@ -12,6 +12,7 @@ type OperationsPolicySearchParams = Promise<Record<string, string | string[] | u
 type BookingMatchingPolicySnapshot = {
   providerResponseWindowMinutes: number | null;
   backupProviderRadiusMeters: number | null;
+  backupProviderLocationMaxAgeMinutes: number | null;
   preferredAcceptMode: string | null;
   backupOpenMode: string | null;
   travelBufferMinutes: number | null;
@@ -972,6 +973,24 @@ function policyRecommendationPosture(
     };
   }
 
+  if (setting.key === 'matching.backup_provider_location_max_age_minutes') {
+    const looser =
+      Number.isFinite(numericValue) &&
+      Number.isFinite(numericRecommended) &&
+      numericValue > numericRecommended;
+    return {
+      status: looser ? 'Allows older locations' : 'Stricter freshness',
+      detail: looser
+        ? 'Backup alerts may reach partners whose last known location is no longer reliable.'
+        : 'Only recently refreshed partner locations are eligible for backup alerts and joins.',
+      operatorAction: `${liveContext} Watch partner app location refresh failures before loosening this.`,
+      alignedAction:
+        'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',
+      className: looser ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: looser ? 'pill-warn' : 'pill-success',
+    };
+  }
+
   if (setting.key === 'matching.preferred_accept_mode') {
     return {
       status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Fast lock' : 'Customer choice',
@@ -1032,6 +1051,8 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[])
   const responseWindowMinutes =
     policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
   const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const backupLocationFreshnessMinutes =
+    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
   const preferredAcceptMode =
     policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const backupOpenMode = policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
@@ -1046,6 +1067,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[])
   const hardWalletBlock = walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
   const baselineRadius = backupRadiusMeters === 10000;
   const baselineTimer = responseWindowMinutes === 10;
+  const baselineLocationFreshness = backupLocationFreshnessMinutes === 30;
 
   const cards = [
     {
@@ -1069,6 +1091,17 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[])
       className: baselineRadius ? 'ops-task-done' : 'ops-task-pending',
       pillClass: baselineRadius ? 'pill-success' : 'pill-warn',
       blocking: !baselineRadius,
+    },
+    {
+      title: 'Backup location freshness',
+      status: baselineLocationFreshness ? '30m default' : 'Custom freshness',
+      detail: `Backup partners must refresh location within ${backupLocationFreshnessMinutes} minute(s) before alerts or joins.`,
+      operatorAction: baselineLocationFreshness
+        ? 'This matches the provider app rule that refreshes location every 10 minutes while open.'
+        : 'If this is loosened, monitor stale-location joins and partner no-response rates.',
+      className: baselineLocationFreshness ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: baselineLocationFreshness ? 'pill-success' : 'pill-warn',
+      blocking: !baselineLocationFreshness,
     },
     {
       title: 'Backup visibility timing',
@@ -1136,6 +1169,11 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[])
         label: 'Backup radius',
         value: formatDistance(backupRadiusMeters),
         helper: 'Nearby partners who can participate.',
+      },
+      {
+        label: 'Location freshness',
+        value: `${backupLocationFreshnessMinutes} min`,
+        helper: 'Backup alerts exclude older partner locations.',
       },
       {
         label: 'Backup timing',
@@ -1249,6 +1287,18 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         ),
         operatorMeaning:
           'Controls which nearby partners can participate for each booking. New bookings copy the latest radius.',
+      },
+      {
+        policy: 'Backup location freshness',
+        scope: 'Partner eligibility',
+        liveValue: policyDisplayByKey(settings, 'matching.backup_provider_location_max_age_minutes'),
+        savedValue: summarizeSnapshotValues(
+          bookings,
+          (snapshot) => snapshot.backupProviderLocationMaxAgeMinutes,
+          (value) => `${value} min`,
+        ),
+        operatorMeaning:
+          'Controls whether stale partner locations are excluded from backup alerts and join attempts.',
       },
       {
         policy: 'Partner accept mode',
@@ -1946,6 +1996,9 @@ function readBookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchi
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
     backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
+    backupProviderLocationMaxAgeMinutes: readOptionalNumber(
+      policy.backupProviderLocationMaxAgeMinutes,
+    ),
     preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
@@ -2000,6 +2053,11 @@ function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperat
       label: 'backup radius',
       saved: snapshot.backupProviderRadiusMeters,
       live: policyRawValue(settings, 'matching.backup_provider_radius_meters'),
+    },
+    {
+      label: 'backup location freshness',
+      saved: snapshot.backupProviderLocationMaxAgeMinutes,
+      live: policyRawValue(settings, 'matching.backup_provider_location_max_age_minutes'),
     },
     {
       label: 'accept mode',

@@ -58,6 +58,7 @@ type BookingProtectionLane = {
 type BookingMatchingPolicySnapshot = {
   providerResponseWindowMinutes: number | null;
   backupProviderRadiusMeters: number | null;
+  backupProviderLocationMaxAgeMinutes: number | null;
   preferredAcceptMode: string | null;
   backupOpenMode: string | null;
   travelBufferMinutes: number | null;
@@ -1549,6 +1550,9 @@ function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | nu
   const radius = snapshot.backupProviderRadiusMeters
     ? `${(snapshot.backupProviderRadiusMeters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`
     : 'radius ?';
+  const freshness = snapshot.backupProviderLocationMaxAgeMinutes
+    ? `${snapshot.backupProviderLocationMaxAgeMinutes}m fresh`
+    : 'freshness ?';
   const backupMode =
     snapshot.backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
       ? 'backup immediate'
@@ -1561,7 +1565,7 @@ function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | nu
       : snapshot.preferredAcceptMode === 'AUTO_MATCH_ON_ACCEPT'
         ? 'auto match'
         : 'accept ?';
-  return `Saved policy: ${timer} / ${radius} / ${backupMode} / ${acceptMode}`;
+  return `Saved policy: ${timer} / ${radius} / ${freshness} / ${backupMode} / ${acceptMode}`;
 }
 
 function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPolicySnapshot | null {
@@ -1573,6 +1577,9 @@ function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPo
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
     backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
+    backupProviderLocationMaxAgeMinutes: readOptionalNumber(
+      policy.backupProviderLocationMaxAgeMinutes,
+    ),
     preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),

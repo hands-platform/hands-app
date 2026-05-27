@@ -860,6 +860,10 @@ export class BookingsService {
         fallback.backupProviderRadiusMeters,
       ),
       travelBufferMinutes: readSnapshotInteger(snapshot.travelBufferMinutes, fallback.travelBufferMinutes),
+      backupProviderLocationMaxAgeMinutes: readSnapshotInteger(
+        snapshot.backupProviderLocationMaxAgeMinutes,
+        fallback.backupProviderLocationMaxAgeMinutes,
+      ),
       preferredAcceptMode:
         snapshot.preferredAcceptMode === PREFERRED_ACCEPT_AUTO_MATCH ||
         snapshot.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM
@@ -888,6 +892,9 @@ export class BookingsService {
     }
 
     const policy = input.policy ?? (await this.matching.getPolicy());
+    const freshLocationAfter = new Date(
+      Date.now() - policy.backupProviderLocationMaxAgeMinutes * 60_000,
+    );
     const providers = await this.prisma.providerProfile.findMany({
       where: {
         id: input.preferredProviderId ? { not: input.preferredProviderId } : undefined,
@@ -895,6 +902,7 @@ export class BookingsService {
         blockedAt: null,
         currentLat: { not: null },
         currentLng: { not: null },
+        currentLocationUpdatedAt: { gte: freshLocationAfter },
         verification: { status: VerificationStatus.APPROVED },
         participants: {
           none: {
@@ -950,7 +958,7 @@ export class BookingsService {
       distanceMeters?: number | null;
       participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
     },
-    provider: { id: string },
+    provider: { id: string; currentLocationUpdatedAt?: Date | string | null },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
     if (booking.preferredProviderId === provider.id) {
@@ -959,9 +967,11 @@ export class BookingsService {
     if (!this.isBackupWindowOpen(booking, policy)) {
       return false;
     }
-    return typeof booking.distanceMeters === 'number'
-      ? booking.distanceMeters <= policy.backupProviderRadiusMeters
-      : false;
+    return (
+      providerLocationFreshEnough(provider.currentLocationUpdatedAt, policy.backupProviderLocationMaxAgeMinutes) &&
+      typeof booking.distanceMeters === 'number' &&
+      booking.distanceMeters <= policy.backupProviderRadiusMeters
+    );
   }
 
   private requireProviderWithinMatchingRadius(
@@ -972,7 +982,12 @@ export class BookingsService {
       preferredProviderId: string | null;
       participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
     },
-    provider: { id: string; currentLat: unknown; currentLng: unknown },
+    provider: {
+      id: string;
+      currentLat: unknown;
+      currentLng: unknown;
+      currentLocationUpdatedAt?: Date | string | null;
+    },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
     const distanceMeters = calculateDistanceMeters(
@@ -989,6 +1004,11 @@ export class BookingsService {
     }
     if (distanceMeters === null) {
       throw new BadRequestException('Partner location is required before joining this booking');
+    }
+    if (!providerLocationFreshEnough(provider.currentLocationUpdatedAt, policy.backupProviderLocationMaxAgeMinutes)) {
+      throw new BadRequestException(
+        `Partner location must be refreshed within ${policy.backupProviderLocationMaxAgeMinutes} minutes before joining backup bookings`,
+      );
     }
     if (distanceMeters > policy.backupProviderRadiusMeters) {
       throw new BadRequestException(
@@ -1273,10 +1293,22 @@ function formatMatchingRadius(radiusMeters: number) {
   return `${radiusMeters.toLocaleString('en')}m`;
 }
 
+function providerLocationFreshEnough(value: Date | string | null | undefined, maxAgeMinutes: number) {
+  if (!value) {
+    return false;
+  }
+  const updatedAt = value instanceof Date ? value.getTime() : new Date(value).getTime();
+  if (!Number.isFinite(updatedAt)) {
+    return false;
+  }
+  return Date.now() - updatedAt <= maxAgeMinutes * 60_000;
+}
+
 function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingService['getPolicy']>>) {
   return {
     providerResponseWindowMinutes: policy.providerResponseWindowMinutes,
     backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
+    backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
     preferredAcceptMode: policy.preferredAcceptMode,
     backupOpenMode: policy.backupOpenMode,
     travelBufferMinutes: policy.travelBufferMinutes,
