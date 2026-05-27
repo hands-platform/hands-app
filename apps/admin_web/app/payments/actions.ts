@@ -6,25 +6,25 @@ import { adminPost } from '../../lib/admin-api';
 export async function refundPayment(formData: FormData) {
   const paymentId = String(formData.get('paymentId'));
   await adminPost(`/admin/payments/${paymentId}/refund`, {}, null);
-  revalidatePath('/payments');
+  revalidatePaymentOperationPaths();
 }
 
 export async function syncPayment(formData: FormData) {
   const paymentId = String(formData.get('paymentId'));
   await adminPost(`/admin/payments/${paymentId}/sync`, {}, null);
-  revalidatePath('/payments');
+  revalidatePaymentOperationPaths();
 }
 
 export async function capturePayment(formData: FormData) {
   const paymentId = String(formData.get('paymentId'));
   await adminPost(`/admin/payments/${paymentId}/capture`, {}, null);
-  revalidatePath('/payments');
+  revalidatePaymentOperationPaths();
 }
 
 export async function releasePayment(formData: FormData) {
   const paymentId = String(formData.get('paymentId'));
   await adminPost(`/admin/payments/${paymentId}/release`, {}, null);
-  revalidatePath('/payments');
+  revalidatePaymentOperationPaths();
 }
 
 export async function settleCashDebt(formData: FormData) {
@@ -43,6 +43,18 @@ export async function settleCashDebt(formData: FormData) {
     null,
   );
   revalidatePath('/payments');
+  revalidatePath('/earnings');
+  revalidatePath('/bookings');
+  revalidatePath('/partner-risk');
+  revalidatePath('/provider-risk');
+  revalidatePath('/partners');
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
+}
+
+function revalidatePaymentOperationPaths() {
+  revalidatePath('/payments');
+  revalidatePath('/refunds');
   revalidatePath('/earnings');
   revalidatePath('/bookings');
   revalidatePath('/partner-risk');

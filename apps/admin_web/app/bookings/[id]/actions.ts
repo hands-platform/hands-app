@@ -72,6 +72,10 @@ export async function markBookingNoShow(formData: FormData) {
   revalidatePath('/bookings');
   revalidatePath('/payments');
   revalidatePath('/refunds');
+  revalidatePath('/partner-risk');
+  revalidatePath('/provider-risk');
+  revalidatePath('/partners');
+  revalidatePath('/providers');
   revalidatePath('/audit-log');
 }
 
@@ -87,6 +91,10 @@ export async function expireBooking(formData: FormData) {
   revalidatePath('/bookings');
   revalidatePath('/payments');
   revalidatePath('/refunds');
+  revalidatePath('/partner-risk');
+  revalidatePath('/provider-risk');
+  revalidatePath('/partners');
+  revalidatePath('/providers');
   revalidatePath('/audit-log');
 }
 
@@ -103,6 +111,10 @@ export async function closeoutCompletedBooking(formData: FormData) {
   revalidatePath('/payments');
   revalidatePath('/earnings');
   revalidatePath('/payouts');
+  revalidatePath('/partner-risk');
+  revalidatePath('/provider-risk');
+  revalidatePath('/partners');
+  revalidatePath('/providers');
   revalidatePath('/audit-log');
 }
 
@@ -133,4 +145,10 @@ async function runPaymentAction(formData: FormData, action: 'sync' | 'capture' |
   revalidatePath('/bookings');
   revalidatePath('/payments');
   revalidatePath('/refunds');
+  revalidatePath('/earnings');
+  revalidatePath('/partner-risk');
+  revalidatePath('/provider-risk');
+  revalidatePath('/partners');
+  revalidatePath('/providers');
+  revalidatePath('/audit-log');
 }

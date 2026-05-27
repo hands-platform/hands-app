@@ -20,8 +20,11 @@ export async function markEarningPaid(formData: FormData) {
   revalidatePath('/payouts');
   revalidatePath('/payments');
   revalidatePath('/bookings');
+  revalidatePath('/partner-risk');
+  revalidatePath('/provider-risk');
   revalidatePath('/partners');
   revalidatePath('/providers');
+  revalidatePath('/audit-log');
 }
 
 export async function createProviderPayout(formData: FormData) {
@@ -37,6 +40,9 @@ export async function createProviderPayout(formData: FormData) {
   }, null);
   revalidatePath('/earnings');
   revalidatePath('/payouts');
+  revalidatePath('/partner-risk');
+  revalidatePath('/provider-risk');
   revalidatePath('/partners');
   revalidatePath('/providers');
+  revalidatePath('/audit-log');
 }
