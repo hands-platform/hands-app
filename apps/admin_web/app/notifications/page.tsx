@@ -343,7 +343,7 @@ function notificationFilterDescription(review: string) {
     return 'delivery attempts that returned a push provider failure.';
   }
   if (review === 'disabled-device') {
-    return 'users or providers with disabled push devices.';
+    return 'users or partners with disabled push devices.';
   }
   if (review === 'needs-retry') {
     return 'notifications whose delivery path should be reviewed before retry.';
@@ -358,7 +358,7 @@ function notificationFilterDescription(review: string) {
     return 'notifications without a captured delivery attempt yet.';
   }
   if (review === 'payout-setup') {
-    return 'providers who earned revenue and now need tax/address/agreement setup before payout.';
+    return 'partners who earned revenue and now need tax/address/agreement setup before payout.';
   }
   return 'all notification records.';
 }
@@ -445,12 +445,12 @@ function typeMeaning(type: string) {
     return 'Payment or refund alert';
   }
   if (type.includes('payout') || type.includes('tax')) {
-    return 'Provider tax or payout setup alert';
+    return 'Partner tax or payout setup alert';
   }
   if (type.includes('chat')) {
     return 'Realtime conversation alert';
   }
-  return 'Operational customer or therapist alert';
+  return 'Operational customer or partner alert';
 }
 
 function notificationDataHint(notification: AdminNotification) {

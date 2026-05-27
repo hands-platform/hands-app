@@ -288,7 +288,7 @@ function actionBucketLabel(action: string) {
     return 'Tax';
   }
   if (isProviderReviewAction(action)) {
-    return 'Provider';
+    return 'Partner';
   }
   if (isDispatchAction(action)) {
     return 'Dispatch';
@@ -300,7 +300,7 @@ function actionBucketLabel(action: string) {
     return 'Notification';
   }
   if (isProviderReviewAction(action)) {
-    return 'Provider';
+    return 'Partner';
   }
   return 'System';
 }
@@ -417,8 +417,8 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
     highlights.push({
       label:
         previousProviderPayout !== null && previousProviderPayout !== providerPayout
-          ? `Provider ${money(previousProviderPayout, currency)} -> ${money(providerPayout, currency)}`
-          : `Provider ${money(providerPayout, currency)}`,
+          ? `Partner ${money(previousProviderPayout, currency)} -> ${money(providerPayout, currency)}`
+          : `Partner ${money(providerPayout, currency)}`,
       className: 'pill pill-success',
     });
   }
@@ -492,7 +492,7 @@ function relatedBoardLabel(log: AdminAuditLog) {
     return 'Audit';
   }
   if (href.startsWith('/providers/')) {
-    return 'provider detail';
+    return 'partner detail';
   }
   if (href.startsWith('/bookings/')) {
     return 'booking detail';
@@ -619,13 +619,13 @@ function opsHint(action: string, target: string) {
     return 'Confirm the money state matches the booking state before closing the loop.';
   }
   if (action.startsWith('notification.')) {
-    return 'Check retry or delivery health if the customer or therapist missed an alert.';
+    return 'Check retry or delivery health if the customer or partner missed an alert.';
   }
   if (isServicePricingAction(action)) {
     return 'Review service price, partner payout, VAT, costs, and before/after changes.';
   }
   if (action.startsWith('provider.')) {
-    return 'Review therapist readiness, moderation, or queue movement.';
+    return 'Review partner readiness, moderation, or queue movement.';
   }
   return `Audit trail for ${target || 'system'} activity.`;
 }
