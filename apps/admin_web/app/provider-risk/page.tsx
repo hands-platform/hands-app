@@ -30,7 +30,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
     adminGet<AdminProvider[]>('/admin/providers', []),
     adminGet<AdminProviderReport[]>('/admin/provider-reports', []),
     adminGet<AdminProviderSanction[]>('/admin/provider-sanctions', []),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policies', []),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const riskPolicy = buildPartnerRiskPolicy(operationalPolicies);
   const visibleReports = filterReports(reports, filters);

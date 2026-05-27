@@ -100,7 +100,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const { id } = await params;
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(`/admin/providers/${id}`, null),
-    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policies', []),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
 
   if (!provider) {
