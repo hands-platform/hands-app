@@ -1,4 +1,4 @@
-import { AdminNotification, adminGet } from '../../lib/admin-api';
+import { AdminNotification, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
 import Link from 'next/link';
 import { enablePushDevice, retryNotification } from './actions';
 
@@ -10,9 +10,14 @@ export default async function NotificationsPage({
   searchParams?: NotificationsPageSearchParams;
 }) {
   const filters = buildNotificationFilters((await searchParams) ?? {});
-  const allNotifications = sortNotifications(await adminGet<AdminNotification[]>('/admin/notifications', []));
+  const [rawNotifications, operationalPolicies] = await Promise.all([
+    adminGet<AdminNotification[]>('/admin/notifications', []),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+  ]);
+  const allNotifications = sortNotifications(rawNotifications);
   const notifications = filterNotifications(allNotifications, filters);
   const summary = buildSummary(allNotifications);
+  const channelSummary = buildChannelSummary(allNotifications, operationalPolicies);
   const opsQueue = buildDeliveryOpsQueue(allNotifications);
   const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
 
@@ -48,6 +53,14 @@ export default async function NotificationsPage({
           <p>Payout setup</p>
           <h2>{summary.payoutSetup}</h2>
         </div>
+        <div className="card">
+          <p>Partner alerts</p>
+          <h2>{channelSummary.partnerAlertCount}</h2>
+        </div>
+        <div className="card">
+          <p>OneSignal route</p>
+          <h2>{channelSummary.oneSignalDeliveries}</h2>
+        </div>
       </section>
       <div className="card">
         <div className="toolbar">
@@ -60,6 +73,40 @@ export default async function NotificationsPage({
             <span className="pill pill-success">Latest failures first</span>
             <span className="pill pill-info">Delivery signal</span>
             <span className="pill pill-warn">Retry readiness</span>
+          </div>
+        </div>
+
+        <div className="card soft-card" style={{ marginBottom: 16 }}>
+          <div className="toolbar">
+            <div>
+              <h3>Partner alert routing policy</h3>
+              <p className="muted">
+                Current decision: <strong>{channelSummary.policyLabel}</strong>. Use this to confirm whether
+                partner booking requests are intentionally in-app only or routed to OneSignal.
+              </p>
+            </div>
+            <Link className="text-link" href="/operations-policy">
+              Change alert policy
+            </Link>
+          </div>
+          <div className="grid">
+            <div className="card">
+              <span className="pill pill-info">Partner booking alerts</span>
+              <h3 style={{ marginTop: 10 }}>{channelSummary.partnerAlertCount}</h3>
+              <p className="muted">Direct requests, backup participation alerts, matching, and payout setup.</p>
+            </div>
+            <div className="card">
+              <span className="pill pill-success">In-app route</span>
+              <h3 style={{ marginTop: 10 }}>{channelSummary.inAppDeliveries}</h3>
+              <p className="muted">Delivery attempts intentionally kept inside the app inbox.</p>
+            </div>
+            <div className="card">
+              <span className={channelSummary.oneSignalDeliveries ? 'pill pill-warn' : 'pill pill-neutral'}>
+                OneSignal route
+              </span>
+              <h3 style={{ marginTop: 10 }}>{channelSummary.oneSignalDeliveries}</h3>
+              <p className="muted">OS push delivery attempts created by the active policy.</p>
+            </div>
           </div>
         </div>
 
@@ -290,6 +337,13 @@ const notificationFilterLinks = [
     href: '/notifications?review=payout-setup',
     review: 'payout-setup',
   },
+  {
+    label: 'Partner alerts',
+    href: '/notifications?review=partner-alerts',
+    review: 'partner-alerts',
+  },
+  { label: 'OneSignal', href: '/notifications?review=onesignal', review: 'onesignal' },
+  { label: 'In-app route', href: '/notifications?review=in-app-route', review: 'in-app-route' },
 ];
 
 function buildNotificationFilters(params: Record<string, string | string[] | undefined>) {
@@ -335,6 +389,15 @@ function notificationMatchesReview(notification: AdminNotification, review: stri
   if (review === 'payout-setup') {
     return notification.type === 'provider.payout_setup_required';
   }
+  if (review === 'partner-alerts') {
+    return isPartnerAlert(notification.type);
+  }
+  if (review === 'onesignal') {
+    return deliveries.some((delivery) => delivery.provider === 'ONESIGNAL');
+  }
+  if (review === 'in-app-route') {
+    return deliveries.some((delivery) => delivery.provider === 'IN_APP_ONLY');
+  }
   return true;
 }
 
@@ -359,6 +422,15 @@ function notificationFilterDescription(review: string) {
   }
   if (review === 'payout-setup') {
     return 'partners who earned revenue and now need tax/address/agreement setup before payout.';
+  }
+  if (review === 'partner-alerts') {
+    return 'booking and payout alerts sent to partners.';
+  }
+  if (review === 'onesignal') {
+    return 'notifications that attempted OS push delivery through OneSignal.';
+  }
+  if (review === 'in-app-route') {
+    return 'notifications intentionally kept in the app inbox route.';
   }
   return 'all notification records.';
 }
@@ -592,6 +664,40 @@ function buildDeliveryOpsQueue(notifications: AdminNotification[]) {
         }
       : null,
   ].filter((item): item is NonNullable<typeof item> => Boolean(item));
+}
+
+function buildChannelSummary(
+  notifications: AdminNotification[],
+  operationalPolicies: AdminOperationalPolicySetting[],
+) {
+  const partnerAlertPolicy = operationalPolicies.find(
+    (setting) => setting.key === 'notification.partner_alert_channel',
+  );
+  const partnerAlerts = notifications.filter((notification) => isPartnerAlert(notification.type));
+  const deliveries = notifications.flatMap((notification) => notification.deliveries ?? []);
+  return {
+    policyLabel: policyOptionLabel(partnerAlertPolicy),
+    partnerAlertCount: partnerAlerts.length,
+    inAppDeliveries: deliveries.filter((delivery) => delivery.provider === 'IN_APP_ONLY').length,
+    oneSignalDeliveries: deliveries.filter((delivery) => delivery.provider === 'ONESIGNAL').length,
+  };
+}
+
+function policyOptionLabel(setting?: AdminOperationalPolicySetting) {
+  if (!setting) {
+    return 'Not configured';
+  }
+  const value = String(setting.value);
+  return setting.options?.find((option) => option.value === value)?.label ?? value;
+}
+
+function isPartnerAlert(type: string) {
+  return [
+    'booking.requested',
+    'booking.backup_available',
+    'booking.matched',
+    'provider.payout_setup_required',
+  ].includes(type);
 }
 
 function asRecord(value: unknown) {
