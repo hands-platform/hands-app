@@ -15,6 +15,7 @@ export default async function OperationsPolicyPage({
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
   const notice = policyNotice(params);
   const ownerDecisionBacklog = operationsOwnerDecisionBacklog();
+  const matchingPlaybook = buildMatchingPlaybook(settings);
 
   return (
     <>
@@ -69,6 +70,35 @@ export default async function OperationsPolicyPage({
         <div className="grid">
           {matchingSettings.map((setting) => (
             <PolicyForm key={setting.key} setting={setting} />
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking matching playbook</h2>
+            <p className="muted">
+              Current operator-facing flow based on the saved policy values. Use this to verify whether the
+              customer, partner, finance, and alert behavior still matches the intended operation.
+            </p>
+          </div>
+          <span className="pill pill-info">Policy driven</span>
+        </div>
+        <div className="timeline" style={{ marginTop: 12 }}>
+          {matchingPlaybook.map((step) => (
+            <div className={`timeline-step ${step.className}`} key={step.title}>
+              <span>{step.step}</span>
+              <strong>{step.title}</strong>
+              <p>{step.detail}</p>
+              <div className="participant-list">
+                {step.tags.map((tag) => (
+                  <span className={`pill ${tag.tone}`} key={`${step.title}-${tag.label}`}>
+                    {tag.label}
+                  </span>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </section>
@@ -331,6 +361,85 @@ function operationsOwnerDecisionBacklog() {
       pillClass: 'pill-success',
     },
   ];
+}
+
+function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
+  const responseWindow = policyDisplayByKey(settings, 'matching.provider_response_window_minutes');
+  const backupRadius = policyDisplayByKey(settings, 'matching.backup_provider_radius_meters');
+  const backupOpenMode = policyDisplayByKey(settings, 'matching.backup_open_mode');
+  const preferredAcceptMode = policyDisplayByKey(settings, 'matching.preferred_accept_mode');
+  const walletGate = policyDisplayByKey(settings, 'wallet.negative_balance_gate');
+  const alertChannel = policyDisplayByKey(settings, 'notification.partner_alert_channel');
+
+  return [
+    {
+      step: '1',
+      title: 'Customer picks one preferred partner',
+      detail:
+        'The customer chooses a partner profile and service option first. This creates a direct booking request and opens the matching window.',
+      className: 'timeline-done',
+      tags: [
+        { label: 'Direct request', tone: 'pill-success' },
+        { label: preferredAcceptMode, tone: 'pill-info' },
+      ],
+    },
+    {
+      step: '2',
+      title: 'Preferred partner response window starts',
+      detail: `The first-picked partner has ${responseWindow} to accept. Existing open bookings keep their saved expiry time.`,
+      className: 'timeline-active',
+      tags: [
+        { label: responseWindow, tone: 'pill-info' },
+        { label: 'Timer saved on booking', tone: 'pill-neutral' },
+      ],
+    },
+    {
+      step: '3',
+      title: 'Backup partners can participate by policy',
+      detail: `Partners inside ${backupRadius} can see or join the backup lane according to "${backupOpenMode}".`,
+      className: 'timeline-active',
+      tags: [
+        { label: backupRadius, tone: 'pill-info' },
+        { label: backupOpenMode, tone: 'pill-warn' },
+      ],
+    },
+    {
+      step: '4',
+      title: 'Customer sees available partner choices',
+      detail:
+        'Accepted or joined partners appear in the customer waiting screen so the customer can confirm the final partner when customer-confirm mode is active.',
+      className: 'timeline-active',
+      tags: [
+        { label: 'Customer shortlist', tone: 'pill-success' },
+        { label: preferredAcceptMode, tone: 'pill-info' },
+      ],
+    },
+    {
+      step: '5',
+      title: 'Wallet and risk gates protect operations',
+      detail: `Negative cash-fee debt follows "${walletGate}". Risk holds, account blocks, and stale location should be reviewed before partner dispatch.`,
+      className: walletGate.includes('Block') ? 'timeline-active' : 'timeline-done',
+      tags: [
+        { label: walletGate, tone: walletGate.includes('Block') ? 'pill-danger' : 'pill-warn' },
+        { label: 'Partner Risk', tone: 'pill-info' },
+      ],
+    },
+    {
+      step: '6',
+      title: 'Chat and service execution',
+      detail: `After acceptance/service start, chat and operational follow-up continue in-app. Alerts currently follow "${alertChannel}".`,
+      className: 'timeline-done',
+      tags: [
+        { label: 'Chat unlock', tone: 'pill-success' },
+        { label: alertChannel, tone: 'pill-info' },
+      ],
+    },
+  ];
+}
+
+function policyDisplayByKey(settings: AdminOperationalPolicySetting[], key: string) {
+  const setting = settings.find((item) => item.key === key);
+  return setting ? policyDisplayValue(setting) : 'Not configured';
 }
 
 function formatPolicyValue(value: unknown, unit?: string | null) {
