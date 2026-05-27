@@ -22,6 +22,8 @@ const pages = [
   { path: '/provider-risk', markers: ['Partner Risk', 'Risk operation filters'] },
   { path: '/app-sessions', markers: ['App Sessions', 'Latest app sessions'] },
   { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
+  { path: '/partners', markers: ['Partner Verification', 'Review queue'] },
+  { path: '/partners?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   { path: '/providers', markers: ['Partner Verification', 'Review queue'] },
   { path: '/providers?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
@@ -56,14 +58,16 @@ for (const page of pages) {
 const providersBody = await fetchPage('/providers');
 const providerLinkMatch = providersBody.match(/href="\/providers\/([^"]+)"/);
 if (providerLinkMatch) {
-  const providerPath = `/providers/${providerLinkMatch[1]}`;
-  const providerBody = await fetchPage(providerPath);
-  const providerMarkers = ['Partner ops command center', 'Booking acceptance decision'];
-  const missing = providerMarkers.filter((marker) => !providerBody.includes(marker));
-  if (missing.length > 0) {
-    throw new Error(`${providerPath} is missing expected markers: ${missing.join(', ')}`);
+  const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
+  for (const providerPath of providerDetailPaths) {
+    const providerBody = await fetchPage(providerPath);
+    const providerMarkers = ['Partner ops command center', 'Booking acceptance decision'];
+    const missing = providerMarkers.filter((marker) => !providerBody.includes(marker));
+    if (missing.length > 0) {
+      throw new Error(`${providerPath} is missing expected markers: ${missing.join(', ')}`);
+    }
+    console.log(`PASS ${providerPath}`);
   }
-  console.log(`PASS ${providerPath}`);
 }
 
 console.log(`Admin web smoke passed for ${pages.length} page(s) at ${baseUrl}.`);
