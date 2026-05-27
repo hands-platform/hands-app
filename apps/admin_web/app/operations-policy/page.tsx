@@ -544,6 +544,23 @@ export default async function OperationsPolicyPage({
               <h3>{item.title}</h3>
               <p>{item.question}</p>
               <small>{item.signal}</small>
+              <div className="booking-radar" style={{ marginTop: 12 }}>
+                {item.options.map((option) => (
+                  <div className="insight-card" key={option.label}>
+                    <strong>{option.label}</strong>
+                    <p className="muted">{option.tradeoff}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="ops-task-note" style={{ marginTop: 12 }}>
+                <strong>Recommended direction</strong>
+                <p className="muted">{item.recommendation}</p>
+                <strong>Decision trigger</strong>
+                <p className="muted">{item.decisionTrigger}</p>
+                <Link className="text-link" href={item.href}>
+                  Review data
+                </Link>
+              </div>
             </div>
           ))}
         </div>
@@ -1876,6 +1893,23 @@ function operationsOwnerDecisionBacklog() {
         'Should the first-pick partner keep the full response window, or should backup partners become more prominent earlier?',
       signal:
         'Review open matching wait time, first-pick response rate, and customer cancellation before changing the timer.',
+      options: [
+        {
+          label: 'Keep 10 minutes',
+          tradeoff:
+            'Protects the customer-selected partner and keeps the first-pick promise clear, but customers may wait longer.',
+        },
+        {
+          label: 'Escalate earlier',
+          tradeoff:
+            'Shows backup partners sooner and reduces waiting anxiety, but the first-pick partner has less exclusive time.',
+        },
+      ],
+      recommendation:
+        'Keep the 10-minute policy for launch, then review response-rate data by city before shortening it.',
+      decisionTrigger:
+        'Revisit when first-pick response rate drops below 70% or customer cancellations during wait exceed 8%.',
+      href: '/bookings?view=matching',
       className: 'ops-task-pending',
       pillClass: 'pill-info',
     },
@@ -1886,6 +1920,23 @@ function operationsOwnerDecisionBacklog() {
         'Should HANDS keep one nationwide default radius, or vary radius by city density and service type?',
       signal:
         'Review partner count within radius, average distance, late arrivals, and ignored backup alerts by city.',
+      options: [
+        {
+          label: 'Single 10km default',
+          tradeoff:
+            'Simple to explain and operate during MVP, but dense cities and low-supply cities may need different behavior.',
+        },
+        {
+          label: 'City/service rules',
+          tradeoff:
+            'More precise dispatch control, but requires more admin policy work and monitoring per market.',
+        },
+      ],
+      recommendation:
+        'Start with a single 10km radius, then add city/service overrides after Ho Chi Minh City data is stable.',
+      decisionTrigger:
+        'Revisit when backup alerts are ignored often, or accepted backup partners are repeatedly too far away.',
+      href: '/operations-policy',
       className: 'ops-task-pending',
       pillClass: 'pill-info',
     },
@@ -1896,6 +1947,23 @@ function operationsOwnerDecisionBacklog() {
         'Should partners with cash-fee debt be fully blocked, or allowed one recovery booking under supervision?',
       signal:
         'Review cash settlement speed, repeated debt partners, and customer impact before enabling recovery mode.',
+      options: [
+        {
+          label: 'Hard block',
+          tradeoff:
+            'Strongly protects company fees and tax withholding, but may reduce available supply for cash-heavy areas.',
+        },
+        {
+          label: 'Recovery booking',
+          tradeoff:
+            'Can keep a trusted partner active while collecting debt, but needs tighter finance review and abuse controls.',
+        },
+      ],
+      recommendation:
+        'Keep hard blocking until finance has a reliable settlement workflow and partner trust scoring.',
+      decisionTrigger:
+        'Revisit after cash-settlement median collection time is under 24 hours for two consecutive weeks.',
+      href: '/cash-settlements',
       className: 'ops-task-blocked',
       pillClass: 'pill-warn',
     },
@@ -1906,6 +1974,23 @@ function operationsOwnerDecisionBacklog() {
         'When a customer cancels after partner commitment, should payment be released immediately or held for fee review?',
       signal:
         'Review after-match cancellation reasons, partner travel evidence, refund complaints, and manual review workload.',
+      options: [
+        {
+          label: 'Admin review',
+          tradeoff:
+            'Protects early customer trust and lets support learn real patterns, but increases manual workload.',
+        },
+        {
+          label: 'Auto fee',
+          tradeoff:
+            'Faster and more consistent, but mistakes can quickly damage customer and partner trust.',
+        },
+      ],
+      recommendation:
+        'Use admin review during MVP and only automate once arrival evidence and cancellation reasons are reliable.',
+      decisionTrigger:
+        'Revisit when support has at least 100 reviewed after-match cancellations with clear reason categories.',
+      href: '/refunds',
       className: 'ops-task-pending',
       pillClass: 'pill-warn',
     },
@@ -1916,6 +2001,23 @@ function operationsOwnerDecisionBacklog() {
         'What evidence should be required before no-show penalties or customer fee decisions are automated?',
       signal:
         'Review chat, arrival timestamp, location proof, customer response, and dispute rate before auto no-show.',
+      options: [
+        {
+          label: 'Manual evidence review',
+          tradeoff:
+            'Safer for launch and disputes, but slower for partner compensation and customer closeout.',
+        },
+        {
+          label: 'Evidence-based automation',
+          tradeoff:
+            'Scales support decisions, but requires reliable location, chat, and timestamp capture.',
+        },
+      ],
+      recommendation:
+        'Keep manual review until service-start, arrival, chat, and location proof are consistently captured.',
+      decisionTrigger:
+        'Revisit when no-show dispute rate is measurable and evidence completeness is above 95%.',
+      href: '/bookings?view=no-show',
       className: 'ops-task-pending',
       pillClass: 'pill-warn',
     },
@@ -1926,6 +2028,23 @@ function operationsOwnerDecisionBacklog() {
         'When should urgent booking alerts move from in-app only to mandatory OneSignal push delivery?',
       signal:
         'Review delivery failure rate, disabled devices, missed requests, and production push credential readiness.',
+      options: [
+        {
+          label: 'In-app first',
+          tradeoff:
+            'Lowest setup risk and easiest local testing, but partners may miss requests when the app is closed.',
+        },
+        {
+          label: 'OneSignal required',
+          tradeoff:
+            'Better booking reach and urgency, but depends on production credentials and delivery monitoring.',
+        },
+      ],
+      recommendation:
+        'Keep in-app first locally, then enable OneSignal once production credentials and failure dashboards are ready.',
+      decisionTrigger:
+        'Revisit immediately after OneSignal production setup is complete and device delivery logs are visible.',
+      href: '/notifications',
       className: 'ops-task-done',
       pillClass: 'pill-success',
     },
