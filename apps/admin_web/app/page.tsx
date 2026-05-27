@@ -54,6 +54,18 @@ type OpsQueueItem = {
   recommendedAction: string;
 };
 
+type PartnerOpsQueueItem = {
+  id: string;
+  name: string;
+  status: string;
+  detail: string;
+  action: string;
+  href: string;
+  className: string;
+  priority: number;
+  metrics: Array<{ label: string; value: string; tone: 'ok' | 'warn' | 'danger' | 'info' }>;
+};
+
 export default async function DashboardPage() {
   const [
     users,
@@ -124,6 +136,7 @@ export default async function DashboardPage() {
     cashDebtRows,
     cashSettlementSummary,
   );
+  const partnerOpsQueue = buildPartnerOpsQueue(providers, cashDebtRows, appSessions);
   const commandSignals = buildDashboardCommandSignals({
     providers,
     bookings,
@@ -661,6 +674,73 @@ export default async function DashboardPage() {
               />
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner dispatch control</h2>
+            <p className="muted">
+              Priority partner queue for booking acceptance blockers, location readiness, first-revenue payout
+              requirements, and app contactability.
+            </p>
+          </div>
+          <Link className="text-link" href="/providers">
+            Partner queue
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {partnerOpsQueue.items.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
+              <small>{item.status}</small>
+              <h3>{item.name}</h3>
+              <p>{item.detail}</p>
+              <div className="ops-task-breakdown">
+                {item.metrics.map((metric) => (
+                  <span
+                    className={`ops-task-breakdown-item ops-task-breakdown-${metric.tone}`}
+                    key={`${item.id}-${metric.label}`}
+                  >
+                    <span>{metric.label}</span>
+                    <strong>{metric.value}</strong>
+                  </span>
+                ))}
+              </div>
+              <span className="ops-task-card-action">{item.action}</span>
+            </Link>
+          ))}
+          {partnerOpsQueue.items.length === 0 && (
+            <div className="ops-task-note">
+              <strong>No partner blocker is currently visible.</strong>
+              <p className="muted">
+                Verified partners, wallet debt, location freshness, payout readiness, and app contactability
+                are clear in the current snapshot.
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+          <div>
+            <span>Blocked now</span>
+            <strong>{partnerOpsQueue.blockedNow}</strong>
+            <small>Cannot safely accept work</small>
+          </div>
+          <div>
+            <span>Needs payout setup</span>
+            <strong>{partnerOpsQueue.payoutSetup}</strong>
+            <small>First revenue follow-up</small>
+          </div>
+          <div>
+            <span>Location stale/missing</span>
+            <strong>{partnerOpsQueue.locationIssue}</strong>
+            <small>Dispatch visibility gap</small>
+          </div>
+          <div>
+            <span>Not contactable</span>
+            <strong>{partnerOpsQueue.contactIssue}</strong>
+            <small>No app session or push</small>
+          </div>
         </div>
       </section>
 
@@ -1244,6 +1324,238 @@ function buildPartnerSupplyInsights(
     supplyPressureLabel:
       onlineAvailable > 0 ? `${(activeDemand / onlineAvailable).toFixed(1)}x` : 'No supply',
   };
+}
+
+function buildPartnerOpsQueue(
+  providers: AdminProvider[],
+  cashDebtRows: AdminEarning[],
+  sessions: AdminAppSession[],
+) {
+  const cashDebtByPartner = new Map<string, number>();
+  for (const earning of cashDebtRows) {
+    cashDebtByPartner.set(
+      earning.providerProfileId,
+      (cashDebtByPartner.get(earning.providerProfileId) ?? 0) + Math.abs(earning.netAmount),
+    );
+  }
+
+  const livePartnerUserIds = new Set(
+    sessions
+      .filter((session) => session.role === 'PROVIDER' && appSessionState(session) === 'live')
+      .map((session) => session.userId),
+  );
+
+  const items = providers
+    .map((partner) => buildPartnerOpsQueueItem(partner, cashDebtByPartner, livePartnerUserIds))
+    .filter((item): item is PartnerOpsQueueItem => Boolean(item))
+    .sort((left, right) => right.priority - left.priority || left.name.localeCompare(right.name))
+    .slice(0, 8);
+
+  return {
+    items,
+    blockedNow: providers.filter((partner) => {
+      const hasCashDebt = (cashDebtByPartner.get(partner.id) ?? 0) > 0;
+      const hasActiveSanction = (partner.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE');
+      return hasCashDebt || Boolean(partner.blockedAt) || hasActiveSanction;
+    }).length,
+    payoutSetup: providers.filter((partner) => partnerNeedsFirstRevenueSetup(partner)).length,
+    locationIssue: providers.filter((partner) => partnerLocationState(partner) !== 'recent').length,
+    contactIssue: providers.filter((partner) => partnerContactState(partner, livePartnerUserIds) !== 'ready')
+      .length,
+  };
+}
+
+function buildPartnerOpsQueueItem(
+  partner: AdminProvider,
+  cashDebtByPartner: Map<string, number>,
+  livePartnerUserIds: Set<string | undefined>,
+): PartnerOpsQueueItem | null {
+  const cashDebt = cashDebtByPartner.get(partner.id) ?? 0;
+  const activeSanctions = (partner.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
+  const locationState = partnerLocationState(partner);
+  const contactState = partnerContactState(partner, livePartnerUserIds);
+  const name = partnerDisplayName(partner);
+  const href = `/providers/${partner.id}`;
+  const metrics = [
+    partnerOpsMetric('status', partner.status.replace('ONLINE_', '').toLowerCase(), 'info'),
+    partnerOpsMetric('location', locationState, locationState === 'recent' ? 'ok' : 'warn'),
+    partnerOpsMetric('contact', contactState, contactState === 'ready' ? 'ok' : 'warn'),
+  ];
+
+  if (cashDebt > 0) {
+    return {
+      id: `${partner.id}-cash-debt`,
+      name,
+      status: 'Cash debt block',
+      detail:
+        'Partner wallet is negative from cash fee/tax debt. Booking acceptance should stay blocked until finance records a deposit or offset.',
+      action: 'Open partner finance',
+      href,
+      className: 'ops-task-blocked',
+      priority: 110,
+      metrics: [partnerOpsMetric('debt', money(cashDebt), 'danger'), ...metrics],
+    };
+  }
+
+  if (partner.blockedAt || activeSanctions.length > 0) {
+    return {
+      id: `${partner.id}-risk-block`,
+      name,
+      status: partner.blockedAt ? 'Account blocked' : 'Active sanction',
+      detail: partner.blockedReason
+        ? `Account control is active: ${partner.blockedReason}`
+        : 'Risk control is active. Review reports, sanctions, and payout holds before dispatch.',
+      action: 'Open risk review',
+      href: `/partner-risk?q=${encodeURIComponent(partner.id)}`,
+      className: 'ops-task-blocked',
+      priority: 105,
+      metrics: [partnerOpsMetric('sanctions', activeSanctions.length.toString(), 'danger'), ...metrics],
+    };
+  }
+
+  if (partnerNeedsFirstRevenueSetup(partner)) {
+    return {
+      id: `${partner.id}-first-revenue-setup`,
+      name,
+      status: 'First revenue setup',
+      detail:
+        'Partner has earned money. Collect tax profile, residential address, and payout/tax agreement before payout release.',
+      action: 'Open payout setup',
+      href,
+      className: 'ops-task-pending',
+      priority: 85,
+      metrics: [
+        partnerOpsMetric(
+          'tax',
+          partner.taxProfile?.status ?? 'missing',
+          partner.taxProfile?.status === 'APPROVED' ? 'ok' : 'warn',
+        ),
+        partnerOpsMetric(
+          'agreements',
+          `${partner.agreements?.length ?? 0}/5`,
+          (partner.agreements?.length ?? 0) >= 5 ? 'ok' : 'warn',
+        ),
+        ...metrics,
+      ],
+    };
+  }
+
+  if (partner.verification?.status === 'SUBMITTED' || partner.kyc?.status === 'PENDING') {
+    return {
+      id: `${partner.id}-verification`,
+      name,
+      status: 'Verification review',
+      detail:
+        'Partner is waiting for admin review. Clear KYC, documents, and bank readiness to expand supply.',
+      action: 'Open review',
+      href: '/providers?verification=SUBMITTED',
+      className: 'ops-task-pending',
+      priority: 70,
+      metrics: [
+        partnerOpsMetric('verification', partner.verification?.status ?? 'missing', 'warn'),
+        partnerOpsMetric(
+          'kyc',
+          partner.kyc?.status ?? 'missing',
+          partner.kyc?.status === 'APPROVED' ? 'ok' : 'warn',
+        ),
+        ...metrics,
+      ],
+    };
+  }
+
+  if (locationState !== 'recent' && partner.status.startsWith('ONLINE')) {
+    return {
+      id: `${partner.id}-location`,
+      name,
+      status: 'Location weak',
+      detail: 'Partner is online but location is stale, expired, or missing. Dispatch distance may be wrong.',
+      action: 'Open location review',
+      href: '/providers?review=location',
+      className: 'ops-task-pending',
+      priority: 55,
+      metrics,
+    };
+  }
+
+  if (contactState !== 'ready' && partner.status.startsWith('ONLINE')) {
+    return {
+      id: `${partner.id}-contact`,
+      name,
+      status: 'Contact weak',
+      detail:
+        'Partner appears online but app session or push readiness is weak. Booking alerts may not arrive.',
+      action: 'Open push/session review',
+      href: '/providers?review=push',
+      className: 'ops-task-pending',
+      priority: 45,
+      metrics,
+    };
+  }
+
+  return null;
+}
+
+function partnerNeedsFirstRevenueSetup(partner: AdminProvider) {
+  if (!providerHasFirstRevenue(partner)) {
+    return false;
+  }
+  const hasTax = partner.taxProfile?.status === 'APPROVED';
+  const hasAddress = Boolean(partner.residentialAddress?.trim());
+  const hasAgreements = (partner.agreements?.length ?? 0) >= 5;
+  return !hasTax || !hasAddress || !hasAgreements;
+}
+
+function partnerLocationState(partner: AdminProvider) {
+  const hasCoordinate =
+    Number.isFinite(Number(partner.currentLat)) && Number.isFinite(Number(partner.currentLng));
+  if (!hasCoordinate || !partner.currentLocationUpdatedAt) {
+    return 'missing';
+  }
+  const updatedAt = Date.parse(partner.currentLocationUpdatedAt);
+  if (!Number.isFinite(updatedAt)) {
+    return 'missing';
+  }
+  const ageMs = Date.now() - updatedAt;
+  if (ageMs <= 30 * 60_000) {
+    return 'recent';
+  }
+  if (ageMs <= 24 * 60 * 60_000) {
+    return 'stale';
+  }
+  return 'expired';
+}
+
+function partnerContactState(partner: AdminProvider, livePartnerUserIds: Set<string | undefined>) {
+  const hasLiveSession = partner.user?.id ? livePartnerUserIds.has(partner.user.id) : false;
+  const hasEnabledPush = (partner.user?.pushDevices ?? []).some((device) => device.enabled);
+  if (hasLiveSession && hasEnabledPush) {
+    return 'ready';
+  }
+  if (hasLiveSession) {
+    return 'push missing';
+  }
+  if (hasEnabledPush) {
+    return 'not live';
+  }
+  return 'not contactable';
+}
+
+function partnerOpsMetric(
+  label: string,
+  value: string,
+  tone: PartnerOpsQueueItem['metrics'][number]['tone'],
+) {
+  return { label, value, tone };
+}
+
+function partnerDisplayName(partner: AdminProvider) {
+  return (
+    partner.displayName ||
+    partner.activityNickname ||
+    partner.user?.fullName ||
+    partner.user?.phone ||
+    partner.id
+  );
 }
 
 function providerHasFirstRevenue(provider: AdminProvider) {
