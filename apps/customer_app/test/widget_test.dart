@@ -220,14 +220,14 @@ void main() {
       hasChatRoom: false,
     );
     expect(backupAction.title, 'Backup options are ready');
-    expect(backupAction.body, contains('switch to a backup therapist'));
+    expect(backupAction.body, contains('switch to a backup partner'));
 
     final waitingAction = waitingCustomerAction(
       status: 'OPEN_MATCHING',
       fallbackCount: 0,
       hasChatRoom: false,
     );
-    expect(waitingAction.title, 'Waiting for therapist response');
+    expect(waitingAction.title, 'Waiting for partner response');
     expect(waitingAction.body, contains('No action is needed yet'));
 
     final confirmedAction = waitingCustomerAction(

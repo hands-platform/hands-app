@@ -1081,7 +1081,7 @@ class ProviderDetailPage extends StatelessWidget {
                                 SizedBox(width: 10),
                                 Expanded(
                                     child: Text(
-                                        'Protected when the assigned therapist changes')),
+                                        'Protected when the assigned partner changes')),
                               ],
                             ),
                           ],
@@ -1097,7 +1097,7 @@ class ProviderDetailPage extends StatelessWidget {
                       DetailInfoCard(
                         child: Text(
                           (detail['bio'] as String?) ??
-                              'Experienced therapist profile ready for booking.',
+                              'Experienced partner profile ready for booking.',
                           style: Theme.of(context).textTheme.bodyLarge,
                         ),
                       ),
@@ -1169,7 +1169,7 @@ class ProviderDetailPage extends StatelessWidget {
                         const SectionHeader(
                           title: 'Photos',
                           subtitle:
-                              'Public profile and work photos from this therapist.',
+                              'Public profile and work photos from this partner.',
                         ),
                         const SizedBox(height: 12),
                         SizedBox(
@@ -1193,7 +1193,7 @@ class ProviderDetailPage extends StatelessWidget {
                       const SectionHeader(
                         title: 'My services',
                         subtitle:
-                            'Choose one service to open a booking request with this therapist first.',
+                            'Choose one service to open a booking request with this partner first.',
                       ),
                       const SizedBox(height: 12),
                       Builder(
@@ -1203,7 +1203,7 @@ class ProviderDetailPage extends StatelessWidget {
                           if (serviceGroups.isEmpty) {
                             return const EmptyPanel(
                               text:
-                                  'This therapist has no bookable service options yet. HANDS requires an active partner price and an exact admin payout rule before booking.',
+                                  'This partner has no bookable service options yet. HANDS requires an active partner price and an exact admin payout rule before booking.',
                             );
                           }
                           return Column(
@@ -1281,7 +1281,7 @@ class ServiceOptionGroupCard extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(
-              'Choose a time option. The selected therapist gets the first response window, and backup matching can open if needed.',
+              'Choose a time option. The selected partner gets the first response window, and backup matching can open if needed.',
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -1933,7 +1933,7 @@ class _BookingConfirmationPageState
                   ),
                   const SizedBox(height: 16),
                   BookingSummaryRow(
-                    label: 'Therapist',
+                    label: 'Partner',
                     value: providerName,
                   ),
                   const SizedBox(height: 10),
@@ -2021,7 +2021,7 @@ class _BookingConfirmationPageState
                         customerPoint: customerPoint,
                         providerPoint: providerPoint,
                         customerLabel: 'Customer',
-                        providerLabel: 'Therapist area',
+                        providerLabel: 'Partner area',
                         fallbackShowProviderMarker: true,
                       ),
                     ),
@@ -2053,7 +2053,7 @@ class _BookingConfirmationPageState
                   ],
                   const SizedBox(height: 4),
                   Text(
-                    'Therapist distance: ${formatDistance(distanceMeters)}',
+                    'Partner distance: ${formatDistance(distanceMeters)}',
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium
@@ -2144,7 +2144,7 @@ class _BookingConfirmationPageState
                               ServiceTag(
                                   label:
                                       'Minimum ${formatCurrency(basePrice)} VND'),
-                            const ServiceTag(label: '1 therapist'),
+                            const ServiceTag(label: '1 partner'),
                           ],
                         ),
                       ],
@@ -2485,11 +2485,11 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     });
 
     final eventMessages = <String, String>{
-      'provider.joined': 'A backup therapist joined this request.',
+      'provider.joined': 'A backup partner joined this request.',
       'provider.accepted':
-          'A therapist accepted. Confirm this therapist or choose another available option.',
-      'booking.matched': 'Your therapist confirmed the booking.',
-      'booking.opened': 'The request is still open for therapist responses.',
+          'A partner accepted. Confirm this partner or choose another available option.',
+      'booking.matched': 'Your partner confirmed the booking.',
+      'booking.opened': 'The request is still open for partner responses.',
       'booking.expired': 'This booking expired or was cancelled.',
       'service.started': 'Service started. Chat is now available.',
       'service.completed': 'Service completed. You can review the booking.',
@@ -2664,8 +2664,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                 : 'Booking update';
     final waitingText = status == 'OPEN_MATCHING'
         ? (preferredProvider == null
-            ? 'Waiting for nearby therapists to respond...'
-            : 'Waiting for ${preferredProvider['displayName'] ?? 'your therapist'} to confirm. Other therapists may join too.')
+            ? 'Waiting for nearby partners to respond...'
+            : 'Waiting for ${preferredProvider['displayName'] ?? 'your partner'} to confirm. Backup partners may join too.')
         : status == 'MATCHED'
             ? 'Partner accepted. Waiting for service start...'
             : status == 'IN_SERVICE'
@@ -2683,9 +2683,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                     customerPoint: customerPoint,
                     providerPoint: providerPoint,
                     customerLabel: 'You',
-                    providerLabel: latestProviderLocation == null
-                        ? 'Waiting'
-                        : 'Therapist',
+                    providerLabel:
+                        latestProviderLocation == null ? 'Waiting' : 'Partner',
                     fallbackShowProviderMarker: latestProviderLocation != null,
                   ),
                   Positioned(
@@ -2801,7 +2800,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                                   SizedBox(
                                     width: cardWidth,
                                     child: WaitingStatCard(
-                                      label: 'Backup therapists',
+                                      label: 'Backup partners',
                                       value: fallbackCount.toString(),
                                     ),
                                   ),
@@ -2850,23 +2849,23 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           ],
                           const SizedBox(height: 18),
                           BookingSectionCard(
-                            title: 'Therapist location',
+                            title: 'Partner location',
                             child: LiveLocationDetails(
                               customerPoint: customerPoint,
                               providerLocation: latestProviderLocation,
                               emptyText:
-                                  'The therapist\'s last shared pin will appear here after they share location.',
+                                  'The partner\'s last shared pin will appear here after they share location.',
                             ),
                           ),
                           const SizedBox(height: 18),
                           if (preferredProvider != null) ...[
-                            Text('Chosen therapist',
+                            Text('Chosen partner',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleLarge
                                     ?.copyWith(fontWeight: FontWeight.w700)),
                             const SizedBox(height: 12),
-                            TherapistDisplayCard(
+                            PartnerDisplayCard(
                               provider: preferredProvider,
                               badgeLabel: 'Chosen first',
                               detail: directRequestDetail(matchingPolicy),
@@ -2877,14 +2876,14 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                             const SizedBox(height: 16),
                           ],
                           if (alternativeParticipants.isNotEmpty) ...[
-                            Text('Backup therapists',
+                            Text('Backup partners',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleLarge
                                     ?.copyWith(fontWeight: FontWeight.w700)),
                             const SizedBox(height: 4),
                             Text(
-                              '$fallbackCount therapist(s) can take this request now. You can keep waiting or switch.',
+                              '$fallbackCount partner(s) can take this request now. You can keep waiting or switch.',
                               style: Theme.of(context)
                                   .textTheme
                                   .bodyMedium
@@ -2892,27 +2891,27 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                             ),
                             const SizedBox(height: 12),
                             for (final item in alternativeParticipants)
-                              TherapistSelectionCard(
+                              PartnerSelectionCard(
                                 participant: item,
                                 onSelect: () => selectProvider(item),
                               ),
                           ] else if (finalizedProvider != null) ...[
-                            Text('Confirmed therapist',
+                            Text('Confirmed partner',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleLarge
                                     ?.copyWith(fontWeight: FontWeight.w700)),
                             const SizedBox(height: 12),
-                            TherapistDisplayCard(
+                            PartnerDisplayCard(
                               provider: finalizedProvider,
                               badgeLabel: 'Confirmed',
                               detail:
-                                  'Your booking is now locked to this therapist.',
+                                  'Your booking is now locked to this partner.',
                             ),
                           ] else ...[
                             const EmptyPanel(
                                 text:
-                                    'Waiting for a therapist response. Backup options can appear here if the first therapist is slow to confirm.'),
+                                    'Waiting for a partner response. Backup options can appear here if the first partner is slow to confirm.'),
                           ],
                           const SizedBox(height: 10),
                           FilledButton.tonalIcon(
@@ -2934,8 +2933,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
   }
 }
 
-class TherapistSelectionCard extends StatelessWidget {
-  const TherapistSelectionCard({
+class PartnerSelectionCard extends StatelessWidget {
+  const PartnerSelectionCard({
     super.key,
     required this.participant,
     required this.onSelect,
@@ -2980,7 +2979,7 @@ class TherapistSelectionCard extends StatelessWidget {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        TherapistRoleTag(
+                        PartnerRoleTag(
                           label: 'Backup ready',
                           backgroundColor: Color(0xFFF8ECD4),
                           foregroundColor: Color(0xFF8A5B12),
@@ -2994,7 +2993,7 @@ class TherapistSelectionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'This therapist can replace your preferred therapist if you want to switch.',
+                      'This partner can replace your preferred partner if you want to switch.',
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
@@ -3034,7 +3033,7 @@ class TherapistSelectionCard extends StatelessWidget {
                   backgroundColor: const Color(0xFF5E8E4A),
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Switch to this therapist'),
+                child: const Text('Switch to this partner'),
               ),
             ),
           ],
@@ -3044,8 +3043,8 @@ class TherapistSelectionCard extends StatelessWidget {
   }
 }
 
-class TherapistDisplayCard extends StatelessWidget {
-  const TherapistDisplayCard({
+class PartnerDisplayCard extends StatelessWidget {
+  const PartnerDisplayCard({
     super.key,
     required this.provider,
     this.subtitle = 'Ready for confirmation / service delivery',
@@ -3086,7 +3085,7 @@ class TherapistDisplayCard extends StatelessWidget {
                         ),
                       ),
                       if (badgeLabel != null)
-                        TherapistRoleTag(
+                        PartnerRoleTag(
                           label: badgeLabel!,
                           backgroundColor: badgeLabel == 'Final'
                               ? const Color(0xFFE8F4E3)
@@ -3119,8 +3118,8 @@ class TherapistDisplayCard extends StatelessWidget {
   }
 }
 
-class TherapistRoleTag extends StatelessWidget {
-  const TherapistRoleTag({
+class PartnerRoleTag extends StatelessWidget {
+  const PartnerRoleTag({
     super.key,
     required this.label,
     required this.backgroundColor,
@@ -3246,10 +3245,10 @@ class WaitingStagePanel extends StatelessWidget {
     final stageItems = [
       WaitingStageItem(
         title: preferredProviderName == null
-            ? 'Finding a therapist'
-            : 'Chosen therapist first',
+            ? 'Finding a partner'
+            : 'Chosen partner first',
         body: preferredProviderName == null
-            ? 'Nearby therapists are being checked now.'
+            ? 'Nearby partners are being checked now.'
             : '$preferredProviderName gets ${responseWindowLabel(matchingPolicy)} while ${backupWindowDescription(matchingPolicy)}.',
         accent: const Color(0xFF5E8E4A),
         caption: preferredProviderName == null
@@ -3262,7 +3261,7 @@ class WaitingStagePanel extends StatelessWidget {
             : '$fallbackCount backup option(s) ready',
         body: fallbackCount == 0
             ? backupStandbyDescription(matchingPolicy)
-            : 'You can switch to another available therapist below without restarting the booking.',
+            : 'You can switch to another available partner below without restarting the booking.',
         accent: const Color(0xFFB9852F),
         caption: fallbackCount == 0
             ? 'Stage 2 - standby'
@@ -3271,8 +3270,8 @@ class WaitingStagePanel extends StatelessWidget {
       WaitingStageItem(
         title: status == 'MATCHED' ? 'Confirmed' : 'Auto-close timer',
         body: status == 'MATCHED'
-            ? 'The therapist is confirmed. Next step is service start and chat.'
-            : 'This request closes automatically at ${formatExpiry(expiresAt)} if no therapist is selected.',
+            ? 'The partner is confirmed. Next step is service start and chat.'
+            : 'This request closes automatically at ${formatExpiry(expiresAt)} if no partner is selected.',
         accent: const Color(0xFF2563EB),
         caption: status == 'MATCHED'
             ? 'Stage 3 - locked in'
@@ -3536,7 +3535,7 @@ class LiveLocationDetails extends StatelessWidget {
               customerPoint: customerPoint,
               providerPoint: providerPoint,
               customerLabel: 'Customer',
-              providerLabel: 'Therapist',
+              providerLabel: 'Partner',
               fallbackShowProviderMarker: hasProviderPoint,
             ),
           ),
@@ -4348,7 +4347,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
       customerLng = selected.longitude;
       customerAddress = selected.addressText;
       customerLocationIsDemo = false;
-      notice = 'Service location selected. Refreshing nearby therapists.';
+      notice = 'Service location selected. Refreshing nearby partners.';
       error = null;
     });
 
@@ -4366,7 +4365,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
     if (mounted) {
       setState(() {
         notice =
-            'Service location selected. Nearby therapists are sorted from this pin.';
+            'Service location selected. Nearby partners are sorted from this pin.';
       });
     }
   }
@@ -4470,7 +4469,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
           Text('Partners', style: Theme.of(context).textTheme.displaySmall),
           const SizedBox(height: 8),
           Text(
-            'Nearby therapists sorted by distance and availability.',
+            'Nearby partners sorted by distance and availability.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -4508,7 +4507,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
           else if (providers.isEmpty)
             const EmptyPanel(
                 text:
-                    'No nearby therapists loaded yet. Refresh to fetch the latest queue.')
+                    'No nearby partners loaded yet. Refresh to fetch the latest queue.')
           else ...[
             ClipRRect(
               borderRadius: BorderRadius.circular(18),
@@ -4619,7 +4618,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
           Text('Bookings', style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
-              'Recent requests, assigned therapists, payment state, and chat readiness.',
+              'Recent requests, assigned partners, payment state, and chat readiness.',
               style: Theme.of(context).textTheme.bodyLarge),
           const SizedBox(height: 16),
           FilledButton.icon(
@@ -4652,7 +4651,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
           else if (items.isEmpty)
             const EmptyPanel(
                 text:
-                    'No bookings yet. Choose a therapist and book a service to start.')
+                    'No bookings yet. Choose a partner and book a service to start.')
           else
             for (final booking in items)
               CustomerBookingHistoryCard(booking: booking),
@@ -4772,7 +4771,7 @@ class CustomerBookingHistoryCard extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleLarge),
                       const SizedBox(height: 2),
                       Text(provider?['displayName'] as String? ??
-                          'Therapist pending'),
+                          'Partner pending'),
                     ],
                   ),
                 ),
@@ -4885,12 +4884,12 @@ String formatCustomerScheduleMoment(dynamic value) {
 String customerBookingNextAction(Map<String, dynamic> booking) {
   return switch (booking['status']) {
     'OPEN_MATCHING' =>
-      'Waiting for the selected therapist or backup therapists to respond.',
+      'Waiting for the selected partner or backup partners to respond.',
     'MATCHED' =>
-      'Therapist confirmed. Chat opens when the provider starts the service.',
+      'Partner confirmed. Chat opens when the partner starts the service.',
     'PROVIDER_ON_THE_WAY' =>
-      'Track the therapist location and keep your phone nearby.',
-    'ARRIVED' => 'Therapist arrived. Confirm details before service starts.',
+      'Track the partner location and keep your phone nearby.',
+    'ARRIVED' => 'Partner arrived. Confirm details before service starts.',
     'IN_SERVICE' => 'Service is in progress. Use Chat if you need help.',
     'COMPLETED' => 'Service complete. Review and tip when ready.',
     'CANCELLED' => 'Cancelled. Any payment hold should be released.',
@@ -4975,7 +4974,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       setState(() {
         latestProviderLocation =
             Map<String, dynamic>.from(payload.cast<String, dynamic>());
-        statusMessage = 'Therapist location updated.';
+        statusMessage = 'Partner location updated.';
       });
     });
   }
@@ -5014,9 +5013,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final providerName = providerDisplayName(booking);
       final nextMessage = switch (status) {
         'OPEN_MATCHING' =>
-          '$providerName has not been locked in yet. Stay on the waiting screen until a therapist is selected.',
+          '$providerName has not been locked in yet. Stay on the waiting screen until a partner is selected.',
         'MATCHED' =>
-          '$providerName is confirmed. Chat opens when the therapist starts the service.',
+          '$providerName is confirmed. Chat opens when the partner starts the service.',
         'PROVIDER_ON_THE_WAY' =>
           '$providerName is on the way. Chat will open as soon as service start is triggered.',
         'IN_SERVICE' =>
@@ -5087,7 +5086,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Text(
             auth == null
                 ? 'Login to load the latest booking chat.'
-                : 'Realtime messages with your assigned therapist.',
+                : 'Realtime messages with your assigned partner.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -5113,7 +5112,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           if (chatRoomId == null)
             const EmptyPanel(
                 text:
-                    'Chat opens after a therapist is selected and the service start step begins.')
+                    'Chat opens after a partner is selected and the service start step begins.')
           else ...[
             Text('Room $chatRoomId',
                 style: Theme.of(context).textTheme.titleMedium),
@@ -5124,7 +5123,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 customerPoint: deriveBookingLatLng(activeBooking),
                 providerLocation: latestProviderLocation,
                 emptyText:
-                    'Therapist location appears here after the provider shares their current pin.',
+                    'Partner location appears here after the partner shares their current pin.',
               ),
             ),
             const SizedBox(height: 12),
@@ -5976,21 +5975,21 @@ WaitingCustomerAction waitingCustomerAction({
     return const WaitingCustomerAction(
       title: 'Backup options are ready',
       body:
-          'Your first therapist is still being checked. You can keep waiting or switch to a backup therapist below.',
+          'Your first-pick partner is still being checked. You can keep waiting or switch to a backup partner below.',
     );
   }
   if (status == 'OPEN_MATCHING') {
     return WaitingCustomerAction(
-      title: 'Waiting for therapist response',
+      title: 'Waiting for partner response',
       body:
-          'No action is needed yet. HANDS is waiting for your chosen therapist. ${backupStandbyDescription(matchingPolicy)}',
+          'No action is needed yet. HANDS is waiting for your chosen partner. ${backupStandbyDescription(matchingPolicy)}',
     );
   }
   if (hasChatRoom && (status == 'MATCHED' || status == 'PROVIDER_ON_THE_WAY')) {
     return const WaitingCustomerAction(
       title: 'Booking confirmed',
       body:
-          'Your therapist is confirmed. Chat will help coordinate service start and location details.',
+          'Your partner is confirmed. Chat will help coordinate service start and location details.',
     );
   }
   if (status == 'IN_SERVICE') {
@@ -6034,7 +6033,7 @@ String backupRadiusLabel(Map<String, dynamic> policy) {
     final text = km == km.roundToDouble()
         ? km.toInt().toString()
         : km.toStringAsFixed(1);
-    return 'within ${text}km';
+    return 'within $text km';
   }
   return 'within ${meters}m';
 }
@@ -6046,17 +6045,17 @@ bool backupOpensImmediately(Map<String, dynamic> policy) {
 String backupWindowDescription(Map<String, dynamic> policy) {
   final radius = backupRadiusLabel(policy);
   if (backupOpensImmediately(policy)) {
-    return 'backup therapists $radius can also join during this window';
+    return 'backup partners $radius can also join during this window';
   }
-  return 'backup therapists $radius can join after this window if needed';
+  return 'backup partners $radius can join after this window if needed';
 }
 
 String backupStandbyDescription(Map<String, dynamic> policy) {
   final radius = backupRadiusLabel(policy);
   if (backupOpensImmediately(policy)) {
-    return 'Backup therapists $radius can appear as soon as they offer support.';
+    return 'Backup partners $radius can appear as soon as they offer support.';
   }
-  return 'Backup therapists $radius can appear after the first response window if the chosen therapist is slow.';
+  return 'Backup partners $radius can appear after the first response window if the chosen partner is slow.';
 }
 
 String backupParticipationLabel(Map<String, dynamic> policy) {
@@ -6066,7 +6065,7 @@ String backupParticipationLabel(Map<String, dynamic> policy) {
 }
 
 String directRequestDetail(Map<String, dynamic> policy) {
-  return 'This therapist is getting ${responseWindowLabel(policy)} for your request.';
+  return 'This partner is getting ${responseWindowLabel(policy)} for your request.';
 }
 
 class WaitingCustomerAction {
