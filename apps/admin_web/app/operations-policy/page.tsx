@@ -1055,8 +1055,8 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
       return {
         id: booking.id,
         href: `/bookings/${booking.id}`,
-        title: `${bookingServiceLabel(booking)} · ${shortId(booking.id)}`,
-        subtitle: `${bookingPartnerLabel(booking)} · ${bookingCustomerLabel(booking)}`,
+        title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
+        subtitle: `${bookingPartnerLabel(booking)} / ${bookingCustomerLabel(booking)}`,
         pills: [
           { label: booking.status, className: 'pill-warn' },
           {
@@ -1081,8 +1081,8 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     .map(({ booking, drift }) => ({
       id: booking.id,
       href: `/bookings/${booking.id}`,
-      title: `${bookingServiceLabel(booking)} · ${shortId(booking.id)}`,
-      subtitle: `${booking.status} · ${bookingPartnerLabel(booking)}`,
+      title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
+      subtitle: `${booking.status} / ${bookingPartnerLabel(booking)}`,
       pills: drift.slice(0, 3).map((item) => ({
         label: item.label,
         className: 'pill-warn',
@@ -1101,8 +1101,8 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     .map(({ booking, recentWalletTotal }) => ({
       id: booking.id,
       href: `/bookings/${booking.id}`,
-      title: `${bookingPartnerLabel(booking)} · ${shortId(booking.id)}`,
-      subtitle: `${bookingServiceLabel(booking)} · ${booking.payment?.method ?? 'payment unknown'}`,
+      title: `${bookingPartnerLabel(booking)} / ${shortId(booking.id)}`,
+      subtitle: `${bookingServiceLabel(booking)} / ${booking.payment?.method ?? 'payment unknown'}`,
       pills: [
         { label: formatMoney(recentWalletTotal), className: 'pill-danger' },
         { label: booking.payment?.status ?? 'payment unknown', className: 'pill-warn' },

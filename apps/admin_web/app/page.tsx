@@ -1284,15 +1284,15 @@ function buildMatchingControlRoom(
     const urgent = expired || freshEligible.length === 0;
     const detail = [
       bookingRegionLabel(booking),
-      `preferred ${booking.preferredProvider?.displayName ?? 'none'}`,
+      `first-pick ${booking.preferredProvider?.displayName ?? 'none'}`,
       `${participantCount} joined`,
       coordinate ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible` : 'no customer pin',
       booking.expiresAt ? `timer ${timeUntilLabel(booking.expiresAt)}` : 'no timer',
-    ].join(' · ');
+    ].join(' / ');
 
     return {
       id: booking.id,
-      title: `${bookingServiceLabel(booking)} · ${shortId(booking.id)}`,
+      title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
       detail,
       status: urgent ? 'Dispatch now' : 'Watch',
       pillClass: urgent ? 'pill-danger' : 'pill-warn',
@@ -1355,7 +1355,7 @@ function buildMatchingControlRoom(
           : 'Backup partners wait until the first-pick window closes.',
         operatorAction: immediateBackup
           ? 'This supports the current customer anxiety-reduction direction.'
-          : 'Use this only when preferred partner response rate is strong enough.',
+          : 'Use this only when first-pick partner response rate is strong enough.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
@@ -2945,10 +2945,10 @@ function bookingFlags(booking: AdminBooking) {
   }
   if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && participantCount === 0) {
     flags.push({
-      label: 'Preferred partner has not replied yet',
+      label: 'First-pick partner has not replied yet',
       severity: 'medium',
       priority: 61,
-      recommendedAction: 'Ask the preferred partner to reply or prepare backup matching for the customer.',
+      recommendedAction: 'Ask the first-pick partner to reply or prepare backup matching for the customer.',
     });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
@@ -3035,7 +3035,7 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
     policyMetric(
       byKey.get('matching.provider_response_window_minutes'),
       'Response window',
-      'Preferred partner first reply timer.',
+      'First-pick partner first reply timer.',
     ),
     policyMetric(
       byKey.get('matching.backup_provider_radius_meters'),
@@ -3047,7 +3047,7 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
       'Travel buffer',
       'Availability buffer after work.',
     ),
-    policyMetric(byKey.get('matching.preferred_accept_mode'), 'Accept mode', 'Preferred accept behavior.'),
+    policyMetric(byKey.get('matching.preferred_accept_mode'), 'Accept mode', 'First-pick accept behavior.'),
   ];
 
   const decisionKeys = [
