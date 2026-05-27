@@ -13,6 +13,7 @@ type Props = {
 type BookingView =
   | 'active'
   | 'high-risk'
+  | 'matching'
   | 'no-supply'
   | 'payment'
   | 'cash-debt'
@@ -53,6 +54,26 @@ type BookingProtectionLane = {
   operatorAction: string;
   href: string;
   bookings: AdminBooking[];
+};
+
+type BookingMatchingEscalationLane = {
+  title: string;
+  status: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  detail: string;
+  operatorAction: string;
+  href: string;
+  bookings: AdminBooking[];
+  metrics: Array<{ label: string; value: string }>;
+};
+
+type BookingMatchingEscalationRow = {
+  booking: AdminBooking;
+  title: string;
+  detail: string;
+  operatorAction: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  tags: string[];
 };
 
 type BookingMatchingPolicySnapshot = {
@@ -158,12 +179,23 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     () => buildCustomerProtectionBoard(orderedBookings),
     [orderedBookings],
   );
+  const matchingEscalationBoard = useMemo(
+    () => buildMatchingEscalationBoard(orderedBookings, currentTimeMs),
+    [currentTimeMs, orderedBookings],
+  );
+  const matchingEscalationRows = useMemo(
+    () => buildMatchingEscalationRows(orderedBookings, currentTimeMs),
+    [currentTimeMs, orderedBookings],
+  );
 
   const visibleBookings = useMemo(() => {
     if (view === 'high-risk') {
       return orderedBookings.filter((booking) =>
         bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
       );
+    }
+    if (view === 'matching') {
+      return orderedBookings.filter((booking) => bookingMatchingEscalationNeedsOps(booking, currentTimeMs));
     }
     if (view === 'no-supply') {
       return orderedBookings.filter(
@@ -295,6 +327,83 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               </div>
             </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Matching escalation board</h2>
+            <p className="muted">
+              Direct first-pick partner flow, 10-minute response window, backup partner participation, and
+              customer final selection in one operating board.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy">
+            Change matching rules
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {matchingEscalationBoard.map((lane) => (
+            <Link className="ops-task-card" href={lane.href} key={lane.title}>
+              <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
+              <h3>{lane.title}</h3>
+              <p>{lane.detail}</p>
+              <div className="participant-list">
+                <span className="pill">{lane.status}</span>
+                {lane.metrics.map((metricItem) => (
+                  <span className="pill" key={`${lane.title}-${metricItem.label}`}>
+                    {metricItem.label}: {metricItem.value}
+                  </span>
+                ))}
+              </div>
+              {lane.bookings.length > 0 ? (
+                <div className="stack">
+                  {lane.bookings.slice(0, 3).map((booking) => (
+                    <span className="muted" key={`${lane.title}-${booking.id}`}>
+                      {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
+                      {bookingMatchingWindowLabel(booking, currentTimeMs)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <small>{lane.operatorAction}</small>
+            </Link>
+          ))}
+        </div>
+        <div className="participant-list" style={{ marginTop: 14 }}>
+          {matchingEscalationRows.slice(0, 6).map((item) => (
+            <Link className="card" href={`/bookings/${item.booking.id}`} key={`matching-${item.booking.id}`}>
+              <div className="risk-watch-header">
+                <div>
+                  <p>
+                    {shortId(item.booking.id)} / {bookingCustomerLabel(item.booking)}
+                  </p>
+                  <h3>{item.title}</h3>
+                </div>
+                <span className={`signal ${commandToneClass(item.tone)}`}>
+                  {commandToneLabel(item.tone)}
+                </span>
+              </div>
+              <p className="muted">{item.detail}</p>
+              <p>{item.operatorAction}</p>
+              <div className="participant-list">
+                {item.tags.map((tag) => (
+                  <span className="pill" key={`${item.booking.id}-${tag}`}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
+          {matchingEscalationRows.length === 0 && (
+            <div className="card">
+              <h3>No matching escalation right now</h3>
+              <p className="muted">
+                Open matching, backup participation, customer final selection, and chat handoff are clear.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -605,6 +714,13 @@ const bookingViewOptions: Array<{
     label: 'High risk',
     description: 'bookings with expired matching, unresolved payment, or missing chat after matching.',
     operatorHint: 'Use this as the first dispatch triage view when the dashboard shows attention needed.',
+  },
+  {
+    view: 'matching',
+    label: 'Matching ops',
+    description: 'direct first-pick, backup partner, final customer selection, and chat handoff work.',
+    operatorHint:
+      'Use this during live dispatch to manage the 10-minute partner response window and backup partner escalation.',
   },
   {
     view: 'no-supply',
@@ -956,6 +1072,203 @@ function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtecti
   ];
 }
 
+function buildMatchingEscalationBoard(
+  bookings: AdminBooking[],
+  nowMs: number,
+): BookingMatchingEscalationLane[] {
+  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const expiredWindow = open.filter((booking) => bookingMatchingWindowExpired(booking, nowMs));
+  const firstPickWaiting = open.filter(
+    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
+  );
+  const noBackupSupply = open.filter((booking) => fallbackParticipants(booking).length === 0);
+  const backupReady = open.filter((booking) => fallbackParticipants(booking).length > 0);
+  const customerFinalSelection = open.filter((booking) => bookingHasAcceptedPartner(booking));
+  const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
+  const chatReady = bookings.filter((booking) => Boolean(booking.chatRoom));
+
+  return [
+    {
+      title: 'First-pick response window',
+      status: expiredWindow.length > 0 ? 'Expired window' : firstPickWaiting.length ? 'Waiting' : 'Clear',
+      tone: expiredWindow.length > 0 ? 'danger' : firstPickWaiting.length ? 'warn' : 'ok',
+      detail:
+        firstPickWaiting.length > 0
+          ? 'Preferred partners have the first chance before the customer switches to backup supply.'
+          : 'No preferred partner is currently blocking a direct request.',
+      operatorAction:
+        'If the timer is near expiry, prepare backup partner reminders and keep the customer waiting screen honest.',
+      href: expiredWindow.length > 0 ? '/bookings?view=high-risk' : '/bookings?view=matching',
+      bookings: firstPickWaiting,
+      metrics: [
+        metric('waiting', firstPickWaiting.length),
+        metric('expired', expiredWindow.length),
+      ],
+    },
+    {
+      title: 'Backup partner supply',
+      status: noBackupSupply.length > 0 ? 'Needs supply' : backupReady.length ? 'Ready' : 'Clear',
+      tone: noBackupSupply.length > 0 ? 'warn' : backupReady.length ? 'info' : 'ok',
+      detail:
+        noBackupSupply.length > 0
+          ? 'Some open requests have no backup partner visible to the customer yet.'
+          : 'Backup partners are already visible for open requests that need options.',
+      operatorAction:
+        'Check partner radius, location freshness, push delivery, wallet debt, and online state before extending wait time.',
+      href: noBackupSupply.length > 0 ? '/bookings?view=no-supply' : '/bookings?view=matching',
+      bookings: noBackupSupply.length > 0 ? noBackupSupply : backupReady,
+      metrics: [
+        metric('no backup', noBackupSupply.length),
+        metric('backup ready', backupReady.length),
+      ],
+    },
+    {
+      title: 'Customer final selection',
+      status: customerFinalSelection.length > 0 ? 'Customer decision' : 'Clear',
+      tone: customerFinalSelection.length > 0 ? 'warn' : 'ok',
+      detail:
+        customerFinalSelection.length > 0
+          ? 'At least one partner accepted or joined; the customer still needs to lock the final partner.'
+          : 'No open request is waiting on customer final selection.',
+      operatorAction:
+        'Guide support to nudge the customer when accepted partners are waiting and the booking is still open.',
+      href: '/bookings?view=matching',
+      bookings: customerFinalSelection,
+      metrics: [
+        metric('accepted options', customerFinalSelection.length),
+        metric('backup options', backupReady.length),
+      ],
+    },
+    {
+      title: 'Chat handoff after match',
+      status: matchedWithoutChat.length > 0 ? 'Repair chat' : chatReady.length ? 'Chat live' : 'Clear',
+      tone: matchedWithoutChat.length > 0 ? 'danger' : chatReady.length ? 'info' : 'ok',
+      detail:
+        matchedWithoutChat.length > 0
+          ? 'A final partner is selected, but chat is missing and service coordination can stall.'
+          : 'Matched bookings have chat or no active handoff blocker is visible.',
+      operatorAction:
+        'Repair chat room creation before the partner moves to service start, arrival, or payment closeout.',
+      href: matchedWithoutChat.length > 0 ? '/bookings?view=high-risk' : '/bookings?view=chat',
+      bookings: matchedWithoutChat,
+      metrics: [
+        metric('missing chat', matchedWithoutChat.length),
+        metric('chat ready', chatReady.length),
+      ],
+    },
+  ];
+}
+
+function buildMatchingEscalationRows(
+  bookings: AdminBooking[],
+  nowMs: number,
+): BookingMatchingEscalationRow[] {
+  return bookings
+    .map<BookingMatchingEscalationRow | null>((booking) => {
+      if (!bookingMatchingEscalationNeedsOps(booking, nowMs)) {
+        return null;
+      }
+
+      const fallbackCount = fallbackParticipants(booking).length;
+      const acceptedCount = acceptedParticipants(booking).length;
+      const windowLabel = bookingMatchingWindowLabel(booking, nowMs);
+      const baseTags = [
+        booking.status,
+        windowLabel,
+        `${fallbackCount} backup`,
+        `${acceptedCount} accepted`,
+      ];
+
+      if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
+        return {
+          booking,
+          title: 'Response window expired',
+          detail: 'The booking is still open after its saved response window.',
+          operatorAction:
+            'Close or extend matching intentionally, then release payment if no final partner can be selected.',
+          tone: 'danger',
+          tags: baseTags,
+        };
+      }
+
+      if (booking.status === 'OPEN_MATCHING' && acceptedCount > 0) {
+        return {
+          booking,
+          title: 'Customer final partner selection needed',
+          detail: 'One or more partners are ready, but the booking has not moved to final match.',
+          operatorAction: 'Ask support to prompt the customer to choose a final partner from the waiting list.',
+          tone: 'warn',
+          tags: [...baseTags, selectionPathLabel(booking)],
+        };
+      }
+
+      if (
+        booking.status === 'OPEN_MATCHING' &&
+        booking.preferredProvider &&
+        isPreferredAwaitingDecision(booking) &&
+        fallbackCount === 0
+      ) {
+        return {
+          booking,
+          title: 'First-pick pending with no backup',
+          detail: 'The preferred partner is still deciding and no backup partner has joined.',
+          operatorAction:
+            'Check push delivery and eligible partners within the configured radius before the customer loses patience.',
+          tone: 'warn',
+          tags: [...baseTags, 'customer waiting'],
+        };
+      }
+
+      if (
+        booking.status === 'OPEN_MATCHING' &&
+        booking.preferredProvider &&
+        isPreferredAwaitingDecision(booking) &&
+        fallbackCount > 0
+      ) {
+        return {
+          booking,
+          title: 'First-pick pending with backup ready',
+          detail: 'Backup partners are visible while the preferred partner still has first chance.',
+          operatorAction: 'Let the timer run or guide the customer to select a backup partner if urgency is high.',
+          tone: 'info',
+          tags: [...baseTags, selectionPathLabel(booking)],
+        };
+      }
+
+      if (booking.status === 'OPEN_MATCHING' && fallbackCount === 0) {
+        return {
+          booking,
+          title: 'Open request has no partner supply',
+          detail: 'No partner has joined the request yet.',
+          operatorAction: 'Review location, service price, radius policy, and partner alert delivery.',
+          tone: 'warn',
+          tags: baseTags,
+        };
+      }
+
+      if (booking.status === 'MATCHED' && !booking.chatRoom) {
+        return {
+          booking,
+          title: 'Matched booking missing chat',
+          detail: 'The final partner is selected, but customer and partner cannot coordinate in chat.',
+          operatorAction: 'Repair chat room creation before allowing service progress.',
+          tone: 'danger',
+          tags: [booking.status, selectionLabel(booking), 'chat missing'],
+        };
+      }
+
+      return null;
+    })
+    .filter((item): item is BookingMatchingEscalationRow => Boolean(item))
+    .sort((left, right) => {
+      const toneDelta = commandToneWeight(right.tone) - commandToneWeight(left.tone);
+      if (toneDelta !== 0) {
+        return toneDelta;
+      }
+      return bookingTimestamp(right.booking) - bookingTimestamp(left.booking);
+    });
+}
+
 function metric(label: string, value: number) {
   return { label, value: value.toString() };
 }
@@ -1128,6 +1441,9 @@ function emptyBookingMessage(view: BookingView) {
   }
   if (view === 'high-risk') {
     return 'No high-risk bookings match this queue. Expired matching, missing chat, and payment closeout are clear.';
+  }
+  if (view === 'matching') {
+    return 'No matching escalation bookings match this queue. First-pick, backup supply, customer selection, and chat handoff are clear.';
   }
   if (view === 'no-supply') {
     return 'No open matching booking is waiting without partner supply.';
@@ -1709,6 +2025,53 @@ function fallbackParticipants(booking: AdminBooking) {
       participant.providerProfile?.id &&
       participant.providerProfile.id !== preferredId,
   );
+}
+
+function acceptedParticipants(booking: AdminBooking) {
+  return (booking.participants ?? []).filter(
+    (participant) => participant.status === 'ACCEPTED' || participant.status === 'SELECTED',
+  );
+}
+
+function bookingHasAcceptedPartner(booking: AdminBooking) {
+  return acceptedParticipants(booking).length > 0 && !booking.selectedProvider;
+}
+
+function bookingMatchingEscalationNeedsOps(booking: AdminBooking, nowMs: number) {
+  if (booking.status === 'OPEN_MATCHING') {
+    return true;
+  }
+  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+    return true;
+  }
+  return bookingMatchingWindowExpired(booking, nowMs);
+}
+
+function bookingMatchingWindowExpired(booking: AdminBooking, nowMs: number) {
+  if (booking.status !== 'OPEN_MATCHING' || !booking.expiresAt || nowMs <= 0) {
+    return false;
+  }
+  const expiresAt = new Date(booking.expiresAt).getTime();
+  return Number.isFinite(expiresAt) && expiresAt < nowMs;
+}
+
+function bookingMatchingWindowLabel(booking: AdminBooking, nowMs: number) {
+  if (!booking.expiresAt || nowMs <= 0) {
+    return 'window pending';
+  }
+  const expiresAt = new Date(booking.expiresAt).getTime();
+  if (!Number.isFinite(expiresAt)) {
+    return 'window invalid';
+  }
+
+  const minutes = Math.round((expiresAt - nowMs) / 60_000);
+  if (minutes < 0) {
+    return `${Math.abs(minutes)}m overdue`;
+  }
+  if (minutes === 0) {
+    return 'expires now';
+  }
+  return `${minutes}m left`;
 }
 
 function selectionLabel(booking: AdminBooking) {
