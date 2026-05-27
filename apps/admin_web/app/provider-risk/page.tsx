@@ -139,7 +139,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             Showing {visibleReports.length} report(s), {visibleSanctions.length} sanction(s)
           </span>
         </div>
-        <form className="form-grid" action="/provider-risk">
+        <form className="form-grid" action="/partner-risk">
           <label>
             Search
             <input name="q" defaultValue={filters.q} placeholder="Partner, phone, category, reason" />
@@ -176,7 +176,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           </label>
           <div className="actions full-span">
             <button type="submit">Apply filters</button>
-            <Link className="text-link" href="/provider-risk">
+            <Link className="text-link" href="/partner-risk">
               Clear filters
             </Link>
           </div>
@@ -256,7 +256,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                     {item.openReportCount > 0 ? (
                       <Link
                         className="text-link"
-                        href={`/provider-risk?q=${encodeURIComponent(item.provider.id)}`}
+                        href={`/partner-risk?q=${encodeURIComponent(item.provider.id)}`}
                       >
                         Report lane
                       </Link>
@@ -576,7 +576,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       detail: urgentReports.length
         ? 'Critical or high reports need evidence review and a decision before partner trust changes.'
         : 'No critical or high partner report is currently open.',
-      href: urgentReports.length ? '/provider-risk?severity=HIGH_PLUS' : '/provider-risk?status=OPEN',
+      href: urgentReports.length ? '/partner-risk?severity=HIGH_PLUS' : '/partner-risk?status=OPEN',
       action: urgentReports.length ? 'Open critical + high lane' : 'Review open reports',
       className: urgentReports.length ? 'ops-task-blocked' : 'ops-task-done',
       metrics: [
@@ -610,7 +610,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       detail: activeSanctions.length
         ? 'Active sanctions are live operating controls and need clean audit follow-up.'
         : 'No active sanction is currently restricting partner operations.',
-      href: activeSanctions.length ? '/provider-risk?sanction=ACTIVE' : '/provider-risk',
+      href: activeSanctions.length ? '/partner-risk?sanction=ACTIVE' : '/partner-risk',
       action: activeSanctions.length ? 'Review active sanctions' : 'Open risk board',
       className: activeSanctions.length ? 'ops-task-pending' : 'ops-task-done',
       metrics: [
@@ -625,7 +625,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       detail: overdueReports.length
         ? 'Some open investigations have passed the target review window.'
         : 'Open partner reports are inside their review windows.',
-      href: overdueReports.length ? '/provider-risk?status=OPEN' : '/provider-risk?status=INVESTIGATING',
+      href: overdueReports.length ? '/partner-risk?status=OPEN' : '/partner-risk?status=INVESTIGATING',
       action: overdueReports.length ? 'Clear overdue reports' : 'Review investigations',
       className: overdueReports.length ? 'ops-task-blocked' : 'ops-task-done',
       metrics: [
@@ -692,7 +692,7 @@ function buildRiskNextActions(input: {
           : 'Review evidence and move to investigating, resolved, dismissed, or sanction.',
       href: report.bookingId
         ? `/bookings/${report.bookingId}`
-        : `/provider-risk?q=${encodeURIComponent(report.id)}`,
+        : `/partner-risk?q=${encodeURIComponent(report.id)}`,
       tags: [
         { label: report.severity, tone: severityPill(report.severity) },
         { label: report.status, tone: statusPill(report.status) },
@@ -728,7 +728,7 @@ function buildRiskNextActions(input: {
         sanction.type === 'PAYOUT_HOLD'
           ? 'Resolve payout evidence before creating or paying payout batches.'
           : 'Keep or lift the sanction only with a clear audit trail.',
-      href: `/provider-risk?q=${encodeURIComponent(sanction.providerProfileId)}`,
+      href: `/partner-risk?q=${encodeURIComponent(sanction.providerProfileId)}`,
       tags: [
         { label: sanction.status, tone: 'pill-danger' },
         { label: sanction.type, tone: sanction.type === 'WARNING' ? 'pill-warn' : 'pill-danger' },

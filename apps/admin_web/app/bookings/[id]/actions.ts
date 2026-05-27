@@ -39,6 +39,7 @@ export async function settleBookingCashDebt(formData: FormData) {
   revalidatePath('/bookings');
   revalidatePath('/payments');
   revalidatePath('/earnings');
+  revalidatePath('/partner-risk');
   revalidatePath('/provider-risk');
   revalidatePath('/providers');
   revalidatePath('/audit-log');

@@ -246,7 +246,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 Started {formatDate(payoutOps.hold.startsAt)} / expires {formatDate(payoutOps.hold.expiresAt)}
               </p>
             </div>
-            <Link className="text-link" href={`/provider-risk?q=${encodeURIComponent(provider.id)}`}>
+            <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
               Risk desk
             </Link>
           </div>
@@ -546,7 +546,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               partner profile.
             </p>
           </div>
-          <Link className="text-link" href={`/provider-risk?q=${encodeURIComponent(provider.id)}`}>
+          <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
             Open risk desk
           </Link>
         </div>

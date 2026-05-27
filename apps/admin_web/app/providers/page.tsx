@@ -373,7 +373,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <ProviderIssuePills provider={provider} />
                   <p className="muted">{providerActionHint(provider)}</p>
                   {hasOpenProviderRisk(provider) ? (
-                    <Link className="text-link" href={`/provider-risk?q=${encodeURIComponent(provider.id)}`}>
+                    <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
                       Open risk desk
                     </Link>
                   ) : null}
@@ -1299,7 +1299,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
         accountBlocks > 0 || openRisk > 0
           ? 'Account blocks, reports, or active sanctions need operator attention.'
           : 'No filtered partner has a major trust or device risk signal.',
-      href: openRisk > 0 ? '/provider-risk' : '/providers?review=security',
+      href: openRisk > 0 ? '/partner-risk' : '/providers?review=security',
       metrics: [
         providerCommandMetric('blocked', accountBlocks),
         providerCommandMetric('open risk', openRisk),

@@ -623,7 +623,7 @@ export default async function DashboardPage() {
                 Funnel view for signup, KYC, banking, first revenue tax readiness, and trust badge.
               </p>
             </div>
-            <Link className="text-link" href="/provider-risk">
+            <Link className="text-link" href="/partner-risk">
               Risk queue
             </Link>
           </div>
@@ -1597,13 +1597,13 @@ function buildDashboardCommandSignals(input: {
           label: 'Risk reports',
           value: openProviderReports.length.toString(),
           tone: openProviderReports.length ? 'danger' : 'ok',
-          href: '/provider-risk?status=OPEN',
+          href: '/partner-risk?status=OPEN',
         },
         {
           label: 'Active sanctions',
           value: activeProviderSanctions.length.toString(),
           tone: activeProviderSanctions.length ? 'danger' : 'ok',
-          href: '/provider-risk?sanction=ACTIVE',
+          href: '/partner-risk?sanction=ACTIVE',
         },
       ],
     },

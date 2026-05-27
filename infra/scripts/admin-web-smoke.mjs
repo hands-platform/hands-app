@@ -10,6 +10,7 @@ const pages = [
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
+  { path: '/partner-risk', markers: ['Partner Risk', 'Risk operation filters'] },
   { path: '/provider-risk', markers: ['Partner Risk', 'Risk operation filters'] },
   { path: '/app-sessions', markers: ['App Sessions', 'Latest app sessions'] },
   { path: '/providers', markers: ['Partner Verification', 'Review queue'] },

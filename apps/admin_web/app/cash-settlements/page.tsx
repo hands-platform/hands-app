@@ -94,7 +94,7 @@ export default async function CashSettlementsPage() {
               later positive earnings.
             </p>
           </div>
-          <Link className="text-link" href="/provider-risk">
+          <Link className="text-link" href="/partner-risk">
             Partner risk
           </Link>
         </div>

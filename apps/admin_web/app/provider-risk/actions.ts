@@ -37,7 +37,11 @@ export async function createProviderSanction(formData: FormData) {
   const reportId = readOptional(formData, 'reportId');
   const expiresAt = readOptional(formData, 'expiresAt');
   const reason = readReason(formData);
-  await adminPost(`/admin/providers/${providerProfileId}/sanctions`, { type, reportId, expiresAt, reason }, null);
+  await adminPost(
+    `/admin/providers/${providerProfileId}/sanctions`,
+    { type, reportId, expiresAt, reason },
+    null,
+  );
   revalidateProviderRisk(providerProfileId);
 }
 
@@ -70,6 +74,7 @@ function readOptional(formData: FormData, name: string) {
 }
 
 function revalidateProviderRisk(providerProfileId?: string | null) {
+  revalidatePath('/partner-risk');
   revalidatePath('/provider-risk');
   revalidatePath('/providers');
   revalidatePath('/audit-log');
