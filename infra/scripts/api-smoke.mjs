@@ -1099,6 +1099,64 @@ assertBookingPricing('Direct provider custom-price', hybridBookingDetail, {
 });
 assertBookingMatchingWindow('Direct provider custom-price', hybridBookingDetail, 10);
 
+let preferredAcceptPolicyBooking;
+let preferredAcceptPolicyMatched;
+await patchJson(
+  `/admin/operational-policy/${encodeURIComponent('matching.preferred_accept_mode')}`,
+  adminAuth.accessToken,
+  { value: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT' },
+);
+try {
+  preferredAcceptPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+    serviceId: service.id,
+    providerId: providerAuth.user.providerProfile.id,
+    scheduledStartAt: new Date(Date.now() + 80 * 60_000).toISOString(),
+    address: { line1: 'Preferred accept policy smoke flow' },
+    lat: 10.7783,
+    lng: 106.6994,
+    paymentMethod: 'CASH',
+  });
+  const acceptedButWaiting = await postJson(
+    `/provider/bookings/${preferredAcceptPolicyBooking.id}/accept`,
+    providerAuth.accessToken,
+  );
+  if (acceptedButWaiting.status !== 'OPEN_MATCHING' || acceptedButWaiting.selectedProviderId !== null) {
+    throw new Error(
+      `Preferred accept customer-confirm policy should keep booking open: ${JSON.stringify(
+        acceptedButWaiting,
+      )}`,
+    );
+  }
+  const preferredAcceptedParticipant = acceptedButWaiting.participants?.find(
+    (participant) => participant.providerProfileId === providerAuth.user.providerProfile.id,
+  );
+  if (preferredAcceptedParticipant?.status !== 'ACCEPTED') {
+    throw new Error(
+      `Preferred accept customer-confirm policy should mark participant accepted: ${JSON.stringify(
+        acceptedButWaiting,
+      )}`,
+    );
+  }
+  preferredAcceptPolicyMatched = await postJson(
+    `/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider`,
+    customerAuth.accessToken,
+    { providerId: providerAuth.user.providerProfile.id },
+  );
+  if (preferredAcceptPolicyMatched.status !== 'MATCHED') {
+    throw new Error(
+      `Customer final confirmation did not match preferred accepted partner: ${JSON.stringify(
+        preferredAcceptPolicyMatched,
+      )}`,
+    );
+  }
+} finally {
+  await patchJson(
+    `/admin/operational-policy/${encodeURIComponent('matching.preferred_accept_mode')}`,
+    adminAuth.accessToken,
+    { value: 'AUTO_MATCH_ON_ACCEPT' },
+  );
+}
+
 const momoBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   scheduledStartAt: new Date(Date.now() + 90 * 60_000).toISOString(),
@@ -1936,6 +1994,8 @@ console.log({
   hybridSelectedProviderId: adminHybridBooking?.selectedProvider?.id ?? null,
   hybridSwitchedToBackup:
     adminHybridBooking?.preferredProvider?.id !== adminHybridBooking?.selectedProvider?.id,
+  preferredAcceptPolicyBookingId: preferredAcceptPolicyBooking?.id ?? null,
+  preferredAcceptPolicyMatched: preferredAcceptPolicyMatched?.status === 'MATCHED',
   savedSelectedLocationId: savedSelectedLocation.id,
   nearbyProviderDistanceMeters: nearbyProvider.distanceMeters,
   nearbyProviderRecent: nearbyProvider.isRecentLocation,

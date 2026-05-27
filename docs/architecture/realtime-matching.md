@@ -27,11 +27,12 @@ Enforced settings:
 - `matching.provider_response_window_minutes`
 - `matching.backup_provider_radius_meters`
 - `matching.travel_buffer_minutes`
+- `matching.preferred_accept_mode`
 
 Existing open bookings keep their stored `expiresAt` timestamp so operators do not accidentally change a
-live customer countdown. The same page also records non-enforced product decisions, such as whether a
-preferred partner acceptance should auto-match or still require customer final confirmation, so HANDS can
-keep an audit trail before redesigning the mobile flow.
+live customer countdown. `matching.preferred_accept_mode` controls whether the first-picked partner
+acceptance immediately matches the booking or keeps the booking open until the customer confirms that
+partner as the final selection.
 
 ## BullMQ Queues
 

@@ -2486,6 +2486,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
 
     final eventMessages = <String, String>{
       'provider.joined': 'A backup therapist joined this request.',
+      'provider.accepted': 'A therapist accepted. Confirm this therapist or choose another available option.',
       'booking.matched': 'Your therapist confirmed the booking.',
       'booking.opened': 'The request is still open for therapist responses.',
       'booking.expired': 'This booking expired or was cancelled.',
@@ -2508,6 +2509,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     for (final event in [
       'provider.location.updated',
       'provider.joined',
+      'provider.accepted',
       'booking.matched',
       'booking.opened',
       'booking.expired',

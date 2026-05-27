@@ -13,7 +13,7 @@ import {
 import { EarningsService } from '../earnings/earnings.service';
 import { MatchingGateway } from '../matching/matching.gateway';
 import { MatchingService } from '../matching/matching.service';
-import { haversineMeters, roundTo100Meters } from '../matching/matching.policy';
+import { PREFERRED_ACCEPT_CUSTOMER_CONFIRM, haversineMeters, roundTo100Meters } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
@@ -608,6 +608,33 @@ export class BookingsService {
 
     if (booking.preferredProviderId === provider.id) {
       if (status === ParticipantStatus.ACCEPTED) {
+        const matchingPolicy = await this.matching.getPolicy();
+        if (matchingPolicy.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM) {
+          const updated = await this.prisma.booking.update({
+            where: { id: bookingId },
+            data: {
+              status: BookingStatus.OPEN_MATCHING,
+              selectedProviderId: null,
+              participants: {
+                update: {
+                  where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
+                  data: { status, respondedAt: new Date() },
+                },
+              },
+            },
+            include: { participants: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
+          });
+          await this.notifications.create({
+            userId: booking.customerProfile.userId,
+            type: 'provider.accepted',
+            title: 'Partner is ready',
+            body: `${provider.displayName} accepted your request. Confirm this partner or choose another available partner.`,
+            data: { bookingId, providerProfileId: provider.id },
+          });
+          this.matchingGateway.emitProviderAccepted(bookingId, updated);
+          return updated;
+        }
+
         const updated = await this.prisma.booking.update({
           where: { id: bookingId },
           data: {

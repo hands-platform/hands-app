@@ -7,11 +7,19 @@ export const DEFAULT_BACKUP_PROVIDER_RADIUS_METERS = 10000;
 export const MATCHING_TRAVEL_BUFFER_MINUTES_KEY = 'matching.travel_buffer_minutes';
 export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
+export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
+export const PREFERRED_ACCEPT_AUTO_MATCH = 'AUTO_MATCH_ON_ACCEPT';
+export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+
+export type PreferredAcceptMode =
+  | typeof PREFERRED_ACCEPT_AUTO_MATCH
+  | typeof PREFERRED_ACCEPT_CUSTOMER_CONFIRM;
 
 export type MatchingPolicy = {
   travelBufferMinutes: number;
   providerResponseWindowMinutes: number;
   backupProviderRadiusMeters: number;
+  preferredAcceptMode: PreferredAcceptMode;
 };
 
 export type OperationalPolicyDefinition = {
@@ -70,26 +78,26 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
   {
-    key: 'matching.preferred_accept_mode',
+    key: MATCHING_PREFERRED_ACCEPT_MODE_KEY,
     category: 'Decision',
     label: 'When the preferred partner accepts',
     description:
       'Choose whether a preferred partner acceptance immediately matches the booking or still asks the customer to confirm.',
-    value: 'AUTO_MATCH_ON_ACCEPT',
-    recommendedValue: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+    value: PREFERRED_ACCEPT_AUTO_MATCH,
+    recommendedValue: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     options: [
       {
-        value: 'AUTO_MATCH_ON_ACCEPT',
+        value: PREFERRED_ACCEPT_AUTO_MATCH,
         label: 'Auto match on partner accept',
         tradeoff: 'Fastest MVP flow, but the customer has less final control.',
       },
       {
-        value: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+        value: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
         label: 'Customer confirms final partner',
         tradeoff: 'Best for long-term customer control, but needs a clearer waiting screen flow.',
       },
     ],
-    enforced: false,
+    enforced: true,
   },
   {
     key: 'matching.backup_open_mode',
@@ -168,6 +176,7 @@ export function resolveMatchingPolicy(
       1000,
       30000,
     ),
+    preferredAcceptMode: readPreferredAcceptMode(settings[MATCHING_PREFERRED_ACCEPT_MODE_KEY]),
   };
 }
 
@@ -192,6 +201,12 @@ function readPositiveInteger(config: ConfigService, key: string, fallback: numbe
 export function readPolicyInteger(value: unknown, fallback: number, min: number, max: number) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
+}
+
+function readPreferredAcceptMode(value: unknown): PreferredAcceptMode {
+  return value === PREFERRED_ACCEPT_CUSTOMER_CONFIRM
+    ? PREFERRED_ACCEPT_CUSTOMER_CONFIRM
+    : PREFERRED_ACCEPT_AUTO_MATCH;
 }
 
 function toRadians(value: number) {
