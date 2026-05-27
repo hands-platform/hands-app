@@ -6,6 +6,7 @@ export type PushMessage = {
   title: string;
   body: string;
   data?: Record<string, string>;
+  providerOverride?: 'in_app_only' | 'onesignal';
 };
 
 export type PushSendResult = {
@@ -21,7 +22,8 @@ export class PushDeliveryService {
   constructor(private readonly config: ConfigService) {}
 
   async send(message: PushMessage): Promise<PushSendResult> {
-    const provider = this.config.get<string>('PUSH_PROVIDER')?.trim().toLowerCase() || 'in_app_only';
+    const provider =
+      message.providerOverride ?? this.config.get<string>('PUSH_PROVIDER')?.trim().toLowerCase() ?? 'in_app_only';
 
     if (provider === 'onesignal') {
       return this.sendWithOneSignal(message);

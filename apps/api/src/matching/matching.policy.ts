@@ -17,6 +17,9 @@ export const CANCELLATION_AUTO_FEE_AFTER_MATCH = 'AUTO_FEE_AFTER_MATCH';
 export const NO_SHOW_PARTNER_REPORT_POLICY_KEY = 'no_show.partner_report_policy';
 export const NO_SHOW_ADMIN_REVIEW_REQUIRED = 'ADMIN_REVIEW_REQUIRED';
 export const NO_SHOW_AUTO_AFTER_EVIDENCE = 'AUTO_NO_SHOW_AFTER_EVIDENCE';
+export const NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY = 'notification.partner_alert_channel';
+export const PARTNER_ALERT_IN_APP_WITH_PUSH_LATER = 'IN_APP_WITH_PUSH_LATER';
+export const PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
 export const PREFERRED_ACCEPT_AUTO_MATCH = 'AUTO_MATCH_ON_ACCEPT';
 export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 
@@ -198,21 +201,21 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: false,
   },
   {
-    key: 'notification.partner_alert_channel',
+    key: NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
     category: 'Decision',
     label: 'Partner alert channel',
     description:
       'Choose how partners should receive urgent booking and backup participation alerts.',
-    value: 'IN_APP_WITH_PUSH_LATER',
-    recommendedValue: 'IN_APP_WITH_PUSH_LATER',
+    value: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
+    recommendedValue: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
     options: [
       {
-        value: 'IN_APP_WITH_PUSH_LATER',
+        value: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
         label: 'In-app now, push later',
         tradeoff: 'Keeps MVP stable until OneSignal/Vonage production accounts are fully approved.',
       },
       {
-        value: 'ONESIGNAL_FOR_ALL_BOOKINGS',
+        value: PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS,
         label: 'OneSignal for all bookings',
         tradeoff: 'Better reach, but depends on production push setup and delivery monitoring.',
       },

@@ -1,6 +1,10 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Prisma } from '@prisma/client';
 import { Job } from 'bullmq';
+import {
+  NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
+  PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS,
+} from '../matching/matching.policy';
 import { PrismaService } from '../prisma/prisma.service';
 import { PushDeliveryService } from './push-delivery.service';
 
@@ -34,6 +38,7 @@ export class NotificationRetryProcessor extends WorkerHost {
 
     const results = [];
     const data = toStringData(notification.data);
+    const providerOverride = await this.resolveProviderOverride(notification.type);
 
     for (const device of devices) {
       const result = await this.pushDelivery.send({
@@ -41,6 +46,7 @@ export class NotificationRetryProcessor extends WorkerHost {
         title: notification.title,
         body: notification.body,
         data,
+        providerOverride,
       });
 
       await this.prisma.$transaction(async (tx) => {
@@ -77,6 +83,28 @@ export class NotificationRetryProcessor extends WorkerHost {
       results,
     };
   }
+
+  private async resolveProviderOverride(notificationType: string) {
+    if (!isPartnerBookingAlert(notificationType)) {
+      return undefined;
+    }
+
+    const setting = await this.prisma.operationalPolicySetting.findUnique({
+      where: { key: NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY },
+      select: { value: true },
+    });
+
+    return setting?.value === PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS ? 'onesignal' : 'in_app_only';
+  }
+}
+
+function isPartnerBookingAlert(notificationType: string) {
+  return [
+    'booking.requested',
+    'booking.backup_available',
+    'booking.matched',
+    'provider.payout_setup_required',
+  ].includes(notificationType);
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue {

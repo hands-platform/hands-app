@@ -1194,6 +1194,51 @@ try {
   );
 }
 
+let oneSignalPolicyNotification = null;
+await patchJson(
+  `/admin/operational-policy/${encodeURIComponent('notification.partner_alert_channel')}`,
+  adminAuth.accessToken,
+  { value: 'ONESIGNAL_FOR_ALL_BOOKINGS' },
+);
+try {
+  const oneSignalPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+    serviceId: service.id,
+    providerId: providerAuth.user.providerProfile.id,
+    scheduledStartAt: new Date(Date.now() + 88 * 60_000).toISOString(),
+    address: { line1: 'Partner alert channel policy smoke flow' },
+    lat: 10.7783,
+    lng: 106.6994,
+    paymentMethod: 'CASH',
+  });
+  for (let attempt = 0; attempt < 20; attempt++) {
+    await sleep(500);
+    const adminNotifications = await getJson('/admin/notifications', adminAuth.accessToken);
+    oneSignalPolicyNotification = adminNotifications.find(
+      (item) =>
+        item.type === 'booking.requested' &&
+        item.data?.bookingId === oneSignalPolicyBooking.id &&
+        (item.deliveries?.length ?? 0) > 0,
+    );
+    if (oneSignalPolicyNotification) {
+      break;
+    }
+  }
+  const deliveryProvider = oneSignalPolicyNotification?.deliveries?.[0]?.provider;
+  if (deliveryProvider !== 'ONESIGNAL') {
+    throw new Error(
+      `Partner alert channel policy did not route direct booking push through OneSignal: ${JSON.stringify(
+        oneSignalPolicyNotification,
+      )}`,
+    );
+  }
+} finally {
+  await patchJson(
+    `/admin/operational-policy/${encodeURIComponent('notification.partner_alert_channel')}`,
+    adminAuth.accessToken,
+    { value: 'IN_APP_WITH_PUSH_LATER' },
+  );
+}
+
 const momoBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   scheduledStartAt: new Date(Date.now() + 90 * 60_000).toISOString(),
