@@ -15,11 +15,15 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
-
-const PROVIDER_WALLET_BLOCK_REASON = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
-
-const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
-  '현금 예약으로 발생한 HANDS 수수료와 원천징수 금액이 미정산 상태입니다. 회사 계좌로 입금하거나 관리자 정산/상계가 완료되면 예약 수락이 다시 가능합니다.';
+import {
+  PROVIDER_WALLET_BLOCK_CODE,
+  PROVIDER_WALLET_BLOCK_REASON,
+  PROVIDER_WALLET_SETTLEMENT_INSTRUCTION,
+  PROVIDER_WALLET_SETTLEMENT_METHOD,
+  providerWalletSettlementReference,
+  providerWalletSettlementSteps,
+  throwProviderWalletBlocked,
+} from '../provider-wallet/provider-wallet.policy';
 
 type TaxPolicyWithRules = Prisma.TaxPolicyVersionGetPayload<{ include: { rules: true } }>;
 type TaxRuleRecord = TaxPolicyWithRules['rules'][number];
@@ -190,13 +194,14 @@ export class EarningsService {
       walletBalance,
       walletBlocked,
       walletDebtAmount,
+      walletBlockCode: walletBlocked ? PROVIDER_WALLET_BLOCK_CODE : null,
       walletBlockReason: walletBlocked ? PROVIDER_WALLET_BLOCK_REASON : null,
       walletSettlementRequired: walletBlocked,
-      walletSettlementMethod: walletBlocked ? 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET' : null,
-      walletSettlementReference: walletBlocked ? this.providerWalletSettlementReference(provider.id) : null,
+      walletSettlementMethod: walletBlocked ? PROVIDER_WALLET_SETTLEMENT_METHOD : null,
+      walletSettlementReference: walletBlocked ? providerWalletSettlementReference(provider.id) : null,
       walletSettlementInstruction: walletBlocked ? PROVIDER_WALLET_SETTLEMENT_INSTRUCTION : null,
       walletSettlementSteps: walletBlocked
-        ? this.providerWalletSettlementSteps(walletDebtAmount, summary.currency, provider.id)
+        ? providerWalletSettlementSteps(walletDebtAmount, summary.currency, provider.id)
         : [],
       payoutBlocked: Boolean(payoutHold),
       payoutHold,
@@ -533,19 +538,6 @@ export class EarningsService {
       paidNetAmount: paid._sum.netAmount ?? 0,
       currency: 'VND',
     };
-  }
-
-  private providerWalletSettlementReference(providerProfileId: string) {
-    return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
-  }
-
-  private providerWalletSettlementSteps(amount: number, currency: string, providerProfileId: string) {
-    return [
-      `Settle ${amount.toLocaleString('vi-VN')} ${currency} for unpaid HANDS fees.`,
-      `Use reference ${this.providerWalletSettlementReference(providerProfileId)} when reporting the deposit.`,
-      'After admin confirms the deposit or offset, refresh wallet status.',
-      'New booking acceptance unlocks only when the wallet is no longer negative.',
-    ];
   }
 
   private calculateProviderWalletDelta(input: {
@@ -892,11 +884,7 @@ export class EarningsService {
     });
     const walletBalance = wallet._sum.netAmount ?? 0;
     if (walletBalance < 0) {
-      throw new BadRequestException(
-        `Provider has unsettled cash fee debt (${Math.abs(
-          walletBalance,
-        )} VND). Settle or offset the debt before creating a payout batch.`,
-      );
+      throwProviderWalletBlocked({ providerProfileId, walletBalance });
     }
   }
 

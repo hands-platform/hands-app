@@ -13,8 +13,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const context = host.switchToHttp();
     const response = context.getResponse();
     const request = context.getRequest<RequestWithId>();
-    const status = exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
+    const status =
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
     const exceptionResponse = exception instanceof HttpException ? exception.getResponse() : undefined;
+    const exceptionBody =
+      typeof exceptionResponse === 'object' && exceptionResponse !== null && !Array.isArray(exceptionResponse)
+        ? (exceptionResponse as Record<string, unknown>)
+        : {};
     const message =
       typeof exceptionResponse === 'object' && exceptionResponse !== null && 'message' in exceptionResponse
         ? (exceptionResponse as { message: unknown }).message
@@ -23,6 +28,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
           : 'Internal server error';
 
     const body = {
+      ...exceptionBody,
       statusCode: status,
       message,
       requestId: request.requestId,

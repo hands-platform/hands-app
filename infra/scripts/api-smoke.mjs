@@ -49,7 +49,7 @@ async function expectRequestFailure(label, fn, expectedStatus) {
     if (!message.includes(`failed: ${expectedStatus}`)) {
       throw new Error(`${label} failed with an unexpected error: ${message}`);
     }
-    return true;
+    return message;
   }
   throw new Error(`${label} unexpectedly succeeded`);
 }
@@ -1246,6 +1246,7 @@ if (
   walletDebtProviderEarningsSummary.walletBalance >= 0 ||
   walletDebtProviderEarningsSummary.walletBlocked !== true ||
   walletDebtProviderEarningsSummary.walletDebtAmount <= 0 ||
+  walletDebtProviderEarningsSummary.walletBlockCode !== 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT' ||
   walletDebtProviderEarningsSummary.walletSettlementRequired !== true ||
   walletDebtProviderEarningsSummary.walletSettlementMethod !== 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET' ||
   !walletDebtProviderEarningsSummary.walletSettlementInstruction ||
@@ -1288,12 +1289,12 @@ if (
     )}`,
   );
 }
-await expectRequestFailure(
+const directWalletBlockError = await expectRequestFailure(
   'Negative provider wallet blocks direct booking acceptance',
   () => postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken),
   400,
 );
-await expectRequestFailure(
+const customerSelectionWalletBlockError = await expectRequestFailure(
   'Negative provider wallet blocks customer final selection',
   () =>
     postJson(
@@ -1305,6 +1306,14 @@ await expectRequestFailure(
     ),
   400,
 );
+for (const [label, message] of [
+  ['direct booking acceptance', directWalletBlockError],
+  ['customer final selection', customerSelectionWalletBlockError],
+]) {
+  if (!message.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
+    throw new Error(`Negative wallet ${label} response is missing wallet block code: ${message}`);
+  }
+}
 const blockedOpenMatchingBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   scheduledStartAt: new Date(Date.now() + 165 * 60_000).toISOString(),
@@ -1313,13 +1322,13 @@ const blockedOpenMatchingBooking = await postJson('/customer/bookings', customer
   lng: 106.6994,
   paymentMethod: 'MOMO',
 });
-await expectRequestFailure(
+const openMatchingWalletBlockError = await expectRequestFailure(
   'Negative provider wallet blocks open matching join',
   () =>
     postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
   400,
 );
-await expectRequestFailure(
+const payoutWalletBlockError = await expectRequestFailure(
   'Negative provider wallet blocks payout batch creation',
   () =>
     postJson('/admin/payout-batches', adminAuth.accessToken, {
@@ -1329,6 +1338,14 @@ await expectRequestFailure(
     }),
   400,
 );
+for (const [label, message] of [
+  ['open matching join', openMatchingWalletBlockError],
+  ['payout batch creation', payoutWalletBlockError],
+]) {
+  if (!message.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
+    throw new Error(`Negative wallet ${label} response is missing wallet block code: ${message}`);
+  }
+}
 const adminEarningsAfterCashDebt = await getJson('/admin/earnings', adminAuth.accessToken);
 const cashDebtEarning = adminEarningsAfterCashDebt.find(
   (earning) => earning.bookingId === walletDebtBooking.id && earning.netAmount < 0,

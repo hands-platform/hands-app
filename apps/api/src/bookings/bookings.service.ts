@@ -15,9 +15,8 @@ import { MatchingService } from '../matching/matching.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
+import { throwProviderWalletBlocked } from '../provider-wallet/provider-wallet.policy';
 import { PrismaService } from '../prisma/prisma.service';
-
-const PROVIDER_WALLET_BLOCK_REASON = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 @Injectable()
 export class BookingsService {
@@ -619,8 +618,9 @@ export class BookingsService {
       },
       _sum: { netAmount: true },
     });
-    if ((wallet._sum.netAmount ?? 0) < 0) {
-      throw new BadRequestException(PROVIDER_WALLET_BLOCK_REASON);
+    const walletBalance = wallet._sum.netAmount ?? 0;
+    if (walletBalance < 0) {
+      throwProviderWalletBlocked({ providerProfileId, walletBalance });
     }
   }
 
