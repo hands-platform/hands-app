@@ -408,28 +408,28 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="participant-list" style={{ marginTop: 8 }}>
                       {booking.preferredProvider && (
                         <span className="pill" style={{ background: '#eef6e8', borderColor: '#b9d4a8' }}>
-                          Preferred: {booking.preferredProvider.displayName ?? 'Provider'}{' '}
+                          Preferred: {booking.preferredProvider.displayName ?? 'Partner'}{' '}
                           {preferredProviderStateLabel(booking)}
                         </span>
                       )}
                       {booking.selectedProvider &&
                         booking.selectedProvider.id !== booking.preferredProvider?.id && (
                           <span className="pill pill-success">
-                            Final: {booking.selectedProvider.displayName ?? 'Provider'}
+                            Final: {booking.selectedProvider.displayName ?? 'Partner'}
                           </span>
                         )}
                       {fallbackParticipants(booking)
                         .slice(0, 4)
                         .map((participant) => (
                           <span className="pill" key={participant.id}>
-                            Backup: {participant.providerProfile?.displayName ?? 'Provider'} (
+                            Backup: {participant.providerProfile?.displayName ?? 'Partner'} (
                             {participant.status})
                           </span>
                         ))}
                     </div>
                     {fallbackParticipants(booking).length > 4 && (
                       <div className="muted" style={{ marginTop: 6 }}>
-                        +{fallbackParticipants(booking).length - 4} more backup therapist(s)
+                        +{fallbackParticipants(booking).length - 4} more backup partner(s)
                       </div>
                     )}
                   </td>
@@ -910,7 +910,7 @@ function opsSignal(booking: AdminBooking) {
     return <span className="signal signal-info">Fallback options ready</span>;
   }
   if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
-    return <span className="signal signal-info">Backup therapist selected</span>;
+    return <span className="signal signal-info">Backup partner selected</span>;
   }
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
     return <span className="signal signal-warn">Chat missing</span>;
@@ -957,7 +957,7 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
     flags.push({ severity: 'high', title: 'No-show payment unresolved' });
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    flags.push({ severity: 'high', title: 'Cash fee debt blocks provider acceptance' });
+    flags.push({ severity: 'high', title: 'Cash fee debt blocks partner acceptance' });
   }
   const pricingPolicy = bookingPricingPolicySignal(booking);
   if (pricingPolicy.status === 'blocked') {
@@ -969,7 +969,7 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
     flags.push({ severity: 'high', title: 'Matching window expired' });
   }
   if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && participantCount === 0) {
-    flags.push({ severity: 'medium', title: 'Preferred provider pending' });
+    flags.push({ severity: 'medium', title: 'Preferred partner pending' });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
     flags.push({ severity: 'medium', title: 'No partner supply' });
@@ -1166,19 +1166,19 @@ function nextAction(booking: AdminBooking) {
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return 'Wait for the preferred provider, but monitor fallback therapist supply.';
+    return 'Wait for the preferred partner, but monitor fallback partner supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
     return 'Watch notifications and nearby partner supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
-    return 'Customer can keep waiting or switch to a backup therapist.';
+    return 'Customer can keep waiting or switch to a backup partner.';
   }
   if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
-    return 'Customer switched away from the preferred therapist. Confirm chat, route, and provider handoff.';
+    return 'Customer switched away from the preferred partner. Confirm chat, route, and partner handoff.';
   }
   if (booking.status === 'MATCHED') {
-    return 'Customer selection is locked. Check chat creation, route tracking, and provider departure.';
+    return 'Customer selection is locked. Check chat creation, route tracking, and partner departure.';
   }
   if (booking.status === 'PROVIDER_ON_THE_WAY') {
     return 'Monitor live location and arrival progress.';
@@ -1318,7 +1318,7 @@ function bookingProviderLabel(booking: AdminBooking) {
     booking.selectedProvider?.displayName ??
     booking.preferredProvider?.displayName ??
     fallbackParticipants(booking)[0]?.providerProfile?.displayName;
-  return provider ? `Provider ${provider}` : 'Provider pending';
+  return provider ? `Partner ${provider}` : 'Partner pending';
 }
 
 function isSelectedProviderParticipant(booking: AdminBooking) {
@@ -1353,30 +1353,30 @@ function fallbackParticipants(booking: AdminBooking) {
 
 function selectionLabel(booking: AdminBooking) {
   if (!booking.preferredProvider) {
-    return 'No preferred therapist';
+    return 'No preferred partner';
   }
 
   if (isBackupSelected(booking)) {
-    return 'Backup therapist selected';
+    return 'Backup partner selected';
   }
 
   if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
-    return 'Preferred therapist pending';
+    return 'Preferred partner pending';
   }
 
   if (preferredProviderStateLabel(booking) == 'declined') {
-    return 'Preferred therapist declined';
+    return 'Preferred partner declined';
   }
 
   if (booking.status === 'MATCHED') {
-    return 'Final therapist selected';
+    return 'Final partner selected';
   }
 
   if (isSelectedProviderParticipant(booking)) {
-    return 'Preferred therapist is active';
+    return 'Preferred partner is active';
   }
 
-  return 'Preferred therapist requested';
+  return 'Preferred partner requested';
 }
 
 function selectionPathLabel(booking: AdminBooking) {
@@ -1388,20 +1388,20 @@ function selectionPathLabel(booking: AdminBooking) {
 
   if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
     return fallbackCount > 0
-      ? 'Direct request first, with backup therapists already waiting'
-      : 'Direct request first, waiting on the preferred therapist';
+      ? 'Direct request first, with backup partners already waiting'
+      : 'Direct request first, waiting on the preferred partner';
   }
 
   if (isBackupSelected(booking)) {
-    return 'Direct request escalated to backup, then the guest chose a backup therapist';
+    return 'Direct request escalated to backup, then the guest chose a backup partner';
   }
 
   if (booking.status === 'MATCHED') {
-    return 'Direct request confirmed by the preferred therapist';
+    return 'Direct request confirmed by the preferred partner';
   }
 
   if (fallbackCount > 0) {
-    return 'Backup therapists are available while the preferred therapist stays in the flow';
+    return 'Backup partners are available while the preferred partner stays in the flow';
   }
 
   return 'Direct request remains the active path';
