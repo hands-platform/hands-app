@@ -22,9 +22,15 @@ const pages = [
   { path: '/provider-risk', markers: ['Partner Risk', 'Risk operation filters'] },
   { path: '/app-sessions', markers: ['App Sessions', 'Latest app sessions'] },
   { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
-  { path: '/partners', markers: ['Partner Verification', 'Dispatch capacity forecast', 'Review queue'] },
+  {
+    path: '/partners',
+    markers: ['Partner Verification', 'Dispatch capacity forecast', 'Backup matching eligibility', 'Review queue'],
+  },
   { path: '/partners?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
-  { path: '/providers', markers: ['Partner Verification', 'Dispatch capacity forecast', 'Review queue'] },
+  {
+    path: '/providers',
+    markers: ['Partner Verification', 'Dispatch capacity forecast', 'Backup matching eligibility', 'Review queue'],
+  },
   { path: '/providers?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
   { path: '/setup', markers: ['External setup', 'External registration handoff', 'Current blockers'] },

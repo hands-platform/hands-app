@@ -75,13 +75,19 @@ type ProvidersPageSearchParams = Promise<Record<string, string | string[] | unde
 type ProviderOpsPolicy = {
   staleLocationMinutes: number;
   expiredLocationHours: number;
+  backupRadiusMeters: number;
+  responseWindowMinutes: number;
 };
 
 const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
+const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
+const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 const DEFAULT_PROVIDER_OPS_POLICY: ProviderOpsPolicy = {
   staleLocationMinutes: 30,
   expiredLocationHours: 24,
+  backupRadiusMeters: 10000,
+  responseWindowMinutes: 10,
 };
 const PROVIDER_LIST_RENDER_LIMIT = 40;
 
@@ -496,6 +502,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   </div>
                   <ProviderIssuePills provider={provider} opsPolicy={opsPolicy} />
                   <p className="muted">{providerActionHint(provider, opsPolicy)}</p>
+                  <PartnerBackupEligibilityCell provider={provider} opsPolicy={opsPolicy} />
                   {hasOpenProviderRisk(provider) ? (
                     <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
                       Open risk desk
@@ -996,6 +1003,51 @@ function ProviderIssuePills({
   );
 }
 
+function PartnerBackupEligibilityCell({
+  provider,
+  opsPolicy,
+}: {
+  provider: AdminProvider;
+  opsPolicy: ProviderOpsPolicy;
+}) {
+  const eligibility = partnerBackupMatchingEligibility(provider, opsPolicy);
+
+  return (
+    <div className="card" style={{ marginTop: 10, padding: 12 }}>
+      <div className="risk-watch-header">
+        <div>
+          <strong>Backup matching eligibility</strong>
+          <p className="muted">
+            {eligibility.detail}
+          </p>
+        </div>
+        <span className={`pill ${eligibility.eligible ? 'pill-success' : 'pill-warn'}`}>
+          {eligibility.eligible ? 'Candidate ready' : 'Excluded'}
+        </span>
+      </div>
+      <div className="participant-list" style={{ marginTop: 8 }}>
+        <span className="pill pill-info">
+          Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}
+        </span>
+        <span className="pill pill-info">First window: {opsPolicy.responseWindowMinutes}m</span>
+        <span className="pill pill-info">Location: {opsPolicy.staleLocationMinutes}m fresh</span>
+      </div>
+      {eligibility.blockers.length ? (
+        <div className="participant-list" style={{ marginTop: 8 }}>
+          {eligibility.blockers.map((blocker) => (
+            <span className={`pill ${blocker.severity === 'hard' ? 'pill-danger' : 'pill-warn'}`} key={blocker.label}>
+              {blocker.label}
+            </span>
+          ))}
+        </div>
+      ) : null}
+      <p className="muted" style={{ marginTop: 8 }}>
+        {eligibility.operatorAction}
+      </p>
+    </div>
+  );
+}
+
 function buildProviderPriorityLane(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
   const ranked = providers
     .map((provider) => ({ provider, action: nextProviderListAction(provider, opsPolicy) }))
@@ -1350,6 +1402,52 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
     return 'Partner is operational in Nest auth. Supabase role sync will become available after Supabase OTP login links this phone.';
   }
   return 'Partner is ready for direct requests and fallback matching.';
+}
+
+function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
+  const blockers: Array<{ label: string; severity: 'hard' | 'soft' }> = [];
+  const locationState = providerLocationStatus(provider, opsPolicy);
+  const securityState = providerSecurityStatus(provider);
+  const walletBalance = providerUnsettledWalletBalance(provider);
+
+  if (provider.blockedAt) {
+    blockers.push({ label: 'account blocked', severity: 'hard' });
+  }
+  if (provider.verification?.status !== 'APPROVED') {
+    blockers.push({ label: `verification ${provider.verification?.status ?? 'DRAFT'}`, severity: 'hard' });
+  }
+  if (walletBalance < 0) {
+    blockers.push({ label: 'wallet debt', severity: 'hard' });
+  }
+  if (provider.status !== 'ONLINE_AVAILABLE') {
+    blockers.push({ label: 'not online available', severity: 'soft' });
+  }
+  if (locationState !== 'recent') {
+    blockers.push({ label: `location ${locationState}`, severity: locationState === 'missing' ? 'hard' : 'soft' });
+  }
+  if (!hasHealthyPush(provider)) {
+    blockers.push({ label: 'push missing', severity: 'soft' });
+  }
+  if (!['clear', 'missing'].includes(securityState)) {
+    blockers.push({ label: providerSecurityLabel(securityState).toLowerCase(), severity: 'hard' });
+  }
+
+  const eligible = blockers.length === 0;
+
+  return {
+    eligible,
+    blockers,
+    detail: eligible
+      ? `Can receive backup alerts and join eligible bookings within ${formatDistanceMeters(
+          opsPolicy.backupRadiusMeters,
+        )} during the ${opsPolicy.responseWindowMinutes}m first-pick window.`
+      : `Not ready for backup matching until blockers are resolved. Distance is still checked per booking within ${formatDistanceMeters(
+          opsPolicy.backupRadiusMeters,
+        )}.`,
+    operatorAction: eligible
+      ? 'For a live booking, confirm the booking address is inside radius before asking this partner to join.'
+      : 'Fix the listed blockers before relying on this partner for backup participation or customer shortlist recovery.',
+  };
 }
 
 function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
@@ -2322,6 +2420,12 @@ function buildProviderOpsPolicy(settings: AdminOperationalPolicySetting[]): Prov
       readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
       DEFAULT_PROVIDER_OPS_POLICY.staleLocationMinutes,
     expiredLocationHours: DEFAULT_PROVIDER_OPS_POLICY.expiredLocationHours,
+    backupRadiusMeters:
+      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY) ??
+      DEFAULT_PROVIDER_OPS_POLICY.backupRadiusMeters,
+    responseWindowMinutes:
+      readPolicyNumber(settings, MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY) ??
+      DEFAULT_PROVIDER_OPS_POLICY.responseWindowMinutes,
   };
 }
 
@@ -2340,6 +2444,13 @@ function hasProviderCoordinate(provider: AdminProvider) {
     return false;
   }
   return Number.isFinite(Number(provider.currentLat)) && Number.isFinite(Number(provider.currentLng));
+}
+
+function formatDistanceMeters(distanceMeters: number) {
+  if (distanceMeters >= 1000) {
+    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(distanceMeters / 1000)}km`;
+  }
+  return `${new Intl.NumberFormat('en-US').format(distanceMeters)}m`;
 }
 
 function providerLocationLabel(status: ProviderLocationState) {
