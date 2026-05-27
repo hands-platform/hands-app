@@ -7,6 +7,7 @@ import {
   AdminExternalReadiness,
   AdminAppSession,
   AdminNotification,
+  AdminOperationalPolicySetting,
   AdminPayment,
   AdminPayoutBatch,
   AdminProvider,
@@ -80,6 +81,7 @@ export default async function DashboardPage() {
     appSessions,
     externalReadiness,
     cashSettlementSummary,
+    operationalPolicies,
   ] = await Promise.all([
     adminGet<AdminUser[]>('/admin/users', []),
     adminGet<AdminProvider[]>('/admin/providers', []),
@@ -108,6 +110,7 @@ export default async function DashboardPage() {
       checks: [],
     }),
     adminGet<AdminCashSettlementSummary>('/admin/cash-settlement-summary', emptyCashSettlementSummary()),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
 
   const queue = buildOpsQueue({
@@ -156,6 +159,7 @@ export default async function DashboardPage() {
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
+  const policySummary = buildOperationalPolicySummary(operationalPolicies);
 
   const metrics = [
     [
@@ -287,6 +291,40 @@ export default async function DashboardPage() {
             <p className="muted">{helper}</p>
           </div>
         ))}
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Operations policy snapshot</h2>
+            <p className="muted">
+              Live dispatch rules and owner decisions currently guiding matching, backup participation,
+              cancellation, no-show, and partner alerts.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy">
+            Change policy
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {policySummary.enforced.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {policySummary.decisions.map((decision) => (
+            <div className={`ops-task-card ${decision.className}`} key={decision.key}>
+              <span className={`pill ${decision.pillClass}`}>{decision.status}</span>
+              <h3>{decision.label}</h3>
+              <p>{decision.current}</p>
+              <small>{decision.recommendation}</small>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="detail-grid" style={{ marginTop: 20 }}>
@@ -2574,6 +2612,80 @@ function completedCloseoutNeedsOps(booking: AdminBooking) {
     (booking.earning.platformFeeLogs?.length ?? 0) === 0 ||
     (booking.earning.walletLedgerEntries?.length ?? 0) === 0
   );
+}
+
+function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]) {
+  const byKey = new Map(settings.map((setting) => [setting.key, setting]));
+  const enforced = [
+    policyMetric(
+      byKey.get('matching.provider_response_window_minutes'),
+      'Response window',
+      'Preferred partner first reply timer.',
+    ),
+    policyMetric(
+      byKey.get('matching.backup_provider_radius_meters'),
+      'Backup radius',
+      'Partners inside this radius can join.',
+    ),
+    policyMetric(byKey.get('matching.travel_buffer_minutes'), 'Travel buffer', 'Availability buffer after work.'),
+    policyMetric(
+      byKey.get('matching.preferred_accept_mode'),
+      'Accept mode',
+      'Preferred accept behavior.',
+    ),
+  ];
+
+  const decisionKeys = [
+    'matching.backup_open_mode',
+    'wallet.negative_balance_gate',
+    'cancellation.after_match_policy',
+    'no_show.partner_report_policy',
+    'notification.partner_alert_channel',
+  ];
+
+  const decisions = decisionKeys
+    .map((key) => byKey.get(key))
+    .filter((setting): setting is AdminOperationalPolicySetting => Boolean(setting))
+    .map((setting) => {
+      const aligned = String(setting.value) === String(setting.recommendedValue);
+      return {
+        key: setting.key,
+        label: setting.label,
+        status: setting.enforced ? 'Enforced' : aligned ? 'Recommended' : 'Owner choice',
+        current: policyOptionLabel(setting),
+        recommendation: `Recommended: ${policyOptionLabel(setting, true)}`,
+        className: aligned ? 'ops-task-done' : 'ops-task-blocked',
+        pillClass: aligned ? 'pill-success' : 'pill-warn',
+      };
+    });
+
+  return { enforced, decisions };
+}
+
+function policyMetric(setting: AdminOperationalPolicySetting | undefined, label: string, helper: string) {
+  return {
+    label,
+    value: setting ? formatPolicyValue(setting.value, setting.unit) : '-',
+    helper,
+  };
+}
+
+function policyOptionLabel(setting: AdminOperationalPolicySetting, useRecommended = false) {
+  const value = String(useRecommended ? setting.recommendedValue : setting.value);
+  return setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit);
+}
+
+function formatPolicyValue(value: unknown, unit?: string | null) {
+  if (value === null || value === undefined) {
+    return '-';
+  }
+  if (unit === 'meters') {
+    return `${(Number(value) / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+  }
+  if (unit === 'minutes') {
+    return `${value} min`;
+  }
+  return String(value);
 }
 
 function activePayoutHold(batch: AdminPayoutBatch) {

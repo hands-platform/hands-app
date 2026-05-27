@@ -4,6 +4,7 @@ import {
   AdminBookingDetail,
   AdminChatMessage,
   AdminLocationSnapshot,
+  AdminOperationalPolicySetting,
   adminGet,
 } from '../../../lib/admin-api';
 import {
@@ -28,7 +29,10 @@ const EXPIRED_LOCATION_HOURS = 24;
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const booking = await adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null);
+  const [booking, operationalPolicies] = await Promise.all([
+    adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+  ]);
 
   if (!booking) {
     notFound();
@@ -49,6 +53,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
+  const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
 
   return (
     <>
@@ -157,6 +162,42 @@ export default async function BookingDetailPage({ params }: PageProps) {
           ) : (
             <span className="muted">No payment action available.</span>
           )}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Applied operations policy</h2>
+            <p className="muted">
+              The live admin policy that operators should use when handling this booking. Existing bookings
+              keep their saved timeout, while partner visibility and join checks use the latest policy.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy">
+            Open policy
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {policySnapshot.metrics.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className="ops-row">
+            <div>
+              <span className={`pill ${policySnapshot.decisionTone}`}>{policySnapshot.decisionStatus}</span>
+              <strong>{policySnapshot.decisionTitle}</strong>
+              <p className="muted">{policySnapshot.decisionDetail}</p>
+            </div>
+            <Link className="text-link" href="/operations-policy">
+              Review decision
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -1818,6 +1859,100 @@ function bookingFinanceTrace(booking: AdminBookingDetail) {
       ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
       : 'Not created',
   };
+}
+
+function bookingOperationalPolicySnapshot(
+  booking: AdminBookingDetail,
+  settings: AdminOperationalPolicySetting[],
+) {
+  const byKey = new Map(settings.map((setting) => [setting.key, setting]));
+  const responseWindow = byKey.get('matching.provider_response_window_minutes');
+  const backupRadius = byKey.get('matching.backup_provider_radius_meters');
+  const travelBuffer = byKey.get('matching.travel_buffer_minutes');
+  const acceptMode = byKey.get('matching.preferred_accept_mode');
+  const expiresAt = booking.expiresAt ? new Date(booking.expiresAt).getTime() : null;
+  const minutesLeft =
+    expiresAt === null || Number.isNaN(expiresAt)
+      ? null
+      : Math.max(0, Math.ceil((expiresAt - Date.now()) / 60_000));
+  const acceptedParticipants = (booking.participants ?? []).filter(
+    (participant) => participant.status === 'ACCEPTED',
+  );
+  const selected = booking.status === 'MATCHED' || Boolean(booking.selectedProvider);
+  const customerConfirmMode = String(acceptMode?.value) === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+
+  const decisionTitle = customerConfirmMode
+    ? 'Customer final confirmation mode'
+    : 'Auto-match preferred partner mode';
+  const decisionStatus =
+    customerConfirmMode && acceptedParticipants.length > 0 && !selected
+      ? 'Customer action needed'
+      : acceptMode?.enforced
+        ? 'Policy enforced'
+        : 'Policy default';
+  const decisionTone =
+    customerConfirmMode && acceptedParticipants.length > 0 && !selected ? 'pill-warn' : 'pill-success';
+  const decisionDetail = customerConfirmMode
+    ? acceptedParticipants.length > 0 && !selected
+      ? 'A partner accepted, but the customer still needs to confirm the final partner before chat is unlocked.'
+      : 'Preferred partner acceptance keeps the request open until the customer confirms the final partner.'
+    : 'Preferred partner acceptance immediately locks the booking to that partner.';
+
+  return {
+    decisionTitle,
+    decisionStatus,
+    decisionTone,
+    decisionDetail,
+    metrics: [
+      {
+        label: 'Response window',
+        value: bookingPolicyValueLabel(responseWindow),
+        helper:
+          minutesLeft === null
+            ? 'No active countdown saved.'
+            : `${minutesLeft} min left on this booking countdown.`,
+      },
+      {
+        label: 'Backup radius',
+        value: bookingPolicyValueLabel(backupRadius),
+        helper: 'Nearby partners outside this distance cannot join.',
+      },
+      {
+        label: 'Travel buffer',
+        value: bookingPolicyValueLabel(travelBuffer),
+        helper: 'Applied before nearby availability is calculated.',
+      },
+      {
+        label: 'Accept mode',
+        value: bookingPolicyOptionLabel(acceptMode),
+        helper: selected ? 'Booking has a final partner.' : 'Booking is still waiting for final selection.',
+      },
+    ],
+  };
+}
+
+function bookingPolicyValueLabel(setting?: AdminOperationalPolicySetting) {
+  if (!setting) {
+    return '-';
+  }
+
+  const value = setting.value;
+  if (setting.unit === 'meters') {
+    return `${(Number(value) / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+  }
+  if (setting.unit === 'minutes') {
+    return `${value} min`;
+  }
+  return String(value);
+}
+
+function bookingPolicyOptionLabel(setting?: AdminOperationalPolicySetting) {
+  if (!setting) {
+    return '-';
+  }
+
+  const value = String(setting.value);
+  return setting.options?.find((option) => option.value === value)?.label ?? bookingPolicyValueLabel(setting);
 }
 
 type ServicePayoutSnapshotLine = {
