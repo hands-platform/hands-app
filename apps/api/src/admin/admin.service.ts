@@ -1847,7 +1847,7 @@ export class AdminService {
     });
   }
 
-  async updateOperationalPolicySetting(actorId: string, key: string, input: { value?: unknown }) {
+  async updateOperationalPolicySetting(actorId: string, key: string, input: { value?: unknown; reason?: string }) {
     const definition = OPERATIONAL_POLICY_DEFINITIONS.find((item) => item.key === key);
     if (!definition) {
       throw new NotFoundException('Operational policy setting not found');
@@ -1885,6 +1885,7 @@ export class AdminService {
       key,
       previousValue: previous?.value ?? definition.value,
       value,
+      reason: normalizeAuditReason(input.reason),
       enforced: definition.enforced,
     });
 
@@ -2197,4 +2198,9 @@ function slugify(value: string) {
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
   return slug || 'service';
+}
+
+function normalizeAuditReason(reason?: string) {
+  const normalized = reason?.replace(/\s+/g, ' ').trim();
+  return normalized ? normalized.slice(0, 500) : 'No reason provided by API caller';
 }

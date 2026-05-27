@@ -8,15 +8,20 @@ export async function updateOperationalPolicy(formData: FormData) {
   const key = String(formData.get('key') || '').trim();
   const rawValue = String(formData.get('value') || '').trim();
   const valueType = String(formData.get('valueType') || 'string');
+  const reason = String(formData.get('reason') || '').replace(/\s+/g, ' ').trim();
 
   if (!key || !rawValue) {
     redirectToPolicy('blocked', 'missing-value');
   }
 
+  if (reason.length < 12) {
+    redirectToPolicy('blocked', 'missing-reason');
+  }
+
   const value = valueType === 'number' ? Number(rawValue) : valueType === 'boolean' ? rawValue === 'true' : rawValue;
   const saved = await adminPatch<AdminOperationalPolicySetting | null>(
     `/admin/operational-policy/${encodeURIComponent(key)}`,
-    { value },
+    { value, reason },
     null,
   );
 

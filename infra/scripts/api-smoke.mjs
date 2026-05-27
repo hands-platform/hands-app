@@ -87,7 +87,10 @@ async function assertOperationalPolicyMetadata(accessToken) {
 }
 
 const patchOperationalPolicyValue = (accessToken, key, value) =>
-  patchJson(operationalPolicyPath(key), accessToken, { value });
+  patchJson(operationalPolicyPath(key), accessToken, {
+    value,
+    reason: `Automated smoke coverage for ${key}`,
+  });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

@@ -481,7 +481,7 @@ export class AdminController {
   updateOperationalPolicy(
     @CurrentUser() user: AuthenticatedUser,
     @Param('key') key: string,
-    @Body() body: { value?: unknown },
+    @Body() body: { value?: unknown; reason?: string },
   ) {
     return this.admin.updateOperationalPolicySetting(user.id, key, body);
   }

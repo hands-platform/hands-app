@@ -547,6 +547,15 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
           />
         </label>
       )}
+      <label className="field">
+        <span>Change reason</span>
+        <textarea
+          name="reason"
+          minLength={12}
+          required
+          placeholder="Example: Increase backup visibility because District 1 wait time is rising."
+        />
+      </label>
       <button type="submit" style={{ marginTop: 12 }}>
         Save policy
       </button>
