@@ -1,4 +1,10 @@
-import { AdminAuditLog, AdminBooking, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
+import {
+  AdminAuditLog,
+  AdminBooking,
+  AdminOperationalPolicySetting,
+  AdminProvider,
+  adminGet,
+} from '../../lib/admin-api';
 import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -9,9 +15,10 @@ export default async function OperationsPolicyPage({
   searchParams?: OperationsPolicySearchParams;
 }) {
   const params = (await searchParams) ?? {};
-  const [settings, bookings, auditLogs] = await Promise.all([
+  const [settings, bookings, providers, auditLogs] = await Promise.all([
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminBooking[]>('/admin/bookings', []),
+    adminGet<AdminProvider[]>('/admin/providers', []),
     adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
   ]);
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
@@ -20,6 +27,7 @@ export default async function OperationsPolicyPage({
   const notice = policyNotice(params);
   const ownerDecisionBacklog = operationsOwnerDecisionBacklog();
   const matchingPlaybook = buildMatchingPlaybook(settings);
+  const policySimulation = buildPolicySimulation(settings, bookings, providers);
   const impactDashboard = buildPolicyImpactDashboard(settings, bookings);
   const policyDrilldown = buildPolicyDrilldown(bookings, settings);
   const policyAuditRows = operationalPolicyAuditRows(auditLogs);
@@ -114,6 +122,94 @@ export default async function OperationsPolicyPage({
         <div className="grid">
           {matchingSettings.map((setting) => (
             <PolicyForm key={setting.key} setting={setting} />
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Live policy simulator</h2>
+            <p className="muted">
+              Uses the current policy values, the latest booking/customer coordinate, and current partner
+              locations to preview who would see or join a new direct booking request.
+            </p>
+          </div>
+          <span className={`pill ${policySimulation.ready ? 'pill-success' : 'pill-warn'}`}>
+            {policySimulation.ready ? 'Ready for dispatch check' : 'Needs better location data'}
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {policySimulation.metrics.map((metric) => (
+            <div key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="detail-grid" style={{ marginTop: 14 }}>
+          <div className="ops-task-note">
+            <h3>Simulated booking path</h3>
+            <div className="timeline" style={{ marginTop: 12 }}>
+              {policySimulation.timeline.map((step) => (
+                <div className={`timeline-step ${step.className}`} key={step.title}>
+                  <span>{step.step}</span>
+                  <strong>{step.title}</strong>
+                  <p>{step.detail}</p>
+                  <div className="participant-list">
+                    {step.tags.map((tag) => (
+                      <span className={`pill ${tag.tone}`} key={`${step.title}-${tag.label}`}>
+                        {tag.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="ops-task-note">
+            <div className="risk-watch-header">
+              <div>
+                <h3>Eligible partner preview</h3>
+                <p className="muted">
+                  Top nearby online partners inside the current backup radius. Stale locations are excluded
+                  from the dispatch count.
+                </p>
+              </div>
+              <span className="pill pill-info">{policySimulation.partnerRows.length} shown</span>
+            </div>
+            <div className="stack" style={{ marginTop: 10 }}>
+              {policySimulation.partnerRows.map((partner) => (
+                <div className="ops-row" key={partner.id}>
+                  <div>
+                    <a className="text-link" href={`/providers/${partner.id}`}>
+                      {partner.name}
+                    </a>
+                    <p className="muted">
+                      {partner.distanceLabel} · location {partner.locationAgeLabel}
+                    </p>
+                  </div>
+                  <span className={`pill ${partner.pillClass}`}>{partner.status}</span>
+                </div>
+              ))}
+              {policySimulation.partnerRows.length === 0 ? (
+                <p className="muted">
+                  No online partner with a usable location is inside the current radius. Check partner app
+                  location update and city supply before live launch.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {policySimulation.checks.map((check) => (
+            <div className={`ops-task-card ${check.className}`} key={check.title}>
+              <span className={`pill ${check.pillClass}`}>{check.status}</span>
+              <h3>{check.title}</h3>
+              <p>{check.detail}</p>
+              <small>{check.operatorAction}</small>
+            </div>
           ))}
         </div>
       </section>
@@ -498,6 +594,177 @@ function PolicyDrilldownList({ list }: { list: PolicyDrilldownListView }) {
       )}
     </div>
   );
+}
+
+type PolicySimulatorPartnerRow = {
+  id: string;
+  name: string;
+  status: string;
+  distanceLabel: string;
+  locationAgeLabel: string;
+  pillClass: string;
+};
+
+function buildPolicySimulation(
+  settings: AdminOperationalPolicySetting[],
+  bookings: AdminBooking[],
+  providers: AdminProvider[],
+) {
+  const responseWindowMinutes =
+    policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
+  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const travelBufferMinutes = policyNumberValue(settings, 'matching.travel_buffer_minutes') ?? 30;
+  const backupOpenMode =
+    policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const preferredAcceptMode =
+    policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+  const alertChannel = policyStringValue(settings, 'notification.partner_alert_channel') ?? 'PUSH_ONLY';
+  const reference = referenceBookingCoordinate(bookings);
+  const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE'));
+  const partnerCandidates = onlinePartners
+    .map((provider) => {
+      const lat = readOptionalNumber(provider.currentLat);
+      const lng = readOptionalNumber(provider.currentLng);
+      const distanceMeters =
+        lat !== null && lng !== null ? haversineDistanceMeters(reference.lat, reference.lng, lat, lng) : null;
+      const ageMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
+      const usableLocation =
+        distanceMeters !== null && ageMinutes !== null && ageMinutes <= 24 * 60 && !provider.blockedAt;
+      return {
+        provider,
+        distanceMeters,
+        ageMinutes,
+        usableLocation,
+      };
+    })
+    .filter((item) => item.usableLocation && item.distanceMeters !== null)
+    .sort((left, right) => (left.distanceMeters ?? Infinity) - (right.distanceMeters ?? Infinity));
+
+  const eligiblePartners = partnerCandidates.filter(
+    (item) => (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
+  );
+  const freshEligible = eligiblePartners.filter((item) => (item.ageMinutes ?? Infinity) <= 30);
+  const partnerRows: PolicySimulatorPartnerRow[] = eligiblePartners.slice(0, 6).map((item) => ({
+    id: item.provider.id,
+    name: item.provider.displayName ?? item.provider.user?.fullName ?? 'Partner',
+    status: (item.ageMinutes ?? Infinity) <= 30 ? 'Fresh' : 'Stale',
+    distanceLabel: formatDistance(item.distanceMeters ?? 0),
+    locationAgeLabel: formatLocationAge(item.ageMinutes),
+    pillClass: (item.ageMinutes ?? Infinity) <= 30 ? 'pill-success' : 'pill-warn',
+  }));
+  const expiresAt = new Date(Date.now() + responseWindowMinutes * 60 * 1000);
+  const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
+  const customerFinalConfirm = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+  const ready = eligiblePartners.length > 0 && freshEligible.length > 0;
+
+  return {
+    ready,
+    partnerRows,
+    metrics: [
+      {
+        label: 'Reference location',
+        value: reference.label,
+        helper: `${reference.lat.toFixed(4)}, ${reference.lng.toFixed(4)}`,
+      },
+      {
+        label: 'First response window',
+        value: `${responseWindowMinutes} min`,
+        helper: `A request created now would auto-close around ${expiresAt.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit',
+        })}.`,
+      },
+      {
+        label: 'Backup radius',
+        value: formatDistance(backupRadiusMeters),
+        helper: `${eligiblePartners.length} usable partner(s), ${freshEligible.length} fresh location(s).`,
+      },
+      {
+        label: 'Partner alert',
+        value: policyDisplayByKey(settings, 'notification.partner_alert_channel'),
+        helper: `${alertChannel === 'PUSH_AND_IN_APP' ? 'Push and in-app listing' : 'Configured alert channel'} for eligible partners.`,
+      },
+    ],
+    timeline: [
+      {
+        step: '1',
+        title: 'Customer creates direct request',
+        detail:
+          'The selected partner receives the first-pick request. Backup partners are evaluated from current policy and location data.',
+        className: 'timeline-done',
+        tags: [
+          {
+            label: customerFinalConfirm ? 'Customer final choice' : 'Auto-match after accept',
+            tone: 'pill-info',
+          },
+          { label: `${responseWindowMinutes} min`, tone: 'pill-success' },
+        ],
+      },
+      {
+        step: '2',
+        title: immediateBackup ? 'Backup list opens immediately' : 'Backup list waits',
+        detail: immediateBackup
+          ? `${eligiblePartners.length} partner(s) inside ${formatDistance(backupRadiusMeters)} can see or join while the first partner decides.`
+          : `Backup partners are held until the ${responseWindowMinutes} minute first-pick window ends.`,
+        className: immediateBackup ? 'timeline-active' : 'timeline-warn',
+        tags: [
+          { label: policyDisplayByKey(settings, 'matching.backup_open_mode'), tone: 'pill-info' },
+          {
+            label: `${eligiblePartners.length} eligible`,
+            tone: eligiblePartners.length ? 'pill-success' : 'pill-danger',
+          },
+        ],
+      },
+      {
+        step: '3',
+        title: 'Partner availability is buffered',
+        detail: `After a partner completes a booking, the system uses a ${travelBufferMinutes} minute travel buffer before they become normally available again.`,
+        className: 'timeline-done',
+        tags: [
+          { label: `${travelBufferMinutes} min travel buffer`, tone: 'pill-neutral' },
+          { label: 'Location reuse only', tone: 'pill-info' },
+        ],
+      },
+    ],
+    checks: [
+      {
+        status: ready ? 'Healthy' : 'Needs supply',
+        title: 'Dispatch supply check',
+        detail: ready
+          ? `${freshEligible.length} fresh partner location(s) are inside the current radius.`
+          : 'No fresh eligible partner location is inside the current radius.',
+        operatorAction: ready
+          ? 'This policy can support a real customer wait screen for the reference area.'
+          : 'Ask partners to open the app and send location, or review radius/city supply before launch.',
+        className: ready ? 'ops-task-done' : 'ops-task-blocked',
+        pillClass: ready ? 'pill-success' : 'pill-danger',
+      },
+      {
+        status: immediateBackup ? 'Low anxiety' : 'Strict first-pick',
+        title: 'Customer waiting experience',
+        detail: immediateBackup
+          ? 'Customers can see backup interest during the first response window.'
+          : 'Customers may see an empty waiting screen until the first partner times out.',
+        operatorAction: immediateBackup
+          ? 'Keep monitoring whether customers understand preferred vs backup partner choice.'
+          : 'Use only if first-pick response rate is high enough to avoid empty waiting.',
+        className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
+        pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
+      },
+      {
+        status: customerFinalConfirm ? 'Customer controls' : 'Fast lock',
+        title: 'Final matching decision',
+        detail: customerFinalConfirm
+          ? 'Accepted partners still require customer final selection.'
+          : 'The first accepted partner can lock the booking faster.',
+        operatorAction: customerFinalConfirm
+          ? 'This matches the current HANDS direction: customer always chooses the final partner.'
+          : 'Use only if HANDS decides faster auto-lock is more important than customer choice.',
+        className: customerFinalConfirm ? 'ops-task-done' : 'ops-task-blocked',
+        pillClass: customerFinalConfirm ? 'pill-success' : 'pill-danger',
+      },
+    ],
+  };
 }
 
 function buildPolicyRecommendationReview(
@@ -920,6 +1187,91 @@ function shortId(id: string) {
 
 function formatMoney(amount: number) {
   return `${new Intl.NumberFormat('vi-VN').format(amount)} VND`;
+}
+
+function policyNumberValue(settings: AdminOperationalPolicySetting[], key: string) {
+  return readOptionalNumber(policyRawValue(settings, key));
+}
+
+function policyStringValue(settings: AdminOperationalPolicySetting[], key: string) {
+  return readOptionalString(policyRawValue(settings, key));
+}
+
+function referenceBookingCoordinate(bookings: AdminBooking[]) {
+  const withCoordinate = bookings
+    .filter((booking) => parseCoordinatePair(booking.lat, booking.lng))
+    .sort(byNewestBooking)[0];
+  const coordinate = withCoordinate ? parseCoordinatePair(withCoordinate.lat, withCoordinate.lng) : null;
+  if (withCoordinate && coordinate) {
+    return {
+      lat: coordinate.lat,
+      lng: coordinate.lng,
+      label: `Booking ${shortId(withCoordinate.id)}`,
+    };
+  }
+  return {
+    lat: 10.7769,
+    lng: 106.7009,
+    label: 'Demo Ho Chi Minh City',
+  };
+}
+
+function parseCoordinatePair(lat: unknown, lng: unknown) {
+  const parsedLat = readOptionalNumber(lat);
+  const parsedLng = readOptionalNumber(lng);
+  if (parsedLat === null || parsedLng === null) {
+    return null;
+  }
+  if (Math.abs(parsedLat) > 90 || Math.abs(parsedLng) > 180) {
+    return null;
+  }
+  return { lat: parsedLat, lng: parsedLng };
+}
+
+function haversineDistanceMeters(fromLat: number, fromLng: number, toLat: number, toLng: number) {
+  const earthRadiusMeters = 6371000;
+  const deltaLat = degreesToRadians(toLat - fromLat);
+  const deltaLng = degreesToRadians(toLng - fromLng);
+  const startLat = degreesToRadians(fromLat);
+  const endLat = degreesToRadians(toLat);
+  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(startLat) * Math.cos(endLat) * Math.sin(deltaLng / 2) ** 2;
+  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function locationAgeMinutes(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return null;
+  }
+  return Math.max(0, Math.round((Date.now() - timestamp) / 60000));
+}
+
+function formatLocationAge(minutes: number | null) {
+  if (minutes === null) {
+    return 'unknown';
+  }
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) {
+    return `${hours}h ago`;
+  }
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+function formatDistance(meters: number) {
+  if (meters < 1000) {
+    return `${Math.round(meters)} m`;
+  }
+  return `${(meters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
 }
 
 function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
