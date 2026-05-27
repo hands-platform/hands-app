@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   AdminProvider,
+  AdminOperationalPolicySetting,
   adminGet,
   providerDocumentLabel,
   providerDocumentReviewHint,
@@ -47,21 +48,34 @@ type ProviderFilters = {
   review: string;
 };
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type ProviderOpsPolicy = {
+  staleLocationMinutes: number;
+  expiredLocationHours: number;
+};
 
-const STALE_LOCATION_MINUTES = 30;
-const EXPIRED_LOCATION_HOURS = 24;
+const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
+  'matching.backup_provider_location_max_age_minutes';
+const DEFAULT_PROVIDER_OPS_POLICY: ProviderOpsPolicy = {
+  staleLocationMinutes: 30,
+  expiredLocationHours: 24,
+};
 const PROVIDER_LIST_RENDER_LIMIT = 40;
 
 export default async function ProvidersPage({ searchParams }: { searchParams?: ProvidersPageSearchParams }) {
   const filters = buildProviderFilters(searchParams ? await searchParams : {});
-  const allProviders = sortProviders(await adminGet<AdminProvider[]>('/admin/providers', []));
-  const providers = filterProviders(allProviders, filters);
+  const [rawProviders, operationalPolicies] = await Promise.all([
+    adminGet<AdminProvider[]>('/admin/providers', []),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policies', []),
+  ]);
+  const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
+  const allProviders = sortProviders(rawProviders, opsPolicy);
+  const providers = filterProviders(allProviders, filters, opsPolicy);
   const visibleProviders = providers.slice(0, PROVIDER_LIST_RENDER_LIMIT);
   const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
-  const summary = buildProviderSummary(providers);
-  const commandCenter = buildProviderCommandCenter(providers);
-  const reviewQueue = buildProviderReviewQueue(providers);
-  const priorityLane = buildProviderPriorityLane(providers);
+  const summary = buildProviderSummary(providers, opsPolicy);
+  const commandCenter = buildProviderCommandCenter(providers, opsPolicy);
+  const reviewQueue = buildProviderReviewQueue(providers, opsPolicy);
+  const priorityLane = buildProviderPriorityLane(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
 
   return (
@@ -164,6 +178,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               Showing {visibleProviders.length} of {providers.length} matching partners
               {providers.length !== allProviders.length ? ` (${allProviders.length} total)` : ''}
             </span>
+            <Link className="text-link" href="/operations-policy">
+              Location freshness: {opsPolicy.staleLocationMinutes}m
+            </Link>
           </div>
           {activeFilters.length > 0 ? (
             <div className="full-span">
@@ -345,7 +362,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <ProviderOnboardingCell provider={provider} />
                 </td>
                 <td>
-                  <ProviderNextActionCell provider={provider} />
+                  <ProviderNextActionCell provider={provider} opsPolicy={opsPolicy} />
                   <div className="participant-list" style={{ marginBottom: 8 }}>
                     <span
                       className={`pill ${provider.verification?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}
@@ -371,8 +388,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                       {hasOpenProviderRisk(provider) ? 'Risk open' : 'Risk clear'}
                     </span>
                   </div>
-                  <ProviderIssuePills provider={provider} />
-                  <p className="muted">{providerActionHint(provider)}</p>
+                  <ProviderIssuePills provider={provider} opsPolicy={opsPolicy} />
+                  <p className="muted">{providerActionHint(provider, opsPolicy)}</p>
                   {hasOpenProviderRisk(provider) ? (
                     <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
                       Open risk desk
@@ -380,7 +397,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   ) : null}
                 </td>
                 <td>
-                  <ProviderLocationCell provider={provider} />
+                  <ProviderLocationCell provider={provider} opsPolicy={opsPolicy} />
                 </td>
                 <td>
                   <ProviderSecurityCell provider={provider} />
@@ -822,8 +839,14 @@ type ProviderListAction = {
   priority: number;
 };
 
-function ProviderNextActionCell({ provider }: { provider: AdminProvider }) {
-  const action = nextProviderListAction(provider);
+function ProviderNextActionCell({
+  provider,
+  opsPolicy,
+}: {
+  provider: AdminProvider;
+  opsPolicy: ProviderOpsPolicy;
+}) {
+  const action = nextProviderListAction(provider, opsPolicy);
   return (
     <div style={{ marginBottom: 10 }}>
       <div className="participant-list" style={{ marginBottom: 6 }}>
@@ -839,8 +862,14 @@ function ProviderNextActionCell({ provider }: { provider: AdminProvider }) {
   );
 }
 
-function ProviderIssuePills({ provider }: { provider: AdminProvider }) {
-  const issues = providerReviewIssues(provider);
+function ProviderIssuePills({
+  provider,
+  opsPolicy,
+}: {
+  provider: AdminProvider;
+  opsPolicy: ProviderOpsPolicy;
+}) {
+  const issues = providerReviewIssues(provider, opsPolicy);
   if (!issues.length) {
     return (
       <div className="participant-list" style={{ marginBottom: 8 }}>
@@ -861,9 +890,9 @@ function ProviderIssuePills({ provider }: { provider: AdminProvider }) {
   );
 }
 
-function buildProviderPriorityLane(providers: AdminProvider[]) {
+function buildProviderPriorityLane(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
   const ranked = providers
-    .map((provider) => ({ provider, action: nextProviderListAction(provider) }))
+    .map((provider) => ({ provider, action: nextProviderListAction(provider, opsPolicy) }))
     .filter((item) => item.action.tone !== 'done')
     .sort((left, right) => {
       if (left.action.priority !== right.action.priority) {
@@ -878,12 +907,12 @@ function buildProviderPriorityLane(providers: AdminProvider[]) {
   };
 }
 
-function nextProviderListAction(provider: AdminProvider): ProviderListAction {
+function nextProviderListAction(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY): ProviderListAction {
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
   const primaryBank = provider.bankAccounts?.[0];
   const firstRevenueSignal = providerHasFirstRevenueSignal(provider);
   const agreementsAccepted = provider.agreements?.length ?? 0;
-  const locationState = providerLocationStatus(provider);
+  const locationState = providerLocationStatus(provider, opsPolicy);
   const securityState = providerSecurityStatus(provider);
   const walletBalance = providerUnsettledWalletBalance(provider);
 
@@ -1072,8 +1101,14 @@ function providerDisplayName(provider: AdminProvider) {
   return provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id;
 }
 
-function ProviderLocationCell({ provider }: { provider: AdminProvider }) {
-  const status = providerLocationStatus(provider);
+function ProviderLocationCell({
+  provider,
+  opsPolicy,
+}: {
+  provider: AdminProvider;
+  opsPolicy: ProviderOpsPolicy;
+}) {
+  const status = providerLocationStatus(provider, opsPolicy);
   const hasCoordinate = hasProviderCoordinate(provider);
 
   return (
@@ -1169,7 +1204,7 @@ function formatProviderMoney(value: number, currency = 'VND') {
   return `${new Intl.NumberFormat('vi-VN').format(value)} ${currency}`;
 }
 
-function providerActionHint(provider: AdminProvider) {
+function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   if (provider.blockedAt) {
     return 'This partner account is blocked and cannot go online, update location, or appear to customers.';
   }
@@ -1188,7 +1223,7 @@ function providerActionHint(provider: AdminProvider) {
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Partner is approved but not currently online for direct or backup requests.';
   }
-  const locationState = providerLocationStatus(provider);
+  const locationState = providerLocationStatus(provider, opsPolicy);
   if (locationState === 'missing') {
     return 'Partner is online, but no location has been saved yet. Ask them to reopen the Partner app.';
   }
@@ -1196,7 +1231,7 @@ function providerActionHint(provider: AdminProvider) {
     return 'Partner has an old saved location. They should go online again before dispatch.';
   }
   if (locationState === 'stale') {
-    return 'Partner is live, but the last location is older than 30 minutes. Confirm before dispatch.';
+    return `Partner is live, but the last location is older than ${opsPolicy.staleLocationMinutes} minutes. Confirm before dispatch.`;
   }
   if (!hasHealthyPush(provider)) {
     return 'Partner is live, but push registration should be checked before relying on alerts.';
@@ -1215,7 +1250,10 @@ function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
 }
 
-function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommandLane[] {
+function buildProviderCommandCenter(
+  providers: AdminProvider[],
+  opsPolicy: ProviderOpsPolicy,
+): ProviderCommandLane[] {
   const verificationReview = providers.filter(
     (provider) => provider.verification?.status !== 'APPROVED',
   ).length;
@@ -1226,9 +1264,11 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
     (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
   ).length;
   const publicMediaReview = providers.filter(providerPublicMediaNeedsReview).length;
-  const readyNow = providers.filter((provider) => providerDispatchReady(provider)).length;
+  const readyNow = providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length;
   const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
-  const locationFresh = providers.filter((provider) => providerLocationStatus(provider) === 'recent').length;
+  const locationFresh = providers.filter(
+    (provider) => providerLocationStatus(provider, opsPolicy) === 'recent',
+  ).length;
   const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
   const bankReview = providers.filter((provider) =>
     (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
@@ -1271,7 +1311,7 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
       href: readyNow > 0 ? '/partners?readiness=ready' : '/partners?review=location',
       metrics: [
         providerCommandMetric('online', online),
-        providerCommandMetric('fresh location', locationFresh),
+        providerCommandMetric(`fresh <=${opsPolicy.staleLocationMinutes}m`, locationFresh),
         providerCommandMetric('push ready', pushReady),
         providerCommandMetric('Supabase pending', supabasePending),
       ],
@@ -1314,12 +1354,12 @@ function buildProviderCommandCenter(providers: AdminProvider[]): ProviderCommand
   ];
 }
 
-function providerDispatchReady(provider: AdminProvider) {
+function providerDispatchReady(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   return (
     provider.verification?.status === 'APPROVED' &&
     !provider.blockedAt &&
     provider.status === 'ONLINE_AVAILABLE' &&
-    providerLocationStatus(provider) === 'recent' &&
+    providerLocationStatus(provider, opsPolicy) === 'recent' &&
     providerSecurityStatus(provider) === 'clear' &&
     hasHealthyPush(provider)
   );
@@ -1352,13 +1392,15 @@ function providerCommandToneLabel(tone: ProviderCommandLane['tone']) {
   return 'Clear';
 }
 
-function buildProviderSummary(providers: AdminProvider[]) {
+function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
   const accountBlocked = providers.filter((provider) => Boolean(provider.blockedAt)).length;
   const approved = providers.filter((provider) => provider.verification?.status === 'APPROVED').length;
   const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
-  const recentLocation = providers.filter((provider) => providerLocationStatus(provider) === 'recent').length;
+  const recentLocation = providers.filter(
+    (provider) => providerLocationStatus(provider, opsPolicy) === 'recent',
+  ).length;
   const staleLocation = providers.filter((provider) =>
-    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider)),
+    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
   ).length;
   const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
   const pushDisabled = providers.filter((provider) =>
@@ -1376,7 +1418,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
       provider.verification?.status === 'APPROVED' &&
       !provider.blockedAt &&
       provider.status === 'ONLINE_AVAILABLE' &&
-      providerLocationStatus(provider) === 'recent' &&
+      providerLocationStatus(provider, opsPolicy) === 'recent' &&
       providerSecurityStatus(provider) === 'clear' &&
       hasHealthyPush(provider),
   ).length;
@@ -1386,7 +1428,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
     ['Account blocked', accountBlocked.toString()],
     ['Approved', approved.toString()],
     ['Online now', online.toString()],
-    ['Recent location', recentLocation.toString()],
+    [`Recent location <=${opsPolicy.staleLocationMinutes}m`, recentLocation.toString()],
     ['Location needs review', staleLocation.toString()],
     ['Push ready', pushReady.toString()],
     ['Push needs review', pushDisabled.toString()],
@@ -1399,7 +1441,7 @@ function buildProviderSummary(providers: AdminProvider[]) {
   ] as const;
 }
 
-function buildProviderReviewQueue(providers: AdminProvider[]) {
+function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
   const accountBlocks = providers.filter((provider) => Boolean(provider.blockedAt)).length;
   const kycNeedsReview = providers.filter((provider) =>
     ['PENDING', 'REJECTED'].includes(provider.kyc?.status ?? 'MISSING'),
@@ -1415,7 +1457,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
   const cashDebtNeedsReview = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const taxNeedsReview = providers.filter(providerTaxNeedsReview).length;
   const locationNeedsReview = providers.filter((provider) =>
-    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider)),
+    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
   ).length;
   const pushNeedsReview = providers.filter((provider) => !hasHealthyPush(provider)).length;
   const securityNeedsReview = providers.filter((provider) =>
@@ -1427,7 +1469,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       provider.verification?.status === 'APPROVED' &&
       !provider.blockedAt &&
       provider.status === 'ONLINE_AVAILABLE' &&
-      providerLocationStatus(provider) === 'recent' &&
+      providerLocationStatus(provider, opsPolicy) === 'recent' &&
       providerSecurityStatus(provider) === 'clear' &&
       hasHealthyPush(provider),
   ).length;
@@ -1501,7 +1543,7 @@ function buildProviderReviewQueue(providers: AdminProvider[]) {
       count: locationNeedsReview,
       href: '/partners?review=location',
       detail:
-        'Partners with missing, stale, or expired locations should reopen the Partner app before dispatch.',
+        `Partners with missing, expired, or older-than-${opsPolicy.staleLocationMinutes}m locations should reopen the Partner app before dispatch.`,
     },
     {
       label: 'Push alert readiness',
@@ -1543,7 +1585,7 @@ function providerTaxPillClass(provider: AdminProvider) {
   return 'pill-neutral';
 }
 
-function providerReviewIssues(provider: AdminProvider) {
+function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   const issues: Array<{ label: string; severity: 'high' | 'medium' }> = [];
   const kycStatus = provider.kyc?.status ?? 'MISSING';
   const bankStatus = provider.bankAccounts?.[0]?.status ?? 'MISSING';
@@ -1587,7 +1629,7 @@ function providerReviewIssues(provider: AdminProvider) {
   if (walletBalance < 0) {
     issues.push({ label: `cash debt ${formatProviderMoney(Math.abs(walletBalance))}`, severity: 'high' });
   }
-  const locationState = providerLocationStatus(provider);
+  const locationState = providerLocationStatus(provider, opsPolicy);
   if (locationState !== 'recent') {
     issues.push({
       label: `location ${locationState}`,
@@ -1633,10 +1675,10 @@ function hasOpenProviderRisk(provider: AdminProvider) {
   );
 }
 
-function sortProviders(providers: AdminProvider[]) {
+function sortProviders(providers: AdminProvider[], opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   return [...providers].sort((left, right) => {
-    const leftScore = providerPriority(left);
-    const rightScore = providerPriority(right);
+    const leftScore = providerPriority(left, opsPolicy);
+    const rightScore = providerPriority(right, opsPolicy);
     if (leftScore !== rightScore) {
       return rightScore - leftScore;
     }
@@ -1786,7 +1828,11 @@ function readParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
 }
 
-function filterProviders(providers: AdminProvider[], filters: ProviderFilters) {
+function filterProviders(
+  providers: AdminProvider[],
+  filters: ProviderFilters,
+  opsPolicy = DEFAULT_PROVIDER_OPS_POLICY,
+) {
   const search = filters.q.toLowerCase();
 
   return providers.filter((provider) => {
@@ -1804,23 +1850,27 @@ function filterProviders(providers: AdminProvider[], filters: ProviderFilters) {
     if (filters.kyc && (provider.kyc?.status ?? 'MISSING') !== filters.kyc) {
       return false;
     }
-    if (filters.location && providerLocationStatus(provider) !== filters.location) {
+    if (filters.location && providerLocationStatus(provider, opsPolicy) !== filters.location) {
       return false;
     }
     if (filters.security && providerSecurityStatus(provider) !== filters.security) {
       return false;
     }
-    if (filters.readiness && providerReadiness(provider) !== filters.readiness) {
+    if (filters.readiness && providerReadiness(provider, opsPolicy) !== filters.readiness) {
       return false;
     }
-    if (filters.review && !providerMatchesReviewQueue(provider, filters.review)) {
+    if (filters.review && !providerMatchesReviewQueue(provider, filters.review, opsPolicy)) {
       return false;
     }
     return true;
   });
 }
 
-function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
+function providerMatchesReviewQueue(
+  provider: AdminProvider,
+  review: string,
+  opsPolicy = DEFAULT_PROVIDER_OPS_POLICY,
+) {
   if (review === 'blocked') {
     return Boolean(provider.blockedAt);
   }
@@ -1856,7 +1906,7 @@ function providerMatchesReviewQueue(provider: AdminProvider, review: string) {
     return hasOpenProviderRisk(provider);
   }
   if (review === 'location') {
-    return ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider));
+    return ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy));
   }
   if (review === 'push') {
     return !hasHealthyPush(provider);
@@ -1890,14 +1940,14 @@ function providerSearchText(provider: AdminProvider) {
     .toLowerCase();
 }
 
-function providerReadiness(provider: AdminProvider) {
+function providerReadiness(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   if (provider.blockedAt) {
     return 'needs-review';
   }
   if (
     provider.verification?.status === 'APPROVED' &&
     provider.status === 'ONLINE_AVAILABLE' &&
-    providerLocationStatus(provider) === 'recent' &&
+    providerLocationStatus(provider, opsPolicy) === 'recent' &&
     providerSecurityStatus(provider) === 'clear' &&
     hasHealthyPush(provider)
   ) {
@@ -1912,7 +1962,7 @@ function providerReadiness(provider: AdminProvider) {
   return 'needs-review';
 }
 
-function providerPriority(provider: AdminProvider) {
+function providerPriority(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   if (provider.blockedAt) {
     return 0;
   }
@@ -1922,7 +1972,7 @@ function providerPriority(provider: AdminProvider) {
   if (
     provider.verification?.status === 'APPROVED' &&
     provider.status === 'ONLINE_AVAILABLE' &&
-    providerLocationStatus(provider) === 'recent' &&
+    providerLocationStatus(provider, opsPolicy) === 'recent' &&
     providerSecurityStatus(provider) === 'clear' &&
     hasHealthyPush(provider)
   ) {
@@ -1975,7 +2025,10 @@ function providerSecurityPillClass(status: ProviderSecurityState) {
   return 'pill-danger';
 }
 
-function providerLocationStatus(provider: AdminProvider): ProviderLocationState {
+function providerLocationStatus(
+  provider: AdminProvider,
+  opsPolicy = DEFAULT_PROVIDER_OPS_POLICY,
+): ProviderLocationState {
   if (!hasProviderCoordinate(provider) || !provider.currentLocationUpdatedAt) {
     return 'missing';
   }
@@ -1986,13 +2039,29 @@ function providerLocationStatus(provider: AdminProvider): ProviderLocationState 
   }
 
   const ageMs = Date.now() - updatedAt;
-  if (ageMs > EXPIRED_LOCATION_HOURS * 60 * 60_000) {
+  if (ageMs > opsPolicy.expiredLocationHours * 60 * 60_000) {
     return 'expired';
   }
-  if (ageMs > STALE_LOCATION_MINUTES * 60_000) {
+  if (ageMs > opsPolicy.staleLocationMinutes * 60_000) {
     return 'stale';
   }
   return 'recent';
+}
+
+function buildProviderOpsPolicy(settings: AdminOperationalPolicySetting[]): ProviderOpsPolicy {
+  return {
+    staleLocationMinutes:
+      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
+      DEFAULT_PROVIDER_OPS_POLICY.staleLocationMinutes,
+    expiredLocationHours: DEFAULT_PROVIDER_OPS_POLICY.expiredLocationHours,
+  };
+}
+
+function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
+  const setting = settings.find((item) => item.key === key);
+  if (!setting) return null;
+  const parsed = Number(setting.value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function hasProviderCoordinate(provider: AdminProvider) {

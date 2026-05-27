@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  AdminOperationalPolicySetting,
   AdminProvider,
   adminGet,
   providerDocumentLabel,
@@ -34,6 +35,15 @@ import {
 
 type PageProps = {
   params: Promise<{ id: string }>;
+};
+type PartnerDispatchPolicy = {
+  locationFreshnessMinutes: number;
+};
+
+const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
+  'matching.backup_provider_location_max_age_minutes';
+const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
+  locationFreshnessMinutes: 30,
 };
 
 type ProviderDetail = AdminProvider & {
@@ -88,11 +98,15 @@ type ProviderDetail = AdminProvider & {
 
 export default async function ProviderDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const provider = await adminGet<ProviderDetail | null>(`/admin/providers/${id}`, null);
+  const [provider, operationalPolicies] = await Promise.all([
+    adminGet<ProviderDetail | null>(`/admin/providers/${id}`, null),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policies', []),
+  ]);
 
   if (!provider) {
     notFound();
   }
+  const dispatchPolicy = buildPartnerDispatchPolicy(operationalPolicies);
 
   const readUrls = new Map<string, string>();
   await Promise.all(
@@ -109,15 +123,15 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   );
 
   const primaryBank = provider.bankAccounts?.[0];
-  const reviewChecklist = buildReviewChecklist(provider);
-  const opsSummary = buildProviderOpsSummary(provider);
+  const reviewChecklist = buildReviewChecklist(provider, dispatchPolicy);
+  const opsSummary = buildProviderOpsSummary(provider, dispatchPolicy);
   const payoutOps = buildProviderPayoutOps(provider);
   const securitySummary = buildProviderSecuritySummary(provider);
   const levelPlan = buildProviderLevelPlan(provider);
   const resubmissionPlan = buildProviderResubmissionPlan(provider);
   const registrationDossier = buildProviderRegistrationDossier(provider);
   const providerServicePricing = buildProviderServicePricing(provider);
-  const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing);
+  const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing, dispatchPolicy);
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
   const payoutHold = activePayoutHold(provider);
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
@@ -213,7 +227,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <span>Location</span>
             <strong>{bookingAcceptance.locationAge}</strong>
-            <small>Must be fresh for dispatch</small>
+            <small>Must be fresh within {dispatchPolicy.locationFreshnessMinutes}m</small>
           </div>
           <div>
             <span>Services</span>
@@ -246,6 +260,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <span className={`pill ${opsSummary.ready ? 'pill-success' : 'pill-warn'}`}>
             {opsSummary.ready ? 'Operational' : 'Needs operator attention'}
           </span>
+          <Link className="text-link" href="/operations-policy">
+            Location freshness: {dispatchPolicy.locationFreshnessMinutes}m
+          </Link>
         </div>
         <div className="ops-task-grid">
           {opsSummary.cards.map((card) => (
@@ -1359,11 +1376,13 @@ type BookingAcceptanceGate = {
 function buildProviderBookingAcceptance(
   provider: ProviderDetail,
   pricing: ReturnType<typeof buildProviderServicePricing>,
+  dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY,
 ) {
   const cashDebt = cashFeeDebtAmount(provider);
   const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
   const hasPushDevice = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
-  const hasRecentLocation = locationAgeMinutes(provider.currentLocationUpdatedAt) <= 30;
+  const hasRecentLocation =
+    locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const primaryBank = provider.bankAccounts?.[0];
   const pricingReady = pricing.readyCount > 0;
   const hasRequiredDocuments = hasApprovedRequiredKycDocuments(provider);
@@ -1437,7 +1456,7 @@ function buildProviderBookingAcceptance(
       ok: hasRecentLocation,
       detail: hasRecentLocation
         ? `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`
-        : `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`,
+        : `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}. Policy requires ${dispatchPolicy.locationFreshnessMinutes}m freshness.`,
       action: hasRecentLocation ? 'Clear' : 'Refresh location',
     },
     {
@@ -1465,16 +1484,19 @@ function buildProviderBookingAcceptance(
   };
 }
 
-function buildProviderOpsSummary(provider: ProviderDetail) {
+function buildProviderOpsSummary(
+  provider: ProviderDetail,
+  dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY,
+) {
   const primaryBank = provider.bankAccounts?.[0];
   const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
-  const hasRecentLocation = locationMinutes <= 30;
+  const hasRecentLocation = locationMinutes <= dispatchPolicy.locationFreshnessMinutes;
   const hasEnabledPush = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
   const requiredDocumentsReady = hasApprovedRequiredKycDocuments(provider);
   const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
   const agreementsAccepted = provider.agreements?.length ?? 0;
   const payoutAgreementsReady = agreementsAccepted >= 5;
-  const nextAction = nextProviderAction(provider);
+  const nextAction = nextProviderAction(provider, dispatchPolicy);
   const payoutHold = activePayoutHold(provider);
   const payoutReady =
     hasFirstRevenue &&
@@ -2158,7 +2180,10 @@ function payoutBlockers(provider: ProviderDetail) {
   return blockers.length ? blockers : ['Payout gate needs admin refresh.'];
 }
 
-function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
+function nextProviderAction(
+  provider: ProviderDetail,
+  dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY,
+): ProviderOpsCard {
   const payoutHold = activePayoutHold(provider);
   if (provider.blockedAt) {
     return {
@@ -2241,11 +2266,13 @@ function nextProviderAction(provider: ProviderDetail): ProviderOpsCard {
       tone: 'blocked',
     };
   }
-  if (locationAgeMinutes(provider.currentLocationUpdatedAt) > 30) {
+  if (locationAgeMinutes(provider.currentLocationUpdatedAt) > dispatchPolicy.locationFreshnessMinutes) {
     return {
       title: 'Next admin action',
       status: 'LOCATION',
-      detail: `Location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`,
+      detail: `Location is ${locationAgeLabel(
+        provider.currentLocationUpdatedAt,
+      )}. Policy requires ${dispatchPolicy.locationFreshnessMinutes}m freshness.`,
       action: 'Ask partner to open the app and refresh location.',
       tone: 'pending',
     };
@@ -2280,10 +2307,11 @@ function cardClass(tone: ProviderOpsCard['tone']) {
   return 'ops-task-pending';
 }
 
-function buildReviewChecklist(provider: ProviderDetail) {
+function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY) {
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
   const primaryBank = provider.bankAccounts?.[0];
-  const hasRecentLocation = locationAgeMinutes(provider.currentLocationUpdatedAt) <= 30;
+  const hasRecentLocation =
+    locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
   const hasPushDevice = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
   const hasBasicProfile = Boolean(
     provider.displayName?.trim() && provider.legalName?.trim() && provider.user?.phone?.trim(),
@@ -2354,7 +2382,7 @@ function buildReviewChecklist(provider: ProviderDetail) {
       ok: hasRecentLocation,
       status: hasRecentLocation ? 'RECENT' : 'STALE',
       detail: provider.currentLocationUpdatedAt
-        ? `Last shared at ${formatDate(provider.currentLocationUpdatedAt)}.`
+        ? `Last shared at ${formatDate(provider.currentLocationUpdatedAt)}. Policy requires ${dispatchPolicy.locationFreshnessMinutes}m freshness.`
         : 'Partner app has not shared a location.',
     },
     {
@@ -2398,6 +2426,21 @@ function formatDateOnly(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString();
+}
+
+function buildPartnerDispatchPolicy(settings: AdminOperationalPolicySetting[]): PartnerDispatchPolicy {
+  return {
+    locationFreshnessMinutes:
+      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
+      DEFAULT_PARTNER_DISPATCH_POLICY.locationFreshnessMinutes,
+  };
+}
+
+function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
+  const setting = settings.find((item) => item.key === key);
+  if (!setting) return null;
+  const parsed = Number(setting.value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function formatJsonSummary(value: unknown) {

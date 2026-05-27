@@ -1,5 +1,11 @@
 import Link from 'next/link';
-import { AdminProvider, AdminProviderReport, AdminProviderSanction, adminGet } from '../../lib/admin-api';
+import {
+  AdminOperationalPolicySetting,
+  AdminProvider,
+  AdminProviderReport,
+  AdminProviderSanction,
+  adminGet,
+} from '../../lib/admin-api';
 import {
   createProviderReport,
   createProviderSanction,
@@ -8,14 +14,25 @@ import {
 } from './actions';
 
 type RiskSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type PartnerRiskPolicy = {
+  locationFreshnessMinutes: number;
+};
+
+const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
+  'matching.backup_provider_location_max_age_minutes';
+const DEFAULT_PARTNER_RISK_POLICY: PartnerRiskPolicy = {
+  locationFreshnessMinutes: 30,
+};
 
 export default async function ProviderRiskPage({ searchParams }: { searchParams?: RiskSearchParams }) {
   const filters = buildFilters(searchParams ? await searchParams : {});
-  const [providers, reports, sanctions] = await Promise.all([
+  const [providers, reports, sanctions, operationalPolicies] = await Promise.all([
     adminGet<AdminProvider[]>('/admin/providers', []),
     adminGet<AdminProviderReport[]>('/admin/provider-reports', []),
     adminGet<AdminProviderSanction[]>('/admin/provider-sanctions', []),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policies', []),
   ]);
+  const riskPolicy = buildPartnerRiskPolicy(operationalPolicies);
   const visibleReports = filterReports(reports, filters);
   const visibleSanctions = filterSanctions(sanctions, filters);
   const activeFilters = buildRiskActiveFilters(filters);
@@ -23,8 +40,8 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
     id: provider.id,
     label: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
   }));
-  const summary = buildRiskSummary(reports, sanctions, providers);
-  const providerWatchlist = buildProviderRiskWatchlist(providers);
+  const summary = buildRiskSummary(reports, sanctions, providers, riskPolicy);
+  const providerWatchlist = buildProviderRiskWatchlist(providers, riskPolicy);
   const commandCenter = buildRiskCommandCenter({
     reports,
     sanctions,
@@ -60,6 +77,9 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <span className={`pill ${commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}`}>
             {commandCenter.urgentCount ? `${commandCenter.urgentCount} urgent` : 'No urgent lane'}
           </span>
+          <Link className="text-link" href="/operations-policy">
+            Location freshness: {riskPolicy.locationFreshnessMinutes}m
+          </Link>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 12 }}>
           {commandCenter.lanes.map((lane) => (
@@ -1042,8 +1062,9 @@ function buildRiskSummary(
   reports: AdminProviderReport[],
   sanctions: AdminProviderSanction[],
   providers: AdminProvider[],
+  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
 ) {
-  const watchlist = buildProviderRiskWatchlist(providers);
+  const watchlist = buildProviderRiskWatchlist(providers, riskPolicy);
   return [
     [
       'Open reports',
@@ -1058,7 +1079,7 @@ function buildRiskSummary(
     ['Wallet debt', watchlist.filter((item) => item.walletBalance < 0).length.toString()],
     [
       'Location gaps',
-      providers.filter((provider) => Boolean(providerLocationSignal(provider))).length.toString(),
+      providers.filter((provider) => Boolean(providerLocationSignal(provider, riskPolicy))).length.toString(),
     ],
     [
       'Shared devices',
@@ -1084,10 +1105,13 @@ type ProviderRiskWatchItem = {
   nextStep: string;
 };
 
-function buildProviderRiskWatchlist(providers: AdminProvider[]): ProviderRiskWatchItem[] {
+function buildProviderRiskWatchlist(
+  providers: AdminProvider[],
+  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
+): ProviderRiskWatchItem[] {
   const deviceUsage = buildDeviceUsage(providers);
   return providers
-    .map((provider) => buildProviderRiskWatchItem(provider, deviceUsage))
+    .map((provider) => buildProviderRiskWatchItem(provider, deviceUsage, riskPolicy))
     .filter((item): item is ProviderRiskWatchItem => Boolean(item))
     .sort((left, right) => watchSeverityRank(right.severity) - watchSeverityRank(left.severity));
 }
@@ -1095,6 +1119,7 @@ function buildProviderRiskWatchlist(providers: AdminProvider[]): ProviderRiskWat
 function buildProviderRiskWatchItem(
   provider: AdminProvider,
   deviceUsage: Map<string, Set<string>>,
+  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
 ): ProviderRiskWatchItem | null {
   const walletBalance = providerUnsettledWalletBalance(provider);
   const openReportCount = (provider.reports ?? []).filter((report) =>
@@ -1110,7 +1135,7 @@ function buildProviderRiskWatchItem(
   if (hasPayoutHold) signals.push({ kind: 'PAYOUT', label: 'Payout hold' });
   if (openReportCount > 0) signals.push({ kind: 'REPORT', label: `${openReportCount} open report(s)` });
   if (sharedDeviceCount > 0) signals.push({ kind: 'DEVICE', label: `${sharedDeviceCount} shared device(s)` });
-  const locationSignal = providerLocationSignal(provider);
+  const locationSignal = providerLocationSignal(provider, riskPolicy);
   if (locationSignal) {
     signals.push({ kind: 'LOCATION', label: locationSignal });
   }
@@ -1142,7 +1167,7 @@ function buildProviderRiskWatchItem(
     openReportCount,
     hasPayoutHold,
     detail: providerRiskDetail({ walletBalance, openReportCount, sharedDeviceCount, signals }),
-    nextStep: providerRiskNextStep({ walletBalance, hasPayoutHold, openReportCount, provider }),
+    nextStep: providerRiskNextStep({ walletBalance, hasPayoutHold, openReportCount, provider }, riskPolicy),
   };
 }
 
@@ -1175,7 +1200,7 @@ function providerRiskNextStep(input: {
   hasPayoutHold: boolean;
   openReportCount: number;
   provider: AdminProvider;
-}) {
+}, riskPolicy = DEFAULT_PARTNER_RISK_POLICY) {
   if (input.walletBalance < 0) {
     return `Confirm partner deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
   }
@@ -1185,13 +1210,13 @@ function providerRiskNextStep(input: {
   if (input.openReportCount > 0) {
     return 'Update report status with resolution note or apply a sanction if needed.';
   }
-  if (providerLocationSignal(input.provider)) {
+  if (providerLocationSignal(input.provider, riskPolicy)) {
     return 'Ask the partner to reopen the app and refresh their current location before accepting bookings.';
   }
   return 'Complete missing verification data before enabling higher trust or payout features.';
 }
 
-function providerLocationSignal(provider: AdminProvider) {
+function providerLocationSignal(provider: AdminProvider, riskPolicy = DEFAULT_PARTNER_RISK_POLICY) {
   if (!provider.status.startsWith('ONLINE')) {
     return null;
   }
@@ -1211,7 +1236,24 @@ function providerLocationSignal(provider: AdminProvider) {
   if (!Number.isFinite(updatedAt)) {
     return 'Location timestamp invalid';
   }
-  return Date.now() - updatedAt > 30 * 60_000 ? 'Location stale' : null;
+  return Date.now() - updatedAt > riskPolicy.locationFreshnessMinutes * 60_000
+    ? `Location older than ${riskPolicy.locationFreshnessMinutes}m`
+    : null;
+}
+
+function buildPartnerRiskPolicy(settings: AdminOperationalPolicySetting[]): PartnerRiskPolicy {
+  return {
+    locationFreshnessMinutes:
+      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
+      DEFAULT_PARTNER_RISK_POLICY.locationFreshnessMinutes,
+  };
+}
+
+function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
+  const setting = settings.find((item) => item.key === key);
+  if (!setting) return null;
+  const parsed = Number(setting.value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function buildDeviceUsage(providers: AdminProvider[]) {
