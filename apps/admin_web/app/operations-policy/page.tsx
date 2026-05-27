@@ -14,6 +14,7 @@ export default async function OperationsPolicyPage({
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
   const notice = policyNotice(params);
+  const ownerDecisionBacklog = operationsOwnerDecisionBacklog();
 
   return (
     <>
@@ -128,6 +129,29 @@ export default async function OperationsPolicyPage({
             recommendation="Keep in-app notifications first, then promote OneSignal after production credentials are stable."
             detail="The system can record notifications now; push delivery should become mandatory only after monitoring is ready."
           />
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Owner decision backlog</h2>
+            <p className="muted">
+              Product and operations choices that should be reviewed before HANDS turns each policy into
+              stricter automation. Keep the decision in Admin first, then automate after real operating data.
+            </p>
+          </div>
+          <span className="pill pill-info">Review weekly</span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {ownerDecisionBacklog.map((item) => (
+            <div className={`ops-task-card ${item.className}`} key={item.title}>
+              <span className={`pill ${item.pillClass}`}>{item.owner}</span>
+              <h3>{item.title}</h3>
+              <p>{item.question}</p>
+              <small>{item.signal}</small>
+            </div>
+          ))}
         </div>
       </section>
     </>
@@ -248,6 +272,65 @@ function DecisionHint({
       <p className="muted">{detail}</p>
     </div>
   );
+}
+
+function operationsOwnerDecisionBacklog() {
+  return [
+    {
+      owner: 'Dispatch',
+      title: 'Preferred partner timer',
+      question: 'Should the first-picked partner keep the full response window, or should backup partners become more prominent earlier?',
+      signal:
+        'Review open matching wait time, first-pick response rate, and customer cancellation before changing the timer.',
+      className: 'ops-task-pending',
+      pillClass: 'pill-info',
+    },
+    {
+      owner: 'Supply',
+      title: 'Backup partner radius',
+      question: 'Should HANDS keep one nationwide default radius, or vary radius by city density and service type?',
+      signal:
+        'Review partner count within radius, average distance, late arrivals, and ignored backup alerts by city.',
+      className: 'ops-task-pending',
+      pillClass: 'pill-info',
+    },
+    {
+      owner: 'Finance',
+      title: 'Negative wallet recovery',
+      question: 'Should partners with cash-fee debt be fully blocked, or allowed one recovery booking under supervision?',
+      signal:
+        'Review cash settlement speed, repeated debt partners, and customer impact before enabling recovery mode.',
+      className: 'ops-task-blocked',
+      pillClass: 'pill-warn',
+    },
+    {
+      owner: 'Support',
+      title: 'Cancellation fee rule',
+      question: 'When a customer cancels after partner commitment, should payment be released immediately or held for fee review?',
+      signal:
+        'Review after-match cancellation reasons, partner travel evidence, refund complaints, and manual review workload.',
+      className: 'ops-task-pending',
+      pillClass: 'pill-warn',
+    },
+    {
+      owner: 'Trust',
+      title: 'No-show evidence',
+      question: 'What evidence should be required before no-show penalties or customer fee decisions are automated?',
+      signal:
+        'Review chat, arrival timestamp, location proof, customer response, and dispute rate before auto no-show.',
+      className: 'ops-task-pending',
+      pillClass: 'pill-warn',
+    },
+    {
+      owner: 'Growth',
+      title: 'Partner alert channel',
+      question: 'When should urgent booking alerts move from in-app only to mandatory OneSignal push delivery?',
+      signal:
+        'Review delivery failure rate, disabled devices, missed requests, and production push credential readiness.',
+      className: 'ops-task-done',
+      pillClass: 'pill-success',
+    },
+  ];
 }
 
 function formatPolicyValue(value: unknown, unit?: string | null) {
