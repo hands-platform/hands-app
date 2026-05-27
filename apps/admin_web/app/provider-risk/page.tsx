@@ -158,6 +158,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             Severity
             <select name="severity" defaultValue={filters.severity}>
               <option value="">All</option>
+              <option value="HIGH_PLUS">Critical + high</option>
               <option value="CRITICAL">Critical</option>
               <option value="HIGH">High</option>
               <option value="MEDIUM">Medium</option>
@@ -575,8 +576,8 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       detail: urgentReports.length
         ? 'Critical or high reports need evidence review and a decision before partner trust changes.'
         : 'No critical or high partner report is currently open.',
-      href: urgentReports.length ? '/provider-risk?severity=HIGH' : '/provider-risk?status=OPEN',
-      action: urgentReports.length ? 'Open high severity lane' : 'Review open reports',
+      href: urgentReports.length ? '/provider-risk?severity=HIGH_PLUS' : '/provider-risk?status=OPEN',
+      action: urgentReports.length ? 'Open critical + high lane' : 'Review open reports',
       className: urgentReports.length ? 'ops-task-blocked' : 'ops-task-done',
       metrics: [
         metric('Critical', urgentReports.filter((report) => report.severity === 'CRITICAL').length, 'danger'),
@@ -769,7 +770,7 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
       ? {
           kind: 'severity',
           value: filters.severity,
-          label: `Severity: ${filters.severity}`,
+          label: `Severity: ${filters.severity === 'HIGH_PLUS' ? 'CRITICAL + HIGH' : filters.severity}`,
           description: riskFilterDescription('severity', filters.severity),
         }
       : null,
@@ -792,6 +793,9 @@ function riskFilterDescription(kind: string, value: string) {
     return 'Investigating reports need evidence, customer notes, or staff follow-up.';
   }
   if (kind === 'severity') {
+    if (value === 'HIGH_PLUS') {
+      return 'Critical and high severity reports are prioritized together for safety review.';
+    }
     return `${value.toLowerCase()} severity reports are prioritized for safety review.`;
   }
   if (kind === 'sanction' && value === 'ACTIVE') {
@@ -818,7 +822,10 @@ function readParam(value: string | string[] | undefined) {
 function filterReports(reports: AdminProviderReport[], filters: ReturnType<typeof buildFilters>) {
   return reports.filter((report) => {
     if (filters.status && report.status !== filters.status) return false;
-    if (filters.severity && report.severity !== filters.severity) return false;
+    if (filters.severity === 'HIGH_PLUS' && !['CRITICAL', 'HIGH'].includes(report.severity)) return false;
+    if (filters.severity && filters.severity !== 'HIGH_PLUS' && report.severity !== filters.severity) {
+      return false;
+    }
     if (filters.q && !reportSearchText(report).includes(filters.q)) return false;
     return true;
   });
