@@ -22,6 +22,7 @@ export default async function OperationsPolicyPage({
   const matchingPlaybook = buildMatchingPlaybook(settings);
   const impactDashboard = buildPolicyImpactDashboard(settings, bookings);
   const policyAuditRows = operationalPolicyAuditRows(auditLogs);
+  const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
 
   return (
     <>
@@ -60,6 +61,42 @@ export default async function OperationsPolicyPage({
           </div>
         </section>
       ) : null}
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Recommended value review</h2>
+            <p className="muted">
+              Compares current policy values with the HANDS recommended baseline. Differences are allowed, but
+              operators should know the likely tradeoff before keeping them.
+            </p>
+          </div>
+          <span className={`pill ${recommendationReview.warningCount ? 'pill-warn' : 'pill-success'}`}>
+            {recommendationReview.warningCount
+              ? `${recommendationReview.warningCount} owner choice(s)`
+              : 'Aligned'}
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {recommendationReview.summary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {recommendationReview.cards.map((card) => (
+            <div className={`ops-task-card ${card.className}`} key={card.key}>
+              <span className={`pill ${card.pillClass}`}>{card.status}</span>
+              <h3>{card.label}</h3>
+              <p>{card.detail}</p>
+              <small>{card.operatorAction}</small>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -402,6 +439,168 @@ function MetricCard({ label, value, helper }: { label: string; value: string; he
       <small>{helper}</small>
     </div>
   );
+}
+
+function buildPolicyRecommendationReview(
+  settings: AdminOperationalPolicySetting[],
+  bookings: AdminBooking[],
+) {
+  const openMatchingCount = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
+  const activeBookingCount = bookings.filter((booking) =>
+    ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  ).length;
+  const reviewable = settings.filter(
+    (setting) => setting.recommendedValue !== null && setting.recommendedValue !== undefined,
+  );
+  const cards = reviewable.map((setting) => {
+    const aligned = String(setting.value) === String(setting.recommendedValue);
+    const posture = policyRecommendationPosture(setting, { openMatchingCount, activeBookingCount });
+    return {
+      key: setting.key,
+      label: setting.label,
+      status: aligned ? 'Recommended' : posture.status,
+      detail: aligned
+        ? `Current value matches the recommended baseline: ${policyDisplayValue(setting)}.`
+        : `Current value is ${policyDisplayValue(setting)}; recommended is ${policyDisplayValue(setting, true)}. ${posture.detail}`,
+      operatorAction: aligned ? posture.alignedAction : posture.operatorAction,
+      className: aligned ? 'ops-task-done' : posture.className,
+      pillClass: aligned ? 'pill-success' : posture.pillClass,
+      aligned,
+      enforced: setting.enforced,
+    };
+  });
+  const warningCount = cards.filter((card) => !card.aligned).length;
+  const enforcedWarningCount = cards.filter((card) => !card.aligned && card.enforced).length;
+  return {
+    warningCount,
+    summary: [
+      {
+        label: 'Compared policies',
+        value: String(reviewable.length),
+        helper: 'Policies with an explicit recommended baseline.',
+      },
+      {
+        label: 'Owner choices',
+        value: String(warningCount),
+        helper: 'Current values intentionally different from recommendation.',
+      },
+      {
+        label: 'Live deviations',
+        value: String(enforcedWarningCount),
+        helper: 'Differences that can affect live booking behavior.',
+      },
+      {
+        label: 'Active bookings',
+        value: String(activeBookingCount),
+        helper: 'Bookings to consider before changing enforced values.',
+      },
+    ],
+    cards,
+  };
+}
+
+function policyRecommendationPosture(
+  setting: AdminOperationalPolicySetting,
+  context: { openMatchingCount: number; activeBookingCount: number },
+) {
+  const value = String(setting.value);
+  const recommended = String(setting.recommendedValue);
+  const numericValue = Number(setting.value);
+  const numericRecommended = Number(setting.recommendedValue);
+  const liveContext =
+    context.openMatchingCount > 0
+      ? `${context.openMatchingCount} open matching booking(s) may feel this policy while active.`
+      : 'No open matching booking is currently exposed to this policy.';
+
+  if (setting.key === 'matching.provider_response_window_minutes') {
+    const shorter =
+      Number.isFinite(numericValue) &&
+      Number.isFinite(numericRecommended) &&
+      numericValue < numericRecommended;
+    return {
+      status: shorter ? 'Faster than baseline' : 'Slower than baseline',
+      detail: shorter
+        ? 'This can reduce waiting time but may make first-picked partners miss requests.'
+        : 'This gives partners more time but increases customer waiting anxiety.',
+      operatorAction: `${liveContext} Existing booking countdowns do not recalculate.`,
+      alignedAction: 'Keep monitoring first-pick response rate and cancellation during the waiting window.',
+      className: shorter ? 'ops-task-pending' : 'ops-task-blocked',
+      pillClass: shorter ? 'pill-warn' : 'pill-danger',
+    };
+  }
+
+  if (setting.key === 'matching.backup_provider_radius_meters') {
+    const narrower =
+      Number.isFinite(numericValue) &&
+      Number.isFinite(numericRecommended) &&
+      numericValue < numericRecommended;
+    return {
+      status: narrower ? 'Narrow supply' : 'Wide supply',
+      detail: narrower
+        ? 'Fewer partners can join backup matching, so customer alternatives may look empty.'
+        : 'More partners can join, but distance and arrival quality need closer monitoring.',
+      operatorAction: `${liveContext} Watch ignored backup alerts and late arrivals by city.`,
+      alignedAction:
+        'Radius is at the default operating range; keep reviewing city density before making it dynamic.',
+      className: narrower ? 'ops-task-blocked' : 'ops-task-pending',
+      pillClass: narrower ? 'pill-danger' : 'pill-warn',
+    };
+  }
+
+  if (setting.key === 'matching.preferred_accept_mode') {
+    return {
+      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Fast lock' : 'Customer choice',
+      detail:
+        value === 'AUTO_MATCH_ON_ACCEPT'
+          ? 'Fast lock reduces friction but weakens the customer final-choice flow.'
+          : 'Customer final-choice mode adds one step but better matches the HANDS target flow.',
+      operatorAction: 'Use customer-confirm mode before scaling backup partner shortlist UX.',
+      alignedAction:
+        'Customer final-choice posture is aligned with the intended direct + backup matching model.',
+      className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: value === recommended ? 'pill-success' : 'pill-warn',
+    };
+  }
+
+  if (setting.key === 'matching.backup_open_mode') {
+    return {
+      status: value === 'IMMEDIATE_WITHIN_WINDOW' ? 'Immediate backup' : 'Delayed backup',
+      detail:
+        value === 'IMMEDIATE_WITHIN_WINDOW'
+          ? 'This reduces empty waiting screens and lets nearby partners show interest early.'
+          : 'This protects the preferred partner window but may leave customers with no visible alternatives.',
+      operatorAction: `${liveContext} If delayed mode is kept, support should watch waiting-screen complaints.`,
+      alignedAction:
+        'Immediate backup participation supports lower customer anxiety during the first window.',
+      className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: value === recommended ? 'pill-success' : 'pill-warn',
+    };
+  }
+
+  if (setting.key === 'wallet.negative_balance_gate') {
+    return {
+      status: value === 'BLOCK_ALL_BOOKING_ACTIONS' ? 'Hard block' : 'Recovery mode',
+      detail:
+        value === 'BLOCK_ALL_BOOKING_ACTIONS'
+          ? 'Debt risk is contained, but partner recovery requires manual settlement.'
+          : 'Recovery mode can help partners repay but increases operational cash-debt risk.',
+      operatorAction: 'Keep hard block until cash settlement collection and trust scoring are stronger.',
+      alignedAction: 'Hard block is safer for early operations with cash bookings.',
+      className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: value === recommended ? 'pill-success' : 'pill-danger',
+    };
+  }
+
+  return {
+    status: setting.enforced ? 'Owner choice' : 'Planning choice',
+    detail: 'This differs from the recommended baseline and should stay visible in weekly operations review.',
+    operatorAction: setting.enforced
+      ? `${context.activeBookingCount} active booking(s) may need operator awareness.`
+      : 'This is not enforced yet; keep the decision documented before automation.',
+    alignedAction: 'Current value matches the recommended policy posture.',
+    className: setting.enforced ? 'ops-task-pending' : 'ops-task-done',
+    pillClass: setting.enforced ? 'pill-warn' : 'pill-info',
+  };
 }
 
 function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], bookings: AdminBooking[]) {
