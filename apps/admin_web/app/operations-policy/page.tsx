@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -17,6 +18,8 @@ type BookingMatchingPolicySnapshot = {
   backupOpenMode: string | null;
   travelBufferMinutes: number | null;
 };
+
+const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 
 export default async function OperationsPolicyPage({
   searchParams,
@@ -41,7 +44,7 @@ export default async function OperationsPolicyPage({
   const policyDrilldown = buildPolicyDrilldown(bookings, settings);
   const policyAuditRows = operationalPolicyAuditRows(auditLogs);
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
-  const acceptanceMatrix = buildBookingAcceptanceMatrix(settings);
+  const acceptanceMatrix = buildBookingAcceptanceMatrix(settings, providers);
 
   return (
     <>
@@ -147,6 +150,27 @@ export default async function OperationsPolicyPage({
               <h3>{card.title}</h3>
               <p>{card.detail}</p>
               <small>{card.operatorAction}</small>
+            </div>
+          ))}
+        </div>
+        <div className="risk-watch-header" style={{ marginTop: 18 }}>
+          <div>
+            <h3>Current partner acceptance impact</h3>
+            <p className="muted">
+              Applies the policy posture to the current partner snapshot so operators can see who can accept,
+              who is hard-blocked, and who only needs recovery follow-up.
+            </p>
+          </div>
+          <Link className="text-link" href="/partners">
+            Open partner queue
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {acceptanceMatrix.impact.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
             </div>
           ))}
         </div>
@@ -1047,7 +1071,7 @@ function policyRecommendationPosture(
   };
 }
 
-function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[]) {
+function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[], providers: AdminProvider[]) {
   const responseWindowMinutes =
     policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
   const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
@@ -1156,6 +1180,10 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[])
       blocking: !hardWalletBlock,
     },
   ];
+  const impact = buildPartnerAcceptancePolicyImpact(providers, {
+    backupLocationFreshnessMinutes,
+    hardWalletBlock,
+  });
 
   return {
     blockingCount: cards.filter((card) => card.blocking).length,
@@ -1187,7 +1215,133 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[])
       },
     ],
     cards,
+    impact,
   };
+}
+
+function buildPartnerAcceptancePolicyImpact(
+  providers: AdminProvider[],
+  policy: { backupLocationFreshnessMinutes: number; hardWalletBlock: boolean },
+) {
+  const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE'));
+  const readyPartners = providers.filter((provider) => partnerCanAcceptUnderCurrentPolicy(provider, policy));
+  const walletBlocked = providers.filter((provider) => partnerWalletBalance(provider) < 0);
+  const identityBlocked = providers.filter((provider) => !partnerIdentityReady(provider));
+  const locationBlocked = providers.filter(
+    (provider) => !partnerLocationFresh(provider, policy.backupLocationFreshnessMinutes),
+  );
+  const pushGaps = providers.filter((provider) => !partnerHasEnabledPush(provider));
+  const accountRisk = providers.filter((provider) => partnerAccountRisk(provider));
+  const softRecovery = providers.filter(
+    (provider) => !partnerCanAcceptUnderCurrentPolicy(provider, policy) && !partnerHardBlocked(provider, policy),
+  );
+
+  return [
+    {
+      label: 'Can accept now',
+      value: readyPartners.length.toString(),
+      helper: `${onlinePartners.length} online partner(s), filtered by identity, wallet, location, push, and risk gates.`,
+    },
+    {
+      label: 'Hard blocked',
+      value: providers.filter((provider) => partnerHardBlocked(provider, policy)).length.toString(),
+      helper: 'Account risk, identity failure, or negative wallet under the current wallet policy.',
+    },
+    {
+      label: 'Cash debt block',
+      value: walletBlocked.length.toString(),
+      helper: policy.hardWalletBlock
+        ? 'Negative wallet blocks booking acceptance.'
+        : 'Negative wallet is visible but not a hard block under recovery mode.',
+    },
+    {
+      label: 'Identity block',
+      value: identityBlocked.length.toString(),
+      helper: 'Partner approval, KYC, and required CCCD/selfie documents are not all approved.',
+    },
+    {
+      label: 'Location block',
+      value: locationBlocked.length.toString(),
+      helper: `Missing or older than ${policy.backupLocationFreshnessMinutes} minute(s), so 10km backup matching should not trust it.`,
+    },
+    {
+      label: 'Push gap',
+      value: pushGaps.length.toString(),
+      helper: 'Partner may not receive first-pick or backup participation alerts.',
+    },
+    {
+      label: 'Account risk',
+      value: accountRisk.length.toString(),
+      helper: 'Blocked account, active sanction, blocked device, suspicious session, or shared device signal.',
+    },
+    {
+      label: 'Recovery queue',
+      value: softRecovery.length.toString(),
+      helper: 'Not ready now, but can be recovered through app open, push refresh, or manual follow-up.',
+    },
+  ];
+}
+
+function partnerCanAcceptUnderCurrentPolicy(
+  provider: AdminProvider,
+  policy: { backupLocationFreshnessMinutes: number; hardWalletBlock: boolean },
+) {
+  return (
+    provider.status === 'ONLINE_AVAILABLE' &&
+    !partnerHardBlocked(provider, policy) &&
+    partnerLocationFresh(provider, policy.backupLocationFreshnessMinutes) &&
+    partnerHasEnabledPush(provider)
+  );
+}
+
+function partnerHardBlocked(
+  provider: AdminProvider,
+  policy: { hardWalletBlock: boolean },
+) {
+  return (
+    partnerAccountRisk(provider) ||
+    !partnerIdentityReady(provider) ||
+    (policy.hardWalletBlock && partnerWalletBalance(provider) < 0)
+  );
+}
+
+function partnerIdentityReady(provider: AdminProvider) {
+  const approvedDocuments = new Set(
+    (provider.documents ?? [])
+      .filter((document) => document.status === 'APPROVED')
+      .map((document) => document.type),
+  );
+  return (
+    provider.verification?.status === 'APPROVED' &&
+    provider.kyc?.status === 'APPROVED' &&
+    REQUIRED_KYC_DOCUMENTS.every((type) => approvedDocuments.has(type))
+  );
+}
+
+function partnerWalletBalance(provider: AdminProvider) {
+  return (provider.earnings ?? []).reduce((total, earning) => total + Number(earning.netAmount ?? 0), 0);
+}
+
+function partnerLocationFresh(provider: AdminProvider, freshnessMinutes: number) {
+  if (readOptionalNumber(provider.currentLat) === null || readOptionalNumber(provider.currentLng) === null) {
+    return false;
+  }
+  const ageMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
+  return ageMinutes !== null && ageMinutes <= freshnessMinutes;
+}
+
+function partnerHasEnabledPush(provider: AdminProvider) {
+  return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
+}
+
+function partnerAccountRisk(provider: AdminProvider) {
+  return (
+    Boolean(provider.blockedAt) ||
+    (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE') ||
+    (provider.devices ?? []).some((device) => Boolean(device.blockedAt) || device.enabled === false) ||
+    (provider.sessions ?? []).some((session) => session.suspicious) ||
+    (provider.sharedDeviceMatches ?? []).length > 0
+  );
 }
 
 function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], bookings: AdminBooking[]) {
