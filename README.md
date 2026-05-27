@@ -170,6 +170,7 @@ Customer and provider apps now have runtime API clients, phone OTP request/verif
 The current MVP intentionally follows the reference app's flow order while keeping the implementation original. See:
 
 - `docs/architecture/product-intent.md`
+- `docs/architecture/partner-acceptance-operations.md`
 
 ## Admin MVP
 
