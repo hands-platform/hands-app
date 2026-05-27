@@ -113,6 +113,7 @@ export default async function DashboardPage() {
   const cashDebtAmount = cashSettlementSummary.totalDebtAmount;
   const queueSummary = buildOpsQueueSummary(queue);
   const bookingOps = buildBookingOpsInsights(bookings);
+  const bookingDeepDive = buildBookingOperationsDeepDive(bookings, payments);
   const appPresence = buildAppPresence(users, bookings, appSessions);
   const hourlyDemand = buildHourlyBookingDemand(bookings);
   const regionalDemand = buildRegionalBookingDemand(bookings);
@@ -273,6 +274,121 @@ export default async function DashboardPage() {
             <p className="muted">{helper}</p>
           </div>
         ))}
+      </section>
+
+      <section className="detail-grid" style={{ marginTop: 20 }}>
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Booking risk cockpit</h2>
+              <p className="muted">
+                Dispatch exceptions that should be cleared before they become customer complaints.
+              </p>
+            </div>
+            <Link className="text-link" href="/bookings?view=high-risk">
+              High-risk bookings
+            </Link>
+          </div>
+          <div className="service-trace-summary">
+            <div>
+              <span>Expired matching</span>
+              <strong>{bookingDeepDive.expiredOpenMatching}</strong>
+              <small>Open windows past timeout</small>
+            </div>
+            <div>
+              <span>No participants</span>
+              <strong>{bookingDeepDive.openWithoutParticipants}</strong>
+              <small>Customer waiting, no partner joined</small>
+            </div>
+            <div>
+              <span>Matched no chat</span>
+              <strong>{bookingDeepDive.matchedWithoutChat}</strong>
+              <small>Partner selected, room missing</small>
+            </div>
+            <div>
+              <span>Quiet active chats</span>
+              <strong>{bookingDeepDive.quietActiveChats}</strong>
+              <small>Room exists but no messages</small>
+            </div>
+            <div>
+              <span>Payment release risk</span>
+              <strong>{bookingDeepDive.releaseRisk}</strong>
+              <small>Cancelled/expired/no-show not released</small>
+            </div>
+            <div>
+              <span>Completion capture risk</span>
+              <strong>{bookingDeepDive.captureRisk}</strong>
+              <small>Completed service still authorized</small>
+            </div>
+            <div>
+              <span>Avg participants</span>
+              <strong>{bookingDeepDive.averageParticipants}</strong>
+              <small>Open/matched response depth</small>
+            </div>
+            <div>
+              <span>Manual closeout</span>
+              <strong>{bookingDeepDive.manualCloseout}</strong>
+              <small>Needs operator audit trail</small>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Service and payment mix</h2>
+              <p className="muted">
+                Which services and payment methods are creating operational load right now.
+              </p>
+            </div>
+            <Link className="text-link" href="/services">
+              Pricing setup
+            </Link>
+          </div>
+          <div className="detail-grid">
+            <div>
+              <h3>Top service demand</h3>
+              <div className="stack">
+                {bookingDeepDive.serviceDemand.map((item) => (
+                  <div className="ops-row" key={item.label}>
+                    <div>
+                      <strong>{item.label}</strong>
+                      <p className="muted">
+                        {item.active} active / {item.completed} completed / avg {money(item.averagePrice)}
+                      </p>
+                    </div>
+                    <span className="pill pill-info">{item.total}</span>
+                  </div>
+                ))}
+                {bookingDeepDive.serviceDemand.length === 0 ? (
+                  <p className="muted">No service demand loaded yet.</p>
+                ) : null}
+              </div>
+            </div>
+            <div>
+              <h3>Payment method load</h3>
+              <div className="stack">
+                {bookingDeepDive.paymentMix.map((item) => (
+                  <div className="ops-row" key={item.method}>
+                    <div>
+                      <strong>{item.method}</strong>
+                      <p className="muted">
+                        {money(item.amount, item.currency)} / {item.authorized} authorized / {item.pending}{' '}
+                        pending
+                      </p>
+                    </div>
+                    <span className={`pill ${item.riskCount ? 'pill-warn' : 'pill-info'}`}>
+                      {item.count} payment(s)
+                    </span>
+                  </div>
+                ))}
+                {bookingDeepDive.paymentMix.length === 0 ? (
+                  <p className="muted">No payment method data loaded yet.</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="detail-grid" style={{ marginTop: 20 }}>
@@ -870,6 +986,155 @@ function buildBookingOpsInsights(bookings: AdminBooking[]) {
     noShowSignal: bookings.filter(isNoShowSignal).length,
     completedCloseoutRisk: completedCloseoutRisk.length,
   };
+}
+
+function buildBookingOperationsDeepDive(bookings: AdminBooking[], payments: AdminPayment[]) {
+  const activeOrMatching = bookings.filter(
+    (booking) => activeBookingStatuses.has(booking.status) || booking.status === 'OPEN_MATCHING',
+  );
+  const participantCount = activeOrMatching.reduce(
+    (sum, booking) => sum + (booking.participants?.length ?? 0),
+    0,
+  );
+  const expiredOpenMatching = bookings.filter(
+    (booking) =>
+      booking.status === 'OPEN_MATCHING' &&
+      Boolean(booking.expiresAt) &&
+      Date.parse(booking.expiresAt ?? '') < Date.now(),
+  ).length;
+  const openWithoutParticipants = bookings.filter(
+    (booking) => booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0,
+  ).length;
+  const matchedWithoutChat = bookings.filter(
+    (booking) => booking.status === 'MATCHED' && !booking.chatRoom,
+  ).length;
+  const quietActiveChats = bookings.filter(
+    (booking) =>
+      Boolean(booking.chatRoom) &&
+      (booking.chatRoom?.messages?.length ?? 0) === 0 &&
+      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  ).length;
+  const releaseRisk = bookings.filter(
+    (booking) =>
+      ['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status) && unresolvedReleasePayment(booking),
+  ).length;
+  const captureRisk = payments.filter(
+    (payment) => payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED',
+  ).length;
+  const manualCloseout = bookings.filter(
+    (booking) => completedCloseoutNeedsOps(booking) || isNoShowSignal(booking),
+  ).length;
+
+  return {
+    expiredOpenMatching,
+    openWithoutParticipants,
+    matchedWithoutChat,
+    quietActiveChats,
+    releaseRisk,
+    captureRisk,
+    averageParticipants: activeOrMatching.length
+      ? (participantCount / activeOrMatching.length).toFixed(1)
+      : '0.0',
+    manualCloseout,
+    serviceDemand: buildServiceDemandMix(bookings),
+    paymentMix: buildPaymentMethodMix(payments),
+  };
+}
+
+function buildServiceDemandMix(bookings: AdminBooking[]) {
+  const buckets = new Map<
+    string,
+    {
+      label: string;
+      total: number;
+      active: number;
+      completed: number;
+      cancelled: number;
+      amount: number;
+      averagePrice: number;
+    }
+  >();
+
+  for (const booking of bookings) {
+    for (const bookingService of booking.services ?? []) {
+      const service = bookingService.service;
+      const label = `${service?.name ?? 'Unknown service'} / ${service?.durationMin ?? '?'} min`;
+      const quantity = bookingService.quantity ?? 1;
+      const price = bookingService.price ?? service?.basePrice ?? 0;
+      const bucket = buckets.get(label) ?? {
+        label,
+        total: 0,
+        active: 0,
+        completed: 0,
+        cancelled: 0,
+        amount: 0,
+        averagePrice: 0,
+      };
+
+      bucket.total += quantity;
+      bucket.amount += price * quantity;
+      if (activeBookingStatuses.has(booking.status)) bucket.active += quantity;
+      if (booking.status === 'COMPLETED') bucket.completed += quantity;
+      if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status)) bucket.cancelled += quantity;
+      bucket.averagePrice = bucket.total ? Math.round(bucket.amount / bucket.total) : 0;
+      buckets.set(label, bucket);
+    }
+  }
+
+  return [...buckets.values()]
+    .sort((left, right) => right.total - left.total || right.amount - left.amount)
+    .slice(0, 6);
+}
+
+function buildPaymentMethodMix(payments: AdminPayment[]) {
+  const buckets = new Map<
+    string,
+    {
+      method: string;
+      count: number;
+      amount: number;
+      currency: string;
+      authorized: number;
+      pending: number;
+      captured: number;
+      released: number;
+      refunded: number;
+      riskCount: number;
+    }
+  >();
+
+  for (const payment of payments) {
+    const method = payment.method ?? 'UNKNOWN';
+    const bucket = buckets.get(method) ?? {
+      method,
+      count: 0,
+      amount: 0,
+      currency: payment.currency ?? 'VND',
+      authorized: 0,
+      pending: 0,
+      captured: 0,
+      released: 0,
+      refunded: 0,
+      riskCount: 0,
+    };
+    bucket.count += 1;
+    bucket.amount += payment.amount ?? 0;
+    if (payment.status === 'AUTHORIZED') bucket.authorized += 1;
+    if (payment.status === 'PENDING') bucket.pending += 1;
+    if (payment.status === 'CAPTURED') bucket.captured += 1;
+    if (payment.status === 'RELEASED') bucket.released += 1;
+    if (payment.status === 'REFUNDED') bucket.refunded += 1;
+    if (
+      (payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED') ||
+      (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(payment.booking?.status ?? '') &&
+        !['RELEASED', 'REFUNDED'].includes(payment.status))
+    ) {
+      bucket.riskCount += 1;
+    }
+    buckets.set(method, bucket);
+  }
+
+  return [...buckets.values()].sort((left, right) => right.count - left.count || right.amount - left.amount);
 }
 
 function buildAppPresence(users: AdminUser[], bookings: AdminBooking[], sessions: AdminAppSession[]) {
