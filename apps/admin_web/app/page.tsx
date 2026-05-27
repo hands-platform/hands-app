@@ -4,6 +4,7 @@ import {
   AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
+  AdminAppSession,
   AdminNotification,
   AdminPayment,
   AdminPayoutBatch,
@@ -44,6 +45,7 @@ export default async function DashboardPage() {
     refunds,
     notifications,
     payoutBatches,
+    appSessions,
     externalReadiness,
   ] = await Promise.all([
     adminGet<AdminUser[]>('/admin/users', []),
@@ -66,6 +68,7 @@ export default async function DashboardPage() {
     adminGet<AdminRefund[]>('/admin/refunds', []),
     adminGet<AdminNotification[]>('/admin/notifications', []),
     adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
+    adminGet<AdminAppSession[]>('/admin/app-sessions', []),
     apiGet<AdminExternalReadiness>('/health/external', {
       ok: false,
       timestamp: new Date(0).toISOString(),
@@ -85,7 +88,7 @@ export default async function DashboardPage() {
   });
   const queueSummary = buildOpsQueueSummary(queue);
   const bookingOps = buildBookingOpsInsights(bookings);
-  const customerPresence = buildCustomerPresence(users, bookings);
+  const appPresence = buildAppPresence(users, bookings, appSessions);
   const hourlyDemand = buildHourlyBookingDemand(bookings);
   const regionalDemand = buildRegionalBookingDemand(bookings);
   const commandSignals = buildDashboardCommandSignals({
@@ -154,12 +157,17 @@ export default async function DashboardPage() {
     ['Pending verification', pendingVerification.length.toString(), 'Partners waiting for admin approval.'],
     [
       'Customers in app',
-      customerPresence.liveAppCustomers.toString(),
+      appPresence.liveAppCustomers.toString(),
       'Customer app sessions seen within the active session window.',
     ],
     [
+      'Partners in app',
+      appPresence.liveAppPartners.toString(),
+      'Partner app sessions seen within the active session window.',
+    ],
+    [
       'Active customers',
-      customerPresence.activeBookingCustomers.toString(),
+      appPresence.activeBookingCustomers.toString(),
       'Unique customers currently attached to active bookings.',
     ],
     [
@@ -307,27 +315,42 @@ export default async function DashboardPage() {
             <tbody>
               <InfoRow
                 label="Live app customers"
-                value={customerPresence.liveAppCustomers.toString()}
+                value={appPresence.liveAppCustomers.toString()}
                 detail="Customer app sessions with an unexpired heartbeat."
               />
               <InfoRow
+                label="Live app partners"
+                value={appPresence.liveAppPartners.toString()}
+                detail="Partner app sessions with an unexpired heartbeat."
+              />
+              <InfoRow
+                label="Recent customer sessions"
+                value={appPresence.recentCustomerSessions.toString()}
+                detail="Customer sessions seen in the last 30 minutes but not live now."
+              />
+              <InfoRow
+                label="Stale customer sessions"
+                value={appPresence.staleCustomerSessions.toString()}
+                detail="Customer sessions seen within 24 hours but outside the recent window."
+              />
+              <InfoRow
                 label="Active booking customers"
-                value={customerPresence.activeBookingCustomers.toString()}
+                value={appPresence.activeBookingCustomers.toString()}
                 detail="Unique customers attached to open or in-service reservations."
               />
               <InfoRow
                 label="Reachable customers"
-                value={customerPresence.reachableCustomers.toString()}
+                value={appPresence.reachableCustomers.toString()}
                 detail="Fallback proxy from enabled push devices when session heartbeats are missing."
               />
               <InfoRow
                 label="Push-disabled customers"
-                value={customerPresence.disabledPushCustomers.toString()}
+                value={appPresence.disabledPushCustomers.toString()}
                 detail="Customers who may not receive booking or chat updates."
               />
               <InfoRow
                 label="Customer records"
-                value={customerPresence.totalCustomers.toString()}
+                value={appPresence.totalCustomers.toString()}
                 detail="Total users with a customer profile in the latest admin snapshot."
               />
             </tbody>
@@ -712,19 +735,23 @@ function buildBookingOpsInsights(bookings: AdminBooking[]) {
   };
 }
 
-function buildCustomerPresence(users: AdminUser[], bookings: AdminBooking[]) {
+function buildAppPresence(users: AdminUser[], bookings: AdminBooking[], sessions: AdminAppSession[]) {
   const customers = users.filter((user) => Boolean(user.customerProfile));
-  const now = Date.now();
-  const liveAppCustomers = customers.filter((user) =>
-    (user.appSessions ?? []).some((session) => {
-      if (!session.active || session.role !== 'CUSTOMER') {
-        return false;
-      }
-      const expiry = session.expiresAt
-        ? Date.parse(session.expiresAt)
-        : Date.parse(session.lastSeenAt) + 5 * 60_000;
-      return Number.isFinite(expiry) && expiry >= now;
-    }),
+  const customerSessions = sessions.filter((session) => session.role === 'CUSTOMER');
+  const partnerSessions = sessions.filter((session) => session.role === 'PROVIDER');
+  const liveCustomerUserIds = new Set(
+    customerSessions
+      .filter((session) => appSessionState(session) === 'live')
+      .map((session) => session.userId),
+  );
+  const livePartnerUserIds = new Set(
+    partnerSessions.filter((session) => appSessionState(session) === 'live').map((session) => session.userId),
+  );
+  const recentCustomerSessions = customerSessions.filter(
+    (session) => appSessionState(session) === 'recent',
+  ).length;
+  const staleCustomerSessions = customerSessions.filter(
+    (session) => appSessionState(session) === 'stale',
   ).length;
   const reachableCustomers = customers.filter((user) =>
     (user.pushDevices ?? []).some((device) => device.enabled),
@@ -742,11 +769,34 @@ function buildCustomerPresence(users: AdminUser[], bookings: AdminBooking[]) {
 
   return {
     totalCustomers: customers.length,
-    liveAppCustomers,
+    liveAppCustomers: liveCustomerUserIds.size,
+    liveAppPartners: livePartnerUserIds.size,
+    recentCustomerSessions,
+    staleCustomerSessions,
     reachableCustomers,
     disabledPushCustomers,
     activeBookingCustomers,
   };
+}
+
+function appSessionState(session: AdminAppSession) {
+  if (session.active && session.expiresAt && Date.parse(session.expiresAt) >= Date.now()) {
+    return 'live';
+  }
+
+  const lastSeen = Date.parse(session.lastSeenAt);
+  if (!Number.isFinite(lastSeen)) {
+    return 'expired';
+  }
+
+  const ageMs = Date.now() - lastSeen;
+  if (ageMs <= 30 * 60_000) {
+    return 'recent';
+  }
+  if (ageMs <= 24 * 60 * 60_000) {
+    return 'stale';
+  }
+  return 'expired';
 }
 
 function buildHourlyBookingDemand(bookings: AdminBooking[]) {
