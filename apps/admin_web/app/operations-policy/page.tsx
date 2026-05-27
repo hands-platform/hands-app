@@ -1,4 +1,4 @@
-import { AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
+import { AdminBooking, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
 import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -9,13 +9,17 @@ export default async function OperationsPolicyPage({
   searchParams?: OperationsPolicySearchParams;
 }) {
   const params = (await searchParams) ?? {};
-  const settings = await adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []);
+  const [settings, bookings] = await Promise.all([
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminBooking[]>('/admin/bookings', []),
+  ]);
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');
   const decisionSettings = settings.filter((setting) => setting.category === 'Decision');
   const savedCount = settings.filter((setting) => setting.updatedAt).length;
   const notice = policyNotice(params);
   const ownerDecisionBacklog = operationsOwnerDecisionBacklog();
   const matchingPlaybook = buildMatchingPlaybook(settings);
+  const impactDashboard = buildPolicyImpactDashboard(settings, bookings);
 
   return (
     <>
@@ -70,6 +74,34 @@ export default async function OperationsPolicyPage({
         <div className="grid">
           {matchingSettings.map((setting) => (
             <PolicyForm key={setting.key} setting={setting} />
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Policy change impact</h2>
+            <p className="muted">
+              Before changing a setting, use this view to see whether it only affects new bookings or also
+              changes live partner visibility, join checks, and operational review work.
+            </p>
+          </div>
+          <span className="pill pill-info">{bookings.length} booking(s) sampled</span>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          {impactDashboard.metrics.map((metric) => (
+            <MetricCard key={metric.label} label={metric.label} value={metric.value} helper={metric.helper} />
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {impactDashboard.cards.map((card) => (
+            <div className={`ops-task-card ${card.className}`} key={card.title}>
+              <span className={`pill ${card.pillClass}`}>{card.scope}</span>
+              <h3>{card.title}</h3>
+              <p>{card.detail}</p>
+              <small>{card.operatorAction}</small>
+            </div>
           ))}
         </div>
       </section>
@@ -264,8 +296,8 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
             type={isNumber ? 'number' : 'text'}
             name="value"
             defaultValue={String(setting.value)}
-            min={isNumber ? setting.min ?? undefined : undefined}
-            max={isNumber ? setting.max ?? undefined : undefined}
+            min={isNumber ? (setting.min ?? undefined) : undefined}
+            max={isNumber ? (setting.max ?? undefined) : undefined}
           />
         </label>
       )}
@@ -304,12 +336,115 @@ function DecisionHint({
   );
 }
 
+function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
+  return (
+    <div className="metric-card">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{helper}</small>
+    </div>
+  );
+}
+
+function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], bookings: AdminBooking[]) {
+  const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const activeDispatch = bookings.filter((booking) =>
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  );
+  const negativeCashDebtBookings = bookings.filter((booking) => bookingWalletLedgerTotal(booking) < 0);
+  const snapshotDrift = bookings.filter(
+    (booking) => bookingPolicySnapshotDrift(booking, settings).length > 0,
+  );
+  const withoutSnapshot = bookings.filter((booking) => !readBookingMatchingPolicySnapshot(booking));
+  const immediateBackup = policyRawValue(settings, 'matching.backup_open_mode') === 'IMMEDIATE_WITHIN_WINDOW';
+  const customerConfirm =
+    policyRawValue(settings, 'matching.preferred_accept_mode') === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+
+  return {
+    metrics: [
+      {
+        label: 'Open matching now',
+        value: String(openMatching.length),
+        helper: 'These bookings may feel radius, backup-open, and partner alert changes immediately.',
+      },
+      {
+        label: 'Active dispatch',
+        value: String(activeDispatch.length),
+        helper: 'Matched or in-service bookings should be handled by their saved booking state.',
+      },
+      {
+        label: 'Policy drift',
+        value: String(snapshotDrift.length),
+        helper: 'Bookings whose saved matching snapshot differs from current Admin policy.',
+      },
+      {
+        label: 'Legacy bookings',
+        value: String(withoutSnapshot.length),
+        helper: 'Older bookings without metadata fall back to live policy explanations.',
+      },
+    ],
+    cards: [
+      {
+        scope: 'New bookings',
+        title: 'Response timer changes are forward-only',
+        detail:
+          'Changing the preferred partner response window affects new booking expiry and Redis TTL. Existing bookings keep their saved expiresAt value.',
+        operatorAction:
+          openMatching.length > 0
+            ? `There are ${openMatching.length} open booking(s); do not expect their countdown to recalculate.`
+            : 'No open matching bookings are waiting right now.',
+        className: 'ops-task-done',
+        pillClass: 'pill-success',
+      },
+      {
+        scope: 'Live matching',
+        title: immediateBackup
+          ? 'Backup partners can join during the first window'
+          : 'Backup partners wait until the first window closes',
+        detail: immediateBackup
+          ? 'Eligible partners inside the radius can appear while the preferred partner is still deciding.'
+          : 'Backup visibility and join checks stay delayed until the preferred response window passes.',
+        operatorAction: customerConfirm
+          ? 'Customer confirmation mode is active, so accepted partners still require customer final choice.'
+          : 'Auto-match mode is active, so accepted preferred partners can lock faster.',
+        className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
+        pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
+      },
+      {
+        scope: 'Partner risk',
+        title: 'Negative wallet gate protects cash-fee debt',
+        detail:
+          'Partners with unpaid cash-fee debt should be blocked from accepting or joining until settlement is posted.',
+        operatorAction:
+          negativeCashDebtBookings.length > 0
+            ? `${negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
+            : 'No negative wallet booking state was found in the current sample.',
+        className: negativeCashDebtBookings.length > 0 ? 'ops-task-blocked' : 'ops-task-done',
+        pillClass: negativeCashDebtBookings.length > 0 ? 'pill-danger' : 'pill-success',
+      },
+      {
+        scope: 'Audit',
+        title: 'Saved policy snapshots make old bookings explainable',
+        detail:
+          'Bookings created after this change keep response window, backup radius, accept mode, backup-open mode, and travel buffer in metadata.',
+        operatorAction:
+          snapshotDrift.length > 0
+            ? `${snapshotDrift.length} booking(s) differ from current policy; review booking detail before manual action.`
+            : 'Current booking snapshots are aligned with the live policy sample.',
+        className: snapshotDrift.length > 0 ? 'ops-task-pending' : 'ops-task-done',
+        pillClass: snapshotDrift.length > 0 ? 'pill-warn' : 'pill-success',
+      },
+    ],
+  };
+}
+
 function operationsOwnerDecisionBacklog() {
   return [
     {
       owner: 'Dispatch',
       title: 'Preferred partner timer',
-      question: 'Should the first-picked partner keep the full response window, or should backup partners become more prominent earlier?',
+      question:
+        'Should the first-picked partner keep the full response window, or should backup partners become more prominent earlier?',
       signal:
         'Review open matching wait time, first-pick response rate, and customer cancellation before changing the timer.',
       className: 'ops-task-pending',
@@ -318,7 +453,8 @@ function operationsOwnerDecisionBacklog() {
     {
       owner: 'Supply',
       title: 'Backup partner radius',
-      question: 'Should HANDS keep one nationwide default radius, or vary radius by city density and service type?',
+      question:
+        'Should HANDS keep one nationwide default radius, or vary radius by city density and service type?',
       signal:
         'Review partner count within radius, average distance, late arrivals, and ignored backup alerts by city.',
       className: 'ops-task-pending',
@@ -327,7 +463,8 @@ function operationsOwnerDecisionBacklog() {
     {
       owner: 'Finance',
       title: 'Negative wallet recovery',
-      question: 'Should partners with cash-fee debt be fully blocked, or allowed one recovery booking under supervision?',
+      question:
+        'Should partners with cash-fee debt be fully blocked, or allowed one recovery booking under supervision?',
       signal:
         'Review cash settlement speed, repeated debt partners, and customer impact before enabling recovery mode.',
       className: 'ops-task-blocked',
@@ -336,7 +473,8 @@ function operationsOwnerDecisionBacklog() {
     {
       owner: 'Support',
       title: 'Cancellation fee rule',
-      question: 'When a customer cancels after partner commitment, should payment be released immediately or held for fee review?',
+      question:
+        'When a customer cancels after partner commitment, should payment be released immediately or held for fee review?',
       signal:
         'Review after-match cancellation reasons, partner travel evidence, refund complaints, and manual review workload.',
       className: 'ops-task-pending',
@@ -345,7 +483,8 @@ function operationsOwnerDecisionBacklog() {
     {
       owner: 'Trust',
       title: 'No-show evidence',
-      question: 'What evidence should be required before no-show penalties or customer fee decisions are automated?',
+      question:
+        'What evidence should be required before no-show penalties or customer fee decisions are automated?',
       signal:
         'Review chat, arrival timestamp, location proof, customer response, and dispute rate before auto no-show.',
       className: 'ops-task-pending',
@@ -354,7 +493,8 @@ function operationsOwnerDecisionBacklog() {
     {
       owner: 'Growth',
       title: 'Partner alert channel',
-      question: 'When should urgent booking alerts move from in-app only to mandatory OneSignal push delivery?',
+      question:
+        'When should urgent booking alerts move from in-app only to mandatory OneSignal push delivery?',
       signal:
         'Review delivery failure rate, disabled devices, missed requests, and production push credential readiness.',
       className: 'ops-task-done',
@@ -442,6 +582,10 @@ function policyDisplayByKey(settings: AdminOperationalPolicySetting[], key: stri
   return setting ? policyDisplayValue(setting) : 'Not configured';
 }
 
+function policyRawValue(settings: AdminOperationalPolicySetting[], key: string) {
+  return settings.find((item) => item.key === key)?.value;
+}
+
 function formatPolicyValue(value: unknown, unit?: string | null) {
   if (value === null || value === undefined) return '-';
   if (unit === 'meters') {
@@ -456,7 +600,9 @@ function formatPolicyValue(value: unknown, unit?: string | null) {
 
 function policyDisplayValue(setting: AdminOperationalPolicySetting, recommended = false) {
   const value = String(recommended ? setting.recommendedValue : setting.value);
-  return setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit);
+  return (
+    setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit)
+  );
 }
 
 function policyImpactDetails(key: string) {
@@ -558,4 +704,82 @@ function policyNotice(params: Record<string, string | string[] | undefined>) {
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function readBookingMatchingPolicySnapshot(booking: AdminBooking) {
+  const metadata = readPlainRecord(booking.metadata);
+  const policy = readPlainRecord(metadata?.matchingPolicy);
+  if (!policy) {
+    return null;
+  }
+  return {
+    providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
+    backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
+    preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
+    backupOpenMode: readOptionalString(policy.backupOpenMode),
+    travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
+  };
+}
+
+function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperationalPolicySetting[]) {
+  const snapshot = readBookingMatchingPolicySnapshot(booking);
+  if (!snapshot) {
+    return [];
+  }
+  const comparisons = [
+    {
+      label: 'response window',
+      saved: snapshot.providerResponseWindowMinutes,
+      live: policyRawValue(settings, 'matching.provider_response_window_minutes'),
+    },
+    {
+      label: 'backup radius',
+      saved: snapshot.backupProviderRadiusMeters,
+      live: policyRawValue(settings, 'matching.backup_provider_radius_meters'),
+    },
+    {
+      label: 'accept mode',
+      saved: snapshot.preferredAcceptMode,
+      live: policyRawValue(settings, 'matching.preferred_accept_mode'),
+    },
+    {
+      label: 'backup open mode',
+      saved: snapshot.backupOpenMode,
+      live: policyRawValue(settings, 'matching.backup_open_mode'),
+    },
+    {
+      label: 'travel buffer',
+      saved: snapshot.travelBufferMinutes,
+      live: policyRawValue(settings, 'matching.travel_buffer_minutes'),
+    },
+  ];
+  return comparisons.filter((comparison) => {
+    if (comparison.saved === null || comparison.saved === undefined) {
+      return false;
+    }
+    return String(comparison.saved) !== String(comparison.live);
+  });
+}
+
+function bookingWalletLedgerTotal(booking: AdminBooking) {
+  return (booking.earning?.walletLedgerEntries ?? []).reduce(
+    (total, entry) => total + Number(entry.amount ?? 0),
+    0,
+  );
+}
+
+function readPlainRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function readOptionalNumber(value: unknown) {
+  const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readOptionalString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
