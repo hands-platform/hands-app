@@ -160,6 +160,7 @@ export default async function DashboardPage() {
   );
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
   const policySummary = buildOperationalPolicySummary(operationalPolicies);
+  const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies);
 
   const metrics = [
     [
@@ -296,6 +297,83 @@ export default async function DashboardPage() {
       <section className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
+            <h2>Matching control room</h2>
+            <p className="muted">
+              Live view of open matching demand against the current 1st-pick timer, backup radius, and partner
+              location freshness.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy">
+            Simulate policy
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {matchingControl.metrics.map((metric) => (
+            <div key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="detail-grid" style={{ marginTop: 14 }}>
+          <div className="ops-task-note">
+            <div className="risk-watch-header">
+              <div>
+                <h3>Open matching queue</h3>
+                <p className="muted">
+                  Bookings that may require dispatch intervention before the customer cancels or the timer
+                  expires.
+                </p>
+              </div>
+              <span className={`pill ${matchingControl.openRows.length ? 'pill-warn' : 'pill-success'}`}>
+                {matchingControl.openRows.length} shown
+              </span>
+            </div>
+            <div className="stack" style={{ marginTop: 10 }}>
+              {matchingControl.openRows.map((row) => (
+                <div className="ops-row" key={row.id}>
+                  <div>
+                    <Link className="text-link" href={`/bookings/${row.id}`}>
+                      {row.title}
+                    </Link>
+                    <p className="muted">{row.detail}</p>
+                  </div>
+                  <span className={`pill ${row.pillClass}`}>{row.status}</span>
+                </div>
+              ))}
+              {matchingControl.openRows.length === 0 ? (
+                <p className="muted">No open matching booking is waiting right now.</p>
+              ) : null}
+            </div>
+          </div>
+          <div className="ops-task-note">
+            <div className="risk-watch-header">
+              <div>
+                <h3>Supply and policy checks</h3>
+                <p className="muted">
+                  The most likely reason matching will feel slow before operators touch a booking.
+                </p>
+              </div>
+              <span className={`pill ${matchingControl.healthPillClass}`}>{matchingControl.healthLabel}</span>
+            </div>
+            <div className="ops-task-grid" style={{ marginTop: 12, gridTemplateColumns: '1fr' }}>
+              {matchingControl.checks.map((check) => (
+                <div className={`ops-task-card ${check.className}`} key={check.title}>
+                  <span className={`pill ${check.pillClass}`}>{check.status}</span>
+                  <h3>{check.title}</h3>
+                  <p>{check.detail}</p>
+                  <small>{check.operatorAction}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
             <h2>Operations policy snapshot</h2>
             <p className="muted">
               Live dispatch rules and owner decisions currently guiding matching, backup participation,
@@ -357,7 +435,9 @@ export default async function DashboardPage() {
                   </div>
                 ))}
                 {policySummary.activeOverrides.length === 0 ? (
-                  <p className="muted">No active policy override is different from the recommended baseline.</p>
+                  <p className="muted">
+                    No active policy override is different from the recommended baseline.
+                  </p>
                 ) : null}
               </div>
             </div>
@@ -366,7 +446,8 @@ export default async function DashboardPage() {
                 <div>
                   <strong>Recent policy changes</strong>
                   <p className="muted">
-                    Use this as a quick audit signal before investigating dispatch, payment, or alert behavior.
+                    Use this as a quick audit signal before investigating dispatch, payment, or alert
+                    behavior.
                   </p>
                 </div>
                 <Link className="text-link" href="/audit-log?bucket=Operations%2FPolicy">
@@ -1164,6 +1245,237 @@ function InfoRow({ label, value, detail }: { label: string; value: string; detai
       <td>{value}</td>
     </tr>
   );
+}
+
+function buildMatchingControlRoom(
+  bookings: AdminBooking[],
+  providers: AdminProvider[],
+  settings: AdminOperationalPolicySetting[],
+) {
+  const openMatching = bookings
+    .filter((booking) => booking.status === 'OPEN_MATCHING')
+    .sort(
+      (left, right) =>
+        Date.parse(left.expiresAt ?? left.createdAt ?? '') -
+        Date.parse(right.expiresAt ?? right.createdAt ?? ''),
+    );
+  const responseWindowMinutes =
+    dashboardPolicyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
+  const backupRadiusMeters =
+    dashboardPolicyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const backupOpenMode =
+    dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const freshOnlinePartners = providers.filter(
+    (provider) =>
+      provider.status.startsWith('ONLINE') &&
+      !provider.blockedAt &&
+      parseCoordinatePair(provider.currentLat, provider.currentLng) &&
+      locationAgeMinutes(provider.currentLocationUpdatedAt) !== null &&
+      (locationAgeMinutes(provider.currentLocationUpdatedAt) ?? Infinity) <= 30,
+  );
+  const openRows = openMatching.slice(0, 8).map((booking) => {
+    const coordinate = parseCoordinatePair(booking.lat, booking.lng);
+    const eligiblePartners = coordinate
+      ? providersWithinRadius(providers, coordinate.lat, coordinate.lng, backupRadiusMeters)
+      : [];
+    const freshEligible = eligiblePartners.filter((item) => (item.ageMinutes ?? Infinity) <= 30);
+    const participantCount = booking.participants?.length ?? 0;
+    const expired = booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false;
+    const urgent = expired || freshEligible.length === 0;
+    const detail = [
+      bookingRegionLabel(booking),
+      `preferred ${booking.preferredProvider?.displayName ?? 'none'}`,
+      `${participantCount} joined`,
+      coordinate ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible` : 'no customer pin',
+      booking.expiresAt ? `timer ${timeUntilLabel(booking.expiresAt)}` : 'no timer',
+    ].join(' · ');
+
+    return {
+      id: booking.id,
+      title: `${bookingServiceLabel(booking)} · ${shortId(booking.id)}`,
+      detail,
+      status: urgent ? 'Dispatch now' : 'Watch',
+      pillClass: urgent ? 'pill-danger' : 'pill-warn',
+      eligibleCount: eligiblePartners.length,
+      freshEligibleCount: freshEligible.length,
+      expired,
+    };
+  });
+  const atRiskRows = openRows.filter((row) => row.expired || row.freshEligibleCount === 0);
+  const averageEligible =
+    openRows.length > 0
+      ? (openRows.reduce((sum, row) => sum + row.eligibleCount, 0) / openRows.length).toFixed(1)
+      : '0';
+  const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
+
+  return {
+    openRows,
+    healthLabel: atRiskRows.length ? `${atRiskRows.length} risk` : 'Stable',
+    healthPillClass: atRiskRows.length ? 'pill-danger' : 'pill-success',
+    metrics: [
+      {
+        label: 'Open matching',
+        value: String(openMatching.length),
+        helper: `${atRiskRows.length} booking(s) need dispatch review now.`,
+      },
+      {
+        label: 'Policy timer',
+        value: `${responseWindowMinutes} min`,
+        helper: 'First-pick partner response window for new bookings.',
+      },
+      {
+        label: 'Backup radius',
+        value: formatDistance(backupRadiusMeters),
+        helper: `${averageEligible} average eligible partner(s) in shown open requests.`,
+      },
+      {
+        label: 'Fresh online supply',
+        value: String(freshOnlinePartners.length),
+        helper: 'Online partners with a location update in the last 30 minutes.',
+      },
+    ],
+    checks: [
+      {
+        status: atRiskRows.length ? 'Action needed' : 'Clear',
+        title: 'Timer and supply risk',
+        detail: atRiskRows.length
+          ? `${atRiskRows.length} open matching booking(s) are expired or have no fresh eligible nearby partner.`
+          : 'Open matching bookings have usable partner supply in the current sample.',
+        operatorAction: atRiskRows.length
+          ? 'Open the affected bookings, contact partners, or widen/refresh supply before customer wait grows.'
+          : 'Keep monitoring response speed and participant depth.',
+        className: atRiskRows.length ? 'ops-task-blocked' : 'ops-task-done',
+        pillClass: atRiskRows.length ? 'pill-danger' : 'pill-success',
+      },
+      {
+        status: immediateBackup ? 'Visible early' : 'Delayed',
+        title: 'Backup participation mode',
+        detail: immediateBackup
+          ? 'Nearby partners can appear during the first-pick response window.'
+          : 'Backup partners wait until the first-pick window closes.',
+        operatorAction: immediateBackup
+          ? 'This supports the current customer anxiety-reduction direction.'
+          : 'Use this only when preferred partner response rate is strong enough.',
+        className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
+        pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
+      },
+      {
+        status: freshOnlinePartners.length ? 'Location ready' : 'Location gap',
+        title: 'Partner app location freshness',
+        detail: freshOnlinePartners.length
+          ? `${freshOnlinePartners.length} online partner(s) have fresh location data.`
+          : 'No online partner has a fresh location update in the current admin sample.',
+        operatorAction: freshOnlinePartners.length
+          ? 'This is enough to validate the low-cost last-location model.'
+          : 'Ask partners to open the app so the 10-minute location update flow can seed matching.',
+        className: freshOnlinePartners.length ? 'ops-task-done' : 'ops-task-blocked',
+        pillClass: freshOnlinePartners.length ? 'pill-success' : 'pill-danger',
+      },
+    ],
+  };
+}
+
+function dashboardPolicyNumberValue(settings: AdminOperationalPolicySetting[], key: string) {
+  const raw = settings.find((setting) => setting.key === key)?.value;
+  const value = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : NaN;
+  return Number.isFinite(value) ? value : null;
+}
+
+function dashboardPolicyStringValue(settings: AdminOperationalPolicySetting[], key: string) {
+  const raw = settings.find((setting) => setting.key === key)?.value;
+  return typeof raw === 'string' ? raw : null;
+}
+
+function providersWithinRadius(providers: AdminProvider[], lat: number, lng: number, radiusMeters: number) {
+  return providers
+    .map((provider) => {
+      const coordinate = parseCoordinatePair(provider.currentLat, provider.currentLng);
+      const ageMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
+      const distanceMeters = coordinate
+        ? haversineDistanceMeters(lat, lng, coordinate.lat, coordinate.lng)
+        : null;
+      return {
+        provider,
+        ageMinutes,
+        distanceMeters,
+      };
+    })
+    .filter(
+      (item) =>
+        item.provider.status.startsWith('ONLINE') &&
+        !item.provider.blockedAt &&
+        item.distanceMeters !== null &&
+        item.distanceMeters <= radiusMeters &&
+        item.ageMinutes !== null &&
+        item.ageMinutes <= 24 * 60,
+    )
+    .sort((left, right) => (left.distanceMeters ?? Infinity) - (right.distanceMeters ?? Infinity));
+}
+
+function bookingServiceLabel(booking: AdminBooking) {
+  const service = booking.services?.[0];
+  const name = service?.service?.name ?? 'Booking';
+  const duration = service?.service?.durationMin ? `${service.service.durationMin} min` : null;
+  return duration ? `${name} (${duration})` : name;
+}
+
+function parseCoordinatePair(lat: unknown, lng: unknown) {
+  const parsedLat = typeof lat === 'number' ? lat : typeof lat === 'string' ? Number(lat) : NaN;
+  const parsedLng = typeof lng === 'number' ? lng : typeof lng === 'string' ? Number(lng) : NaN;
+  if (!Number.isFinite(parsedLat) || !Number.isFinite(parsedLng)) {
+    return null;
+  }
+  if (Math.abs(parsedLat) > 90 || Math.abs(parsedLng) > 180) {
+    return null;
+  }
+  return { lat: parsedLat, lng: parsedLng };
+}
+
+function haversineDistanceMeters(fromLat: number, fromLng: number, toLat: number, toLng: number) {
+  const earthRadiusMeters = 6371000;
+  const deltaLat = degreesToRadians(toLat - fromLat);
+  const deltaLng = degreesToRadians(toLng - fromLng);
+  const startLat = degreesToRadians(fromLat);
+  const endLat = degreesToRadians(toLat);
+  const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(startLat) * Math.cos(endLat) * Math.sin(deltaLng / 2) ** 2;
+  return 2 * earthRadiusMeters * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function locationAgeMinutes(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return null;
+  }
+  return Math.max(0, Math.round((Date.now() - timestamp) / 60000));
+}
+
+function timeUntilLabel(value: string) {
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return 'unknown';
+  }
+  const minutes = Math.round((timestamp - Date.now()) / 60000);
+  if (minutes < 0) {
+    return `${Math.abs(minutes)}m overdue`;
+  }
+  if (minutes < 60) {
+    return `${minutes}m left`;
+  }
+  return `${Math.round(minutes / 60)}h left`;
+}
+
+function formatDistance(meters: number) {
+  if (meters < 1000) {
+    return `${Math.round(meters)} m`;
+  }
+  return `${(meters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
 }
 
 function buildBookingOpsInsights(bookings: AdminBooking[]) {
@@ -2730,12 +3042,12 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
       'Backup radius',
       'Partners inside this radius can join.',
     ),
-    policyMetric(byKey.get('matching.travel_buffer_minutes'), 'Travel buffer', 'Availability buffer after work.'),
     policyMetric(
-      byKey.get('matching.preferred_accept_mode'),
-      'Accept mode',
-      'Preferred accept behavior.',
+      byKey.get('matching.travel_buffer_minutes'),
+      'Travel buffer',
+      'Availability buffer after work.',
     ),
+    policyMetric(byKey.get('matching.preferred_accept_mode'), 'Accept mode', 'Preferred accept behavior.'),
   ];
 
   const decisionKeys = [
@@ -2804,7 +3116,9 @@ function policyMetric(setting: AdminOperationalPolicySetting | undefined, label:
 
 function policyOptionLabel(setting: AdminOperationalPolicySetting, useRecommended = false) {
   const value = String(useRecommended ? setting.recommendedValue : setting.value);
-  return setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit);
+  return (
+    setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit)
+  );
 }
 
 function formatPolicyValue(value: unknown, unit?: string | null) {
