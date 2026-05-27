@@ -2,7 +2,7 @@ const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101';
 
 const pages = [
   { path: '/', markers: ['HANDS Admin', 'Shift command briefing', 'Partner dispatch control', 'API source'] },
-  { path: '/bookings', markers: ['Booking Monitor', 'Booking operation filters'] },
+  { path: '/bookings', markers: ['Booking Monitor', 'Customer protection closeout board', 'Booking operation filters'] },
   { path: '/bookings?view=closeout', markers: ['Booking Monitor', 'Closeout ops'] },
   { path: '/bookings?view=expired', markers: ['Booking Monitor', 'Expired'] },
   { path: '/bookings?view=no-show', markers: ['Booking Monitor', 'No-show'] },

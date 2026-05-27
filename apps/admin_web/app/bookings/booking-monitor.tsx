@@ -45,6 +45,16 @@ type BookingNextAction = {
   tags: string[];
 };
 
+type BookingProtectionLane = {
+  title: string;
+  status: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  detail: string;
+  operatorAction: string;
+  href: string;
+  bookings: AdminBooking[];
+};
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
@@ -132,6 +142,10 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   const nextActions = useMemo(
     () => buildBookingNextActions(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
+  );
+  const customerProtectionBoard = useMemo(
+    () => buildCustomerProtectionBoard(orderedBookings),
+    [orderedBookings],
   );
 
   const visibleBookings = useMemo(() => {
@@ -326,6 +340,48 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               </p>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer protection closeout board</h2>
+            <p className="muted">
+              Focused closeout lanes for cancelled, expired, no-show, completed, and cash-fee debt bookings.
+              Use this before ending a shift so customer payment and partner wallet outcomes are not left open.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              customerProtectionBoard.some((lane) => lane.bookings.length > 0) ? 'pill-warn' : 'pill-success'
+            }`}
+          >
+            {customerProtectionBoard.reduce((sum, lane) => sum + lane.bookings.length, 0)} open closeout
+          </span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {customerProtectionBoard.map((lane) => (
+            <Link className="ops-task-card" href={lane.href} key={lane.title}>
+              <span className={`signal ${commandToneClass(lane.tone)}`}>{commandToneLabel(lane.tone)}</span>
+              <h3>{lane.title}</h3>
+              <p>{lane.detail}</p>
+              <div className="participant-list">
+                <span className="pill">{lane.status}</span>
+                <span className="pill">{lane.bookings.length} booking(s)</span>
+              </div>
+              {lane.bookings.length > 0 ? (
+                <div className="stack">
+                  {lane.bookings.slice(0, 3).map((booking) => (
+                    <span className="muted" key={`${lane.title}-${booking.id}`}>
+                      {shortId(booking.id)} / {bookingCustomerLabel(booking)} / {booking.payment?.status ?? 'no payment'}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <small>{lane.operatorAction}</small>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -796,6 +852,92 @@ function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): Booki
       return bookingTimestamp(right.booking) - bookingTimestamp(left.booking);
     })
     .slice(0, 5);
+}
+
+function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtectionLane[] {
+  const cancelledUnresolved = bookings.filter(
+    (booking) =>
+      booking.status === 'CANCELLED' &&
+      Boolean(booking.payment) &&
+      !['RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
+  );
+  const expiredUnresolved = bookings.filter(
+    (booking) =>
+      booking.status === 'EXPIRED' &&
+      Boolean(booking.payment) &&
+      !['RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
+  );
+  const noShowUnresolved = bookings.filter(
+    (booking) =>
+      booking.status === 'NO_SHOW' &&
+      Boolean(booking.payment) &&
+      !['RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
+  );
+  const completedCloseout = bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
+  const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
+
+  return [
+    {
+      title: 'Cancelled payment release',
+      status: cancelledUnresolved.length ? 'Release/refund' : 'Clear',
+      tone: cancelledUnresolved.length ? 'danger' : 'ok',
+      detail:
+        cancelledUnresolved.length > 0
+          ? 'Customer cancelled, but the linked payment is not released or refunded yet.'
+          : 'Cancelled bookings have no unresolved payment hold in the current snapshot.',
+      operatorAction: 'Open payment queue and close customer money movement before support follow-up.',
+      href: '/bookings?view=payment',
+      bookings: cancelledUnresolved,
+    },
+    {
+      title: 'Expired matching closeout',
+      status: expiredUnresolved.length ? 'Timeout review' : 'Clear',
+      tone: expiredUnresolved.length ? 'danger' : 'ok',
+      detail:
+        expiredUnresolved.length > 0
+          ? 'Matching expired before final partner selection, but payment still needs an outcome.'
+          : 'Expired bookings have payment release/refund state aligned.',
+      operatorAction: 'Release the hold, confirm customer notification, and check retry/alert history.',
+      href: '/bookings?view=expired',
+      bookings: expiredUnresolved,
+    },
+    {
+      title: 'No-show outcome',
+      status: noShowUnresolved.length ? 'Evidence needed' : 'Clear',
+      tone: noShowUnresolved.length ? 'warn' : 'ok',
+      detail:
+        noShowUnresolved.length > 0
+          ? 'No-show bookings still need a payment, fee, or customer support decision.'
+          : 'No-show bookings have no unresolved payment in the current snapshot.',
+      operatorAction: 'Review chat, arrival/location proof, customer response, then decide payment handling.',
+      href: '/bookings?view=no-show',
+      bookings: noShowUnresolved,
+    },
+    {
+      title: 'Completed service reconciliation',
+      status: completedCloseout.length ? 'Closeout missing' : 'Clear',
+      tone: completedCloseout.length ? 'danger' : 'ok',
+      detail:
+        completedCloseout.length > 0
+          ? 'Completed bookings are missing capture, earning, tax, platform fee, or wallet ledger records.'
+          : 'Completed bookings are reconciled against payment and ledger requirements.',
+      operatorAction: 'Run or inspect closeout before payout, tax, and review workflows continue.',
+      href: '/bookings?view=closeout',
+      bookings: completedCloseout,
+    },
+    {
+      title: 'Cash fee debt',
+      status: cashDebt.length ? 'Partner blocked' : 'Clear',
+      tone: cashDebt.length ? 'danger' : 'ok',
+      detail:
+        cashDebt.length > 0
+          ? 'Cash bookings created negative wallet balances that block partner booking acceptance.'
+          : 'No cash booking currently creates an unpaid HANDS fee debt blocker.',
+      operatorAction: 'Collect partner fee deposit or settle from available earnings before new acceptance.',
+      href: '/bookings?view=cash-debt',
+      bookings: cashDebt,
+    },
+  ];
 }
 
 function metric(label: string, value: number) {
