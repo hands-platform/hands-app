@@ -48,6 +48,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
     watchlist: providerWatchlist,
   });
   const operatingBlocks = buildPartnerOperatingBlocks(providerWatchlist);
+  const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist);
 
   return (
     <>
@@ -139,6 +140,52 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             No risk action currently needs operator review.
           </p>
         )}
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking acceptance unblock board</h2>
+            <p className="muted">
+              Shows which partners cannot accept or join bookings now, which issues only affect payout,
+              and exactly where staff should clear the blocker.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              acceptanceUnblockBoard.some((item) => item.blockingCount > 0) ? 'pill-danger' : 'pill-success'
+            }`}
+          >
+            {acceptanceUnblockBoard.reduce((sum, item) => sum + item.blockingCount, 0)} blocking partner(s)
+          </span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {acceptanceUnblockBoard.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.id}>
+              <small>{item.status}</small>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <div className="ops-task-breakdown">
+                {item.metrics.map((metric) => (
+                  <span className={`ops-task-breakdown-item ${metric.tone}`} key={metric.label}>
+                    <span>{metric.label}</span>
+                    <strong>{metric.value}</strong>
+                  </span>
+                ))}
+              </div>
+              {item.partnerSamples.length ? (
+                <div className="participant-list" style={{ marginTop: 10 }}>
+                  {item.partnerSamples.map((partner) => (
+                    <span className="pill pill-info" key={`${item.id}-${partner}`}>
+                      {partner}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <span className="ops-task-card-action">{item.action}</span>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -637,6 +684,19 @@ type PartnerOperatingBlock = {
   priority: number;
 };
 
+type BookingAcceptanceUnblockCard = {
+  id: string;
+  title: string;
+  status: string;
+  detail: string;
+  action: string;
+  href: string;
+  className: string;
+  blockingCount: number;
+  partnerSamples: string[];
+  metrics: RiskCommandMetric[];
+};
+
 function buildRiskCommandCenter(input: RiskCommandCenterInput) {
   const openReports = input.reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status));
   const urgentReports = openReports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity));
@@ -868,6 +928,151 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
   }
 
   return blocks.sort((left, right) => right.priority - left.priority).slice(0, 18);
+}
+
+function buildBookingAcceptanceUnblockBoard(
+  watchlist: ProviderRiskWatchItem[],
+): BookingAcceptanceUnblockCard[] {
+  const cashDebtItems = watchlist.filter((item) => item.walletBalance < 0);
+  const accountBlockedItems = watchlist.filter(
+    (item) => item.provider.blockedAt || item.signals.some((signal) => signal.kind === 'BLOCK'),
+  );
+  const locationItems = watchlist.filter((item) =>
+    item.signals.some((signal) => signal.kind === 'LOCATION'),
+  );
+  const verificationItems = watchlist.filter((item) =>
+    item.signals.some((signal) => ['KYC', 'BANK'].includes(signal.kind)),
+  );
+  const deviceItems = watchlist.filter((item) => partnerHasDeviceContactGap(item.provider));
+  const taxItems = watchlist.filter((item) =>
+    item.signals.some((signal) => signal.kind === 'TAX'),
+  );
+
+  return [
+    {
+      id: 'wallet-debt',
+      title: 'Cash fee debt blocks acceptance',
+      status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
+      detail: cashDebtItems.length
+        ? 'Partners with negative wallet balance cannot accept or join new bookings until HANDS fee debt is settled.'
+        : 'No partner is currently blocked by cash-service fee debt.',
+      action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
+      href: cashDebtItems.length ? '/cash-settlements' : '/operations-policy',
+      className: cashDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
+      blockingCount: cashDebtItems.length,
+      partnerSamples: partnerSamples(cashDebtItems),
+      metrics: [
+        metric('Blocked', cashDebtItems.length, cashDebtItems.length ? 'danger' : 'ok'),
+        metric(
+          'Debt',
+          formatMoney(cashDebtItems.reduce((sum, item) => sum + Math.abs(item.walletBalance), 0)),
+          cashDebtItems.length ? 'danger' : 'ok',
+        ),
+        metric('Rule', 'Negative wallet', cashDebtItems.length ? 'warn' : 'ok'),
+      ],
+    },
+    {
+      id: 'account-controls',
+      title: 'Account controls stop work',
+      status: accountBlockedItems.length ? 'BLOCKING' : 'CLEAR',
+      detail: accountBlockedItems.length
+        ? 'Blocked accounts or active account controls must be reviewed before the partner receives work.'
+        : 'No account block is currently preventing partner booking acceptance.',
+      action: accountBlockedItems.length ? 'Review account blocks' : 'Open risk board',
+      href: accountBlockedItems.length ? '/partner-risk?sanction=ACTIVE' : '/partner-risk',
+      className: accountBlockedItems.length ? 'ops-task-blocked' : 'ops-task-done',
+      blockingCount: accountBlockedItems.length,
+      partnerSamples: partnerSamples(accountBlockedItems),
+      metrics: [
+        metric('Blocked', accountBlockedItems.length, accountBlockedItems.length ? 'danger' : 'ok'),
+        metric('Profile', accountBlockedItems.filter((item) => item.provider.blockedAt).length, 'info'),
+        metric('Audit', 'Required', accountBlockedItems.length ? 'warn' : 'ok'),
+      ],
+    },
+    {
+      id: 'location-dispatch',
+      title: 'Location freshness controls dispatch',
+      status: locationItems.length ? 'DISPATCH HOLD' : 'READY',
+      detail: locationItems.length
+        ? 'Distance ranking, 10km backup invitations, and customer expectations depend on fresh partner location.'
+        : 'Online partner locations are fresh enough for dispatch decisions.',
+      action: locationItems.length ? 'Open partner profiles' : 'Review location policy',
+      href: locationItems.length ? '/partners' : '/operations-policy',
+      className: locationItems.length ? 'ops-task-pending' : 'ops-task-done',
+      blockingCount: 0,
+      partnerSamples: partnerSamples(locationItems),
+      metrics: [
+        metric('Stale/missing', locationItems.length, locationItems.length ? 'warn' : 'ok'),
+        metric('Acceptance', 'Policy gate', locationItems.length ? 'warn' : 'ok'),
+        metric('Radius', '10km backup', 'info'),
+      ],
+    },
+    {
+      id: 'verification-readiness',
+      title: 'KYC and bank readiness',
+      status: verificationItems.length ? 'LEVEL GATE' : 'READY',
+      detail: verificationItems.length
+        ? 'Identity and bank gaps should keep the partner below full activity or payout level until cleared.'
+        : 'KYC and bank approval gaps are not blocking listed partners.',
+      action: verificationItems.length ? 'Open verification queue' : 'Review partner levels',
+      href: verificationItems.length ? '/partners' : '/partners',
+      className: verificationItems.length ? 'ops-task-pending' : 'ops-task-done',
+      blockingCount: 0,
+      partnerSamples: partnerSamples(verificationItems),
+      metrics: [
+        metric('KYC/bank', verificationItems.length, verificationItems.length ? 'warn' : 'ok'),
+        metric('Work level', 'Level 2 gate', verificationItems.length ? 'warn' : 'ok'),
+        metric('Payout', 'Requires bank', verificationItems.length ? 'warn' : 'ok'),
+      ],
+    },
+    {
+      id: 'device-contact',
+      title: 'Push/contact readiness',
+      status: deviceItems.length ? 'CONTACT RISK' : 'READY',
+      detail: deviceItems.length
+        ? 'Partners without an enabled device can miss backup invitations and direct booking alerts.'
+        : 'Partner device readiness does not show a broad notification risk.',
+      action: deviceItems.length ? 'Open app sessions' : 'Review sessions',
+      href: '/app-sessions',
+      className: deviceItems.length ? 'ops-task-pending' : 'ops-task-done',
+      blockingCount: 0,
+      partnerSamples: partnerSamples(deviceItems),
+      metrics: [
+        metric('Contact gaps', deviceItems.length, deviceItems.length ? 'warn' : 'ok'),
+        metric('Push', 'Invite risk', deviceItems.length ? 'warn' : 'ok'),
+        metric('Fallback', 'Manual call', 'info'),
+      ],
+    },
+    {
+      id: 'tax-after-first-earning',
+      title: 'Tax is a payout gate after first earning',
+      status: taxItems.length ? 'PAYOUT GATE' : 'READY',
+      detail:
+        'Tax data should not block lightweight signup or first booking flow, but payout and withdrawal stay gated after first earning.',
+      action: taxItems.length ? 'Open tax policy' : 'Review tax rules',
+      href: '/tax-policy',
+      className: taxItems.length ? 'ops-task-pending' : 'ops-task-done',
+      blockingCount: 0,
+      partnerSamples: partnerSamples(taxItems),
+      metrics: [
+        metric('Tax pending', taxItems.length, taxItems.length ? 'info' : 'ok'),
+        metric('Acceptance', 'Not blocked', 'ok'),
+        metric('Payout', 'Blocked later', taxItems.length ? 'warn' : 'ok'),
+      ],
+    },
+  ];
+}
+
+function partnerSamples(items: ProviderRiskWatchItem[], limit = 3) {
+  return items.slice(0, limit).map((item) => adminProviderName(item.provider));
+}
+
+function partnerHasDeviceContactGap(provider: AdminProvider) {
+  const devices = provider.devices ?? [];
+  if (!devices.length) {
+    return true;
+  }
+  return !devices.some((device) => device.enabled && !device.blockedAt);
 }
 
 function metric(

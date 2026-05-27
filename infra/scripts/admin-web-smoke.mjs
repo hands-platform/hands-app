@@ -30,8 +30,8 @@ const pages = [
   { path: '/reviews', markers: ['Reviews And Reports', 'Review command board'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue'] },
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
-  { path: '/partner-risk', markers: ['Partner Risk', 'Risk operation filters'] },
-  { path: '/provider-risk', markers: ['Partner Risk', 'Risk operation filters'] },
+  { path: '/partner-risk', markers: ['Partner Risk', 'Booking acceptance unblock board', 'Risk operation filters'] },
+  { path: '/provider-risk', markers: ['Partner Risk', 'Booking acceptance unblock board', 'Risk operation filters'] },
   { path: '/app-sessions', markers: ['App Sessions', 'Latest app sessions'] },
   { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
   {
