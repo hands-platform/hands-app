@@ -858,6 +858,14 @@ function buildRiskSummary(
     ['Blocked accounts', providers.filter((provider) => provider.blockedAt).length.toString()],
     ['Wallet debt', watchlist.filter((item) => item.walletBalance < 0).length.toString()],
     [
+      'Location gaps',
+      providers.filter((provider) => Boolean(providerLocationSignal(provider))).length.toString(),
+    ],
+    [
+      'Shared devices',
+      watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'DEVICE')).length.toString(),
+    ],
+    [
       'Onboarding gaps',
       watchlist
         .filter((item) => item.signals.some((signal) => ['KYC', 'BANK', 'TAX'].includes(signal.kind)))
@@ -903,6 +911,10 @@ function buildProviderRiskWatchItem(
   if (hasPayoutHold) signals.push({ kind: 'PAYOUT', label: 'Payout hold' });
   if (openReportCount > 0) signals.push({ kind: 'REPORT', label: `${openReportCount} open report(s)` });
   if (sharedDeviceCount > 0) signals.push({ kind: 'DEVICE', label: `${sharedDeviceCount} shared device(s)` });
+  const locationSignal = providerLocationSignal(provider);
+  if (locationSignal) {
+    signals.push({ kind: 'LOCATION', label: locationSignal });
+  }
   if (!provider.kyc || provider.kyc.status !== 'APPROVED')
     signals.push({ kind: 'KYC', label: 'KYC not approved' });
   if (!(provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED')) {
@@ -919,7 +931,7 @@ function buildProviderRiskWatchItem(
       ? 'CRITICAL'
       : openReportCount > 0 || sharedDeviceCount > 0
         ? 'HIGH'
-        : ['KYC', 'BANK'].some((kind) => signals.some((signal) => signal.kind === kind))
+        : ['KYC', 'BANK', 'LOCATION'].some((kind) => signals.some((signal) => signal.kind === kind))
           ? 'MEDIUM'
           : 'LOW';
 
@@ -953,6 +965,9 @@ function providerRiskDetail(input: {
   if (input.signals.some((signal) => signal.kind === 'TAX')) {
     return 'Tax information can stay pending until first earning, but payout must remain gated.';
   }
+  if (input.signals.some((signal) => signal.kind === 'LOCATION')) {
+    return 'Online partner location is missing or stale, so dispatch distance and customer expectation can be wrong.';
+  }
   return 'Partner has onboarding or compliance gaps that need staff follow-up.';
 }
 
@@ -971,7 +986,33 @@ function providerRiskNextStep(input: {
   if (input.openReportCount > 0) {
     return 'Update report status with resolution note or apply a sanction if needed.';
   }
+  if (providerLocationSignal(input.provider)) {
+    return 'Ask the partner to reopen the app and refresh their current location before accepting bookings.';
+  }
   return 'Complete missing verification data before enabling higher trust or payout features.';
+}
+
+function providerLocationSignal(provider: AdminProvider) {
+  if (!provider.status.startsWith('ONLINE')) {
+    return null;
+  }
+  if (
+    provider.currentLat === null ||
+    provider.currentLat === undefined ||
+    provider.currentLng === null ||
+    provider.currentLng === undefined
+  ) {
+    return 'Online location missing';
+  }
+  if (!provider.currentLocationUpdatedAt) {
+    return 'Location timestamp missing';
+  }
+
+  const updatedAt = Date.parse(provider.currentLocationUpdatedAt);
+  if (!Number.isFinite(updatedAt)) {
+    return 'Location timestamp invalid';
+  }
+  return Date.now() - updatedAt > 30 * 60_000 ? 'Location stale' : null;
 }
 
 function buildDeviceUsage(providers: AdminProvider[]) {
@@ -1016,7 +1057,7 @@ function watchSeverityPill(severity: ProviderRiskWatchItem['severity']) {
 
 function watchSignalPill(kind: string) {
   if (['BLOCK', 'WALLET', 'PAYOUT'].includes(kind)) return 'pill-danger';
-  if (['REPORT', 'DEVICE', 'KYC', 'BANK'].includes(kind)) return 'pill-warn';
+  if (['REPORT', 'DEVICE', 'LOCATION', 'KYC', 'BANK'].includes(kind)) return 'pill-warn';
   return 'pill-neutral';
 }
 
