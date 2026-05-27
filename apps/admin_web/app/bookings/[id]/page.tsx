@@ -4,6 +4,7 @@ import {
   AdminBookingDetail,
   AdminChatMessage,
   AdminLocationSnapshot,
+  AdminNotification,
   AdminOperationalPolicySetting,
   adminGet,
 } from '../../../lib/admin-api';
@@ -29,9 +30,10 @@ const EXPIRED_LOCATION_HOURS = 24;
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [booking, operationalPolicies] = await Promise.all([
+  const [booking, operationalPolicies, rawNotifications] = await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
+    adminGet<AdminNotification[]>('/admin/notifications', []),
   ]);
 
   if (!booking) {
@@ -54,6 +56,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
   const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
+  const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
 
   return (
     <>
@@ -209,6 +212,50 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking alert trace</h2>
+            <p className="muted">
+              Reservation-specific notification history for first-pick, backup partner visibility, retries,
+              and disabled device checks.
+            </p>
+          </div>
+          <Link className="text-link" href={`/notifications?booking=${booking.id}`}>
+            Open notification board
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {notificationTrace.metrics.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        {notificationTrace.rows.length > 0 ? (
+          <div className="risk-list">
+            {notificationTrace.rows.map((row) => (
+              <div className="risk-item" key={row.id}>
+                <span className={`signal ${row.signalClass}`}>{row.signal}</span>
+                <div>
+                  <h3>{row.title}</h3>
+                  <p>{row.detail}</p>
+                  <small>{row.meta}</small>
+                  {row.delivery ? <small>{row.delivery}</small> : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No notification rows are tied to this booking yet. If a partner says they missed the request,
+            check whether the booking created `booking.requested` or `booking.backup_available` alerts.
+          </p>
+        )}
       </section>
 
       <section className="card risk-watch" style={{ marginBottom: 16 }}>
@@ -2041,6 +2088,139 @@ function readBookingMatchingPolicySnapshot(booking: AdminBookingDetail) {
     backupOpenMode: readOptionalString(policy?.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy?.travelBufferMinutes),
   };
+}
+
+function bookingNotificationTrace(booking: AdminBookingDetail, notifications: AdminNotification[]) {
+  const rows = notifications
+    .filter((notification) => notificationDataBookingId(notification) === booking.id)
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .map((notification) => bookingNotificationTraceRow(notification));
+  const deliveries = rows.flatMap((row) => row.deliveryStatuses);
+  const partnerAlerts = rows.filter((row) => row.isPartnerAlert).length;
+  const failed = deliveries.filter((status) => status === 'FAILED').length;
+  const skippedOrPending =
+    deliveries.filter((status) => status === 'SKIPPED').length +
+    rows.filter((row) => row.deliveryStatuses.length === 0).length;
+  const disabledDevices = rows.reduce((total, row) => total + row.disabledDeviceCount, 0);
+
+  return {
+    rows,
+    metrics: [
+      {
+        label: 'Related alerts',
+        value: `${rows.length}`,
+        helper: 'Notification rows carrying this booking id.',
+      },
+      {
+        label: 'Partner alerts',
+        value: `${partnerAlerts}`,
+        helper: 'First-pick, backup, and matched partner notices.',
+      },
+      {
+        label: 'Failed sends',
+        value: `${failed}`,
+        helper: failed ? 'Open the notification board before retry.' : 'No captured send failures.',
+      },
+      {
+        label: 'Skipped / pending',
+        value: `${skippedOrPending}`,
+        helper: 'In-app-only routing, no device path, or no attempt yet.',
+      },
+      {
+        label: 'Disabled devices',
+        value: `${disabledDevices}`,
+        helper: disabledDevices ? 'Fresh device token is needed before re-enable.' : 'No disabled devices.',
+      },
+    ],
+  };
+}
+
+function bookingNotificationTraceRow(notification: AdminNotification) {
+  const data = readPlainRecord(notification.data);
+  const deliveries = notification.deliveries ?? [];
+  const failed = deliveries.some((delivery) => delivery.status === 'FAILED');
+  const disabled = deliveries.some((delivery) => delivery.pushDevice?.enabled === false);
+  const skipped = deliveries.some((delivery) => delivery.status === 'SKIPPED');
+  const sent = deliveries.some((delivery) => delivery.status === 'SENT');
+  const partner = notification.user?.providerProfile;
+  const target =
+    partner?.displayName ??
+    notification.user?.fullName ??
+    notification.user?.phone ??
+    (partner?.id ? `Partner ${shortId(partner.id)}` : 'Unknown target');
+  const providerProfileId = readOptionalString(data?.providerProfileId);
+  const radius = readOptionalNumber(data?.backupProviderRadiusMeters);
+  const distance = readOptionalNumber(data?.distanceMeters);
+  const deliveryStatuses = deliveries.map((delivery) => delivery.status);
+
+  return {
+    id: notification.id,
+    isPartnerAlert: isPartnerNotificationType(notification.type),
+    deliveryStatuses,
+    disabledDeviceCount: deliveries.filter((delivery) => delivery.pushDevice?.enabled === false).length,
+    signal: failed
+      ? 'Retry needed'
+      : disabled
+        ? 'Device disabled'
+        : skipped
+          ? 'Skipped'
+          : sent
+            ? 'Delivered'
+            : 'Pending',
+    signalClass: failed || disabled ? 'signal-warn' : sent ? 'signal-ok' : 'signal-info',
+    title: `${notification.title} / ${target}`,
+    detail: notification.body,
+    meta: [
+      humanizeNotificationType(notification.type),
+      `created ${formatDate(notification.createdAt)}`,
+      providerProfileId ? `partner ${shortId(providerProfileId)}` : null,
+      distance !== null ? `distance ${formatDistanceMeters(distance)}` : null,
+      radius !== null ? `backup radius ${formatDistanceMeters(radius)}` : null,
+      data?.backupOpenMode ? `backup mode ${String(data.backupOpenMode)}` : null,
+    ]
+      .filter(Boolean)
+      .join(' / '),
+    delivery:
+      deliveries.length > 0
+        ? deliveries
+            .map(
+              (delivery) =>
+                `${delivery.provider} ${delivery.status} (${delivery.pushDevice?.platform ?? 'device'}, ${formatDate(
+                  delivery.attemptedAt,
+                )})`,
+            )
+            .join(' / ')
+        : 'No delivery attempt captured.',
+  };
+}
+
+function notificationDataBookingId(notification: AdminNotification) {
+  const data = readPlainRecord(notification.data);
+  return readOptionalString(data?.bookingId);
+}
+
+function isPartnerNotificationType(type: string) {
+  return [
+    'booking.requested',
+    'booking.backup_available',
+    'booking.matched',
+    'provider.payout_setup_required',
+  ].includes(type);
+}
+
+function humanizeNotificationType(type: string) {
+  return type
+    .toLowerCase()
+    .split(/[_\-.]/g)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function formatDistanceMeters(value: number) {
+  if (value >= 1000) {
+    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+  }
+  return `${Math.round(value).toLocaleString()} m`;
 }
 
 function readPlainRecord(value: unknown): Record<string, unknown> | null {

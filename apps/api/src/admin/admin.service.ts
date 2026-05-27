@@ -1941,7 +1941,16 @@ export class AdminService {
       orderBy: { createdAt: 'desc' },
       take: 100,
       include: {
-        user: { select: { id: true, phone: true, fullName: true } },
+        user: {
+          select: {
+            id: true,
+            phone: true,
+            fullName: true,
+            roles: true,
+            customerProfile: { select: { id: true } },
+            providerProfile: { select: { id: true, displayName: true, status: true } },
+          },
+        },
         deliveries: { include: { pushDevice: true }, orderBy: { attemptedAt: 'desc' } },
       },
     });

@@ -20,6 +20,7 @@ export default async function NotificationsPage({
   const channelSummary = buildChannelSummary(allNotifications, operationalPolicies);
   const opsQueue = buildDeliveryOpsQueue(allNotifications);
   const activeFilter = notificationFilterLinks.find((item) => item.review === filters.review);
+  const activeBookingId = filters.booking;
 
   return (
     <>
@@ -159,16 +160,25 @@ export default async function NotificationsPage({
                   {notificationFilterDescription(activeFilter.review)}
                 </p>
               ) : null}
+              {activeBookingId ? (
+                <p className="muted">
+                  Active booking trace: <strong>{shortId(activeBookingId)}</strong>. Showing only
+                  notifications tied to this booking id.
+                </p>
+              ) : null}
             </div>
-            <span className={`pill ${filters.review ? 'pill-warn' : 'pill-success'}`}>
+            <span className={`pill ${filters.review || activeBookingId ? 'pill-warn' : 'pill-success'}`}>
               Showing {notifications.length} of {allNotifications.length}
             </span>
           </div>
           <div className="participant-list">
-            {filters.review ? (
+            {filters.review || activeBookingId ? (
               <Link className="pill pill-success" href="/notifications">
                 Clear filter
               </Link>
+            ) : null}
+            {activeBookingId ? (
+              <span className="pill pill-info">Booking {shortId(activeBookingId)}</span>
             ) : null}
             {notificationFilterLinks.map((link) => (
               <Link
@@ -204,6 +214,12 @@ export default async function NotificationsPage({
                 <td>
                   <div>{notification.user?.fullName ?? notification.user?.phone ?? '-'}</div>
                   <div className="muted">{notification.user?.phone ?? 'No phone on file'}</div>
+                  {notification.user?.providerProfile ? (
+                    <div className="muted">
+                      Partner {notification.user.providerProfile.displayName ?? shortId(notification.user.providerProfile.id)} /{' '}
+                      {notification.user.providerProfile.status ?? 'status unknown'}
+                    </div>
+                  ) : null}
                 </td>
                 <td>
                   <div>{humanizeType(notification.type)}</div>
@@ -271,7 +287,7 @@ export default async function NotificationsPage({
             ))}
             {notifications.length === 0 && (
               <tr>
-                <td colSpan={7}>{emptyNotificationMessage(filters.review)}</td>
+                <td colSpan={7}>{emptyNotificationMessage(filters.review, filters.booking)}</td>
               </tr>
             )}
           </tbody>
@@ -349,6 +365,7 @@ const notificationFilterLinks = [
 function buildNotificationFilters(params: Record<string, string | string[] | undefined>) {
   return {
     review: readParam(params.review),
+    booking: readParam(params.booking),
   };
 }
 
@@ -359,8 +376,13 @@ function readParam(value: string | string[] | undefined) {
   return value ?? '';
 }
 
-function filterNotifications(notifications: AdminNotification[], filters: { review: string }) {
-  return notifications.filter((notification) => notificationMatchesReview(notification, filters.review));
+function filterNotifications(notifications: AdminNotification[], filters: { review: string; booking: string }) {
+  return notifications.filter((notification) => {
+    if (filters.booking && notificationBookingId(notification) !== filters.booking) {
+      return false;
+    }
+    return notificationMatchesReview(notification, filters.review);
+  });
 }
 
 function notificationMatchesReview(notification: AdminNotification, review: string) {
@@ -435,7 +457,10 @@ function notificationFilterDescription(review: string) {
   return 'all notification records.';
 }
 
-function emptyNotificationMessage(review: string) {
+function emptyNotificationMessage(review: string, booking?: string) {
+  if (booking) {
+    return `No notifications currently match booking ${shortId(booking)}. Confirm the booking created an alert row before retrying delivery.`;
+  }
   if (!review) {
     return 'No notifications loaded.';
   }
@@ -526,10 +551,32 @@ function typeMeaning(type: string) {
 }
 
 function notificationDataHint(notification: AdminNotification) {
+  const data = asRecord(notification.data);
+  if (isPartnerAlert(notification.type) || data?.bookingId) {
+    const parts = [];
+    if (data?.bookingId) {
+      parts.push(`booking ${shortId(String(data.bookingId))}`);
+    }
+    if (data?.providerProfileId) {
+      parts.push(`partner ${shortId(String(data.providerProfileId))}`);
+    }
+    if (data?.distanceMeters !== undefined && data?.distanceMeters !== null) {
+      parts.push(`distance ${formatMeters(data.distanceMeters)}`);
+    }
+    if (data?.backupProviderRadiusMeters !== undefined && data?.backupProviderRadiusMeters !== null) {
+      parts.push(`backup radius ${formatMeters(data.backupProviderRadiusMeters)}`);
+    }
+    if (data?.backupOpenMode) {
+      parts.push(`backup mode ${String(data.backupOpenMode)}`);
+    }
+    if (parts.length > 0) {
+      return parts.join(' / ');
+    }
+  }
+
   if (notification.type !== 'provider.payout_setup_required') {
     return null;
   }
-  const data = asRecord(notification.data);
   const missing = asRecord(data?.missing);
   if (!missing) {
     return 'Missing payout setup details were not included.';
@@ -545,6 +592,22 @@ function notificationDataHint(notification: AdminNotification) {
     parts.push(`agreements: ${missing.agreements.map(String).join(', ')}`);
   }
   return parts.length ? `Missing: ${parts.join(' / ')}` : 'Payout setup appears complete.';
+}
+
+function notificationBookingId(notification: AdminNotification) {
+  const data = asRecord(notification.data);
+  return readString(data?.bookingId) ?? '';
+}
+
+function formatMeters(value: unknown) {
+  const amount = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(amount)) {
+    return String(value);
+  }
+  if (amount >= 1000) {
+    return `${(amount / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+  }
+  return `${Math.round(amount).toLocaleString()} m`;
 }
 
 function needsRetry(notification: AdminNotification) {
@@ -706,4 +769,8 @@ function asRecord(value: unknown) {
 
 function readString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value : undefined;
+}
+
+function shortId(id: string) {
+  return id.slice(0, 8);
 }

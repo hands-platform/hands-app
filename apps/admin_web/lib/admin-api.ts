@@ -802,7 +802,14 @@ export type AdminNotification = {
   body: string;
   createdAt: string;
   data?: unknown;
-  user?: { phone?: string; fullName?: string | null };
+  user?: {
+    id?: string;
+    phone?: string;
+    fullName?: string | null;
+    roles?: string[];
+    customerProfile?: { id: string } | null;
+    providerProfile?: { id: string; displayName?: string | null; status?: string | null } | null;
+  };
   deliveries?: Array<{
     id?: string;
     provider: string;
