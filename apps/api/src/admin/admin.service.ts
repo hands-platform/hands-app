@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  BookingStatus,
   BookingOpsTaskStatus,
   BookingOpsTaskType,
   EarningStatus,
@@ -873,6 +874,69 @@ export class AdminService {
       status: booking.status,
       note: content,
       preset,
+    });
+
+    return updated;
+  }
+
+  async markBookingNoShow(actorId: string, bookingId: string, input: { reason?: string }) {
+    const reason = normalizeNullable(input.reason);
+    const booking = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: { payment: true },
+    });
+
+    const noShowEligibleStatuses: BookingStatus[] = [
+      BookingStatus.OPEN_MATCHING,
+      BookingStatus.MATCHED,
+      BookingStatus.PROVIDER_ON_THE_WAY,
+      BookingStatus.ARRIVED,
+    ];
+    if (!noShowEligibleStatuses.includes(booking.status)) {
+      throw new BadRequestException(`Booking status ${booking.status} cannot be marked as no-show`);
+    }
+
+    const entry = `[${new Date().toISOString()}] No-show marked by operations${reason ? `: ${reason}` : '.'}`;
+    const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+
+    const updated = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        status: BookingStatus.NO_SHOW,
+        notes,
+        opsTasks: {
+          upsert: {
+            where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
+            update: {
+              status: BookingOpsTaskStatus.BLOCKED,
+              note: reason ?? 'No-show requires payment and customer communication review.',
+              actorId,
+            },
+            create: {
+              type: BookingOpsTaskType.PAYMENT_REVIEWED,
+              status: BookingOpsTaskStatus.BLOCKED,
+              note: reason ?? 'No-show requires payment and customer communication review.',
+              actorId,
+            },
+          },
+        },
+      },
+      include: {
+        payment: true,
+        customerProfile: { include: { user: true } },
+        selectedProvider: { include: { user: true } },
+        preferredProvider: { include: { user: true } },
+        services: { include: { service: true } },
+        participants: { include: { providerProfile: { include: { user: true } } } },
+        opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
+      },
+    });
+
+    await this.writeAudit(actorId, 'booking.no_show.mark', `booking:${bookingId}`, {
+      bookingId,
+      previousStatus: booking.status,
+      paymentStatus: booking.payment?.status,
+      reason,
     });
 
     return updated;

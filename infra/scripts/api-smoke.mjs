@@ -1128,6 +1128,25 @@ if (cancelledPaymentAfterSync?.status !== 'RELEASED') {
   );
 }
 
+const noShowBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  scheduledStartAt: new Date(Date.now() + 130 * 60_000).toISOString(),
+  address: { line1: 'No-show operations smoke flow' },
+  lat: 10.7769,
+  lng: 106.7009,
+  paymentMethod: 'MOMO',
+});
+const markedNoShowBooking = await postJson(
+  `/admin/bookings/${noShowBooking.id}/no-show`,
+  adminAuth.accessToken,
+  {
+    reason: 'Smoke test no-show',
+  },
+);
+if (markedNoShowBooking.status !== 'NO_SHOW') {
+  throw new Error(`Admin no-show action did not update status: ${JSON.stringify(markedNoShowBooking)}`);
+}
+
 await postJson(`/provider/bookings/${booking.id}/join`, providerAuth.accessToken);
 await postJson(`/provider/bookings/${hybridBooking.id}/join`, backupProviderAuth.accessToken);
 
@@ -1629,6 +1648,12 @@ const adminCancelledBooking = adminBookings.find((item) => item.id === cancellab
 if (adminCancelledBooking?.status !== 'CANCELLED' || adminCancelledBooking?.payment?.status !== 'RELEASED') {
   throw new Error(
     `Admin booking monitor did not expose cancellation release state: ${JSON.stringify(adminCancelledBooking)}`,
+  );
+}
+const adminNoShowBooking = adminBookings.find((item) => item.id === noShowBooking.id);
+if (adminNoShowBooking?.status !== 'NO_SHOW') {
+  throw new Error(
+    `Admin booking monitor did not expose no-show state: ${JSON.stringify(adminNoShowBooking)}`,
   );
 }
 const adminUsers = await getJson('/admin/users', adminAuth.accessToken);

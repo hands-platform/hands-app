@@ -9,6 +9,7 @@ import {
 import {
   addBookingOpsNote,
   captureBookingPayment,
+  markBookingNoShow,
   refundBookingPayment,
   releaseBookingPayment,
   settleBookingCashDebt,
@@ -318,6 +319,31 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </button>
           </div>
         </form>
+      </section>
+
+      <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+        <div>
+          <h2>No-show handling</h2>
+          <p className="muted">
+            Use only when the customer or partner did not proceed and operations must close the live booking
+            path. Payment, refund, and customer communication still need review after marking no-show.
+          </p>
+        </div>
+        {canMarkNoShow(booking.status) ? (
+          <form action={markBookingNoShow} className="ops-note-form">
+            <input type="hidden" name="bookingId" value={booking.id} />
+            <textarea
+              aria-label="No-show reason"
+              name="reason"
+              placeholder="Example: Customer did not answer calls after partner arrival."
+            />
+            <button type="submit">Mark no-show</button>
+          </form>
+        ) : (
+          <span className={`pill ${booking.status === 'NO_SHOW' ? 'pill-danger' : 'pill-neutral'}`}>
+            {booking.status === 'NO_SHOW' ? 'Already no-show' : 'No-show not available for this status'}
+          </span>
+        )}
       </section>
 
       <section className="card ops-command-center" style={{ marginBottom: 16 }}>
@@ -667,6 +693,9 @@ function RiskItem({ flag }: { flag: RiskFlag }) {
 }
 
 function primaryOpsInstruction(booking: AdminBookingDetail) {
+  if (booking.status === 'NO_SHOW') {
+    return 'Booking is marked no-show. Review customer communication, payment release/refund, and any partner fee impact before closing.';
+  }
   if (booking.status === 'CANCELLED') {
     return booking.payment?.status === 'RELEASED'
       ? 'Booking is cancelled and the payment hold is already released. Confirm customer messaging only.'
@@ -696,6 +725,9 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
 function opsBadges(booking: AdminBookingDetail) {
   const badges = [];
   const flags = bookingRiskFlags(booking);
+  if (booking.status === 'NO_SHOW') {
+    badges.push({ label: 'No-show', tone: 'pill-danger' });
+  }
   if (flags.some((flag) => flag.severity === 'high')) {
     badges.push({ label: 'High risk', tone: 'pill-danger' });
   } else if (flags.some((flag) => flag.severity === 'medium')) {
@@ -754,6 +786,15 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
       title: 'Cancelled payment unresolved',
       detail: `Booking is cancelled but payment is still ${paymentStatus}.`,
       action: 'Release the authorization or refund before closing the ticket.',
+    });
+  }
+
+  if (status === 'NO_SHOW' && booking.payment && !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')) {
+    flags.push({
+      severity: 'high',
+      title: 'No-show payment unresolved',
+      detail: `Booking is no-show but payment is still ${paymentStatus}.`,
+      action: 'Decide whether to release, refund, or keep the fee according to the active operating policy.',
     });
   }
 
@@ -1239,12 +1280,18 @@ function bookingStatusHint(status: string) {
   if (status === 'CANCELLED') {
     return 'Confirm payment release or refund.';
   }
+  if (status === 'NO_SHOW') {
+    return 'Review customer/partner communication and payment outcome.';
+  }
   return 'Monitor the next operational action.';
 }
 
 function paymentHint(booking: AdminBookingDetail) {
   if (!booking.payment) {
     return 'No payment record created.';
+  }
+  if (booking.status === 'NO_SHOW' && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)) {
+    return 'No-show requires payment decision before closing.';
   }
   if (bookingCashDebtNeedsSettlement(booking)) {
     return 'Cash fee debt is still unsettled; provider acceptance is blocked.';
@@ -1262,6 +1309,10 @@ function paymentHint(booking: AdminBookingDetail) {
     return 'Refund path is active.';
   }
   return `${booking.payment.method} payment is being monitored.`;
+}
+
+function canMarkNoShow(status: string) {
+  return ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED'].includes(status);
 }
 
 function bookingCashDebtNeedsSettlement(booking: AdminBookingDetail) {

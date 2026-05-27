@@ -191,6 +191,15 @@ export class AdminController {
     return this.admin.addBookingOpsNote(user.id, id, body);
   }
 
+  @Post('bookings/:id/no-show')
+  markBookingNoShow(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.admin.markBookingNoShow(user.id, id, body);
+  }
+
   @Post('bookings/:id/ops-task')
   updateBookingOpsTask(
     @CurrentUser() user: AuthenticatedUser,

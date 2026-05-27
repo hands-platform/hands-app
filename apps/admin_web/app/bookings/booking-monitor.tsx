@@ -10,7 +10,7 @@ type Props = {
   initialView: BookingView;
 };
 
-type BookingView = 'active' | 'high-risk' | 'payment' | 'pricing' | 'location' | 'chat' | 'all';
+type BookingView = 'active' | 'high-risk' | 'payment' | 'pricing' | 'location' | 'chat' | 'no-show' | 'all';
 
 type BookingCommandLane = {
   title: string;
@@ -82,6 +82,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     );
     const backupChosen = orderedBookings.filter((booking) => isBackupSelected(booking));
     const chatLive = orderedBookings.filter((booking) => Boolean(booking.chatRoom));
+    const noShow = orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
     const paymentRisk = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
     const pricingRisk = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
     const locationRisk = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
@@ -98,6 +99,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Fallback options', waitingSelection.length.toString()],
       ['Backup selected', backupChosen.length.toString()],
       ['Chat live', chatLive.length.toString()],
+      ['No-show', noShow.length.toString()],
       ['Payment risk', paymentRisk.length.toString()],
       ['Pricing risk', pricingRisk.length.toString()],
       ['Location risk', locationRisk.length.toString()],
@@ -130,6 +132,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     }
     if (view === 'chat') {
       return orderedBookings.filter((booking) => Boolean(booking.chatRoom));
+    }
+    if (view === 'no-show') {
+      return orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
     }
     if (view === 'all') {
       return orderedBookings;
@@ -520,6 +525,13 @@ const bookingViewOptions: Array<{
       'Use this to inspect service handoff quality, quiet chats, and route/location expectations.',
   },
   {
+    view: 'no-show',
+    label: 'No-show',
+    description: 'bookings closed as no-show but still needing payment, customer, or partner review.',
+    operatorHint:
+      'Use this after marking no-show to confirm payment outcome, partner debt, and customer communication.',
+  },
+  {
     view: 'all',
     label: 'All bookings',
     description: 'full booking history for investigation, finance follow-up, and audit review.',
@@ -539,6 +551,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
   );
   const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
   const paymentRisk = bookings.filter((booking) => bookingPaymentNeedsOps(booking));
+  const noShow = bookings.filter((booking) => booking.status === 'NO_SHOW');
   const pricingRisk = bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
   const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
   const locationRisk = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
@@ -596,15 +609,30 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
     },
     {
       title: 'Payment closeout',
-      status: paymentRisk.length > 0 || pricingRisk.length > 0 ? 'Review' : 'Ready',
-      tone: paymentRisk.length > 0 ? 'danger' : pricingRisk.length > 0 ? 'warn' : 'ok',
+      status: paymentRisk.length > 0 || noShow.length > 0 || pricingRisk.length > 0 ? 'Review' : 'Ready',
+      tone:
+        paymentRisk.length > 0
+          ? 'danger'
+          : noShow.length > 0
+            ? 'warn'
+            : pricingRisk.length > 0
+              ? 'warn'
+              : 'ok',
       detail:
         paymentRisk.length > 0
           ? 'Some bookings need capture, release, refund, cash debt, or missing reference review.'
-          : 'Payment and service pricing policy signals are aligned.',
-      href: paymentRisk.length > 0 ? '/bookings?view=payment' : '/bookings?view=pricing',
+          : noShow.length > 0
+            ? 'No-show bookings need a clear payment and customer communication outcome.'
+            : 'Payment and service pricing policy signals are aligned.',
+      href:
+        paymentRisk.length > 0
+          ? '/bookings?view=payment'
+          : noShow.length > 0
+            ? '/bookings?view=no-show'
+            : '/bookings?view=pricing',
       metrics: [
         metric('payment', paymentRisk.length),
+        metric('no-show', noShow.length),
         metric('pricing', pricingRisk.length),
         metric('cash debt', cashDebt.length),
         metric(
@@ -737,6 +765,9 @@ function riskFlagWeight(flag: BookingRiskFlag) {
 }
 
 function bookingPriority(booking: AdminBooking) {
+  if (booking.status === 'NO_SHOW') {
+    return 6;
+  }
   if (booking.status === 'IN_SERVICE') {
     return 5;
   }
@@ -771,6 +802,9 @@ function emptyBookingMessage(view: BookingView) {
   if (view === 'chat') {
     return 'No chat-live bookings match this queue. No active customer/provider conversation needs review.';
   }
+  if (view === 'no-show') {
+    return 'No no-show bookings need review. Customer protection and payment closeout are clear.';
+  }
   return 'No bookings loaded. Start the API and run the smoke flow to populate this table.';
 }
 
@@ -784,6 +818,13 @@ function StatusBadge({ status }: { status: string }) {
 
 function opsSignal(booking: AdminBooking) {
   const participantCount = fallbackParticipants(booking).length;
+  if (booking.status === 'NO_SHOW') {
+    return booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status) ? (
+      <span className="signal signal-warn">No-show, check payment</span>
+    ) : (
+      <span className="signal signal-ok">No-show closed</span>
+    );
+  }
   if (booking.status === 'CANCELLED') {
     return booking.payment?.status === 'RELEASED' ? (
       <span className="signal signal-ok">Cancelled and released</span>
@@ -840,6 +881,13 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
   if (booking.status === 'COMPLETED' && paymentStatus === 'AUTHORIZED') {
     flags.push({ severity: 'high', title: 'Completed service still on hold' });
   }
+  if (
+    booking.status === 'NO_SHOW' &&
+    booking.payment &&
+    !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')
+  ) {
+    flags.push({ severity: 'high', title: 'No-show payment unresolved' });
+  }
   if (bookingCashDebtNeedsOps(booking)) {
     flags.push({ severity: 'high', title: 'Cash fee debt blocks provider acceptance' });
   }
@@ -891,6 +939,9 @@ function bookingPaymentNeedsOps(booking: AdminBooking) {
     return ['CREATED', 'OPEN_MATCHING', 'MATCHED'].includes(booking.status);
   }
   if (booking.status === 'CANCELLED' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
+    return true;
+  }
+  if (booking.status === 'NO_SHOW' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
     return true;
   }
   if (booking.status === 'COMPLETED' && payment.status === 'AUTHORIZED') {
@@ -998,6 +1049,11 @@ function hasProviderLocation(booking: AdminBooking) {
 
 function nextAction(booking: AdminBooking) {
   const participantCount = fallbackParticipants(booking).length;
+  if (booking.status === 'NO_SHOW') {
+    return booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)
+      ? 'No-show is marked. Decide payment release, refund, or fee handling before closing.'
+      : 'No-show is marked and payment outcome is already closed. Confirm customer and partner notes.';
+  }
   if (booking.status === 'CANCELLED') {
     return booking.payment?.status === 'RELEASED'
       ? 'Customer cancelled before completion. Payment hold is released; confirm notifications were delivered.'
