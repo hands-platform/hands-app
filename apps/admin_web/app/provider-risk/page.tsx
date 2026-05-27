@@ -15,12 +15,18 @@ import {
 
 type RiskSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type PartnerRiskPolicy = {
+  responseWindowMinutes: number;
+  backupRadiusMeters: number;
   locationFreshnessMinutes: number;
 };
 
+const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
+const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
 const DEFAULT_PARTNER_RISK_POLICY: PartnerRiskPolicy = {
+  responseWindowMinutes: 10,
+  backupRadiusMeters: 10000,
   locationFreshnessMinutes: 30,
 };
 
@@ -48,7 +54,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
     watchlist: providerWatchlist,
   });
   const operatingBlocks = buildPartnerOperatingBlocks(providerWatchlist);
-  const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist);
+  const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist, riskPolicy);
 
   return (
     <>
@@ -79,7 +85,8 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             {commandCenter.urgentCount ? `${commandCenter.urgentCount} urgent` : 'No urgent lane'}
           </span>
           <Link className="text-link" href="/operations-policy">
-            Location freshness: {riskPolicy.locationFreshnessMinutes}m
+            {riskPolicy.responseWindowMinutes}m first-pick / {formatDistance(riskPolicy.backupRadiusMeters)} backup /
+            location {riskPolicy.locationFreshnessMinutes}m
           </Link>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 12 }}>
@@ -165,6 +172,12 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
               <small>{item.status}</small>
               <h3>{item.title}</h3>
               <p>{item.detail}</p>
+              <p className="muted">
+                <strong>Operator script:</strong> {item.operatorScript}
+              </p>
+              <p className="muted">
+                <strong>Customer impact:</strong> {item.customerImpact}
+              </p>
               <div className="ops-task-breakdown">
                 {item.metrics.map((metric) => (
                   <span className={`ops-task-breakdown-item ${metric.tone}`} key={metric.label}>
@@ -689,6 +702,8 @@ type BookingAcceptanceUnblockCard = {
   title: string;
   status: string;
   detail: string;
+  operatorScript: string;
+  customerImpact: string;
   action: string;
   href: string;
   className: string;
@@ -932,6 +947,7 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
 
 function buildBookingAcceptanceUnblockBoard(
   watchlist: ProviderRiskWatchItem[],
+  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
 ): BookingAcceptanceUnblockCard[] {
   const cashDebtItems = watchlist.filter((item) => item.walletBalance < 0);
   const accountBlockedItems = watchlist.filter(
@@ -956,6 +972,10 @@ function buildBookingAcceptanceUnblockBoard(
       detail: cashDebtItems.length
         ? 'Partners with negative wallet balance cannot accept or join new bookings until HANDS fee debt is settled.'
         : 'No partner is currently blocked by cash-service fee debt.',
+      operatorScript:
+        'Tell the partner their unpaid HANDS fee must be deposited or offset before booking acceptance unlocks.',
+      customerImpact:
+        'Customer requests are protected from partners who still owe settlement from previous cash bookings.',
       action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
       href: cashDebtItems.length ? '/cash-settlements' : '/operations-policy',
       className: cashDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -978,6 +998,10 @@ function buildBookingAcceptanceUnblockBoard(
       detail: accountBlockedItems.length
         ? 'Blocked accounts or active account controls must be reviewed before the partner receives work.'
         : 'No account block is currently preventing partner booking acceptance.',
+      operatorScript:
+        'Keep the block active until evidence, notes, and the unblock reason are clear in the audit trail.',
+      customerImpact:
+        'Customers will not see or match with partners under active account restrictions.',
       action: accountBlockedItems.length ? 'Review account blocks' : 'Open risk board',
       href: accountBlockedItems.length ? '/partner-risk?sanction=ACTIVE' : '/partner-risk',
       className: accountBlockedItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -994,8 +1018,14 @@ function buildBookingAcceptanceUnblockBoard(
       title: 'Location freshness controls dispatch',
       status: locationItems.length ? 'DISPATCH HOLD' : 'READY',
       detail: locationItems.length
-        ? 'Distance ranking, 10km backup invitations, and customer expectations depend on fresh partner location.'
+        ? `Distance ranking, ${formatDistance(
+            riskPolicy.backupRadiusMeters,
+          )} backup invitations, and customer expectations depend on fresh partner location.`
         : 'Online partner locations are fresh enough for dispatch decisions.',
+      operatorScript:
+        'Ask the partner to reopen the app and refresh GPS before taking dispatch-sensitive bookings.',
+      customerImpact:
+        'Distance sorting and backup invitations can be inaccurate when the last location is stale.',
       action: locationItems.length ? 'Open partner profiles' : 'Review location policy',
       href: locationItems.length ? '/partners' : '/operations-policy',
       className: locationItems.length ? 'ops-task-pending' : 'ops-task-done',
@@ -1004,7 +1034,7 @@ function buildBookingAcceptanceUnblockBoard(
       metrics: [
         metric('Stale/missing', locationItems.length, locationItems.length ? 'warn' : 'ok'),
         metric('Acceptance', 'Policy gate', locationItems.length ? 'warn' : 'ok'),
-        metric('Radius', '10km backup', 'info'),
+        metric('Radius', `${formatDistance(riskPolicy.backupRadiusMeters)} backup`, 'info'),
       ],
     },
     {
@@ -1014,6 +1044,10 @@ function buildBookingAcceptanceUnblockBoard(
       detail: verificationItems.length
         ? 'Identity or bank gaps block paid booking acceptance and backup participation until cleared.'
         : 'KYC and bank approval gaps are not blocking listed partners.',
+      operatorScript:
+        'Review CCCD/CMND, selfie, and bank evidence; reject with a specific reupload reason if anything is unclear.',
+      customerImpact:
+        'Paid work should only be accepted by partners who passed identity and payout readiness checks.',
       action: verificationItems.length ? 'Open acceptance-blocked partners' : 'Review partner levels',
       href: verificationItems.length ? '/partners?review=acceptance-blocked' : '/partners',
       className: verificationItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -1032,6 +1066,10 @@ function buildBookingAcceptanceUnblockBoard(
       detail: deviceItems.length
         ? 'Partners without an enabled device can miss backup invitations and direct booking alerts.'
         : 'Partner device readiness does not show a broad notification risk.',
+      operatorScript:
+        'Confirm the partner has a current app session and enabled device before relying on push alerts.',
+      customerImpact:
+        'Backup supply may look available but fail to respond if the partner cannot receive alerts.',
       action: deviceItems.length ? 'Open app sessions' : 'Review sessions',
       href: '/app-sessions',
       className: deviceItems.length ? 'ops-task-pending' : 'ops-task-done',
@@ -1049,6 +1087,10 @@ function buildBookingAcceptanceUnblockBoard(
       status: taxItems.length ? 'PAYOUT GATE' : 'READY',
       detail:
         'Tax data should not block lightweight signup or first booking flow, but payout and withdrawal stay gated after first earning.',
+      operatorScript:
+        'Do not force tax data during initial signup; request it after first earning and before payout or withdrawal.',
+      customerImpact:
+        'Customers can book newer partners without extra signup friction, while finance remains protected before payout.',
       action: taxItems.length ? 'Open tax policy' : 'Review tax rules',
       href: '/tax-policy',
       className: taxItems.length ? 'ops-task-pending' : 'ops-task-done',
@@ -1448,10 +1490,23 @@ function providerLocationSignal(provider: AdminProvider, riskPolicy = DEFAULT_PA
 
 function buildPartnerRiskPolicy(settings: AdminOperationalPolicySetting[]): PartnerRiskPolicy {
   return {
+    responseWindowMinutes:
+      readPolicyNumber(settings, MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY) ??
+      DEFAULT_PARTNER_RISK_POLICY.responseWindowMinutes,
+    backupRadiusMeters:
+      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY) ??
+      DEFAULT_PARTNER_RISK_POLICY.backupRadiusMeters,
     locationFreshnessMinutes:
       readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
       DEFAULT_PARTNER_RISK_POLICY.locationFreshnessMinutes,
   };
+}
+
+function formatDistance(meters: number) {
+  if (meters >= 1000) {
+    return `${(meters / 1000).toFixed(meters % 1000 === 0 ? 0 : 1)}km`;
+  }
+  return `${meters}m`;
 }
 
 function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
