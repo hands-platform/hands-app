@@ -8,6 +8,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
   const allRefunds = sortRefunds(await adminGet<AdminRefund[]>('/admin/refunds', []));
   const refunds = filterRefunds(allRefunds, filters);
   const activeFilter = refundFilterLinks().find((item) => item.review === filters.review);
+  const commandBoard = buildRefundCommandBoard(allRefunds);
 
   return (
     <>
@@ -34,6 +35,50 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
               ).length
             }
           </h2>
+        </div>
+      </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Refund command board</h2>
+            <p className="muted">
+              Keep customer refunds, payment ledger state, booking closeout, and customer messaging in one
+              operational view before closing a shift.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              commandBoard.some((item) => item.refunds.length > 0 && item.tone !== 'ok')
+                ? 'pill-warn'
+                : 'pill-success'
+            }`}
+          >
+            {commandBoard.reduce((sum, item) => sum + item.refunds.length, 0)} refund signal(s)
+          </span>
+        </div>
+        <div className="ops-task-grid">
+          {commandBoard.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={item.title}>
+              <span className={`signal ${refundToneClass(item.tone)}`}>{refundToneLabel(item.tone)}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <div className="participant-list">
+                <span className="pill">{item.status}</span>
+                <span className="pill">{item.refunds.length} case(s)</span>
+              </div>
+              {item.refunds.length > 0 ? (
+                <div className="stack">
+                  {item.refunds.slice(0, 3).map((refund) => (
+                    <span className="muted" key={`${item.title}-${refund.id}`}>
+                      {shortId(refund.id)} / {refundCustomerLabel(refund)} / {refund.amount}{' '}
+                      {refund.payment?.currency ?? 'VND'}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <small>{item.operatorAction}</small>
+            </Link>
+          ))}
         </div>
       </section>
       <section className="card" style={{ marginBottom: 16 }}>
@@ -134,8 +179,72 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
   );
 }
 
+type RefundCommandTone = 'warn' | 'info' | 'ok';
+
+type RefundCommandItem = {
+  title: string;
+  detail: string;
+  status: string;
+  operatorAction: string;
+  href: string;
+  tone: RefundCommandTone;
+  refunds: AdminRefund[];
+};
+
 function sortRefunds(refunds: AdminRefund[]) {
   return [...refunds].sort((left, right) => (right.createdAt || '').localeCompare(left.createdAt || ''));
+}
+
+function buildRefundCommandBoard(refunds: AdminRefund[]): RefundCommandItem[] {
+  const requested = refunds.filter((refund) => refund.status === 'REQUESTED');
+  const paymentMismatch = refunds.filter(
+    (refund) => refund.status === 'REQUESTED' && refund.payment?.status !== 'REFUNDED',
+  );
+  const bookingSettled = refunds.filter(
+    (refund) => refund.status === 'COMPLETED' || refund.booking?.status === 'REFUNDED',
+  );
+  const cancelledOrExpired = refunds.filter((refund) =>
+    ['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(refund.booking?.status ?? ''),
+  );
+
+  return [
+    {
+      title: 'Customer refund requests',
+      detail: 'Guests are waiting for a clear refund decision and customer-facing update.',
+      status: 'REQUESTED',
+      operatorAction: 'Confirm eligibility, payment method, and customer message.',
+      href: '/refunds?review=requested',
+      tone: requested.length > 0 ? 'warn' : 'ok',
+      refunds: requested,
+    },
+    {
+      title: 'Payment ledger mismatch',
+      detail: 'Refund record exists but the linked payment is not marked as refunded.',
+      status: 'Payment not refunded',
+      operatorAction: 'Open payment, confirm reversal, then close the refund case.',
+      href: '/refunds?review=needs-update',
+      tone: paymentMismatch.length > 0 ? 'warn' : 'ok',
+      refunds: paymentMismatch,
+    },
+    {
+      title: 'Closed refund evidence',
+      detail: 'Refunds that look settled and should match booking, payment, and audit notes.',
+      status: 'Settled',
+      operatorAction: 'Sample settled cases and make sure operator notes are complete.',
+      href: '/refunds?review=completed',
+      tone: bookingSettled.length > 0 ? 'info' : 'ok',
+      refunds: bookingSettled,
+    },
+    {
+      title: 'Cancel, expire, no-show context',
+      detail: 'Refunds linked to failed service outcomes need consistent customer and wallet handling.',
+      status: 'Closeout related',
+      operatorAction: 'Check booking closeout, cash debt, and customer protection policy.',
+      href: '/bookings?view=closeout',
+      tone: cancelledOrExpired.length > 0 ? 'warn' : 'ok',
+      refunds: cancelledOrExpired,
+    },
+  ];
 }
 
 function buildRefundFilters(params: Record<string, string | string[] | undefined>) {
@@ -230,6 +339,34 @@ function refundOpsHint(refund: AdminRefund) {
     return 'Booking is already marked as refunded. Check payment ledger and customer notes.';
   }
   return 'Review this refund before closing the case.';
+}
+
+function refundCustomerLabel(refund: AdminRefund) {
+  return (
+    refund.booking?.customerProfile?.user?.fullName ??
+    refund.booking?.customerProfile?.user?.phone ??
+    'Unknown customer'
+  );
+}
+
+function refundToneClass(tone: RefundCommandTone) {
+  if (tone === 'warn') {
+    return 'signal-warn';
+  }
+  if (tone === 'ok') {
+    return 'signal-ok';
+  }
+  return 'signal-info';
+}
+
+function refundToneLabel(tone: RefundCommandTone) {
+  if (tone === 'warn') {
+    return 'Needs operator';
+  }
+  if (tone === 'ok') {
+    return 'Clear';
+  }
+  return 'Watch';
 }
 
 function shortId(value: string) {
