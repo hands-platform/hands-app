@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {
   AdminBooking,
+  AdminCashSettlementSummary,
   AdminEarning,
   AdminEarningSummary,
   AdminExternalReadiness,
@@ -22,6 +23,25 @@ const activeBookingStatuses = new Set([
   'ARRIVED',
   'IN_SERVICE',
 ]);
+
+function emptyCashSettlementSummary(): AdminCashSettlementSummary {
+  return {
+    generatedAt: new Date(0).toISOString(),
+    currency: 'VND',
+    rowCount: 0,
+    providerCount: 0,
+    totalDebtAmount: 0,
+    totalPlatformFee: 0,
+    totalTaxAmount: 0,
+    oldestOpenAt: null,
+    oldestOpenAgeMinutes: 0,
+    staleDebtRowCount: 0,
+    highDebtProviderCount: 0,
+    missingPaymentEvidenceCount: 0,
+    cashPaymentRowCount: 0,
+    topProviderGroups: [],
+  };
+}
 
 type OpsQueueItem = {
   label: string;
@@ -47,6 +67,7 @@ export default async function DashboardPage() {
     payoutBatches,
     appSessions,
     externalReadiness,
+    cashSettlementSummary,
   ] = await Promise.all([
     adminGet<AdminUser[]>('/admin/users', []),
     adminGet<AdminProvider[]>('/admin/providers', []),
@@ -74,6 +95,7 @@ export default async function DashboardPage() {
       timestamp: new Date(0).toISOString(),
       checks: [],
     }),
+    adminGet<AdminCashSettlementSummary>('/admin/cash-settlement-summary', emptyCashSettlementSummary()),
   ]);
 
   const queue = buildOpsQueue({
@@ -84,16 +106,23 @@ export default async function DashboardPage() {
     notifications,
     earnings,
     earningRows,
+    cashSettlementSummary,
     payoutBatches,
   });
   const cashDebtRows = openCashDebtEarnings(earningRows);
-  const cashDebtAmount = sumCashDebt(cashDebtRows);
+  const cashDebtAmount = cashSettlementSummary.totalDebtAmount;
   const queueSummary = buildOpsQueueSummary(queue);
   const bookingOps = buildBookingOpsInsights(bookings);
   const appPresence = buildAppPresence(users, bookings, appSessions);
   const hourlyDemand = buildHourlyBookingDemand(bookings);
   const regionalDemand = buildRegionalBookingDemand(bookings);
-  const partnerSupply = buildPartnerSupplyInsights(providers, bookings, appSessions, cashDebtRows);
+  const partnerSupply = buildPartnerSupplyInsights(
+    providers,
+    bookings,
+    appSessions,
+    cashDebtRows,
+    cashSettlementSummary,
+  );
   const commandSignals = buildDashboardCommandSignals({
     providers,
     bookings,
@@ -102,6 +131,7 @@ export default async function DashboardPage() {
     notifications,
     earnings,
     earningRows,
+    cashSettlementSummary,
     payoutBatches,
     externalReadiness,
   });
@@ -189,7 +219,7 @@ export default async function DashboardPage() {
     [
       'Cash debt',
       money(cashDebtAmount, earnings.currency),
-      'Partner cash fee/tax debt blocking booking acceptance.',
+      `${cashSettlementSummary.providerCount} partner(s), ${cashSettlementSummary.rowCount} debt row(s) blocking booking acceptance.`,
     ],
     [
       'Open payout batches',
@@ -891,6 +921,7 @@ function buildPartnerSupplyInsights(
   bookings: AdminBooking[],
   sessions: AdminAppSession[],
   cashDebtRows: AdminEarning[],
+  cashSettlementSummary: AdminCashSettlementSummary,
 ) {
   const now = Date.now();
   const partnerSessions = sessions.filter((session) => session.role === 'PROVIDER');
@@ -928,7 +959,7 @@ function buildPartnerSupplyInsights(
     liveSessions: livePartnerUserIds.size,
     staleLocation,
     noLocation,
-    cashDebtPartners: cashDebtPartnerIds.size,
+    cashDebtPartners: cashSettlementSummary.providerCount,
     pendingVerification: providers.filter((provider) => provider.verification?.status === 'SUBMITTED').length,
     approvedVerification: providers.filter((provider) => provider.verification?.status === 'APPROVED').length,
     kycApproved: providers.filter((provider) => provider.kyc?.status === 'APPROVED').length,
@@ -1117,6 +1148,7 @@ function buildDashboardCommandSignals(input: {
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
   earningRows: AdminEarning[];
+  cashSettlementSummary: AdminCashSettlementSummary;
   payoutBatches: AdminPayoutBatch[];
   externalReadiness: AdminExternalReadiness;
 }): DashboardCommandSignal[] {
@@ -1165,7 +1197,9 @@ function buildDashboardCommandSignals(input: {
     (payment) => payment.method === 'CASH' && payment.status === 'PENDING',
   );
   const cashDebtRows = openCashDebtEarnings(input.earningRows);
-  const cashDebtAmount = sumCashDebt(cashDebtRows);
+  const cashDebtRowCount = input.cashSettlementSummary.rowCount;
+  const cashDebtProviderCount = input.cashSettlementSummary.providerCount;
+  const cashDebtAmount = input.cashSettlementSummary.totalDebtAmount;
   const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
   const paymentReviews =
     completedCloseoutRisk.length +
@@ -1373,27 +1407,39 @@ function buildDashboardCommandSignals(input: {
     },
     {
       title: 'Cash settlement lane',
-      status: cashDebtRows.length ? `${cashDebtRows.length} DEBT` : 'CLEAR',
-      detail: cashDebtRows.length
-        ? `${money(cashDebtAmount, input.earnings.currency)} partner cash fee/tax debt must be collected or offset before new booking acceptance.`
+      status: cashDebtRowCount ? `${cashDebtRowCount} DEBT` : 'CLEAR',
+      detail: cashDebtRowCount
+        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} partner cash fee/tax debt across ${cashDebtProviderCount} partner(s) must be collected or offset before new booking acceptance.`
         : 'No open cash fee debt is blocking partner wallets.',
       action: 'Open cash settlements',
       href: '/cash-settlements',
-      priority: cashDebtRows.length ? 94 : 12,
-      severity: cashDebtRows.length ? 'high' : 'low',
-      className: cashDebtRows.length ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: cashDebtRows.length ? 'pill-danger' : 'pill-success',
+      priority: cashDebtRowCount ? 94 : 12,
+      severity: cashDebtRowCount ? 'high' : 'low',
+      className: cashDebtRowCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: cashDebtRowCount ? 'pill-danger' : 'pill-success',
       breakdown: [
         {
           label: 'Debt rows',
-          value: cashDebtRows.length.toString(),
-          tone: cashDebtRows.length ? 'danger' : 'ok',
+          value: cashDebtRowCount.toString(),
+          tone: cashDebtRowCount ? 'danger' : 'ok',
+          href: '/cash-settlements',
+        },
+        {
+          label: 'Blocked partners',
+          value: cashDebtProviderCount.toString(),
+          tone: cashDebtProviderCount ? 'danger' : 'ok',
           href: '/cash-settlements',
         },
         {
           label: 'Wallet debt',
-          value: money(cashDebtAmount, input.earnings.currency),
+          value: money(cashDebtAmount, input.cashSettlementSummary.currency),
           tone: cashDebtAmount > 0 ? 'danger' : 'ok',
+          href: '/cash-settlements',
+        },
+        {
+          label: 'Over 24h',
+          value: input.cashSettlementSummary.staleDebtRowCount.toString(),
+          tone: input.cashSettlementSummary.staleDebtRowCount ? 'warn' : 'ok',
           href: '/cash-settlements',
         },
         {
@@ -1553,6 +1599,7 @@ function buildOpsQueue(input: {
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
   earningRows: AdminEarning[];
+  cashSettlementSummary: AdminCashSettlementSummary;
   payoutBatches: AdminPayoutBatch[];
 }) {
   const items: OpsQueueItem[] = [];
@@ -1615,7 +1662,24 @@ function buildOpsQueue(input: {
     }
   }
 
-  for (const earning of openCashDebtEarnings(input.earningRows)) {
+  if (input.cashSettlementSummary.rowCount > 0) {
+    items.push({
+      area: 'Finance',
+      href: '/cash-settlements',
+      label: 'Cash settlement queue blocking partners',
+      detail: `${input.cashSettlementSummary.providerCount} partner(s) owe ${money(
+        input.cashSettlementSummary.totalDebtAmount,
+        input.cashSettlementSummary.currency,
+      )} across ${input.cashSettlementSummary.rowCount} open debt row(s).`,
+      severity: 'high',
+      owner: 'Finance',
+      priority: 100,
+      recommendedAction:
+        'Collect partner deposit or approve an auditable offset before allowing more cash work.',
+    });
+  }
+
+  for (const earning of openCashDebtEarnings(input.earningRows).slice(0, 5)) {
     items.push({
       area: 'Finance',
       href: '/cash-settlements',

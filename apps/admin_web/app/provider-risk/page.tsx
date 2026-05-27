@@ -249,7 +249,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                       Partner detail
                     </Link>
                     {item.walletBalance < 0 ? (
-                      <Link className="text-link" href="/earnings">
+                      <Link className="text-link" href="/cash-settlements">
                         Cash debt queue
                       </Link>
                     ) : null}

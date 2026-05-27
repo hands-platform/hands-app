@@ -119,6 +119,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const providerServicePricing = buildProviderServicePricing(provider);
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
   const payoutHold = activePayoutHold(provider);
+  const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
 
   return (
     <>
@@ -268,9 +269,16 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <div className="risk-watch-header">
               <h3>Recent earnings</h3>
-              <Link className="text-link" href="/earnings">
-                Open earnings
-              </Link>
+              <div className="actions">
+                {hasCashFeeDebt ? (
+                  <Link className="text-link" href="/cash-settlements">
+                    Cash debt queue
+                  </Link>
+                ) : null}
+                <Link className="text-link" href="/earnings">
+                  Open earnings
+                </Link>
+              </div>
             </div>
             {(provider.earnings ?? []).length ? (
               <div className="setup-stage-list">
