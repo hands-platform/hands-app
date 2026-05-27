@@ -16,7 +16,9 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
   const status = Array.isArray(statusValue) ? statusValue[0] : statusValue;
   if (
     view === 'high-risk' ||
+    view === 'no-supply' ||
     view === 'payment' ||
+    view === 'cash-debt' ||
     view === 'closeout' ||
     view === 'pricing' ||
     view === 'location' ||

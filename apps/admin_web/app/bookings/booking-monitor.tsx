@@ -13,7 +13,9 @@ type Props = {
 type BookingView =
   | 'active'
   | 'high-risk'
+  | 'no-supply'
   | 'payment'
+  | 'cash-debt'
   | 'closeout'
   | 'pricing'
   | 'location'
@@ -138,8 +140,16 @@ export function BookingMonitor({ bookings, initialView }: Props) {
         bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
       );
     }
+    if (view === 'no-supply') {
+      return orderedBookings.filter(
+        (booking) => booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0,
+      );
+    }
     if (view === 'payment') {
       return orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
+    }
+    if (view === 'cash-debt') {
+      return orderedBookings.filter((booking) => bookingCashDebtNeedsOps(booking));
     }
     if (view === 'closeout') {
       return orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
@@ -525,11 +535,25 @@ const bookingViewOptions: Array<{
     operatorHint: 'Use this as the first dispatch triage view when the dashboard shows attention needed.',
   },
   {
+    view: 'no-supply',
+    label: 'No supply',
+    description: 'open matching bookings with no partner participation yet.',
+    operatorHint:
+      'Use this when customers are waiting but no partner has joined. Call/notify nearby partners or review location/service pricing.',
+  },
+  {
     view: 'payment',
     label: 'Payment ops',
     description: 'bookings whose payment state can block closeout, refund, capture, or settlement.',
     operatorHint:
       'Use this to catch completed authorized payments, cancelled unresolved holds, cash pending, and missing refs.',
+  },
+  {
+    view: 'cash-debt',
+    label: 'Cash debt',
+    description: 'cash bookings that created partner fee/tax debt and can block future acceptance.',
+    operatorHint:
+      'Use this with Cash Settlements to confirm deposit or admin offset before the partner accepts more bookings.',
   },
   {
     view: 'closeout',
@@ -617,7 +641,9 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
           : 'Active booking demand has enough current operating signal.',
       href:
         noSupply.length > 0 || expiredMatching.length > 0
-          ? '/bookings?view=high-risk'
+          ? noSupply.length > 0
+            ? '/bookings?view=no-supply'
+            : '/bookings?view=high-risk'
           : '/bookings?view=active',
       metrics: [
         metric('active', active.length),
@@ -678,7 +704,9 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
         closeoutRisk.length > 0
           ? '/bookings?view=closeout'
           : paymentRisk.length > 0
-            ? '/bookings?view=payment'
+            ? cashDebt.length > 0
+              ? '/bookings?view=cash-debt'
+              : '/bookings?view=payment'
             : noShow.length > 0
               ? '/bookings?view=no-show'
               : '/bookings?view=pricing',
@@ -943,8 +971,14 @@ function emptyBookingMessage(view: BookingView) {
   if (view === 'high-risk') {
     return 'No high-risk bookings match this queue. Expired matching, missing chat, and payment closeout are clear.';
   }
+  if (view === 'no-supply') {
+    return 'No open matching booking is waiting without partner supply.';
+  }
   if (view === 'payment') {
     return 'No payment-risk bookings match this queue. Capture, release, refund, cash, and partner refs are clear.';
+  }
+  if (view === 'cash-debt') {
+    return 'No cash booking currently has open partner fee/tax debt.';
   }
   if (view === 'closeout') {
     return 'No completed closeout-risk bookings match this queue. Capture, earning, tax, fee, and wallet records are aligned.';
