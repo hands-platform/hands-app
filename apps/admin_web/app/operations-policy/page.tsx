@@ -45,6 +45,7 @@ export default async function OperationsPolicyPage({
   const policyAuditRows = operationalPolicyAuditRows(auditLogs);
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
   const acceptanceMatrix = buildBookingAcceptanceMatrix(settings, providers);
+  const policyEnforcementTrace = buildPolicyEnforcementTrace(settings);
 
   return (
     <>
@@ -171,6 +172,29 @@ export default async function OperationsPolicyPage({
               <span>{item.label}</span>
               <strong>{item.value}</strong>
               <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Policy enforcement trace</h2>
+            <p className="muted">
+              Shows where each operating decision is enforced today, so operators know whether a policy
+              change affects customer matching, partner acceptance, notifications, or finance gates.
+            </p>
+          </div>
+          <span className="pill pill-info">{policyEnforcementTrace.length} enforced lane(s)</span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {policyEnforcementTrace.map((item) => (
+            <div className="ops-task-card ops-task-done" key={item.title}>
+              <span className="pill pill-success">{item.scope}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <small>{item.verify}</small>
             </div>
           ))}
         </div>
@@ -1246,6 +1270,73 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     cards,
     impact,
   };
+}
+
+function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) {
+  const responseWindowMinutes =
+    policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
+  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const backupLocationFreshnessMinutes =
+    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+  const backupOpenMode = policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const preferredAcceptMode =
+    policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+  const walletGate =
+    policyStringValue(settings, 'wallet.negative_balance_gate') ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+
+  return [
+    {
+      scope: 'Booking create',
+      title: `${responseWindowMinutes} minute first-pick timer`,
+      detail:
+        'New direct bookings store the current response-window policy in booking metadata and expiry time.',
+      verify: 'Verify with a new booking, then open the booking detail timeline and matching policy snapshot.',
+    },
+    {
+      scope: 'Backup join',
+      title: `${formatDistance(backupRadiusMeters)} backup radius`,
+      detail:
+        'Backup partners are filtered by customer distance before they can see, join, or receive backup availability alerts.',
+      verify: 'Verify from Operations Policy simulator and Partner Risk location freshness signals.',
+    },
+    {
+      scope: 'Location gate',
+      title: `${backupLocationFreshnessMinutes} minute location freshness`,
+      detail:
+        'Partners with stale or missing last location are excluded from backup participation and shown as dispatch risk.',
+      verify: 'Verify by opening App Sessions and Partner Risk after a partner app sends or misses a location heartbeat.',
+    },
+    {
+      scope: 'Customer choice',
+      title:
+        preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
+          ? 'Customer keeps final partner selection'
+          : 'Partner acceptance can auto-lock',
+      detail:
+        'This controls whether accepting the preferred partner immediately matches the booking or returns control to the customer.',
+      verify: 'Verify by creating a direct booking, accepting in the partner app, then checking the customer waiting screen.',
+    },
+    {
+      scope: 'Backup timing',
+      title:
+        backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
+          ? 'Backup partners can join during the wait'
+          : 'Backup partners wait until timer or decline',
+      detail:
+        'This controls whether backup partners can participate during the first-pick response window.',
+      verify: 'Verify from partner app open request list while a direct booking is still waiting.',
+    },
+    {
+      scope: 'Wallet gate',
+      title:
+        walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
+          ? 'Negative wallet blocks acceptance'
+          : 'Recovery booking mode is enabled',
+      detail:
+        'Cash-service company fee debt is enforced before partner accept/join actions and before payout release.',
+      verify: 'Verify from Cash Settlements, Partner Risk, and a blocked accept attempt in the partner app.',
+    },
+  ];
 }
 
 function buildPartnerAcceptancePolicyImpact(
