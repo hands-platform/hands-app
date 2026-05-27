@@ -192,6 +192,18 @@ export default async function OperationsPolicyPage({
           {matchingSettings.map((setting) => (
             <PolicyForm key={setting.key} setting={setting} />
           ))}
+          {matchingSettings.length === 0 ? (
+            <div className="card" style={{ margin: 0 }}>
+              <h3>No matching policies loaded</h3>
+              <p className="muted">
+                Seed operational policies from the API setup before editing live matching rules. Each policy
+                update will require a Change reason so operators can audit why the value changed.
+              </p>
+              <Link className="text-link" href="/setup">
+                Open setup checks
+              </Link>
+            </div>
+          ) : null}
         </div>
       </section>
 

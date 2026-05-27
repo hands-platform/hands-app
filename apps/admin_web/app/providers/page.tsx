@@ -241,6 +241,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="blocked">Account blocks</option>
               <option value="location">Location freshness</option>
               <option value="push">Push alert readiness</option>
+              <option value="acceptance-blocked">Booking acceptance blocked</option>
+              <option value="direct-ready">Direct request ready</option>
+              <option value="backup-ready">10km backup ready</option>
+              <option value="backup-blocked">10km backup blocked</option>
             </select>
           </label>
           <div className="actions full-span">
@@ -324,7 +328,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <h2>Partner acceptance blocker board</h2>
             <p className="muted">
               Shows why partners cannot accept direct bookings or join 10km backup matching before operators
-              try to dispatch them.
+              try to dispatch them. Backup matching eligibility is checked with the same booking-readiness
+              gates shown below.
             </p>
           </div>
           <div className="participant-list">
@@ -1076,6 +1081,10 @@ function hasHealthyPush(provider: AdminProvider) {
   return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
 }
 
+function hasApprovedBankAccount(provider: AdminProvider) {
+  return (provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED');
+}
+
 function providerPublicMedia(provider: AdminProvider): AdminProviderPublicMedia[] {
   return provider.user?.fileAssets ?? [];
 }
@@ -1285,7 +1294,7 @@ function nextProviderListAction(provider: AdminProvider, opsPolicy = DEFAULT_PRO
       priority: 84,
     };
   }
-  if (primaryBank?.status !== 'APPROVED') {
+  if (!hasApprovedBankAccount(provider)) {
     return {
       status: 'BANK',
       detail: `Primary bank account is ${primaryBank?.status ?? 'missing'}.`,
@@ -1664,6 +1673,15 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
   if (provider.verification?.status !== 'APPROVED') {
     blockers.push({ label: `verification ${provider.verification?.status ?? 'DRAFT'}`, severity: 'hard' });
   }
+  if (provider.kyc?.status !== 'APPROVED') {
+    blockers.push({ label: `KYC ${provider.kyc?.status ?? 'MISSING'}`, severity: 'hard' });
+  }
+  if (!hasApprovedRequiredKycDocuments(provider)) {
+    blockers.push({ label: 'identity documents', severity: 'hard' });
+  }
+  if (!hasApprovedBankAccount(provider)) {
+    blockers.push({ label: 'bank account', severity: 'hard' });
+  }
   if (walletBalance < 0) {
     blockers.push({ label: 'wallet debt', severity: 'hard' });
   }
@@ -1722,9 +1740,7 @@ function buildProviderCommandCenter(
     (provider) => providerLocationStatus(provider, opsPolicy) === 'recent',
   ).length;
   const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
-  const bankReview = providers.filter((provider) =>
-    (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
-  ).length;
+  const bankReview = providers.filter((provider) => !hasApprovedBankAccount(provider)).length;
   const payoutSetupReview = providers.filter(providerPayoutSetupNeedsReview).length;
   const taxReview = providers.filter(providerTaxNeedsReview).length;
   const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
@@ -1808,8 +1824,7 @@ function buildProviderCommandCenter(
 
 function providerDispatchReady(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   return (
-    provider.verification?.status === 'APPROVED' &&
-    !provider.blockedAt &&
+    !partnerHasHardAcceptanceBlocker(provider) &&
     provider.status === 'ONLINE_AVAILABLE' &&
     providerLocationStatus(provider, opsPolicy) === 'recent' &&
     providerSecurityStatus(provider) === 'clear' &&
@@ -1850,7 +1865,7 @@ function buildPartnerDispatchForecast(
 ): PartnerDispatchForecast {
   const readyNow = providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length;
   const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
-  const approved = providers.filter((provider) => provider.verification?.status === 'APPROVED').length;
+  const bookingBase = providers.filter((provider) => !partnerHasHardAcceptanceBlocker(provider)).length;
   const locationNeedsRefresh = providers.filter((provider) =>
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
   ).length;
@@ -1859,16 +1874,14 @@ function buildPartnerDispatchForecast(
   const securityRisk = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
-  const onboardingBlocked = providers.filter((provider) => provider.verification?.status !== 'APPROVED').length;
+  const hardBlocked = providers.filter((provider) => partnerHasHardAcceptanceBlocker(provider)).length;
   const payoutLocked = providers.filter(providerPayoutSetupNeedsReview).length;
   const approvedOffline = providers.filter(
-    (provider) => provider.verification?.status === 'APPROVED' && provider.status !== 'ONLINE_AVAILABLE',
+    (provider) => !partnerHasHardAcceptanceBlocker(provider) && provider.status !== 'ONLINE_AVAILABLE',
   ).length;
   const recoverableNow = providers.filter((provider) => {
     if (providerDispatchReady(provider, opsPolicy)) return false;
-    if (provider.verification?.status !== 'APPROVED') return false;
-    if (provider.blockedAt) return false;
-    if (providerUnsettledWalletBalance(provider) < 0) return false;
+    if (partnerHasHardAcceptanceBlocker(provider)) return false;
     if (!['clear', 'missing'].includes(providerSecurityStatus(provider))) return false;
     return (
       provider.status !== 'ONLINE_AVAILABLE' ||
@@ -1895,16 +1908,17 @@ function buildPartnerDispatchForecast(
       },
       {
         label: 'Online capacity',
-        value: `${online}/${approved}`,
-        detail: 'Approved partner pool currently online versus total approved partners in this filtered view.',
-        tone: online > 0 ? 'info' : approved > 0 ? 'warn' : 'danger',
+        value: `${online}/${bookingBase}`,
+        detail:
+          'Partners currently online versus the pool that has passed identity, bank, wallet, and safety gates.',
+        tone: online > 0 ? 'info' : bookingBase > 0 ? 'warn' : 'danger',
         href: '/partners?providerStatus=ONLINE_AVAILABLE',
       },
       {
         label: 'Hard blockers',
-        value: (walletDebt + securityRisk + onboardingBlocked).toString(),
+        value: hardBlocked.toString(),
         detail: 'Identity, account, cash debt, or security blockers that should not be bypassed by dispatch.',
-        tone: walletDebt + securityRisk + onboardingBlocked > 0 ? 'danger' : 'ok',
+        tone: hardBlocked > 0 ? 'danger' : 'ok',
         href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=security',
       },
     ],
@@ -1970,8 +1984,12 @@ function buildPartnerAcceptanceBlockerBoard(
   );
   const pushHold = providers.filter((provider) => !hasHealthyPush(provider));
   const onboardingHold = providers.filter(
-    (provider) => provider.verification?.status !== 'APPROVED' || partnerNeedsKycReview(provider),
+    (provider) =>
+      provider.verification?.status !== 'APPROVED' ||
+      provider.kyc?.status !== 'APPROVED' ||
+      !hasApprovedRequiredKycDocuments(provider),
   );
+  const bankBookingHold = providers.filter((provider) => !hasApprovedBankAccount(provider));
   const firstEarningPayoutGate = providers.filter(providerPayoutSetupNeedsReview);
   const hardBlocked = providers.filter((provider) => partnerHasHardAcceptanceBlocker(provider)).length;
   const eligibleNow = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length;
@@ -2025,11 +2043,22 @@ function buildPartnerAcceptanceBlockerBoard(
         title: 'Identity and onboarding',
         count: onboardingHold.length,
         status: onboardingHold.length ? 'Review needed' : 'Approved',
-        detail: 'Partners should not receive paid jobs until verification and required identity checks are approved.',
+        detail:
+          'Partners should not receive paid jobs until verification, KYC, and required identity documents are approved.',
         operatorAction: 'Review KYC, documents, public media, and partner approval status in one queue.',
         href: '/partners?review=kyc',
         tone: onboardingHold.length ? 'warn' : 'ok',
         samples: partnerBlockerSamples(onboardingHold),
+      },
+      {
+        title: 'Bank booking gate',
+        count: bankBookingHold.length,
+        status: bankBookingHold.length ? 'Blocks booking' : 'Approved',
+        detail: 'A partner needs at least one approved bank account before receiving paid booking work.',
+        operatorAction: 'Approve or reject bank account evidence so booking readiness matches API enforcement.',
+        href: '/partners?review=bank',
+        tone: bankBookingHold.length ? 'warn' : 'ok',
+        samples: partnerBlockerSamples(bankBookingHold),
       },
       {
         title: 'First earning payout gate',
@@ -2132,6 +2161,9 @@ function partnerHasHardAcceptanceBlocker(provider: AdminProvider) {
   return (
     Boolean(provider.blockedAt) ||
     provider.verification?.status !== 'APPROVED' ||
+    provider.kyc?.status !== 'APPROVED' ||
+    !hasApprovedRequiredKycDocuments(provider) ||
+    !hasApprovedBankAccount(provider) ||
     providerUnsettledWalletBalance(provider) < 0 ||
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))
   );
@@ -2221,15 +2253,7 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
   const deviceRisk = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
-  const readyNow = providers.filter(
-    (provider) =>
-      provider.verification?.status === 'APPROVED' &&
-      !provider.blockedAt &&
-      provider.status === 'ONLINE_AVAILABLE' &&
-      providerLocationStatus(provider, opsPolicy) === 'recent' &&
-      providerSecurityStatus(provider) === 'clear' &&
-      hasHealthyPush(provider),
-  ).length;
+  const readyNow = providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length;
 
   return [
     ['Total partners', providers.length.toString()],
@@ -2256,9 +2280,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
     (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
   ).length;
   const publicMediaNeedsReview = providers.filter(providerPublicMediaNeedsReview).length;
-  const bankNeedsReview = providers.filter((provider) =>
-    (provider.bankAccounts ?? []).some((account) => ['PENDING_REVIEW', 'REJECTED'].includes(account.status)),
-  ).length;
+  const bankNeedsReview = providers.filter((provider) => !hasApprovedBankAccount(provider)).length;
   const payoutSetupNeedsReview = providers.filter(providerPayoutSetupNeedsReview).length;
   const cashDebtNeedsReview = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const taxNeedsReview = providers.filter(providerTaxNeedsReview).length;
@@ -2270,17 +2292,22 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const riskNeedsReview = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
-  const readyForDispatch = providers.filter(
-    (provider) =>
-      provider.verification?.status === 'APPROVED' &&
-      !provider.blockedAt &&
-      provider.status === 'ONLINE_AVAILABLE' &&
-      providerLocationStatus(provider, opsPolicy) === 'recent' &&
-      providerSecurityStatus(provider) === 'clear' &&
-      hasHealthyPush(provider),
+  const directReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length;
+  const backupReady = providers.filter(
+    (provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible,
+  ).length;
+  const acceptanceBlocked = providers.filter(
+    (provider) => !partnerCanAcceptBookingNow(provider, opsPolicy),
   ).length;
 
   const items = [
+    {
+      label: 'Booking acceptance blocked',
+      count: acceptanceBlocked,
+      href: '/partners?review=acceptance-blocked',
+      detail:
+        'Partners who cannot accept direct requests now because identity, bank, wallet, location, push, or safety gates are not satisfied.',
+    },
     {
       label: 'Account blocks',
       count: accountBlocks,
@@ -2311,7 +2338,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       label: 'Bank payout review',
       count: bankNeedsReview,
       href: '/partners?review=bank',
-      detail: 'Bank accounts must be approved before partners can move toward payout readiness.',
+      detail: 'At least one bank account must be approved before partners can receive paid booking work.',
     },
     {
       label: 'First earning payout setup',
@@ -2359,15 +2386,23 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       detail: 'Partners without enabled push devices may miss direct requests and backup matching alerts.',
     },
     {
-      label: 'Ready for dispatch',
-      count: readyForDispatch,
-      href: '/partners?readiness=ready',
-      detail: 'Approved, online partners with recent location and push registration.',
+      label: 'Direct request ready',
+      count: directReady,
+      href: '/partners?review=direct-ready',
+      detail: 'Partners who can receive and accept a preferred direct booking right now.',
+    },
+    {
+      label: '10km backup ready',
+      count: backupReady,
+      href: '/partners?review=backup-ready',
+      detail: `Partners who can receive backup alerts and join customer shortlists inside the ${formatDistanceMeters(
+        opsPolicy.backupRadiusMeters,
+      )} matching radius.`,
     },
   ];
 
   const totalOpen = items
-    .filter((item) => item.label !== 'Ready for dispatch')
+    .filter((item) => !['Direct request ready', '10km backup ready'].includes(item.label))
     .reduce((sum, item) => sum + item.count, 0);
 
   return { items, totalOpen };
@@ -2395,7 +2430,9 @@ function providerTaxPillClass(provider: AdminProvider) {
 function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   const issues: Array<{ label: string; severity: 'high' | 'medium' }> = [];
   const kycStatus = provider.kyc?.status ?? 'MISSING';
-  const bankStatus = provider.bankAccounts?.[0]?.status ?? 'MISSING';
+  const bankStatus = hasApprovedBankAccount(provider)
+    ? 'APPROVED'
+    : provider.bankAccounts?.[0]?.status ?? 'MISSING';
   const taxStatus = provider.taxProfile?.status ?? 'MISSING';
 
   if (provider.blockedAt) {
@@ -2411,6 +2448,13 @@ function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVI
   }
   if (kycStatus !== 'APPROVED') {
     issues.push({ label: `KYC ${kycStatus}`, severity: kycStatus === 'REJECTED' ? 'high' : 'medium' });
+  }
+  const missingRequiredDocuments = missingApprovedRequiredKycDocuments(provider);
+  if (missingRequiredDocuments.length > 0) {
+    issues.push({
+      label: `identity docs ${missingRequiredDocuments.length}/3 missing`,
+      severity: 'high',
+    });
   }
   if ((provider.documents ?? []).some((document) => document.status === 'REJECTED')) {
     issues.push({ label: 'document rejected', severity: 'high' });
@@ -2618,6 +2662,18 @@ function providerFilterDescription(kind: string, value: string) {
   if (kind === 'review' && value === 'cash-debt') {
     return 'Cash fee debt highlights partners blocked from accepting bookings because HANDS commission was not settled.';
   }
+  if (kind === 'review' && value === 'acceptance-blocked') {
+    return 'Booking acceptance blocked highlights partners who cannot currently accept preferred or backup matching work.';
+  }
+  if (kind === 'review' && value === 'direct-ready') {
+    return 'Direct request ready highlights partners who can accept a preferred customer request immediately.';
+  }
+  if (kind === 'review' && value === 'backup-ready') {
+    return '10km backup ready highlights partners who can receive backup alerts and join customer shortlists.';
+  }
+  if (kind === 'review' && value === 'backup-blocked') {
+    return '10km backup blocked highlights partners excluded from backup matching until blockers are resolved.';
+  }
   if (kind === 'review') {
     return 'Review queue focuses the table on one operational approval lane.';
   }
@@ -2693,9 +2749,7 @@ function providerMatchesReviewQueue(
     return providerPublicMediaNeedsReview(provider);
   }
   if (review === 'bank') {
-    return (provider.bankAccounts ?? []).some((account) =>
-      ['PENDING_REVIEW', 'REJECTED'].includes(account.status),
-    );
+    return !hasApprovedBankAccount(provider);
   }
   if (review === 'payout-setup') {
     return providerPayoutSetupNeedsReview(provider);
@@ -2717,6 +2771,18 @@ function providerMatchesReviewQueue(
   }
   if (review === 'push') {
     return !hasHealthyPush(provider);
+  }
+  if (review === 'acceptance-blocked') {
+    return !partnerCanAcceptBookingNow(provider, opsPolicy);
+  }
+  if (review === 'direct-ready') {
+    return partnerCanAcceptBookingNow(provider, opsPolicy);
+  }
+  if (review === 'backup-ready') {
+    return partnerBackupMatchingEligibility(provider, opsPolicy).eligible;
+  }
+  if (review === 'backup-blocked') {
+    return !partnerBackupMatchingEligibility(provider, opsPolicy).eligible;
   }
   return true;
 }
@@ -2751,19 +2817,13 @@ function providerReadiness(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER
   if (provider.blockedAt) {
     return 'needs-review';
   }
-  if (
-    provider.verification?.status === 'APPROVED' &&
-    provider.status === 'ONLINE_AVAILABLE' &&
-    providerLocationStatus(provider, opsPolicy) === 'recent' &&
-    providerSecurityStatus(provider) === 'clear' &&
-    hasHealthyPush(provider)
-  ) {
+  if (providerDispatchReady(provider, opsPolicy)) {
     return 'ready';
   }
-  if (provider.verification?.status === 'APPROVED' && provider.status !== 'ONLINE_AVAILABLE') {
+  if (!partnerHasHardAcceptanceBlocker(provider) && provider.status !== 'ONLINE_AVAILABLE') {
     return 'approved-offline';
   }
-  if (provider.verification?.status === 'APPROVED' && !hasHealthyPush(provider)) {
+  if (!partnerHasHardAcceptanceBlocker(provider) && !hasHealthyPush(provider)) {
     return 'push-missing';
   }
   return 'needs-review';
@@ -2776,19 +2836,13 @@ function providerPriority(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_
   if (['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))) {
     return 0;
   }
-  if (
-    provider.verification?.status === 'APPROVED' &&
-    provider.status === 'ONLINE_AVAILABLE' &&
-    providerLocationStatus(provider, opsPolicy) === 'recent' &&
-    providerSecurityStatus(provider) === 'clear' &&
-    hasHealthyPush(provider)
-  ) {
+  if (providerDispatchReady(provider, opsPolicy)) {
     return 4;
   }
-  if (provider.verification?.status === 'APPROVED' && provider.status === 'ONLINE_AVAILABLE') {
+  if (!partnerHasHardAcceptanceBlocker(provider) && provider.status === 'ONLINE_AVAILABLE') {
     return 3;
   }
-  if (provider.verification?.status === 'APPROVED') {
+  if (!partnerHasHardAcceptanceBlocker(provider)) {
     return 2;
   }
   return 1;
