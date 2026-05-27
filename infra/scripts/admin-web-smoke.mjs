@@ -20,9 +20,15 @@ const pages = [
   { path: '/tax-policy', markers: ['Tax policy', 'Policy health'] },
 ];
 
-async function fetchPage(path) {
+async function fetchPage(path, redirectDepth = 0) {
   const response = await fetch(`${baseUrl}${path}`, { redirect: 'manual' });
   const body = await response.text();
+  if ([307, 308].includes(response.status) && redirectDepth < 3) {
+    const location = response.headers.get('location');
+    if (location?.startsWith('/')) {
+      return fetchPage(location, redirectDepth + 1);
+    }
+  }
   if (!response.ok) {
     throw new Error(`${path} returned ${response.status}: ${body.slice(0, 240)}`);
   }

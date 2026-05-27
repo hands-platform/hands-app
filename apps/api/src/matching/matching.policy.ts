@@ -119,7 +119,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'When backup partners can join',
     description:
-      'Choose whether nearby backup partners can join during the first-pick response window or only after that timer passes.',
+      'Choose whether nearby backup partners can join during the first-pick response window, or only after the timer passes. If the first-pick partner declines, backup partners open immediately.',
     value: BACKUP_OPEN_IMMEDIATE,
     recommendedValue: BACKUP_OPEN_IMMEDIATE,
     options: [
@@ -131,7 +131,8 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
         label: 'Delay backup visibility',
-        tradeoff: 'Less partner noise, but slower recovery if the first-pick partner is late.',
+        tradeoff:
+          'Less partner noise while the first-pick partner is deciding, with immediate recovery if that partner declines.',
       },
     ],
     enforced: true,

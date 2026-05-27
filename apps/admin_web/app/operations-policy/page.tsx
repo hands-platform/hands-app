@@ -707,10 +707,10 @@ function buildPolicySimulation(
       },
       {
         step: '2',
-        title: immediateBackup ? 'Backup list opens immediately' : 'Backup list waits',
+        title: immediateBackup ? 'Backup list opens immediately' : 'Backup list waits unless declined',
         detail: immediateBackup
           ? `${eligiblePartners.length} partner(s) inside ${formatDistance(backupRadiusMeters)} can see or join while the first partner decides.`
-          : `Backup partners are held until the ${responseWindowMinutes} minute first-pick window ends.`,
+          : `Backup partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick partner declines.`,
         className: immediateBackup ? 'timeline-active' : 'timeline-warn',
         tags: [
           { label: policyDisplayByKey(settings, 'matching.backup_open_mode'), tone: 'pill-info' },
@@ -749,7 +749,7 @@ function buildPolicySimulation(
         title: 'Customer waiting experience',
         detail: immediateBackup
           ? 'Customers can see backup interest during the first response window.'
-          : 'Customers may see an empty waiting screen until the first partner times out.',
+          : 'Customers may see an empty waiting screen until the first partner times out, unless that partner declines first.',
         operatorAction: immediateBackup
           ? 'Keep monitoring whether customers understand first-pick vs backup partner choice.'
           : 'Use only if first-pick response rate is high enough to avoid empty waiting.',
@@ -899,7 +899,7 @@ function policyRecommendationPosture(
       detail:
         value === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'This reduces empty waiting screens and lets nearby partners show interest early.'
-          : 'This protects the first-pick partner window but may leave customers with no visible alternatives.',
+          : 'This protects the first-pick partner window, but backup partners now open immediately when the first-pick partner declines.',
       operatorAction: `${liveContext} If delayed mode is kept, support should watch waiting-screen complaints.`,
       alignedAction:
         'Immediate backup participation supports lower customer anxiety during the first window.',
@@ -910,9 +910,9 @@ function policyRecommendationPosture(
 
   if (setting.key === 'wallet.negative_balance_gate') {
     return {
-      status: value === 'BLOCK_ALL_BOOKING_ACTIONS' ? 'Hard block' : 'Recovery mode',
+      status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Hard block' : 'Recovery mode',
       detail:
-        value === 'BLOCK_ALL_BOOKING_ACTIONS'
+        value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
           ? 'Debt risk is contained, but partner recovery requires manual settlement.'
           : 'Recovery mode can help partners repay but increases operational cash-debt risk.',
       operatorAction: 'Keep hard block until cash settlement collection and trust scoring are stronger.',
@@ -1524,7 +1524,7 @@ function policyImpactDetails(key: string) {
       area: 'Backup flow',
       title: 'Controls when other partners can participate',
       detail:
-        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks backup join until the first-pick response window has passed.',
+        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks backup join until the first-pick response window passes, but opens immediately after first-pick decline.',
     },
     'wallet.negative_balance_gate': {
       area: 'Wallet risk',

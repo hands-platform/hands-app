@@ -1926,7 +1926,7 @@ function bookingOperationalPolicySnapshot(
         label: 'Backup participation',
         helper:
           String(backupOpenMode?.value) === 'AFTER_FIRST_PICK_DELAY'
-            ? 'Backup partners are hidden until the preferred partner window passes.'
+            ? 'Backup partners are hidden until the preferred partner window passes, but open immediately if that partner declines.'
             : 'Eligible nearby partners can join while the preferred partner is still deciding.',
         enforced: true,
       }),
