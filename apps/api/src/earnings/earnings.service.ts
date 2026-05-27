@@ -222,6 +222,25 @@ export class EarningsService {
     });
   }
 
+  listCashSettlementDebtForAdmin() {
+    return this.prisma.providerEarning.findMany({
+      where: {
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+        netAmount: { lt: 0 },
+      },
+      orderBy: [{ createdAt: 'asc' }, { netAmount: 'asc' }],
+      take: 500,
+      include: {
+        providerProfile: { include: { user: { select: { id: true, phone: true, fullName: true } } } },
+        booking: { include: { payment: true, review: true, services: { include: { service: true } } } },
+        platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
+        taxLogs: { orderBy: { createdAt: 'desc' }, take: 1 },
+        walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+      },
+    });
+  }
+
   adminSummary() {
     return this.summaryWhere({});
   }

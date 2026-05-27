@@ -1361,6 +1361,17 @@ const cashDebtBookingLedger = cashDebtEarning.walletLedgerEntries?.find(
 if (!cashDebtBookingLedger || cashDebtBookingLedger.amount !== cashDebtEarning.netAmount) {
   throw new Error(`Cash debt booking ledger was not recorded: ${JSON.stringify(cashDebtEarning)}`);
 }
+const adminCashSettlementEarnings = await getJson('/admin/cash-settlement-earnings', adminAuth.accessToken);
+const cashSettlementDebtRow = adminCashSettlementEarnings.find(
+  (earning) => earning.bookingId === walletDebtBooking.id && earning.netAmount < 0,
+);
+if (!cashSettlementDebtRow || cashSettlementDebtRow.payoutBatchId) {
+  throw new Error(
+    `Cash settlement queue did not expose the open wallet debt row: ${JSON.stringify(
+      adminCashSettlementEarnings[0],
+    )}`,
+  );
+}
 const adminPaymentsAfterCashDebt = await getJson('/admin/payments', adminAuth.accessToken);
 const cashDebtPayment = adminPaymentsAfterCashDebt.find(
   (payment) => payment.bookingId === walletDebtBooking.id,

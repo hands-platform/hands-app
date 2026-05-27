@@ -3,7 +3,7 @@ import { AdminEarning, adminGet } from '../../lib/admin-api';
 import { settleCashFeeDebt } from './actions';
 
 export default async function CashSettlementsPage() {
-  const earnings = await adminGet<AdminEarning[]>('/admin/earnings', []);
+  const earnings = await adminGet<AdminEarning[]>('/admin/cash-settlement-earnings', []);
   const rows = buildCashSettlementRows(earnings);
   const providers = buildProviderGroups(rows);
   const summary = buildSummary(rows, providers);
