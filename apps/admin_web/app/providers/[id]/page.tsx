@@ -45,6 +45,11 @@ type PartnerKycEvidence = {
   allRequiredApproved: boolean;
   missingDocuments: string[];
   nextAction: string;
+  decisionChecklist: Array<{
+    label: string;
+    ok: boolean;
+    detail: string;
+  }>;
   rows: Array<{
     type: string;
     label: string;
@@ -1033,6 +1038,18 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               Approve the required CCCD front, CCCD back, and selfie documents before approving KYC.
             </p>
           ) : null}
+          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+            {kycEvidence.decisionChecklist.map((item) => (
+              <div className="setup-stage-item" key={item.label}>
+                <span>{item.ok ? 'OK' : 'FIX'}</span>
+                <div>
+                  <strong>{item.label}</strong>
+                  <p className="muted">{item.detail}</p>
+                </div>
+                <small>{item.ok ? 'Clear' : 'Needs review'}</small>
+              </div>
+            ))}
+          </div>
           <div className="setup-stage-list" style={{ marginTop: 12 }}>
             {kycEvidence.rows.map((row) => (
               <div className="setup-stage-item" key={row.type}>
@@ -2494,6 +2511,10 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
     .filter((row) => row.status !== 'APPROVED')
     .map((row) => row.type);
   const allRequiredApproved = missingDocuments.length === 0;
+  const rejectedDocuments = rows.filter((row) => row.status === 'REJECTED');
+  const legalNameReady = Boolean(provider.legalName?.trim());
+  const cccdReady = Boolean(provider.kyc?.cccdNumberLast4);
+  const kycRecordReady = Boolean(provider.kyc);
 
   let nextAction = 'No KYC action required.';
   if (!provider.kyc) {
@@ -2508,6 +2529,45 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
     allRequiredApproved,
     missingDocuments,
     nextAction,
+    decisionChecklist: [
+      {
+        label: 'KYC record submitted',
+        ok: kycRecordReady,
+        detail: kycRecordReady
+          ? `Submitted ${formatDate(provider.kyc?.submittedAt)}.`
+          : 'Partner must submit identity data before admin can approve KYC.',
+      },
+      {
+        label: 'Legal name present',
+        ok: legalNameReady,
+        detail: legalNameReady
+          ? `Legal name: ${provider.legalName}.`
+          : 'Ask the partner to complete the legal name used for CCCD and payout checks.',
+      },
+      {
+        label: 'CCCD/CMND number captured',
+        ok: cccdReady,
+        detail: cccdReady
+          ? `Stored as masked last four ****${provider.kyc?.cccdNumberLast4}.`
+          : 'CCCD/CMND number is missing or has not been captured in the KYC record.',
+      },
+      {
+        label: 'Required evidence approved',
+        ok: allRequiredApproved,
+        detail: allRequiredApproved
+          ? 'CCCD front, CCCD back, and selfie are approved.'
+          : `Missing or unapproved: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`,
+      },
+      {
+        label: 'Rejected evidence resolved',
+        ok: rejectedDocuments.length === 0,
+        detail: rejectedDocuments.length
+          ? `Rejected evidence still needs resubmission: ${rejectedDocuments
+              .map((row) => row.label)
+              .join(', ')}.`
+          : 'No rejected identity evidence is blocking approval.',
+      },
+    ],
     rows,
   };
 }
