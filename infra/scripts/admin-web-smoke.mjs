@@ -11,6 +11,7 @@ const pages = [
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
+  { path: '/reviews', markers: ['Reviews And Reports', 'Review command board'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue'] },
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
   { path: '/partner-risk', markers: ['Partner Risk', 'Risk operation filters'] },
