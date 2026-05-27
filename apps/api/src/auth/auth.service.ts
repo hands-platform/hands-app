@@ -62,7 +62,7 @@ export class AuthService {
           role === Role.PROVIDER && !existing?.providerProfile
             ? {
                 create: {
-                  displayName: `Provider ${input.phone.slice(-4)}`,
+                  displayName: `Partner ${input.phone.slice(-4)}`,
                   verification: { create: {} },
                 },
               }
@@ -76,7 +76,7 @@ export class AuthService {
           role === Role.PROVIDER
             ? {
                 create: {
-                  displayName: `Provider ${input.phone.slice(-4)}`,
+                  displayName: `Partner ${input.phone.slice(-4)}`,
                   verification: { create: {} },
                 },
               }

@@ -64,7 +64,7 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.spa_outlined), label: 'Home'),
           NavigationDestination(
-              icon: Icon(Icons.groups_outlined), label: 'Providers'),
+              icon: Icon(Icons.groups_outlined), label: 'Partners'),
           NavigationDestination(
               icon: Icon(Icons.receipt_long_outlined), label: 'Bookings'),
           NavigationDestination(
@@ -266,7 +266,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       customerAddress = selected.addressText;
       customerLocationIsDemo = false;
       notice =
-          'Service location selected. Nearby providers are now sorted from this pin.';
+          'Service location selected. Nearby partners are now sorted from this pin.';
       error = null;
     });
 
@@ -284,7 +284,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     if (mounted) {
       setState(() {
         notice =
-            'Service location selected. Nearby providers are now sorted from this pin.';
+            'Service location selected. Nearby partners are now sorted from this pin.';
       });
     }
   }
@@ -339,7 +339,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
             setState(() {
               activeBooking = booked;
-              notice = 'Booking created. Waiting for provider response.';
+              notice = 'Booking created. Waiting for partner response.';
             });
 
             await navigator.push<void>(
@@ -407,7 +407,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   icon: const Icon(Icons.search),
                   label: Text(auth == null
                       ? 'Demo customer login'
-                      : 'Refresh providers'),
+                      : 'Refresh partners'),
                 ),
               ),
             ],
@@ -454,7 +454,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 16),
             if (providers.isEmpty)
               const EmptyPanel(
-                  text: 'Nearby providers will appear here after refresh.')
+                  text: 'Nearby partners will appear here after refresh.')
             else
               for (final item in providers)
                 ProviderListCard(
@@ -648,7 +648,7 @@ class ProviderListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = provider['displayName'] as String? ?? 'Provider';
+    final displayName = provider['displayName'] as String? ?? 'Partner';
     final distanceMeters = asDouble(provider['distanceMeters']);
     final rating = providerAverageRating(provider);
     final reviewCount = providerReviewCount(provider);
@@ -900,8 +900,8 @@ class ActiveBookingBanner extends StatelessWidget {
       child: ListTile(
         title: Text(service?['name'] as String? ?? 'Active booking'),
         subtitle: Text(provider == null
-            ? 'Waiting for provider response'
-            : 'Provider: ${provider['displayName']}'),
+            ? 'Waiting for partner response'
+            : 'Partner: ${provider['displayName']}'),
         trailing: FilledButton.tonal(
           onPressed: onOpen,
           child: const Text('Open'),
@@ -944,7 +944,7 @@ class ProviderDetailPage extends StatelessWidget {
           final services = detail['services'] is List<dynamic>
               ? detail['services'] as List<dynamic>
               : [];
-          final displayName = detail['displayName'] as String? ?? 'Provider';
+          final displayName = detail['displayName'] as String? ?? 'Partner';
           final rating = providerAverageRating(detail);
           final reviewCount = providerReviewCount(detail);
           final experienceYears = asNum(detail['experienceYears'])?.toInt();
@@ -1203,7 +1203,7 @@ class ProviderDetailPage extends StatelessWidget {
                           if (serviceGroups.isEmpty) {
                             return const EmptyPanel(
                               text:
-                                  'This therapist has no bookable service options yet. HANDS requires an active provider price and an exact admin payout rule before booking.',
+                                  'This therapist has no bookable service options yet. HANDS requires an active partner price and an exact admin payout rule before booking.',
                             );
                           }
                           return Column(
@@ -1385,7 +1385,7 @@ class ServiceDurationOptionTile extends StatelessWidget {
           if (hasProviderPrice) ...[
             const SizedBox(height: 8),
             Text(
-              'Provider price selected. Admin minimum ${formatCurrency(basePrice)} VND.',
+              'Partner price selected. Admin minimum ${formatCurrency(basePrice)} VND.',
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
@@ -1715,7 +1715,7 @@ class _BookingConfirmationPageState
         !widget.initialCustomerLocationIsDemo;
     if (widget.initialCustomerLocationIsDemo) {
       locationMessage =
-          'Nearby providers used a demo city pin. Choose the exact service location before booking.';
+          'Nearby partners used a demo city pin. Choose the exact service location before booking.';
     }
     if (customerLat == null || customerLng == null) {
       unawaited(loadCustomerLocation());
@@ -1899,7 +1899,7 @@ class _BookingConfirmationPageState
     final servicePrice = customerServicePrice(service);
     final basePrice = asNum(service['basePrice'])?.toInt() ?? servicePrice;
     final hasProviderPrice = servicePrice != basePrice;
-    final providerName = provider['displayName'] as String? ?? 'Provider';
+    final providerName = provider['displayName'] as String? ?? 'Partner';
     final serviceName = customerServiceName(service);
     final durationLabel = customerServiceDurationLabel(service);
     final platformFee = 0;
@@ -2667,7 +2667,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
             ? 'Waiting for nearby therapists to respond...'
             : 'Waiting for ${preferredProvider['displayName'] ?? 'your therapist'} to confirm. Other therapists may join too.')
         : status == 'MATCHED'
-            ? 'Provider accepted. Waiting for service start...'
+            ? 'Partner accepted. Waiting for service start...'
             : status == 'IN_SERVICE'
                 ? 'Service started. Continue in Chat.'
                 : 'Status: $status';
@@ -2948,7 +2948,7 @@ class TherapistSelectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider =
         asMap(participant['providerProfile']) ?? <String, dynamic>{};
-    final providerName = provider['displayName']?.toString() ?? 'Provider';
+    final providerName = provider['displayName']?.toString() ?? 'Partner';
     final distance = formatDistance(asDouble(participant['distanceMeters']));
     final titleStyle = Theme.of(context)
         .textTheme
@@ -3067,7 +3067,7 @@ class TherapistDisplayCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ProviderThumbnail(
-                name: provider['displayName'] as String? ?? 'Provider',
+                name: provider['displayName'] as String? ?? 'Partner',
                 size: 84),
             const SizedBox(width: 12),
             Expanded(
@@ -3078,7 +3078,7 @@ class TherapistDisplayCard extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          provider['displayName'] as String? ?? 'Provider',
+                          provider['displayName'] as String? ?? 'Partner',
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
@@ -3406,7 +3406,7 @@ class LocationMapSurface extends StatefulWidget {
     required this.customerPoint,
     required this.providerPoint,
     this.customerLabel = 'Customer',
-    this.providerLabel = 'Provider',
+    this.providerLabel = 'Partner',
     this.fallbackShowProviderMarker = false,
   });
 
@@ -4091,7 +4091,7 @@ class _NearbyProvidersMapState extends State<NearbyProvidersMap> {
         continue;
       }
       final isRecent = provider['isRecentLocation'] != false;
-      final displayName = provider['displayName'] as String? ?? 'Provider';
+      final displayName = provider['displayName'] as String? ?? 'Partner';
       final locationLabel = providerLocationFreshnessLabel(provider)
           .replaceFirst('Location ', '')
           .replaceFirst('Last updated ', 'Updated ');
@@ -4137,7 +4137,7 @@ class _NearbyProvidersMapState extends State<NearbyProvidersMap> {
 
     return _MapPlaceholder(
       customerLabel: 'You',
-      providerLabel: '${widget.providers.length} provider(s)',
+      providerLabel: '${widget.providers.length} partner(s)',
       showProviderMarker: widget.providers.isNotEmpty,
     );
   }
@@ -4467,7 +4467,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Text('Providers', style: Theme.of(context).textTheme.displaySmall),
+          Text('Partners', style: Theme.of(context).textTheme.displaySmall),
           const SizedBox(height: 8),
           Text(
             'Nearby therapists sorted by distance and availability.',
@@ -4487,8 +4487,8 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
           FilledButton.icon(
             onPressed: auth == null ? signInAndLoad : loadProviders,
             icon: const Icon(Icons.search),
-            label: Text(
-                auth == null ? 'Demo customer login' : 'Refresh providers'),
+            label:
+                Text(auth == null ? 'Demo customer login' : 'Refresh partners'),
           ),
           if (loading) ...[
             const SizedBox(height: 12),
@@ -5626,7 +5626,7 @@ String customerServicePricePolicyLabel(Map<String, dynamic>? service) {
     return 'Price step check';
   }
   if (basePrice > 0 && price > basePrice) {
-    return 'Provider price';
+    return 'Partner price';
   }
   return 'Admin minimum';
 }
@@ -5652,7 +5652,7 @@ String providerDisplayName(Map<String, dynamic>? booking) {
     final first = participants.first as Map<String, dynamic>;
     final providerProfile = first['providerProfile'] as Map<String, dynamic>?;
     if (providerProfile != null) {
-      return providerProfile['displayName'] as String? ?? 'Provider';
+      return providerProfile['displayName'] as String? ?? 'Partner';
     }
   }
   return 'Booking request';

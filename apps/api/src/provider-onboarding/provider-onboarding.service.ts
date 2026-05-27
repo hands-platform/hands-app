@@ -802,7 +802,7 @@ export class ProviderOnboardingService {
       },
     });
     if (!provider) {
-      throw new NotFoundException('Provider profile not found');
+      throw new NotFoundException('Partner profile not found');
     }
     return provider;
   }
@@ -1051,12 +1051,7 @@ async function assertTaxRuleDoesNotConflict(
 
   if (data.scope === TaxRuleScope.AMOUNT_BAND) {
     const overlapping = existingRules.find((rule) =>
-      amountBandsOverlap(
-        data.minGrossAmount,
-        data.maxGrossAmount,
-        rule.minGrossAmount,
-        rule.maxGrossAmount,
-      ),
+      amountBandsOverlap(data.minGrossAmount, data.maxGrossAmount, rule.minGrossAmount, rule.maxGrossAmount),
     );
     if (overlapping) {
       throw new BadRequestException('Active AMOUNT_BAND tax rules cannot overlap in the same policy version');

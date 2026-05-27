@@ -183,7 +183,7 @@ ProviderOnboardingPriority providerOnboardingPriorityFromSnapshot(
 
   if (canWithdraw) {
     return const ProviderOnboardingPriority(
-      title: 'Provider setup is complete',
+      title: 'Partner setup is complete',
       detail:
           'This provider can receive bookings and request payouts when earnings are available.',
       tone: 'success',

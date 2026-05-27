@@ -26,7 +26,7 @@ class ProviderApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Provider',
+      title: 'Partner',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2563EB)),
         useMaterial3: true,
@@ -447,7 +447,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
             onPressed: auth == null ? signInAndLoad : () => loadOpenBookings(),
             icon: const Icon(Icons.login),
             label:
-                Text(auth == null ? 'Demo provider login' : 'Refresh requests'),
+                Text(auth == null ? 'Demo partner login' : 'Refresh requests'),
           ),
           const SizedBox(height: 12),
           ProviderStatusPanel(
@@ -644,11 +644,11 @@ class ProviderOtpLoginPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Provider login',
+            Text('Partner login',
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             Text(
-              'Use phone OTP for the production provider account, or local demo login while testing direct booking requests.',
+              'Use phone OTP for the production partner account, or local demo login while testing direct booking requests.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -863,7 +863,7 @@ class _ProviderScheduleScreenState
                 loading ? null : (auth == null ? signInAndLoad : loadSchedule),
             icon: const Icon(Icons.calendar_month_outlined),
             label:
-                Text(auth == null ? 'Demo provider login' : 'Refresh schedule'),
+                Text(auth == null ? 'Demo partner login' : 'Refresh schedule'),
           ),
           if (loading) ...[
             const SizedBox(height: 12),
@@ -885,7 +885,7 @@ class _ProviderScheduleScreenState
           const SizedBox(height: 16),
           if (auth == null)
             const InfoCard(
-                text: 'Login first to load your provider booking schedule.')
+                text: 'Login first to load your partner booking schedule.')
           else if (items.isEmpty)
             const InfoCard(
                 text: 'No assigned, joined, or completed bookings yet.')
@@ -1646,7 +1646,7 @@ class OpenBookingCard extends StatelessWidget {
                             ?.copyWith(color: Colors.black54),
                       ),
                       Text(
-                          '${booking['status']} - ${participants.length} provider(s) joined'),
+                          '${booking['status']} - ${participants.length} partner(s) joined'),
                     ],
                   ),
                 ),
@@ -1903,7 +1903,7 @@ class EarningsScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           if (auth == null)
             const InfoCard(
-                text: 'Demo provider login is available on the Requests tab.')
+                text: 'Demo partner login is available on the Requests tab.')
           else
             FutureBuilder<List<dynamic>>(
               future: ref.read(providerRepositoryProvider).earnings(),
@@ -3716,7 +3716,7 @@ class _ProviderOnboardingCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Provider onboarding',
+                    'Partner onboarding',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -4130,7 +4130,7 @@ class _ProviderLevelRoadmap extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Provider level roadmap',
+                  'Partner level roadmap',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
               ),
@@ -4911,7 +4911,7 @@ ProviderRequestGuidance providerRequestGuidance({
       nextAction: 'Stay visible and wait for the customer to choose you.',
       contextMessage: hasPreferredProvider
           ? 'Another therapist was chosen first. You are visible as a backup option.'
-          : 'You joined this open request. The customer will pick the final provider.',
+          : 'You joined this open request. The customer will pick the final partner.',
       detailMessage:
           'You are in the shortlist. Keep the app open and wait for customer selection.',
       infoMessage:
@@ -4945,7 +4945,7 @@ ProviderRequestGuidance providerRequestGuidance({
     decisionLabel: 'Can join',
     nextAction: 'Join this open request to enter the customer shortlist.',
     contextMessage:
-        'This request is open to nearby therapists. The customer will pick the final provider.',
+        'This request is open to nearby therapists. The customer will pick the final partner.',
     detailMessage:
         'No preferred therapist was set. Nearby therapists can join and wait for the guest selection.',
     infoMessage:
@@ -5161,7 +5161,7 @@ class ProviderErrorCard extends StatelessWidget {
                 children: [
                   Text(
                     accountBlocked
-                        ? 'Provider account blocked by admin'
+                        ? 'Partner account blocked by admin'
                         : 'Device blocked by admin',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: colorScheme.onErrorContainer,
@@ -5235,8 +5235,8 @@ String providerAppErrorMessage(Object error) {
   }
   if (isProviderAccountBlockedMessage(normalized)) {
     return normalized.replaceFirst(
-      'This provider account is blocked by admin review',
-      'This provider account is blocked by HANDS admin review',
+      'This partner account is blocked by admin review',
+      'This partner account is blocked by HANDS admin review',
     );
   }
   return normalized;

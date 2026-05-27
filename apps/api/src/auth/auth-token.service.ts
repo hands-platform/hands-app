@@ -167,7 +167,7 @@ export class AuthTokenService {
             roles.includes(Role.PROVIDER) && !existingBySupabaseId.providerProfile
               ? {
                   create: {
-                    displayName: `Provider ${phone.slice(-4)}`,
+                    displayName: `Partner ${phone.slice(-4)}`,
                     verification: { create: {} },
                   },
                 }
@@ -194,7 +194,7 @@ export class AuthTokenService {
             roles.includes(Role.PROVIDER) && !existingByPhone.providerProfile
               ? {
                   create: {
-                    displayName: `Provider ${phone.slice(-4)}`,
+                    displayName: `Partner ${phone.slice(-4)}`,
                     verification: { create: {} },
                   },
                 }
@@ -213,7 +213,7 @@ export class AuthTokenService {
         providerProfile: roles.includes(Role.PROVIDER)
           ? {
               create: {
-                displayName: `Provider ${phone.slice(-4)}`,
+                displayName: `Partner ${phone.slice(-4)}`,
                 verification: { create: {} },
               },
             }

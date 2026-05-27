@@ -29,7 +29,7 @@ export class SupabaseAdminService {
         status: 'SKIPPED',
         configured: this.isConfigured(),
         supabaseUserId,
-        reason: 'Provider user is not linked to Supabase Auth yet.',
+        reason: 'Partner user is not linked to Supabase Auth yet.',
       };
     }
 

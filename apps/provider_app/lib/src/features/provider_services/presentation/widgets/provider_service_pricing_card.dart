@@ -220,7 +220,7 @@ class _ProviderServicePriceGroupCard extends StatelessWidget {
               if (group.payoutMissingOptionCount > 0) ...[
                 const SizedBox(height: 6),
                 Text(
-                  '${group.payoutMissingOptionCount} active option(s) need an exact admin payout rule before providers can take bookings.',
+                  '${group.payoutMissingOptionCount} active option(s) need an exact admin payout rule before partners can take bookings.',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Theme.of(context).colorScheme.error,
                       ),
@@ -568,7 +568,7 @@ class _ProviderServicePriceSheetState
           ),
           if (service.payoutRuleConfigured) ...[
             _PricingSummaryLine(
-              label: 'Current provider payout',
+              label: 'Current partner payout',
               value: formatVnd(service.providerPayoutAmount ?? 0),
             ),
             _PricingSummaryLine(

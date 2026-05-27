@@ -93,10 +93,10 @@ export class BookingsService {
         },
       });
       if (providerService && !providerService.active) {
-        throw new BadRequestException('Provider does not offer this service');
+        throw new BadRequestException('Partner does not offer this service');
       }
       if (!providerService && configuredServiceCount > 0) {
-        throw new BadRequestException('Provider does not offer this service');
+        throw new BadRequestException('Partner does not offer this service');
       }
     }
     const customerPrice = this.resolveCustomerPrice(service, providerService?.price);
@@ -202,7 +202,7 @@ export class BookingsService {
       title: preferredProvider ? 'Booking request sent' : 'Booking opened',
       body: preferredProvider
         ? `${preferredProvider.displayName} received your booking request.`
-        : 'We are looking for nearby providers.',
+        : 'We are looking for nearby partners.',
       data: {
         bookingId: booking.id,
         providerProfileId: preferredProvider?.id,
@@ -295,13 +295,13 @@ export class BookingsService {
     const customerPrice = providerPrice ?? service.basePrice;
     const priceStep = service.priceStep ?? 100000;
     if (!Number.isInteger(customerPrice) || customerPrice <= 0) {
-      throw new BadRequestException('Provider service price is invalid');
+      throw new BadRequestException('Partner service price is invalid');
     }
     if (customerPrice < service.basePrice) {
-      throw new BadRequestException('Provider service price cannot be lower than the admin minimum');
+      throw new BadRequestException('Partner service price cannot be lower than the admin minimum');
     }
     if (customerPrice % priceStep !== 0) {
-      throw new BadRequestException(`Provider service price must use ${priceStep} VND increments`);
+      throw new BadRequestException(`Partner service price must use ${priceStep} VND increments`);
     }
     return customerPrice;
   }
@@ -416,7 +416,7 @@ export class BookingsService {
     const nextNotes =
       cancellationPolicyNote && booking.notes?.trim()
         ? `${booking.notes.trim()}\n${cancellationPolicyNote}`
-        : cancellationPolicyNote ?? booking.notes;
+        : (cancellationPolicyNote ?? booking.notes);
 
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
@@ -455,7 +455,9 @@ export class BookingsService {
       },
     });
     const releasedPayment =
-      updated.payment && !holdPaymentForCancellationFeeReview ? await this.payments.release(updated.payment.id) : null;
+      updated.payment && !holdPaymentForCancellationFeeReview
+        ? await this.payments.release(updated.payment.id)
+        : null;
     const result = releasedPayment ? { ...updated, payment: releasedPayment } : updated;
 
     await this.matching.closeBooking(bookingId);
@@ -613,7 +615,7 @@ export class BookingsService {
     await this.notifications.create({
       userId: customerUserId,
       type: 'provider.joined',
-      title: 'A provider joined',
+      title: 'A partner joined',
       body: `${provider.displayName} joined your booking.`,
       data: { bookingId, providerProfileId: provider.id },
     });
@@ -636,7 +638,7 @@ export class BookingsService {
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
     });
     if (!participant || participant.status === ParticipantStatus.REJECTED) {
-      throw new BadRequestException('Provider must join before customer selection');
+      throw new BadRequestException('Partner must join before customer selection');
     }
     await this.ensureProviderWalletCanAccept(providerId);
 
@@ -670,7 +672,7 @@ export class BookingsService {
     await this.notifications.create({
       userId: customerUserId,
       type: 'booking.matched',
-      title: 'Provider selected',
+      title: 'Partner selected',
       body: 'Your chat room is ready.',
       data: { bookingId, chatRoomId: booking.chatRoom?.id },
     });
@@ -734,7 +736,7 @@ export class BookingsService {
         await this.notifications.create({
           userId: booking.customerProfile.userId,
           type: 'booking.accepted',
-          title: 'Provider accepted your booking',
+          title: 'Partner accepted your booking',
           body: `${provider.displayName} accepted your request.`,
           data: { bookingId },
         });
@@ -761,7 +763,7 @@ export class BookingsService {
         await this.notifications.create({
           userId: booking.customerProfile.userId,
           type: 'booking.rejected',
-          title: 'Provider declined your booking',
+          title: 'Partner declined your booking',
           body: 'We are still looking for another available therapist.',
           data: { bookingId, providerProfileId: provider.id },
         });
@@ -770,8 +772,7 @@ export class BookingsService {
         await this.matching.registerActiveBooking(bookingId, result);
         await this.matching.scheduleBookingTimeout(
           bookingId,
-          updated.expiresAt ??
-            new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
+          updated.expiresAt ?? new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
         );
         this.matchingGateway.emitBookingOpened(bookingId, result);
         return updated;
@@ -853,7 +854,11 @@ export class BookingsService {
   }
 
   private canProviderSeeOpenBooking(
-    booking: { preferredProviderId: string | null; openedAt?: Date | string | null; distanceMeters?: number | null },
+    booking: {
+      preferredProviderId: string | null;
+      openedAt?: Date | string | null;
+      distanceMeters?: number | null;
+    },
     provider: { id: string },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
@@ -869,7 +874,12 @@ export class BookingsService {
   }
 
   private requireProviderWithinMatchingRadius(
-    booking: { lat: unknown; lng: unknown; openedAt?: Date | string | null; preferredProviderId: string | null },
+    booking: {
+      lat: unknown;
+      lng: unknown;
+      openedAt?: Date | string | null;
+      preferredProviderId: string | null;
+    },
     provider: { id: string; currentLat: unknown; currentLng: unknown },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
@@ -886,7 +896,7 @@ export class BookingsService {
       throw new BadRequestException('Backup partners can join after the preferred response window opens');
     }
     if (distanceMeters === null) {
-      throw new BadRequestException('Provider location is required before joining this booking');
+      throw new BadRequestException('Partner location is required before joining this booking');
     }
     if (distanceMeters > policy.backupProviderRadiusMeters) {
       throw new BadRequestException(
@@ -968,7 +978,7 @@ export class BookingsService {
         userId: updated.customerProfile.userId,
         type: 'service.started',
         title: 'Service started',
-        body: 'Your provider started the service. Chat is now available.',
+        body: 'Your partner started the service. Chat is now available.',
         data: { bookingId, chatRoomId: updated.chatRoom?.id },
       });
       if (updated.selectedProvider?.userId) {
@@ -1077,15 +1087,15 @@ export class BookingsService {
 
   private async requireProvider(userId?: string) {
     if (!userId) {
-      throw new BadRequestException('Authenticated provider is required');
+      throw new BadRequestException('Authenticated partner is required');
     }
 
     const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
     if (!provider) {
-      throw new NotFoundException('Provider profile not found');
+      throw new NotFoundException('Partner profile not found');
     }
     if (provider.status === ProviderStatus.OFFLINE) {
-      throw new BadRequestException('Provider must be online before joining bookings');
+      throw new BadRequestException('Partner must be online before joining bookings');
     }
     return provider;
   }
@@ -1093,7 +1103,7 @@ export class BookingsService {
   private async requireSelectedProvider(bookingId: string, providerId: string) {
     const booking = await this.prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
     if (booking.selectedProviderId !== providerId) {
-      throw new BadRequestException('Provider is not selected for this booking');
+      throw new BadRequestException('Partner is not selected for this booking');
     }
     return booking;
   }

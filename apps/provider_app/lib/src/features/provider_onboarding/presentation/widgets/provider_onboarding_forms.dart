@@ -273,7 +273,7 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
   @override
   Widget build(BuildContext context) {
     return _SheetFrame(
-      title: 'Provider basic profile',
+      title: 'Partner basic profile',
       child: Form(
         key: _formKey,
         child: Column(

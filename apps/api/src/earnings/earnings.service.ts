@@ -55,7 +55,7 @@ export class EarningsService {
       throw new BadRequestException('Earnings can be created only for completed bookings');
     }
     if (booking.selectedProviderId !== providerProfileId) {
-      throw new BadRequestException('Provider is not selected for this booking');
+      throw new BadRequestException('Partner is not selected for this booking');
     }
 
     const grossAmount =
@@ -390,7 +390,7 @@ export class EarningsService {
   }) {
     const provider = await this.prisma.providerProfile.findUnique({ where: { id: input.providerProfileId } });
     if (!provider) {
-      throw new NotFoundException('Provider profile not found');
+      throw new NotFoundException('Partner profile not found');
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -927,7 +927,7 @@ export class EarningsService {
   private async requireProviderProfile(userId: string) {
     const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
     if (!provider) {
-      throw new NotFoundException('Provider profile not found');
+      throw new NotFoundException('Partner profile not found');
     }
     return provider;
   }
@@ -942,7 +942,7 @@ export class EarningsService {
       },
     });
     if (!provider) {
-      throw new NotFoundException('Provider profile not found');
+      throw new NotFoundException('Partner profile not found');
     }
 
     await this.ensureNoActivePayoutHold(tx, providerProfileId);
@@ -955,21 +955,19 @@ export class EarningsService {
     const missingAgreements = REQUIRED_PAYOUT_AGREEMENTS.filter((type) => !acceptedAgreementTypes.has(type));
 
     if (completedBookingCount < 1) {
-      throw new BadRequestException('Provider must complete at least one booking before payout');
+      throw new BadRequestException('Partner must complete at least one booking before payout');
     }
     if (!provider.taxProfile || provider.taxProfile.status !== ProviderTaxProfileStatus.APPROVED) {
-      throw new BadRequestException('Provider tax profile must be approved before payout');
+      throw new BadRequestException('Partner tax profile must be approved before payout');
     }
     if (!provider.residentialAddress?.trim()) {
-      throw new BadRequestException('Provider residential address is required before payout');
+      throw new BadRequestException('Partner residential address is required before payout');
     }
     if (provider.bankAccounts.length === 0) {
-      throw new BadRequestException('Provider needs an approved bank account before payout');
+      throw new BadRequestException('Partner needs an approved bank account before payout');
     }
     if (missingAgreements.length > 0) {
-      throw new BadRequestException(
-        `Provider must accept payout agreements: ${missingAgreements.join(', ')}`,
-      );
+      throw new BadRequestException(`Partner must accept payout agreements: ${missingAgreements.join(', ')}`);
     }
   }
 
@@ -994,7 +992,7 @@ export class EarningsService {
   private async ensureNoActivePayoutHold(client: TxClient, providerProfileId: string) {
     const payoutHold = await this.activePayoutHoldForProvider(client, providerProfileId);
     if (payoutHold) {
-      throw new BadRequestException(`Provider payout is blocked by active sanction: ${payoutHold.reason}`);
+      throw new BadRequestException(`Partner payout is blocked by active sanction: ${payoutHold.reason}`);
     }
   }
 

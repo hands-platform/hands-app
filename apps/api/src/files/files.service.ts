@@ -152,10 +152,10 @@ export class FilesService {
 
     if (input.purpose === 'provider-verification') {
       if (!user.roles.includes(Role.PROVIDER) && !user.roles.includes(Role.ADMIN)) {
-        throw new BadRequestException('Provider verification uploads require provider or admin role');
+        throw new BadRequestException('Partner verification uploads require partner or admin role');
       }
       if (input.visibility !== FileVisibility.PRIVATE) {
-        throw new BadRequestException('Provider verification files must be private');
+        throw new BadRequestException('Partner verification files must be private');
       }
       if (!input.providerVerificationId) {
         throw new BadRequestException('providerVerificationId is required for provider verification files');
@@ -164,10 +164,10 @@ export class FilesService {
 
     if (['provider-gallery', 'profile-image'].includes(input.purpose)) {
       if (!user.roles.includes(Role.PROVIDER) && !user.roles.includes(Role.ADMIN)) {
-        throw new BadRequestException('Provider media uploads require provider or admin role');
+        throw new BadRequestException('Partner media uploads require partner or admin role');
       }
       if (input.visibility !== FileVisibility.PUBLIC) {
-        throw new BadRequestException('Provider gallery and profile images must be public');
+        throw new BadRequestException('Partner gallery and profile images must be public');
       }
     }
 

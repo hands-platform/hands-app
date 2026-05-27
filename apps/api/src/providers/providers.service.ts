@@ -199,7 +199,7 @@ export class ProvidersService {
     const blocked = Boolean(existingDevice?.blockedAt);
     const suspicious = providerBlocked || blocked || sharedDeviceCount > 0;
     const suspiciousReason = providerBlocked
-      ? `Blocked provider account: ${providerBlockReason}`
+      ? `Blocked partner account: ${providerBlockReason}`
       : blocked
         ? `Blocked device: ${existingDevice?.blockReason ?? 'No reason saved'}`
         : sharedDeviceCount > 0
@@ -257,7 +257,7 @@ export class ProvidersService {
   async updateLocation(userId: string | undefined, input: { lat: number; lng: number }) {
     const provider = await this.requireProvider(userId);
     assertProviderNotBlocked(provider);
-    assertVietnamCoordinate(input.lat, input.lng, 'Provider location must be inside Vietnam');
+    assertVietnamCoordinate(input.lat, input.lng, 'Partner location must be inside Vietnam');
     const recordedAt = new Date();
     const updated = await this.prisma.providerProfile.update({
       where: { id: provider.id },
@@ -372,7 +372,7 @@ export class ProvidersService {
     const hasPayoutRule = service.payoutRules.some((rule) => rule.customerPrice === price);
     if (active && !hasPayoutRule) {
       throw new BadRequestException(
-        'Admin payout rule is required before this provider price can be activated',
+        'Admin payout rule is required before this partner price can be activated',
       );
     }
 
@@ -450,12 +450,12 @@ export class ProvidersService {
 
   private async requireProvider(userId?: string) {
     if (!userId) {
-      throw new BadRequestException('Authenticated provider is required');
+      throw new BadRequestException('Authenticated partner is required');
     }
 
     const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
     if (!provider) {
-      throw new NotFoundException('Provider profile not found');
+      throw new NotFoundException('Partner profile not found');
     }
     return provider;
   }
@@ -471,21 +471,21 @@ function assertProviderNotBlocked(provider: { blockedAt: Date | null; blockedRea
   if (provider.blockedAt) {
     throw new BadRequestException(
       provider.blockedReason
-        ? `Provider account is blocked by admin review: ${provider.blockedReason}`
-        : 'Provider account is blocked by admin review.',
+        ? `Partner account is blocked by admin review: ${provider.blockedReason}`
+        : 'Partner account is blocked by admin review.',
     );
   }
 }
 
 function assertProviderServicePrice(service: { basePrice: number; priceStep: number }, price: number) {
   if (!Number.isInteger(price) || price <= 0) {
-    throw new BadRequestException('Provider service price is invalid');
+    throw new BadRequestException('Partner service price is invalid');
   }
   if (price < service.basePrice) {
-    throw new BadRequestException('Provider service price cannot be lower than the admin minimum');
+    throw new BadRequestException('Partner service price cannot be lower than the admin minimum');
   }
   if (price % service.priceStep !== 0) {
-    throw new BadRequestException(`Provider service price must use ${service.priceStep} VND increments`);
+    throw new BadRequestException(`Partner service price must use ${service.priceStep} VND increments`);
   }
 }
 

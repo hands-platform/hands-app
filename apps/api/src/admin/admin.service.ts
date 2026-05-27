@@ -229,7 +229,7 @@ export class AdminService {
       },
     });
     if (!provider) {
-      throw new NotFoundException('Provider not found');
+      throw new NotFoundException('Partner not found');
     }
 
     const deviceIds = Array.from(
@@ -356,7 +356,7 @@ export class AdminService {
     await this.notifications.create({
       userId: provider.userId,
       type: 'provider.account.blocked',
-      title: 'Provider account blocked',
+      title: 'Partner account blocked',
       body: blockReason,
       data: { providerProfileId, reason: blockReason },
     });
@@ -394,8 +394,8 @@ export class AdminService {
     await this.notifications.create({
       userId: provider.userId,
       type: 'provider.account.unblocked',
-      title: 'Provider account unblocked',
-      body: 'Your HANDS provider account can sign in again. Go online only when ready to receive requests.',
+      title: 'Partner account unblocked',
+      body: 'Your HANDS partner account can sign in again. Go online only when ready to receive requests.',
       data: { providerProfileId },
     });
 
@@ -608,8 +608,8 @@ export class AdminService {
         await this.notifications.create({
           userId: provider.userId,
           type: 'provider.account.unblocked',
-          title: 'Provider account unblocked',
-          body: 'Your HANDS provider account can sign in again. Go online only when ready to receive requests.',
+          title: 'Partner account unblocked',
+          body: 'Your HANDS partner account can sign in again. Go online only when ready to receive requests.',
           data: { providerProfileId: provider.id, sanctionId },
         });
       }
@@ -685,7 +685,7 @@ export class AdminService {
         status: 'SKIPPED' as const,
         configured: false,
         supabaseUserId: provider.user.supabaseUserId,
-        reason: 'Provider must be approved before Supabase provider role sync.',
+        reason: 'Partner must be approved before Supabase provider role sync.',
       };
       await this.writeAudit(actorId, 'provider.supabase_role_sync.skipped', `provider:${providerProfileId}`, {
         result,
@@ -2148,14 +2148,14 @@ function normalizeServicePayoutRuleInput(
     (creating || input.providerPayoutAmount !== undefined) &&
     (!Number.isInteger(providerPayoutAmount) || (providerPayoutAmount ?? -1) < 0)
   ) {
-    throw new BadRequestException('Provider payout amount must be zero or greater');
+    throw new BadRequestException('Partner payout amount must be zero or greater');
   }
   if (
     customerPrice !== undefined &&
     providerPayoutAmount !== undefined &&
     providerPayoutAmount > customerPrice
   ) {
-    throw new BadRequestException('Provider payout amount cannot exceed customer price');
+    throw new BadRequestException('Partner payout amount cannot exceed customer price');
   }
 
   const vatBps = input.vatBps ?? existing?.vatBps ?? 0;
