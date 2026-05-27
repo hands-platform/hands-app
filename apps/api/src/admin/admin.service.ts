@@ -405,7 +405,7 @@ export class AdminService {
   listProviderReports() {
     return this.prisma.providerReport.findMany({
       orderBy: [{ status: 'asc' }, { severity: 'desc' }, { createdAt: 'desc' }],
-      take: 100,
+      take: 250,
       include: {
         providerProfile: { include: { user: { select: { phone: true, fullName: true } } } },
         booking: { select: { id: true, status: true, scheduledStartAt: true } },
