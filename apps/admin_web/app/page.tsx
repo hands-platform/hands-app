@@ -128,9 +128,19 @@ export default async function DashboardPage() {
       'Cancelled requests needing refund/release review.',
     ],
     [
+      'Expired bookings',
+      bookingOps.expired.toString(),
+      'Expired requests that should have payment release and customer follow-up checked.',
+    ],
+    [
       'No-show signal',
       bookingOps.noShowSignal.toString(),
       'Formal NO_SHOW reservations plus overdue matched bookings without chat.',
+    ],
+    [
+      'Closeout risk',
+      bookingOps.completedCloseoutRisk.toString(),
+      'Completed bookings missing capture, earning, tax, fee, or wallet ledger records.',
     ],
     [
       'Online partners',
@@ -257,9 +267,24 @@ export default async function DashboardPage() {
               <small>Refund/release check</small>
             </div>
             <div>
+              <span>Expired</span>
+              <strong>{bookingOps.expired}</strong>
+              <small>Manual closeout</small>
+            </div>
+            <div>
+              <span>Formal no-show</span>
+              <strong>{bookingOps.noShowFormal}</strong>
+              <small>Operator decision</small>
+            </div>
+            <div>
               <span>No-show signal</span>
               <strong>{bookingOps.noShowSignal}</strong>
               <small>Expired proxy</small>
+            </div>
+            <div>
+              <span>Closeout risk</span>
+              <strong>{bookingOps.completedCloseoutRisk}</strong>
+              <small>Finance records</small>
             </div>
           </div>
         </div>
@@ -621,14 +646,21 @@ function InfoRow({ label, value, detail }: { label: string; value: string; detai
 }
 
 function buildBookingOpsInsights(bookings: AdminBooking[]) {
+  const expired = bookings.filter((booking) => booking.status === 'EXPIRED');
+  const noShowFormal = bookings.filter((booking) => booking.status === 'NO_SHOW');
+  const completedCloseoutRisk = bookings.filter(completedCloseoutNeedsOps);
+
   return {
     total: bookings.length,
     openMatching: bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length,
     active: bookings.filter((booking) => activeBookingStatuses.has(booking.status)).length,
     completed: bookings.filter((booking) => booking.status === 'COMPLETED').length,
     cancelled: bookings.filter((booking) => booking.status === 'CANCELLED').length,
+    expired: expired.length,
     refunded: bookings.filter((booking) => booking.status === 'REFUNDED').length,
+    noShowFormal: noShowFormal.length,
     noShowSignal: bookings.filter(isNoShowSignal).length,
+    completedCloseoutRisk: completedCloseoutRisk.length,
   };
 }
 
@@ -826,6 +858,11 @@ function buildDashboardCommandSignals(input: {
   const matchedWithoutChat = input.bookings.filter(
     (booking) => booking.status === 'MATCHED' && !booking.chatRoom,
   );
+  const formalExpired = input.bookings.filter((booking) => booking.status === 'EXPIRED');
+  const formalNoShow = input.bookings.filter((booking) => booking.status === 'NO_SHOW');
+  const expiredPaymentRisk = formalExpired.filter((booking) => unresolvedReleasePayment(booking));
+  const noShowPaymentRisk = formalNoShow.filter((booking) => unresolvedReleasePayment(booking));
+  const completedCloseoutRisk = input.bookings.filter(completedCloseoutNeedsOps);
   const submittedVerification = input.providers.filter(
     (provider) => provider.verification?.status === 'SUBMITTED',
   );
@@ -856,7 +893,12 @@ function buildDashboardCommandSignals(input: {
   const cashDebtAmount = sumCashDebt(cashDebtRows);
   const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
   const paymentReviews =
-    completedAuthorized.length + missingGatewayRef.length + cashPending.length + openRefunds.length;
+    completedCloseoutRisk.length +
+    expiredPaymentRisk.length +
+    noShowPaymentRisk.length +
+    missingGatewayRef.length +
+    cashPending.length +
+    openRefunds.length;
   const payoutHolds = input.payoutBatches.filter((batch) => Boolean(activePayoutHold(batch)));
   const payoutReviews = input.payoutBatches.filter((batch) =>
     ['DRAFT', 'FAILED', 'PROCESSING'].includes(batch.status),
@@ -921,6 +963,18 @@ function buildDashboardCommandSignals(input: {
           href: '/bookings?view=high-risk',
         },
         {
+          label: 'Formal expired',
+          value: formalExpired.length.toString(),
+          tone: formalExpired.length ? 'warn' : 'ok',
+          href: '/bookings?status=EXPIRED',
+        },
+        {
+          label: 'No-show',
+          value: formalNoShow.length.toString(),
+          tone: formalNoShow.length ? 'warn' : 'ok',
+          href: '/bookings?status=NO_SHOW',
+        },
+        {
           label: 'Quiet chats',
           value: quietChatRooms.length.toString(),
           tone: quietChatRooms.length ? 'info' : 'ok',
@@ -983,20 +1037,38 @@ function buildDashboardCommandSignals(input: {
       title: 'Payment lane',
       status: `${paymentReviews} REVIEW`,
       detail: paymentReviews
-        ? 'Payment holds, missing refs, cash collection, completed-service captures, or refunds need review.'
+        ? 'Payment holds, missing refs, cash collection, completed closeout, expired/no-show release, or refunds need review.'
         : 'Payment and refund queues are quiet.',
       action: 'Open payments',
-      href: cashPending.length ? '/payments?review=cash' : '/payments',
-      priority: completedAuthorized.length ? 100 : cashPending.length ? 85 : paymentReviews ? 80 : 20,
-      severity: completedAuthorized.length ? 'high' : paymentReviews ? 'medium' : 'low',
+      href: completedCloseoutRisk.length
+        ? '/bookings?view=closeout'
+        : cashPending.length
+          ? '/payments?review=cash'
+          : '/payments',
+      priority:
+        completedCloseoutRisk.length || expiredPaymentRisk.length || noShowPaymentRisk.length
+          ? 100
+          : completedAuthorized.length
+            ? 95
+            : cashPending.length
+              ? 85
+              : paymentReviews
+                ? 80
+                : 20,
+      severity:
+        completedCloseoutRisk.length || expiredPaymentRisk.length || noShowPaymentRisk.length
+          ? 'high'
+          : paymentReviews
+            ? 'medium'
+            : 'low',
       className: paymentReviews ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: paymentReviews ? 'pill-danger' : 'pill-success',
       breakdown: [
         {
-          label: 'Capture review',
-          value: completedAuthorized.length.toString(),
-          tone: completedAuthorized.length ? 'danger' : 'ok',
-          href: '/payments?review=capture',
+          label: 'Closeout risk',
+          value: completedCloseoutRisk.length.toString(),
+          tone: completedCloseoutRisk.length ? 'danger' : 'ok',
+          href: '/bookings?view=closeout',
         },
         {
           label: 'Missing refs',
@@ -1009,6 +1081,12 @@ function buildDashboardCommandSignals(input: {
           value: cashPending.length.toString(),
           tone: cashPending.length ? 'warn' : 'ok',
           href: '/payments?review=cash',
+        },
+        {
+          label: 'Release risk',
+          value: (expiredPaymentRisk.length + noShowPaymentRisk.length).toString(),
+          tone: expiredPaymentRisk.length + noShowPaymentRisk.length ? 'danger' : 'ok',
+          href: '/bookings?view=payment',
         },
         {
           label: 'Open refunds',
@@ -1395,6 +1473,15 @@ function bookingFlags(booking: AdminBooking) {
   ) {
     flags.push({ label: 'Cancelled booking has unresolved payment', severity: 'high' });
   }
+  if (booking.status === 'EXPIRED' && unresolvedReleasePayment(booking)) {
+    flags.push({ label: 'Expired booking has unresolved payment release', severity: 'high' });
+  }
+  if (booking.status === 'NO_SHOW' && unresolvedReleasePayment(booking)) {
+    flags.push({ label: 'No-show booking has unresolved payment release', severity: 'high' });
+  }
+  if (completedCloseoutNeedsOps(booking)) {
+    flags.push({ label: 'Completed booking missing closeout records', severity: 'high' });
+  }
   if (booking.status === 'OPEN_MATCHING' && expired) {
     flags.push({ label: 'Open matching window expired', severity: 'high' });
   }
@@ -1416,6 +1503,28 @@ function bookingFlags(booking: AdminBooking) {
   }
 
   return flags;
+}
+
+function unresolvedReleasePayment(booking: AdminBooking) {
+  return Boolean(booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status));
+}
+
+function completedCloseoutNeedsOps(booking: AdminBooking) {
+  if (booking.status !== 'COMPLETED') {
+    return false;
+  }
+  if (!booking.payment || booking.payment.status !== 'CAPTURED') {
+    return true;
+  }
+  if (!booking.earning) {
+    return true;
+  }
+
+  return (
+    (booking.earning.taxLogs?.length ?? 0) === 0 ||
+    (booking.earning.platformFeeLogs?.length ?? 0) === 0 ||
+    (booking.earning.walletLedgerEntries?.length ?? 0) === 0
+  );
 }
 
 function activePayoutHold(batch: AdminPayoutBatch) {
