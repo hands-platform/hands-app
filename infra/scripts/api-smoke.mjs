@@ -110,6 +110,70 @@ async function expectRequestFailure(label, fn, expectedStatus) {
   throw new Error(`${label} unexpectedly succeeded`);
 }
 
+async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, label) {
+  const providerProfileId = providerAuth.user.providerProfile.id;
+  await postJson(`/admin/providers/${providerProfileId}/approve`, adminAccessToken);
+
+  let onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
+  if (onboarding.kyc?.status !== 'APPROVED') {
+    const requiredDocumentTypes = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
+    const documentPayload = [];
+    for (const type of requiredDocumentTypes) {
+      const existing = onboarding.documents?.find(
+        (document) => document.type === type && document.status !== 'REJECTED',
+      );
+      if (!existing) {
+        const upload = await postJson('/files/presign', providerAuth.accessToken, {
+          contentType: 'image/jpeg',
+          visibility: 'PRIVATE',
+          purpose: `${label}-kyc-${type.toLowerCase()}`,
+        });
+        await postJson(`/files/${upload.file.id}/complete`, providerAuth.accessToken, {
+          sizeBytes: 1024,
+        });
+        documentPayload.push({ fileId: upload.file.id, type });
+      }
+    }
+
+    await postJson('/provider/onboarding/kyc/submit', providerAuth.accessToken, {
+      cccdNumber: '000000000000',
+      documents: documentPayload,
+    });
+    onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
+    for (const type of requiredDocumentTypes) {
+      const document = onboarding.documents?.find(
+        (item) => item.type === type && item.status !== 'APPROVED',
+      );
+      if (document) {
+        await postJson(`/admin/provider-documents/${document.id}/approve`, adminAccessToken);
+      }
+    }
+    await postJson(`/admin/providers/${providerProfileId}/kyc/approve`, adminAccessToken);
+  }
+
+  onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
+  if (!onboarding.bankAccounts?.some((account) => account.status === 'APPROVED')) {
+    const bankAccount = await postJson('/provider/onboarding/bank-accounts', providerAuth.accessToken, {
+      bankName: 'Vietcombank',
+      accountNumber: '000012345678',
+      accountHolderName: `${label} Partner`,
+    });
+    await postJson(
+      `/admin/provider-bank-accounts/${bankAccount.bankAccount.id}/approve`,
+      adminAccessToken,
+    );
+  }
+
+  const ready = await getJson('/provider/onboarding', providerAuth.accessToken);
+  if (
+    ready.kyc?.status !== 'APPROVED' ||
+    !ready.bankAccounts?.some((account) => account.status === 'APPROVED')
+  ) {
+    throw new Error(`${label} partner booking readiness setup failed: ${JSON.stringify(ready)}`);
+  }
+  return ready;
+}
+
 function firstBookingServiceLine(booking) {
   const services = Array.isArray(booking?.services) ? booking.services : [];
   return services.length > 0 && services[0] && typeof services[0] === 'object' ? services[0] : null;
@@ -920,6 +984,56 @@ await expectRequestFailure(
     ),
   400,
 );
+await postJson(`/admin/providers/${kycNegativeProviderAuth.user.providerProfile.id}/approve`, adminAuth.accessToken);
+await postJson('/provider/online', kycNegativeProviderAuth.accessToken);
+await postJson('/provider/location', kycNegativeProviderAuth.accessToken, {
+  lat: 10.7772,
+  lng: 106.7011,
+});
+const unapprovedKycBookingGateError = await expectRequestFailure(
+  'Partner without approved KYC cannot receive direct booking',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      providerId: kycNegativeProviderAuth.user.providerProfile.id,
+      scheduledStartAt: new Date(Date.now() + 50 * 60_000).toISOString(),
+      address: { line1: 'KYC booking gate smoke flow' },
+      lat: 10.7769,
+      lng: 106.7009,
+      paymentMethod: 'CASH',
+    }),
+  400,
+);
+if (!unapprovedKycBookingGateError.includes('Partner KYC must be approved')) {
+  throw new Error(`KYC booking gate returned the wrong message: ${unapprovedKycBookingGateError}`);
+}
+const pendingKycOnboarding = await getJson('/provider/onboarding', kycNegativeProviderAuth.accessToken);
+for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
+  const document = pendingKycOnboarding.documents.find(
+    (item) => item.type === type && item.status !== 'APPROVED',
+  );
+  if (document) {
+    await postJson(`/admin/provider-documents/${document.id}/approve`, adminAuth.accessToken);
+  }
+}
+await postJson(`/admin/providers/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
+const missingBankBookingGateError = await expectRequestFailure(
+  'Partner without approved bank account cannot receive direct booking',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      providerId: kycNegativeProviderAuth.user.providerProfile.id,
+      scheduledStartAt: new Date(Date.now() + 55 * 60_000).toISOString(),
+      address: { line1: 'Bank booking gate smoke flow' },
+      lat: 10.7769,
+      lng: 106.7009,
+      paymentMethod: 'CASH',
+    }),
+  400,
+);
+if (!missingBankBookingGateError.includes('Partner bank account must be approved')) {
+  throw new Error(`Bank booking gate returned the wrong message: ${missingBankBookingGateError}`);
+}
 const kycDocumentUploads = [];
 for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
   const upload = await postJson('/files/presign', providerAuth.accessToken, {
@@ -977,6 +1091,8 @@ if (
 ) {
   throw new Error(`Provider onboarding review flow failed: ${JSON.stringify(approvedProviderOnboarding)}`);
 }
+await approvePartnerBookingReadiness(backupProviderAuth, adminAuth.accessToken, 'backup');
+await approvePartnerBookingReadiness(walletDebtProviderAuth, adminAuth.accessToken, 'wallet-debt');
 const taxPolicyVersions = await getJson('/admin/tax-policy-versions', adminAuth.accessToken);
 if (!Array.isArray(taxPolicyVersions)) {
   throw new Error(`Tax policy version list did not return an array: ${JSON.stringify(taxPolicyVersions)}`);
