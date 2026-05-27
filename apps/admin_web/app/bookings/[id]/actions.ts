@@ -88,6 +88,22 @@ export async function expireBooking(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function closeoutCompletedBooking(formData: FormData) {
+  const bookingId = String(formData.get('bookingId') ?? '');
+  const note = String(formData.get('note') ?? '');
+  if (!bookingId) {
+    return;
+  }
+
+  await adminPost(`/admin/bookings/${bookingId}/closeout`, { note }, null);
+  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath('/bookings');
+  revalidatePath('/payments');
+  revalidatePath('/earnings');
+  revalidatePath('/payouts');
+  revalidatePath('/audit-log');
+}
+
 export async function updateBookingOpsTask(formData: FormData) {
   const bookingId = String(formData.get('bookingId') ?? '');
   const type = String(formData.get('type') ?? '');

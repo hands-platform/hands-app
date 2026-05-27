@@ -85,6 +85,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const noShow = orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
     const expired = orderedBookings.filter((booking) => booking.status === 'EXPIRED');
     const paymentRisk = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
+    const closeoutRisk = orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
     const pricingRisk = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
     const locationRisk = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
     const highRisk = orderedBookings.filter((booking) =>
@@ -103,6 +104,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['No-show', noShow.length.toString()],
       ['Expired', expired.length.toString()],
       ['Payment risk', paymentRisk.length.toString()],
+      ['Closeout risk', closeoutRisk.length.toString()],
       ['Pricing risk', pricingRisk.length.toString()],
       ['Location risk', locationRisk.length.toString()],
     ];
@@ -554,6 +556,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
   const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
   const paymentRisk = bookings.filter((booking) => bookingPaymentNeedsOps(booking));
   const noShow = bookings.filter((booking) => booking.status === 'NO_SHOW');
+  const closeoutRisk = bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
   const pricingRisk = bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
   const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
   const locationRisk = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
@@ -611,29 +614,39 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
     },
     {
       title: 'Payment closeout',
-      status: paymentRisk.length > 0 || noShow.length > 0 || pricingRisk.length > 0 ? 'Review' : 'Ready',
+      status:
+        paymentRisk.length > 0 || closeoutRisk.length > 0 || noShow.length > 0 || pricingRisk.length > 0
+          ? 'Review'
+          : 'Ready',
       tone:
         paymentRisk.length > 0
           ? 'danger'
-          : noShow.length > 0
-            ? 'warn'
-            : pricingRisk.length > 0
+          : closeoutRisk.length > 0
+            ? 'danger'
+            : noShow.length > 0
               ? 'warn'
-              : 'ok',
+              : pricingRisk.length > 0
+                ? 'warn'
+                : 'ok',
       detail:
         paymentRisk.length > 0
           ? 'Some bookings need capture, release, refund, cash debt, or missing reference review.'
-          : noShow.length > 0
-            ? 'No-show bookings need a clear payment and customer communication outcome.'
-            : 'Payment and service pricing policy signals are aligned.',
+          : closeoutRisk.length > 0
+            ? 'Completed bookings are missing earning, tax, platform fee, or wallet closeout records.'
+            : noShow.length > 0
+              ? 'No-show bookings need a clear payment and customer communication outcome.'
+              : 'Payment and service pricing policy signals are aligned.',
       href:
         paymentRisk.length > 0
           ? '/bookings?view=payment'
-          : noShow.length > 0
-            ? '/bookings?view=no-show'
-            : '/bookings?view=pricing',
+          : closeoutRisk.length > 0
+            ? '/bookings?view=payment'
+            : noShow.length > 0
+              ? '/bookings?view=no-show'
+              : '/bookings?view=pricing',
       metrics: [
         metric('payment', paymentRisk.length),
+        metric('closeout', closeoutRisk.length),
         metric('no-show', noShow.length),
         metric('pricing', pricingRisk.length),
         metric('cash debt', cashDebt.length),
@@ -897,6 +910,9 @@ function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag
   if (booking.status === 'COMPLETED' && paymentStatus === 'AUTHORIZED') {
     flags.push({ severity: 'high', title: 'Completed service still on hold' });
   }
+  if (bookingCompletedCloseoutNeedsOps(booking)) {
+    flags.push({ severity: 'high', title: 'Completed closeout incomplete' });
+  }
   if (
     booking.status === 'NO_SHOW' &&
     booking.payment &&
@@ -966,6 +982,9 @@ function bookingPaymentNeedsOps(booking: AdminBooking) {
   if (booking.status === 'COMPLETED' && payment.status === 'AUTHORIZED') {
     return true;
   }
+  if (bookingCompletedCloseoutNeedsOps(booking)) {
+    return true;
+  }
   if (payment.status === 'AUTHORIZED' && !payment.providerRef) {
     return true;
   }
@@ -976,6 +995,23 @@ function bookingPaymentNeedsOps(booking: AdminBooking) {
     return true;
   }
   return false;
+}
+
+function bookingCompletedCloseoutNeedsOps(booking: AdminBooking) {
+  if (booking.status !== 'COMPLETED') {
+    return false;
+  }
+  if (!booking.payment || booking.payment.status !== 'CAPTURED') {
+    return true;
+  }
+  if (!booking.earning) {
+    return true;
+  }
+  return (
+    (booking.earning.taxLogs?.length ?? 0) === 0 ||
+    (booking.earning.platformFeeLogs?.length ?? 0) === 0 ||
+    (booking.earning.walletLedgerEntries?.length ?? 0) === 0
+  );
 }
 
 function bookingPricingPolicyNeedsOps(booking: AdminBooking) {
@@ -1113,6 +1149,9 @@ function nextAction(booking: AdminBooking) {
   }
   if (booking.status === 'IN_SERVICE') {
     return 'Watch completion and payment capture.';
+  }
+  if (bookingCompletedCloseoutNeedsOps(booking)) {
+    return 'Completed service needs closeout reconciliation for payment, earning, tax, and wallet records.';
   }
   if (booking.status === 'COMPLETED') {
     return 'Review payment, tip, and follow-up review.';

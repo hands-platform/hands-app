@@ -1435,6 +1435,22 @@ const review = await postJson('/customer/reviews', customerAuth.accessToken, {
   tipAmount: 50000,
 });
 
+const completedCloseout = await postJson(`/admin/bookings/${booking.id}/closeout`, adminAuth.accessToken, {
+  note: 'Smoke test completed booking closeout',
+});
+if (
+  completedCloseout.status !== 'COMPLETED' ||
+  completedCloseout.payment?.status !== 'CAPTURED' ||
+  !completedCloseout.earning?.id ||
+  !completedCloseout.earning?.taxLogs?.length ||
+  !completedCloseout.earning?.platformFeeLogs?.length ||
+  !completedCloseout.earning?.walletLedgerEntries?.length
+) {
+  throw new Error(
+    `Completed closeout did not reconcile finance records: ${JSON.stringify(completedCloseout)}`,
+  );
+}
+
 const providerEarnings = await getJson('/provider/earnings', providerAuth.accessToken);
 const providerEarningsSummary = await getJson('/provider/earnings/summary', providerAuth.accessToken);
 const completedEarning = providerEarnings.find((earning) => earning.bookingId === booking.id);

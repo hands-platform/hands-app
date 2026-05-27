@@ -1019,6 +1019,85 @@ export class AdminService {
     return updated;
   }
 
+  async closeoutCompletedBooking(actorId: string, bookingId: string, input: { note?: string }) {
+    const note = normalizeNullable(input.note);
+    const booking = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      include: { payment: true, earning: true, selectedProvider: true },
+    });
+
+    if (booking.status !== BookingStatus.COMPLETED) {
+      throw new BadRequestException(`Booking status ${booking.status} cannot be closed out as completed`);
+    }
+    if (!booking.selectedProviderId) {
+      throw new BadRequestException('Completed booking requires a selected partner before closeout');
+    }
+
+    const capturedPayment =
+      booking.payment && booking.payment.status !== PaymentStatus.CAPTURED
+        ? await this.prisma.payment.update({
+            where: { id: booking.payment.id },
+            data: { status: PaymentStatus.CAPTURED },
+          })
+        : booking.payment;
+
+    const earning = await this.earnings.createForCompletedBooking(bookingId, booking.selectedProviderId);
+    const entry = `[${new Date().toISOString()}] Completed booking closeout reconciled by operations${
+      note ? `: ${note}` : '.'
+    }`;
+    const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
+
+    const updated = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        notes,
+        opsTasks: {
+          upsert: {
+            where: { bookingId_type: { bookingId, type: BookingOpsTaskType.PAYMENT_REVIEWED } },
+            update: {
+              status: BookingOpsTaskStatus.DONE,
+              note: note ?? 'Payment, earning, tax, and wallet closeout reconciled.',
+              actorId,
+            },
+            create: {
+              type: BookingOpsTaskType.PAYMENT_REVIEWED,
+              status: BookingOpsTaskStatus.DONE,
+              note: note ?? 'Payment, earning, tax, and wallet closeout reconciled.',
+              actorId,
+            },
+          },
+        },
+      },
+      include: {
+        payment: true,
+        earning: {
+          include: {
+            platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+            taxLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+          },
+        },
+        customerProfile: { include: { user: true } },
+        selectedProvider: { include: { user: true } },
+        preferredProvider: { include: { user: true } },
+        services: { include: { service: true } },
+        participants: { include: { providerProfile: { include: { user: true } } } },
+        opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
+      },
+    });
+
+    await this.writeAudit(actorId, 'booking.completed.closeout', `booking:${bookingId}`, {
+      bookingId,
+      paymentId: capturedPayment?.id,
+      paymentStatus: capturedPayment?.status,
+      earningId: earning.id,
+      netAmount: earning.netAmount,
+      note,
+    });
+
+    return updated;
+  }
+
   async updateBookingOpsTask(
     actorId: string,
     bookingId: string,

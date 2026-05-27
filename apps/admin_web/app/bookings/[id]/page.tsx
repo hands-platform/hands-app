@@ -9,6 +9,7 @@ import {
 import {
   addBookingOpsNote,
   captureBookingPayment,
+  closeoutCompletedBooking,
   expireBooking,
   markBookingNoShow,
   refundBookingPayment,
@@ -320,6 +321,29 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </button>
           </div>
         </form>
+      </section>
+
+      <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+        <div>
+          <h2>Completed closeout</h2>
+          <p className="muted">
+            Reconcile a completed service after operational edits or a partial failure. This confirms payment
+            capture, provider earning, tax log, platform fee log, and wallet ledger are present.
+          </p>
+        </div>
+        {canCloseoutCompletedBooking(booking) ? (
+          <form action={closeoutCompletedBooking} className="ops-note-form">
+            <input type="hidden" name="bookingId" value={booking.id} />
+            <textarea
+              aria-label="Closeout note"
+              name="note"
+              placeholder="Example: Reconciled after support confirmed service completion."
+            />
+            <button type="submit">Reconcile completed booking</button>
+          </form>
+        ) : (
+          <span className={`pill ${completedCloseoutTone(booking)}`}>{completedCloseoutLabel(booking)}</span>
+        )}
       </section>
 
       <section className="card ops-command-center" style={{ marginBottom: 16 }}>
@@ -1366,6 +1390,39 @@ function canMarkNoShow(status: string) {
 
 function canExpireBooking(status: string) {
   return status === 'OPEN_MATCHING';
+}
+
+function canCloseoutCompletedBooking(booking: AdminBookingDetail) {
+  if (booking.status !== 'COMPLETED') {
+    return false;
+  }
+  if (!booking.payment || booking.payment.status !== 'CAPTURED') {
+    return true;
+  }
+  if (!booking.earning) {
+    return true;
+  }
+  const hasTaxLog = (booking.earning.taxLogs?.length ?? 0) > 0;
+  const hasPlatformFeeLog = (booking.earning.platformFeeLogs?.length ?? 0) > 0;
+  const hasWalletLedger = (booking.earning.walletLedgerEntries?.length ?? 0) > 0;
+  return !hasTaxLog || !hasPlatformFeeLog || !hasWalletLedger;
+}
+
+function completedCloseoutLabel(booking: AdminBookingDetail) {
+  if (booking.status !== 'COMPLETED') {
+    return 'Closeout available after completion';
+  }
+  if (!canCloseoutCompletedBooking(booking)) {
+    return 'Completed closeout healthy';
+  }
+  return 'Completed closeout needs reconciliation';
+}
+
+function completedCloseoutTone(booking: AdminBookingDetail) {
+  if (booking.status !== 'COMPLETED') {
+    return 'pill-neutral';
+  }
+  return canCloseoutCompletedBooking(booking) ? 'pill-warn' : 'pill-success';
 }
 
 function bookingCashDebtNeedsSettlement(booking: AdminBookingDetail) {

@@ -209,6 +209,15 @@ export class AdminController {
     return this.admin.expireBooking(user.id, id, body);
   }
 
+  @Post('bookings/:id/closeout')
+  closeoutCompletedBooking(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Body() body: { note?: string },
+  ) {
+    return this.admin.closeoutCompletedBooking(user.id, id, body);
+  }
+
   @Post('bookings/:id/ops-task')
   updateBookingOpsTask(
     @CurrentUser() user: AuthenticatedUser,
