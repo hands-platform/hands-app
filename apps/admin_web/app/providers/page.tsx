@@ -75,6 +75,32 @@ type PartnerAcceptanceBlockerBoard = {
     samples: string[];
   }>;
 };
+type PartnerKycReviewBoard = {
+  openCount: number;
+  readyToApprove: number;
+  blockedByDocuments: number;
+  cards: Array<{
+    title: string;
+    count: number;
+    status: string;
+    detail: string;
+    operatorAction: string;
+    href: string;
+    tone: ProviderCommandLane['tone'];
+    samples: string[];
+  }>;
+};
+type PartnerKycState = {
+  status: string;
+  missingDocuments: string[];
+  pendingDocuments: number;
+  rejectedDocuments: number;
+  readyToApprove: boolean;
+  blockedByDocuments: boolean;
+  needsReview: boolean;
+  detail: string;
+  operatorAction: string;
+};
 type ProviderFilters = {
   q: string;
   verification: string;
@@ -104,6 +130,7 @@ const DEFAULT_PROVIDER_OPS_POLICY: ProviderOpsPolicy = {
   responseWindowMinutes: 10,
 };
 const PROVIDER_LIST_RENDER_LIMIT = 40;
+const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 
 export default async function ProvidersPage({ searchParams }: { searchParams?: ProvidersPageSearchParams }) {
   const filters = buildProviderFilters(searchParams ? await searchParams : {});
@@ -122,6 +149,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const priorityLane = buildProviderPriorityLane(providers, opsPolicy);
   const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy);
   const acceptanceBlockerBoard = buildPartnerAcceptanceBlockerBoard(providers, opsPolicy);
+  const kycReviewBoard = buildPartnerKycReviewBoard(providers);
   const activeFilters = buildProviderActiveFilters(filters);
 
   return (
@@ -308,6 +336,52 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         </div>
         <div className="grid" style={{ marginTop: 12 }}>
           {acceptanceBlockerBoard.cards.map((card) => (
+            <Link className="card" href={card.href} key={card.title}>
+              <p>{card.title}</p>
+              <h2>{card.count}</h2>
+              <span className={`signal ${providerCommandToneClass(card.tone)}`}>
+                {card.status}
+              </span>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {card.detail}
+              </p>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {card.operatorAction}
+              </p>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                {card.samples.length > 0 ? (
+                  card.samples.map((sample) => (
+                    <span className="pill" key={sample}>
+                      {sample}
+                    </span>
+                  ))
+                ) : (
+                  <span className="pill pill-success">No immediate queue</span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>KYC review board</h2>
+            <p className="muted">
+              Tracks identity records, CCCD front/back, and selfie evidence before a partner can become
+              dispatch-ready.
+            </p>
+          </div>
+          <div className="participant-list">
+            <span className={`pill ${kycReviewBoard.openCount > 0 ? 'pill-warn' : 'pill-success'}`}>
+              {kycReviewBoard.openCount} KYC item(s)
+            </span>
+            <span className="pill pill-success">{kycReviewBoard.readyToApprove} ready to approve</span>
+            <span className="pill pill-danger">{kycReviewBoard.blockedByDocuments} blocked by docs</span>
+          </div>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          {kycReviewBoard.cards.map((card) => (
             <Link className="card" href={card.href} key={card.title}>
               <p>{card.title}</p>
               <h2>{card.count}</h2>
@@ -718,6 +792,7 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
   const missingAgreements = 5 - (provider.agreements?.length ?? 0);
   const documents = provider.documents ?? [];
   const canApproveKyc = hasApprovedRequiredKycDocuments(provider);
+  const kycState = partnerKycState(provider);
   const taxNeedsReview = providerTaxNeedsReview(provider);
   const taxStatus = provider.taxProfile?.status ?? (taxNeedsReview ? 'MISSING' : 'DEFERRED');
 
@@ -736,6 +811,19 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
       <p className="muted" style={{ marginBottom: 8 }}>
         {provider.legalName ? `Legal: ${provider.legalName}` : 'Legal name not saved'}
         {provider.kyc?.cccdNumberLast4 ? ` / CCCD ****${provider.kyc.cccdNumberLast4}` : ''}
+      </p>
+      <div className="participant-list" style={{ marginBottom: 8 }}>
+        {REQUIRED_KYC_DOCUMENTS.map((documentType) => {
+          const documentStatus = providerKycDocumentStatus(provider, documentType);
+          return (
+            <span className={`pill ${kycDocumentPillClass(documentStatus)}`} key={documentType}>
+              {providerDocumentLabel(documentType)} {documentStatus}
+            </span>
+          );
+        })}
+      </div>
+      <p className="muted" style={{ marginBottom: 8 }}>
+        {kycState.operatorAction}
       </p>
       <p className="muted" style={{ marginBottom: 8 }}>
         Agreements: {provider.agreements?.length ?? 0}/5
@@ -1300,13 +1388,113 @@ function nextProviderListAction(provider: AdminProvider, opsPolicy = DEFAULT_PRO
 }
 
 function missingApprovedRequiredKycDocuments(provider: AdminProvider) {
-  const requiredDocuments = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
   const approvedDocuments = new Set(
     (provider.documents ?? [])
       .filter((document) => document.status === 'APPROVED')
       .map((document) => document.type),
   );
-  return requiredDocuments.filter((type) => !approvedDocuments.has(type));
+  return REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
+}
+
+function providerKycDocumentStatus(provider: AdminProvider, documentType: string) {
+  const document = (provider.documents ?? []).find((item) => item.type === documentType);
+  return document?.status ?? 'MISSING';
+}
+
+function kycDocumentPillClass(status: string) {
+  if (status === 'APPROVED') return 'pill-success';
+  if (status === 'REJECTED') return 'pill-danger';
+  if (status === 'PENDING_REVIEW') return 'pill-warn';
+  return 'pill-neutral';
+}
+
+function partnerKycState(provider: AdminProvider): PartnerKycState {
+  const status = provider.kyc?.status ?? 'MISSING';
+  const missingDocuments = missingApprovedRequiredKycDocuments(provider);
+  const requiredDocumentStatuses = REQUIRED_KYC_DOCUMENTS.map((type) =>
+    providerKycDocumentStatus(provider, type),
+  );
+  const pendingDocuments = requiredDocumentStatuses.filter((documentStatus) =>
+    ['PENDING_REVIEW', 'UPLOADED'].includes(documentStatus),
+  ).length;
+  const rejectedDocuments = requiredDocumentStatuses.filter((documentStatus) => documentStatus === 'REJECTED')
+    .length;
+  const blockedByDocuments = status !== 'APPROVED' && missingDocuments.length > 0;
+  const readyToApprove = Boolean(provider.kyc) && status !== 'APPROVED' && missingDocuments.length === 0;
+  const needsReview =
+    status !== 'APPROVED' || blockedByDocuments || pendingDocuments > 0 || rejectedDocuments > 0;
+
+  if (!provider.kyc) {
+    return {
+      status,
+      missingDocuments,
+      pendingDocuments,
+      rejectedDocuments,
+      readyToApprove,
+      blockedByDocuments,
+      needsReview,
+      detail: 'No KYC record is stored yet.',
+      operatorAction: 'Ask the partner to submit CCCD number, CCCD front/back, and selfie evidence.',
+    };
+  }
+
+  if (readyToApprove) {
+    return {
+      status,
+      missingDocuments,
+      pendingDocuments,
+      rejectedDocuments,
+      readyToApprove,
+      blockedByDocuments,
+      needsReview,
+      detail: 'KYC record and required identity documents are ready.',
+      operatorAction: 'Review the detail page, then approve or reject KYC.',
+    };
+  }
+
+  if (blockedByDocuments) {
+    return {
+      status,
+      missingDocuments,
+      pendingDocuments,
+      rejectedDocuments,
+      readyToApprove,
+      blockedByDocuments,
+      needsReview,
+      detail: `Missing approved evidence: ${missingDocuments.map(providerDocumentLabel).join(', ')}.`,
+      operatorAction: 'Approve uploaded evidence first, or reject with a clear resubmission reason.',
+    };
+  }
+
+  if (status === 'REJECTED' || rejectedDocuments > 0) {
+    return {
+      status,
+      missingDocuments,
+      pendingDocuments,
+      rejectedDocuments,
+      readyToApprove,
+      blockedByDocuments,
+      needsReview,
+      detail: 'KYC or required evidence was rejected.',
+      operatorAction: 'Wait for partner resubmission, then re-check the full evidence set.',
+    };
+  }
+
+  return {
+    status,
+    missingDocuments,
+    pendingDocuments,
+    rejectedDocuments,
+    readyToApprove,
+    blockedByDocuments,
+    needsReview,
+    detail: status === 'APPROVED' ? 'KYC is approved.' : 'KYC is waiting for operator attention.',
+    operatorAction: status === 'APPROVED' ? 'No KYC action required.' : 'Review KYC status and evidence.',
+  };
+}
+
+function partnerNeedsKycReview(provider: AdminProvider) {
+  return partnerKycState(provider).needsReview;
 }
 
 function providerListActionPillClass(tone: ProviderListAction['tone']) {
@@ -1781,9 +1969,8 @@ function buildPartnerAcceptanceBlockerBoard(
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
   );
   const pushHold = providers.filter((provider) => !hasHealthyPush(provider));
-  const onboardingHold = providers.filter((provider) =>
-    provider.verification?.status !== 'APPROVED' ||
-    ['REJECTED', 'PENDING'].includes(provider.kyc?.status ?? 'MISSING'),
+  const onboardingHold = providers.filter(
+    (provider) => provider.verification?.status !== 'APPROVED' || partnerNeedsKycReview(provider),
   );
   const firstEarningPayoutGate = providers.filter(providerPayoutSetupNeedsReview);
   const hardBlocked = providers.filter((provider) => partnerHasHardAcceptanceBlocker(provider)).length;
@@ -1854,6 +2041,88 @@ function buildPartnerAcceptanceBlockerBoard(
         href: '/partners?review=payout-setup',
         tone: firstEarningPayoutGate.length ? 'info' : 'ok',
         samples: partnerBlockerSamples(firstEarningPayoutGate),
+      },
+    ],
+  };
+}
+
+function buildPartnerKycReviewBoard(providers: AdminProvider[]): PartnerKycReviewBoard {
+  const missingKyc = providers.filter((provider) => !provider.kyc);
+  const pendingKyc = providers.filter((provider) => provider.kyc?.status === 'PENDING');
+  const rejectedKyc = providers.filter((provider) => provider.kyc?.status === 'REJECTED');
+  const blockedByDocuments = providers.filter((provider) => partnerKycState(provider).blockedByDocuments);
+  const readyToApprove = providers.filter((provider) => partnerKycState(provider).readyToApprove);
+  const pendingRequiredDocuments = providers.filter((provider) =>
+    REQUIRED_KYC_DOCUMENTS.some((type) =>
+      ['PENDING_REVIEW', 'UPLOADED'].includes(providerKycDocumentStatus(provider, type)),
+    ),
+  );
+  const openCount = providers.filter(partnerNeedsKycReview).length;
+
+  return {
+    openCount,
+    readyToApprove: readyToApprove.length,
+    blockedByDocuments: blockedByDocuments.length,
+    cards: [
+      {
+        title: 'Ready to approve',
+        count: readyToApprove.length,
+        status: readyToApprove.length ? 'Decision needed' : 'Clear',
+        detail: 'KYC record exists and all required CCCD/selfie evidence is already approved.',
+        operatorAction: 'Open partner detail and make the final approve/reject decision.',
+        href: '/partners?review=kyc',
+        tone: readyToApprove.length ? 'info' : 'ok',
+        samples: partnerBlockerSamples(readyToApprove),
+      },
+      {
+        title: 'Blocked by identity documents',
+        count: blockedByDocuments.length,
+        status: blockedByDocuments.length ? 'Evidence gap' : 'Clear',
+        detail: 'At least one required CCCD front, CCCD back, or selfie document is not approved yet.',
+        operatorAction: 'Approve uploaded evidence first, or reject with a resubmission reason.',
+        href: '/partners?review=kyc',
+        tone: blockedByDocuments.length ? 'warn' : 'ok',
+        samples: partnerBlockerSamples(blockedByDocuments),
+      },
+      {
+        title: 'Pending document review',
+        count: pendingRequiredDocuments.length,
+        status: pendingRequiredDocuments.length ? 'Check files' : 'Clear',
+        detail: 'Required identity evidence is uploaded and waiting for document-level review.',
+        operatorAction: 'Review file type, face/ID match, and file quality before approving KYC.',
+        href: '/partners?review=documents',
+        tone: pendingRequiredDocuments.length ? 'warn' : 'ok',
+        samples: partnerBlockerSamples(pendingRequiredDocuments),
+      },
+      {
+        title: 'Missing KYC record',
+        count: missingKyc.length,
+        status: missingKyc.length ? 'Not submitted' : 'Clear',
+        detail: 'Partner signed up but has not submitted CCCD number and identity review data.',
+        operatorAction: 'Keep signup friction low, but block paid dispatch until KYC is submitted.',
+        href: '/partners?review=kyc',
+        tone: missingKyc.length ? 'warn' : 'ok',
+        samples: partnerBlockerSamples(missingKyc),
+      },
+      {
+        title: 'Rejected KYC',
+        count: rejectedKyc.length,
+        status: rejectedKyc.length ? 'Needs resubmit' : 'Clear',
+        detail: 'Rejected KYC should stay visible until the partner uploads corrected evidence.',
+        operatorAction: 'Confirm rejection reason is specific enough for partner support follow-up.',
+        href: '/partners?review=kyc',
+        tone: rejectedKyc.length ? 'danger' : 'ok',
+        samples: partnerBlockerSamples(rejectedKyc),
+      },
+      {
+        title: 'Pending KYC',
+        count: pendingKyc.length,
+        status: pendingKyc.length ? 'Review queue' : 'Clear',
+        detail: 'Submitted KYC records still need an operator decision.',
+        operatorAction: 'Prioritize partners with complete evidence and recent activity first.',
+        href: '/partners?review=kyc',
+        tone: pendingKyc.length ? 'info' : 'ok',
+        samples: partnerBlockerSamples(pendingKyc),
       },
     ],
   };
@@ -1982,9 +2251,7 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
 
 function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
   const accountBlocks = providers.filter((provider) => Boolean(provider.blockedAt)).length;
-  const kycNeedsReview = providers.filter((provider) =>
-    ['PENDING', 'REJECTED'].includes(provider.kyc?.status ?? 'MISSING'),
-  ).length;
+  const kycNeedsReview = providers.filter(partnerNeedsKycReview).length;
   const documentNeedsReview = providers.filter((provider) =>
     (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
   ).length;
@@ -2025,7 +2292,8 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       label: 'KYC updates',
       count: kycNeedsReview,
       href: '/partners?review=kyc',
-      detail: 'Partners with pending or rejected identity verification need admin review or resubmission.',
+      detail:
+        'Partners with missing, pending, rejected, or document-blocked identity verification need admin review.',
     },
     {
       label: 'Document review',
@@ -2414,7 +2682,7 @@ function providerMatchesReviewQueue(
     return Boolean(provider.blockedAt);
   }
   if (review === 'kyc') {
-    return ['PENDING', 'REJECTED'].includes(provider.kyc?.status ?? 'MISSING');
+    return partnerNeedsKycReview(provider);
   }
   if (review === 'documents') {
     return (provider.documents ?? []).some((document) =>
