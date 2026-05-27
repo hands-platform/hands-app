@@ -1,10 +1,11 @@
 import { BadRequestException } from '@nestjs/common';
 
 export const PROVIDER_WALLET_BLOCK_CODE = 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT';
-export const PROVIDER_WALLET_BLOCK_REASON = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
+export const PROVIDER_WALLET_BLOCK_REASON =
+  'You cannot accept new bookings because unpaid HANDS cash-service fees are still pending settlement.';
 export const PROVIDER_WALLET_SETTLEMENT_METHOD = 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET';
 export const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
-  '현금 예약으로 발생한 HANDS 수수료와 원천징수 금액이 미정산 상태입니다. 회사 계좌로 입금하거나 관리자 정산/상계가 완료되면 예약 수락이 다시 가능합니다.';
+  'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Deposit the settlement amount to HANDS or wait for an admin offset. Booking acceptance unlocks after the wallet is no longer negative.';
 
 export function providerWalletSettlementReference(providerProfileId: string) {
   return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
