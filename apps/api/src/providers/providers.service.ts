@@ -203,7 +203,7 @@ export class ProvidersService {
       : blocked
         ? `Blocked device: ${existingDevice?.blockReason ?? 'No reason saved'}`
         : sharedDeviceCount > 0
-          ? `Device is already linked to ${sharedDeviceCount} other provider profile(s).`
+          ? `Device is already linked to ${sharedDeviceCount} other partner profile(s).`
           : null;
 
     const result = await this.prisma.$transaction(async (tx) => {

@@ -92,7 +92,7 @@ const registrationItems = [
     order: 4,
     category: 'Maps',
     account: 'MapTiler',
-    purpose: 'Low-cost map tile/style rendering for customer and provider mobile screens.',
+    purpose: 'Low-cost map tile/style rendering for customer and partner mobile screens.',
     consolePath: 'MapTiler Cloud > Account > Keys',
     env: [envItem('MAPTILER_API_KEY', '<maptiler-key>', hasValue(env.MAPTILER_API_KEY))],
     setup: [
@@ -221,7 +221,7 @@ const registrationItems = [
     order: 11,
     category: 'Mobile release',
     account: 'Android Play Console signing',
-    purpose: 'Separate customer/provider upload keys and fingerprints for production Android distribution.',
+    purpose: 'Separate customer/partner upload keys and fingerprints for production Android distribution.',
     consolePath: 'Google Play Console > Setup > App integrity',
     env: [
       envItem('ANDROID_CUSTOMER_APPLICATION_ID', 'com.massagevn.customer.customer_app', true),
@@ -238,7 +238,7 @@ const registrationItems = [
       ),
     ],
     setup: [
-      'Create separate upload keys for the HANDS customer and provider apps.',
+      'Create separate upload keys for the HANDS customer and partner apps.',
       'Optional helper: run npm.cmd run android:signing:create to generate local upload keys and key.properties files.',
       'Store keystores outside Git, preferably under C:\\dev\\massage-vn-workspace\\secrets.',
       'Copy apps/customer_app/android/key.properties.example to apps/customer_app/android/key.properties and fill local secret values.',

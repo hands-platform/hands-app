@@ -181,13 +181,13 @@ addRecommended(
 
 addRecommended(
   'mobile-release',
-  'Android customer/provider upload keystores',
+  'Android customer/partner upload keystores',
   allHaveExistingPath(['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE']),
   'Create separate Android upload keystores, store them outside Git, and set valid local keystore paths before Play release.',
 );
 addPhaseRequired(
   'mobile-release',
-  'Android customer/provider upload keystores',
+  'Android customer/partner upload keystores',
   allHaveExistingPath(['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE']),
   'Fill ANDROID_CUSTOMER_UPLOAD_KEYSTORE and ANDROID_PROVIDER_UPLOAD_KEYSTORE with existing local files before production Android release.',
   ['production'],
