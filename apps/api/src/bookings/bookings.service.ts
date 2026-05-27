@@ -8,6 +8,10 @@ import {
   PaymentMethod,
   PaymentStatus,
   Prisma,
+  ProviderBankAccountStatus,
+  ProviderDocumentStatus,
+  ProviderDocumentType,
+  ProviderKycStatus,
   ProviderTaxProfileStatus,
   ProviderStatus,
   VerificationStatus,
@@ -35,6 +39,12 @@ import { PaymentsService } from '../payments/payments.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { throwProviderWalletBlocked } from '../provider-wallet/provider-wallet.policy';
 import { PrismaService } from '../prisma/prisma.service';
+
+const REQUIRED_BOOKING_DOCUMENT_TYPES = [
+  ProviderDocumentType.CCCD_FRONT,
+  ProviderDocumentType.CCCD_BACK,
+  ProviderDocumentType.SELFIE,
+];
 
 @Injectable()
 export class BookingsService {
@@ -74,7 +84,13 @@ export class BookingsService {
     const preferredProvider = input.providerId
       ? await this.prisma.providerProfile.findUniqueOrThrow({
           where: { id: input.providerId },
-          include: { user: true },
+          include: {
+            user: true,
+            verification: true,
+            kyc: true,
+            documents: { where: { deletedAt: null } },
+            bankAccounts: { where: { deletedAt: null } },
+          },
         })
       : null;
     const providerService = preferredProvider
@@ -88,6 +104,7 @@ export class BookingsService {
         })
       : null;
     if (preferredProvider) {
+      assertProviderCanReceiveBooking(preferredProvider);
       await this.ensureProviderWalletCanAccept(preferredProvider.id);
       const configuredServiceCount = await this.prisma.providerService.count({
         where: {
@@ -583,6 +600,7 @@ export class BookingsService {
     if (booking.expiresAt && booking.expiresAt.getTime() <= Date.now()) {
       throw new BadRequestException('Booking request is expired');
     }
+    assertProviderCanReceiveBooking(provider);
     await this.ensureProviderWalletCanAccept(provider.id);
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
@@ -674,6 +692,7 @@ export class BookingsService {
   async updateParticipant(bookingId: string, providerUserId: string | undefined, status: ParticipantStatus) {
     const provider = await this.requireProvider(providerUserId);
     if (status === ParticipantStatus.ACCEPTED) {
+      assertProviderCanReceiveBooking(provider);
       await this.ensureProviderWalletCanAccept(provider.id);
     }
     const booking = await this.prisma.booking.findUniqueOrThrow({
@@ -904,6 +923,22 @@ export class BookingsService {
         currentLng: { not: null },
         currentLocationUpdatedAt: { gte: freshLocationAfter },
         verification: { status: VerificationStatus.APPROVED },
+        kyc: { status: ProviderKycStatus.APPROVED },
+        bankAccounts: {
+          some: {
+            status: ProviderBankAccountStatus.APPROVED,
+            deletedAt: null,
+          },
+        },
+        AND: REQUIRED_BOOKING_DOCUMENT_TYPES.map((type) => ({
+          documents: {
+            some: {
+              type,
+              status: ProviderDocumentStatus.APPROVED,
+              deletedAt: null,
+            },
+          },
+        })),
         participants: {
           none: {
             bookingId: input.bookingId,
@@ -1225,7 +1260,15 @@ export class BookingsService {
       throw new BadRequestException('Authenticated partner is required');
     }
 
-    const provider = await this.prisma.providerProfile.findUnique({ where: { userId } });
+    const provider = await this.prisma.providerProfile.findUnique({
+      where: { userId },
+      include: {
+        verification: true,
+        kyc: true,
+        documents: { where: { deletedAt: null } },
+        bankAccounts: { where: { deletedAt: null } },
+      },
+    });
     if (!provider) {
       throw new NotFoundException('Partner profile not found');
     }
@@ -1265,6 +1308,59 @@ function addProviderMatchingDistance<T extends { lat: unknown; lng: unknown }>(
       provider.currentLng,
     ),
   };
+}
+
+function assertProviderCanReceiveBooking(provider: {
+  blockedAt: Date | null;
+  blockedReason: string | null;
+  status: ProviderStatus;
+  verification?: { status: VerificationStatus } | null;
+  kyc?: { status: ProviderKycStatus } | null;
+  documents?: Array<{
+    type: ProviderDocumentType;
+    status: ProviderDocumentStatus;
+    deletedAt?: Date | null;
+  }>;
+  bankAccounts?: Array<{
+    status: ProviderBankAccountStatus;
+    deletedAt?: Date | null;
+  }>;
+}) {
+  if (provider.blockedAt) {
+    throw new BadRequestException(
+      provider.blockedReason
+        ? `Partner account is blocked by admin review: ${provider.blockedReason}`
+        : 'Partner account is blocked by admin review.',
+    );
+  }
+  if (provider.status === ProviderStatus.OFFLINE) {
+    throw new BadRequestException('Partner must be online before receiving bookings');
+  }
+  if (provider.verification?.status !== VerificationStatus.APPROVED) {
+    throw new BadRequestException('Partner verification must be approved before receiving bookings');
+  }
+  if (provider.kyc?.status !== ProviderKycStatus.APPROVED) {
+    throw new BadRequestException('Partner KYC must be approved before receiving bookings');
+  }
+
+  const approvedDocuments = new Set(
+    (provider.documents ?? [])
+      .filter((document) => document.status === ProviderDocumentStatus.APPROVED && !document.deletedAt)
+      .map((document) => document.type),
+  );
+  const missingDocuments = REQUIRED_BOOKING_DOCUMENT_TYPES.filter((type) => !approvedDocuments.has(type));
+  if (missingDocuments.length > 0) {
+    throw new BadRequestException(
+      `Partner required KYC documents must be approved before receiving bookings: ${missingDocuments.join(', ')}`,
+    );
+  }
+
+  const hasApprovedBank = (provider.bankAccounts ?? []).some(
+    (account) => account.status === ProviderBankAccountStatus.APPROVED && !account.deletedAt,
+  );
+  if (!hasApprovedBank) {
+    throw new BadRequestException('Partner bank account must be approved before receiving bookings');
+  }
 }
 
 function calculateDistanceMeters(

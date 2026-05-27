@@ -4,6 +4,10 @@ import {
   FileReviewStatus,
   FileUploadStatus,
   FileVisibility,
+  ProviderBankAccountStatus,
+  ProviderDocumentStatus,
+  ProviderDocumentType,
+  ProviderKycStatus,
   ProviderStatus,
   VerificationStatus,
 } from '@prisma/client';
@@ -12,6 +16,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 import { haversineMeters, roundTo100Meters } from '../matching/matching.policy';
+
+const REQUIRED_PUBLIC_BOOKING_DOCUMENT_TYPES = [
+  ProviderDocumentType.CCCD_FRONT,
+  ProviderDocumentType.CCCD_BACK,
+  ProviderDocumentType.SELFIE,
+];
 
 @Injectable()
 export class ProvidersService {
@@ -38,6 +48,22 @@ export class ProvidersService {
         currentLng: { not: null },
         currentLocationUpdatedAt: { gte: hideBefore },
         verification: { status: VerificationStatus.APPROVED },
+        kyc: { status: ProviderKycStatus.APPROVED },
+        bankAccounts: {
+          some: {
+            status: ProviderBankAccountStatus.APPROVED,
+            deletedAt: null,
+          },
+        },
+        AND: REQUIRED_PUBLIC_BOOKING_DOCUMENT_TYPES.map((type) => ({
+          documents: {
+            some: {
+              type,
+              status: ProviderDocumentStatus.APPROVED,
+              deletedAt: null,
+            },
+          },
+        })),
       },
       include: {
         user: {
@@ -106,7 +132,27 @@ export class ProvidersService {
 
   async getDetail(id: string) {
     const provider = await this.prisma.providerProfile.findFirstOrThrow({
-      where: { id, blockedAt: null },
+      where: {
+        id,
+        blockedAt: null,
+        verification: { status: VerificationStatus.APPROVED },
+        kyc: { status: ProviderKycStatus.APPROVED },
+        bankAccounts: {
+          some: {
+            status: ProviderBankAccountStatus.APPROVED,
+            deletedAt: null,
+          },
+        },
+        AND: REQUIRED_PUBLIC_BOOKING_DOCUMENT_TYPES.map((type) => ({
+          documents: {
+            some: {
+              type,
+              status: ProviderDocumentStatus.APPROVED,
+              deletedAt: null,
+            },
+          },
+        })),
+      },
       include: {
         user: {
           select: {

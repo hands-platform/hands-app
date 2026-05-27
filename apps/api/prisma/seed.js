@@ -2,6 +2,14 @@ const {
   PrismaClient,
   Role,
   ProviderStatus,
+  ProviderKycStatus,
+  ProviderDocumentStatus,
+  ProviderDocumentType,
+  ProviderBankAccountStatus,
+  FilePurpose,
+  FileReviewStatus,
+  FileUploadStatus,
+  FileVisibility,
   TaxPolicyStatus,
   TaxRuleScope,
   VerificationStatus,
@@ -208,6 +216,105 @@ async function main() {
         serviceStyle: 'Quiet, professional home massage with clear arrival communication.',
       },
     });
+
+    await prisma.providerKyc.upsert({
+      where: { providerProfileId: provider.providerProfile.id },
+      update: {
+        cccdNumberHash: 'demo-cccd-hash',
+        cccdNumberLast4: '0002',
+        status: ProviderKycStatus.APPROVED,
+        submittedAt: new Date(),
+        reviewedAt: new Date(),
+        rejectionReason: null,
+        blockedAt: null,
+      },
+      create: {
+        providerProfileId: provider.providerProfile.id,
+        cccdNumberHash: 'demo-cccd-hash',
+        cccdNumberLast4: '0002',
+        status: ProviderKycStatus.APPROVED,
+        submittedAt: new Date(),
+        reviewedAt: new Date(),
+      },
+    });
+
+    for (const documentType of [
+      ProviderDocumentType.CCCD_FRONT,
+      ProviderDocumentType.CCCD_BACK,
+      ProviderDocumentType.SELFIE,
+    ]) {
+      const file = await prisma.fileAsset.upsert({
+        where: { key: `demo-provider/${provider.providerProfile.id}/${documentType}.jpg` },
+        update: {
+          uploadStatus: FileUploadStatus.UPLOADED,
+          reviewStatus: FileReviewStatus.APPROVED,
+          reviewedAt: new Date(),
+          uploadedAt: new Date(),
+        },
+        create: {
+          key: `demo-provider/${provider.providerProfile.id}/${documentType}.jpg`,
+          url: null,
+          contentType: 'image/jpeg',
+          purpose: FilePurpose.PROVIDER_VERIFICATION,
+          visibility: FileVisibility.PRIVATE,
+          uploadStatus: FileUploadStatus.UPLOADED,
+          reviewStatus: FileReviewStatus.APPROVED,
+          reviewedAt: new Date(),
+          uploadedAt: new Date(),
+          ownerUserId: provider.id,
+          sizeBytes: 204800,
+        },
+      });
+      await prisma.providerDocument.upsert({
+        where: { fileAssetId: file.id },
+        update: {
+          type: documentType,
+          status: ProviderDocumentStatus.APPROVED,
+          reviewedAt: new Date(),
+          rejectionReason: null,
+          deletedAt: null,
+        },
+        create: {
+          providerProfileId: provider.providerProfile.id,
+          fileAssetId: file.id,
+          type: documentType,
+          status: ProviderDocumentStatus.APPROVED,
+          reviewedAt: new Date(),
+        },
+      });
+    }
+
+    const primaryBank = await prisma.providerBankAccount.findFirst({
+      where: { providerProfileId: provider.providerProfile.id, isPrimary: true },
+    });
+    if (primaryBank) {
+      await prisma.providerBankAccount.update({
+        where: { id: primaryBank.id },
+        data: {
+          bankName: 'Vietcombank',
+          accountNumberMasked: '****0002',
+          accountNumberLast4: '0002',
+          accountHolderName: 'Demo Provider',
+          status: ProviderBankAccountStatus.APPROVED,
+          reviewedAt: new Date(),
+          rejectionReason: null,
+          deletedAt: null,
+        },
+      });
+    } else {
+      await prisma.providerBankAccount.create({
+        data: {
+          providerProfileId: provider.providerProfile.id,
+          bankName: 'Vietcombank',
+          accountNumberMasked: '****0002',
+          accountNumberLast4: '0002',
+          accountHolderName: 'Demo Provider',
+          status: ProviderBankAccountStatus.APPROVED,
+          isPrimary: true,
+          reviewedAt: new Date(),
+        },
+      });
+    }
   }
 
   const admin = await prisma.user.upsert({
