@@ -269,10 +269,10 @@ export default async function EarningsPage() {
           <div>
             <h2>Partner payout queue</h2>
             <p className="muted">
-              Grouped by provider so finance can create one payout batch for all eligible unpaid earnings.
+              Grouped by partner so finance can create one payout batch for all eligible unpaid earnings.
             </p>
           </div>
-          <span className="pill pill-info">{payoutQueue.length} provider(s)</span>
+          <span className="pill pill-info">{payoutQueue.length} partner(s)</span>
         </div>
         {payoutQueue.length ? (
           <div className="setup-stage-list">
@@ -300,7 +300,7 @@ export default async function EarningsPage() {
                 </div>
                 <div className="actions">
                   <Link className="text-link" href={`/providers/${group.providerProfileId}`}>
-                    Provider
+                    Partner
                   </Link>
                   {group.canBatch ? (
                     <form action={createProviderPayout}>
@@ -320,7 +320,7 @@ export default async function EarningsPage() {
             ))}
           </div>
         ) : (
-          <p className="muted">No provider has unpaid earnings in the current admin result window.</p>
+          <p className="muted">No partner has unpaid earnings in the current admin result window.</p>
         )}
       </div>
 
@@ -329,7 +329,7 @@ export default async function EarningsPage() {
           <div>
             <h2>Cash fee debt queue</h2>
             <p className="muted">
-              Cash bookings create a negative provider wallet until the provider deposits the HANDS fee or
+              Cash bookings create a negative partner wallet until the partner deposits the HANDS fee or
               finance offsets it.
             </p>
           </div>
@@ -388,13 +388,13 @@ export default async function EarningsPage() {
                     {item.lastLedgerRef ? <small>Last ledger ref: {item.lastLedgerRef}</small> : null}
                   </div>
                   <p className="muted">
-                    Settling this row records the provider cash-fee debt as paid and can reopen booking
+                    Settling this row records the partner cash-fee debt as paid and can reopen booking
                     acceptance once the wallet is non-negative.
                   </p>
                 </div>
                 <div className="actions">
                   <Link className="text-link" href={`/providers/${item.earning.providerProfileId}`}>
-                    Provider
+                    Partner
                   </Link>
                   <form action={markEarningPaid}>
                     <input type="hidden" name="earningId" value={item.earning.id} />
@@ -416,7 +416,7 @@ export default async function EarningsPage() {
             ))}
           </div>
         ) : (
-          <p className="muted">No provider has unsettled cash fee debt in the current admin result window.</p>
+          <p className="muted">No partner has unsettled cash fee debt in the current admin result window.</p>
         )}
       </div>
 
@@ -433,7 +433,7 @@ export default async function EarningsPage() {
         <table className="table">
           <thead>
             <tr>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Booking</th>
               <th>Status</th>
               <th>Payout batch</th>
@@ -646,7 +646,7 @@ function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
         settlementReference,
         lastLedgerRef,
         settlementChecklist: [
-          `Confirm provider deposit or approved offset before settling ${settlementReference}.`,
+          `Confirm partner deposit or approved offset before settling ${settlementReference}.`,
           'Keep the reference on the bank transfer, chat evidence, or admin offset memo.',
           'Recheck payout queue after settlement.',
         ],
@@ -776,11 +776,11 @@ function buildEarningsMoneyFlowChecks(
       title: 'Cash job lock',
       status: `${cashDebtQueue.length} PROVIDER(S)`,
       detail: cashDebtQueue.length
-        ? 'Negative wallet providers must settle company fee before receiving more bookings.'
-        : 'No cash fee debt currently blocks provider work.',
+        ? 'Negative wallet partners must settle company fee before receiving more bookings.'
+        : 'No cash fee debt currently blocks partner work.',
       action: cashDebtQueue.length
         ? 'Use cash debt queue to confirm deposit or approved offset.'
-        : 'Provider booking lock is clear for listed earnings.',
+        : 'Partner booking lock is clear for listed earnings.',
       className: cashDebtQueue.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebtQueue.length ? 'pill-danger' : 'pill-success',
     },
@@ -1003,7 +1003,7 @@ function buildProviderPayoutQueue(earnings: AdminEarning[], payoutBatches: Admin
             ? 'Settle or offset the cash fee debt before creating a payout batch.'
             : canBatch
               ? 'Create one batch for all currently eligible unpaid earnings.'
-              : 'No unbatched positive earning is available for this provider.',
+              : 'No unbatched positive earning is available for this partner.',
       };
     })
     .sort((left, right) => {
@@ -1041,14 +1041,14 @@ function buildFinanceSignals(
   return [
     {
       title: 'Ready to batch',
-      status: `${readyProviders.length} PROVIDER(S)`,
+      status: `${readyProviders.length} PARTNER(S)`,
       detail: formatMoney(
         readyProviders.reduce((sum, item) => sum + item.unbatchedNet, 0),
         'VND',
       ),
       action: readyProviders.length
-        ? 'Create batches from the provider queue below.'
-        : 'No provider is ready to batch.',
+        ? 'Create batches from the partner queue below.'
+        : 'No partner is ready to batch.',
       className: readyProviders.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: readyProviders.length ? 'pill-warn' : 'pill-success',
     },
@@ -1084,7 +1084,7 @@ function buildFinanceSignals(
         'VND',
       ),
       action: cashDebtQueue.length
-        ? 'Confirm provider deposit or offset, then mark fee settled.'
+        ? 'Confirm partner deposit or offset, then mark fee settled.'
         : 'No negative cash wallet needs settlement.',
       className: cashDebtQueue.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebtQueue.length ? 'pill-danger' : 'pill-success',
@@ -1123,7 +1123,7 @@ function earningPriority(earning: AdminEarning) {
 }
 
 function providerDisplayName(earning: AdminEarning) {
-  return earning.providerProfile?.displayName ?? earning.providerProfile?.user?.phone ?? 'Unknown provider';
+  return earning.providerProfile?.displayName ?? earning.providerProfile?.user?.phone ?? 'Unknown partner';
 }
 
 function earningSignalClass(earning: AdminEarning) {
@@ -1148,7 +1148,7 @@ function earningStatusLabel(earning: AdminEarning) {
 
 function earningHint(earning: AdminEarning) {
   if (isCashDebt(earning)) {
-    return 'Cash fee debt blocks provider wallet until settled';
+    return 'Cash fee debt blocks partner wallet until settled';
   }
   if (earning.status === 'PAID') {
     return earning.paidAt ? `Paid ${relativeTime(earning.paidAt)}` : 'Paid without timestamp';
