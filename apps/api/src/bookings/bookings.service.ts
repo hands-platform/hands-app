@@ -209,6 +209,7 @@ export class BookingsService {
       payload: {
         eligibleBackupProviderCount: eligibleBackupProviders.length,
         backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+        backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
       },
     });
     if (booking.payment?.id) {
@@ -242,13 +243,16 @@ export class BookingsService {
     } else {
       this.matchingGateway.emitBookingOpened(booking.id, result);
     }
-    await this.notifyBackupProviders({
+    const backupNotificationTrace = await this.notifyBackupProviders({
+      stage: 'initial_open',
       bookingId: booking.id,
       providers: eligibleBackupProviders,
       backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
       backupOpenMode: matchingPolicy.backupOpenMode,
+      backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
       matchingPayload: result,
     });
+    await this.recordBackupNotificationTrace(booking.id, backupNotificationTrace);
     return result;
   }
 
@@ -803,6 +807,7 @@ export class BookingsService {
           payload: {
             eligibleBackupProviderCount: eligibleBackupProviders.length,
             backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+            backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
             firstPickDeclined: true,
           },
         });
@@ -811,13 +816,16 @@ export class BookingsService {
           bookingId,
           updated.expiresAt ?? new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
         );
-        await this.notifyBackupProviders({
+        const backupNotificationTrace = await this.notifyBackupProviders({
+          stage: 'first_pick_declined',
           bookingId,
           providers: eligibleBackupProviders,
           backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
           backupOpenMode: matchingPolicy.backupOpenMode,
+          backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
           matchingPayload: result,
         });
+        await this.recordBackupNotificationTrace(bookingId, backupNotificationTrace);
         return updated;
       }
     }
@@ -829,14 +837,23 @@ export class BookingsService {
   }
 
   private async notifyBackupProviders(input: {
+    stage: 'initial_open' | 'first_pick_declined';
     bookingId: string;
     providers: Array<{ id: string; userId: string; distanceMeters: number }>;
     backupProviderRadiusMeters: number;
     backupOpenMode: string;
+    backupProviderInvitationLimit: number;
     matchingPayload: unknown;
   }) {
+    const notifiedProviders: Array<{
+      providerProfileId: string;
+      userId: string;
+      distanceMeters: number;
+      notificationId: string;
+    }> = [];
+
     for (const backupProvider of input.providers) {
-      await this.notifications.create({
+      const notification = await this.notifications.create({
         userId: backupProvider.userId,
         type: 'booking.backup_available',
         title: 'Nearby booking available',
@@ -849,7 +866,14 @@ export class BookingsService {
           distanceMeters: backupProvider.distanceMeters,
           backupProviderRadiusMeters: input.backupProviderRadiusMeters,
           backupOpenMode: input.backupOpenMode,
+          backupProviderInvitationLimit: input.backupProviderInvitationLimit,
         },
+      });
+      notifiedProviders.push({
+        providerProfileId: backupProvider.id,
+        userId: backupProvider.userId,
+        distanceMeters: backupProvider.distanceMeters,
+        notificationId: notification.id,
       });
     }
     this.matchingGateway.emitBackupBookingAvailable(
@@ -857,6 +881,53 @@ export class BookingsService {
       input.bookingId,
       input.matchingPayload,
     );
+    return {
+      stage: input.stage,
+      createdAt: new Date().toISOString(),
+      notifiedCount: notifiedProviders.length,
+      backupProviderRadiusMeters: input.backupProviderRadiusMeters,
+      backupOpenMode: input.backupOpenMode,
+      backupProviderInvitationLimit: input.backupProviderInvitationLimit,
+      websocketTargetCount: input.providers.length,
+      providers: notifiedProviders,
+    };
+  }
+
+  private async recordBackupNotificationTrace(
+    bookingId: string,
+    trace: {
+      stage: string;
+      createdAt: string;
+      notifiedCount: number;
+      backupProviderRadiusMeters: number;
+      backupOpenMode: string;
+      backupProviderInvitationLimit: number;
+      websocketTargetCount: number;
+      providers: Array<{
+        providerProfileId: string;
+        userId: string;
+        distanceMeters: number;
+        notificationId: string;
+      }>;
+    },
+  ) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: { metadata: true },
+    });
+    const metadata = readPlainRecord(booking?.metadata) ?? {};
+    const existingTraces = Array.isArray(metadata.backupNotificationTraces)
+      ? metadata.backupNotificationTraces
+      : [];
+    await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: {
+        metadata: toJson({
+          ...metadata,
+          backupNotificationTraces: [...existingTraces, trace].slice(-12),
+        }),
+      },
+    });
   }
 
   private bookingPolicy(
@@ -1425,4 +1496,8 @@ function readPlainRecord(value: unknown): Record<string, unknown> | undefined {
 function readSnapshotInteger(value: unknown, fallback: number) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function toJson(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }

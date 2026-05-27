@@ -344,6 +344,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+        {notificationTrace.backupBatches.length > 0 ? (
+          <div className="risk-list">
+            {notificationTrace.backupBatches.map((batch) => (
+              <div className="risk-item" key={batch.id}>
+                <span className="signal signal-info">{batch.signal}</span>
+                <div>
+                  <h3>{batch.title}</h3>
+                  <p>{batch.detail}</p>
+                  <small>{batch.meta}</small>
+                  {batch.providers ? <small>{batch.providers}</small> : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {notificationTrace.rows.length > 0 ? (
           <div className="risk-list">
             {notificationTrace.rows.map((row) => (
@@ -358,12 +373,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
               </div>
             ))}
           </div>
-        ) : (
+        ) : notificationTrace.backupBatches.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No notification rows are tied to this booking yet. If a partner says they missed the request,
             check whether the booking created `booking.requested` or `booking.backup_available` alerts.
           </p>
-        )}
+        ) : null}
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -2851,6 +2866,7 @@ function compactAuditValue(value: unknown) {
 }
 
 function bookingNotificationTrace(booking: AdminBookingDetail, notifications: AdminNotification[]) {
+  const backupBatches = bookingBackupNotificationTraceBatches(booking);
   const rows = notifications
     .filter((notification) => notificationDataBookingId(notification) === booking.id)
     .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
@@ -2865,6 +2881,7 @@ function bookingNotificationTrace(booking: AdminBookingDetail, notifications: Ad
 
   return {
     rows,
+    backupBatches,
     metrics: [
       {
         label: 'Related alerts',
@@ -2891,8 +2908,88 @@ function bookingNotificationTrace(booking: AdminBookingDetail, notifications: Ad
         value: `${disabledDevices}`,
         helper: disabledDevices ? 'Fresh device token is needed before re-enable.' : 'No disabled devices.',
       },
+      {
+        label: 'Backup batches',
+        value: `${backupBatches.length}`,
+        helper: backupBatches.length ? 'Stored invite batches on the booking record.' : 'No backup invite batch recorded.',
+      },
+      {
+        label: 'Last backup invite',
+        value: backupBatches[0]?.notifiedCountLabel ?? '0',
+        helper: backupBatches[0]?.detail ?? 'No partner was invited from a backup batch yet.',
+      },
     ],
   };
+}
+
+function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
+  const metadata = readPlainRecord(booking.metadata);
+  const rawBatches = Array.isArray(metadata?.backupNotificationTraces)
+    ? metadata.backupNotificationTraces
+    : [];
+
+  return rawBatches
+    .map((value, index) => {
+      const batch = readPlainRecord(value);
+      if (!batch) {
+        return null;
+      }
+      const providers = Array.isArray(batch.providers) ? batch.providers : [];
+      const createdAt = readOptionalString(batch.createdAt);
+      const stage = readOptionalString(batch.stage) ?? 'backup_invite';
+      const notifiedCount = readOptionalNumber(batch.notifiedCount) ?? providers.length;
+      const websocketTargetCount = readOptionalNumber(batch.websocketTargetCount);
+      const radius = readOptionalNumber(batch.backupProviderRadiusMeters);
+      const limit = readOptionalNumber(batch.backupProviderInvitationLimit);
+      const mode = readOptionalString(batch.backupOpenMode);
+      const providerSummary = providers
+        .map((providerValue) => {
+          const provider = readPlainRecord(providerValue);
+          if (!provider) {
+            return null;
+          }
+          const providerProfileId = readOptionalString(provider.providerProfileId);
+          const notificationId = readOptionalString(provider.notificationId);
+          const distance = readOptionalNumber(provider.distanceMeters);
+          return [
+            providerProfileId ? `partner ${shortId(providerProfileId)}` : null,
+            distance !== null ? formatDistanceMeters(distance) : null,
+            notificationId ? `alert ${shortId(notificationId)}` : null,
+          ]
+            .filter(Boolean)
+            .join(' / ');
+        })
+        .filter(Boolean)
+        .slice(0, 8)
+        .join(' | ');
+
+      return {
+        id: `${createdAt ?? 'batch'}-${stage}-${index}`,
+        signal: notifiedCount > 0 ? 'Backup invited' : 'No backup sent',
+        title: `${humanizeNotificationType(stage)} / ${notifiedCount} partner(s)`,
+        notifiedCountLabel: `${notifiedCount}`,
+        detail:
+          notifiedCount > 0
+            ? `${notifiedCount} partner(s) were sent backup availability alerts.`
+            : 'The backup batch ran, but no eligible partner was available under the saved policy.',
+        meta: [
+          createdAt ? `created ${formatDate(createdAt)}` : null,
+          websocketTargetCount !== null ? `websocket targets ${websocketTargetCount}` : null,
+          radius !== null ? `radius ${formatDistanceMeters(radius)}` : null,
+          limit !== null ? `invite cap ${limit}` : null,
+          mode ? `mode ${mode}` : null,
+        ]
+          .filter(Boolean)
+          .join(' / '),
+        providers: providerSummary ? `Invited: ${providerSummary}` : '',
+      };
+    })
+    .filter((value): value is NonNullable<typeof value> => Boolean(value))
+    .sort((left, right) => {
+      const leftCreatedAt = left.id.split('-').slice(0, 3).join('-');
+      const rightCreatedAt = right.id.split('-').slice(0, 3).join('-');
+      return Date.parse(rightCreatedAt) - Date.parse(leftCreatedAt);
+    });
 }
 
 function bookingNotificationTraceRow(notification: AdminNotification) {
@@ -2911,6 +3008,7 @@ function bookingNotificationTraceRow(notification: AdminNotification) {
   const providerProfileId = readOptionalString(data?.providerProfileId);
   const radius = readOptionalNumber(data?.backupProviderRadiusMeters);
   const distance = readOptionalNumber(data?.distanceMeters);
+  const invitationLimit = readOptionalNumber(data?.backupProviderInvitationLimit);
   const deliveryStatuses = deliveries.map((delivery) => delivery.status);
 
   return {
@@ -2936,6 +3034,7 @@ function bookingNotificationTraceRow(notification: AdminNotification) {
       providerProfileId ? `partner ${shortId(providerProfileId)}` : null,
       distance !== null ? `distance ${formatDistanceMeters(distance)}` : null,
       radius !== null ? `backup radius ${formatDistanceMeters(radius)}` : null,
+      invitationLimit !== null ? `invite cap ${invitationLimit}` : null,
       data?.backupOpenMode ? `backup mode ${String(data.backupOpenMode)}` : null,
     ]
       .filter(Boolean)
