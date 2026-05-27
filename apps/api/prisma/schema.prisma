@@ -22,6 +22,7 @@ enum BookingStatus {
   IN_SERVICE
   COMPLETED
   CANCELLED
+  NO_SHOW
   EXPIRED
   REFUNDED
 }
@@ -245,6 +246,7 @@ model User {
   chatMessages             ChatMessage[]
   auditLogs                AdminAuditLog[]            @relation("AdminActor")
   bookingOpsTasks          BookingOpsTask[]           @relation("BookingOpsTaskActor")
+  appSessions              AppSession[]
   fileAssets               FileAsset[]                @relation("FileAssetOwner")
   reviewedFileAssets       FileAsset[]                @relation("FileAssetReviewer")
   taxPolicyVersions        TaxPolicyVersion[]         @relation("TaxPolicyAuthor")
@@ -254,6 +256,27 @@ model User {
   providerReportsAssigned  ProviderReport[]           @relation("ProviderReportAssignee")
   providerSanctionsIssued  ProviderSanction[]         @relation("ProviderSanctionIssuer")
   providerSanctionsLifted  ProviderSanction[]         @relation("ProviderSanctionLifter")
+}
+
+model AppSession {
+  id         String    @id @default(cuid())
+  userId     String
+  role       Role
+  deviceId   String
+  platform   String?
+  appVersion String?
+  ipAddress  String?
+  active     Boolean   @default(true)
+  lastSeenAt DateTime  @default(now())
+  expiresAt  DateTime?
+  metadata   Json?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, role, deviceId])
+  @@index([role, active, lastSeenAt])
+  @@index([userId, lastSeenAt])
 }
 
 model CustomerProfile {

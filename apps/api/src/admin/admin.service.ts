@@ -40,10 +40,14 @@ export class AdminService {
   listUsers() {
     return this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: 500,
       include: {
         customerProfile: true,
         providerProfile: true,
+        appSessions: {
+          orderBy: { lastSeenAt: 'desc' },
+          take: 5,
+        },
         pushDevices: {
           orderBy: { updatedAt: 'desc' },
           include: {

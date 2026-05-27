@@ -9,6 +9,7 @@ export type BookingStatus =
   | 'IN_SERVICE'
   | 'COMPLETED'
   | 'CANCELLED'
+  | 'NO_SHOW'
   | 'EXPIRED'
   | 'REFUNDED';
 
@@ -27,4 +28,3 @@ export type RealtimeEvent =
   | 'service.started'
   | 'service.completed'
   | 'payment.updated';
-

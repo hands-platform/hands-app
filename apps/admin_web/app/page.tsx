@@ -130,7 +130,7 @@ export default async function DashboardPage() {
     [
       'No-show signal',
       bookingOps.noShowSignal.toString(),
-      'Inferred from expired requests until a formal NO_SHOW status is added.',
+      'Formal NO_SHOW reservations plus overdue matched bookings without chat.',
     ],
     [
       'Online partners',
@@ -140,8 +140,8 @@ export default async function DashboardPage() {
     ['Pending verification', pendingVerification.length.toString(), 'Partners waiting for admin approval.'],
     [
       'Customers in app',
-      customerPresence.reachableCustomers.toString(),
-      'Reachable customer proxy from enabled app push device registrations.',
+      customerPresence.liveAppCustomers.toString(),
+      'Customer app sessions seen within the active session window.',
     ],
     [
       'Active customers',
@@ -277,14 +277,19 @@ export default async function DashboardPage() {
           <table className="table">
             <tbody>
               <InfoRow
-                label="Reachable customers"
-                value={customerPresence.reachableCustomers.toString()}
-                detail="Customer users with at least one enabled app push device."
+                label="Live app customers"
+                value={customerPresence.liveAppCustomers.toString()}
+                detail="Customer app sessions with an unexpired heartbeat."
               />
               <InfoRow
                 label="Active booking customers"
                 value={customerPresence.activeBookingCustomers.toString()}
                 detail="Unique customers attached to open or in-service reservations."
+              />
+              <InfoRow
+                label="Reachable customers"
+                value={customerPresence.reachableCustomers.toString()}
+                detail="Fallback proxy from enabled push devices when session heartbeats are missing."
               />
               <InfoRow
                 label="Push-disabled customers"
@@ -629,6 +634,18 @@ function buildBookingOpsInsights(bookings: AdminBooking[]) {
 
 function buildCustomerPresence(users: AdminUser[], bookings: AdminBooking[]) {
   const customers = users.filter((user) => Boolean(user.customerProfile));
+  const now = Date.now();
+  const liveAppCustomers = customers.filter((user) =>
+    (user.appSessions ?? []).some((session) => {
+      if (!session.active || session.role !== 'CUSTOMER') {
+        return false;
+      }
+      const expiry = session.expiresAt
+        ? Date.parse(session.expiresAt)
+        : Date.parse(session.lastSeenAt) + 5 * 60_000;
+      return Number.isFinite(expiry) && expiry >= now;
+    }),
+  ).length;
   const reachableCustomers = customers.filter((user) =>
     (user.pushDevices ?? []).some((device) => device.enabled),
   ).length;
@@ -645,6 +662,7 @@ function buildCustomerPresence(users: AdminUser[], bookings: AdminBooking[]) {
 
   return {
     totalCustomers: customers.length,
+    liveAppCustomers,
     reachableCustomers,
     disabledPushCustomers,
     activeBookingCustomers,
@@ -716,6 +734,9 @@ function buildRegionalBookingDemand(bookings: AdminBooking[]) {
 }
 
 function isNoShowSignal(booking: AdminBooking) {
+  if (booking.status === 'NO_SHOW') {
+    return true;
+  }
   if (booking.status === 'EXPIRED') {
     return true;
   }

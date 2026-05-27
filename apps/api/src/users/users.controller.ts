@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -11,6 +11,23 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly users: UsersService) {}
 
+  @Post('app/session')
+  @UseGuards(JwtAuthGuard)
+  recordAppSession(
+    @CurrentUser() user: AuthenticatedUser,
+    @Req() request: { ip?: string },
+    @Body()
+    body: {
+      role?: Role;
+      deviceId?: string;
+      platform?: string;
+      appVersion?: string;
+      metadata?: Record<string, unknown>;
+    },
+  ) {
+    return this.users.recordAppSession(user, body, request.ip);
+  }
+
   @Get('customer/me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER)
@@ -21,7 +38,10 @@ export class UsersController {
   @Patch('customer/me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER)
-  updateCustomerMe(@CurrentUser() user: AuthenticatedUser, @Body() body: { fullName?: string; email?: string }) {
+  updateCustomerMe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { fullName?: string; email?: string },
+  ) {
     return this.users.updateMe(user.id, body);
   }
 
@@ -35,7 +55,10 @@ export class UsersController {
   @Patch('provider/me')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
-  updateProviderMe(@CurrentUser() user: AuthenticatedUser, @Body() body: { fullName?: string; email?: string }) {
+  updateProviderMe(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { fullName?: string; email?: string },
+  ) {
     return this.users.updateMe(user.id, body);
   }
 }

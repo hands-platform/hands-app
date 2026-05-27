@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../../../../core/app_config.dart';
+import '../../../../core/app_session_reporter.dart';
 import '../../../../core/providers.dart';
 import '../../data/datasources/auth_local_datasource.dart';
 import '../../data/datasources/auth_remote_datasource.dart';
@@ -40,11 +41,21 @@ final authLocalDataSourceProvider = Provider<AuthLocalDataSource>((ref) {
   );
 });
 
+final appSessionReporterProvider = Provider<AppSessionReporter>((ref) {
+  return AppSessionReporter(
+    api: ref.read(apiClientProvider),
+    storage: const FlutterSecureStorage(),
+    role: 'CUSTOMER',
+    storageKey: 'hands.customer.app_session_device_id.v1',
+  );
+});
+
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(
     remoteDataSource: ref.read(authRemoteDataSourceProvider),
     localDataSource: ref.read(authLocalDataSourceProvider),
     apiClient: ref.read(apiClientProvider),
+    appSessionReporter: ref.read(appSessionReporterProvider),
     realtimeSocket: ref.read(realtimeSocketProvider),
   );
 });

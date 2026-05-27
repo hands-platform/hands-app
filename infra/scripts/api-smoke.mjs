@@ -134,6 +134,27 @@ const adminAuth = await request('/auth/verify-otp', {
   body: JSON.stringify({ phone: '+84900000099', otp: '123456', role: 'ADMIN' }),
 });
 
+const customerAppSession = await postJson('/app/session', customerAuth.accessToken, {
+  role: 'CUSTOMER',
+  deviceId: `smoke-customer-app-${Date.now()}`,
+  platform: 'android',
+  appVersion: 'smoke-test',
+});
+const providerAppSession = await postJson('/app/session', providerAuth.accessToken, {
+  role: 'PROVIDER',
+  deviceId: `smoke-provider-app-${Date.now()}`,
+  platform: 'android',
+  appVersion: 'smoke-test',
+});
+if (customerAppSession.role !== 'CUSTOMER' || providerAppSession.role !== 'PROVIDER') {
+  throw new Error(
+    `App session heartbeat did not persist roles correctly: ${JSON.stringify({
+      customerAppSession,
+      providerAppSession,
+    })}`,
+  );
+}
+
 await patchJson('/notifications/device-token/register', customerAuth.accessToken, {
   token: 'demo-customer-device-token',
   platform: 'android',
@@ -1610,6 +1631,13 @@ if (adminCancelledBooking?.status !== 'CANCELLED' || adminCancelledBooking?.paym
     `Admin booking monitor did not expose cancellation release state: ${JSON.stringify(adminCancelledBooking)}`,
   );
 }
+const adminUsers = await getJson('/admin/users', adminAuth.accessToken);
+const adminCustomerUser = adminUsers.find((item) => item.id === customerAuth.user.id);
+if (!adminCustomerUser?.appSessions?.some((session) => session.id === customerAppSession.id)) {
+  throw new Error(
+    `Admin user payload is missing customer app session heartbeat: ${JSON.stringify(adminCustomerUser)}`,
+  );
+}
 const adminProviders = await getJson('/admin/providers', adminAuth.accessToken);
 const adminProvider = adminProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
 if (!adminProvider?.user?.pushDevices?.some((device) => device.token === 'demo-provider-device-token')) {
@@ -1725,6 +1753,9 @@ console.log({
   payoutBatchCount: adminPayoutBatches.length,
   adminBookingMonitorReady: true,
   adminBookingDetailReady: true,
+  customerAppSessionId: customerAppSession.id,
+  providerAppSessionId: providerAppSession.id,
+  adminCustomerAppSessionReady: true,
   adminProviderPushDeviceCount: adminProvider?.user?.pushDevices?.length ?? 0,
   adminBackupProviderPushDeviceCount: adminBackupProvider?.user?.pushDevices?.length ?? 0,
   providerDeviceSessionId: providerDeviceSession.session?.id ?? null,

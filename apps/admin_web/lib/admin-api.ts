@@ -11,6 +11,18 @@ export type AdminUser = {
   roles: string[];
   providerProfile?: AdminProvider | null;
   customerProfile?: { id: string; userId: string; addresses?: unknown } | null;
+  appSessions?: Array<{
+    id: string;
+    role: string;
+    deviceId: string;
+    platform?: string | null;
+    appVersion?: string | null;
+    active: boolean;
+    lastSeenAt: string;
+    expiresAt?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+  }>;
   pushDevices?: Array<{
     id: string;
     platform: string;

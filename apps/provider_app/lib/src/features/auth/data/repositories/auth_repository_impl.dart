@@ -1,4 +1,5 @@
 import '../../../../core/api_client.dart';
+import '../../../../core/app_session_reporter.dart';
 import '../../../../core/realtime_socket.dart';
 import '../../domain/entities/auth_session.dart';
 import '../../domain/entities/otp_request.dart';
@@ -12,15 +13,18 @@ class AuthRepositoryImpl implements AuthRepository {
     required AuthRemoteDataSource remoteDataSource,
     required AuthLocalDataSource localDataSource,
     required ApiClient apiClient,
+    required AppSessionReporter appSessionReporter,
     required RealtimeSocket realtimeSocket,
   })  : _remoteDataSource = remoteDataSource,
         _localDataSource = localDataSource,
         _apiClient = apiClient,
+        _appSessionReporter = appSessionReporter,
         _realtimeSocket = realtimeSocket;
 
   final AuthRemoteDataSource _remoteDataSource;
   final AuthLocalDataSource _localDataSource;
   final ApiClient _apiClient;
+  final AppSessionReporter _appSessionReporter;
   final RealtimeSocket _realtimeSocket;
   AuthSession? _activeSession;
 
@@ -71,6 +75,11 @@ class AuthRepositoryImpl implements AuthRepository {
     _apiClient.refreshToken = session.refreshToken;
     _apiClient.onTokensRefreshed = _persistRefreshedSession;
     _realtimeSocket.connect(session.accessToken);
+    _recordAppSession();
+  }
+
+  void _recordAppSession() {
+    _appSessionReporter.recordHeartbeat().catchError((_) {});
   }
 
   Future<void> _persistRefreshedSession(
