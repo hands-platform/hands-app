@@ -113,6 +113,21 @@ export default async function OperationsPolicyPage({
             recommendation="Keep Vonage deferred until account setup is complete."
             detail="Use internal/demo auth for local development, then turn on phone auth once Vonage credentials and sender rules are ready."
           />
+          <DecisionHint
+            title="Cancellation after match"
+            recommendation="Start with admin review before adding automatic fees."
+            detail="This keeps early customer support flexible while HANDS learns real cancellation and partner arrival patterns."
+          />
+          <DecisionHint
+            title="No-show disputes"
+            recommendation="Require admin review until evidence upload and dispute screens are mature."
+            detail="No-show penalties are sensitive; manual review prevents trust damage in the first operating phase."
+          />
+          <DecisionHint
+            title="Partner alert channel"
+            recommendation="Keep in-app notifications first, then promote OneSignal after production credentials are stable."
+            detail="The system can record notifications now; push delivery should become mandatory only after monitoring is ready."
+          />
         </div>
       </section>
     </>

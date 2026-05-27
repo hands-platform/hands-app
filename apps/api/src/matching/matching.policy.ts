@@ -143,6 +143,72 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     ],
     enforced: false,
   },
+  {
+    key: 'cancellation.after_match_policy',
+    category: 'Decision',
+    label: 'Customer cancellation after match',
+    description:
+      'Choose how HANDS should handle customer cancellation after a partner has accepted or been selected.',
+    value: 'ADMIN_REVIEW_FOR_MVP',
+    recommendedValue: 'ADMIN_REVIEW_FOR_MVP',
+    options: [
+      {
+        value: 'ADMIN_REVIEW_FOR_MVP',
+        label: 'Admin review for MVP',
+        tradeoff: 'Safest while operations learn real cancellation reasons and edge cases.',
+      },
+      {
+        value: 'AUTO_FEE_AFTER_MATCH',
+        label: 'Auto fee after match',
+        tradeoff: 'Protects partner time, but needs clear customer-facing rules and refund handling.',
+      },
+    ],
+    enforced: false,
+  },
+  {
+    key: 'no_show.partner_report_policy',
+    category: 'Decision',
+    label: 'No-show handling',
+    description:
+      'Choose how no-show reports should move from partner report to operational decision.',
+    value: 'ADMIN_REVIEW_REQUIRED',
+    recommendedValue: 'ADMIN_REVIEW_REQUIRED',
+    options: [
+      {
+        value: 'ADMIN_REVIEW_REQUIRED',
+        label: 'Admin review required',
+        tradeoff: 'Reduces false penalties while the marketplace is young.',
+      },
+      {
+        value: 'AUTO_NO_SHOW_AFTER_EVIDENCE',
+        label: 'Auto no-show after evidence',
+        tradeoff: 'Faster operations, but requires strong evidence upload and dispute flows.',
+      },
+    ],
+    enforced: false,
+  },
+  {
+    key: 'notification.partner_alert_channel',
+    category: 'Decision',
+    label: 'Partner alert channel',
+    description:
+      'Choose how partners should receive urgent booking and backup participation alerts.',
+    value: 'IN_APP_WITH_PUSH_LATER',
+    recommendedValue: 'IN_APP_WITH_PUSH_LATER',
+    options: [
+      {
+        value: 'IN_APP_WITH_PUSH_LATER',
+        label: 'In-app now, push later',
+        tradeoff: 'Keeps MVP stable until OneSignal/Vonage production accounts are fully approved.',
+      },
+      {
+        value: 'ONESIGNAL_FOR_ALL_BOOKINGS',
+        label: 'OneSignal for all bookings',
+        tradeoff: 'Better reach, but depends on production push setup and delivery monitoring.',
+      },
+    ],
+    enforced: false,
+  },
 ];
 
 export function resolveMatchingPolicy(
