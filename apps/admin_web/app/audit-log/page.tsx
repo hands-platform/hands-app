@@ -1,4 +1,5 @@
 import { AdminAuditLog, adminGet } from '../../lib/admin-api';
+import Link from 'next/link';
 
 type AuditLogFilters = {
   q: string;
@@ -12,6 +13,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
   const allLogs = sortLogs(await adminGet<AdminAuditLog[]>('/admin/audit-logs', []));
   const logs = filterAuditLogs(allLogs, filters);
   const summary = buildSummary(logs);
+  const commandBoard = buildAuditCommandBoard(allLogs);
 
   return (
     <>
@@ -44,6 +46,50 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
         <div className="card">
           <p>Recent hour</p>
           <h2>{summary.recentHour}</h2>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Audit command board</h2>
+            <p className="muted">
+              High-impact admin changes grouped by policy, money movement, dispatch state, and recent
+              operator actions.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              commandBoard.some((item) => item.logs.length > 0 && item.tone === 'warn')
+                ? 'pill-warn'
+                : 'pill-success'
+            }`}
+          >
+            {commandBoard.reduce((sum, item) => sum + item.logs.length, 0)} audit signal(s)
+          </span>
+        </div>
+        <div className="ops-task-grid">
+          {commandBoard.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={item.title}>
+              <span className={`signal ${auditToneClass(item.tone)}`}>{auditToneLabel(item.tone)}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <div className="participant-list">
+                <span className="pill">{item.status}</span>
+                <span className="pill">{item.logs.length} event(s)</span>
+              </div>
+              {item.logs.length > 0 ? (
+                <div className="stack">
+                  {item.logs.slice(0, 3).map((log) => (
+                    <span className="muted" key={`${item.title}-${log.id}`}>
+                      {humanizeAction(log.action)} / {shortTarget(log.target)} / {relativeTime(log.createdAt)}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <small>{item.operatorAction}</small>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -203,6 +249,67 @@ function buildSummary(logs: AdminAuditLog[]) {
     needsReview: logs.filter((log) => auditPriority(log.action) >= 3).length,
     recentHour: logs.filter((log) => now - Date.parse(log.createdAt) <= 60 * 60 * 1000).length,
   };
+}
+
+type AuditCommandTone = 'warn' | 'info' | 'ok';
+
+type AuditCommandItem = {
+  title: string;
+  detail: string;
+  status: string;
+  operatorAction: string;
+  href: string;
+  tone: AuditCommandTone;
+  logs: AdminAuditLog[];
+};
+
+function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
+  const now = Date.now();
+  const servicePolicyLogs = logs.filter((log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'));
+  const moneyLogs = logs.filter((log) => isPaymentAction(log.action) || log.action.startsWith('payout.'));
+  const dispatchLogs = logs.filter((log) => isDispatchAction(log.action) || log.action.startsWith('booking.'));
+  const recentHighPriority = logs.filter(
+    (log) => auditPriority(log.action) >= 3 && now - Date.parse(log.createdAt) <= 24 * 60 * 60 * 1000,
+  );
+
+  return [
+    {
+      title: 'Policy and pricing changes',
+      detail: 'Service price, payout, VAT, tax, and fee edits have downstream effects on bookings and wallet debt.',
+      status: 'Policy',
+      operatorAction: 'Review before/after metadata and confirm the change was intentional.',
+      href: '/audit-log?bucket=Service%2FPricing',
+      tone: servicePolicyLogs.length > 0 ? 'warn' : 'ok',
+      logs: servicePolicyLogs,
+    },
+    {
+      title: 'Money movement trail',
+      detail: 'Payment, refund, payout, and settlement events should line up with booking outcomes.',
+      status: 'Money',
+      operatorAction: 'Check ledger impact before closing payment or payout tasks.',
+      href: '/audit-log?bucket=Payment',
+      tone: moneyLogs.length > 0 ? 'warn' : 'ok',
+      logs: moneyLogs,
+    },
+    {
+      title: 'Dispatch and partner actions',
+      detail: 'Booking, matching, partner status, and verification changes affect service delivery.',
+      status: 'Dispatch',
+      operatorAction: 'Trace handoff problems from booking detail back to the acting operator.',
+      href: '/audit-log?bucket=Dispatch',
+      tone: dispatchLogs.length > 0 ? 'info' : 'ok',
+      logs: dispatchLogs,
+    },
+    {
+      title: 'Recent high-priority changes',
+      detail: 'High-priority edits from the last 24 hours should be reviewed before shift handoff.',
+      status: 'Last 24h',
+      operatorAction: 'Use this lane for end-of-shift review and incident handoff.',
+      href: '/audit-log?priority=4',
+      tone: recentHighPriority.length > 0 ? 'warn' : 'ok',
+      logs: recentHighPriority,
+    },
+  ];
 }
 
 function buildAuditFilters(params: Record<string, string | string[] | undefined>): AuditLogFilters {
@@ -653,4 +760,24 @@ function opsDetail(action: string) {
     return 'Partner review actions should match verification evidence and moderation notes.';
   }
   return 'Use this row to confirm who acted, when they acted, and what object changed.';
+}
+
+function auditToneClass(tone: AuditCommandTone) {
+  if (tone === 'warn') {
+    return 'signal-warn';
+  }
+  if (tone === 'ok') {
+    return 'signal-ok';
+  }
+  return 'signal-info';
+}
+
+function auditToneLabel(tone: AuditCommandTone) {
+  if (tone === 'warn') {
+    return 'Review';
+  }
+  if (tone === 'ok') {
+    return 'Clear';
+  }
+  return 'Watch';
 }

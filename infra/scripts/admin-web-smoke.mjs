@@ -18,6 +18,7 @@ const pages = [
   { path: '/partner-risk', markers: ['Partner Risk', 'Risk operation filters'] },
   { path: '/provider-risk', markers: ['Partner Risk', 'Risk operation filters'] },
   { path: '/app-sessions', markers: ['App Sessions', 'Latest app sessions'] },
+  { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
   { path: '/providers', markers: ['Partner Verification', 'Review queue'] },
   { path: '/providers?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
