@@ -299,7 +299,7 @@ export default async function DashboardPage() {
           <div>
             <h2>Matching control room</h2>
             <p className="muted">
-              Live view of open matching demand against the current 1st-pick timer, backup radius, and partner
+              Live view of open matching demand against the current first-pick timer, backup radius, and partner
               location freshness.
             </p>
           </div>
@@ -1281,11 +1281,21 @@ function buildMatchingControlRoom(
     const freshEligible = eligiblePartners.filter((item) => (item.ageMinutes ?? Infinity) <= 30);
     const participantCount = booking.participants?.length ?? 0;
     const expired = booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false;
+    const firstPickDeclined = Boolean(
+      booking.preferredProvider?.id &&
+        (booking.participants ?? []).some(
+          (participant) =>
+            participant.providerProfile?.id === booking.preferredProvider?.id &&
+            participant.status === 'REJECTED',
+        ),
+    );
+    const backupWindowOpen = immediateBackup || firstPickDeclined || expired;
     const urgent = expired || freshEligible.length === 0;
     const detail = [
       bookingRegionLabel(booking),
       `first-pick ${booking.preferredProvider?.displayName ?? 'none'}`,
       `${participantCount} joined`,
+      firstPickDeclined ? 'first-pick declined' : backupWindowOpen ? 'backup open' : 'backup waiting',
       coordinate ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible` : 'no customer pin',
       booking.expiresAt ? `timer ${timeUntilLabel(booking.expiresAt)}` : 'no timer',
     ].join(' / ');
@@ -1329,6 +1339,13 @@ function buildMatchingControlRoom(
         helper: `${averageEligible} average eligible partner(s) in shown open requests.`,
       },
       {
+        label: 'Backup open rule',
+        value: immediateBackup ? 'Immediate' : 'Delayed',
+        helper: immediateBackup
+          ? 'Eligible partners can join during the first-pick timer.'
+          : 'Held during the timer, but opens immediately after first-pick decline.',
+      },
+      {
         label: 'Fresh online supply',
         value: String(freshOnlinePartners.length),
         helper: 'Online partners with a location update in the last 30 minutes.',
@@ -1352,10 +1369,10 @@ function buildMatchingControlRoom(
         title: 'Backup participation mode',
         detail: immediateBackup
           ? 'Nearby partners can appear during the first-pick response window.'
-          : 'Backup partners wait until the first-pick window closes.',
+          : 'Backup partners wait until the first-pick window closes, unless the first-pick partner declines first.',
         operatorAction: immediateBackup
           ? 'This supports the current customer anxiety-reduction direction.'
-          : 'Use this only when first-pick partner response rate is strong enough.',
+          : 'Use this only when first-pick partner response rate is strong enough, and watch decline recovery.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
