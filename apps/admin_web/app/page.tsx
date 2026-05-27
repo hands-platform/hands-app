@@ -67,6 +67,14 @@ type PartnerOpsQueueItem = {
   metrics: Array<{ label: string; value: string; tone: 'ok' | 'warn' | 'danger' | 'info' }>;
 };
 
+type DashboardBookingMatchingPolicySnapshot = {
+  providerResponseWindowMinutes: number | null;
+  backupProviderRadiusMeters: number | null;
+  preferredAcceptMode: string | null;
+  backupOpenMode: string | null;
+  travelBufferMinutes: number | null;
+};
+
 type ShiftBriefing = {
   label: string;
   signalClass: string;
@@ -393,8 +401,8 @@ export default async function DashboardPage() {
           <div>
             <h2>Matching control room</h2>
             <p className="muted">
-              Live view of open matching demand against the current first-pick timer, backup radius, and partner
-              location freshness.
+              Live view of open matching demand. Existing bookings use their saved policy snapshot; new
+              bookings use the current policy.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy">
@@ -1360,6 +1368,9 @@ function buildMatchingControlRoom(
   const backupOpenMode =
     dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
   const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
+  const openMatchingWithPolicySnapshot = openMatching.filter((booking) =>
+    dashboardBookingPolicySnapshot(booking),
+  );
   const freshOnlinePartners = providers.filter(
     (provider) =>
       provider.status.startsWith('ONLINE') &&
@@ -1369,9 +1380,15 @@ function buildMatchingControlRoom(
       (locationAgeMinutes(provider.currentLocationUpdatedAt) ?? Infinity) <= 30,
   );
   const openRows = openMatching.slice(0, 8).map((booking) => {
+    const savedPolicy = dashboardBookingPolicySnapshot(booking);
+    const bookingResponseWindowMinutes =
+      savedPolicy?.providerResponseWindowMinutes ?? responseWindowMinutes;
+    const bookingBackupRadiusMeters = savedPolicy?.backupProviderRadiusMeters ?? backupRadiusMeters;
+    const bookingBackupOpenMode = savedPolicy?.backupOpenMode ?? backupOpenMode;
+    const bookingImmediateBackup = bookingBackupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
     const coordinate = parseCoordinatePair(booking.lat, booking.lng);
     const eligiblePartners = coordinate
-      ? providersWithinRadius(providers, coordinate.lat, coordinate.lng, backupRadiusMeters)
+      ? providersWithinRadius(providers, coordinate.lat, coordinate.lng, bookingBackupRadiusMeters)
       : [];
     const freshEligible = eligiblePartners.filter((item) => (item.ageMinutes ?? Infinity) <= 30);
     const participantCount = booking.participants?.length ?? 0;
@@ -1384,7 +1401,7 @@ function buildMatchingControlRoom(
             participant.status === 'REJECTED',
         ),
     );
-    const backupWindowOpen = immediateBackup || firstPickDeclined || expired;
+    const backupWindowOpen = bookingImmediateBackup || firstPickDeclined || expired;
     const urgent = expired || freshEligible.length === 0;
     const detail = [
       bookingRegionLabel(booking),
@@ -1392,6 +1409,9 @@ function buildMatchingControlRoom(
       `${participantCount} joined`,
       firstPickDeclined ? 'first-pick declined' : backupWindowOpen ? 'backup open' : 'backup waiting',
       coordinate ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible` : 'no customer pin',
+      `${formatDistance(bookingBackupRadiusMeters)} radius`,
+      `${bookingResponseWindowMinutes}m window`,
+      savedPolicy ? 'saved policy' : 'live fallback',
       booking.expiresAt ? `timer ${timeUntilLabel(booking.expiresAt)}` : 'no timer',
     ].join(' / ');
 
@@ -1404,6 +1424,7 @@ function buildMatchingControlRoom(
       eligibleCount: eligiblePartners.length,
       freshEligibleCount: freshEligible.length,
       expired,
+      hasPolicySnapshot: Boolean(savedPolicy),
     };
   });
   const atRiskRows = openRows.filter((row) => row.expired || row.freshEligibleCount === 0);
@@ -1424,20 +1445,25 @@ function buildMatchingControlRoom(
       },
       {
         label: 'Policy timer',
-        value: `${responseWindowMinutes} min`,
-        helper: 'First-pick partner response window for new bookings.',
+        value: `${responseWindowMinutes} min live`,
+        helper: 'New bookings use this value; open rows prefer each saved booking snapshot.',
       },
       {
         label: 'Backup radius',
         value: formatDistance(backupRadiusMeters),
-        helper: `${averageEligible} average eligible partner(s) in shown open requests.`,
+        helper: `${averageEligible} average eligible partner(s) using row-level saved radius when available.`,
       },
       {
         label: 'Backup open rule',
-        value: immediateBackup ? 'Immediate' : 'Delayed',
+        value: immediateBackup ? 'Immediate live' : 'Delayed live',
         helper: immediateBackup
-          ? 'Eligible partners can join during the first-pick timer.'
-          : 'Held during the timer, but opens immediately after first-pick decline.',
+          ? 'New bookings allow eligible partners during the first-pick timer.'
+          : 'New bookings hold backup partners unless first-pick declines or the window expires.',
+      },
+      {
+        label: 'Saved snapshots',
+        value: `${openMatchingWithPolicySnapshot.length}/${openMatching.length}`,
+        helper: 'Open bookings with metadata.matchingPolicy stored for audit-safe dispatch decisions.',
       },
       {
         label: 'Fresh online supply',
@@ -1462,13 +1488,36 @@ function buildMatchingControlRoom(
         status: immediateBackup ? 'Visible early' : 'Delayed',
         title: 'Backup participation mode',
         detail: immediateBackup
-          ? 'Nearby partners can appear during the first-pick response window.'
-          : 'Backup partners wait until the first-pick window closes, unless the first-pick partner declines first.',
+          ? 'New bookings can show nearby backup partners during the first-pick response window.'
+          : 'New bookings keep backup partners waiting until timeout, unless first-pick declines first.',
         operatorAction: immediateBackup
           ? 'This supports the current customer anxiety-reduction direction.'
           : 'Use this only when first-pick partner response rate is strong enough, and watch decline recovery.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
+      },
+      {
+        status:
+          openMatching.length === 0 || openMatchingWithPolicySnapshot.length === openMatching.length
+            ? 'Traceable'
+            : 'Legacy fallback',
+        title: 'Open booking policy snapshots',
+        detail:
+          openMatching.length === 0
+            ? 'No open matching booking needs snapshot review right now.'
+            : `${openMatchingWithPolicySnapshot.length}/${openMatching.length} open matching booking(s) have saved matching policy.`,
+        operatorAction:
+          openMatchingWithPolicySnapshot.length === openMatching.length
+            ? 'Use each booking row and detail page as the source of truth for manual dispatch.'
+            : 'Legacy open bookings without snapshots should be reviewed against current policy and audit notes.',
+        className:
+          openMatching.length === 0 || openMatchingWithPolicySnapshot.length === openMatching.length
+            ? 'ops-task-done'
+            : 'ops-task-pending',
+        pillClass:
+          openMatching.length === 0 || openMatchingWithPolicySnapshot.length === openMatching.length
+            ? 'pill-success'
+            : 'pill-warn',
       },
       {
         status: freshOnlinePartners.length ? 'Location ready' : 'Location gap',
@@ -1495,6 +1544,37 @@ function dashboardPolicyNumberValue(settings: AdminOperationalPolicySetting[], k
 function dashboardPolicyStringValue(settings: AdminOperationalPolicySetting[], key: string) {
   const raw = settings.find((setting) => setting.key === key)?.value;
   return typeof raw === 'string' ? raw : null;
+}
+
+function dashboardBookingPolicySnapshot(booking: AdminBooking): DashboardBookingMatchingPolicySnapshot | null {
+  const metadata = readPlainRecord(booking.metadata);
+  const policy = readPlainRecord(metadata?.matchingPolicy);
+  if (!policy) {
+    return null;
+  }
+  return {
+    providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
+    backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
+    preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
+    backupOpenMode: readOptionalString(policy.backupOpenMode),
+    travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
+  };
+}
+
+function readPlainRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+function readOptionalNumber(value: unknown) {
+  const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readOptionalString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function providersWithinRadius(providers: AdminProvider[], lat: number, lng: number, radiusMeters: number) {
