@@ -54,6 +54,13 @@ const pages = [
   { path: '/partners?review=kyc', markers: ['Partner Verification', 'KYC review board', 'KYC updates'] },
   { path: '/partners?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   {
+    path: '/partners?review=acceptance-blocked',
+    markers: ['Partner Verification', 'Booking acceptance blocked'],
+  },
+  { path: '/partners?review=direct-ready', markers: ['Partner Verification', 'Direct request ready'] },
+  { path: '/partners?review=backup-ready', markers: ['Partner Verification', '10km backup ready'] },
+  { path: '/partners?review=backup-blocked', markers: ['Partner Verification', '10km backup blocked'] },
+  {
     path: '/providers',
     markers: [
       'Partner Verification',
