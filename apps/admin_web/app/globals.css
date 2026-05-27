@@ -784,13 +784,15 @@ button:disabled {
   margin-top: 14px;
 }
 
-.service-trace-summary div {
+.service-trace-summary div,
+.service-trace-summary a {
   background: #fbfdf8;
   border: 1px solid #d9ead1;
   border-radius: 8px;
   display: grid;
   gap: 6px;
   padding: 12px;
+  text-decoration: none;
 }
 
 .service-trace-summary span {

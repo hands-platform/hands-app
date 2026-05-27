@@ -67,6 +67,25 @@ type PartnerOpsQueueItem = {
   metrics: Array<{ label: string; value: string; tone: 'ok' | 'warn' | 'danger' | 'info' }>;
 };
 
+type ShiftBriefing = {
+  label: string;
+  signalClass: string;
+  headline: string;
+  detail: string;
+  primaryAction: {
+    label: string;
+    href: string;
+  };
+  stats: Array<{
+    label: string;
+    value: string;
+    helper: string;
+    tone: 'ok' | 'info' | 'warn' | 'danger';
+    href: string;
+  }>;
+  nextActions: OpsQueueItem[];
+};
+
 export default async function DashboardPage() {
   const [
     users,
@@ -161,6 +180,18 @@ export default async function DashboardPage() {
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
   const policySummary = buildOperationalPolicySummary(operationalPolicies);
   const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies);
+  const shiftBriefing = buildShiftCommandBriefing({
+    queue,
+    commandSignals,
+    bookingOps,
+    bookingDeepDive,
+    appPresence,
+    partnerSupply,
+    matchingControl,
+    failedNotifications,
+    cashSettlementSummary,
+    activePayoutBatches,
+  });
 
   const metrics = [
     [
@@ -281,6 +312,65 @@ export default async function DashboardPage() {
           <Link className="text-link" href="/audit-log">
             Audit log
           </Link>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Shift command briefing</h2>
+            <p className="muted">
+              Start here before opening detail pages. It compresses dispatch, partner supply, cash debt,
+              notification, and payout pressure into one operating handoff.
+            </p>
+          </div>
+          <span className={`signal ${shiftBriefing.signalClass}`}>{shiftBriefing.label}</span>
+        </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className="ops-row">
+            <div>
+              <span className="pill pill-warn">Next best move</span>
+              <strong>{shiftBriefing.headline}</strong>
+              <p className="muted">{shiftBriefing.detail}</p>
+            </div>
+            <Link className="text-link" href={shiftBriefing.primaryAction.href}>
+              {shiftBriefing.primaryAction.label}
+            </Link>
+          </div>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+          {shiftBriefing.stats.map((stat) => (
+            <Link
+              className={`ops-task-breakdown-item ops-task-breakdown-${stat.tone}`}
+              href={stat.href}
+              key={stat.label}
+            >
+              <span>{stat.label}</span>
+              <strong>{stat.value}</strong>
+              <small>{stat.helper}</small>
+            </Link>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {shiftBriefing.nextActions.map((item) => (
+            <Link className={`ops-task-card ${opsQueueCardClass(item.severity)}`} href={item.href} key={item.label}>
+              <small>
+                {item.owner} / {item.area}
+              </small>
+              <h3>{item.label}</h3>
+              <p>{item.recommendedAction}</p>
+              <span className="ops-task-card-action">Open</span>
+            </Link>
+          ))}
+          {shiftBriefing.nextActions.length === 0 && (
+            <div className="ops-task-note">
+              <strong>No urgent queue item is visible.</strong>
+              <p className="muted">
+                Keep watching live matching, partner locations, cash debt, and notification delivery as demand
+                changes.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1265,6 +1355,7 @@ function buildMatchingControlRoom(
     dashboardPolicyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
   const backupOpenMode =
     dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
   const freshOnlinePartners = providers.filter(
     (provider) =>
       provider.status.startsWith('ONLINE') &&
@@ -1316,7 +1407,6 @@ function buildMatchingControlRoom(
     openRows.length > 0
       ? (openRows.reduce((sum, row) => sum + row.eligibleCount, 0) / openRows.length).toFixed(1)
       : '0';
-  const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
 
   return {
     openRows,
@@ -2855,6 +2945,98 @@ function buildOpsQueue(input: {
       severityScore(right.severity) - severityScore(left.severity) ||
       left.area.localeCompare(right.area),
   );
+}
+
+function buildShiftCommandBriefing(input: {
+  queue: OpsQueueItem[];
+  commandSignals: DashboardCommandSignal[];
+  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
+  bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
+  appPresence: ReturnType<typeof buildAppPresence>;
+  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
+  failedNotifications: AdminNotification[];
+  cashSettlementSummary: AdminCashSettlementSummary;
+  activePayoutBatches: AdminPayoutBatch[];
+}): ShiftBriefing {
+  const firstQueueItem = input.queue[0];
+  const firstSignal = input.commandSignals[0];
+  const highQueueCount = input.queue.filter((item) => item.severity === 'high').length;
+  const openMatchingRows = input.matchingControl.openRows.length;
+  const cashDebtPartners = input.cashSettlementSummary.providerCount;
+  const failedNotificationCount = input.failedNotifications.length;
+  const payoutBatchCount = input.activePayoutBatches.length;
+  const hasAttention =
+    highQueueCount > 0 ||
+    openMatchingRows > 0 ||
+    cashDebtPartners > 0 ||
+    failedNotificationCount > 0 ||
+    payoutBatchCount > 0;
+
+  return {
+    label: hasAttention ? 'Operator attention' : 'Stable shift',
+    signalClass: hasAttention ? 'signal-warn' : 'signal-ok',
+    headline: firstQueueItem?.label ?? firstSignal?.title ?? 'No critical first action',
+    detail:
+      firstQueueItem?.recommendedAction ??
+      firstSignal?.detail ??
+      'The current snapshot has no critical blocker. Keep the dispatch and finance lanes under observation.',
+    primaryAction: {
+      label: firstQueueItem ? 'Open priority item' : firstSignal ? firstSignal.action : 'Open booking monitor',
+      href: firstQueueItem?.href ?? firstSignal?.href ?? '/bookings',
+    },
+    stats: [
+      {
+        label: 'Dispatch pressure',
+        value: openMatchingRows.toString(),
+        helper: `${input.bookingDeepDive.openWithoutParticipants} without partner, ${input.bookingOps.noShowSignal} no-show signal`,
+        tone: openMatchingRows ? 'warn' : 'ok',
+        href: '/bookings?view=active',
+      },
+      {
+        label: 'Customer presence',
+        value: input.appPresence.liveAppCustomers.toString(),
+        helper: `${input.appPresence.activeBookingCustomers} active-booking customers`,
+        tone: input.appPresence.liveAppCustomers ? 'info' : 'warn',
+        href: '/app-sessions?role=CUSTOMER',
+      },
+      {
+        label: 'Partner supply',
+        value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online}`,
+        helper: `${input.partnerSupply.staleLocation} stale location, ${input.partnerSupply.supplyPressureLabel} pressure`,
+        tone: input.partnerSupply.onlineAvailable ? 'ok' : 'warn',
+        href: '/providers',
+      },
+      {
+        label: 'Cash debt block',
+        value: cashDebtPartners.toString(),
+        helper: money(input.cashSettlementSummary.totalDebtAmount, input.cashSettlementSummary.currency),
+        tone: cashDebtPartners ? 'danger' : 'ok',
+        href: '/cash-settlements',
+      },
+      {
+        label: 'Alert failures',
+        value: failedNotificationCount.toString(),
+        helper: 'Push/in-app delivery rows needing retry or device review',
+        tone: failedNotificationCount ? 'warn' : 'ok',
+        href: '/notifications?review=failed',
+      },
+      {
+        label: 'Payout batches',
+        value: payoutBatchCount.toString(),
+        helper: 'Draft, processing, failed, or held payout work',
+        tone: payoutBatchCount ? 'info' : 'ok',
+        href: '/payouts',
+      },
+    ],
+    nextActions: input.queue.slice(0, 4),
+  };
+}
+
+function opsQueueCardClass(severity: OpsQueueItem['severity']) {
+  if (severity === 'high') return 'ops-task-blocked';
+  if (severity === 'medium') return 'ops-task-pending';
+  return 'ops-task-done';
 }
 
 function buildOpsQueueSummary(queue: OpsQueueItem[]) {
