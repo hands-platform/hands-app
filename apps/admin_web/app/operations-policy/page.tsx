@@ -1133,7 +1133,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       status: baselineLocationFreshness ? '30m default' : 'Custom freshness',
       detail: `Backup partners must refresh location within ${backupLocationFreshnessMinutes} minute(s) before alerts or joins.`,
       operatorAction: baselineLocationFreshness
-        ? 'This matches the provider app rule that refreshes location every 10 minutes while open.'
+        ? 'This matches the partner app rule that refreshes location every 10 minutes while open.'
         : 'If this is loosened, monitor stale-location joins and partner no-response rates.',
       className: baselineLocationFreshness ? 'ops-task-done' : 'ops-task-pending',
       pillClass: baselineLocationFreshness ? 'pill-success' : 'pill-warn',
