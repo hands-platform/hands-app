@@ -441,6 +441,14 @@ export default async function DashboardPage() {
                       {row.title}
                     </Link>
                     <p className="muted">{row.detail}</p>
+                    <div className="participant-list" style={{ marginTop: 8 }}>
+                      <span className={`pill ${row.customerPillClass}`}>{row.customerState}</span>
+                      <span className={`pill ${row.backupPillClass}`}>{row.backupState}</span>
+                      <span className={`pill ${row.supplyPillClass}`}>{row.supplyState}</span>
+                    </div>
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      Next: {row.nextAction}
+                    </p>
                   </div>
                   <span className={`pill ${row.pillClass}`}>{row.status}</span>
                 </div>
@@ -1423,6 +1431,29 @@ function buildMatchingControlRoom(
     );
     const backupWindowOpen = bookingImmediateBackup || firstPickDeclined || expired;
     const urgent = expired || freshEligible.length === 0;
+    const customerReadyToChoose = participantCount > 0;
+    const hasCustomerPin = Boolean(coordinate);
+    const customerState = customerReadyToChoose ? 'Customer can choose' : 'Customer waiting';
+    const customerPillClass = customerReadyToChoose ? 'pill-success' : 'pill-warn';
+    const backupState = backupWindowOpen ? 'Backup open' : 'First-pick window';
+    const backupPillClass = backupWindowOpen ? 'pill-success' : 'pill-info';
+    const supplyState = hasCustomerPin
+      ? `${freshEligible.length} fresh / ${eligiblePartners.length} nearby`
+      : 'No customer pin';
+    const supplyPillClass = !hasCustomerPin
+      ? 'pill-danger'
+      : freshEligible.length
+        ? 'pill-success'
+        : 'pill-danger';
+    const nextAction = matchingRowNextAction({
+      expired,
+      hasCustomerPin,
+      customerReadyToChoose,
+      backupWindowOpen,
+      freshEligibleCount: freshEligible.length,
+      eligibleCount: eligiblePartners.length,
+      firstPickName: booking.preferredProvider?.displayName ?? null,
+    });
     const detail = [
       bookingRegionLabel(booking),
       `first-pick ${booking.preferredProvider?.displayName ?? 'none'}`,
@@ -1446,6 +1477,13 @@ function buildMatchingControlRoom(
       freshEligibleCount: freshEligible.length,
       expired,
       hasPolicySnapshot: Boolean(savedPolicy),
+      customerState,
+      customerPillClass,
+      backupState,
+      backupPillClass,
+      supplyState,
+      supplyPillClass,
+      nextAction,
     };
   });
   const atRiskRows = openRows.filter((row) => row.expired || row.freshEligibleCount === 0);
@@ -1583,6 +1621,36 @@ function dashboardBookingPolicySnapshot(booking: AdminBooking): DashboardBooking
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
   };
+}
+
+function matchingRowNextAction(input: {
+  expired: boolean;
+  hasCustomerPin: boolean;
+  customerReadyToChoose: boolean;
+  backupWindowOpen: boolean;
+  freshEligibleCount: number;
+  eligibleCount: number;
+  firstPickName: string | null;
+}) {
+  if (input.expired) {
+    return 'Expire or manually recover this request before the customer waits longer.';
+  }
+  if (!input.hasCustomerPin) {
+    return 'Confirm the customer service location so distance-based backup matching can work.';
+  }
+  if (input.customerReadyToChoose) {
+    return 'Confirm the customer sees the shortlist and can select the final partner.';
+  }
+  if (input.freshEligibleCount === 0 && input.eligibleCount > 0) {
+    return 'Ask nearby partners to refresh location or open the Partner app before widening policy.';
+  }
+  if (input.freshEligibleCount === 0) {
+    return 'Check local supply; no fresh nearby partner is currently available for backup.';
+  }
+  if (input.backupWindowOpen) {
+    return `Nudge ${input.freshEligibleCount} eligible nearby partner(s) to join the customer shortlist.`;
+  }
+  return `Watch first-pick response from ${input.firstPickName ?? 'the preferred partner'} while backup supply stays ready.`;
 }
 
 function readPlainRecord(value: unknown): Record<string, unknown> | null {
