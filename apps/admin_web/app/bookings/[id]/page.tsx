@@ -31,11 +31,10 @@ const EXPIRED_LOCATION_HOURS = 24;
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [booking, operationalPolicies, rawNotifications, auditLogs] = await Promise.all([
+  const [booking, operationalPolicies, rawNotifications] = await Promise.all([
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminNotification[]>('/admin/notifications', []),
-    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
   ]);
 
   if (!booking) {
@@ -59,7 +58,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
   const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
-  const operationsTrace = bookingOperationsTrace(booking, auditLogs);
+  const operationsTrace = bookingOperationsTrace(booking, booking.auditLogs ?? []);
 
   return (
     <>

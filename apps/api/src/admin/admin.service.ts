@@ -786,8 +786,8 @@ export class AdminService {
     });
   }
 
-  getBookingDetail(id: string) {
-    return this.prisma.booking.findUniqueOrThrow({
+  async getBookingDetail(id: string) {
+    const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id },
       include: {
         customerProfile: { include: { user: true } },
@@ -855,6 +855,23 @@ export class AdminService {
         },
       },
     });
+    const auditLogs = await this.prisma.adminAuditLog.findMany({
+      where: {
+        OR: [
+          { target: `booking:${id}` },
+          { metadata: { path: ['bookingId'], equals: id } },
+          {
+            action: 'operational_policy.update',
+            createdAt: { gte: booking.createdAt },
+          },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+    });
+
+    return { ...booking, auditLogs };
   }
 
   async addBookingOpsNote(actorId: string, bookingId: string, input: { note?: string; preset?: string }) {

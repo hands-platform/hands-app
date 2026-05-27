@@ -425,6 +425,7 @@ export type AdminBookingDetail = AdminBooking & {
   platformFeeLogs?: AdminProviderPlatformFeeLog[];
   taxLogs?: AdminProviderTaxLog[];
   walletLedgerEntries?: AdminProviderWalletLedgerEntry[];
+  auditLogs?: AdminAuditLog[];
 };
 
 export type AdminBookingOpsTask = {
