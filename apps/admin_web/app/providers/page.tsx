@@ -61,6 +61,20 @@ type PartnerDispatchForecast = {
     blocked: number;
   }>;
 };
+type PartnerAcceptanceBlockerBoard = {
+  hardBlocked: number;
+  eligibleNow: number;
+  cards: Array<{
+    title: string;
+    count: number;
+    status: string;
+    detail: string;
+    operatorAction: string;
+    href: string;
+    tone: ProviderCommandLane['tone'];
+    samples: string[];
+  }>;
+};
 type ProviderFilters = {
   q: string;
   verification: string;
@@ -107,6 +121,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const reviewQueue = buildProviderReviewQueue(providers, opsPolicy);
   const priorityLane = buildProviderPriorityLane(providers, opsPolicy);
   const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy);
+  const acceptanceBlockerBoard = buildPartnerAcceptanceBlockerBoard(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
 
   return (
@@ -270,6 +285,51 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     {item.label}: {item.value}
                   </span>
                 ))}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner acceptance blocker board</h2>
+            <p className="muted">
+              Shows why partners cannot accept direct bookings or join 10km backup matching before operators
+              try to dispatch them.
+            </p>
+          </div>
+          <div className="participant-list">
+            <span className={`pill ${acceptanceBlockerBoard.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}>
+              {acceptanceBlockerBoard.hardBlocked} hard blocked
+            </span>
+            <span className="pill pill-info">{acceptanceBlockerBoard.eligibleNow} can accept now</span>
+          </div>
+        </div>
+        <div className="grid" style={{ marginTop: 12 }}>
+          {acceptanceBlockerBoard.cards.map((card) => (
+            <Link className="card" href={card.href} key={card.title}>
+              <p>{card.title}</p>
+              <h2>{card.count}</h2>
+              <span className={`signal ${providerCommandToneClass(card.tone)}`}>
+                {card.status}
+              </span>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {card.detail}
+              </p>
+              <p className="muted" style={{ marginTop: 8 }}>
+                {card.operatorAction}
+              </p>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                {card.samples.length > 0 ? (
+                  card.samples.map((sample) => (
+                    <span className="pill" key={sample}>
+                      {sample}
+                    </span>
+                  ))
+                ) : (
+                  <span className="pill pill-success">No immediate queue</span>
+                )}
               </div>
             </Link>
           ))}
@@ -1706,6 +1766,119 @@ function buildPartnerDispatchForecast(
     ],
     supplyLanes: buildPartnerSupplyLanes(providers, opsPolicy),
   };
+}
+
+function buildPartnerAcceptanceBlockerBoard(
+  providers: AdminProvider[],
+  opsPolicy: ProviderOpsPolicy,
+): PartnerAcceptanceBlockerBoard {
+  const cashDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0);
+  const accountOrSecurity = providers.filter((provider) =>
+    Boolean(provider.blockedAt) ||
+    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+  );
+  const locationHold = providers.filter((provider) =>
+    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
+  );
+  const pushHold = providers.filter((provider) => !hasHealthyPush(provider));
+  const onboardingHold = providers.filter((provider) =>
+    provider.verification?.status !== 'APPROVED' ||
+    ['REJECTED', 'PENDING'].includes(provider.kyc?.status ?? 'MISSING'),
+  );
+  const firstEarningPayoutGate = providers.filter(providerPayoutSetupNeedsReview);
+  const hardBlocked = providers.filter((provider) => partnerHasHardAcceptanceBlocker(provider)).length;
+  const eligibleNow = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length;
+
+  return {
+    hardBlocked,
+    eligibleNow,
+    cards: [
+      {
+        title: 'Cash fee settlement',
+        count: cashDebt.length,
+        status: cashDebt.length ? 'Blocks accept' : 'Clear',
+        detail: 'Negative wallet from cash bookings blocks booking acceptance until HANDS fee settlement is posted.',
+        operatorAction: 'Open the cash debt queue and confirm settlement before allowing more booking work.',
+        href: '/partners?review=cash-debt',
+        tone: cashDebt.length ? 'danger' : 'ok',
+        samples: partnerBlockerSamples(cashDebt),
+      },
+      {
+        title: 'Account and device risk',
+        count: accountOrSecurity.length,
+        status: accountOrSecurity.length ? 'Do not dispatch' : 'Clear',
+        detail: 'Blocked accounts, blocked devices, shared devices, or suspicious sessions must stay out of matching.',
+        operatorAction: 'Resolve account controls in Partner Risk before overriding any booking decision.',
+        href: '/partner-risk',
+        tone: accountOrSecurity.length ? 'danger' : 'ok',
+        samples: partnerBlockerSamples(accountOrSecurity),
+      },
+      {
+        title: 'Location freshness',
+        count: locationHold.length,
+        status: locationHold.length ? 'Needs app open' : 'Fresh',
+        detail:
+          `Backup matching uses the last location. Partners older than ${opsPolicy.staleLocationMinutes} minutes should not be trusted for 10km dispatch.`,
+        operatorAction: 'Ask partners to open the app so location refreshes before they receive or join requests.',
+        href: '/partners?review=location',
+        tone: locationHold.length ? 'warn' : 'ok',
+        samples: partnerBlockerSamples(locationHold),
+      },
+      {
+        title: 'Push alert reachability',
+        count: pushHold.length,
+        status: pushHold.length ? 'Alert gap' : 'Ready',
+        detail: 'Partners without enabled push devices may miss first-pick and backup participation prompts.',
+        operatorAction: 'Use in-app refresh, token registration, or contact fallback before relying on them for demand.',
+        href: '/partners?review=push',
+        tone: pushHold.length ? 'warn' : 'ok',
+        samples: partnerBlockerSamples(pushHold),
+      },
+      {
+        title: 'Identity and onboarding',
+        count: onboardingHold.length,
+        status: onboardingHold.length ? 'Review needed' : 'Approved',
+        detail: 'Partners should not receive paid jobs until verification and required identity checks are approved.',
+        operatorAction: 'Review KYC, documents, public media, and partner approval status in one queue.',
+        href: '/partners?review=kyc',
+        tone: onboardingHold.length ? 'warn' : 'ok',
+        samples: partnerBlockerSamples(onboardingHold),
+      },
+      {
+        title: 'First earning payout gate',
+        count: firstEarningPayoutGate.length,
+        status: firstEarningPayoutGate.length ? 'Payout locked' : 'Deferred',
+        detail:
+          'Tax and full payout setup are requested after first earning, not before signup, to reduce onboarding drop-off.',
+        operatorAction: 'Keep booking work possible, but block withdrawals until tax, address, bank, and terms are complete.',
+        href: '/partners?review=payout-setup',
+        tone: firstEarningPayoutGate.length ? 'info' : 'ok',
+        samples: partnerBlockerSamples(firstEarningPayoutGate),
+      },
+    ],
+  };
+}
+
+function partnerHasHardAcceptanceBlocker(provider: AdminProvider) {
+  return (
+    Boolean(provider.blockedAt) ||
+    provider.verification?.status !== 'APPROVED' ||
+    providerUnsettledWalletBalance(provider) < 0 ||
+    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))
+  );
+}
+
+function partnerCanAcceptBookingNow(provider: AdminProvider, opsPolicy: ProviderOpsPolicy) {
+  return (
+    !partnerHasHardAcceptanceBlocker(provider) &&
+    provider.status === 'ONLINE_AVAILABLE' &&
+    providerLocationStatus(provider, opsPolicy) === 'recent' &&
+    hasHealthyPush(provider)
+  );
+}
+
+function partnerBlockerSamples(providers: AdminProvider[]) {
+  return providers.slice(0, 3).map(providerDisplayName);
 }
 
 function buildPartnerSupplyLanes(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {

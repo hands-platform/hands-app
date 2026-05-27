@@ -36,12 +36,24 @@ const pages = [
   { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
   {
     path: '/partners',
-    markers: ['Partner Verification', 'Dispatch capacity forecast', 'Backup matching eligibility', 'Review queue'],
+    markers: [
+      'Partner Verification',
+      'Dispatch capacity forecast',
+      'Partner acceptance blocker board',
+      'Backup matching eligibility',
+      'Review queue',
+    ],
   },
   { path: '/partners?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   {
     path: '/providers',
-    markers: ['Partner Verification', 'Dispatch capacity forecast', 'Backup matching eligibility', 'Review queue'],
+    markers: [
+      'Partner Verification',
+      'Dispatch capacity forecast',
+      'Partner acceptance blocker board',
+      'Backup matching eligibility',
+      'Review queue',
+    ],
   },
   { path: '/providers?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
