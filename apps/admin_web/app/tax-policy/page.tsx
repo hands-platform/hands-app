@@ -20,7 +20,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
         <div>
           <h1>Tax policy</h1>
           <p className="muted">
-            Versioned withholding rules for Vietnam freelance providers. Rates are configured here, not in
+            Versioned withholding rules for Vietnam freelance partners. Rates are configured here, not in
             application code.
           </p>
         </div>
@@ -97,7 +97,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               <p className="muted">
                 {preview.policy
                   ? `Effective from ${formatDate(preview.policy.effectiveFrom)}`
-                  : 'Create or activate one policy before provider earnings are settled.'}
+                  : 'Create or activate one policy before partner earnings are settled.'}
               </p>
             </div>
             <small>{preview.policy?.status ?? 'NONE'}</small>

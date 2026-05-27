@@ -77,7 +77,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
             <tr>
               <th>Refund</th>
               <th>Customer</th>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Payment</th>
               <th>Booking</th>
               <th>Amount</th>

@@ -26,8 +26,8 @@ const setupOrder = [
     phase: 'Store release preparation',
     operatorAction:
       'Create separate customer/partner upload keystores, store them outside Git, and fill local key.properties files.',
-    exitCriteria: 'Customer and provider release APK builds succeed with local upload signing enabled.',
-    purpose: 'Required before Play Console upload and any Android provider that requires SHA fingerprints.',
+    exitCriteria: 'Customer and partner release APK builds succeed with local upload signing enabled.',
+    purpose: 'Required before Play Console upload and any Android vendor that requires SHA fingerprints.',
     env: ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'],
     notes: [
       'Local MVP release builds fall back to debug signing when android/key.properties is missing.',
@@ -60,7 +60,7 @@ const setupOrder = [
       'Use infra/env/hands-staging.env.example as the operator fill-in checklist.',
       'Copy the project URL and anon key from Supabase project settings.',
       'Set the JWT secret on the API so access tokens can be verified server-side.',
-      'Keep the service role key server-side only; it is used by admin operations to sync approved provider roles.',
+      'Keep the service role key server-side only; it is used by admin operations to sync approved partner roles.',
       'Run the secret leak guard before every push after editing any local environment file.',
     ],
     commands: [
@@ -87,7 +87,7 @@ const setupOrder = [
       'This step is intentionally deferred so product development can continue without breaking login.',
       'Do not fill Supabase Phone Auth SMS fields with placeholder values.',
       'Use Vonage for production SMS when the OTP E2E pass starts.',
-      'Provider role exchange must remain server-verified and must not trust a client-selected role.',
+      'Partner role exchange must remain server-verified and must not trust a client-selected role.',
       'After this passes, mobile apps can switch AUTH_BACKEND from nest to supabase.',
     ],
     commands: [
@@ -100,8 +100,8 @@ const setupOrder = [
     title: 'MapTiler and Geoapify',
     phase: 'Location E2E',
     operatorAction: 'Use the configured low-cost map/geocoding keys and verify address search before E2E.',
-    exitCriteria: 'Customer app can search an address, move the pin, and load nearby providers.',
-    purpose: 'Required for customer address search, map pin confirmation, and nearby provider display.',
+    exitCriteria: 'Customer app can search an address, move the pin, and load nearby partners.',
+    purpose: 'Required for customer address search, map pin confirmation, and nearby partner display.',
     env: ['MAPTILER_API_KEY', 'GEOAPIFY_API_KEY'],
     notes: [
       'MapTiler and Geoapify keys are configured locally in ignored environment files.',
@@ -152,8 +152,8 @@ const setupOrder = [
     title: 'File storage and CDN',
     phase: 'Media operations',
     operatorAction: 'Use local MinIO for MVP, then configure production storage/CDN.',
-    exitCriteria: 'Private verification files and public provider media can be uploaded and served.',
-    purpose: 'Required for provider verification files, public profile media, and moderation evidence.',
+    exitCriteria: 'Private verification files and public partner media can be uploaded and served.',
+    purpose: 'Required for partner verification files, public profile media, and moderation evidence.',
     env: [
       'S3_ENDPOINT',
       'S3_BUCKET',
@@ -168,7 +168,7 @@ const setupOrder = [
       'Local MinIO is enough for development.',
       'Use private reads for verification files.',
       'For Supabase Storage, prefer S3_PRIVATE_BUCKET=hands-private and S3_PUBLIC_BUCKET=hands-public.',
-      'Serve approved public provider media through a CDN base URL.',
+      'Serve approved public partner media through a CDN base URL.',
     ],
     commands: [
       'npm.cmd run external:check:storage',
@@ -266,7 +266,7 @@ const externalRegistrationPlan = [
     provider: 'Supabase Storage or S3-compatible storage',
     owner: 'administration@hands.vn',
     detail:
-      'Local MinIO is enough for development. Production needs private KYC buckets and public provider media delivery.',
+      'Local MinIO is enough for development. Production needs private KYC buckets and public partner media delivery.',
     env: ['S3_PRIVATE_BUCKET', 'S3_PUBLIC_BUCKET', 'S3_PUBLIC_BASE_URL'],
   },
   {

@@ -35,7 +35,7 @@ export default async function ReviewsPage() {
         <div className="toolbar">
           <div>
             <p className="muted">
-              Moderation board for guest feedback, dispute signals, and therapist quality monitoring.
+              Moderation board for guest feedback, dispute signals, and partner quality monitoring.
             </p>
           </div>
           <div className="participant-list">
@@ -49,7 +49,7 @@ export default async function ReviewsPage() {
           <thead>
             <tr>
               <th>Review</th>
-              <th>Provider</th>
+              <th>Partner</th>
               <th>Customer</th>
               <th>Status</th>
               <th>Ops signal</th>
@@ -199,7 +199,7 @@ function providerReviewHint(review: AdminReview) {
   if (review.tipAmount > 0) {
     return 'Guest left a tip, which often signals a strong experience';
   }
-  return 'Use this review to track therapist quality and consistency';
+  return 'Use this review to track partner quality and consistency';
 }
 
 function signalClass(review: AdminReview) {
@@ -233,13 +233,13 @@ function opsHint(review: AdminReview) {
     return 'Review the text, confirm the report reason, and decide whether to keep it hidden.';
   }
   if (review.status === 'HIDDEN') {
-    return 'Hidden reviews should still be documented for support or therapist coaching.';
+    return 'Hidden reviews should still be documented for support or partner coaching.';
   }
   if (review.rating <= 2) {
     return 'Low ratings deserve service recovery review before the pattern spreads.';
   }
   if (review.tipAmount > 0) {
-    return 'Tipped reviews can highlight therapist strengths worth reinforcing.';
+    return 'Tipped reviews can highlight partner strengths worth reinforcing.';
   }
-  return 'Routine feedback row for customer sentiment and therapist quality tracking.';
+  return 'Routine feedback row for customer sentiment and partner quality tracking.';
 }

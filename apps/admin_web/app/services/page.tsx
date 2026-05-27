@@ -189,9 +189,8 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
           <div>
             <h2>Pricing health</h2>
             <p className="muted">
-              Providers can charge the minimum price or higher, but every configured customer price should
-              have a payout rule so finance can separate partner payout, VAT, withholding, and actual
-              commission.
+              Partners can charge the minimum price or higher, but every configured customer price should have
+              a payout rule so finance can separate partner payout, VAT, withholding, and actual commission.
             </p>
           </div>
           <span className={`pill ${healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}`}>
@@ -218,7 +217,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             <h2>Booking readiness queue</h2>
             <p className="muted">
               Shows services that can block customer booking or create an unsafe finance result before
-              providers start using those prices.
+              partners start using those prices.
             </p>
           </div>
           <div className="actions">
@@ -298,7 +297,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                               {cell.baseRule ? 'Payout ready' : 'Payout missing'}
                             </span>
                             <small>
-                              Provider{' '}
+                              Partner{' '}
                               {cell.baseRule
                                 ? formatMoney(cell.baseRule.providerPayoutAmount, cell.baseRule.currency)
                                 : 'not set'}
@@ -365,7 +364,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             <p className="muted">
               Finance view for the current minimum price of every active duration option. This is the fastest
               way to confirm customer price, partner payout, tax/cost assumptions, and customer-app visibility
-              before providers start selling.
+              before partners start selling.
             </p>
           </div>
           <span className="pill pill-info">{activeServices.length} active option(s)</span>
@@ -379,7 +378,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
               <th>Gross fee</th>
               <th>Tax / cost</th>
               <th>Actual company commission</th>
-              <th>Provider visibility</th>
+              <th>Partner visibility</th>
               <th>Next action</th>
             </tr>
           </thead>
@@ -467,7 +466,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             </strong>
           </div>
           <div>
-            <span>Provider + step</span>
+            <span>Partner + step</span>
             <strong>
               {formatMoney(
                 pricePolicyPreviewSummary.providerStepCommission,
@@ -496,7 +495,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                 <th>Service option</th>
                 <th>Current policy</th>
                 <th>Customer + step</th>
-                <th>Provider + step</th>
+                <th>Partner + step</th>
                 <th>Both + step</th>
                 <th>Risk</th>
               </tr>
@@ -514,7 +513,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                     {row.baseRule ? (
                       <div className="service-matrix-cell">
                         <strong>{formatMoney(row.baseRule.customerPrice, row.currency)}</strong>
-                        <small>Provider {formatMoney(row.baseRule.providerPayoutAmount, row.currency)}</small>
+                        <small>Partner {formatMoney(row.baseRule.providerPayoutAmount, row.currency)}</small>
                         <small>
                           Commission {formatMoney(row.currentFinance.actualCompanyCommission, row.currency)}
                         </small>
@@ -550,9 +549,9 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
           <div>
             <h2>Recent booking finance trace</h2>
             <p className="muted">
-              Links service pricing to booking payment, provider earning, tax log, platform fee log, and
-              wallet movement. Use this after changing a price policy to confirm real bookings are producing
-              the expected finance records.
+              Links service pricing to booking payment, partner earning, tax log, platform fee log, and wallet
+              movement. Use this after changing a price policy to confirm real bookings are producing the
+              expected finance records.
             </p>
           </div>
           <span className="pill pill-info">{bookingTraceRows.length} trace row(s)</span>
@@ -889,7 +888,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
 
                     <h3>Price ladder coverage</h3>
                     <p className="muted">
-                      Providers may set prices at these increments. Booking stays blocked for any exact
+                      Partners may set prices at these increments. Booking stays blocked for any exact
                       customer price without an active payout rule.
                     </p>
                     <div className="participant-list" style={{ marginBottom: 12 }}>
@@ -915,7 +914,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                             <span>{rule.active ? 'ON' : 'OFF'}</span>
                             <div>
                               <strong>
-                                Customer {formatMoney(rule.customerPrice, rule.currency)} / provider{' '}
+                                Customer {formatMoney(rule.customerPrice, rule.currency)} / partner{' '}
                                 {formatMoney(rule.providerPayoutAmount, rule.currency)}
                               </strong>
                               <p className="muted">
@@ -1208,9 +1207,9 @@ function servicePricingAuditRows(logs: AdminAuditLog[]) {
             : 'No customer price snapshot';
       const payoutLabel =
         typeof after.providerPayoutAmount === 'number'
-          ? `Provider ${formatMoney(after.providerPayoutAmount, String(after.currency ?? 'VND'))}`
+          ? `Partner ${formatMoney(after.providerPayoutAmount, String(after.currency ?? 'VND'))}`
           : typeof before.providerPayoutAmount === 'number'
-            ? `Previous provider ${formatMoney(before.providerPayoutAmount, String(before.currency ?? 'VND'))}`
+            ? `Previous partner ${formatMoney(before.providerPayoutAmount, String(before.currency ?? 'VND'))}`
             : 'No partner payout snapshot';
 
       return {
@@ -1303,7 +1302,7 @@ function ProviderPriceImpact({
               <div>
                 <strong>{row.providerName}</strong>
                 <p className="muted">
-                  Customer {formatMoney(row.price, row.currency)} / provider{' '}
+                  Customer {formatMoney(row.price, row.currency)} / partner{' '}
                   {row.rule ? formatMoney(row.rule.providerPayoutAmount, row.currency) : 'not configured'}
                 </p>
                 <p className="muted">{row.reason}</p>
@@ -1322,7 +1321,7 @@ function ProviderPriceImpact({
           ))}
         </div>
       ) : (
-        <p className="muted">No provider has configured a price for this duration yet.</p>
+        <p className="muted">No partner has configured a price for this duration yet.</p>
       )}
     </div>
   );
@@ -1349,7 +1348,7 @@ function ScenarioPreviewCell({ scenario }: { scenario: PricePolicyScenario | nul
     <div className="service-matrix-cell">
       <span className={`pill ${scenario.tone}`}>{scenario.status}</span>
       <strong>{formatMoney(scenario.customerPrice, scenario.currency)}</strong>
-      <small>Provider {formatMoney(scenario.providerPayoutAmount, scenario.currency)}</small>
+      <small>Partner {formatMoney(scenario.providerPayoutAmount, scenario.currency)}</small>
       <small>Commission {formatMoney(scenario.finance.actualCompanyCommission, scenario.currency)}</small>
       <small>Tax {formatMoney(scenario.finance.withholdingAmount, scenario.currency)}</small>
     </div>
@@ -1389,7 +1388,7 @@ function servicePricePolicyPreviewRows(
         : null;
       const balancedStepScenario = baseRule
         ? buildPricePolicyScenario(service, baseRule, activeTaxPolicy, {
-            label: 'Customer and provider + step',
+            label: 'Customer and partner + step',
             customerPrice: baseRule.customerPrice + priceStep,
             providerPayoutAmount: baseRule.providerPayoutAmount + priceStep,
           })
@@ -1798,7 +1797,7 @@ function buildPricingHealth(
       value: `${invalidRules.length} invalid`,
       detail:
         invalidRules.length === 0
-          ? 'Payout rules are above minimum, on the right increment, and do not overpay providers.'
+          ? 'Payout rules are above minimum, on the right increment, and do not overpay partners.'
           : 'Review payout rules with invalid customer price or partner payout amount.',
     },
     {
@@ -1863,10 +1862,10 @@ function buildBookingReadinessQueue(
           detail: `${row.providerName} price ${formatMoney(row.price, row.currency)}: ${row.reason}`,
           action:
             row.state === 'missing_payout'
-              ? 'Add an active payout rule for this exact provider customer price.'
+              ? 'Add an active payout rule for this exact partner customer price.'
               : row.state === 'below_minimum'
-                ? 'Ask the provider to raise the price or lower the admin minimum price intentionally.'
-                : 'No customer action needed unless this provider should be visible.',
+                ? 'Ask the partner to raise the price or lower the admin minimum price intentionally.'
+                : 'No customer action needed unless this partner should be visible.',
           tone: row.state === 'below_minimum' ? 'blocked' : 'warning',
         });
       }
@@ -1876,7 +1875,7 @@ function buildBookingReadinessQueue(
           serviceId: service.id,
           title: `${service.name} / ${service.durationMin} min`,
           status: 'INVALID',
-          detail: `Customer ${formatMoney(rule.customerPrice, rule.currency)} / provider ${formatMoney(
+          detail: `Customer ${formatMoney(rule.customerPrice, rule.currency)} / partner ${formatMoney(
             rule.providerPayoutAmount,
             rule.currency,
           )}`,
@@ -1931,7 +1930,7 @@ function providerPriceImpact(
     })
     .map((providerService) => {
       const rule = activeRules.get(providerService.price) ?? null;
-      const providerName = providerService.providerProfile?.displayName ?? 'Unnamed provider';
+      const providerName = providerService.providerProfile?.displayName ?? 'Unnamed partner';
       const providerStatus = providerService.providerProfile?.status ?? 'UNKNOWN';
       const providerBlocked = Boolean(providerService.providerProfile?.blockedAt);
       let state: 'bookable' | 'missing_payout' | 'below_minimum' | 'inactive' = 'bookable';
