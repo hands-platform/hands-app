@@ -88,7 +88,7 @@ void main() {
     expect(providerCashBookingRiskHint(booking), contains('wallet debt'));
   });
 
-  test('explains direct requests as first therapist decisions', () {
+  test('explains direct requests as first partner decisions', () {
     final guidance = providerRequestGuidance(
       booking: {'status': 'OPEN_MATCHING'},
       isPreferredRequest: true,
@@ -97,10 +97,36 @@ void main() {
     );
 
     expect(guidance.modeLabel, 'Direct request');
-    expect(guidance.roleLabel, 'First therapist');
+    expect(guidance.roleLabel, 'First partner');
     expect(guidance.decisionLabel, 'Reply now');
     expect(guidance.nextAction, contains('Reply now'));
+    expect(guidance.detailMessage, contains('10 min'));
+    expect(guidance.detailMessage, contains('10 km'));
     expect(guidance.infoMessage, contains('Accept or decline'));
+  });
+
+  test('uses booking matching policy snapshot in request guidance', () {
+    final booking = {
+      'status': 'OPEN_MATCHING',
+      'metadata': {
+        'matchingPolicy': {
+          'providerResponseWindowMinutes': 7,
+          'backupProviderRadiusMeters': 5000,
+        },
+      },
+    };
+
+    final guidance = providerRequestGuidance(
+      booking: booking,
+      isPreferredRequest: true,
+      joined: false,
+      walletBlocked: false,
+    );
+
+    expect(providerMatchingWindowTagLabel(booking), '7 min first-pick');
+    expect(providerBackupRadiusTagLabel(booking), '5 km backup');
+    expect(guidance.detailMessage, contains('7 min'));
+    expect(guidance.detailMessage, contains('5 km'));
   });
 
   test('blocks direct request guidance when wallet is negative', () {
@@ -131,6 +157,7 @@ void main() {
     expect(guidance.roleLabel, 'Backup option');
     expect(guidance.decisionLabel, 'Can join');
     expect(guidance.detailMessage, contains('Linh Wellness'));
+    expect(guidance.infoMessage, contains('10 km'));
   });
 
   test('explains chat-ready accepted requests', () {

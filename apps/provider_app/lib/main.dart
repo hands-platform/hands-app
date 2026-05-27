@@ -134,7 +134,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         return;
       }
       setState(() => statusMessage =
-          'A booking was confirmed. Review the selected therapist state.');
+          'A booking was confirmed. Review the selected partner state.');
       unawaited(loadOpenBookings(showLoading: false));
     });
 
@@ -148,7 +148,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       setState(() {
         statusMessage = isCancelled
             ? 'The customer cancelled a request. It was removed from your active queue.'
-            : 'A booking request expired before a therapist was confirmed.';
+            : 'A booking request expired before a partner was confirmed.';
       });
       unawaited(loadOpenBookings(showLoading: false));
     });
@@ -314,7 +314,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       setState(() {
         joinedBookingIds = {...joinedBookingIds, bookingId};
         statusMessage =
-            'You joined this request. Waiting for the customer to choose a therapist.';
+            'You joined this request. Waiting for the customer to choose a partner.';
       });
       await loadOpenBookings();
     } catch (exception) {
@@ -1032,7 +1032,7 @@ bool isProviderClosedBooking(Map<String, dynamic> booking) {
 
 String providerScheduleNextAction(Map<String, dynamic> booking) {
   return switch (booking['status']) {
-    'OPEN_MATCHING' => 'Waiting for the guest to confirm a therapist.',
+    'OPEN_MATCHING' => 'Waiting for the guest to confirm a partner.',
     'MATCHED' => 'Prepare to start the service and unlock chat.',
     'PROVIDER_ON_THE_WAY' => 'Keep location sharing active until arrival.',
     'ARRIVED' => 'Mark the service started when the guest is ready.',
@@ -1686,6 +1686,10 @@ class OpenBookingCard extends StatelessWidget {
                 ProviderRequestTag(
                     label: '${formatCurrency(customerAmount)} VND'),
                 ProviderRequestTag(
+                    label: providerMatchingWindowTagLabel(booking)),
+                ProviderRequestTag(
+                    label: providerBackupRadiusTagLabel(booking)),
+                ProviderRequestTag(
                   label: payment?['method']?.toString() ??
                       (isCashBooking ? 'CASH' : 'PAYMENT'),
                   highlighted: isCashBooking,
@@ -2172,7 +2176,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             : 'No chat yet. Join or stay visible in Requests until the guest picks you.',
         'MATCHED' => isFinalProvider
             ? 'The guest picked you. Start the service from Requests to unlock chat.'
-            : 'A therapist was selected already, so this chat room is not yours.',
+            : 'A partner was selected already, so this chat room is not yours.',
         'IN_SERVICE' =>
           'Service is already in progress. Reload chat to join the live room.',
         _ => 'No selected booking chat yet.',
@@ -4824,6 +4828,8 @@ ProviderRequestGuidance providerRequestGuidance({
   final isMatched = booking['status'] == 'MATCHED';
   final actionBlockedByWallet =
       walletBlocked && ((isPreferredRequest && !isMatched) || !joined);
+  final responseWindowLabel = providerMatchingWindowText(booking);
+  final backupRadiusLabel = providerBackupRadiusText(booking);
 
   final modeLabel = isPreferredRequest
       ? 'Direct request'
@@ -4836,7 +4842,7 @@ ProviderRequestGuidance providerRequestGuidance({
           ? 'Backup option'
           : 'Open queue';
   final roleLabel = isPreferredRequest
-      ? 'First therapist'
+      ? 'First partner'
       : hasPreferredProvider
           ? 'Backup option'
           : 'Open candidate';
@@ -4896,9 +4902,9 @@ ProviderRequestGuidance providerRequestGuidance({
       contextMessage:
           'The customer picked your profile first and is waiting for your response.',
       detailMessage:
-          'You are the first therapist this guest chose. A quick reply protects the booking.',
+          'You are the first partner this guest chose. Reply within $responseWindowLabel to protect the booking; backup partners inside $backupRadiusLabel can still volunteer while the customer waits.',
       infoMessage:
-          'The customer already chose you. Accept or decline this request.',
+          'The customer already chose you. Accept or decline this request within $responseWindowLabel.',
     );
   }
 
@@ -4910,7 +4916,7 @@ ProviderRequestGuidance providerRequestGuidance({
       decisionLabel: 'Visible now',
       nextAction: 'Stay visible and wait for the customer to choose you.',
       contextMessage: hasPreferredProvider
-          ? 'Another therapist was chosen first. You are visible as a backup option.'
+          ? 'Another partner was chosen first. You are visible as a backup option.'
           : 'You joined this open request. The customer will pick the final partner.',
       detailMessage:
           'You are in the shortlist. Keep the app open and wait for customer selection.',
@@ -4921,7 +4927,7 @@ ProviderRequestGuidance providerRequestGuidance({
 
   if (hasPreferredProvider) {
     final name = preferredProviderName == null || preferredProviderName.isEmpty
-        ? 'the preferred therapist'
+        ? 'the preferred partner'
         : preferredProviderName;
     return ProviderRequestGuidance(
       modeLabel: modeLabel,
@@ -4930,11 +4936,11 @@ ProviderRequestGuidance providerRequestGuidance({
       decisionLabel: 'Can join',
       nextAction: 'Offer backup support if you can cover this request.',
       contextMessage:
-          'Another therapist was chosen first. You can still join as an alternative option.',
+          'Another partner was chosen first. You can still join as an alternative option within the $backupRadiusLabel backup radius.',
       detailMessage:
           'The guest is still waiting on $name. Join now to appear as a backup option.',
       infoMessage:
-          'Preferred therapist: $name. Join if you can cover this request.',
+          'Preferred partner: $name. Only partners inside $backupRadiusLabel can join this request.',
     );
   }
 
@@ -4945,12 +4951,60 @@ ProviderRequestGuidance providerRequestGuidance({
     decisionLabel: 'Can join',
     nextAction: 'Join this open request to enter the customer shortlist.',
     contextMessage:
-        'This request is open to nearby therapists. The customer will pick the final partner.',
+        'This request is open to nearby partners inside $backupRadiusLabel. The customer will pick the final partner.',
     detailMessage:
-        'No preferred therapist was set. Nearby therapists can join and wait for the guest selection.',
+        'No preferred partner was set. Nearby partners can join and wait for the guest selection.',
     infoMessage:
-        'Customer is waiting and nearby therapists may volunteer for this request.',
+        'Customer is waiting and nearby partners may volunteer for this request.',
   );
+}
+
+int providerMatchingWindowMinutes(Map<String, dynamic> booking) {
+  final policy = asMap(asMap(booking['metadata'])?['matchingPolicy']);
+  final value = asNum(policy?['providerResponseWindowMinutes']) ??
+      asNum(booking['providerResponseWindowMinutes']) ??
+      asNum(booking['earlyAcceptMin']);
+  final minutes = value?.round();
+  if (minutes == null || minutes <= 0) {
+    return 10;
+  }
+  return minutes;
+}
+
+int providerBackupRadiusMeters(Map<String, dynamic> booking) {
+  final policy = asMap(asMap(booking['metadata'])?['matchingPolicy']);
+  final value = asNum(policy?['backupProviderRadiusMeters']) ??
+      asNum(booking['backupProviderRadiusMeters']);
+  final meters = value?.round();
+  if (meters == null || meters <= 0) {
+    return 10000;
+  }
+  return meters;
+}
+
+String providerMatchingWindowText(Map<String, dynamic> booking) {
+  final minutes = providerMatchingWindowMinutes(booking);
+  return '$minutes min';
+}
+
+String providerMatchingWindowTagLabel(Map<String, dynamic> booking) {
+  return '${providerMatchingWindowText(booking)} first-pick';
+}
+
+String providerBackupRadiusText(Map<String, dynamic> booking) {
+  final meters = providerBackupRadiusMeters(booking);
+  if (meters >= 1000) {
+    final km = meters / 1000;
+    final value = km == km.roundToDouble()
+        ? km.toInt().toString()
+        : km.toStringAsFixed(1);
+    return '$value km';
+  }
+  return '$meters m';
+}
+
+String providerBackupRadiusTagLabel(Map<String, dynamic> booking) {
+  return '${providerBackupRadiusText(booking)} backup';
 }
 
 bool providerBookingIsCash(Map<String, dynamic> booking) {
