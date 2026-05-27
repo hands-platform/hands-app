@@ -637,31 +637,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 </td>
                 <td>
                   <ProviderNextActionCell provider={provider} opsPolicy={opsPolicy} />
-                  <div className="participant-list" style={{ marginBottom: 8 }}>
-                    <span
-                      className={`pill ${provider.verification?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}
-                    >
-                      {provider.verification?.status === 'APPROVED' ? 'Verified' : 'Needs review'}
-                    </span>
-                    <span
-                      className={`pill ${provider.status === 'ONLINE_AVAILABLE' ? 'pill-success' : 'pill-neutral'}`}
-                    >
-                      {provider.status === 'ONLINE_AVAILABLE' ? 'Online now' : 'Not live'}
-                    </span>
-                    <span className={`pill ${hasHealthyPush(provider) ? 'pill-success' : 'pill-info'}`}>
-                      {hasHealthyPush(provider) ? 'Push ready' : 'Push missing'}
-                    </span>
-                    <span
-                      className={`pill ${provider.user?.supabaseUserId ? 'pill-success' : 'pill-neutral'}`}
-                    >
-                      {provider.user?.supabaseUserId ? 'Supabase linked' : 'Nest auth only'}
-                    </span>
-                    <span
-                      className={`pill ${hasOpenProviderRisk(provider) ? 'pill-danger' : 'pill-success'}`}
-                    >
-                      {hasOpenProviderRisk(provider) ? 'Risk open' : 'Risk clear'}
-                    </span>
-                  </div>
+                  <PartnerOpsBadgeList provider={provider} opsPolicy={opsPolicy} />
                   <ProviderIssuePills provider={provider} opsPolicy={opsPolicy} />
                   <p className="muted">{providerActionHint(provider, opsPolicy)}</p>
                   <PartnerBackupEligibilityCell provider={provider} opsPolicy={opsPolicy} />
@@ -1132,6 +1108,12 @@ type ProviderListAction = {
   priority: number;
 };
 
+type PartnerOpsBadge = {
+  label: string;
+  detail: string;
+  tone: 'success' | 'danger' | 'warn' | 'info' | 'neutral';
+};
+
 function ProviderNextActionCell({
   provider,
   opsPolicy,
@@ -1151,6 +1133,26 @@ function ProviderNextActionCell({
       <p className="muted" style={{ marginBottom: 8 }}>
         {action.operatorAction}
       </p>
+    </div>
+  );
+}
+
+function PartnerOpsBadgeList({
+  provider,
+  opsPolicy,
+}: {
+  provider: AdminProvider;
+  opsPolicy: ProviderOpsPolicy;
+}) {
+  const badges = partnerOpsBadges(provider, opsPolicy);
+
+  return (
+    <div className="participant-list" style={{ marginBottom: 8 }}>
+      {badges.map((badge) => (
+        <span className={`pill ${partnerOpsBadgePillClass(badge.tone)}`} key={badge.label} title={badge.detail}>
+          {badge.label}
+        </span>
+      ))}
     </div>
   );
 }
@@ -1181,6 +1183,121 @@ function ProviderIssuePills({
       {issues.length > 5 ? <span className="pill pill-info">+{issues.length - 5} more</span> : null}
     </div>
   );
+}
+
+function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy): PartnerOpsBadge[] {
+  const walletBalance = providerUnsettledWalletBalance(provider);
+  const locationState = providerLocationStatus(provider, opsPolicy);
+  const kycState = partnerKycState(provider);
+  const securityState = providerSecurityStatus(provider);
+  const backupEligibility = partnerBackupMatchingEligibility(provider, opsPolicy);
+  const canAccept = partnerCanAcceptBookingNow(provider, opsPolicy);
+  const hasPush = hasHealthyPush(provider);
+  const hasBank = hasApprovedBankAccount(provider);
+  const verificationApproved = provider.verification?.status === 'APPROVED';
+  const authLinked = Boolean(provider.user?.supabaseUserId);
+  const riskOpen = hasOpenProviderRisk(provider);
+
+  return [
+    {
+      label: canAccept ? 'Accept ready' : 'Accept blocked',
+      tone: canAccept ? 'success' : 'danger',
+      detail: canAccept
+        ? 'Partner can accept a direct booking now.'
+        : partnerAcceptBlockerSummary(provider, opsPolicy),
+    },
+    {
+      label: backupEligibility.eligible ? 'Backup ready' : 'Backup blocked',
+      tone: backupEligibility.eligible ? 'success' : 'warn',
+      detail: backupEligibility.eligible
+        ? `Can join backup matching within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)}.`
+        : backupEligibility.blockers.map((blocker) => blocker.label).join(', ') ||
+          'Backup matching is blocked by policy.',
+    },
+    {
+      label: walletBalance < 0 ? 'Cash debt' : 'Wallet clear',
+      tone: walletBalance < 0 ? 'danger' : 'success',
+      detail:
+        walletBalance < 0
+          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before accepting new bookings.`
+          : 'No negative wallet balance is blocking booking acceptance.',
+    },
+    {
+      label: verificationApproved && kycState.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
+        ? 'KYC ok'
+        : 'KYC needed',
+      tone:
+        verificationApproved && kycState.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
+          ? 'success'
+          : 'warn',
+      detail:
+        verificationApproved && kycState.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
+          ? 'Verification, KYC, and required identity documents are approved.'
+          : kycState.operatorAction,
+    },
+    {
+      label: hasBank ? 'Bank ok' : 'Bank needed',
+      tone: hasBank ? 'success' : 'warn',
+      detail: hasBank
+        ? 'At least one approved bank account is available.'
+        : 'Approve a bank account before payout readiness.',
+    },
+    {
+      label: providerLocationLabel(locationState),
+      tone: locationState === 'recent' ? 'success' : locationState === 'missing' ? 'neutral' : 'warn',
+      detail: providerLocationAgeLabel(provider.currentLocationUpdatedAt),
+    },
+    {
+      label: hasPush ? 'Push ready' : 'Push missing',
+      tone: hasPush ? 'success' : 'info',
+      detail: hasPush
+        ? 'At least one enabled push device is registered.'
+        : 'Ask the partner to open the app and register alerts.',
+    },
+    {
+      label: authLinked ? 'Supabase linked' : 'Nest auth only',
+      tone: authLinked ? 'success' : 'neutral',
+      detail: authLinked
+        ? 'Partner user is linked to Supabase auth.'
+        : 'Partner can still operate in Nest auth, but Supabase migration is pending.',
+    },
+    {
+      label: riskOpen ? 'Risk open' : providerSecurityLabel(securityState),
+      tone: riskOpen || !['clear', 'missing'].includes(securityState) ? 'danger' : 'success',
+      detail: riskOpen
+        ? 'There is an unresolved risk/report/sanction item for this partner.'
+        : providerSecurityLabel(securityState),
+    },
+  ];
+}
+
+function partnerAcceptBlockerSummary(provider: AdminProvider, opsPolicy: ProviderOpsPolicy) {
+  const blockers: string[] = [];
+  const locationState = providerLocationStatus(provider, opsPolicy);
+  const securityState = providerSecurityStatus(provider);
+
+  if (provider.blockedAt) blockers.push('account blocked');
+  if (provider.verification?.status !== 'APPROVED') {
+    blockers.push(`verification ${provider.verification?.status ?? 'DRAFT'}`);
+  }
+  if (provider.kyc?.status !== 'APPROVED') blockers.push(`KYC ${provider.kyc?.status ?? 'MISSING'}`);
+  if (!hasApprovedRequiredKycDocuments(provider)) blockers.push('identity documents');
+  if (!hasApprovedBankAccount(provider)) blockers.push('bank account');
+  if (providerUnsettledWalletBalance(provider) < 0) blockers.push('cash fee debt');
+  if (provider.status !== 'ONLINE_AVAILABLE') blockers.push(`status ${provider.status}`);
+  if (locationState !== 'recent') blockers.push(`location ${locationState}`);
+  if (!hasHealthyPush(provider)) blockers.push('push missing');
+  if (!['clear', 'missing'].includes(securityState)) blockers.push(providerSecurityLabel(securityState).toLowerCase());
+
+  return blockers.length ? `Blocked by: ${blockers.join(', ')}.` : 'Booking acceptance is blocked by policy.';
+}
+
+function partnerOpsBadgePillClass(tone: PartnerOpsBadge['tone']) {
+  if (tone === 'success') return 'pill-success';
+  if (tone === 'danger') return 'pill-danger';
+  if (tone === 'warn') return 'pill-warn';
+  if (tone === 'info') return 'pill-info';
+  return 'pill-neutral';
 }
 
 function PartnerBackupEligibilityCell({
