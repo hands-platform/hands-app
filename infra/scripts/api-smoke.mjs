@@ -39,6 +39,16 @@ const getJson = (path, accessToken) =>
     headers: { authorization: `Bearer ${accessToken}` },
   });
 
+const operationalPolicyPath = (key) => `/admin/operational-policy/${encodeURIComponent(key)}`;
+
+async function getOperationalPolicyValue(accessToken, key) {
+  const settings = await getJson('/admin/operational-policy', accessToken);
+  return settings.find((setting) => setting.key === key)?.value;
+}
+
+const patchOperationalPolicyValue = (accessToken, key, value) =>
+  patchJson(operationalPolicyPath(key), accessToken, { value });
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function expectRequestFailure(label, fn, expectedStatus) {
@@ -1101,10 +1111,14 @@ assertBookingMatchingWindow('Direct provider custom-price', hybridBookingDetail,
 
 let preferredAcceptPolicyBooking;
 let preferredAcceptPolicyMatched;
-await patchJson(
-  `/admin/operational-policy/${encodeURIComponent('matching.preferred_accept_mode')}`,
+const preferredAcceptModeBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
-  { value: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT' },
+  'matching.preferred_accept_mode',
+);
+await patchOperationalPolicyValue(
+  adminAuth.accessToken,
+  'matching.preferred_accept_mode',
+  'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
 );
 try {
   preferredAcceptPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
@@ -1150,18 +1164,22 @@ try {
     );
   }
 } finally {
-  await patchJson(
-    `/admin/operational-policy/${encodeURIComponent('matching.preferred_accept_mode')}`,
+  await patchOperationalPolicyValue(
     adminAuth.accessToken,
-    { value: 'AUTO_MATCH_ON_ACCEPT' },
+    'matching.preferred_accept_mode',
+    preferredAcceptModeBeforeSmoke ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
   );
 }
 
 let delayedBackupBooking;
-await patchJson(
-  `/admin/operational-policy/${encodeURIComponent('matching.backup_open_mode')}`,
+const backupOpenModeBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
-  { value: 'AFTER_FIRST_PICK_DELAY' },
+  'matching.backup_open_mode',
+);
+await patchOperationalPolicyValue(
+  adminAuth.accessToken,
+  'matching.backup_open_mode',
+  'AFTER_FIRST_PICK_DELAY',
 );
 try {
   delayedBackupBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
@@ -1187,18 +1205,22 @@ try {
     400,
   );
 } finally {
-  await patchJson(
-    `/admin/operational-policy/${encodeURIComponent('matching.backup_open_mode')}`,
+  await patchOperationalPolicyValue(
     adminAuth.accessToken,
-    { value: 'IMMEDIATE_WITHIN_WINDOW' },
+    'matching.backup_open_mode',
+    backupOpenModeBeforeSmoke ?? 'IMMEDIATE_WITHIN_WINDOW',
   );
 }
 
 let oneSignalPolicyNotification = null;
-await patchJson(
-  `/admin/operational-policy/${encodeURIComponent('notification.partner_alert_channel')}`,
+const partnerAlertChannelBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
-  { value: 'ONESIGNAL_FOR_ALL_BOOKINGS' },
+  'notification.partner_alert_channel',
+);
+await patchOperationalPolicyValue(
+  adminAuth.accessToken,
+  'notification.partner_alert_channel',
+  'ONESIGNAL_FOR_ALL_BOOKINGS',
 );
 try {
   const oneSignalPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
@@ -1232,10 +1254,10 @@ try {
     );
   }
 } finally {
-  await patchJson(
-    `/admin/operational-policy/${encodeURIComponent('notification.partner_alert_channel')}`,
+  await patchOperationalPolicyValue(
     adminAuth.accessToken,
-    { value: 'IN_APP_WITH_PUSH_LATER' },
+    'notification.partner_alert_channel',
+    partnerAlertChannelBeforeSmoke ?? 'IN_APP_WITH_PUSH_LATER',
   );
 }
 
@@ -1300,10 +1322,14 @@ if (cancelledPaymentAfterSync?.status !== 'RELEASED') {
 }
 
 let afterMatchCancellationBooking;
-await patchJson(
-  `/admin/operational-policy/${encodeURIComponent('cancellation.after_match_policy')}`,
+const cancellationAfterMatchBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
-  { value: 'AUTO_FEE_AFTER_MATCH' },
+  'cancellation.after_match_policy',
+);
+await patchOperationalPolicyValue(
+  adminAuth.accessToken,
+  'cancellation.after_match_policy',
+  'AUTO_FEE_AFTER_MATCH',
 );
 try {
   afterMatchCancellationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
@@ -1319,10 +1345,20 @@ try {
     `/provider/bookings/${afterMatchCancellationBooking.id}/accept`,
     providerAuth.accessToken,
   );
-  if (acceptedAfterMatchCancellation.status !== 'MATCHED') {
+  const matchedAfterMatchCancellation =
+    acceptedAfterMatchCancellation.status === 'MATCHED'
+      ? acceptedAfterMatchCancellation
+      : await postJson(
+          `/customer/bookings/${afterMatchCancellationBooking.id}/select-provider`,
+          customerAuth.accessToken,
+          {
+            providerId: providerAuth.user.providerProfile.id,
+          },
+        );
+  if (matchedAfterMatchCancellation.status !== 'MATCHED') {
     throw new Error(
       `After-match cancellation smoke booking was not matched before cancel: ${JSON.stringify(
-        acceptedAfterMatchCancellation,
+        matchedAfterMatchCancellation,
       )}`,
     );
   }
@@ -1349,10 +1385,10 @@ try {
     );
   }
 } finally {
-  await patchJson(
-    `/admin/operational-policy/${encodeURIComponent('cancellation.after_match_policy')}`,
+  await patchOperationalPolicyValue(
     adminAuth.accessToken,
-    { value: 'ADMIN_REVIEW_FOR_MVP' },
+    'cancellation.after_match_policy',
+    cancellationAfterMatchBeforeSmoke ?? 'ADMIN_REVIEW_FOR_MVP',
   );
 }
 
@@ -1457,7 +1493,15 @@ if (typeof cashOpenBooking.distanceMeters !== 'number' || cashOpenBooking.distan
     )}`,
   );
 }
-await postJson(`/provider/bookings/${walletDebtBooking.id}/accept`, walletDebtProviderAuth.accessToken);
+const acceptedWalletDebtBooking = await postJson(
+  `/provider/bookings/${walletDebtBooking.id}/accept`,
+  walletDebtProviderAuth.accessToken,
+);
+if (acceptedWalletDebtBooking.status !== 'MATCHED') {
+  await postJson(`/customer/bookings/${walletDebtBooking.id}/select-provider`, customerAuth.accessToken, {
+    providerId: walletDebtProviderAuth.user.providerProfile.id,
+  });
+}
 await postJson(`/provider/bookings/${walletDebtBooking.id}/complete`, walletDebtProviderAuth.accessToken);
 const walletDebtProviderNotifications = await getJson('/notifications', walletDebtProviderAuth.accessToken);
 if (
@@ -1563,10 +1607,14 @@ const openMatchingWalletBlockError = await expectRequestFailure(
     postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
   400,
 );
-await patchJson(
-  `/admin/operational-policy/${encodeURIComponent('wallet.negative_balance_gate')}`,
+const negativeWalletGateBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
-  { value: 'ALLOW_ONE_RECOVERY_BOOKING' },
+  'wallet.negative_balance_gate',
+);
+await patchOperationalPolicyValue(
+  adminAuth.accessToken,
+  'wallet.negative_balance_gate',
+  'ALLOW_ONE_RECOVERY_BOOKING',
 );
 try {
   await postJson(
@@ -1597,18 +1645,17 @@ try {
   });
   const secondRecoveryError = await expectRequestFailure(
     'Negative wallet recovery policy allows only one active booking',
-    () =>
-      postJson(`/provider/bookings/${secondRecoveryBooking.id}/join`, walletDebtProviderAuth.accessToken),
+    () => postJson(`/provider/bookings/${secondRecoveryBooking.id}/join`, walletDebtProviderAuth.accessToken),
     400,
   );
   if (!secondRecoveryError.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
     throw new Error(`Recovery wallet gate should block the second active booking: ${secondRecoveryError}`);
   }
 } finally {
-  await patchJson(
-    `/admin/operational-policy/${encodeURIComponent('wallet.negative_balance_gate')}`,
+  await patchOperationalPolicyValue(
     adminAuth.accessToken,
-    { value: 'BLOCK_ACCEPTS_WHEN_NEGATIVE' },
+    'wallet.negative_balance_gate',
+    negativeWalletGateBeforeSmoke ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE',
   );
 }
 const payoutWalletBlockError = await expectRequestFailure(
