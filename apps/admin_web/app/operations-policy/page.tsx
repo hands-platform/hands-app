@@ -318,6 +318,7 @@ export default async function OperationsPolicyPage({
                 <th>Actor</th>
                 <th>Before</th>
                 <th>After</th>
+                <th>Reason</th>
                 <th>Ops effect</th>
               </tr>
             </thead>
@@ -335,6 +336,9 @@ export default async function OperationsPolicyPage({
                   <td>{row.actorName}</td>
                   <td>{row.previousValue}</td>
                   <td>{row.value}</td>
+                  <td>
+                    <p style={{ margin: 0 }}>{row.reason}</p>
+                  </td>
                   <td>
                     <span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>
                       {row.enforced ? 'Live behavior' : 'Decision log'}
@@ -1464,6 +1468,7 @@ function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
         actorName: log.actor?.fullName ?? log.actor?.phone ?? 'System',
         previousValue: compactAuditValue(metadata?.previousValue),
         value: compactAuditValue(metadata?.value),
+        reason: readOptionalString(metadata?.reason) ?? 'No reason recorded',
         enforced,
         effect: enforced
           ? details.detail

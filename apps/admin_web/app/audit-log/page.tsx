@@ -489,6 +489,10 @@ type MetadataHighlight = {
 };
 
 function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
+  if (log.action === 'operational_policy.update') {
+    return operationalPolicyHighlights(log);
+  }
+
   if (!isServicePricingAction(log.action)) {
     return [];
   }
@@ -565,6 +569,56 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
   }
 
   return highlights.slice(0, 6);
+}
+
+function operationalPolicyHighlights(log: AdminAuditLog): MetadataHighlight[] {
+  const metadata = readMetadataObject(log.metadata);
+  const highlights: MetadataHighlight[] = [];
+  const key = readString(metadata.key) ?? log.target.replace(/^operational_policy:/, '');
+  const previousValue = metadata.previousValue;
+  const value = metadata.value;
+  const reason = readString(metadata.reason);
+  const enforced = metadata.enforced === true;
+
+  if (key) {
+    highlights.push({ label: policyAuditKeyLabel(key), className: 'pill pill-info' });
+  }
+  highlights.push({
+    label: enforced ? 'Live behavior' : 'Decision log',
+    className: enforced ? 'pill pill-success' : 'pill pill-warn',
+  });
+  if (previousValue !== undefined || value !== undefined) {
+    highlights.push({
+      label: `${compactAuditValue(previousValue)} -> ${compactAuditValue(value)}`,
+      className: 'pill pill-warn',
+    });
+  }
+  if (reason) {
+    highlights.push({ label: `Reason: ${reason.slice(0, 72)}`, className: 'pill pill-success' });
+  }
+
+  return highlights.slice(0, 6);
+}
+
+function policyAuditKeyLabel(key: string) {
+  return key
+    .split('.')
+    .map((part) => part.replace(/_/g, ' '))
+    .join(' / ');
+}
+
+function compactAuditValue(value: unknown) {
+  if (value === null || value === undefined) {
+    return '-';
+  }
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '[complex value]';
+    }
+  }
+  return String(value);
 }
 
 function relatedBoardHref(log: AdminAuditLog) {
