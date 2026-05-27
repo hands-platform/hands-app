@@ -104,6 +104,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
             <select name="bucket" defaultValue={filters.bucket}>
               <option value="">All</option>
               <option value="Dispatch">Dispatch</option>
+              <option value="Operations/Policy">Operations/Policy</option>
               <option value="Payment">Payment</option>
               <option value="Service/Pricing">Service/Pricing</option>
               <option value="Notification">Notification</option>
@@ -348,6 +349,9 @@ function auditSearchText(log: AdminAuditLog) {
 }
 
 function auditPriority(action: string) {
+  if (action.startsWith('operational_policy.')) {
+    return 4;
+  }
   if (action.startsWith('service_payout_rule.')) {
     return 4;
   }
@@ -388,6 +392,9 @@ function isServicePricingAction(action: string) {
 }
 
 function actionBucketLabel(action: string) {
+  if (action.startsWith('operational_policy.')) {
+    return 'Operations/Policy';
+  }
   if (isServicePricingAction(action)) {
     return 'Service/Pricing';
   }
@@ -421,6 +428,9 @@ function isProviderReviewAction(action: string) {
 }
 
 function signalClass(action: string) {
+  if (action.startsWith('operational_policy.')) {
+    return 'signal signal-warn';
+  }
   if (isServicePricingAction(action)) {
     return 'signal signal-warn';
   }
@@ -571,6 +581,9 @@ function relatedBoardHref(log: AdminAuditLog) {
   }
   if (log.action.startsWith('notification.')) {
     return '/notifications';
+  }
+  if (log.action.startsWith('operational_policy.')) {
+    return '/operations-policy';
   }
   if (isServicePricingAction(log.action)) {
     return '/services';
@@ -728,6 +741,9 @@ function opsHint(action: string, target: string) {
   if (action.startsWith('notification.')) {
     return 'Check retry or delivery health if the customer or partner missed an alert.';
   }
+  if (action.startsWith('operational_policy.')) {
+    return 'Confirm the policy change matches the current owner decision and active booking risk.';
+  }
   if (isServicePricingAction(action)) {
     return 'Review service price, partner payout, VAT, costs, and before/after changes.';
   }
@@ -752,6 +768,9 @@ function opsDetail(action: string) {
   }
   if (action.endsWith('.retry')) {
     return 'Retry events are useful when push, SMS, or webhook delivery needed another pass.';
+  }
+  if (action.startsWith('operational_policy.')) {
+    return 'Operational policy edits can change matching timers, backup partner visibility, wallet gates, and alert routing.';
   }
   if (isServicePricingAction(action)) {
     return 'Price policy changes affect customer price, partner payout, tax withholding, cash debt, and payout batches.';

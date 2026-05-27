@@ -32,6 +32,7 @@ export default async function OperationsPolicyPage({
   const policyDrilldown = buildPolicyDrilldown(bookings, settings);
   const policyAuditRows = operationalPolicyAuditRows(auditLogs);
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
+  const acceptanceMatrix = buildBookingAcceptanceMatrix(settings);
 
   return (
     <>
@@ -100,6 +101,41 @@ export default async function OperationsPolicyPage({
             <div className={`ops-task-card ${card.className}`} key={card.key}>
               <span className={`pill ${card.pillClass}`}>{card.status}</span>
               <h3>{card.label}</h3>
+              <p>{card.detail}</p>
+              <small>{card.operatorAction}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking acceptance control matrix</h2>
+            <p className="muted">
+              Current owner choices for the direct booking window, 10km backup participation, partner push
+              reach, and negative wallet blocking. This is the screen operators should check before changing
+              the mobile flow.
+            </p>
+          </div>
+          <span className={`pill ${acceptanceMatrix.blockingCount ? 'pill-warn' : 'pill-success'}`}>
+            {acceptanceMatrix.blockingCount} risk choice(s)
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {acceptanceMatrix.summary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {acceptanceMatrix.cards.map((card) => (
+            <div className={`ops-task-card ${card.className}`} key={card.title}>
+              <span className={`pill ${card.pillClass}`}>{card.status}</span>
+              <h3>{card.title}</h3>
               <p>{card.detail}</p>
               <small>{card.operatorAction}</small>
             </div>
@@ -931,6 +967,130 @@ function policyRecommendationPosture(
     alignedAction: 'Current value matches the recommended policy posture.',
     className: setting.enforced ? 'ops-task-pending' : 'ops-task-done',
     pillClass: setting.enforced ? 'pill-warn' : 'pill-info',
+  };
+}
+
+function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[]) {
+  const responseWindowMinutes =
+    policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
+  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const preferredAcceptMode =
+    policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+  const backupOpenMode = policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const alertChannel =
+    policyStringValue(settings, 'notification.partner_alert_channel') ?? 'IN_APP_WITH_PUSH_LATER';
+  const walletGate =
+    policyStringValue(settings, 'wallet.negative_balance_gate') ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+
+  const customerFinalChoice = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+  const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
+  const pushReady = alertChannel === 'ONESIGNAL_FOR_ALL_BOOKINGS';
+  const hardWalletBlock = walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+  const baselineRadius = backupRadiusMeters === 10000;
+  const baselineTimer = responseWindowMinutes === 10;
+
+  const cards = [
+    {
+      title: 'First-pick response window',
+      status: baselineTimer ? 'HANDS baseline' : 'Owner override',
+      detail: `The first selected partner has ${responseWindowMinutes} minute(s) before the request becomes operationally at-risk.`,
+      operatorAction: baselineTimer
+        ? 'Keep this at 10 minutes until live response-rate data says otherwise.'
+        : 'Monitor customer wait complaints and first-pick acceptance rate before keeping this override.',
+      className: baselineTimer ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: baselineTimer ? 'pill-success' : 'pill-warn',
+      blocking: !baselineTimer,
+    },
+    {
+      title: 'Backup partner pool',
+      status: baselineRadius ? '10km default' : 'Custom radius',
+      detail: `Backup participation currently uses ${formatDistance(backupRadiusMeters)} from the customer location.`,
+      operatorAction: baselineRadius
+        ? 'This matches the requested 10km operating rule for nearby backup participation.'
+        : 'Review city supply, arrival time, and ignored backup alerts before changing radius.',
+      className: baselineRadius ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: baselineRadius ? 'pill-success' : 'pill-warn',
+      blocking: !baselineRadius,
+    },
+    {
+      title: 'Backup visibility timing',
+      status: immediateBackup ? 'Visible during wait' : 'Delayed backup',
+      detail: immediateBackup
+        ? 'Nearby partners can participate while the first-pick partner is still deciding.'
+        : 'Backup partners wait until the timer passes, except when the first-pick partner declines.',
+      operatorAction: immediateBackup
+        ? 'This best matches the customer waiting screen where available backup partners appear early.'
+        : 'Use delayed mode only if partner noise is worse than customer waiting anxiety.',
+      className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
+      blocking: !immediateBackup,
+    },
+    {
+      title: 'Customer final selection',
+      status: customerFinalChoice ? 'Customer controls' : 'Auto-lock',
+      detail: customerFinalChoice
+        ? 'Even after partner acceptance, the customer keeps the final partner selection step.'
+        : 'The first accepted partner can lock the booking without final customer choice.',
+      operatorAction: customerFinalChoice
+        ? 'This is the safer long-term rule for a marketplace with backup partner choices.'
+        : 'Only use auto-lock if HANDS intentionally prioritizes speed over customer choice.',
+      className: customerFinalChoice ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: customerFinalChoice ? 'pill-success' : 'pill-danger',
+      blocking: !customerFinalChoice,
+    },
+    {
+      title: 'Partner alert delivery',
+      status: pushReady ? 'Push enabled' : 'In-app first',
+      detail: pushReady
+        ? 'Partner booking and backup participation alerts are ready to route through OneSignal.'
+        : 'Booking notifications are recorded in-app until OneSignal production setup is fully ready.',
+      operatorAction: pushReady
+        ? 'Watch delivery failures and disabled devices on the Notifications board.'
+        : 'Keep this until OneSignal/Vonage production credentials and monitoring are complete.',
+      className: pushReady ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: pushReady ? 'pill-success' : 'pill-info',
+      blocking: false,
+    },
+    {
+      title: 'Negative wallet gate',
+      status: hardWalletBlock ? 'Hard block' : 'Recovery booking',
+      detail: hardWalletBlock
+        ? 'Partners with unpaid cash-service fee debt cannot accept new work.'
+        : 'Partners with debt may receive one recovery booking, increasing collection risk.',
+      operatorAction: hardWalletBlock
+        ? 'This protects HANDS cash-fee collection during early operations.'
+        : 'Use recovery only after settlement playbooks and trust scoring are mature.',
+      className: hardWalletBlock ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: hardWalletBlock ? 'pill-success' : 'pill-danger',
+      blocking: !hardWalletBlock,
+    },
+  ];
+
+  return {
+    blockingCount: cards.filter((card) => card.blocking).length,
+    summary: [
+      {
+        label: 'First-pick timer',
+        value: `${responseWindowMinutes} min`,
+        helper: 'Partner accepts or the request becomes at-risk.',
+      },
+      {
+        label: 'Backup radius',
+        value: formatDistance(backupRadiusMeters),
+        helper: 'Nearby partners who can participate.',
+      },
+      {
+        label: 'Backup timing',
+        value: immediateBackup ? 'Immediate' : 'Delayed',
+        helper: 'Visibility during first-pick wait.',
+      },
+      {
+        label: 'Final match',
+        value: customerFinalChoice ? 'Customer chooses' : 'Auto-lock',
+        helper: 'Who makes the final partner decision.',
+      },
+    ],
+    cards,
   };
 }
 

@@ -6,7 +6,10 @@ const pages = [
   { path: '/bookings?view=closeout', markers: ['Booking Monitor', 'Closeout ops'] },
   { path: '/bookings?view=expired', markers: ['Booking Monitor', 'Expired'] },
   { path: '/bookings?view=no-show', markers: ['Booking Monitor', 'No-show'] },
-  { path: '/operations-policy', markers: ['Operations Policy', 'Live matching policy'] },
+  {
+    path: '/operations-policy',
+    markers: ['Operations Policy', 'Booking acceptance control matrix', 'Live matching policy'],
+  },
   { path: '/cash-settlements', markers: ['Cash Settlements', 'Settlement command queue'] },
   { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
