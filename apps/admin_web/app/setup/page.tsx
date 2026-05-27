@@ -294,6 +294,7 @@ export default async function SetupPage() {
   const externalBacklog = buildExternalBacklog(readiness, readinessUnavailable);
   const nextActions = buildNextOperatorActions(readiness, readinessUnavailable);
   const deferredActions = buildDeferredOperatorActions(readiness, readinessUnavailable);
+  const currentStage = buildCurrentStageStatus(readiness, readinessUnavailable);
   const registrationPlan = buildExternalRegistrationPlan(readiness, readinessUnavailable);
 
   return (
@@ -307,8 +308,11 @@ export default async function SetupPage() {
           </p>
         </div>
         <div className="actions">
-          <span className={`signal ${readiness.ok ? 'signal-ok' : 'signal-warn'}`}>
-            {readinessUnavailable ? 'API unavailable' : readiness.ok ? 'Ready for E2E' : 'Needs setup'}
+          <span className={`signal ${currentStage.ok ? 'signal-ok' : 'signal-warn'}`}>
+            {currentStage.label}
+          </span>
+          <span className={`signal ${readiness.ok ? 'signal-ok' : 'signal-info'}`}>
+            {readinessUnavailable ? 'External status unknown' : readiness.ok ? 'Production E2E ready' : 'Production deferred'}
           </span>
           <span className="pill pill-info">
             {readinessUnavailable ? 'Readiness not loaded' : `Updated ${formatDate(readiness.timestamp)}`}
@@ -317,6 +321,11 @@ export default async function SetupPage() {
       </section>
 
       <section className="grid" style={{ marginBottom: 16 }}>
+        <SummaryCard
+          label="Current blockers"
+          value={currentStage.blockers}
+          helper={currentStage.helper}
+        />
         <SummaryCard
           label="Ready"
           value={summary.ready}
@@ -706,6 +715,28 @@ function buildDeferredOperatorActions(readiness: AdminExternalReadiness, readine
       };
     })
     .sort((left, right) => left.rank - right.rank || left.name.localeCompare(right.name));
+}
+
+function buildCurrentStageStatus(readiness: AdminExternalReadiness, readinessUnavailable = false) {
+  if (readinessUnavailable) {
+    return {
+      ok: false,
+      blockers: 1,
+      label: 'API unavailable',
+      helper: 'Start local API/Docker services before trusting setup status.',
+    };
+  }
+
+  const blockers = buildNextOperatorActions(readiness, false).length;
+  return {
+    ok: blockers === 0,
+    blockers,
+    label: blockers === 0 ? 'Current stage clear' : 'Current stage blocked',
+    helper:
+      blockers === 0
+        ? 'Local MVP work can continue; deferred production integrations remain tracked separately.'
+        : 'These are non-deferred setup gaps that can block current local/staging E2E work.',
+  };
 }
 
 function buildExternalRegistrationPlan(readiness: AdminExternalReadiness, readinessUnavailable = false) {
