@@ -82,7 +82,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <MetricCard label="Status" value={booking.status} helper={bookingStatusHint(booking.status)} />
         <MetricCard label="Payment" value={booking.payment?.status ?? 'NONE'} helper={paymentHint(booking)} />
         <MetricCard
-          label="Providers"
+          label="Partners"
           value={`${booking.participants?.length ?? 0} joined`}
           helper={providerHint(booking)}
         />
@@ -297,7 +297,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <textarea
             aria-label="Operator note"
             name="note"
-            placeholder="Example: Called provider, confirmed arrival in 15 minutes."
+            placeholder="Example: Called partner, confirmed arrival in 15 minutes."
           />
           <div className="actions">
             <button type="submit">Add note</button>
@@ -311,9 +311,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <button
               name="preset"
               type="submit"
-              value="Provider contacted and asked to confirm location/status."
+              value="Partner contacted and asked to confirm location/status."
             >
-              Provider contacted
+              Partner contacted
             </button>
             <button name="preset" type="submit" value="Payment reviewed by operations.">
               Payment reviewed
@@ -327,7 +327,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <h2>Completed closeout</h2>
           <p className="muted">
             Reconcile a completed service after operational edits or a partial failure. This confirms payment
-            capture, provider earning, tax log, platform fee log, and wallet ledger are present.
+            capture, partner earning, tax log, platform fee log, and wallet ledger are present.
           </p>
         </div>
         {canCloseoutCompletedBooking(booking) ? (
@@ -461,12 +461,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card">
-          <h2>Provider handoff</h2>
+          <h2>Partner handoff</h2>
           <InfoRow label="Preferred" value={providerName(booking.preferredProvider)} />
           <InfoRow label="Final" value={providerName(finalProvider)} />
           <InfoRow label="Final phone" value={finalProvider?.user?.phone ?? 'No phone'} />
           <InfoRow
-            label="Latest provider pin"
+            label="Latest partner pin"
             value={
               latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet'
             }
@@ -507,7 +507,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               </div>
             ))}
             {(booking.participants ?? []).length === 0 && (
-              <p className="muted">No providers have joined yet.</p>
+              <p className="muted">No partners have joined yet.</p>
             )}
           </div>
         </div>
@@ -532,7 +532,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           {bookingCashDebtNeedsSettlement(booking) && (
             <InfoRow
               label="Cash fee debt"
-              value={`${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / provider blocked`}
+              value={`${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / partner blocked`}
             />
           )}
           <InfoRow label="Review" value={booking.review ? `${booking.review.rating}/5` : 'Not submitted'} />
@@ -570,7 +570,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <h2>Location trail</h2>
           <div className="route-mini">
             <span className="route-dot route-customer">Customer</span>
-            {latestLocation && <span className="route-dot route-provider">Provider</span>}
+            {latestLocation && <span className="route-dot route-provider">Partner</span>}
           </div>
           <div className="stack" style={{ marginTop: 12 }}>
             {locationTrail(booking).map((snapshot) => (
@@ -579,7 +579,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                   <strong>{coordinateLabel(snapshot.lat, snapshot.lng)}</strong>
                   <div className="muted">{formatDate(snapshot.recordedAt)}</div>
                 </div>
-                <span className="pill">Provider</span>
+                <span className="pill">Partner</span>
               </div>
             ))}
             {locationTrail(booking).length === 0 && (
@@ -702,8 +702,8 @@ function CashDebtSettlementForm({ booking }: { booking: AdminBookingDetail }) {
       />
       <input
         name="settlementNotes"
-        defaultValue={`Provider deposited ${money(Math.abs(earning.netAmount), earning.currency)} with ${settlementRef}`}
-        placeholder={`Provider deposited ${money(Math.abs(earning.netAmount), earning.currency)}`}
+        defaultValue={`Partner deposited ${money(Math.abs(earning.netAmount), earning.currency)} with ${settlementRef}`}
+        placeholder={`Partner deposited ${money(Math.abs(earning.netAmount), earning.currency)}`}
         aria-label="Cash debt settlement notes"
       />
       <button type="submit">Settle cash debt</button>
@@ -759,16 +759,16 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
     return 'Service is complete. Capture the authorized payment or refund if there was a dispute.';
   }
   if (bookingCashDebtNeedsSettlement(booking)) {
-    return 'Cash was collected by the provider. Finance must settle the HANDS fee debt before this provider can accept more bookings.';
+    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner can accept more bookings.';
   }
   if (booking.payment?.status === 'AUTHORIZED') {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';
   }
   if (booking.status === 'OPEN_MATCHING') {
-    return 'Monitor provider response speed and fallback supply. Customer is still waiting.';
+    return 'Monitor partner response speed and fallback supply. Customer is still waiting.';
   }
   if (booking.status === 'MATCHED') {
-    return 'Provider is selected. Watch chat readiness, location sharing, and arrival progression.';
+    return 'Partner is selected. Watch chat readiness, location sharing, and arrival progression.';
   }
   if (booking.chatRoom && booking.status === 'IN_SERVICE') {
     return 'Service is live. Keep chat and location visible until completion.';
@@ -806,7 +806,7 @@ function opsBadges(booking: AdminBookingDetail) {
     badges.push({ label: 'Cash fee debt', tone: 'pill-danger' });
   }
   if (booking.selectedProvider) {
-    badges.push({ label: 'Provider selected', tone: 'pill-success' });
+    badges.push({ label: 'Partner selected', tone: 'pill-success' });
   }
   if (booking.chatRoom) {
     badges.push({ label: 'Chat ready', tone: 'pill-info' });
@@ -876,12 +876,12 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
   if (bookingCashDebtNeedsSettlement(booking)) {
     flags.push({
       severity: 'high',
-      title: 'Cash fee debt blocks provider',
+      title: 'Cash fee debt blocks partner',
       detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} collected cash and still owes ${money(
         Math.abs(booking.earning?.netAmount ?? 0),
         booking.earning?.currency,
       )}.`,
-      action: 'Confirm the provider deposit or admin offset, then settle the earning.',
+      action: 'Confirm the partner deposit or admin offset, then settle the earning.',
     });
   }
 
@@ -903,9 +903,9 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
   ) {
     flags.push({
       severity: 'medium',
-      title: 'Preferred provider slow',
+      title: 'Preferred partner slow',
       detail: `${providerName(booking.preferredProvider)} has not responded after ${openedAge} minute(s).`,
-      action: 'Encourage backup supply or contact the provider.',
+      action: 'Encourage backup supply or contact the partner.',
     });
   }
 
@@ -913,8 +913,8 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
     flags.push({
       severity: 'medium',
       title: 'No partner supply',
-      detail: 'No provider has joined the request yet.',
-      action: 'Watch nearby online providers and consider operational outreach.',
+      detail: 'No partner has joined the request yet.',
+      action: 'Watch nearby online partners and consider operational outreach.',
     });
   }
 
@@ -922,7 +922,7 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
     flags.push({
       severity: 'high',
       title: 'Matched without chat',
-      detail: 'A provider is selected but no chat room exists.',
+      detail: 'A partner is selected but no chat room exists.',
       action: 'Retry chat room creation before the service starts.',
     });
   }
@@ -931,8 +931,8 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
     flags.push({
       severity: 'medium',
       title: 'No partner location signal',
-      detail: `Booking is ${status}, but the provider has not shared a live pin.`,
-      action: 'Ask the provider to share current location from the Partner app.',
+      detail: `Booking is ${status}, but the partner has not shared a live pin.`,
+      action: 'Ask the partner to share current location from the Partner app.',
     });
   }
 
@@ -944,8 +944,8 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
     flags.push({
       severity: 'medium',
       title: 'Partner location is stale',
-      detail: `The latest provider pin is ${providerLocationMetricHelper(booking).toLowerCase()}.`,
-      action: 'Ask the provider to share location again from the Partner app.',
+      detail: `The latest partner pin is ${providerLocationMetricHelper(booking).toLowerCase()}.`,
+      action: 'Ask the partner to share location again from the Partner app.',
     });
   }
 
@@ -966,7 +966,7 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
     flags.push({
       severity: 'medium',
       title: 'Payment reference missing',
-      detail: 'The payment is authorized but has no provider reference for gateway reconciliation.',
+      detail: 'The payment is authorized but has no gateway reference for reconciliation.',
       action: 'Sync payment before capture, release, or refund.',
     });
   }
@@ -1049,12 +1049,12 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
   ) {
     steps.push({
       priority: 'Now',
-      title: 'Preferred provider response',
+      title: 'Preferred partner response',
       detail: `${providerName(booking.preferredProvider)} has the first response window. Contact them if the customer is waiting too long.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
-      actionLabel: 'Call provider',
+      actionLabel: 'Call partner',
     });
   }
 
@@ -1062,11 +1062,11 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     steps.push({
       priority: 'Watch',
       title: 'Supply watch',
-      detail: 'No provider has joined yet. Keep provider availability and notification delivery visible.',
+      detail: 'No partner has joined yet. Keep partner availability and notification delivery visible.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: '/providers',
-      actionLabel: 'Open providers',
+      actionLabel: 'Open partners',
     });
   }
 
@@ -1074,7 +1074,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     steps.push({
       priority: 'Now',
       title: 'Recover chat room',
-      detail: 'Provider is selected but no chat room exists. This can block service coordination.',
+      detail: 'Partner is selected but no chat room exists. This can block service coordination.',
       owner: 'Support operator',
       tone: 'pill-danger',
     });
@@ -1084,11 +1084,11 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     steps.push({
       priority: 'Now',
       title: 'Request partner location',
-      detail: 'The provider has not shared a saved service pin for this active booking.',
+      detail: 'The partner has not shared a saved service pin for this active booking.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
-      actionLabel: 'Call provider',
+      actionLabel: 'Call partner',
     });
   }
 
@@ -1100,11 +1100,11 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     steps.push({
       priority: 'Watch',
       title: 'Refresh stale location',
-      detail: `${providerLocationMetricHelper(booking)}. Ask the provider to share current location again if the customer asks.`,
+      detail: `${providerLocationMetricHelper(booking)}. Ask the partner to share current location again if the customer asks.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
-      actionLabel: 'Call provider',
+      actionLabel: 'Call partner',
     });
   }
 
@@ -1125,12 +1125,12 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
   if (booking.selectedProvider) {
     steps.push({
       priority: 'Done',
-      title: 'Provider handoff locked',
+      title: 'Partner handoff locked',
       detail: `${providerName(booking.selectedProvider)} is the current final partner for this booking.`,
       owner: 'Dispatch operator',
       tone: 'pill-success',
       actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
-      actionLabel: 'Call provider',
+      actionLabel: 'Call partner',
     });
   }
 
@@ -1177,12 +1177,12 @@ function bookingOpsTaskCards(booking: AdminBookingDetail) {
       type: 'CUSTOMER_CONTACTED',
       label: 'Customer contacted',
       helper:
-        'Confirm the guest has been updated when waiting, switching provider, cancelling, or resolving payment.',
+        'Confirm the guest has been updated when waiting, switching partner, cancelling, or resolving payment.',
     },
     {
       type: 'PROVIDER_CONTACTED',
-      label: 'Provider contacted',
-      helper: 'Confirm the therapist has been reached for response, location, arrival, or service progress.',
+      label: 'Partner contacted',
+      helper: 'Confirm the partner has been reached for response, location, arrival, or service progress.',
     },
     {
       type: 'LOCATION_CHECKED',
@@ -1223,7 +1223,7 @@ function liveServiceSignals(booking: AdminBookingDetail) {
   const latest = latestProviderLocation(booking);
   const freshness = latestProviderLocationFreshness(booking);
   const customerPin = coordinateLabel(booking.lat, booking.lng);
-  const providerPin = latest ? coordinateLabel(latest.lat, latest.lng) : 'No provider pin';
+  const providerPin = latest ? coordinateLabel(latest.lat, latest.lng) : 'No partner pin';
   const distanceMeters = latest
     ? approximateDistanceMeters(booking.lat, booking.lng, latest.lat, latest.lng)
     : null;
@@ -1237,11 +1237,11 @@ function liveServiceSignals(booking: AdminBookingDetail) {
       tone: booking.lat && booking.lng ? 'pill-success' : 'pill-warn',
     },
     {
-      label: 'Provider pin',
+      label: 'Partner pin',
       value: providerPin,
       helper: latest
         ? providerLocationMetricHelper(booking)
-        : 'Ask provider to share current location from chat.',
+        : 'Ask partner to share current location from chat.',
       tone:
         freshness === 'recent'
           ? 'pill-success'
@@ -1259,10 +1259,10 @@ function liveServiceSignals(booking: AdminBookingDetail) {
     },
     {
       label: 'Service contact',
-      value: provider?.user?.phone ?? 'No provider phone',
+      value: provider?.user?.phone ?? 'No partner phone',
       helper: provider
-        ? `${providerName(provider)} is the current handoff provider.`
-        : 'No provider assigned yet.',
+        ? `${providerName(provider)} is the current handoff partner.`
+        : 'No partner assigned yet.',
       tone: provider ? 'pill-success' : 'pill-warn',
     },
     {
@@ -1270,7 +1270,7 @@ function liveServiceSignals(booking: AdminBookingDetail) {
       value: booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} message(s)` : 'Not ready',
       helper: booking.chatRoom
         ? `Room ${booking.chatRoom.id}`
-        : 'Chat opens after provider selection/service start.',
+        : 'Chat opens after partner selection/service start.',
       tone: booking.chatRoom ? 'pill-success' : 'pill-warn',
     },
     {
@@ -1303,12 +1303,12 @@ function flowStages(booking: AdminBookingDetail) {
       label: 'Opened',
       value: booking.openedAt ? formatDate(booking.openedAt) : 'Not opened',
       hint: booking.preferredProvider
-        ? 'Direct request sent to preferred provider.'
+        ? 'Direct request sent to preferred partner.'
         : 'Open matching started.',
       done: Boolean(booking.openedAt),
     },
     {
-      label: 'Provider reply',
+      label: 'Partner reply',
       value: providerDecisionLabel(booking),
       hint: providerHint(booking),
       done:
@@ -1332,10 +1332,10 @@ function flowStages(booking: AdminBookingDetail) {
 
 function bookingStatusHint(status: string) {
   if (status === 'OPEN_MATCHING') {
-    return 'Provider response or customer selection is still pending.';
+    return 'Partner response or customer selection is still pending.';
   }
   if (status === 'MATCHED') {
-    return 'Provider is selected; watch chat and movement.';
+    return 'Partner is selected; watch chat and movement.';
   }
   if (status === 'IN_SERVICE') {
     return 'Service is in progress.';
@@ -1366,7 +1366,7 @@ function paymentHint(booking: AdminBookingDetail) {
     return 'No-show requires payment decision before closing.';
   }
   if (bookingCashDebtNeedsSettlement(booking)) {
-    return 'Cash fee debt is still unsettled; provider acceptance is blocked.';
+    return 'Cash fee debt is still unsettled; partner acceptance is blocked.';
   }
   if (booking.payment.status === 'AUTHORIZED') {
     return 'Hold is active; capture after service completion.';
@@ -1525,7 +1525,7 @@ function bookingFinanceFlags(
     flags.push({
       severity: 'high',
       title: 'Completed booking has no earning',
-      detail: 'Service is completed but no provider earning/wallet entry exists.',
+      detail: 'Service is completed but no partner earning/wallet entry exists.',
       action: 'Run earning creation or inspect completion processing.',
     });
   }
@@ -1533,7 +1533,7 @@ function bookingFinanceFlags(
   if (bookingCashDebtNeedsSettlement(booking)) {
     flags.push({
       severity: 'high',
-      title: 'Cash wallet debt blocks provider',
+      title: 'Cash wallet debt blocks partner',
       detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} owes ${money(
         Math.abs(booking.earning?.netAmount ?? financeTrace.walletTotalAmount),
         financeTrace.currency,
@@ -1564,12 +1564,12 @@ function providerHint(booking: AdminBookingDetail) {
     return `Final partner: ${providerName(booking.selectedProvider)}.`;
   }
   if (booking.preferredProvider && (booking.participants?.length ?? 0) === 0) {
-    return 'Preferred provider has first response window.';
+    return 'Preferred partner has first response window.';
   }
   if ((booking.participants?.length ?? 0) > 0) {
-    return 'Shortlist has providers ready for customer decision.';
+    return 'Shortlist has partners ready for customer decision.';
   }
-  return 'No provider response yet.';
+  return 'No partner response yet.';
 }
 
 function providerDecisionLabel(booking: AdminBookingDetail) {
@@ -1786,7 +1786,7 @@ function bookingFinanceTrace(booking: AdminBookingDetail) {
       ? `${money(readAmount(servicePayoutLine.customerPrice), currency)} customer -> ${money(
           readAmount(servicePayoutLine.providerPayoutAmount),
           currency,
-        )} provider`
+        )} partner`
       : payoutRule
         ? `Active rule ${shortId(payoutRule.id)}`
         : 'No matching rule line',
