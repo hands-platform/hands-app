@@ -47,12 +47,12 @@ export class RedisStateService implements OnModuleDestroy {
     );
   }
 
-  async openMatching(bookingId: string, payload: unknown) {
+  async openMatching(bookingId: string, payload: unknown, ttlSeconds = this.activeMatchingTtlSeconds) {
     await this.redis.set(
       `matching:${bookingId}`,
       JSON.stringify(payload),
       'EX',
-      this.activeMatchingTtlSeconds,
+      ttlSeconds,
     );
     await this.redis.sadd('matching:active', bookingId);
   }
@@ -62,9 +62,9 @@ export class RedisStateService implements OnModuleDestroy {
     await this.redis.srem('matching:active', bookingId);
   }
 
-  async addParticipant(bookingId: string, providerId: string) {
+  async addParticipant(bookingId: string, providerId: string, ttlSeconds = this.activeMatchingTtlSeconds) {
     await this.redis.sadd(`matching:${bookingId}:participants`, providerId);
-    await this.redis.expire(`matching:${bookingId}:participants`, this.activeMatchingTtlSeconds);
+    await this.redis.expire(`matching:${bookingId}:participants`, ttlSeconds);
   }
 
   async setOtp(phone: string, otp: string) {

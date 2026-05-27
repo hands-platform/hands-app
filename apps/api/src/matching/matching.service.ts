@@ -2,6 +2,7 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
+import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { resolveMatchingPolicy } from './matching.policy';
 
@@ -10,15 +11,23 @@ export class MatchingService {
   constructor(
     private readonly redisState: RedisStateService,
     private readonly config: ConfigService,
+    private readonly prisma: PrismaService,
     @InjectQueue('booking-timeouts') private readonly bookingTimeoutQueue: Queue,
   ) {}
 
-  getPolicy() {
-    return resolveMatchingPolicy(this.config);
+  async getPolicy() {
+    const settings = await this.prisma.operationalPolicySetting.findMany({
+      where: { category: { in: ['Matching'] } },
+      select: { key: true, value: true },
+    });
+    return resolveMatchingPolicy(
+      this.config,
+      Object.fromEntries(settings.map((setting) => [setting.key, setting.value])),
+    );
   }
 
-  openBooking(input: { booking?: unknown; payload?: unknown }) {
-    const policy = this.getPolicy();
+  openBooking(input: { booking?: unknown; payload?: unknown; policy?: Awaited<ReturnType<MatchingService['getPolicy']>> }) {
+    const policy = input.policy ?? resolveMatchingPolicy(this.config);
     return {
       id: getRecordId(input.booking) ?? 'dev-booking-id',
       status: 'OPEN_MATCHING',
@@ -49,11 +58,13 @@ export class MatchingService {
   }
 
   async registerActiveBooking(bookingId: string, payload: unknown) {
-    await this.redisState.openMatching(bookingId, payload);
+    const policy = await this.getPolicy();
+    await this.redisState.openMatching(bookingId, payload, policy.providerResponseWindowMinutes * 60);
   }
 
   async registerParticipant(bookingId: string, providerId: string) {
-    await this.redisState.addParticipant(bookingId, providerId);
+    const policy = await this.getPolicy();
+    await this.redisState.addParticipant(bookingId, providerId, policy.providerResponseWindowMinutes * 60);
   }
 
   async closeBooking(bookingId: string) {

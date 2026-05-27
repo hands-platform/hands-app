@@ -90,7 +90,7 @@ export class BookingsService {
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
     const scheduledStartAt = new Date(input.scheduledStartAt);
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + service.durationMin * 60_000);
-    const matchingPolicy = this.matching.getPolicy();
+    const matchingPolicy = await this.matching.getPolicy();
     const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
     const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
     const finalAmount = Math.max(0, customerPrice - discountAmount);
@@ -167,6 +167,7 @@ export class BookingsService {
     });
     const result = this.matching.openBooking({
       booking,
+      policy: matchingPolicy,
       payload: {
         eligibleBackupProviderCount: eligibleBackupProviders.length,
         backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
@@ -469,9 +470,10 @@ export class BookingsService {
       return bookings;
     }
 
+    const matchingPolicy = await this.matching.getPolicy();
     return bookings
       .map((booking) => addProviderMatchingDistance(booking, provider))
-      .filter((booking) => this.canProviderSeeOpenBooking(booking, provider));
+      .filter((booking) => this.canProviderSeeOpenBooking(booking, provider, matchingPolicy));
   }
 
   async listProviderBookings(providerUserId: string) {
@@ -507,7 +509,8 @@ export class BookingsService {
       throw new BadRequestException('Booking request is expired');
     }
     await this.ensureProviderWalletCanAccept(provider.id);
-    const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider);
+    const matchingPolicy = await this.matching.getPolicy();
+    const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
     const participant = await this.prisma.bookingParticipant.upsert({
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
@@ -653,12 +656,13 @@ export class BookingsService {
           body: 'We are still looking for another available therapist.',
           data: { bookingId, providerProfileId: provider.id },
         });
-        const result = this.matching.openBooking({ booking: updated });
+        const matchingPolicy = await this.matching.getPolicy();
+        const result = this.matching.openBooking({ booking: updated, policy: matchingPolicy });
         await this.matching.registerActiveBooking(bookingId, result);
         await this.matching.scheduleBookingTimeout(
           bookingId,
           updated.expiresAt ??
-            new Date(Date.now() + this.matching.getPolicy().providerResponseWindowMinutes * 60_000),
+            new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000),
         );
         this.matchingGateway.emitBookingOpened(bookingId, result);
         return updated;
@@ -678,7 +682,7 @@ export class BookingsService {
     lng: number;
     preferredProviderId?: string;
   }) {
-    const policy = this.matching.getPolicy();
+    const policy = await this.matching.getPolicy();
     const providers = await this.prisma.providerProfile.findMany({
       where: {
         id: input.preferredProviderId ? { not: input.preferredProviderId } : undefined,
@@ -737,18 +741,20 @@ export class BookingsService {
   private canProviderSeeOpenBooking(
     booking: { preferredProviderId: string | null; distanceMeters?: number | null },
     provider: { id: string },
+    policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
     if (booking.preferredProviderId === provider.id) {
       return true;
     }
     return typeof booking.distanceMeters === 'number'
-      ? booking.distanceMeters <= this.matching.getPolicy().backupProviderRadiusMeters
+      ? booking.distanceMeters <= policy.backupProviderRadiusMeters
       : false;
   }
 
   private requireProviderWithinMatchingRadius(
     booking: { lat: unknown; lng: unknown; preferredProviderId: string | null },
     provider: { id: string; currentLat: unknown; currentLng: unknown },
+    policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
     const distanceMeters = calculateDistanceMeters(
       Number(booking.lat),
@@ -762,7 +768,7 @@ export class BookingsService {
     if (distanceMeters === null) {
       throw new BadRequestException('Provider location is required before joining this booking');
     }
-    if (distanceMeters > this.matching.getPolicy().backupProviderRadiusMeters) {
+    if (distanceMeters > policy.backupProviderRadiusMeters) {
       throw new BadRequestException('Only providers within 10km can join this booking');
     }
     return distanceMeters;

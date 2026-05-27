@@ -256,6 +256,7 @@ model User {
   providerReportsAssigned  ProviderReport[]           @relation("ProviderReportAssignee")
   providerSanctionsIssued  ProviderSanction[]         @relation("ProviderSanctionIssuer")
   providerSanctionsLifted  ProviderSanction[]         @relation("ProviderSanctionLifter")
+  operationalPolicyUpdates OperationalPolicySetting[]  @relation("OperationalPolicySettingUpdater")
 }
 
 model AppSession {
@@ -1031,4 +1032,22 @@ model AdminAuditLog {
   metadata  Json?
   createdAt DateTime @default(now())
   actor     User     @relation("AdminActor", fields: [actorId], references: [id])
+}
+
+model OperationalPolicySetting {
+  key              String   @id
+  category         String
+  label            String
+  description      String?
+  value            Json
+  recommendedValue Json?
+  options          Json?
+  requiresRestart  Boolean  @default(false)
+  updatedById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  updatedBy        User?    @relation("OperationalPolicySettingUpdater", fields: [updatedById], references: [id])
+
+  @@index([category])
+  @@index([updatedAt])
 }

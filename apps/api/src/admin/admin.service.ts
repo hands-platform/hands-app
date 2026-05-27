@@ -22,6 +22,7 @@ import {
 } from '@prisma/client';
 import { SupabaseAdminService } from '../auth/supabase-admin.service';
 import { EarningsService } from '../earnings/earnings.service';
+import { OPERATIONAL_POLICY_DEFINITIONS } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
@@ -1802,6 +1803,108 @@ export class AdminService {
       take: 100,
       include: { actor: { select: { id: true, phone: true, fullName: true } } },
     });
+  }
+
+  async listOperationalPolicySettings() {
+    const savedSettings = await this.prisma.operationalPolicySetting.findMany({
+      include: { updatedBy: { select: { id: true, phone: true, fullName: true } } },
+      orderBy: [{ category: 'asc' }, { key: 'asc' }],
+    });
+    const savedByKey = new Map(savedSettings.map((setting) => [setting.key, setting]));
+
+    return OPERATIONAL_POLICY_DEFINITIONS.map((definition) => {
+      const saved = savedByKey.get(definition.key);
+      return {
+        ...definition,
+        value: saved?.value ?? definition.value,
+        recommendedValue: saved?.recommendedValue ?? definition.recommendedValue,
+        options: saved?.options ?? definition.options ?? null,
+        requiresRestart: saved?.requiresRestart ?? definition.requiresRestart ?? false,
+        updatedAt: saved?.updatedAt ?? null,
+        updatedBy: saved?.updatedBy ?? null,
+      };
+    });
+  }
+
+  async updateOperationalPolicySetting(actorId: string, key: string, input: { value?: unknown }) {
+    const definition = OPERATIONAL_POLICY_DEFINITIONS.find((item) => item.key === key);
+    if (!definition) {
+      throw new NotFoundException('Operational policy setting not found');
+    }
+
+    const value = this.validateOperationalPolicyValue(definition, input.value);
+    const previous = await this.prisma.operationalPolicySetting.findUnique({ where: { key } });
+    const setting = await this.prisma.operationalPolicySetting.upsert({
+      where: { key },
+      create: {
+        key,
+        category: definition.category,
+        label: definition.label,
+        description: definition.description,
+        value: toJson(value),
+        recommendedValue: toJson(definition.recommendedValue),
+        options: definition.options ? toJson(definition.options) : undefined,
+        requiresRestart: definition.requiresRestart ?? false,
+        updatedById: actorId,
+      },
+      update: {
+        category: definition.category,
+        label: definition.label,
+        description: definition.description,
+        value: toJson(value),
+        recommendedValue: toJson(definition.recommendedValue),
+        options: definition.options ? toJson(definition.options) : Prisma.DbNull,
+        requiresRestart: definition.requiresRestart ?? false,
+        updatedById: actorId,
+      },
+      include: { updatedBy: { select: { id: true, phone: true, fullName: true } } },
+    });
+
+    await this.writeAudit(actorId, 'operational_policy.update', `operational_policy:${key}`, {
+      key,
+      previousValue: previous?.value ?? definition.value,
+      value,
+      enforced: definition.enforced,
+    });
+
+    return {
+      ...definition,
+      value: setting.value,
+      recommendedValue: setting.recommendedValue ?? definition.recommendedValue,
+      options: setting.options ?? definition.options ?? null,
+      requiresRestart: setting.requiresRestart,
+      updatedAt: setting.updatedAt,
+      updatedBy: setting.updatedBy,
+    };
+  }
+
+  private validateOperationalPolicyValue(
+    definition: (typeof OPERATIONAL_POLICY_DEFINITIONS)[number],
+    value: unknown,
+  ) {
+    if (typeof definition.value === 'number') {
+      const parsed = Number(value);
+      const min = definition.min ?? Number.MIN_SAFE_INTEGER;
+      const max = definition.max ?? Number.MAX_SAFE_INTEGER;
+      if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+        throw new BadRequestException(`${definition.label} must be an integer between ${min} and ${max}`);
+      }
+      return parsed;
+    }
+
+    if (definition.options?.length) {
+      const raw = String(value ?? '').trim();
+      if (!definition.options.some((option) => option.value === raw)) {
+        throw new BadRequestException(`${definition.label} has an unsupported option`);
+      }
+      return raw;
+    }
+
+    if (typeof definition.value === 'boolean') {
+      return value === true || value === 'true';
+    }
+
+    return String(value ?? '').trim();
   }
 
   listNotifications() {

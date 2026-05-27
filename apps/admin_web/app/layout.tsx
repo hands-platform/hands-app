@@ -8,6 +8,7 @@ const links = [
   ['/partner-risk', 'Partner Risk'],
   ['/app-sessions', 'App Sessions'],
   ['/bookings', 'Bookings'],
+  ['/operations-policy', 'Operations Policy'],
   ['/services', 'Services'],
   ['/payments', 'Payments'],
   ['/refunds', 'Refunds'],

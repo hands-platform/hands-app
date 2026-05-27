@@ -472,6 +472,20 @@ export class AdminController {
     return this.admin.listAuditLogs();
   }
 
+  @Get('operational-policy')
+  operationalPolicy() {
+    return this.admin.listOperationalPolicySettings();
+  }
+
+  @Patch('operational-policy/:key')
+  updateOperationalPolicy(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('key') key: string,
+    @Body() body: { value?: unknown },
+  ) {
+    return this.admin.updateOperationalPolicySetting(user.id, key, body);
+  }
+
   @Get('notifications')
   notifications() {
     return this.admin.listNotifications();

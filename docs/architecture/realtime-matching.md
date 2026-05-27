@@ -16,6 +16,23 @@
 - Eligible backup partners receive `booking.backup_available` and can join through `POST /provider/bookings/:id/join`.
 - Customer final selection remains the source of truth for switching from first-pick to a backup partner.
 
+## Admin-Operable Policy
+
+Matching policy is backed by `OperationalPolicySetting` and exposed in Admin at `/operations-policy`.
+Saved Admin values take priority over `.env` fallbacks for new booking creation, backup partner discovery,
+and partner join eligibility.
+
+Enforced settings:
+
+- `matching.provider_response_window_minutes`
+- `matching.backup_provider_radius_meters`
+- `matching.travel_buffer_minutes`
+
+Existing open bookings keep their stored `expiresAt` timestamp so operators do not accidentally change a
+live customer countdown. The same page also records non-enforced product decisions, such as whether a
+preferred partner acceptance should auto-match or still require customer final confirmation, so HANDS can
+keep an audit trail before redesigning the mobile flow.
+
 ## BullMQ Queues
 
 - `booking-timeouts`

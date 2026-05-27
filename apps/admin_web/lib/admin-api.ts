@@ -777,6 +777,23 @@ export type AdminAuditLog = {
   actor?: { phone?: string; fullName?: string | null };
 };
 
+export type AdminOperationalPolicySetting = {
+  key: string;
+  category: string;
+  label: string;
+  description?: string | null;
+  value: number | string | boolean;
+  recommendedValue?: number | string | boolean | null;
+  unit?: string | null;
+  min?: number | null;
+  max?: number | null;
+  options?: Array<{ value: string; label: string; tradeoff: string }> | null;
+  requiresRestart?: boolean;
+  enforced: boolean;
+  updatedAt?: string | null;
+  updatedBy?: { phone?: string | null; fullName?: string | null } | null;
+};
+
 export type AdminNotification = {
   id: string;
   type: string;
