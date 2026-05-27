@@ -886,7 +886,9 @@ export class BookingsService {
       throw new BadRequestException('Provider location is required before joining this booking');
     }
     if (distanceMeters > policy.backupProviderRadiusMeters) {
-      throw new BadRequestException('Only providers within 10km can join this booking');
+      throw new BadRequestException(
+        `Only partners within ${formatMatchingRadius(policy.backupProviderRadiusMeters)} can join this booking`,
+      );
     }
     return distanceMeters;
   }
@@ -1134,4 +1136,11 @@ function calculateDistanceMeters(
     return null;
   }
   return roundTo100Meters(haversineMeters(bookingLat, bookingLng, lat, lng));
+}
+
+function formatMatchingRadius(radiusMeters: number) {
+  if (radiusMeters >= 1000) {
+    return `${(radiusMeters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`;
+  }
+  return `${radiusMeters.toLocaleString('en')}m`;
 }

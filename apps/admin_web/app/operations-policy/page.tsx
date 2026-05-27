@@ -100,7 +100,7 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Backup participation"
-            recommendation="Keep immediate backup visibility inside 10km."
+            recommendation="Keep immediate backup visibility inside the configured backup radius."
             detail="It reduces waiting anxiety, gives the customer alternatives, and fits the reference flow you described."
           />
           <DecisionHint
