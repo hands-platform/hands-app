@@ -303,7 +303,7 @@ function policyImpactDetails(key: string) {
       area: 'Wallet risk',
       title: 'Controls unpaid cash-fee debt enforcement',
       detail:
-        'Current implementation blocks acceptance when the partner wallet is negative so cash-service platform fees are settled first.',
+        'Block mode stops partners with negative cash-fee debt from accepting new work. Recovery mode permits one active booking so they can earn toward repayment.',
     },
     'cancellation.after_match_policy': {
       area: 'Cancellation money',

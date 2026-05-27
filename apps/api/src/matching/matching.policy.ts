@@ -20,6 +20,9 @@ export const NO_SHOW_AUTO_AFTER_EVIDENCE = 'AUTO_NO_SHOW_AFTER_EVIDENCE';
 export const NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY = 'notification.partner_alert_channel';
 export const PARTNER_ALERT_IN_APP_WITH_PUSH_LATER = 'IN_APP_WITH_PUSH_LATER';
 export const PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
+export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';
+export const WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+export const WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
 export const PREFERRED_ACCEPT_AUTO_MATCH = 'AUTO_MATCH_ON_ACCEPT';
 export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 
@@ -135,23 +138,23 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
   {
-    key: 'wallet.negative_balance_gate',
+    key: WALLET_NEGATIVE_BALANCE_GATE_KEY,
     category: 'Decision',
     label: 'Negative wallet booking gate',
     description:
       'Choose how strictly partners with unpaid cash-service platform fees are blocked from accepting new work.',
-    value: 'BLOCK_ACCEPTS_WHEN_NEGATIVE',
-    recommendedValue: 'BLOCK_ACCEPTS_WHEN_NEGATIVE',
+    value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
+    recommendedValue: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
     options: [
       {
-        value: 'BLOCK_ACCEPTS_WHEN_NEGATIVE',
+        value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
         label: 'Block accepts while negative',
-        tradeoff: 'Protects company fee collection and is already implemented.',
+        tradeoff: 'Protects company fee collection and blocks new booking participation while debt is open.',
       },
       {
-        value: 'ALLOW_ONE_RECOVERY_BOOKING',
+        value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,
         label: 'Allow one recovery booking',
-        tradeoff: 'More partner-friendly, but increases unpaid-fee risk.',
+        tradeoff: 'More partner-friendly by allowing one active recovery booking, but increases unpaid-fee risk.',
       },
     ],
     enforced: false,

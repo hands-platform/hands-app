@@ -1563,6 +1563,54 @@ const openMatchingWalletBlockError = await expectRequestFailure(
     postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
   400,
 );
+await patchJson(
+  `/admin/operational-policy/${encodeURIComponent('wallet.negative_balance_gate')}`,
+  adminAuth.accessToken,
+  { value: 'ALLOW_ONE_RECOVERY_BOOKING' },
+);
+try {
+  await postJson(
+    `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
+    walletDebtProviderAuth.accessToken,
+  );
+  const recoveryMatchedBooking = await postJson(
+    `/customer/bookings/${blockedOpenMatchingBooking.id}/select-provider`,
+    customerAuth.accessToken,
+    {
+      providerId: walletDebtProviderAuth.user.providerProfile.id,
+    },
+  );
+  if (recoveryMatchedBooking.status !== 'MATCHED') {
+    throw new Error(
+      `Recovery wallet policy should allow one active matched booking: ${JSON.stringify(
+        recoveryMatchedBooking,
+      )}`,
+    );
+  }
+  const secondRecoveryBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+    serviceId: service.id,
+    scheduledStartAt: new Date(Date.now() + 170 * 60_000).toISOString(),
+    address: { line1: 'Negative wallet second recovery smoke flow' },
+    lat: 10.7784,
+    lng: 106.6995,
+    paymentMethod: 'MOMO',
+  });
+  const secondRecoveryError = await expectRequestFailure(
+    'Negative wallet recovery policy allows only one active booking',
+    () =>
+      postJson(`/provider/bookings/${secondRecoveryBooking.id}/join`, walletDebtProviderAuth.accessToken),
+    400,
+  );
+  if (!secondRecoveryError.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
+    throw new Error(`Recovery wallet gate should block the second active booking: ${secondRecoveryError}`);
+  }
+} finally {
+  await patchJson(
+    `/admin/operational-policy/${encodeURIComponent('wallet.negative_balance_gate')}`,
+    adminAuth.accessToken,
+    { value: 'BLOCK_ACCEPTS_WHEN_NEGATIVE' },
+  );
+}
 const payoutWalletBlockError = await expectRequestFailure(
   'Negative provider wallet blocks payout batch creation',
   () =>
