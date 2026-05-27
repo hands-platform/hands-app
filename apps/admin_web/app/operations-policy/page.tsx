@@ -21,6 +21,7 @@ export default async function OperationsPolicyPage({
   const ownerDecisionBacklog = operationsOwnerDecisionBacklog();
   const matchingPlaybook = buildMatchingPlaybook(settings);
   const impactDashboard = buildPolicyImpactDashboard(settings, bookings);
+  const policyDrilldown = buildPolicyDrilldown(bookings, settings);
   const policyAuditRows = operationalPolicyAuditRows(auditLogs);
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
 
@@ -141,6 +142,24 @@ export default async function OperationsPolicyPage({
               <p>{card.detail}</p>
               <small>{card.operatorAction}</small>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Policy impact drill-down</h2>
+            <p className="muted">
+              Click into the exact bookings and partners operators should review before changing live
+              matching, wallet, or response-window policy.
+            </p>
+          </div>
+          <span className="pill pill-info">{policyDrilldown.totalCount} item(s) to review</span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {policyDrilldown.lists.map((list) => (
+            <PolicyDrilldownList key={list.key} list={list} />
           ))}
         </div>
       </section>
@@ -441,6 +460,46 @@ function MetricCard({ label, value, helper }: { label: string; value: string; he
   );
 }
 
+function PolicyDrilldownList({ list }: { list: PolicyDrilldownListView }) {
+  return (
+    <div className={`ops-task-card ${list.className}`} style={{ minHeight: 0 }}>
+      <div>
+        <span className={`pill ${list.pillClass}`}>{list.rows.length} item(s)</span>
+        <h3>{list.title}</h3>
+        <p>{list.helper}</p>
+      </div>
+      {list.rows.length ? (
+        <div className="ops-task-breakdown">
+          {list.rows.map((row) => (
+            <div className="ops-task-note" key={`${list.key}-${row.id}`}>
+              <a className="text-link" href={row.href}>
+                {row.title}
+              </a>
+              <p className="muted" style={{ margin: '6px 0' }}>
+                {row.subtitle}
+              </p>
+              <div className="participant-list">
+                {row.pills.map((pill) => (
+                  <span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>
+                    {pill.label}
+                  </span>
+                ))}
+              </div>
+              <small>{row.operatorAction}</small>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="ops-task-note">
+          <p className="muted" style={{ margin: 0 }}>
+            {list.emptyText}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function buildPolicyRecommendationReview(
   settings: AdminOperationalPolicySetting[],
   bookings: AdminBooking[],
@@ -693,6 +752,174 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       },
     ],
   };
+}
+
+type PolicyDrilldownPill = {
+  label: string;
+  className: string;
+};
+
+type PolicyDrilldownRow = {
+  id: string;
+  href: string;
+  title: string;
+  subtitle: string;
+  pills: PolicyDrilldownPill[];
+  operatorAction: string;
+};
+
+type PolicyDrilldownListView = {
+  key: string;
+  title: string;
+  helper: string;
+  className: string;
+  pillClass: string;
+  emptyText: string;
+  rows: PolicyDrilldownRow[];
+};
+
+function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperationalPolicySetting[]) {
+  const openMatchingRows = bookings
+    .filter((booking) => booking.status === 'OPEN_MATCHING')
+    .sort(byNewestBooking)
+    .slice(0, 6)
+    .map((booking) => {
+      const participantCount = booking.participants?.length ?? 0;
+      return {
+        id: booking.id,
+        href: `/bookings/${booking.id}`,
+        title: `${bookingServiceLabel(booking)} · ${shortId(booking.id)}`,
+        subtitle: `${bookingPartnerLabel(booking)} · ${bookingCustomerLabel(booking)}`,
+        pills: [
+          { label: booking.status, className: 'pill-warn' },
+          {
+            label: `${participantCount} participant(s)`,
+            className: participantCount ? 'pill-info' : 'pill-neutral',
+          },
+          {
+            label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry',
+            className: 'pill-info',
+          },
+        ],
+        operatorAction:
+          'Review this booking before changing response-window, backup-radius, or backup-open policy.',
+      };
+    });
+
+  const driftRows = bookings
+    .map((booking) => ({ booking, drift: bookingPolicySnapshotDrift(booking, settings) }))
+    .filter(({ drift }) => drift.length > 0)
+    .sort((left, right) => byNewestBooking(left.booking, right.booking))
+    .slice(0, 6)
+    .map(({ booking, drift }) => ({
+      id: booking.id,
+      href: `/bookings/${booking.id}`,
+      title: `${bookingServiceLabel(booking)} · ${shortId(booking.id)}`,
+      subtitle: `${booking.status} · ${bookingPartnerLabel(booking)}`,
+      pills: drift.slice(0, 3).map((item) => ({
+        label: item.label,
+        className: 'pill-warn',
+      })),
+      operatorAction:
+        drift.length > 3
+          ? `${drift.length} policy values differ. Use the booking detail snapshot before manual action.`
+          : 'Saved booking policy differs from live policy. Check the booking detail snapshot first.',
+    }));
+
+  const walletRows = bookings
+    .map((booking) => ({ booking, recentWalletTotal: bookingWalletLedgerTotal(booking) }))
+    .filter(({ recentWalletTotal }) => recentWalletTotal < 0)
+    .sort((left, right) => left.recentWalletTotal - right.recentWalletTotal)
+    .slice(0, 6)
+    .map(({ booking, recentWalletTotal }) => ({
+      id: booking.id,
+      href: `/bookings/${booking.id}`,
+      title: `${bookingPartnerLabel(booking)} · ${shortId(booking.id)}`,
+      subtitle: `${bookingServiceLabel(booking)} · ${booking.payment?.method ?? 'payment unknown'}`,
+      pills: [
+        { label: formatMoney(recentWalletTotal), className: 'pill-danger' },
+        { label: booking.payment?.status ?? 'payment unknown', className: 'pill-warn' },
+        { label: booking.status, className: 'pill-neutral' },
+      ],
+      operatorAction:
+        'Recent wallet entries are negative. Confirm settlement before allowing new booking actions.',
+    }));
+
+  const lists: PolicyDrilldownListView[] = [
+    {
+      key: 'open-matching',
+      title: 'Open matching watchlist',
+      helper: 'Bookings currently waiting for preferred and backup partner decisions.',
+      className: openMatchingRows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: openMatchingRows.length ? 'pill-warn' : 'pill-success',
+      emptyText: 'No open matching booking needs policy review right now.',
+      rows: openMatchingRows,
+    },
+    {
+      key: 'snapshot-drift',
+      title: 'Snapshot drift',
+      helper: 'Bookings whose saved policy snapshot differs from the current Admin policy.',
+      className: driftRows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: driftRows.length ? 'pill-warn' : 'pill-success',
+      emptyText: 'No sampled booking has policy drift.',
+      rows: driftRows,
+    },
+    {
+      key: 'wallet-gate',
+      title: 'Wallet gate watchlist',
+      helper: 'Partners with negative recent wallet ledger entries that may block booking actions.',
+      className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
+      emptyText: 'No negative recent wallet ledger was found in the current booking sample.',
+      rows: walletRows,
+    },
+  ];
+
+  return {
+    totalCount: lists.reduce((total, list) => total + list.rows.length, 0),
+    lists,
+  };
+}
+
+function byNewestBooking(left: AdminBooking, right: AdminBooking) {
+  return (
+    Date.parse(right.createdAt ?? right.updatedAt ?? '') - Date.parse(left.createdAt ?? left.updatedAt ?? '')
+  );
+}
+
+function bookingServiceLabel(booking: AdminBooking) {
+  const service = booking.services?.[0];
+  const name = service?.service?.name ?? 'Service';
+  const duration = service?.service?.durationMin ? `${service.service.durationMin} min` : null;
+  return duration ? `${name} (${duration})` : name;
+}
+
+function bookingPartnerLabel(booking: AdminBooking) {
+  const partner =
+    booking.selectedProvider ??
+    booking.preferredProvider ??
+    booking.participants?.[0]?.providerProfile ??
+    null;
+  return (
+    partner?.displayName ??
+    partner?.user?.fullName ??
+    partner?.user?.phone ??
+    (booking.participants?.length ? 'Joined partner' : 'No partner yet')
+  );
+}
+
+function bookingCustomerLabel(booking: AdminBooking) {
+  return (
+    booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer not loaded'
+  );
+}
+
+function shortId(id: string) {
+  return id.length > 10 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
+}
+
+function formatMoney(amount: number) {
+  return `${new Intl.NumberFormat('vi-VN').format(amount)} VND`;
 }
 
 function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
