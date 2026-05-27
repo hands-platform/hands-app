@@ -158,7 +158,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
           'More partner-friendly by allowing one active recovery booking, but increases unpaid-fee risk.',
       },
     ],
-    enforced: false,
+    enforced: true,
   },
   {
     key: CANCELLATION_AFTER_MATCH_POLICY_KEY,
@@ -180,7 +180,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         tradeoff: 'Protects partner time, but needs clear customer-facing rules and refund handling.',
       },
     ],
-    enforced: false,
+    enforced: true,
   },
   {
     key: NO_SHOW_PARTNER_REPORT_POLICY_KEY,
@@ -201,7 +201,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         tradeoff: 'Faster operations, but requires strong evidence upload and dispute flows.',
       },
     ],
-    enforced: false,
+    enforced: true,
   },
   {
     key: NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
@@ -222,7 +222,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         tradeoff: 'Better reach, but depends on production push setup and delivery monitoring.',
       },
     ],
-    enforced: false,
+    enforced: true,
   },
 ];
 
