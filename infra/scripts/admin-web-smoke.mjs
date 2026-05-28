@@ -52,6 +52,8 @@ const pages = [
       'Dispatch partner repair shortcuts',
     ],
   },
+  { path: '/bookings?view=attention', markers: ['Booking Monitor', 'Attention queue'] },
+  { path: '/bookings?view=high-risk', markers: ['Booking Monitor', 'Attention queue'] },
   { path: '/bookings?view=customer-choice', markers: ['Booking Monitor', 'Stage 3 choice'] },
   { path: '/bookings?view=handoff-repair', markers: ['Booking Monitor', 'Stage 4 repair'] },
   { path: '/bookings?view=closeout', markers: ['Booking Monitor', 'Closeout ops'] },

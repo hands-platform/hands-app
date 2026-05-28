@@ -399,7 +399,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
                   <span>NONE</span>
                   <div>
                     <strong>No usable partner candidate</strong>
-                    <p className="muted">Use the exclusion groups to decide whether to refresh location, widen policy, or contact partners.</p>
+                    <p className="muted">
+                      Use the exclusion groups to decide whether to refresh location, widen policy, or contact
+                      partners.
+                    </p>
                   </div>
                   <Link className="text-link" href="/partners?review=backup-ready">
                     Open backup queue
@@ -1039,9 +1042,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Booking chronological activity</h2>
             <p className="muted">
-              Date-sorted factual event trail for this booking: booking status, partner participation,
-              chat messages, payment, refund, earning, platform fee, tax, wallet, location, notification,
-              review, and operator audit records.
+              Date-sorted factual event trail for this booking: booking status, partner participation, chat
+              messages, payment, refund, earning, platform fee, tax, wallet, location, notification, review,
+              and operator audit records.
             </p>
           </div>
           <span className="pill pill-info">{bookingActivityRecords.length} event(s)</span>
@@ -1334,7 +1337,10 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
     });
   }
 
-  for (const entry of [...(booking.walletLedgerEntries ?? []), ...(booking.earning?.walletLedgerEntries ?? [])]) {
+  for (const entry of [
+    ...(booking.walletLedgerEntries ?? []),
+    ...(booking.earning?.walletLedgerEntries ?? []),
+  ]) {
     records.push({
       id: entry.id,
       type: 'WALLET',
@@ -1429,7 +1435,7 @@ function RiskItem({ flag }: { flag: RiskFlag }) {
   return (
     <div className={`risk-item risk-${flag.severity}`}>
       <div>
-        <span className={`pill ${riskToneClass(flag.severity)}`}>{flag.severity}</span>
+        <span className={`pill ${riskToneClass(flag.severity)}`}>{checkSeverityLabel(flag.severity)}</span>
         <strong>{flag.title}</strong>
         <p className="muted">{flag.detail}</p>
       </div>
@@ -1483,7 +1489,7 @@ function opsBadges(booking: AdminBookingDetail) {
     badges.push({ label: 'Expired', tone: 'pill-warn' });
   }
   if (flags.some((flag) => flag.severity === 'high')) {
-    badges.push({ label: 'High attention', tone: 'pill-danger' });
+    badges.push({ label: 'Action needed', tone: 'pill-danger' });
   } else if (flags.some((flag) => flag.severity === 'medium')) {
     badges.push({ label: 'Needs watch', tone: 'pill-warn' });
   }
@@ -1682,15 +1688,25 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
 
 function riskLevel(flags: RiskFlag[]) {
   if (flags.some((flag) => flag.severity === 'high')) {
-    return { label: 'High', helper: `${flags.length} flag(s) need attention`, tone: 'pill-danger' };
+    return { label: 'Action', helper: `${flags.length} check(s) need attention`, tone: 'pill-danger' };
   }
   if (flags.some((flag) => flag.severity === 'medium')) {
-    return { label: 'Medium', helper: `${flags.length} flag(s) to watch`, tone: 'pill-warn' };
+    return { label: 'Watch', helper: `${flags.length} check(s) to watch`, tone: 'pill-warn' };
   }
   if (flags.some((flag) => flag.severity === 'low')) {
-    return { label: 'Low', helper: `${flags.length} low-priority flag(s)`, tone: 'pill-info' };
+    return { label: 'Note', helper: `${flags.length} note check(s)`, tone: 'pill-info' };
   }
   return { label: 'Clear', helper: 'No active attention checks', tone: 'pill-success' };
+}
+
+function checkSeverityLabel(severity: RiskFlag['severity']) {
+  if (severity === 'high') {
+    return 'Action';
+  }
+  if (severity === 'medium') {
+    return 'Watch';
+  }
+  return 'Note';
 }
 
 function riskToneClass(severity: RiskFlag['severity']) {
@@ -2540,9 +2556,7 @@ function bookingBackupPartnerSupply(
   const customerLng = Number(booking.lng);
   const hasCustomerPin = Number.isFinite(customerLat) && Number.isFinite(customerLng);
   const participantProviderIds = new Set(
-    (booking.participants ?? [])
-      .map((participant) => participant.providerProfile?.id)
-      .filter(Boolean),
+    (booking.participants ?? []).map((participant) => participant.providerProfile?.id).filter(Boolean),
   );
   const preferredProviderId = booking.preferredProvider?.id;
   const selectedProviderId = booking.selectedProvider?.id;
@@ -2596,7 +2610,8 @@ function bookingBackupPartnerSupply(
             eligible: blockers.length === 0,
             blockers,
             distanceMeters,
-            distance: distanceMeters === null ? 'Unknown distance' : distanceLabel(Math.round(distanceMeters)),
+            distance:
+              distanceMeters === null ? 'Unknown distance' : distanceLabel(Math.round(distanceMeters)),
             locationAge:
               locationAgeMinutes === null
                 ? 'No location timestamp'
@@ -2750,7 +2765,8 @@ function bookingBackupCandidateCommand(input: {
       status: 'NO PIN',
       tone: 'pill-danger',
       title: 'Customer location must be confirmed first',
-      detail: 'Distance, 10km backup eligibility, and partner exclusion reasons cannot be trusted without a booking pin.',
+      detail:
+        'Distance, 10km backup eligibility, and partner exclusion reasons cannot be trusted without a booking pin.',
       href: '/bookings',
       action: 'Open bookings',
     };
@@ -2770,7 +2786,8 @@ function bookingBackupCandidateCommand(input: {
       status: 'REPAIR SUPPLY',
       tone: 'pill-warn',
       title: 'Nearby partners exist but are blocked',
-      detail: 'Prioritize app-open/location refresh, online status, and KYC before extending customer wait time.',
+      detail:
+        'Prioritize app-open/location refresh, online status, and KYC before extending customer wait time.',
       href: '/partners?review=backup-blocked',
       action: 'Open blocked partners',
     };
@@ -2780,7 +2797,8 @@ function bookingBackupCandidateCommand(input: {
       status: 'NO 10KM SUPPLY',
       tone: 'pill-warn',
       title: 'Partners are outside the configured backup radius',
-      detail: 'Do not widen radius blindly. Check city supply, customer location accuracy, and operations policy first.',
+      detail:
+        'Do not widen radius blindly. Check city supply, customer location accuracy, and operations policy first.',
       href: '/operations-policy#policy-matching-backup-provider-radius-meters',
       action: 'Review radius policy',
     };
@@ -2789,7 +2807,8 @@ function bookingBackupCandidateCommand(input: {
     status: 'NO SUPPLY',
     tone: 'pill-danger',
     title: 'No partner supply is available for this booking',
-    detail: 'Escalate to support, confirm service location, or prepare customer cancellation/refund handling.',
+    detail:
+      'Escalate to support, confirm service location, or prepare customer cancellation/refund handling.',
     href: '/partners',
     action: 'Open partners',
   };
@@ -2876,13 +2895,15 @@ function bookingCustomerWaitPanel(
     signalStatus = 'Customer choice';
     signalTone = 'pill-warn';
     headline = 'A partner accepted; the customer still needs to select the final partner.';
-    detail = 'Make sure the customer app shows the accepted partner shortlist and can unlock chat after selection.';
+    detail =
+      'Make sure the customer app shows the accepted partner shortlist and can unlock chat after selection.';
     nextActionLabel = 'Check participants';
   } else if (waitingForPartnerJoin && backupSupply.eligibleCount === 0) {
     signalStatus = 'Supply gap';
     signalTone = 'pill-danger';
     headline = 'No fresh nearby partner can currently join under policy.';
-    detail = 'Ask partners to go online/refresh location, or review backup radius and location freshness policy.';
+    detail =
+      'Ask partners to go online/refresh location, or review backup radius and location freshness policy.';
     nextActionHref = '/partners?review=backup-blocked';
     nextActionLabel = 'Open blocked partners';
   } else if (waitingForPartnerJoin && backupWindowOpen) {
@@ -2931,7 +2952,11 @@ function bookingCustomerWaitPanel(
       action: customerConfirmMode
         ? 'Customer selects the final partner before chat unlocks.'
         : 'Policy may auto-lock the accepted preferred partner.',
-      className: selected ? 'ops-task-done' : waitingForCustomerChoice ? 'ops-task-pending' : 'ops-task-pending',
+      className: selected
+        ? 'ops-task-done'
+        : waitingForCustomerChoice
+          ? 'ops-task-pending'
+          : 'ops-task-pending',
       pillClass: selected ? 'pill-success' : waitingForCustomerChoice ? 'pill-warn' : 'pill-info',
     },
     {
@@ -2966,7 +2991,9 @@ function bookingCustomerWaitPanel(
         : selected
           ? 'Final partner is selected, but no chat room is attached.'
           : 'Chat stays locked until the final partner is selected.',
-      action: booking.chatRoom ? 'Monitor coordination and location sharing.' : 'Unlock/repair after final match.',
+      action: booking.chatRoom
+        ? 'Monitor coordination and location sharing.'
+        : 'Unlock/repair after final match.',
       className: booking.chatRoom ? 'ops-task-done' : selected ? 'ops-task-blocked' : 'ops-task-pending',
       pillClass: booking.chatRoom ? 'pill-success' : selected ? 'pill-danger' : 'pill-info',
     },
@@ -3021,7 +3048,8 @@ function bookingStageSnapshot(
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
   );
-  const selectedPartner = booking.selectedProvider ?? (status === 'MATCHED' ? booking.preferredProvider : null);
+  const selectedPartner =
+    booking.selectedProvider ?? (status === 'MATCHED' ? booking.preferredProvider : null);
   const preferredParticipant = preferredParticipantState(booking);
   const locationFreshness = latestProviderLocationFreshness(booking);
   const customerPinReady = Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng));
@@ -3041,7 +3069,8 @@ function bookingStageSnapshot(
     pillClass = status === 'COMPLETED' ? 'pill-success' : 'pill-warn';
     noteClassName = status === 'COMPLETED' ? 'ops-task-done' : 'ops-task-pending';
     headline = 'This booking is in closeout.';
-    detail = 'Use finance, refund, no-show, audit, and review sections to confirm the operational record is clean.';
+    detail =
+      'Use finance, refund, no-show, audit, and review sections to confirm the operational record is clean.';
     actionHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : `/bookings/${booking.id}`;
     actionLabel = booking.payment?.id ? 'Open payment trail' : 'Review closeout';
   } else if (selectedPartner && chatReady) {
@@ -3089,7 +3118,9 @@ function bookingStageSnapshot(
     detail = customerPinReady
       ? customerWaitPanel.detail
       : 'Confirm the customer service location before using distance, backup, or dispatch decisions.';
-    actionHref = customerPinReady ? `/bookings/${booking.id}#participants` : `/bookings/${booking.id}#customer`;
+    actionHref = customerPinReady
+      ? `/bookings/${booking.id}#participants`
+      : `/bookings/${booking.id}#customer`;
     actionLabel = customerPinReady ? 'Watch first-pick' : 'Fix customer pin';
   }
 
@@ -3122,14 +3153,26 @@ function bookingStageSnapshot(
       {
         label: 'Handoff',
         value: chatReady ? 'Chat ready' : 'Chat locked',
-        helper: locationFreshness === 'recent' ? 'Partner location is recent.' : `Partner location is ${locationFreshness}.`,
+        helper:
+          locationFreshness === 'recent'
+            ? 'Partner location is recent.'
+            : `Partner location is ${locationFreshness}.`,
       },
     ],
     badges: [
-      { label: customerPinReady ? 'Pin ready' : 'Pin missing', tone: customerPinReady ? 'pill-success' : 'pill-danger' },
-      { label: `${backupSupply.eligibleCount} in 10km policy`, tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn' },
+      {
+        label: customerPinReady ? 'Pin ready' : 'Pin missing',
+        tone: customerPinReady ? 'pill-success' : 'pill-danger',
+      },
+      {
+        label: `${backupSupply.eligibleCount} in 10km policy`,
+        tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn',
+      },
       { label: chatReady ? 'Chat ready' : 'Chat pending', tone: chatReady ? 'pill-success' : 'pill-info' },
-      { label: providerName(selectedPartner ?? booking.preferredProvider), tone: selectedPartner ? 'pill-success' : 'pill-neutral' },
+      {
+        label: providerName(selectedPartner ?? booking.preferredProvider),
+        tone: selectedPartner ? 'pill-success' : 'pill-neutral',
+      },
     ],
   };
 }
@@ -3363,9 +3406,7 @@ function readBookingMatchingPolicySnapshot(booking: AdminBookingDetail) {
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy?.providerResponseWindowMinutes),
     backupProviderRadiusMeters: readOptionalNumber(policy?.backupProviderRadiusMeters),
-    backupProviderLocationMaxAgeMinutes: readOptionalNumber(
-      policy?.backupProviderLocationMaxAgeMinutes,
-    ),
+    backupProviderLocationMaxAgeMinutes: readOptionalNumber(policy?.backupProviderLocationMaxAgeMinutes),
     backupProviderInvitationLimit: readOptionalNumber(policy?.backupProviderInvitationLimit),
     preferredAcceptMode: readOptionalString(policy?.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy?.backupOpenMode),
@@ -3387,7 +3428,9 @@ function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminAuditLog
     .filter((log) => bookingCreatedAt === 0 || safeTime(log.createdAt) >= bookingCreatedAt)
     .sort((left, right) => safeTime(right.createdAt) - safeTime(left.createdAt));
   const manualLogs = bookingLogs.filter((log) => isManualBookingAuditAction(log.action));
-  const paymentLogs = bookingLogs.filter((log) => log.action.startsWith('payment.') || log.action.startsWith('earning.'));
+  const paymentLogs = bookingLogs.filter(
+    (log) => log.action.startsWith('payment.') || log.action.startsWith('earning.'),
+  );
   const rows = [...bookingLogs, ...policyLogsAfterOpen]
     .sort((left, right) => safeTime(right.createdAt) - safeTime(left.createdAt))
     .slice(0, 8)
@@ -3438,7 +3481,9 @@ function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminAuditLog
       {
         label: 'Manual actions',
         value: `${manualLogs.length}`,
-        helper: manualLogs.length ? 'Review before further intervention.' : 'No manual booking action captured.',
+        helper: manualLogs.length
+          ? 'Review before further intervention.'
+          : 'No manual booking action captured.',
       },
       {
         label: 'Money actions',
@@ -3453,7 +3498,9 @@ function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminAuditLog
       {
         label: 'Policy source',
         value: hasSavedMatchingPolicy ? 'Saved snapshot' : 'Live fallback',
-        helper: hasSavedMatchingPolicy ? 'Booking behavior is explainable from saved metadata.' : 'Use live policy with extra caution.',
+        helper: hasSavedMatchingPolicy
+          ? 'Booking behavior is explainable from saved metadata.'
+          : 'Use live policy with extra caution.',
       },
     ],
   };
@@ -3494,11 +3541,11 @@ function auditPolicyKey(log: AdminAuditLog) {
 function isBookingRelevantPolicyKey(key: string | null) {
   return Boolean(
     key &&
-      (key.startsWith('matching.') ||
-        key.startsWith('wallet.') ||
-        key.startsWith('cancellation.') ||
-        key.startsWith('no_show.') ||
-        key.startsWith('notification.partner_')),
+    (key.startsWith('matching.') ||
+      key.startsWith('wallet.') ||
+      key.startsWith('cancellation.') ||
+      key.startsWith('no_show.') ||
+      key.startsWith('notification.partner_')),
   );
 }
 
@@ -3531,7 +3578,9 @@ function auditMetadataSummary(metadata: unknown) {
     data.value !== undefined ? `value: ${compactAuditValue(data.value)}` : null,
     readOptionalString(data.status) ? `status: ${readOptionalString(data.status)}` : null,
     readOptionalString(data.method) ? `method: ${readOptionalString(data.method)}` : null,
-    readOptionalNumber(data.amount) !== null ? `amount: ${readOptionalNumber(data.amount)?.toLocaleString()}` : null,
+    readOptionalNumber(data.amount) !== null
+      ? `amount: ${readOptionalNumber(data.amount)?.toLocaleString()}`
+      : null,
     readOptionalString(data.note) ? `note: ${readOptionalString(data.note)}` : null,
     data.paymentReleased !== undefined ? `payment released: ${String(data.paymentReleased)}` : null,
   ].filter(Boolean);
@@ -3600,7 +3649,9 @@ function bookingNotificationTrace(booking: AdminBookingDetail, notifications: Ad
       {
         label: 'Backup batches',
         value: `${backupBatches.length}`,
-        helper: backupBatches.length ? 'Stored invite batches on the booking record.' : 'No backup invite batch recorded.',
+        helper: backupBatches.length
+          ? 'Stored invite batches on the booking record.'
+          : 'No backup invite batch recorded.',
       },
       {
         label: 'Last backup invite',
