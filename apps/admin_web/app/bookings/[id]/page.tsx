@@ -2873,6 +2873,7 @@ function bookingNotificationTrace(booking: AdminBookingDetail, notifications: Ad
     .map((notification) => bookingNotificationTraceRow(notification));
   const deliveries = rows.flatMap((row) => row.deliveryStatuses);
   const partnerAlerts = rows.filter((row) => row.isPartnerAlert).length;
+  const noShowAlerts = rows.filter((row) => row.type === 'booking.no_show').length;
   const failed = deliveries.filter((status) => status === 'FAILED').length;
   const skippedOrPending =
     deliveries.filter((status) => status === 'SKIPPED').length +
@@ -2887,6 +2888,13 @@ function bookingNotificationTrace(booking: AdminBookingDetail, notifications: Ad
         label: 'Related alerts',
         value: `${rows.length}`,
         helper: 'Notification rows carrying this booking id.',
+      },
+      {
+        label: 'No-show alerts',
+        value: `${noShowAlerts}`,
+        helper: noShowAlerts
+          ? 'Customer or partner was notified about the no-show review.'
+          : 'No no-show communication row for this booking.',
       },
       {
         label: 'Partner alerts',
@@ -3013,6 +3021,7 @@ function bookingNotificationTraceRow(notification: AdminNotification) {
 
   return {
     id: notification.id,
+    type: notification.type,
     isPartnerAlert: isPartnerNotificationType(notification.type),
     deliveryStatuses,
     disabledDeviceCount: deliveries.filter((delivery) => delivery.pushDevice?.enabled === false).length,
@@ -3036,6 +3045,8 @@ function bookingNotificationTraceRow(notification: AdminNotification) {
       radius !== null ? `backup radius ${formatDistanceMeters(radius)}` : null,
       invitationLimit !== null ? `invite cap ${invitationLimit}` : null,
       data?.backupOpenMode ? `backup mode ${String(data.backupOpenMode)}` : null,
+      data?.noShowPolicy ? `no-show policy ${String(data.noShowPolicy)}` : null,
+      data?.reason ? `reason ${String(data.reason)}` : null,
     ]
       .filter(Boolean)
       .join(' / '),
