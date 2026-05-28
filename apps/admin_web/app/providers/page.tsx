@@ -98,6 +98,29 @@ type PartnerKycReviewBoard = {
     samples: string[];
   }>;
 };
+type PartnerShiftHandoff = {
+  tone: ProviderCommandLane['tone'];
+  label: string;
+  headline: string;
+  detail: string;
+  primaryAction: { label: string; href: string };
+  stats: Array<{
+    label: string;
+    value: string;
+    detail: string;
+    href: string;
+    tone: ProviderCommandLane['tone'];
+  }>;
+  actions: Array<{
+    title: string;
+    scope: string;
+    detail: string;
+    operatorAction: string;
+    href: string;
+    tone: ProviderCommandLane['tone'];
+    samples: string[];
+  }>;
+};
 type PartnerKycState = {
   status: string;
   missingDocuments: string[];
@@ -158,6 +181,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy);
   const acceptanceBlockerBoard = buildPartnerAcceptanceBlockerBoard(providers, opsPolicy);
   const kycReviewBoard = buildPartnerKycReviewBoard(providers);
+  const shiftHandoff = buildPartnerShiftHandoff(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
 
   return (
@@ -298,6 +322,66 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
         ))}
       </div>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner shift handoff</h2>
+            <p className="muted">
+              The first operator read for this partner queue. It turns KYC, wallet debt, dispatch readiness,
+              location freshness, push readiness, and payout setup into a practical work order.
+            </p>
+          </div>
+          <span className={`signal ${providerCommandToneClass(shiftHandoff.tone)}`}>
+            {shiftHandoff.label}
+          </span>
+        </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className="ops-row">
+            <div>
+              <span className="pill pill-info">Next best partner move</span>
+              <strong>{shiftHandoff.headline}</strong>
+              <p className="muted">{shiftHandoff.detail}</p>
+            </div>
+            <Link className="text-link" href={shiftHandoff.primaryAction.href}>
+              {shiftHandoff.primaryAction.label}
+            </Link>
+          </div>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+          {shiftHandoff.stats.map((stat) => (
+            <Link
+              className={`ops-task-breakdown-item ops-task-breakdown-${providerDashboardTone(stat.tone)}`}
+              href={stat.href}
+              key={stat.label}
+            >
+              <span>{stat.label}</span>
+              <strong>{stat.value}</strong>
+              <small>{stat.detail}</small>
+            </Link>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {shiftHandoff.actions.map((item) => (
+            <Link className={`ops-task-card ${partnerShiftCardClass(item.tone)}`} href={item.href} key={item.title}>
+              <span className={`pill ${partnerShiftPillClass(item.tone)}`}>{item.scope}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <small>{item.operatorAction}</small>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                {item.samples.length ? (
+                  item.samples.map((sample) => (
+                    <span className="pill" key={`${item.title}-${sample}`}>
+                      {sample}
+                    </span>
+                  ))
+                ) : (
+                  <span className="pill pill-success">No immediate partner sample</span>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -1960,6 +2044,233 @@ function buildProviderCommandCenter(
       ],
     },
   ];
+}
+
+function buildPartnerShiftHandoff(
+  providers: AdminProvider[],
+  opsPolicy: ProviderOpsPolicy,
+): PartnerShiftHandoff {
+  const acceptReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy));
+  const backupReady = providers.filter((provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible);
+  const hardBlocked = providers.filter(partnerHasHardAcceptanceBlocker);
+  const cashDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0);
+  const readyKyc = providers.filter((provider) => partnerKycState(provider).readyToApprove);
+  const kycBlocked = providers.filter((provider) => {
+    const kycState = partnerKycState(provider);
+    return kycState.blockedByDocuments || kycState.rejectedDocuments > 0 || provider.kyc?.status === 'REJECTED';
+  });
+  const locationRefresh = providers.filter((provider) =>
+    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
+  );
+  const pushMissing = providers.filter((provider) => !hasHealthyPush(provider));
+  const payoutSetup = providers.filter(providerPayoutSetupNeedsReview);
+  const securityRisk = providers.filter((provider) =>
+    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+  );
+  const publicMedia = providers.filter(providerPublicMediaNeedsReview);
+
+  const actions = [
+    cashDebt.length
+      ? {
+          title: 'Collect cash-fee debt before more bookings',
+          scope: 'Finance gate',
+          detail: `${cashDebt.length} partner(s) have negative wallet balance from cash-service fee or tax debt.`,
+          operatorAction:
+            'Collect company fee deposit, record evidence, or offset from available earnings before allowing acceptance.',
+          href: '/partners?review=cash-debt',
+          tone: 'danger' as const,
+          samples: partnerSampleNames(cashDebt),
+        }
+      : null,
+    readyKyc.length
+      ? {
+          title: 'Approve KYC records that are ready',
+          scope: 'KYC review',
+          detail: `${readyKyc.length} partner(s) have required CCCD/selfie evidence ready for admin decision.`,
+          operatorAction: 'Open each detail page, verify evidence, then approve or reject with a clear reason.',
+          href: '/partners?review=kyc',
+          tone: 'warn' as const,
+          samples: partnerSampleNames(readyKyc),
+        }
+      : null,
+    kycBlocked.length
+      ? {
+          title: 'Request KYC resubmission where evidence is blocked',
+          scope: 'Identity blocker',
+          detail: `${kycBlocked.length} partner(s) cannot move forward because identity evidence is missing or rejected.`,
+          operatorAction: 'Use rejection reasons and resubmission guidance before the partner can become dispatch-ready.',
+          href: '/partners?review=documents',
+          tone: 'warn' as const,
+          samples: partnerSampleNames(kycBlocked),
+        }
+      : null,
+    payoutSetup.length
+      ? {
+          title: 'Finish first-earning payout and tax setup',
+          scope: 'Payout gate',
+          detail: `${payoutSetup.length} partner(s) have revenue signal but still need tax, address, or agreement readiness.`,
+          operatorAction:
+            'Ask for tax profile/address/terms only after first revenue, then approve before withdrawal.',
+          href: '/partners?review=payout-setup',
+          tone: 'warn' as const,
+          samples: partnerSampleNames(payoutSetup),
+        }
+      : null,
+    securityRisk.length
+      ? {
+          title: 'Review device or account risk before dispatch',
+          scope: 'Trust gate',
+          detail: `${securityRisk.length} partner(s) have blocked devices, suspicious sessions, shared devices, or account block state.`,
+          operatorAction: 'Open partner risk/security history before relying on them for customer bookings.',
+          href: '/partners?review=security',
+          tone: 'danger' as const,
+          samples: partnerSampleNames(securityRisk),
+        }
+      : null,
+    locationRefresh.length
+      ? {
+          title: 'Refresh partner locations for dispatch accuracy',
+          scope: 'Location',
+          detail: `${locationRefresh.length} partner(s) need a current location before direct request or 10km backup matching.`,
+          operatorAction: `Ask partners to open the app; location must be fresh within ${opsPolicy.staleLocationMinutes} minutes.`,
+          href: '/partners?review=location',
+          tone: acceptReady.length ? ('info' as const) : ('warn' as const),
+          samples: partnerSampleNames(locationRefresh),
+        }
+      : null,
+    pushMissing.length
+      ? {
+          title: 'Repair request alert readiness',
+          scope: 'Alerts',
+          detail: `${pushMissing.length} partner(s) have no enabled push device, so urgent booking alerts may be missed.`,
+          operatorAction: 'Ask partners to reopen the app and register notifications before relying on push outreach.',
+          href: '/partners?review=push',
+          tone: 'info' as const,
+          samples: partnerSampleNames(pushMissing),
+        }
+      : null,
+    publicMedia.length
+      ? {
+          title: 'Moderate public partner media',
+          scope: 'Profile',
+          detail: `${publicMedia.length} partner(s) have profile/gallery media waiting for admin review.`,
+          operatorAction: 'Approve original, safe media or reject unclear uploads before final visual redesign.',
+          href: '/partners?review=public-media',
+          tone: 'info' as const,
+          samples: partnerSampleNames(publicMedia),
+        }
+      : null,
+    acceptReady.length
+      ? {
+          title: 'Keep ready partners warm for live requests',
+          scope: 'Dispatch supply',
+          detail: `${acceptReady.length} partner(s) can accept direct bookings now; ${backupReady.length} are also backup-ready.`,
+          operatorAction: 'Use these partners first when matching demand spikes or customer wait time rises.',
+          href: '/partners?review=direct-ready',
+          tone: 'ok' as const,
+          samples: partnerSampleNames(acceptReady),
+        }
+      : null,
+  ].filter((item): item is PartnerShiftHandoff['actions'][number] => Boolean(item));
+
+  const topAction = actions.find((item) => item.tone === 'danger') ?? actions.find((item) => item.tone === 'warn') ?? actions[0];
+  const tone =
+    cashDebt.length || securityRisk.length
+      ? 'danger'
+      : hardBlocked.length || readyKyc.length || payoutSetup.length
+        ? 'warn'
+        : acceptReady.length
+          ? 'ok'
+          : 'info';
+
+  return {
+    tone,
+    label:
+      tone === 'danger'
+        ? 'Critical'
+        : tone === 'warn'
+          ? 'Action needed'
+          : tone === 'ok'
+            ? 'Dispatch ready'
+            : 'Watch',
+    headline: topAction?.title ?? 'No urgent partner operation item',
+    detail:
+      topAction?.operatorAction ??
+      'The current filtered partner queue has no immediate blocker. Keep watching booking demand, location freshness, and cash debt.',
+    primaryAction: {
+      label: topAction ? 'Open partner work queue' : 'Open dispatch-ready partners',
+      href: topAction?.href ?? '/partners?review=direct-ready',
+    },
+    stats: [
+      {
+        label: 'Can accept now',
+        value: acceptReady.length.toString(),
+        detail: `${backupReady.length} backup-ready within current policy gates.`,
+        href: '/partners?review=direct-ready',
+        tone: acceptReady.length ? 'ok' : 'warn',
+      },
+      {
+        label: 'Hard blocked',
+        value: hardBlocked.length.toString(),
+        detail: 'Account, KYC, bank, wallet, security, or identity blockers.',
+        href: '/partners?review=acceptance-blocked',
+        tone: hardBlocked.length ? 'danger' : 'ok',
+      },
+      {
+        label: 'Cash debt',
+        value: cashDebt.length.toString(),
+        detail: 'Negative wallet blocks new booking acceptance.',
+        href: '/partners?review=cash-debt',
+        tone: cashDebt.length ? 'danger' : 'ok',
+      },
+      {
+        label: 'KYC ready',
+        value: readyKyc.length.toString(),
+        detail: 'Identity evidence ready for admin decision.',
+        href: '/partners?review=kyc',
+        tone: readyKyc.length ? 'warn' : 'ok',
+      },
+      {
+        label: 'Location refresh',
+        value: locationRefresh.length.toString(),
+        detail: `Fresh location policy is ${opsPolicy.staleLocationMinutes} minutes.`,
+        href: '/partners?review=location',
+        tone: locationRefresh.length ? 'warn' : 'ok',
+      },
+      {
+        label: 'Payout setup',
+        value: payoutSetup.length.toString(),
+        detail: 'First-revenue tax/address/agreement gate.',
+        href: '/partners?review=payout-setup',
+        tone: payoutSetup.length ? 'warn' : 'ok',
+      },
+    ],
+    actions: actions.slice(0, 6),
+  };
+}
+
+function partnerSampleNames(providers: AdminProvider[], limit = 4) {
+  return providers.slice(0, limit).map(providerDisplayName);
+}
+
+function providerDashboardTone(tone: ProviderCommandLane['tone']) {
+  if (tone === 'danger') return 'danger';
+  if (tone === 'warn') return 'warn';
+  if (tone === 'info') return 'info';
+  return 'ok';
+}
+
+function partnerShiftCardClass(tone: ProviderCommandLane['tone']) {
+  if (tone === 'danger') return 'ops-task-blocked';
+  if (tone === 'warn') return 'ops-task-pending';
+  return 'ops-task-done';
+}
+
+function partnerShiftPillClass(tone: ProviderCommandLane['tone']) {
+  if (tone === 'danger') return 'pill-danger';
+  if (tone === 'warn') return 'pill-warn';
+  if (tone === 'info') return 'pill-info';
+  return 'pill-success';
 }
 
 function providerDispatchReady(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
