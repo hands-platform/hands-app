@@ -132,7 +132,50 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 -App provider
 ```
 
-## 3. SMS / OTP
+## 3. Runtime Operations Policy
+
+Operational rules are managed from Admin so dispatch and finance behavior can change without rebuilding the apps.
+
+Admin page:
+
+```text
+http://localhost:3101/operations-policy
+```
+
+Current MVP policy:
+
+- selected first partner response window: `10` minutes
+- backup partner radius: `10km`
+- backup partner location freshness: `30` minutes
+- backup partners can appear while the first partner is still deciding
+- customer always selects the final partner
+- negative partner wallet blocks booking acceptance
+- cancellation and no-show decisions require admin review first
+
+Seed/default values:
+
+```dotenv
+MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES=10
+MATCHING_BACKUP_PROVIDER_RADIUS_METERS=10000
+MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES=30
+MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT=50
+MATCHING_PREFERRED_ACCEPT_MODE=CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT
+MATCHING_BACKUP_OPEN_MODE=IMMEDIATE_WITHIN_WINDOW
+WALLET_NEGATIVE_BALANCE_GATE=BLOCK_ACCEPTS_WHEN_NEGATIVE
+CANCELLATION_AFTER_MATCH_POLICY=ADMIN_REVIEW_FOR_MVP
+NO_SHOW_PARTNER_REPORT_POLICY=ADMIN_REVIEW_REQUIRED
+NOTIFICATION_PARTNER_ALERT_CHANNEL=IN_APP_WITH_PUSH_LATER
+```
+
+Verify:
+
+```powershell
+cd C:\dev\massage-vn-workspace\repo
+npm.cmd run admin:web-smoke
+node .\infra\scripts\api-smoke.mjs
+```
+
+## 4. SMS / OTP
 
 Development uses a fixed OTP:
 
@@ -168,7 +211,7 @@ Supabase Auth setup:
 7. After setting `SUPABASE_JWT_SECRET`, run `npm.cmd run auth:supabase-smoke` against the API to verify customer mapping, provider mapping, invalid audience rejection, and role escalation rejection. The full local verifier also runs this flow with a temporary dev JWT secret against its managed API.
 8. Keep `SUPABASE_SERVICE_ROLE_KEY` only in the API environment. It is needed for admin provider-role sync and must never be sent to Flutter, browser JavaScript, or Git.
 
-## 4. Payments
+## 5. Payments
 
 MVP supports:
 
@@ -200,7 +243,7 @@ Before launch, confirm:
 - sandbox merchant separated from production merchant
 - admin manual refund permissions
 
-## 5. Storage / CDN
+## 6. Storage / CDN
 
 MVP can run on local MinIO. Production should use Supabase Storage S3, S3-compatible storage, or Cloudflare R2.
 
@@ -261,7 +304,7 @@ npm.cmd run external:check:storage
 npm.cmd run storage:smoke
 ```
 
-## 6. Domains / Deployment
+## 7. Domains / Deployment
 
 Production preparation:
 
@@ -274,7 +317,7 @@ Production preparation:
 - backup and restore schedule
 - GitHub Actions later, after the MVP flow stabilizes
 
-## 7. Admin Access
+## 8. Admin Access
 
 Local defaults:
 
@@ -292,7 +335,7 @@ Before launch:
 - define owner / operator / finance permissions
 - enable audit log review for payout, refund, partner approval, and coupon changes
 
-## 8. Android Store Signing
+## 9. Android Store Signing
 
 Detailed runbook:
 
@@ -384,7 +427,7 @@ npm.cmd run external:check:production
 
 ## Current Local Status
 
-Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-26:
+Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-28:
 
 - Mobile Firebase dependencies/config: removed
 - Full local verification with Docker services: passing, including API smoke, realtime smoke, Supabase Auth exchange smoke, Flutter analyze, and Flutter tests
@@ -398,6 +441,7 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-26:
 - Supabase Phone Auth provider screen: do not fill yet; Vonage OTP is deferred
 - Supabase REST/storage verification: passing with service role
 - API Supabase auth smoke: passing locally
+- Runtime operations policy: exposed in Admin Setup and Operations Policy, covered by admin web smoke and API smoke
 - Supabase Phone Auth/SMS: deferred
 - Planned SMS provider: Vonage
 - Mobile auth switch: still `AUTH_BACKEND=nest` locally until Vonage + Supabase Phone Auth E2E is configured
@@ -424,8 +468,9 @@ The next external setup items to complete are:
 
 1. Supabase project URL / anon key / JWT secret
 2. MapTiler and Geoapify keys
-3. Supabase Phone Auth SMS configuration with Vonage
-4. MoMo and VNPay credentials
-5. Storage / CDN credentials
-6. Production push provider
-7. Production domains and TLS
+3. Runtime operations policy review in Admin
+4. Supabase Phone Auth SMS configuration with Vonage
+5. MoMo and VNPay credentials
+6. Storage / CDN credentials
+7. Production push provider
+8. Production domains and TLS

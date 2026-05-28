@@ -53,6 +53,7 @@ C:\dev\massage-vn-workspace\repo\infra\setup\.generated\hands-external-registrat
 - GitHub business repository: moved to `hands-platform/hands-app`
 - Supabase staging: created and SQL applied
 - MapTiler and Geoapify: configured locally and verified
+- Runtime operations policy: managed in Admin at `/operations-policy`
 - External production-like registrations still pending: Vonage Phone Auth, OneSignal, MoMo/VNPay, production storage/CDN
 
 ## Registration Order
@@ -163,7 +164,52 @@ Verify:
 npm.cmd run external:check:maps
 ```
 
-### 3. Payments
+### 3. Runtime Operations Policy
+
+Purpose:
+
+- Keep matching, backup participation, wallet gate, cancellation, no-show, and notification behavior configurable from Admin.
+- Avoid hardcoding dispatch or settlement policy in mobile screens.
+
+Current recommended MVP policy:
+
+- Preferred partner response window: 10 minutes.
+- Backup partner radius: 10km.
+- Backup partner location freshness: 30 minutes.
+- Backup partner invite cap: 50.
+- Backup partners can appear immediately while the preferred partner is still deciding.
+- Customer makes the final partner selection.
+- Partners with negative wallet balance are blocked from accepting or joining bookings.
+
+Seed/default values:
+
+```dotenv
+MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES=10
+MATCHING_BACKUP_PROVIDER_RADIUS_METERS=10000
+MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES=30
+MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT=50
+MATCHING_PREFERRED_ACCEPT_MODE=CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT
+MATCHING_BACKUP_OPEN_MODE=IMMEDIATE_WITHIN_WINDOW
+WALLET_NEGATIVE_BALANCE_GATE=BLOCK_ACCEPTS_WHEN_NEGATIVE
+CANCELLATION_AFTER_MATCH_POLICY=ADMIN_REVIEW_FOR_MVP
+NO_SHOW_PARTNER_REPORT_POLICY=ADMIN_REVIEW_REQUIRED
+NOTIFICATION_PARTNER_ALERT_CHANNEL=IN_APP_WITH_PUSH_LATER
+```
+
+Operate:
+
+```text
+http://localhost:3101/operations-policy
+```
+
+Verify:
+
+```powershell
+npm.cmd run admin:web-smoke
+node infra\scripts\api-smoke.mjs
+```
+
+### 4. Payments
 
 Purpose:
 
@@ -193,7 +239,7 @@ npm.cmd run external:check:payments
 node infra\scripts\api-smoke.mjs
 ```
 
-### 4. OS Push Provider
+### 5. OS Push Provider
 
 Purpose:
 
@@ -226,7 +272,7 @@ Verify:
 npm.cmd run external:check:production
 ```
 
-### 5. Production SMS Decision
+### 6. Production SMS Decision
 
 Purpose:
 
@@ -249,7 +295,7 @@ SMS_PROVIDER=dev
 DEV_OTP=123456
 ```
 
-### 6. Storage/CDN
+### 7. Storage/CDN
 
 Purpose:
 
@@ -281,7 +327,7 @@ Verify:
 npm.cmd run external:check:storage
 ```
 
-### 7. Android Store Registration
+### 8. Android Store Registration
 
 Purpose:
 
