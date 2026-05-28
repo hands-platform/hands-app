@@ -27,6 +27,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   const pushDevices = customer.user?.pushDevices ?? [];
   const notifications = customer.user?.notifications ?? [];
   const activityPlan = buildCustomerActivityPlan(customer, bookings, wallet, bookingStats, addresses);
+  const chatRooms = bookings.filter((booking) => booking.chatRoom);
+  const chatMessageCount = chatRooms.reduce((sum, booking) => sum + (booking.chatRoom?.messages?.length ?? 0), 0);
+  const customerActivityRecords = buildCustomerActivityRecords(customer, bookings, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
 
   return (
@@ -68,6 +71,51 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           value={latestSession ? 'Seen' : 'None'}
           helper={latestSession ? formatDate(latestSession.lastSeenAt) : 'No app session recorded'}
         />
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer full record index</h2>
+            <p className="muted">
+              Factual customer record map for operators. No scoring is calculated here; this page only shows
+              booking, work, payment, chat, address, notification, app session, and operator history.
+            </p>
+          </div>
+          <span className="pill pill-info">{customerActivityRecords.length} event(s)</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <a href="#customer-info">
+            <span>Customer info</span>
+            <strong>{customer.user?.phone ?? 'No phone'}</strong>
+            <small>Identity, contact, account age.</small>
+          </a>
+          <a href="#wallet">
+            <span>Wallet and payment</span>
+            <strong>{formatMoney(wallet.capturedSpend)}</strong>
+            <small>Captured, pending, cash, refund rows.</small>
+          </a>
+          <a href="#addresses">
+            <span>Addresses</span>
+            <strong>{addresses.length}</strong>
+            <small>Saved address and selected map pins.</small>
+          </a>
+          <a href="#booking-history">
+            <span>Bookings</span>
+            <strong>{bookings.length}</strong>
+            <small>{bookingStats.completed} completed work record(s).</small>
+          </a>
+          <a href="#chat-history">
+            <span>Chat archive</span>
+            <strong>{chatMessageCount}</strong>
+            <small>{chatRooms.length} room(s), retained for admin.</small>
+          </a>
+          <a href="#customer-activity">
+            <span>Activity timeline</span>
+            <strong>{customerActivityRecords.length}</strong>
+            <small>Date-ordered app and operations events.</small>
+          </a>
+        </div>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -143,7 +191,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </form>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="customer-info" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Customer information</h2>
@@ -188,7 +236,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
       </section>
 
       <section className="grid" style={{ marginBottom: 16 }}>
-        <section className="card">
+        <section className="card" id="wallet">
           <h2>Customer wallet</h2>
           <p className="muted">
             Wallet-style readout derived from bookings, payments, refunds, coupons, and cash/payment state.
@@ -213,7 +261,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           </div>
         </section>
 
-        <section className="card">
+        <section className="card" id="addresses">
           <h2>Saved addresses</h2>
           <p className="muted">Profile addresses and map pins selected in the customer app.</p>
           <div className="setup-stage-list" style={{ marginTop: 12 }}>
@@ -231,7 +279,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </section>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="booking-history" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Booking and cancellation history</h2>
@@ -285,7 +333,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </table>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="chat-history" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Chat history</h2>
@@ -329,6 +377,42 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </div>
       </section>
 
+      <section className="card" id="customer-activity" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer chronological activity</h2>
+            <p className="muted">
+              Date-sorted factual history across bookings, completed work, chat messages, payments, refunds,
+              addresses, app sessions, push devices, notifications, reviews, and operator notes.
+            </p>
+          </div>
+          <span className="pill pill-info">{customerActivityRecords.length} event(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {customerActivityRecords.length > 0 ? (
+            customerActivityRecords.slice(0, 40).map((record) => (
+              <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
+                <span>{record.type}</span>
+                <div>
+                  <strong>{record.title}</strong>
+                  <p className="muted">{record.detail}</p>
+                </div>
+                <small>{formatDate(record.at)}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No customer activity has been recorded yet</strong>
+                <p className="muted">Bookings, messages, address pins, sessions, and operator notes will appear here.</p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
+        </div>
+      </section>
+
       <section className="grid" style={{ marginBottom: 16 }}>
         <section className="card">
           <h2>Push devices</h2>
@@ -363,7 +447,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </section>
       </section>
 
-      <section className="card">
+      <section className="card" id="notifications">
         <div className="risk-watch-header">
           <div>
             <h2>Recent customer notifications</h2>
@@ -396,7 +480,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         </table>
       </section>
 
-      <section className="card" style={{ marginTop: 16 }}>
+      <section className="card" id="audit-trail" style={{ marginTop: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Customer audit trail</h2>
@@ -603,12 +687,179 @@ function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {
   });
 }
 
+function buildCustomerActivityRecords(
+  customer: AdminCustomerDetail,
+  bookings: AdminBookingDetail[],
+  addresses: Array<{ key: string; label: string; value: string }>,
+) {
+  const records: Array<{ id: string; type: string; at: string; title: string; detail: string }> = [];
+
+  if (customer.user?.createdAt) {
+    records.push({
+      id: customer.user.id ?? customer.id,
+      type: 'ACCOUNT',
+      at: customer.user.createdAt,
+      title: 'Customer account created',
+      detail: `${customer.user.fullName ?? 'Unnamed customer'} / ${customer.user.phone ?? 'No phone'}`,
+    });
+  }
+
+  for (const booking of bookings) {
+    records.push({
+      id: booking.id,
+      type: 'BOOKING',
+      at: booking.createdAt ?? booking.scheduledStartAt ?? '',
+      title: `${booking.status} booking ${shortId(booking.id)}`,
+      detail: `${bookingServiceLabel(booking)} / partner ${
+        booking.selectedProvider?.displayName ?? booking.preferredProvider?.displayName ?? 'not selected'
+      } / scheduled ${formatDate(booking.scheduledStartAt)}`,
+    });
+
+    if (booking.status === 'COMPLETED') {
+      records.push({
+        id: `${booking.id}-completed`,
+        type: 'WORK',
+        at: booking.updatedAt ?? booking.scheduledEndAt ?? booking.scheduledStartAt ?? '',
+        title: `Completed work ${shortId(booking.id)}`,
+        detail: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
+      });
+    }
+
+    if (booking.payment) {
+      records.push({
+        id: booking.payment.id ?? `${booking.id}-payment`,
+        type: 'PAYMENT',
+        at: booking.updatedAt ?? booking.createdAt ?? '',
+        title: `${booking.payment.status} payment`,
+        detail: `${booking.payment.method} / ${formatMoney(Number(booking.payment.amount ?? 0), booking.payment.currency ?? 'VND')}`,
+      });
+    }
+
+    const refunds = [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])];
+    for (const refund of refunds) {
+      const reason = 'reason' in refund ? refund.reason : undefined;
+      records.push({
+        id: refund.id,
+        type: 'REFUND',
+        at: refund.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+        title: `${refund.status} refund`,
+        detail: `${formatMoney(Number(refund.amount ?? 0))}${reason ? ` / ${reason}` : ''}`,
+      });
+    }
+
+    for (const message of readChatMessages(booking)) {
+      records.push({
+        id: message.id,
+        type: 'CHAT',
+        at: message.createdAt,
+        title: `Message in booking ${shortId(booking.id)}`,
+        detail: `${message.sender?.fullName ?? message.sender?.phone ?? message.sender?.roles?.join(', ') ?? 'Unknown sender'}: ${compactText(
+          message.body,
+          96,
+        )}`,
+      });
+    }
+
+    for (const task of booking.opsTasks ?? []) {
+      records.push({
+        id: task.id,
+        type: 'OPS',
+        at: task.updatedAt,
+        title: `${task.status} ${task.type}`,
+        detail: `${task.note ?? 'No note'} / actor ${task.actor?.fullName ?? task.actor?.phone ?? 'System'}`,
+      });
+    }
+  }
+
+  for (const location of customer.selectedLocations ?? []) {
+    records.push({
+      id: location.id,
+      type: 'ADDRESS',
+      at: location.createdAt,
+      title: 'Customer selected service location',
+      detail: `${location.addressText} / ${location.latitude}, ${location.longitude}`,
+    });
+  }
+
+  for (const address of addresses.filter((item) => item.key.startsWith('profile-'))) {
+    records.push({
+      id: address.key,
+      type: 'ADDRESS',
+      at: customer.user?.updatedAt ?? customer.user?.createdAt ?? '',
+      title: address.label,
+      detail: address.value,
+    });
+  }
+
+  for (const session of customer.user?.appSessions ?? []) {
+    records.push({
+      id: session.id,
+      type: 'SESSION',
+      at: session.lastSeenAt,
+      title: `${session.active ? 'Active' : 'Inactive'} customer app session`,
+      detail: `${session.platform ?? 'Unknown platform'} / ${session.appVersion ?? 'No app version'} / device ${session.deviceId}`,
+    });
+  }
+
+  for (const device of customer.user?.pushDevices ?? []) {
+    records.push({
+      id: device.id,
+      type: 'DEVICE',
+      at: device.updatedAt ?? device.createdAt ?? '',
+      title: `${device.enabled ? 'Enabled' : 'Disabled'} push device`,
+      detail: `${device.platform} / ${device.deliveries?.[0]?.status ?? 'No delivery attempt'}`,
+    });
+  }
+
+  for (const notification of customer.user?.notifications ?? []) {
+    records.push({
+      id: notification.id,
+      type: 'NOTICE',
+      at: notification.createdAt,
+      title: notification.title,
+      detail: `${notification.type} / ${notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'} / ${
+        notification.deliveries?.[0]?.status ?? 'No delivery'
+      }`,
+    });
+  }
+
+  for (const review of customer.reviews ?? []) {
+    records.push({
+      id: review.id,
+      type: 'REVIEW',
+      at: review.createdAt ?? '',
+      title: `Review left for ${review.providerProfile?.displayName ?? 'partner'}`,
+      detail: `${review.rating} star / ${reviewBookingServiceLabel(review.booking)}`,
+    });
+  }
+
+  for (const log of customer.auditLogs ?? []) {
+    records.push({
+      id: log.id,
+      type: 'AUDIT',
+      at: log.createdAt,
+      title: log.action,
+      detail: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${compactJson(log.metadata)}`,
+    });
+  }
+
+  return records
+    .filter((record) => Boolean(record.at))
+    .sort((left, right) => dateMs(right.at) - dateMs(left.at));
+}
+
 function bookingTotal(booking: AdminBookingDetail) {
   return (booking.services ?? []).reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 1), 0);
 }
 
 function bookingServiceLabel(booking: AdminBookingDetail) {
   const first = booking.services?.[0];
+  if (!first?.service) return 'No service';
+  return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
+}
+
+function reviewBookingServiceLabel(booking?: { services?: AdminBookingDetail['services'] }) {
+  const first = booking?.services?.[0];
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
 }
@@ -656,6 +907,10 @@ function compactJson(value: unknown) {
   if (!value) return 'No metadata';
   const text = JSON.stringify(value);
   return text.length > 160 ? `${text.slice(0, 157)}...` : text;
+}
+
+function compactText(value: string, maxLength: number) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
 
 function dateMs(value?: string | null) {

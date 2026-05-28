@@ -227,12 +227,14 @@ if (customerLinkMatch) {
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
     'Customer detail',
+    'Customer full record index',
     'Customer activity action panel',
     'Customer information',
     'Customer wallet',
     'Saved addresses',
     'Booking and cancellation history',
     'Chat history',
+    'Customer chronological activity',
     'Recent customer notifications',
     'Customer audit trail',
   ];

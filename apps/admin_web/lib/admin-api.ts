@@ -693,8 +693,13 @@ export type AdminReview = {
   tipAmount: number;
   status: string;
   reportReason?: string | null;
+  createdAt?: string;
   customerProfile?: { user?: { fullName?: string | null; phone?: string } };
   providerProfile?: { displayName?: string | null };
+  booking?: {
+    id?: string;
+    services?: AdminBooking['services'];
+  };
 };
 
 export type AdminCoupon = {
