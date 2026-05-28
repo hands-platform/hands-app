@@ -383,7 +383,7 @@ class _KycFormState extends State<_KycForm> {
     return _SheetFrame(
       title: 'KYC identity check',
       description:
-          'Enter the provider CCCD/CMND number after the front, back, and selfie photos are ready.',
+          'Enter the partner CCCD/CMND number after the front, back, and selfie photos are ready.',
       child: Form(
         key: _formKey,
         child: Column(
@@ -864,12 +864,12 @@ String bankAccountFormDescription({
     return '$prefix Correct the Vietnamese bank account details and submit again for admin approval.';
   }
   if (status == 'PENDING_REVIEW') {
-    return 'This bank account is waiting for admin approval. You can update details if the provider changed accounts.';
+    return 'This bank account is waiting for admin approval. You can update details if the partner changed accounts.';
   }
   if (status == 'APPROVED') {
     return 'This bank account is approved for payout. Submit again only when account details change.';
   }
-  return 'Use the provider own Vietnamese bank account. Admin approval is required before payout.';
+  return 'Use the partner own Vietnamese bank account. Admin approval is required before payout.';
 }
 
 String taxProfileFormDescription({
@@ -886,7 +886,7 @@ String taxProfileFormDescription({
     return 'This tax profile is waiting for admin review. Rates are still managed by admin policy.';
   }
   if (status == 'APPROVED') {
-    return 'This tax profile is approved. Update only if the provider tax details change.';
+    return 'This tax profile is approved. Update only if the partner tax details change.';
   }
   return 'Tax profile is requested after the first revenue is earned. Rates are managed by admin policy.';
 }

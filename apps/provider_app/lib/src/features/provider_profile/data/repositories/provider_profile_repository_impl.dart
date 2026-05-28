@@ -47,7 +47,7 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
       final device = _asMap(record['device']);
       final reason = record['blockReason']?.toString() ??
           (providerBlocked ? null : device?['blockReason']?.toString());
-      final subject = providerBlocked ? 'provider account' : 'device';
+      final subject = providerBlocked ? 'partner account' : 'device';
       throw StateError(
         reason == null || reason.isEmpty
             ? 'This $subject is blocked by admin review.'

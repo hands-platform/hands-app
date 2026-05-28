@@ -287,7 +287,7 @@ List<ProviderOnboardingLevelMilestone> providerLevelMilestonesFromSnapshot(
       level: 'LEVEL_4_TRUSTED',
       title: 'Level 4 - trusted badge',
       detail: currentLevel == 'LEVEL_4_TRUSTED'
-          ? 'HANDS admin has granted the trusted provider badge.'
+          ? 'HANDS admin has granted the trusted partner badge.'
           : 'Admin can grant this after identity, profile quality, and experience review.',
       complete: currentLevel == 'LEVEL_4_TRUSTED',
       current: currentLevel == 'LEVEL_4_TRUSTED',

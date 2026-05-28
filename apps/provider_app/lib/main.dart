@@ -3402,7 +3402,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Signed out and provider is offline.')),
+                        content: Text('Signed out and partner is offline.')),
                   );
                 }
               },

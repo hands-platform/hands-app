@@ -235,7 +235,7 @@ String providerDocumentTypeDescription(String type) {
     case 'CCCD_BACK':
       return 'Back side of CCCD/CMND. Avoid glare and cropped corners.';
     case 'SELFIE':
-      return 'Face photo taken by the provider. It must match the ID document.';
+      return 'Face photo taken by the partner. It must match the ID document.';
     case 'PROFILE_PHOTO':
       return 'Public profile photo used after admin review.';
     case 'WORK_PHOTO':
@@ -243,7 +243,7 @@ String providerDocumentTypeDescription(String type) {
     case 'BANK_QR':
       return 'Optional VietQR or banking QR image for payout review.';
     default:
-      return 'Supporting document for provider verification.';
+      return 'Supporting document for partner verification.';
   }
 }
 
