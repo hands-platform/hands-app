@@ -21,33 +21,49 @@ Local MVP auth uses `POST /auth/verify-otp` with dev OTP `123456`.
 
 - `GET /customer/me`
 - `PATCH /customer/me`
-- `GET /customer/providers/nearby`
-- `GET /customer/providers/:id`
+- `GET /customer/partners/nearby`
+- `GET /customer/partners/:id`
 - `POST /customer/bookings`
 - `GET /customer/bookings/:id`
 - `POST /customer/bookings/:id/cancel`
 - `POST /customer/bookings/:id/select-provider`
 - `POST /customer/reviews`
 
-## Provider
+Legacy customer aliases `/customer/providers/nearby` and `/customer/providers/:id` remain active for older app builds.
 
-- `GET /provider/me`
-- `PATCH /provider/me`
-- `POST /provider/online`
-- `POST /provider/offline`
-- `POST /provider/location`
-- `GET /provider/verification`
-- `POST /provider/verification/submit`
-- `GET /provider/bookings/open`
-- `POST /provider/bookings/:id/join`
-- `POST /provider/bookings/:id/accept`
-- `POST /provider/bookings/:id/reject`
-- `POST /provider/bookings/:id/arrived`
-- `POST /provider/bookings/:id/start`
-- `POST /provider/bookings/:id/complete`
-- `GET /provider/earnings`
-- `GET /provider/earnings/summary`
-- `GET /provider/earnings/payout-batches`
+## Partner
+
+- `GET /partner/me`
+- `PATCH /partner/me`
+- `PATCH /partner/me/profile`
+- `POST /partner/online`
+- `POST /partner/offline`
+- `POST /partner/location`
+- `POST /partner/device-session`
+- `GET /partner/services`
+- `GET /partner/services/groups`
+- `PATCH /partner/services/:serviceId`
+- `GET /partner/verification`
+- `POST /partner/verification/submit`
+- `GET /partner/onboarding`
+- `PATCH /partner/onboarding/basic-profile`
+- `POST /partner/onboarding/kyc/submit`
+- `POST /partner/onboarding/bank-accounts`
+- `POST /partner/onboarding/tax-profile`
+- `POST /partner/onboarding/agreements`
+- `GET /partner/bookings/open`
+- `GET /partner/bookings`
+- `POST /partner/bookings/:id/join`
+- `POST /partner/bookings/:id/accept`
+- `POST /partner/bookings/:id/reject`
+- `POST /partner/bookings/:id/arrived`
+- `POST /partner/bookings/:id/start`
+- `POST /partner/bookings/:id/complete`
+- `GET /partner/earnings`
+- `GET /partner/earnings/summary`
+- `GET /partner/earnings/payout-batches`
+
+Legacy `/provider/*` routes remain active for compatibility while mobile code migrates to partner naming.
 
 ## Chat
 
@@ -121,9 +137,9 @@ Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUND
 - When `providerId` is present, the booking is treated as a direct first-pick request, but the matching window still stays open for nearby backup partners.
 - A direct first-pick request waits 10 minutes by default.
 - Online partners within 10km of the booking location receive `booking.backup_available` notifications and can join before the customer selects the final partner.
-- `GET /provider/bookings/open` returns:
+- `GET /partner/bookings/open` returns:
   - direct requests targeted to the authenticated provider
   - open requests within 10km where the authenticated partner can join as backup
-- `POST /provider/bookings/:id/accept` confirms a direct request.
-- `POST /provider/bookings/:id/join` records a backup participant and stores the server-calculated distance snapshot.
-- `POST /provider/bookings/:id/start` creates the chat room when the provider starts the service flow.
+- `POST /partner/bookings/:id/accept` confirms a direct request.
+- `POST /partner/bookings/:id/join` records a backup participant and stores the server-calculated distance snapshot.
+- `POST /partner/bookings/:id/start` creates the chat room when the partner starts the service flow.

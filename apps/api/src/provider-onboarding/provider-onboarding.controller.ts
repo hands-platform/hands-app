@@ -21,13 +21,13 @@ import { ProviderOnboardingService } from './provider-onboarding.service';
 export class ProviderOnboardingController {
   constructor(private readonly onboarding: ProviderOnboardingService) {}
 
-  @Get('provider/onboarding')
+  @Get(['partner/onboarding', 'provider/onboarding'])
   @Roles(Role.PROVIDER)
   snapshot(@CurrentUser() user: AuthenticatedUser) {
     return this.onboarding.getSnapshot(user.id);
   }
 
-  @Patch('provider/onboarding/basic-profile')
+  @Patch(['partner/onboarding/basic-profile', 'provider/onboarding/basic-profile'])
   @Roles(Role.PROVIDER)
   updateBasicProfile(
     @CurrentUser() user: AuthenticatedUser,
@@ -52,7 +52,7 @@ export class ProviderOnboardingController {
     return this.onboarding.updateBasicProfile(user.id, body);
   }
 
-  @Post('provider/onboarding/kyc/submit')
+  @Post(['partner/onboarding/kyc/submit', 'provider/onboarding/kyc/submit'])
   @Roles(Role.PROVIDER)
   submitKyc(
     @CurrentUser() user: AuthenticatedUser,
@@ -65,7 +65,7 @@ export class ProviderOnboardingController {
     return this.onboarding.submitKyc(user.id, body);
   }
 
-  @Post('provider/onboarding/bank-accounts')
+  @Post(['partner/onboarding/bank-accounts', 'provider/onboarding/bank-accounts'])
   @Roles(Role.PROVIDER)
   createBankAccount(
     @CurrentUser() user: AuthenticatedUser,
@@ -81,7 +81,7 @@ export class ProviderOnboardingController {
     return this.onboarding.createBankAccount(user.id, body);
   }
 
-  @Post('provider/onboarding/tax-profile')
+  @Post(['partner/onboarding/tax-profile', 'provider/onboarding/tax-profile'])
   @Roles(Role.PROVIDER)
   upsertTaxProfile(
     @CurrentUser() user: AuthenticatedUser,
@@ -96,7 +96,7 @@ export class ProviderOnboardingController {
     return this.onboarding.upsertTaxProfile(user.id, body);
   }
 
-  @Post('provider/onboarding/agreements')
+  @Post(['partner/onboarding/agreements', 'provider/onboarding/agreements'])
   @Roles(Role.PROVIDER)
   acceptAgreement(
     @CurrentUser() user: AuthenticatedUser,

@@ -11,17 +11,17 @@ import { ProvidersService } from './providers.service';
 export class ProvidersController {
   constructor(private readonly providers: ProvidersService) {}
 
-  @Get('customer/providers/nearby')
+  @Get(['customer/partners/nearby', 'customer/providers/nearby'])
   nearby(@Query('lat') lat: string, @Query('lng') lng: string) {
     return this.providers.findNearby(Number(lat), Number(lng));
   }
 
-  @Get('customer/providers/:id')
+  @Get(['customer/partners/:id', 'customer/providers/:id'])
   detail(@Param('id') id: string) {
     return this.providers.getDetail(id);
   }
 
-  @Patch('provider/me/profile')
+  @Patch(['partner/me/profile', 'provider/me/profile'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   updateProviderProfile(
@@ -31,14 +31,14 @@ export class ProvidersController {
     return this.providers.updateProfile(user.id, body);
   }
 
-  @Post('provider/online')
+  @Post(['partner/online', 'provider/online'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   online(@CurrentUser() user: AuthenticatedUser) {
     return this.providers.setStatus(user.id, ProviderStatus.ONLINE_AVAILABLE);
   }
 
-  @Post('provider/device-session')
+  @Post(['partner/device-session', 'provider/device-session'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   recordDeviceSession(
@@ -49,35 +49,35 @@ export class ProvidersController {
     return this.providers.recordDeviceSession(user.id, body, request.ip);
   }
 
-  @Post('provider/offline')
+  @Post(['partner/offline', 'provider/offline'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   offline(@CurrentUser() user: AuthenticatedUser) {
     return this.providers.setStatus(user.id, ProviderStatus.OFFLINE);
   }
 
-  @Post('provider/location')
+  @Post(['partner/location', 'provider/location'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   updateLocation(@CurrentUser() user: AuthenticatedUser, @Body() body: { lat: number; lng: number }) {
     return this.providers.updateLocation(user.id, body);
   }
 
-  @Get('provider/services')
+  @Get(['partner/services', 'provider/services'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   services(@CurrentUser() user: AuthenticatedUser) {
     return this.providers.listServices(user.id);
   }
 
-  @Get('provider/services/groups')
+  @Get(['partner/services/groups', 'provider/services/groups'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   serviceGroups(@CurrentUser() user: AuthenticatedUser) {
     return this.providers.listServiceGroups(user.id);
   }
 
-  @Patch('provider/services/:serviceId')
+  @Patch(['partner/services/:serviceId', 'provider/services/:serviceId'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   updateServicePrice(
@@ -88,14 +88,14 @@ export class ProvidersController {
     return this.providers.updateServicePrice(user.id, serviceId, body);
   }
 
-  @Get('provider/verification')
+  @Get(['partner/verification', 'provider/verification'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   verification(@CurrentUser() user: AuthenticatedUser) {
     return this.providers.getVerification(user.id);
   }
 
-  @Post('provider/verification/submit')
+  @Post(['partner/verification/submit', 'provider/verification/submit'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   submitVerification(@CurrentUser() user: AuthenticatedUser, @Body() body: { fileIds?: string[] }) {

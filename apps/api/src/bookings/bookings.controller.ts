@@ -64,56 +64,56 @@ export class BookingsController {
     return this.bookings.selectProvider(bookingId, user.id, body.providerId);
   }
 
-  @Get('provider/bookings/open')
+  @Get(['partner/bookings/open', 'provider/bookings/open'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   getOpenBookings(@CurrentUser() user: AuthenticatedUser) {
     return this.bookings.getOpenBookings(user.id);
   }
 
-  @Get('provider/bookings')
+  @Get(['partner/bookings', 'provider/bookings'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   listProviderBookings(@CurrentUser() user: AuthenticatedUser) {
     return this.bookings.listProviderBookings(user.id);
   }
 
-  @Post('provider/bookings/:id/join')
+  @Post(['partner/bookings/:id/join', 'provider/bookings/:id/join'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   join(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
     return this.bookings.joinBooking(bookingId, user.id);
   }
 
-  @Post('provider/bookings/:id/accept')
+  @Post(['partner/bookings/:id/accept', 'provider/bookings/:id/accept'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   accept(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
     return this.bookings.updateParticipant(bookingId, user.id, ParticipantStatus.ACCEPTED);
   }
 
-  @Post('provider/bookings/:id/reject')
+  @Post(['partner/bookings/:id/reject', 'provider/bookings/:id/reject'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   reject(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
     return this.bookings.updateParticipant(bookingId, user.id, ParticipantStatus.REJECTED);
   }
 
-  @Post('provider/bookings/:id/arrived')
+  @Post(['partner/bookings/:id/arrived', 'provider/bookings/:id/arrived'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   arrived(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
     return this.bookings.updateProviderBookingStatus(bookingId, user.id, BookingStatus.ARRIVED);
   }
 
-  @Post('provider/bookings/:id/start')
+  @Post(['partner/bookings/:id/start', 'provider/bookings/:id/start'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   start(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {
     return this.bookings.updateProviderBookingStatus(bookingId, user.id, BookingStatus.IN_SERVICE);
   }
 
-  @Post('provider/bookings/:id/complete')
+  @Post(['partner/bookings/:id/complete', 'provider/bookings/:id/complete'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   complete(@CurrentUser() user: AuthenticatedUser, @Param('id') bookingId: string) {

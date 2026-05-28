@@ -768,6 +768,10 @@ if (
     `Provider grouped service pricing list is incomplete: ${JSON.stringify(providerServiceGroup)}`,
   );
 }
+const partnerAliasServiceGroups = await getJson('/partner/services/groups', providerAuth.accessToken);
+if (!partnerAliasServiceGroups.some((group) => group.options?.some((option) => option.id === service.id))) {
+  throw new Error(`Partner alias service groups did not return the expected service.`);
+}
 await expectRequestFailure(
   'Provider price below admin minimum is rejected',
   () =>
@@ -1229,9 +1233,16 @@ const nearbyProviders = await getJson(
   '/customer/providers/nearby?lat=10.7769&lng=106.7009',
   customerAuth.accessToken,
 );
+const nearbyPartners = await getJson(
+  '/customer/partners/nearby?lat=10.7769&lng=106.7009',
+  customerAuth.accessToken,
+);
 const nearbyProvider = nearbyProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
 if (!nearbyProvider?.currentLocationUpdatedAt || nearbyProvider.isRecentLocation !== true) {
   throw new Error(`Nearby provider payload is missing freshness metadata: ${JSON.stringify(nearbyProvider)}`);
+}
+if (!nearbyPartners.some((item) => item.id === providerAuth.user.providerProfile.id)) {
+  throw new Error(`Customer partner alias nearby search did not include the expected partner.`);
 }
 if (
   !nearbyProvider.profileImageUrl ||
@@ -1244,6 +1255,10 @@ const customerProviderDetail = await getJson(
   `/customer/providers/${providerAuth.user.providerProfile.id}`,
   customerAuth.accessToken,
 );
+const customerPartnerDetail = await getJson(
+  `/customer/partners/${providerAuth.user.providerProfile.id}`,
+  customerAuth.accessToken,
+);
 if (
   !customerProviderDetail.profileImageUrl ||
   !Array.isArray(customerProviderDetail.galleryImageUrls) ||
@@ -1252,6 +1267,9 @@ if (
   throw new Error(
     `Customer provider detail payload is missing public media: ${JSON.stringify(customerProviderDetail)}`,
   );
+}
+if (customerPartnerDetail.id !== customerProviderDetail.id) {
+  throw new Error(`Customer partner alias detail returned a different partner.`);
 }
 
 await expectRequestFailure(
@@ -2054,7 +2072,20 @@ const matched = await postJson(`/customer/bookings/${booking.id}/select-provider
 
 const customerBookings = await getJson('/customer/bookings', customerAuth.accessToken);
 const providerBookings = await getJson('/provider/bookings', providerAuth.accessToken);
+const partnerAliasMe = await getJson('/partner/me', providerAuth.accessToken);
+const partnerAliasBookings = await getJson('/partner/bookings', providerAuth.accessToken);
+const partnerAliasOnboarding = await getJson('/partner/onboarding', providerAuth.accessToken);
 const chatRoomId = matched.booking.chatRoom.id;
+
+if (partnerAliasMe.id !== providerAuth.user.id) {
+  throw new Error(`Partner alias /partner/me returned the wrong user: ${JSON.stringify(partnerAliasMe)}`);
+}
+if (!partnerAliasBookings.some((item) => item.id === booking.id)) {
+  throw new Error(`Partner alias bookings did not include the matched booking.`);
+}
+if (partnerAliasOnboarding.providerProfileId !== providerAuth.user.providerProfile.id) {
+  throw new Error(`Partner alias onboarding snapshot is incomplete.`);
+}
 
 const chatMessage = await postJson(`/chat/rooms/${chatRoomId}/messages`, customerAuth.accessToken, {
   body: 'Hello, see you soon.',
@@ -2087,6 +2118,7 @@ if (
 
 const providerEarnings = await getJson('/provider/earnings', providerAuth.accessToken);
 const providerEarningsSummary = await getJson('/provider/earnings/summary', providerAuth.accessToken);
+const partnerAliasEarningsSummary = await getJson('/partner/earnings/summary', providerAuth.accessToken);
 const completedEarning = providerEarnings.find((earning) => earning.bookingId === booking.id);
 if (
   !completedEarning ||
@@ -2101,6 +2133,9 @@ if (
 }
 if (providerEarningsSummary.withholdingAmount <= 0) {
   throw new Error(`Earnings summary did not include withholding: ${JSON.stringify(providerEarningsSummary)}`);
+}
+if (partnerAliasEarningsSummary.providerProfileId !== providerEarningsSummary.providerProfileId) {
+  throw new Error(`Partner alias earnings summary returned a different profile.`);
 }
 const adminCompletedEarning = (await getJson('/admin/earnings', adminAuth.accessToken)).find(
   (earning) => earning.bookingId === booking.id,

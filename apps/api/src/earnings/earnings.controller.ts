@@ -7,7 +7,7 @@ import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { EarningsService } from './earnings.service';
 
-@Controller('provider/earnings')
+@Controller(['provider/earnings', 'partner/earnings'])
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.PROVIDER)
 export class EarningsController {

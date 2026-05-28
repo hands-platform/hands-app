@@ -45,14 +45,14 @@ export class UsersController {
     return this.users.updateMe(user.id, body);
   }
 
-  @Get('provider/me')
+  @Get(['partner/me', 'provider/me'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   getProviderMe(@CurrentUser() user: AuthenticatedUser) {
     return this.users.getMe(user.id);
   }
 
-  @Patch('provider/me')
+  @Patch(['partner/me', 'provider/me'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
   updateProviderMe(
