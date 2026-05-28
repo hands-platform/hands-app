@@ -56,6 +56,52 @@ export type AdminAppSession = {
   user?: AdminUser | null;
 };
 
+export type AdminCustomer = {
+  id: string;
+  userId: string;
+  addresses?: unknown;
+  user?: {
+    id?: string;
+    phone?: string;
+    email?: string | null;
+    fullName?: string | null;
+    roles?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+    appSessions?: AdminAppSession[];
+    pushDevices?: Array<{
+      id: string;
+      platform: string;
+      enabled: boolean;
+      token: string;
+      createdAt?: string;
+      updatedAt?: string;
+      deliveries?: Array<{
+        id: string;
+        status: string;
+        attemptedAt: string;
+        provider: string;
+        response?: unknown;
+      }>;
+    }>;
+    notifications?: AdminNotification[];
+  };
+  selectedLocations?: Array<{
+    id: string;
+    latitude: string | number;
+    longitude: string | number;
+    addressText: string;
+    createdAt: string;
+  }>;
+  bookings?: AdminBooking[];
+  reviews?: AdminReview[];
+  auditLogs?: AdminAuditLog[];
+};
+
+export type AdminCustomerDetail = AdminCustomer & {
+  bookings?: AdminBookingDetail[];
+};
+
 export type AdminProvider = {
   id: string;
   displayName: string;
@@ -399,6 +445,7 @@ export type AdminBooking = {
     providerRef?: string | null;
     refunds?: Array<{ id: string; amount: number; status: string; createdAt?: string }>;
   } | null;
+  refunds?: AdminRefund[];
   earning?: AdminEarning | null;
   customerProfile?: { user?: { fullName?: string | null; phone?: string } };
   selectedProvider?: {

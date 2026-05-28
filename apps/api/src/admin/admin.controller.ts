@@ -30,6 +30,16 @@ export class AdminController {
     return this.admin.listUsers();
   }
 
+  @Get('customers')
+  customers() {
+    return this.admin.listCustomers();
+  }
+
+  @Get('customers/:id')
+  customerDetail(@Param('id') customerProfileId: string) {
+    return this.admin.getCustomerDetail(customerProfileId);
+  }
+
   @Get('app-sessions')
   appSessions() {
     return this.admin.listAppSessions();

@@ -49,6 +49,18 @@ const pages = [
   { path: '/bookings?view=expired', markers: ['Booking Monitor', 'Expired'] },
   { path: '/bookings?view=no-show', markers: ['Booking Monitor', 'No-show'] },
   {
+    path: '/customers',
+    markers: [
+      'Customer Management',
+      'Customer command board',
+      'All customers',
+      'Last booking',
+      'Wallet',
+      'Saved addresses',
+      'Reachability',
+    ],
+  },
+  {
     path: '/operations-policy',
     markers: [
       'Operations Policy',
@@ -201,6 +213,27 @@ if (providerLinkMatch) {
     }
     console.log(`PASS ${providerPath}`);
   }
+}
+
+const customersBody = await fetchPage('/customers');
+const customerLinkMatch = customersBody.match(/href="\/customers\/([^"]+)"/);
+if (customerLinkMatch) {
+  const customerPath = `/customers/${customerLinkMatch[1]}`;
+  const customerBody = await fetchPage(customerPath);
+  const customerMarkers = [
+    'Customer detail',
+    'Customer information',
+    'Customer wallet',
+    'Saved addresses',
+    'Booking and cancellation history',
+    'Chat history',
+    'Recent customer notifications',
+  ];
+  const missing = customerMarkers.filter((marker) => !customerBody.includes(marker));
+  if (missing.length > 0) {
+    throw new Error(`${customerPath} is missing expected markers: ${missing.join(', ')}`);
+  }
+  console.log(`PASS ${customerPath}`);
 }
 
 const bookingsBody = await fetchPage('/bookings');

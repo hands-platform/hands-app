@@ -69,6 +69,171 @@ export class AdminService {
     });
   }
 
+  listCustomers() {
+    return this.prisma.customerProfile.findMany({
+      orderBy: { id: 'desc' },
+      take: 500,
+      include: {
+        user: {
+          include: {
+            appSessions: {
+              orderBy: { lastSeenAt: 'desc' },
+              take: 3,
+            },
+            pushDevices: {
+              orderBy: { updatedAt: 'desc' },
+              take: 3,
+              include: {
+                deliveries: {
+                  orderBy: { attemptedAt: 'desc' },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+        selectedLocations: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        },
+        bookings: {
+          orderBy: { createdAt: 'desc' },
+          take: 25,
+          include: {
+            services: { include: { service: true } },
+            payment: { include: { refunds: true } },
+            refunds: true,
+            review: true,
+            preferredProvider: { include: { user: true } },
+            selectedProvider: { include: { user: true } },
+            chatRoom: {
+              include: {
+                messages: {
+                  orderBy: { createdAt: 'desc' },
+                  take: 3,
+                  include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
+                },
+              },
+            },
+          },
+        },
+        reviews: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          include: {
+            providerProfile: { include: { user: true } },
+            booking: { include: { services: { include: { service: true } } } },
+          },
+        },
+      },
+    });
+  }
+
+  async getCustomerDetail(customerProfileId: string) {
+    const customer = await this.prisma.customerProfile.findUnique({
+      where: { id: customerProfileId },
+      include: {
+        user: {
+          include: {
+            appSessions: {
+              orderBy: { lastSeenAt: 'desc' },
+              take: 20,
+            },
+            pushDevices: {
+              orderBy: { updatedAt: 'desc' },
+              include: {
+                deliveries: {
+                  orderBy: { attemptedAt: 'desc' },
+                  take: 5,
+                },
+              },
+            },
+            notifications: {
+              orderBy: { createdAt: 'desc' },
+              take: 50,
+              include: {
+                deliveries: {
+                  orderBy: { attemptedAt: 'desc' },
+                  take: 5,
+                },
+              },
+            },
+          },
+        },
+        selectedLocations: {
+          orderBy: { createdAt: 'desc' },
+          take: 25,
+        },
+        bookings: {
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+          include: {
+            services: { include: { service: true } },
+            payment: { include: { refunds: true } },
+            refunds: true,
+            review: true,
+            earning: {
+              include: {
+                platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+                taxLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
+                walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+              },
+            },
+            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+            preferredProvider: { include: { user: true } },
+            selectedProvider: { include: { user: true } },
+            participants: {
+              orderBy: { joinedAt: 'asc' },
+              include: { providerProfile: { include: { user: true } } },
+            },
+            opsTasks: {
+              orderBy: { updatedAt: 'desc' },
+              include: { actor: { select: { id: true, phone: true, fullName: true } } },
+            },
+            chatRoom: {
+              include: {
+                messages: {
+                  orderBy: { createdAt: 'asc' },
+                  take: 100,
+                  include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
+                },
+              },
+            },
+          },
+        },
+        reviews: {
+          orderBy: { createdAt: 'desc' },
+          take: 25,
+          include: {
+            providerProfile: { include: { user: true } },
+            booking: { include: { services: { include: { service: true } } } },
+          },
+        },
+      },
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    const auditLogs = await this.prisma.adminAuditLog.findMany({
+      where: {
+        OR: [
+          { target: `customer:${customerProfileId}` },
+          { target: `user:${customer.userId}` },
+          { metadata: { path: ['customerProfileId'], equals: customerProfileId } },
+          { metadata: { path: ['customerUserId'], equals: customer.userId } },
+          { metadata: { path: ['userId'], equals: customer.userId } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+    });
+
+    return { ...customer, auditLogs };
+  }
+
   listAppSessions() {
     return this.prisma.appSession.findMany({
       orderBy: { lastSeenAt: 'desc' },

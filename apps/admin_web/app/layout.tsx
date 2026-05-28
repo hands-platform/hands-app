@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 const links = [
   ['/', 'Dashboard'],
+  ['/customers', 'Customers'],
   ['/partners', 'Partners'],
   ['/partner-risk', 'Partner Risk'],
   ['/app-sessions', 'App Sessions'],
