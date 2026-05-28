@@ -64,6 +64,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, backupSupply);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
   const operationsTrace = bookingOperationsTrace(booking, booking.auditLogs ?? []);
+  const bookingActivityRecords = buildBookingActivityRecords(booking, rawNotifications);
 
   return (
     <>
@@ -111,10 +112,55 @@ export default async function BookingDetailPage({ params }: PageProps) {
           value={providerLocationMetricValue(booking)}
           helper={providerLocationMetricHelper(booking)}
         />
-        <MetricCard label="Risk" value={riskSummary.label} helper={riskSummary.helper} />
+        <MetricCard label="Checks" value={riskSummary.label} helper={riskSummary.helper} />
       </section>
 
-      <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking full record index</h2>
+            <p className="muted">
+              One-booking record map for operators. This is factual tracking only: customer, partner,
+              matching, chat, payment, fee, tax, wallet, alerts, location, and audit history.
+            </p>
+          </div>
+          <span className="pill pill-info">{bookingActivityRecords.length} event(s)</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <a href="#customer">
+            <span>Customer</span>
+            <strong>{booking.customerProfile?.user?.phone ?? 'No phone'}</strong>
+            <small>{booking.customerProfile?.user?.fullName ?? 'Customer profile'}</small>
+          </a>
+          <a href="#participants">
+            <span>Partners</span>
+            <strong>{booking.participants?.length ?? 0}</strong>
+            <small>Preferred, final, and backup shortlist.</small>
+          </a>
+          <a href="#chat">
+            <span>Chat archive</span>
+            <strong>{messages.length}</strong>
+            <small>{booking.chatRoom ? `Room ${shortId(booking.chatRoom.id)}` : 'No chat room yet'}</small>
+          </a>
+          <a href="#payment">
+            <span>Payment and wallet</span>
+            <strong>{booking.payment?.status ?? 'NONE'}</strong>
+            <small>{money(booking.payment?.amount, booking.payment?.currency)}</small>
+          </a>
+          <a href="#alerts">
+            <span>Alerts</span>
+            <strong>{notificationTrace.rows.length}</strong>
+            <small>{notificationTrace.backupBatches.length} backup batch(es).</small>
+          </a>
+          <a href="#booking-activity">
+            <span>Activity timeline</span>
+            <strong>{bookingActivityRecords.length}</strong>
+            <small>Date-ordered operational history.</small>
+          </a>
+        </div>
+      </section>
+
+      <section className="card ops-command-center" id="booking-ops" style={{ marginBottom: 16 }}>
         <div>
           <h2>Operations command center</h2>
           <p className="muted">{primaryOpsInstruction(booking)}</p>
@@ -175,7 +221,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="alerts" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Booking stage snapshot</h2>
@@ -215,7 +261,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="audit" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Customer wait and matching decision</h2>
@@ -562,8 +608,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <section className="card risk-watch" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Risk watch</h2>
-            <p className="muted">Automatic checks for bookings that need operator attention.</p>
+            <h2>Attention checks</h2>
+            <p className="muted">Automatic operational checks for bookings that need operator attention.</p>
           </div>
           <span className={`pill ${riskSummary.tone}`}>{riskSummary.label}</span>
         </div>
@@ -574,11 +620,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
             ))}
           </div>
         ) : (
-          <p className="muted">No active risk flags. Continue normal monitoring from the timeline.</p>
+          <p className="muted">No active attention checks. Continue normal monitoring from the timeline.</p>
         )}
       </section>
 
-      <section className="card risk-watch" style={{ marginBottom: 16 }}>
+      <section className="card risk-watch" id="finance" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Finance command center</h2>
@@ -814,7 +860,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="detail-grid">
-        <div className="card">
+        <div className="card" id="flow">
           <h2>Operations timeline</h2>
           <div className="timeline">
             {flowStages(booking).map((stage) => (
@@ -840,7 +886,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Expires" value={formatDate(booking.expiresAt)} />
         </div>
 
-        <div className="card">
+        <div className="card" id="service">
           <h2>Service</h2>
           <InfoRow label="Option" value={bookingServiceOptionLabel(booking)} />
           <InfoRow label="Name" value={service?.service?.name ?? 'Service pending'} />
@@ -859,7 +905,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Updated" value={formatDate(booking.updatedAt)} />
         </div>
 
-        <div className="card" id="chat">
+        <div className="card" id="handoff">
           <h2>Partner handoff</h2>
           <InfoRow label="Preferred" value={providerName(booking.preferredProvider)} />
           <InfoRow label="Final" value={providerName(finalProvider)} />
@@ -911,7 +957,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="card">
+        <div className="card" id="payment">
           <h2>Payment and refund</h2>
           <InfoRow label="Payment id" value={booking.payment?.id ?? 'No payment'} />
           <InfoRow label="Method" value={booking.payment?.method ?? 'NONE'} />
@@ -955,7 +1001,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Partner net" value={financeTrace.providerNet} />
         </div>
 
-        <div className="card">
+        <div className="card" id="chat">
           <h2>Chat transcript</h2>
           <div className="stack">
             {messages.slice(-8).map((message) => (
@@ -965,7 +1011,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        <div className="card">
+        <div className="card" id="location">
           <h2>Location trail</h2>
           <div className="route-mini">
             <span className="route-dot route-customer">Customer</span>
@@ -985,6 +1031,43 @@ export default async function BookingDetailPage({ params }: PageProps) {
               <p className="muted">No partner location snapshots linked to this booking yet.</p>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="card" id="booking-activity" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking chronological activity</h2>
+            <p className="muted">
+              Date-sorted factual event trail for this booking: booking status, partner participation,
+              chat messages, payment, refund, earning, platform fee, tax, wallet, location, notification,
+              review, and operator audit records.
+            </p>
+          </div>
+          <span className="pill pill-info">{bookingActivityRecords.length} event(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {bookingActivityRecords.length ? (
+            bookingActivityRecords.slice(0, 60).map((record) => (
+              <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
+                <span>{record.type}</span>
+                <div>
+                  <strong>{record.title}</strong>
+                  <p className="muted">{record.detail}</p>
+                </div>
+                <small>{formatDate(record.at)}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No booking activity has been recorded yet</strong>
+                <p className="muted">Matching, payment, chat, location, and audit events will appear here.</p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
         </div>
       </section>
     </>
@@ -1110,6 +1193,221 @@ function CashDebtSettlementForm({ booking }: { booking: AdminBookingDetail }) {
   );
 }
 
+function buildBookingActivityRecords(booking: AdminBookingDetail, notifications: AdminNotification[]) {
+  const records: Array<{ id: string; type: string; at: string; title: string; detail: string }> = [];
+
+  records.push({
+    id: `${booking.id}-created`,
+    type: 'BOOKING',
+    at: booking.createdAt ?? booking.scheduledStartAt ?? '',
+    title: `Booking created as ${booking.status}`,
+    detail: `${bookingServiceOptionLabel(booking)} / customer ${
+      booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer'
+    } / ${addressLabel(booking.address)}`,
+  });
+
+  if (booking.openedAt) {
+    records.push({
+      id: `${booking.id}-opened`,
+      type: 'MATCHING',
+      at: booking.openedAt,
+      title: 'Matching opened',
+      detail: `Preferred partner ${providerName(booking.preferredProvider)} / expires ${formatDate(booking.expiresAt)}`,
+    });
+  }
+
+  if (booking.scheduledStartAt) {
+    records.push({
+      id: `${booking.id}-scheduled`,
+      type: 'SCHEDULE',
+      at: booking.scheduledStartAt,
+      title: 'Scheduled service time',
+      detail: `${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`,
+    });
+  }
+
+  for (const participant of booking.participants ?? []) {
+    records.push({
+      id: `${participant.id}-joined`,
+      type: 'PARTNER',
+      at: participant.joinedAt ?? booking.createdAt ?? '',
+      title: `${providerName(participant.providerProfile)} joined shortlist`,
+      detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
+        participant.providerStatusAtJoin ?? 'status unknown'
+      }`,
+    });
+    if (participant.respondedAt) {
+      records.push({
+        id: `${participant.id}-responded`,
+        type: 'PARTNER',
+        at: participant.respondedAt,
+        title: `${providerName(participant.providerProfile)} responded`,
+        detail: `${participant.status} / customer can select from accepted partners.`,
+      });
+    }
+  }
+
+  if (booking.selectedProvider) {
+    records.push({
+      id: `${booking.id}-selected-partner`,
+      type: 'MATCHED',
+      at: booking.updatedAt ?? booking.openedAt ?? booking.createdAt ?? '',
+      title: 'Final partner selected',
+      detail: `${providerName(booking.selectedProvider)} / chat ${booking.chatRoom ? 'created' : 'not created yet'}`,
+    });
+  }
+
+  if (booking.chatRoom) {
+    records.push({
+      id: `${booking.chatRoom.id}-room`,
+      type: 'CHAT',
+      at: booking.chatRoom.messages?.[0]?.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+      title: `Chat room ${shortId(booking.chatRoom.id)} available`,
+      detail: `${booking.chatRoom.messages?.length ?? 0} message(s) archived for admin.`,
+    });
+  }
+
+  for (const message of booking.chatRoom?.messages ?? []) {
+    records.push({
+      id: message.id,
+      type: 'CHAT',
+      at: message.createdAt,
+      title: `Message from ${message.sender?.fullName ?? message.sender?.phone ?? message.sender?.roles?.join(', ') ?? 'Unknown sender'}`,
+      detail: compactActivityText(message.body, 110),
+    });
+  }
+
+  if (booking.payment) {
+    records.push({
+      id: booking.payment.id ?? `${booking.id}-payment`,
+      type: 'PAYMENT',
+      at: booking.updatedAt ?? booking.createdAt ?? '',
+      title: `${booking.payment.status} ${booking.payment.method} payment`,
+      detail: `${money(booking.payment.amount, booking.payment.currency)} / ref ${
+        booking.payment.providerRef ?? 'no gateway ref'
+      }`,
+    });
+  }
+
+  const refunds = [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])];
+  for (const refund of refunds) {
+    const reason = 'reason' in refund ? refund.reason : undefined;
+    records.push({
+      id: refund.id,
+      type: 'REFUND',
+      at: refund.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+      title: `${refund.status} refund`,
+      detail: `${money(Number(refund.amount ?? 0), booking.payment?.currency ?? 'VND')}${reason ? ` / ${reason}` : ''}`,
+    });
+  }
+
+  if (booking.earning) {
+    records.push({
+      id: booking.earning.id,
+      type: 'EARNING',
+      at: booking.earning.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+      title: `${booking.earning.status} partner earning`,
+      detail: `Gross ${money(booking.earning.grossAmount, booking.earning.currency)} / fee ${money(
+        booking.earning.platformFee,
+        booking.earning.currency,
+      )} / net ${money(booking.earning.netAmount, booking.earning.currency)}`,
+    });
+  }
+
+  for (const log of [...(booking.platformFeeLogs ?? []), ...(booking.earning?.platformFeeLogs ?? [])]) {
+    records.push({
+      id: log.id,
+      type: 'FEE',
+      at: log.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+      title: 'Platform fee calculated',
+      detail: `${money(log.platformFeeAmount, log.currency)} from ${money(log.grossAmount, log.currency)}`,
+    });
+  }
+
+  for (const log of [...(booking.taxLogs ?? []), ...(booking.earning?.taxLogs ?? [])]) {
+    records.push({
+      id: log.id,
+      type: 'TAX',
+      at: log.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+      title: 'Withholding tax calculated',
+      detail: `${money(log.withholdingAmount, log.currency)} from taxable ${money(log.taxableAmount, log.currency)}`,
+    });
+  }
+
+  for (const entry of [...(booking.walletLedgerEntries ?? []), ...(booking.earning?.walletLedgerEntries ?? [])]) {
+    records.push({
+      id: entry.id,
+      type: 'WALLET',
+      at: entry.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+      title: `${entry.type} wallet ledger`,
+      detail: `${money(entry.amount, entry.currency)} / ${entry.notes ?? entry.reference ?? entry.sourceKey}`,
+    });
+  }
+
+  for (const snapshot of locationTrail(booking)) {
+    records.push({
+      id: snapshot.id,
+      type: 'LOCATION',
+      at: snapshot.recordedAt,
+      title: 'Partner location snapshot',
+      detail: coordinateLabel(snapshot.lat, snapshot.lng),
+    });
+  }
+
+  for (const notification of notifications.filter((item) => notificationDataBookingId(item) === booking.id)) {
+    records.push({
+      id: notification.id,
+      type: 'ALERT',
+      at: notification.createdAt,
+      title: humanizeNotificationType(notification.type),
+      detail: `${notification.title} / ${notification.deliveries?.[0]?.status ?? 'No delivery'} / ${
+        notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'
+      }`,
+    });
+  }
+
+  for (const task of booking.opsTasks ?? []) {
+    records.push({
+      id: task.id,
+      type: 'OPS',
+      at: task.updatedAt,
+      title: `${task.status} ${task.type}`,
+      detail: `${task.note ?? 'No note'} / actor ${task.actor?.fullName ?? task.actor?.phone ?? 'System'}`,
+    });
+  }
+
+  if (booking.review) {
+    records.push({
+      id: booking.review.id,
+      type: 'REVIEW',
+      at: booking.review.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+      title: `Customer review ${booking.review.rating}/5`,
+      detail: booking.review.comment ? compactActivityText(booking.review.comment, 110) : 'No comment',
+    });
+  }
+
+  for (const log of booking.auditLogs ?? []) {
+    records.push({
+      id: log.id,
+      type: 'AUDIT',
+      at: log.createdAt,
+      title: humanizeAuditAction(log.action),
+      detail: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${auditMetadataSummary(log.metadata) || log.target}`,
+    });
+  }
+
+  const unique = new Map<string, { id: string; type: string; at: string; title: string; detail: string }>();
+  for (const record of records.filter((item) => Boolean(item.at))) {
+    unique.set(`${record.type}:${record.id}:${record.at}`, record);
+  }
+
+  return [...unique.values()].sort((left, right) => safeTime(right.at) - safeTime(left.at));
+}
+
+function compactActivityText(value: string, maxLength: number) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
+
 type RiskFlag = {
   severity: 'high' | 'medium' | 'low';
   title: string;
@@ -1185,7 +1483,7 @@ function opsBadges(booking: AdminBookingDetail) {
     badges.push({ label: 'Expired', tone: 'pill-warn' });
   }
   if (flags.some((flag) => flag.severity === 'high')) {
-    badges.push({ label: 'High risk', tone: 'pill-danger' });
+    badges.push({ label: 'High attention', tone: 'pill-danger' });
   } else if (flags.some((flag) => flag.severity === 'medium')) {
     badges.push({ label: 'Needs watch', tone: 'pill-warn' });
   }
@@ -1392,7 +1690,7 @@ function riskLevel(flags: RiskFlag[]) {
   if (flags.some((flag) => flag.severity === 'low')) {
     return { label: 'Low', helper: `${flags.length} low-priority flag(s)`, tone: 'pill-info' };
   }
-  return { label: 'Clear', helper: 'No active risk flags', tone: 'pill-success' };
+  return { label: 'Clear', helper: 'No active attention checks', tone: 'pill-success' };
 }
 
 function riskToneClass(severity: RiskFlag['severity']) {
@@ -2346,7 +2644,7 @@ function bookingBackupPartnerSupply(
     excludedGroups,
     candidateCommand,
     eligibleCount,
-    decisionStatus: hasCustomerPin ? (eligibleCount ? 'Supply available' : 'Supply risk') : 'Missing pin',
+    decisionStatus: hasCustomerPin ? (eligibleCount ? 'Supply available' : 'Supply low') : 'Missing pin',
     decisionTone: hasCustomerPin ? (eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
     decisionTitle: hasCustomerPin
       ? eligibleCount
@@ -2652,7 +2950,7 @@ function bookingCustomerWaitPanel(
     },
     {
       title: 'Nearby partner supply',
-      status: backupSupply.eligibleCount ? 'Supply ready' : customerPinReady ? 'Supply risk' : 'No pin',
+      status: backupSupply.eligibleCount ? 'Supply ready' : customerPinReady ? 'Supply low' : 'No pin',
       detail: backupSupply.decisionDetail,
       action: customerPinReady
         ? `${backupSupply.eligibleCount} eligible, ${rejectedParticipants.length} rejected, ${acceptedParticipants.length} accepted.`

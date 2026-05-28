@@ -251,12 +251,15 @@ if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
   const bookingBody = await fetchPage(bookingPath);
     const bookingMarkers = [
+      'Booking full record index',
       'Booking stage snapshot',
       'Applied operations policy',
       'Dispatch candidate decision matrix',
       'Excluded partner groups',
       'Backup partner supply for this booking',
       'No-show alerts',
+      'Attention checks',
+      'Booking chronological activity',
     ];
   const missing = bookingMarkers.filter((marker) => !bookingBody.includes(marker));
   if (missing.length > 0) {
