@@ -95,7 +95,7 @@ export default async function CashSettlementsPage() {
             </p>
           </div>
           <Link className="text-link" href="/partner-risk">
-            Partner risk
+            Partner controls
           </Link>
         </div>
         {providers.length ? (

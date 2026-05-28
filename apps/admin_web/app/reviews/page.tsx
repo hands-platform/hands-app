@@ -43,8 +43,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           <div>
             <h2>Review command board</h2>
             <p className="muted">
-              Customer trust, partner coaching, and public review visibility are handled here before
-              feedback becomes an operational pattern.
+              Customer trust, partner coaching, and public review visibility are handled here before feedback
+              becomes an operational pattern.
             </p>
           </div>
           <span
@@ -258,7 +258,8 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
     },
     {
       title: 'Low-rating recovery',
-      detail: 'Low scores are early warnings for refunds, partner coaching, or service mismatch.',
+      detail:
+        'Low-rating feedback is a service recovery queue for refunds, partner support, or service mismatch.',
       status: 'Rating <= 2',
       operatorAction: 'Check booking context, customer notes, and partner repetition.',
       href: '/reviews?review=low-rating',
@@ -397,7 +398,7 @@ function statusMeaning(status: string) {
 
 function providerReviewHint(review: AdminReview) {
   if (review.rating <= 2) {
-    return 'Low-score feedback may need service recovery follow-up';
+    return 'Low-rating feedback may need service recovery follow-up';
   }
   if (review.tipAmount > 0) {
     return 'Guest left a tip, which often signals a strong experience';
@@ -447,7 +448,7 @@ function opsSignal(review: AdminReview) {
     return 'Already hidden';
   }
   if (review.rating <= 2) {
-    return 'Low-score follow-up';
+    return 'Low-rating follow-up';
   }
   if (review.tipAmount > 0) {
     return 'High-satisfaction';

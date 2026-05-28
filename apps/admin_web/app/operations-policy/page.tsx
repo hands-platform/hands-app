@@ -191,7 +191,7 @@ export default async function OperationsPolicyPage({
             </p>
           </div>
           <span className={`pill ${acceptanceMatrix.blockingCount ? 'pill-warn' : 'pill-success'}`}>
-            {acceptanceMatrix.blockingCount} risk choice(s)
+            {acceptanceMatrix.blockingCount} control choice(s)
           </span>
         </div>
         <div className="service-trace-summary" style={{ marginTop: 12 }}>
@@ -242,8 +242,8 @@ export default async function OperationsPolicyPage({
             <h2>Policy sensitivity preview</h2>
             <p className="muted">
               Before changing radius or location freshness, compare how many partners would remain usable
-              around the latest customer coordinate. This keeps policy choices tied to real supply instead
-              of guesswork.
+              around the latest customer coordinate. This keeps policy choices tied to real supply instead of
+              guesswork.
             </p>
           </div>
           <span className="pill pill-info">{supplySensitivity.currentPolicyLabel}</span>
@@ -262,7 +262,7 @@ export default async function OperationsPolicyPage({
             <h3>Backup radius sensitivity</h3>
             <p className="muted">
               Reference point: {supplySensitivity.referenceLabel}. Hard blockers include identity, bank,
-              cash-debt, and account risk.
+              cash-debt, and account controls.
             </p>
             <table className="table service-trace">
               <thead>
@@ -325,8 +325,8 @@ export default async function OperationsPolicyPage({
           <div>
             <h2>Matching stage impact preview</h2>
             <p className="muted">
-              Estimates how current open bookings would move across Stage 1/2/3/4 if the response window,
-              10km radius, or location freshness policy changed. This is a planning preview; saved booking
+              Estimates how current open bookings would move across Stage 1/2/3/4 if the response window, 10km
+              radius, or location freshness policy changed. This is a planning preview; saved booking
               snapshots still protect live requests.
             </p>
           </div>
@@ -378,7 +378,7 @@ export default async function OperationsPolicyPage({
         <div className="ops-task-note" style={{ marginTop: 14 }}>
           <strong>How to use this preview</strong>
           <p className="muted">
-            If a candidate value increases Stage 2 backup count without increasing stale/no-supply risk, it
+            If a candidate value increases Stage 2 backup count without increasing stale/no-supply checks, it
             may reduce customer waiting anxiety. If it increases overdue or no-supply count, improve partner
             location freshness, push delivery, or city supply before changing policy.
           </p>
@@ -390,8 +390,8 @@ export default async function OperationsPolicyPage({
           <div>
             <h2>Policy outcome effect</h2>
             <p className="muted">
-              Groups real bookings by the policy snapshot saved at booking open. Use this before changing
-              the 10 minute response window, 10km backup radius, invite cap, or backup opening mode.
+              Groups real bookings by the policy snapshot saved at booking open. Use this before changing the
+              10 minute response window, 10km backup radius, invite cap, or backup opening mode.
             </p>
           </div>
           <span className={`pill ${policyEffectAnalysis.sampleCount ? 'pill-info' : 'pill-warn'}`}>
@@ -415,7 +415,7 @@ export default async function OperationsPolicyPage({
                 <th>Sample</th>
                 <th>Matched / completed</th>
                 <th>Backup supply</th>
-                <th>Risk</th>
+                <th>Check</th>
                 <th>Operator read</th>
               </tr>
             </thead>
@@ -474,8 +474,8 @@ export default async function OperationsPolicyPage({
           <div>
             <h2>Policy enforcement trace</h2>
             <p className="muted">
-              Shows where each operating decision is enforced today, so operators know whether a policy
-              change affects customer matching, partner acceptance, notifications, or finance gates.
+              Shows where each operating decision is enforced today, so operators know whether a policy change
+              affects customer matching, partner acceptance, notifications, or finance gates.
             </p>
           </div>
           <span className="pill pill-info">{policyEnforcementTrace.length} enforced lane(s)</span>
@@ -817,7 +817,7 @@ export default async function OperationsPolicyPage({
           <DecisionHint
             title="Negative wallet gate"
             recommendation="Keep hard blocking while wallet balance is negative."
-            detail="Cash services create company-fee debt. A hard gate is simpler for operations until partner trust scoring is mature."
+            detail="Cash services create company-fee debt. A hard gate is simpler for operations until settlement controls are mature."
           />
           <DecisionHint
             title="Phone OTP"
@@ -1136,7 +1136,8 @@ function buildPolicySimulation(
   const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
   const backupLocationFreshnessMinutes =
     policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
-  const backupInvitationLimit = policyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
+  const backupInvitationLimit =
+    policyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
   const travelBufferMinutes = policyNumberValue(settings, 'matching.travel_buffer_minutes') ?? 30;
   const backupOpenMode =
     policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
@@ -1463,9 +1464,9 @@ function policyRecommendationPosture(
       status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Hard block' : 'Recovery mode',
       detail:
         value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Debt risk is contained, but partner recovery requires manual settlement.'
-          : 'Recovery mode can help partners repay but increases operational cash-debt risk.',
-      operatorAction: 'Keep hard block until cash settlement collection and trust scoring are stronger.',
+          ? 'Cash-debt exposure is contained, but partner recovery requires manual settlement.'
+          : 'Recovery mode can help partners repay but increases operational cash-debt follow-up.',
+      operatorAction: 'Keep hard block until cash settlement collection and recovery controls are stronger.',
       alignedAction: 'Hard block is safer for early operations with cash bookings.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: value === recommended ? 'pill-success' : 'pill-danger',
@@ -1492,7 +1493,8 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
   const preferredAcceptMode =
     policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
-  const backupOpenMode = policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const backupOpenMode =
+    policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
   const alertChannel =
     policyStringValue(settings, 'notification.partner_alert_channel') ?? 'IN_APP_WITH_PUSH_LATER';
   const walletGate =
@@ -1510,7 +1512,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     {
       title: 'First-pick response window',
       status: baselineTimer ? 'HANDS baseline' : 'Owner override',
-      detail: `The first selected partner has ${responseWindowMinutes} minute(s) before the request becomes operationally at-risk.`,
+      detail: `The first selected partner has ${responseWindowMinutes} minute(s) before the request needs operator attention.`,
       operatorAction: baselineTimer
         ? 'Keep this at 10 minutes until live response-rate data says otherwise.'
         : 'Monitor customer wait complaints and first-pick acceptance rate before keeping this override.',
@@ -1584,10 +1586,10 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       status: hardWalletBlock ? 'Hard block' : 'Recovery booking',
       detail: hardWalletBlock
         ? 'Partners with unpaid cash-service fee debt cannot accept new work.'
-        : 'Partners with debt may receive one recovery booking, increasing collection risk.',
+        : 'Partners with debt may receive one recovery booking, increasing collection follow-up.',
       operatorAction: hardWalletBlock
         ? 'This protects HANDS cash-fee collection during early operations.'
-        : 'Use recovery only after settlement playbooks and trust scoring are mature.',
+        : 'Use recovery only after settlement playbooks and recovery controls are mature.',
       className: hardWalletBlock ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: hardWalletBlock ? 'pill-success' : 'pill-danger',
       blocking: !hardWalletBlock,
@@ -1604,7 +1606,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       {
         label: 'First-pick timer',
         value: `${responseWindowMinutes} min`,
-        helper: 'Partner accepts or the request becomes at-risk.',
+        helper: 'Partner accepts or the request needs operator attention.',
       },
       {
         label: 'Backup radius',
@@ -1699,7 +1701,7 @@ function buildPolicySupplySensitivity(
       {
         label: 'Hard blocked in radius',
         value: currentHardBlocked.length.toString(),
-        helper: 'Identity, bank, wallet, or risk gates stop acceptance even if nearby.',
+        helper: 'Identity, bank, wallet, or control gates stop acceptance even if nearby.',
       },
       {
         label: 'Stale excluded',
@@ -1720,13 +1722,17 @@ function buildPolicySupplySensitivity(
         fresh: fresh.length,
         hardBlocked: hardBlocked.length,
         operatorRead: radiusSensitivityRead(radius, backupRadiusMeters, eligible.length),
-        pillClass: radius === backupRadiusMeters ? 'pill-info' : radius < backupRadiusMeters ? 'pill-warn' : 'pill-neutral',
+        pillClass:
+          radius === backupRadiusMeters
+            ? 'pill-info'
+            : radius < backupRadiusMeters
+              ? 'pill-warn'
+              : 'pill-neutral',
       };
     }),
     freshnessRows: freshnessOptions.map((freshness) => {
       const insideRadius = candidates.filter(
-        (item) =>
-          item.online && !item.hardBlocked && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
+        (item) => item.online && !item.hardBlocked && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
       );
       const eligible = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= freshness);
       const staleExcluded = insideRadius.length - eligible.length;
@@ -1736,7 +1742,11 @@ function buildPolicySupplySensitivity(
         staleExcluded,
         operatorRead: freshnessSensitivityRead(freshness, freshnessMinutes, eligible.length, staleExcluded),
         pillClass:
-          freshness === freshnessMinutes ? 'pill-info' : freshness < freshnessMinutes ? 'pill-warn' : 'pill-neutral',
+          freshness === freshnessMinutes
+            ? 'pill-info'
+            : freshness < freshnessMinutes
+              ? 'pill-warn'
+              : 'pill-neutral',
       };
     }),
   };
@@ -1748,7 +1758,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
   const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
   const backupLocationFreshnessMinutes =
     policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
-  const backupOpenMode = policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const backupOpenMode =
+    policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
   const preferredAcceptMode =
     policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const walletGate =
@@ -1760,21 +1771,23 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       title: `${responseWindowMinutes} minute first-pick timer`,
       detail:
         'New direct bookings store the current response-window policy in booking metadata and expiry time.',
-      verify: 'Verify with a new booking, then open the booking detail timeline and matching policy snapshot.',
+      verify:
+        'Verify with a new booking, then open the booking detail timeline and matching policy snapshot.',
     },
     {
       scope: 'Backup join',
       title: `${formatDistance(backupRadiusMeters)} backup radius`,
       detail:
         'Backup partners are filtered by customer distance before they can see, join, or receive backup availability alerts.',
-      verify: 'Verify from Operations Policy simulator and Partner Risk location freshness signals.',
+      verify: 'Verify from Operations Policy simulator and Partner Controls location freshness signals.',
     },
     {
       scope: 'Location gate',
       title: `${backupLocationFreshnessMinutes} minute location freshness`,
       detail:
-        'Partners with stale or missing last location are excluded from backup participation and shown as dispatch risk.',
-      verify: 'Verify by opening App Sessions and Partner Risk after a partner app sends or misses a location heartbeat.',
+        'Partners with stale or missing last location are excluded from backup participation and shown as dispatch checks.',
+      verify:
+        'Verify by opening App Sessions and Partner Controls after a partner app sends or misses a location heartbeat.',
     },
     {
       scope: 'Customer choice',
@@ -1784,7 +1797,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
           : 'Partner acceptance can auto-lock',
       detail:
         'This controls whether accepting the preferred partner immediately matches the booking or returns control to the customer.',
-      verify: 'Verify by creating a direct booking, accepting in the partner app, then checking the customer waiting screen.',
+      verify:
+        'Verify by creating a direct booking, accepting in the partner app, then checking the customer waiting screen.',
     },
     {
       scope: 'Backup timing',
@@ -1792,8 +1806,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
         backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'Backup partners can join during the wait'
           : 'Backup partners wait until timer or decline',
-      detail:
-        'This controls whether backup partners can participate during the first-pick response window.',
+      detail: 'This controls whether backup partners can participate during the first-pick response window.',
       verify: 'Verify from partner app open request list while a direct booking is still waiting.',
     },
     {
@@ -1804,7 +1817,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
           : 'Recovery booking mode is enabled',
       detail:
         'Cash-service company fee debt is enforced before partner accept/join actions and before payout release.',
-      verify: 'Verify from Cash Settlements, Partner Risk, and a blocked accept attempt in the partner app.',
+      verify:
+        'Verify from Cash Settlements, Partner Controls, and a blocked accept attempt in the partner app.',
     },
   ];
 }
@@ -1832,8 +1846,12 @@ function buildMatchingStageImpactPreview(
     freshnessMinutes,
     hardWalletBlock,
   });
-  const responseOptions = uniqueNumbers([5, responseWindowMinutes, 10, 15]).sort((left, right) => left - right);
-  const radiusOptions = uniqueNumbers([5000, backupRadiusMeters, 10000, 15000]).sort((left, right) => left - right);
+  const responseOptions = uniqueNumbers([5, responseWindowMinutes, 10, 15]).sort(
+    (left, right) => left - right,
+  );
+  const radiusOptions = uniqueNumbers([5000, backupRadiusMeters, 10000, 15000]).sort(
+    (left, right) => left - right,
+  );
   const freshnessOptions = uniqueNumbers([15, freshnessMinutes, 30, 60]).sort((left, right) => left - right);
 
   const rows = [
@@ -1844,7 +1862,13 @@ function buildMatchingStageImpactPreview(
         freshnessMinutes,
         hardWalletBlock,
       });
-      return matchingStageImpactRow('Response window', `${value} min`, stats, baseline, value === responseWindowMinutes);
+      return matchingStageImpactRow(
+        'Response window',
+        `${value} min`,
+        stats,
+        baseline,
+        value === responseWindowMinutes,
+      );
     }),
     ...radiusOptions.map((value) => {
       const stats = matchingStageImpactStats(bookings, providers, {
@@ -1853,7 +1877,13 @@ function buildMatchingStageImpactPreview(
         freshnessMinutes,
         hardWalletBlock,
       });
-      return matchingStageImpactRow('Backup radius', formatDistance(value), stats, baseline, value === backupRadiusMeters);
+      return matchingStageImpactRow(
+        'Backup radius',
+        formatDistance(value),
+        stats,
+        baseline,
+        value === backupRadiusMeters,
+      );
     }),
     ...freshnessOptions.map((value) => {
       const stats = matchingStageImpactStats(bookings, providers, {
@@ -1862,7 +1892,13 @@ function buildMatchingStageImpactPreview(
         freshnessMinutes: value,
         hardWalletBlock,
       });
-      return matchingStageImpactRow('Location freshness', `${value} min`, stats, baseline, value === freshnessMinutes);
+      return matchingStageImpactRow(
+        'Location freshness',
+        `${value} min`,
+        stats,
+        baseline,
+        value === freshnessMinutes,
+      );
     }),
   ];
 
@@ -1962,7 +1998,11 @@ function matchingStageImpactRow(
     noSupply: stats.noSupply,
     overdue: stats.overdue,
     operatorRead: matchingStageImpactRead(stats, baseline, current),
-    pillClass: current ? 'pill-info' : stats.noSupply > baseline.noSupply || stats.overdue > baseline.overdue ? 'pill-warn' : 'pill-neutral',
+    pillClass: current
+      ? 'pill-info'
+      : stats.noSupply > baseline.noSupply || stats.overdue > baseline.overdue
+        ? 'pill-warn'
+        : 'pill-neutral',
   };
 }
 
@@ -2052,19 +2092,21 @@ function buildPartnerAcceptancePolicyImpact(
   const pushGaps = providers.filter((provider) => !partnerHasEnabledPush(provider));
   const accountRisk = providers.filter((provider) => partnerAccountRisk(provider));
   const softRecovery = providers.filter(
-    (provider) => !partnerCanAcceptUnderCurrentPolicy(provider, policy) && !partnerHardBlocked(provider, policy),
+    (provider) =>
+      !partnerCanAcceptUnderCurrentPolicy(provider, policy) && !partnerHardBlocked(provider, policy),
   );
 
   return [
     {
       label: 'Can accept now',
       value: readyPartners.length.toString(),
-      helper: `${onlinePartners.length} online partner(s), filtered by identity, bank, wallet, location, push, and risk gates.`,
+      helper: `${onlinePartners.length} online partner(s), filtered by identity, bank, wallet, location, push, and control gates.`,
     },
     {
       label: 'Hard blocked',
       value: providers.filter((provider) => partnerHardBlocked(provider, policy)).length.toString(),
-      helper: 'Account risk, identity failure, missing approved bank, or negative wallet under the current wallet policy.',
+      helper:
+        'Account controls, identity failure, missing approved bank, or negative wallet under the current wallet policy.',
     },
     {
       label: 'Cash debt block',
@@ -2096,7 +2138,8 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Account risk',
       value: accountRisk.length.toString(),
-      helper: 'Blocked account, active sanction, blocked device, suspicious session, or shared device signal.',
+      helper:
+        'Blocked account, active sanction, blocked device, suspicious session, or shared device signal.',
     },
     {
       label: 'Recovery queue',
@@ -2118,10 +2161,7 @@ function partnerCanAcceptUnderCurrentPolicy(
   );
 }
 
-function partnerHardBlocked(
-  provider: AdminProvider,
-  policy: { hardWalletBlock: boolean },
-) {
+function partnerHardBlocked(provider: AdminProvider, policy: { hardWalletBlock: boolean }) {
   return (
     partnerAccountRisk(provider) ||
     !partnerIdentityReady(provider) ||
@@ -2184,7 +2224,9 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
     (booking) => bookingPolicySnapshotDrift(booking, settings).length > 0,
   );
   const withoutSnapshot = bookings.filter((booking) => !readBookingMatchingPolicySnapshot(booking));
-  const openMatchingWithSnapshot = openMatching.filter((booking) => readBookingMatchingPolicySnapshot(booking));
+  const openMatchingWithSnapshot = openMatching.filter((booking) =>
+    readBookingMatchingPolicySnapshot(booking),
+  );
   const openMatchingWithoutSnapshot = openMatching.length - openMatchingWithSnapshot.length;
   const snapshotCoverage =
     bookings.length > 0 ? `${Math.round((withSnapshot.length / bookings.length) * 100)}%` : 'No sample';
@@ -2197,7 +2239,8 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         label: 'Open matching now',
         value: String(openMatching.length),
-        helper: 'Existing open bookings keep their saved policy snapshot; new bookings use the current live policy.',
+        helper:
+          'Existing open bookings keep their saved policy snapshot; new bookings use the current live policy.',
       },
       {
         label: 'Active dispatch',
@@ -2207,7 +2250,8 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         label: 'Policy drift',
         value: String(snapshotDrift.length),
-        helper: 'Expected when Admin policy changed after a booking opened; use booking detail before manual action.',
+        helper:
+          'Expected when Admin policy changed after a booking opened; use booking detail before manual action.',
       },
       {
         label: 'Legacy bookings',
@@ -2287,8 +2331,10 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         policy: 'Partner accept mode',
         scope: 'Final matching',
         liveValue: policyDisplayByKey(settings, 'matching.preferred_accept_mode'),
-        savedValue: summarizeSnapshotValues(bookings, (snapshot) => snapshot.preferredAcceptMode, (value) =>
-          formatSnapshotPolicyValue(settings, 'matching.preferred_accept_mode', value),
+        savedValue: summarizeSnapshotValues(
+          bookings,
+          (snapshot) => snapshot.preferredAcceptMode,
+          (value) => formatSnapshotPolicyValue(settings, 'matching.preferred_accept_mode', value),
         ),
         operatorMeaning:
           'Explains whether an accepted first-pick partner locks automatically or still waits for customer confirmation.',
@@ -2297,8 +2343,10 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         policy: 'Backup opening mode',
         scope: 'Backup visibility',
         liveValue: policyDisplayByKey(settings, 'matching.backup_open_mode'),
-        savedValue: summarizeSnapshotValues(bookings, (snapshot) => snapshot.backupOpenMode, (value) =>
-          formatSnapshotPolicyValue(settings, 'matching.backup_open_mode', value),
+        savedValue: summarizeSnapshotValues(
+          bookings,
+          (snapshot) => snapshot.backupOpenMode,
+          (value) => formatSnapshotPolicyValue(settings, 'matching.backup_open_mode', value),
         ),
         operatorMeaning:
           'Explains whether backup partners were allowed to join during the first-pick response window.',
@@ -2494,7 +2542,9 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       },
       {
         scope: 'Risk',
-        title: totalRiskCount ? 'Review failed booking cohorts before changing policy' : 'No failed outcome spike in sample',
+        title: totalRiskCount
+          ? 'Review failed booking cohorts before changing policy'
+          : 'No failed outcome spike in sample',
         detail: totalRiskCount
           ? 'Cancelled, expired, or no-show bookings may point to response-window, supply, payment, or partner readiness problems.'
           : 'The sampled policy snapshots do not show cancelled, expired, or no-show pressure yet.',
@@ -2978,7 +3028,13 @@ function buildOwnerDecisionPressure(
   supplySensitivity: PolicySupplySensitivity,
   acceptanceMatrix: ReturnType<typeof buildBookingAcceptanceMatrix>,
 ): OwnerDecisionPressure {
-  const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+  const activeStatuses = new Set([
+    'OPEN_MATCHING',
+    'MATCHED',
+    'PROVIDER_ON_THE_WAY',
+    'ARRIVED',
+    'IN_SERVICE',
+  ]);
   const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const activeBookings = bookings.filter((booking) => activeStatuses.has(booking.status));
   const waitingFirstPick = openMatching.filter(
@@ -3178,7 +3234,7 @@ function operationsOwnerDecisionBacklog() {
         },
       ],
       recommendation:
-        'Keep hard blocking until finance has a reliable settlement workflow and partner trust scoring.',
+        'Keep hard blocking until finance has a reliable settlement workflow and recovery control playbook.',
       decisionTrigger:
         'Revisit after cash-settlement median collection time is under 24 hours for two consecutive weeks.',
       href: '/cash-settlements',
@@ -3200,8 +3256,7 @@ function operationsOwnerDecisionBacklog() {
         },
         {
           label: 'Auto fee',
-          tradeoff:
-            'Faster and more consistent, but mistakes can quickly damage customer and partner trust.',
+          tradeoff: 'Faster and more consistent, but mistakes can quickly damage customer and partner trust.',
         },
       ],
       recommendation:
@@ -3223,12 +3278,11 @@ function operationsOwnerDecisionBacklog() {
         {
           label: 'Manual evidence review',
           tradeoff:
-            'Safer for launch and disputes, but slower for partner compensation and customer closeout.',
+            'More controlled for launch and disputes, but slower for partner compensation and customer closeout.',
         },
         {
           label: 'Evidence-based automation',
-          tradeoff:
-            'Scales support decisions, but requires reliable location, chat, and timestamp capture.',
+          tradeoff: 'Scales support decisions, but requires reliable location, chat, and timestamp capture.',
         },
       ],
       recommendation:
@@ -3324,12 +3378,12 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
     },
     {
       step: '5',
-      title: 'Wallet and risk gates protect operations',
-      detail: `Negative cash-fee debt follows "${walletGate}". Risk holds, account blocks, and stale location should be reviewed before partner dispatch.`,
+      title: 'Wallet and control gates protect operations',
+      detail: `Negative cash-fee debt follows "${walletGate}". Payout holds, account blocks, and stale location should be reviewed before partner dispatch.`,
       className: walletGate.includes('Block') ? 'timeline-active' : 'timeline-done',
       tags: [
         { label: walletGate, tone: walletGate.includes('Block') ? 'pill-danger' : 'pill-warn' },
-        { label: 'Partner Risk', tone: 'pill-info' },
+        { label: 'Partner controls', tone: 'pill-info' },
       ],
     },
     {
@@ -3357,7 +3411,10 @@ function formatSnapshotPolicyValue(
 ) {
   const setting = settings.find((item) => item.key === key);
   const stringValue = String(value);
-  return setting?.options?.find((option) => option.value === stringValue)?.label ?? formatPolicyValue(value, setting?.unit);
+  return (
+    setting?.options?.find((option) => option.value === stringValue)?.label ??
+    formatPolicyValue(value, setting?.unit)
+  );
 }
 
 function policyRawValue(settings: AdminOperationalPolicySetting[], key: string) {
@@ -3406,7 +3463,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       saveChecks: [
         {
           label: 'First-pick queue',
-          detail: 'Check how many bookings are still waiting for the preferred partner before shortening the timer.',
+          detail:
+            'Check how many bookings are still waiting for the preferred partner before shortening the timer.',
           href: '/bookings?view=first-pick',
         },
         {
@@ -3424,7 +3482,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       saveChecks: [
         {
           label: 'Stage impact preview',
-          detail: 'Preview how the selected radius changes backup supply and no-supply risk.',
+          detail: 'Preview how the selected radius changes backup supply and no-supply checks.',
           href: '/operations-policy#matching-stage-impact',
         },
         {
@@ -3532,7 +3590,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       saveChecks: [
         {
           label: 'Cancellation closeout',
-          detail: 'Review cancellation reasons, matched state, and refund exposure before changing fee posture.',
+          detail:
+            'Review cancellation reasons, matched state, and refund exposure before changing fee posture.',
           href: '/bookings?view=closeout',
         },
         {
@@ -3555,7 +3614,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'No-show alerts',
-          detail: 'Check alert delivery so partners and customers are informed before penalties are reviewed.',
+          detail:
+            'Check alert delivery so partners and customers are informed before penalties are reviewed.',
           href: '/notifications?review=no-show',
         },
       ],
@@ -3663,9 +3723,7 @@ function readBookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchi
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
     backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
-    backupProviderLocationMaxAgeMinutes: readOptionalNumber(
-      policy.backupProviderLocationMaxAgeMinutes,
-    ),
+    backupProviderLocationMaxAgeMinutes: readOptionalNumber(policy.backupProviderLocationMaxAgeMinutes),
     backupProviderInvitationLimit: readOptionalNumber(policy.backupProviderInvitationLimit),
     preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy.backupOpenMode),

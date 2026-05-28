@@ -117,8 +117,8 @@ export default async function PayoutsPage() {
           <div>
             <h2>Release blocker queue</h2>
             <p className="muted">
-              Transfer-facing list of batches that should not be paid until finance, tax, risk, and bank
-              references are clean.
+              Transfer-facing list of batches that should not be paid until finance, tax, partner checks, and
+              bank references are clean.
             </p>
           </div>
           <span className={`pill ${releaseQueue.length ? 'pill-danger' : 'pill-success'}`}>
@@ -490,7 +490,7 @@ export default async function PayoutsPage() {
                       )}
                       {payoutHold && (
                         <a className="pill pill-danger" href={`/partners/${batch.providerProfileId}`}>
-                          Open partner risk
+                          Open partner checks
                         </a>
                       )}
                       {paidBlockedByMissingRef && (
@@ -938,7 +938,7 @@ function buildPayoutCommandSignals(batches: AdminPayoutBatch[]): PayoutCommandSi
             .slice(0, 2)
             .join(' ')
         : 'No active payout hold on listed batches.',
-      action: held.length ? 'Open partner risk before attempting payout.' : 'No risk hold action.',
+      action: held.length ? 'Open partner checks before attempting payout.' : 'No payout hold action.',
       className: held.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: held.length ? 'pill-danger' : 'pill-success',
     },

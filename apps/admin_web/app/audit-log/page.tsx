@@ -54,8 +54,8 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           <div>
             <h2>Audit command board</h2>
             <p className="muted">
-              High-impact admin changes grouped by policy, money movement, dispatch state, and recent
-              operator actions.
+              High-impact admin changes grouped by policy, money movement, dispatch state, and recent operator
+              actions.
             </p>
           </div>
           <span
@@ -266,9 +266,13 @@ type AuditCommandItem = {
 
 function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
   const now = Date.now();
-  const servicePolicyLogs = logs.filter((log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'));
+  const servicePolicyLogs = logs.filter(
+    (log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'),
+  );
   const moneyLogs = logs.filter((log) => isPaymentAction(log.action) || log.action.startsWith('payout.'));
-  const dispatchLogs = logs.filter((log) => isDispatchAction(log.action) || log.action.startsWith('booking.'));
+  const dispatchLogs = logs.filter(
+    (log) => isDispatchAction(log.action) || log.action.startsWith('booking.'),
+  );
   const recentHighPriority = logs.filter(
     (log) => auditPriority(log.action) >= 3 && now - Date.parse(log.createdAt) <= 24 * 60 * 60 * 1000,
   );
@@ -276,7 +280,8 @@ function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
   return [
     {
       title: 'Policy and pricing changes',
-      detail: 'Service price, payout, VAT, tax, and fee edits have downstream effects on bookings and wallet debt.',
+      detail:
+        'Service price, payout, VAT, tax, and fee edits have downstream effects on bookings and wallet debt.',
       status: 'Policy',
       operatorAction: 'Review before/after metadata and confirm the change was intentional.',
       href: '/audit-log?bucket=Service%2FPricing',
@@ -796,7 +801,7 @@ function opsHint(action: string, target: string) {
     return 'Check retry or delivery health if the customer or partner missed an alert.';
   }
   if (action.startsWith('operational_policy.')) {
-    return 'Confirm the policy change matches the current owner decision and active booking risk.';
+    return 'Confirm the policy change matches the current owner decision and active booking controls.';
   }
   if (isServicePricingAction(action)) {
     return 'Review service price, partner payout, VAT, costs, and before/after changes.';
