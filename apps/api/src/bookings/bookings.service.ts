@@ -1039,7 +1039,6 @@ export class BookingsService {
         currentLat: true,
         currentLng: true,
       },
-      take: 100,
     });
 
     return providers
