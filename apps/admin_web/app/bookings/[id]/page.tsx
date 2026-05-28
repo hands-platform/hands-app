@@ -65,6 +65,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
   const operationsTrace = bookingOperationsTrace(booking, booking.auditLogs ?? []);
   const bookingActivityRecords = buildBookingActivityRecords(booking, rawNotifications);
+  const bookingActivitySummary = buildBookingActivitySummary(bookingActivityRecords);
 
   return (
     <>
@@ -1053,9 +1054,18 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
           <span className="pill pill-info">{bookingActivityRecords.length} event(s)</span>
         </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {bookingActivitySummary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
           {bookingActivityRecords.length ? (
-            bookingActivityRecords.slice(0, 60).map((record) => (
+            bookingActivityRecords.map((record) => (
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
                 <span>{record.type}</span>
                 <div>
@@ -1412,6 +1422,49 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
   }
 
   return [...unique.values()].sort((left, right) => safeTime(right.at) - safeTime(left.at));
+}
+
+function buildBookingActivitySummary(records: ReturnType<typeof buildBookingActivityRecords>) {
+  const financeTypes = new Set(['PAYMENT', 'REFUND', 'EARNING', 'FEE', 'TAX', 'WALLET']);
+  const count = (predicate: (record: (typeof records)[number]) => boolean) =>
+    records.filter(predicate).length;
+  const latestAt = records[0]?.at;
+  const oldestAt = records[records.length - 1]?.at;
+
+  return [
+    {
+      label: 'Range',
+      value: latestAt ? formatDate(latestAt) : 'None',
+      helper: oldestAt ? `Oldest loaded: ${formatDate(oldestAt)}` : 'No activity loaded.',
+    },
+    {
+      label: 'Matching',
+      value: count((record) =>
+        ['BOOKING', 'MATCHING', 'MATCHED', 'SCHEDULE', 'PARTNER'].includes(record.type),
+      ).toString(),
+      helper: 'Booking creation, wait window, partner participation, and final selection.',
+    },
+    {
+      label: 'Chat',
+      value: count((record) => record.type === 'CHAT').toString(),
+      helper: 'Loaded customer and partner messages kept for admin archive.',
+    },
+    {
+      label: 'Finance',
+      value: count((record) => financeTypes.has(record.type)).toString(),
+      helper: 'Payment, refund, earning, tax, fee, and wallet ledger rows.',
+    },
+    {
+      label: 'Ops and alerts',
+      value: count((record) => ['OPS', 'AUDIT', 'ALERT'].includes(record.type)).toString(),
+      helper: 'Operator notes, audit events, and notification delivery events.',
+    },
+    {
+      label: 'Location',
+      value: count((record) => record.type === 'LOCATION').toString(),
+      helper: 'Partner location snapshots linked to this booking.',
+    },
+  ];
 }
 
 function compactActivityText(value: string, maxLength: number) {
