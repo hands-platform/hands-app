@@ -119,6 +119,56 @@ const registrationItems = [
   },
   {
     order: 6,
+    category: 'Operations policy',
+    account: 'HANDS Admin policy controls',
+    purpose:
+      'Runtime-tunable matching, backup participation, cancellation, no-show, notification, and wallet-gate policy.',
+    consolePath: 'HANDS Admin > Operations Policy',
+    env: [
+      envItem('MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES', '10', hasValue(env.MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES)),
+      envItem('MATCHING_BACKUP_PROVIDER_RADIUS_METERS', '10000', hasValue(env.MATCHING_BACKUP_PROVIDER_RADIUS_METERS)),
+      envItem(
+        'MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES',
+        '30',
+        hasValue(env.MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES),
+      ),
+      envItem(
+        'MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT',
+        '50',
+        hasValue(env.MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT),
+      ),
+      envItem(
+        'MATCHING_PREFERRED_ACCEPT_MODE',
+        'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+        hasValue(env.MATCHING_PREFERRED_ACCEPT_MODE),
+      ),
+      envItem('MATCHING_BACKUP_OPEN_MODE', 'IMMEDIATE_WITHIN_WINDOW', hasValue(env.MATCHING_BACKUP_OPEN_MODE)),
+      envItem('WALLET_NEGATIVE_BALANCE_GATE', 'BLOCK_ACCEPTS_WHEN_NEGATIVE', hasValue(env.WALLET_NEGATIVE_BALANCE_GATE)),
+      envItem(
+        'CANCELLATION_AFTER_MATCH_POLICY',
+        'ADMIN_REVIEW_FOR_MVP',
+        hasValue(env.CANCELLATION_AFTER_MATCH_POLICY),
+      ),
+      envItem('NO_SHOW_PARTNER_REPORT_POLICY', 'ADMIN_REVIEW_REQUIRED', hasValue(env.NO_SHOW_PARTNER_REPORT_POLICY)),
+      envItem(
+        'NOTIFICATION_PARTNER_ALERT_CHANNEL',
+        'IN_APP_WITH_PUSH_LATER',
+        hasValue(env.NOTIFICATION_PARTNER_ALERT_CHANNEL),
+      ),
+    ],
+    setup: [
+      'Use the env defaults only as initial seed values; day-to-day changes should be made from /operations-policy so they are audited.',
+      'Recommended MVP: 10 minute first-pick response, 10km backup radius, immediate backup visibility, customer final confirmation, hard block while wallet is negative.',
+      'Do not hardcode Vietnam tax, commission, cancellation, or no-show rules in mobile screens; read the backend/admin policy snapshot instead.',
+    ],
+    verify: [
+      'Open http://localhost:3101/operations-policy',
+      'node infra\\scripts\\api-smoke.mjs',
+      'npm.cmd run admin:web-smoke',
+    ],
+  },
+  {
+    order: 7,
     category: 'Payments',
     account: 'MoMo merchant sandbox',
     purpose: 'Vietnam wallet authorization, release, capture, and refund testing.',
@@ -132,7 +182,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
   },
   {
-    order: 7,
+    order: 8,
     category: 'Payments',
     account: 'VNPay merchant sandbox',
     purpose: 'Vietnam card/bank payment authorization and refund testing.',
@@ -145,7 +195,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
   },
   {
-    order: 8,
+    order: 9,
     category: 'Storage',
     account: 'Supabase Storage S3, R2, or S3-compatible bucket',
     purpose: 'Provider verification files, public profile media, and moderation evidence.',
@@ -177,7 +227,7 @@ const registrationItems = [
     ],
   },
   {
-    order: 9,
+    order: 10,
     category: 'Push',
     account: 'OneSignal or equivalent push provider',
     purpose: 'Native OS push after Firebase Messaging removal.',
@@ -199,7 +249,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:production'],
   },
   {
-    order: 10,
+    order: 11,
     category: 'SMS',
     account: 'Vonage SMS provider',
     purpose: 'Real OTP delivery for Supabase Phone Auth or backend OTP after deferred SMS setup.',
@@ -218,7 +268,7 @@ const registrationItems = [
     verify: ['npm.cmd run external:check:production'],
   },
   {
-    order: 11,
+    order: 12,
     category: 'Mobile release',
     account: 'Android Play Console signing',
     purpose: 'Separate customer/partner upload keys and fingerprints for production Android distribution.',
@@ -323,7 +373,7 @@ function toMarkdown(pack) {
     `- Workspace: \`${pack.project.workspace}\``,
     `- Secret folder: \`${pack.project.secretFolder}\``,
     `- Customer Android package: \`${pack.project.androidApplicationIds.customer}\``,
-    `- Provider Android package: \`${pack.project.androidApplicationIds.provider}\``,
+    `- Partner Android package: \`${pack.project.androidApplicationIds.provider}\``,
     '',
     `Status: ${pack.summary.ready}/${pack.summary.total} account group(s) configured, ${pack.summary.pending} pending.`,
     '',
