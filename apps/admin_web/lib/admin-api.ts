@@ -849,6 +849,7 @@ export type AdminNotification = {
   title: string;
   body: string;
   createdAt: string;
+  readAt?: string | null;
   data?: unknown;
   user?: {
     id?: string;

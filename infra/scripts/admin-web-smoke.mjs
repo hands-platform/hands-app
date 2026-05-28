@@ -222,12 +222,14 @@ if (customerLinkMatch) {
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
     'Customer detail',
+    'Customer support action panel',
     'Customer information',
     'Customer wallet',
     'Saved addresses',
     'Booking and cancellation history',
     'Chat history',
     'Recent customer notifications',
+    'Customer audit trail',
   ];
   const missing = customerMarkers.filter((marker) => !customerBody.includes(marker));
   if (missing.length > 0) {

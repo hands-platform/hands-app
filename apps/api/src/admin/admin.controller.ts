@@ -40,6 +40,15 @@ export class AdminController {
     return this.admin.getCustomerDetail(customerProfileId);
   }
 
+  @Post('customers/:id/ops-note')
+  addCustomerOpsNote(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') customerProfileId: string,
+    @Body() body: { note?: string; preset?: string; bookingId?: string | null },
+  ) {
+    return this.admin.addCustomerOpsNote(user.id, customerProfileId, body);
+  }
+
   @Get('app-sessions')
   appSessions() {
     return this.admin.listAppSessions();

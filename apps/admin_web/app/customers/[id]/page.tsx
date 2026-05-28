@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AdminBookingDetail, AdminChatMessage, AdminCustomerDetail, adminGet } from '../../../lib/admin-api';
+import { addCustomerOpsNote } from './actions';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -24,6 +25,8 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   const latestSession = customer.user?.appSessions?.[0];
   const pushDevices = customer.user?.pushDevices ?? [];
   const notifications = customer.user?.notifications ?? [];
+  const supportPlan = buildCustomerSupportPlan(customer, bookings, wallet, bookingStats, addresses);
+  const recentAuditLogs = customer.auditLogs ?? [];
 
   return (
     <>
@@ -64,6 +67,79 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           value={latestSession ? 'Seen' : 'None'}
           helper={latestSession ? formatDate(latestSession.lastSeenAt) : 'No app session recorded'}
         />
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer support action panel</h2>
+            <p className="muted">
+              One-screen operator plan for refund checks, booking recovery, chat review, address repair, and
+              customer contact.
+            </p>
+          </div>
+          <span className={`pill ${customerSupportPillClass(supportPlan.tone)}`}>{supportPlan.status}</span>
+        </div>
+        <div className="service-trace-summary">
+          {supportPlan.cards.map((card) => (
+            <Link className="text-link" href={card.href} key={card.title}>
+              <span>{card.title}</span>
+              <strong>{card.value}</strong>
+              <small className="muted">{card.detail}</small>
+            </Link>
+          ))}
+        </div>
+        <div className={`ops-task-note ${supportPlan.tone === 'danger' ? 'ops-task-blocked' : 'ops-task-pending'}`} style={{ marginTop: 14 }}>
+          <div className="ops-row">
+            <div>
+              <strong>{supportPlan.headline}</strong>
+              <p className="muted">{supportPlan.detail}</p>
+              <div className="participant-list" style={{ marginTop: 8 }}>
+                {supportPlan.badges.map((badge) => (
+                  <span className={`pill ${customerSupportPillClass(badge.tone)}`} key={badge.label}>
+                    {badge.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <Link className="text-link" href={supportPlan.primaryHref}>
+              {supportPlan.primaryAction}
+            </Link>
+          </div>
+        </div>
+        <form action={addCustomerOpsNote} className="compact-form form-grid" style={{ marginTop: 14 }}>
+          <input type="hidden" name="customerId" value={customer.id} />
+          <label>
+            Quick note preset
+            <select name="preset" defaultValue="">
+              <option value="">Manual note only</option>
+              {supportPlan.presets.map((preset) => (
+                <option value={preset} key={preset}>
+                  {preset}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Related booking
+            <select name="bookingId" defaultValue={latestBooking?.id ?? ''}>
+              <option value="">No booking link</option>
+              {bookings.slice(0, 20).map((booking) => (
+                <option value={booking.id} key={booking.id}>
+                  {shortId(booking.id)} / {booking.status} / {bookingServiceLabel(booking)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="full-span">
+            Support note
+            <textarea
+              name="note"
+              placeholder="Example: Customer contacted by phone, address confirmed, refund review moved to payments."
+            />
+          </label>
+          <button type="submit">Save customer ops note</button>
+        </form>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -315,6 +391,38 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           </tbody>
         </table>
       </section>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer audit trail</h2>
+            <p className="muted">Recent operator notes and system actions attached to this customer.</p>
+          </div>
+          <span className="pill pill-info">{recentAuditLogs.length} logs</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Actor</th>
+              <th>Created</th>
+              <th>Metadata</th>
+            </tr>
+          </thead>
+          <tbody>
+            {recentAuditLogs.slice(0, 20).map((log) => (
+              <tr key={log.id}>
+                <td>{log.action}</td>
+                <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
+                <td>{formatDate(log.createdAt)}</td>
+                <td>
+                  <code>{compactJson(log.metadata)}</code>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
     </>
   );
 }
@@ -360,6 +468,113 @@ function buildCustomerWallet(bookings: AdminBookingDetail[]) {
       cashBookingAmount: 0,
     },
   );
+}
+
+function buildCustomerSupportPlan(
+  customer: AdminCustomerDetail,
+  bookings: AdminBookingDetail[],
+  wallet: ReturnType<typeof buildCustomerWallet>,
+  bookingStats: ReturnType<typeof buildBookingStats>,
+  addresses: Array<{ key: string; label: string; value: string }>,
+) {
+  const latestBooking = bookings[0];
+  const unreadNotifications = customer.user?.notifications?.filter((notification) => !notification.readAt).length ?? 0;
+  const paymentIssueCount = bookings.filter((booking) => {
+    return booking.payment && !['AUTHORIZED', 'CAPTURED'].includes(booking.payment.status);
+  }).length;
+  const chatIssueCount = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status) && !booking.chatRoom).length;
+  const missingAddress = addresses.length === 0;
+  const supportReasons = [
+    bookingStats.active > 0 ? `${bookingStats.active} active booking(s)` : null,
+    paymentIssueCount > 0 ? `${paymentIssueCount} payment issue(s)` : null,
+    wallet.refundAmount > 0 ? `${formatMoney(wallet.refundAmount)} refund exposure` : null,
+    bookingStats.noShow > 0 ? `${bookingStats.noShow} no-show case(s)` : null,
+    chatIssueCount > 0 ? `${chatIssueCount} chat repair issue(s)` : null,
+    missingAddress ? 'No saved address' : null,
+  ].filter(Boolean) as string[];
+  const tone: 'success' | 'info' | 'warn' | 'danger' =
+    bookingStats.noShow > 0 || paymentIssueCount > 0
+      ? 'danger'
+      : bookingStats.active > 0 || wallet.refundAmount > 0 || missingAddress
+        ? 'warn'
+        : latestBooking
+          ? 'info'
+          : 'success';
+  const primaryHref =
+    paymentIssueCount > 0 || wallet.refundAmount > 0
+      ? '/payments'
+      : latestBooking?.id
+        ? `/bookings/${latestBooking.id}`
+        : '/customers';
+  const primaryAction =
+    paymentIssueCount > 0 || wallet.refundAmount > 0
+      ? 'Review payments'
+      : latestBooking?.id
+        ? 'Open latest booking'
+        : 'Back to customers';
+  return {
+    tone,
+    status: supportReasons.length > 0 ? 'Needs review' : 'Stable',
+    headline: supportReasons.length > 0 ? supportReasons.join(' / ') : 'No immediate customer support blocker.',
+    detail:
+      supportReasons.length > 0
+        ? 'Resolve the highest risk item first, then save an ops note so the next shift can continue from the same context.'
+        : 'Keep monitoring future bookings, push reachability, and address quality.',
+    primaryHref,
+    primaryAction,
+    cards: [
+      {
+        title: 'Latest booking',
+        value: latestBooking ? `${shortId(latestBooking.id)} / ${latestBooking.status}` : 'None',
+        detail: latestBooking ? bookingServiceLabel(latestBooking) : 'No reservation history yet',
+        href: latestBooking ? `/bookings/${latestBooking.id}` : '/bookings',
+      },
+      {
+        title: 'Payment / refund',
+        value: `${paymentIssueCount} issue(s)`,
+        detail: `${formatMoney(wallet.refundAmount)} refund exposure`,
+        href: '/payments',
+      },
+      {
+        title: 'Chat review',
+        value: `${chatIssueCount} repair`,
+        detail: `${bookings.filter((booking) => booking.chatRoom).length} room(s) available`,
+        href: latestBooking ? `/bookings/${latestBooking.id}#chat` : '/bookings?view=chat',
+      },
+      {
+        title: 'Location quality',
+        value: addresses.length ? `${addresses.length} saved` : 'Missing',
+        detail: missingAddress ? 'Ask customer to confirm location' : 'Profile and selected pins exist',
+        href: latestBooking ? `/bookings/${latestBooking.id}#customer` : '/customers',
+      },
+      {
+        title: 'Notifications',
+        value: `${unreadNotifications} unread`,
+        detail: `${customer.user?.pushDevices?.filter((device) => device.enabled).length ?? 0} enabled push device(s)`,
+        href: '/notifications',
+      },
+      {
+        title: 'Support trail',
+        value: `${customer.auditLogs?.length ?? 0} logs`,
+        detail: 'Recent customer-linked audit actions',
+        href: '/audit-log',
+      },
+    ],
+    badges: [
+      { label: bookingStats.active ? 'Live booking' : 'No live booking', tone: bookingStats.active ? 'warn' : 'success' },
+      { label: paymentIssueCount ? 'Payment review' : 'Payment clear', tone: paymentIssueCount ? 'danger' : 'success' },
+      { label: missingAddress ? 'Address missing' : 'Address ready', tone: missingAddress ? 'warn' : 'success' },
+      { label: chatIssueCount ? 'Chat repair' : 'Chat ok', tone: chatIssueCount ? 'warn' : 'success' },
+    ],
+    presets: [
+      'Customer contacted; waiting for reply.',
+      'Address confirmed with customer.',
+      'Payment/refund review requested.',
+      'Chat history reviewed; no support blocker.',
+      'No-show case requires manager review.',
+      'Customer asked to update saved address.',
+    ],
+  };
 }
 
 function buildAddressRows(customer: AdminCustomerDetail) {
@@ -413,6 +628,13 @@ function bookingStatusPillClass(status: string) {
   return 'pill-neutral';
 }
 
+function customerSupportPillClass(tone: string) {
+  if (tone === 'danger') return 'pill-danger';
+  if (tone === 'warn') return 'pill-warn';
+  if (tone === 'info') return 'pill-info';
+  return 'pill-success';
+}
+
 function stringifyAddress(value: unknown) {
   if (typeof value === 'string') return value;
   if (value && typeof value === 'object') {
@@ -427,6 +649,12 @@ function stringifyAddress(value: unknown) {
 function shortId(id?: string) {
   if (!id) return 'unknown';
   return id.slice(0, 8);
+}
+
+function compactJson(value: unknown) {
+  if (!value) return 'No metadata';
+  const text = JSON.stringify(value);
+  return text.length > 160 ? `${text.slice(0, 157)}...` : text;
 }
 
 function dateMs(value?: string | null) {

@@ -234,6 +234,50 @@ export class AdminService {
     return { ...customer, auditLogs };
   }
 
+  async addCustomerOpsNote(
+    actorId: string,
+    customerProfileId: string,
+    input: { note?: string; preset?: string; bookingId?: string | null },
+  ) {
+    const note = normalizeNullable(input.note);
+    const preset = normalizeNullable(input.preset);
+    const content = note ?? preset;
+    if (!content) {
+      throw new BadRequestException('Customer operation note is required');
+    }
+
+    const customer = await this.prisma.customerProfile.findUnique({
+      where: { id: customerProfileId },
+      include: { user: { select: { id: true, phone: true, fullName: true } } },
+    });
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
+
+    const bookingId = normalizeNullable(input.bookingId);
+    if (bookingId) {
+      const booking = await this.prisma.booking.findFirst({
+        where: { id: bookingId, customerProfileId },
+        select: { id: true, status: true },
+      });
+      if (!booking) {
+        throw new BadRequestException('Booking does not belong to this customer');
+      }
+    }
+
+    const auditLog = await this.writeAudit(actorId, 'customer.ops_note.add', `customer:${customerProfileId}`, {
+      customerProfileId,
+      customerUserId: customer.userId,
+      customerPhone: customer.user.phone,
+      customerName: customer.user.fullName,
+      bookingId,
+      note: content,
+      preset,
+    });
+
+    return { ok: true, auditLog };
+  }
+
   listAppSessions() {
     return this.prisma.appSession.findMany({
       orderBy: { lastSeenAt: 'desc' },
