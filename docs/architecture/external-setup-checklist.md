@@ -448,6 +448,7 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-28:
 - Supabase REST/storage verification: passing with service role
 - API Supabase auth smoke: passing locally
 - Runtime operations policy: exposed in Admin Setup and Operations Policy, covered by admin web smoke and API smoke
+- No-show closeout alerts: customer and partner notification rows are created when Admin marks no-show, with `/notifications?review=no-show` and booking detail trace coverage
 - Supabase Phone Auth/SMS: deferred
 - Planned SMS provider: Vonage
 - Mobile auth switch: still `AUTH_BACKEND=nest` locally until Vonage + Supabase Phone Auth E2E is configured

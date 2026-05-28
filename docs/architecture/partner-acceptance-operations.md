@@ -75,6 +75,23 @@ Operators should use these screens together:
 - `/cash-settlements`, `/earnings`, `/payouts`, and `/payments`: settle or offset cash fee debt.
 - `/tax-policy` and `/services`: manage tax, fee, service duration, minimum price, price step, and payout matrix policy.
 
+## No-Show Closeout
+
+No-show is an operational closeout state, not an automatic penalty in the MVP. It should be used only when a live booking cannot proceed because the customer or partner did not continue the service path.
+
+Current MVP behavior:
+
+- Eligible statuses: open matching, matched, partner on the way, or arrived.
+- Admin must enter a reason when possible.
+- The booking is moved to `NO_SHOW`.
+- A payment-review ops task is blocked until support decides release, refund, capture, fee, or manual adjustment.
+- The customer receives a `booking.no_show` notification.
+- The selected partner, preferred partner, and joined participants receive a `booking.no_show` notification.
+- The booking detail page shows no-show notification count in the booking alert trace.
+- `/notifications?review=no-show` shows all customer and partner no-show communication rows.
+
+Keep penalties manual until arrival evidence, location proof, chat history, and dispute outcomes are reliable enough for automation. If the policy later changes to evidence-based automation, the no-show policy snapshot must still be saved on each alert and audit row.
+
 ## Implementation Pointers
 
 Backend enforcement:
@@ -88,6 +105,7 @@ Admin visibility:
 - `apps/admin_web/app/operations-policy/page.tsx`
 - `apps/admin_web/app/bookings/booking-monitor.tsx`
 - `apps/admin_web/app/bookings/[id]/page.tsx`
+- `apps/admin_web/app/notifications/page.tsx`
 - `apps/admin_web/app/partners/page.tsx`
 - `apps/admin_web/app/partner-risk/page.tsx`
 
