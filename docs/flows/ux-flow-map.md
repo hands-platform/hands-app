@@ -61,7 +61,7 @@ Physical-device dynamic analysis confirmed this high-level customer flow shape:
 ```mermaid
 flowchart TD
   A["Explore Home"] --> B["Service Category Card"]
-  B --> C["Provider List"]
+  B --> C["Partner List"]
   C --> D["Search And Filter"]
   C --> E["Partner Card"]
   E --> F["Booking CTA"]

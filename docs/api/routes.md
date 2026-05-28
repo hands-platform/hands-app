@@ -135,16 +135,16 @@ Legacy `/admin/providers`, `/admin/provider-reports`, `/admin/provider-sanctions
 
 Callbacks are placeholder parser routes in the MVP. Real MoMo/VNPay signature validation must be added before production.
 
-Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUNDED`, create a `Refund` row, and cancel unpaid provider earnings for that booking.
+Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUNDED`, create a `Refund` row, and cancel unpaid partner earnings for that booking.
 
 ## Phase 1 Direct Booking Notes
 
-- `POST /customer/bookings` can include an optional `providerId` for the first MVP direct-booking flow.
-- When `providerId` is present, the booking is treated as a direct first-pick request, but the matching window still stays open for nearby backup partners.
+- `POST /customer/bookings` can include an optional `providerId` for the first MVP direct-booking flow. The field name remains `providerId` for API compatibility, but product copy should say partner.
+- When `providerId` is present, the booking is treated as a direct first-pick partner request, but the matching window still stays open for nearby backup partners.
 - A direct first-pick request waits 10 minutes by default.
 - Online partners within 10km of the booking location receive `booking.backup_available` notifications and can join before the customer selects the final partner.
 - `GET /partner/bookings/open` returns:
-  - direct requests targeted to the authenticated provider
+  - direct requests targeted to the authenticated partner
   - open requests within 10km where the authenticated partner can join as backup
 - `POST /partner/bookings/:id/accept` confirms a direct request.
 - `POST /partner/bookings/:id/join` records a backup participant and stores the server-calculated distance snapshot.
