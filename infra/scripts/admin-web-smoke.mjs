@@ -5,6 +5,10 @@ const pages = [
     path: '/',
     markers: [
       'HANDS Admin',
+      'Daily operations snapshot',
+      'Matching wait now',
+      'Active app customers',
+      'Cash fee block',
       'Shift command briefing',
       'Opening shift checklist',
       'Total bookings',

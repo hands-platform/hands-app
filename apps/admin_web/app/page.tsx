@@ -120,6 +120,14 @@ type OperatorStartChecklistItem = {
   pillClass: string;
 };
 
+type DailyOperationsSnapshotItem = {
+  label: string;
+  value: string;
+  helper: string;
+  href: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+};
+
 export default async function DashboardPage() {
   const [
     users,
@@ -243,6 +251,15 @@ export default async function DashboardPage() {
     activePayoutBatches,
     externalReadiness,
   });
+  const dailySnapshot = buildDailyOperationsSnapshot({
+    bookings,
+    providers,
+    appPresence,
+    bookingOps,
+    failedNotifications,
+    cashSettlementSummary,
+    activePayoutBatches,
+  });
 
   const metrics = [
     [
@@ -277,7 +294,7 @@ export default async function DashboardPage() {
       'Formal NO_SHOW reservations plus overdue matched bookings without chat.',
     ],
     [
-      'Closeout risk',
+      'Closeout checks',
       bookingOps.completedCloseoutRisk.toString(),
       'Completed bookings missing capture, earning, tax, fee, or wallet ledger records.',
     ],
@@ -364,7 +381,7 @@ export default async function DashboardPage() {
             Partner review
           </Link>
           <Link className="text-link" href="/partner-risk">
-            Partner risk
+            Partner controls
           </Link>
           <Link className="text-link" href="/tax-policy">
             Tax policy
@@ -381,10 +398,38 @@ export default async function DashboardPage() {
       <section className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
+            <h2>Daily operations snapshot</h2>
+            <p className="muted">
+              One-screen view of today&apos;s reservations, matching wait, app presence, partner supply, cash
+              settlement blocks, and notification delivery.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings">
+            Open booking board
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {dailySnapshot.map((item) => (
+            <Link
+              className={`ops-task-breakdown-item ops-task-breakdown-${item.tone}`}
+              href={item.href}
+              key={item.label}
+            >
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
             <h2>Policy outcome pulse</h2>
             <p className="muted">
-              First-screen readout of whether current matching policy is producing acceptable outcomes.
-              Deeper cohort analysis stays in Operations Policy.
+              First-screen readout of whether current matching policy is producing acceptable outcomes. Deeper
+              cohort analysis stays in Operations Policy.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy">
@@ -704,7 +749,10 @@ export default async function DashboardPage() {
                         {change.current} changed {change.changedAtLabel}
                       </p>
                     </div>
-                    <Link className={`pill ${change.enforced ? 'pill-success' : 'pill-warn'}`} href={change.href}>
+                    <Link
+                      className={`pill ${change.enforced ? 'pill-success' : 'pill-warn'}`}
+                      href={change.href}
+                    >
                       {change.enforced ? 'Live' : 'Planning'}
                     </Link>
                   </div>
@@ -735,13 +783,13 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="risk-watch-header">
             <div>
-              <h2>Booking risk cockpit</h2>
+              <h2>Booking attention cockpit</h2>
               <p className="muted">
-                Dispatch exceptions that should be cleared before they become customer complaints.
+                Dispatch exceptions that should be checked before they become customer complaints.
               </p>
             </div>
             <Link className="text-link" href="/bookings?view=high-risk">
-              High-risk bookings
+              Attention bookings
             </Link>
           </div>
           <div className="participant-list" style={{ marginTop: 8 }}>
@@ -749,7 +797,7 @@ export default async function DashboardPage() {
               Matching ops
             </Link>
             <Link className="text-link" href="/bookings?view=high-risk">
-              High-risk bookings
+              Attention bookings
             </Link>
           </div>
           <div className="service-trace-summary">
@@ -779,12 +827,12 @@ export default async function DashboardPage() {
               <small>Room exists but no messages</small>
             </div>
             <div>
-              <span>Payment release risk</span>
+              <span>Payment release check</span>
               <strong>{bookingDeepDive.releaseRisk}</strong>
               <small>Cancelled/expired/no-show not released</small>
             </div>
             <div>
-              <span>Completion capture risk</span>
+              <span>Completion capture check</span>
               <strong>{bookingDeepDive.captureRisk}</strong>
               <small>Completed service still authorized</small>
             </div>
@@ -909,7 +957,7 @@ export default async function DashboardPage() {
               <small>Expired proxy</small>
             </div>
             <div>
-              <span>Closeout risk</span>
+              <span>Closeout checks</span>
               <strong>{bookingOps.completedCloseoutRisk}</strong>
               <small>Finance records</small>
             </div>
@@ -1076,7 +1124,7 @@ export default async function DashboardPage() {
               <small>Submitted for review</small>
             </div>
             <div>
-              <span>Risk blocked</span>
+              <span>Account holds</span>
               <strong>{partnerSupply.blocked}</strong>
               <small>Account or sanction blockers</small>
             </div>
@@ -1092,7 +1140,7 @@ export default async function DashboardPage() {
               </p>
             </div>
             <Link className="text-link" href="/partner-risk">
-              Risk queue
+              Review queue
             </Link>
           </div>
           <table className="table">
@@ -1246,7 +1294,7 @@ export default async function DashboardPage() {
           <span
             className={`signal ${queue.some((item) => item.severity === 'high') ? 'signal-warn' : 'signal-ok'}`}
           >
-            {queue.some((item) => item.severity === 'high') ? 'High priority open' : 'Stable'}
+            {queue.some((item) => item.severity === 'high') ? 'Urgent priority open' : 'Stable'}
           </span>
         </div>
         {topCommandSignal && (
@@ -1312,12 +1360,12 @@ export default async function DashboardPage() {
             <div>
               <h2>Operations priority queue</h2>
               <p className="muted">
-                Generated from the latest admin API snapshot. It ranks customer protection, partner safety,
+                Generated from the latest admin API snapshot. It orders customer protection, partner controls,
                 payment release, cash debt, and payout recovery together.
               </p>
             </div>
             <span className={`signal ${queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}>
-              {queueSummary.high > 0 ? `${queueSummary.high} critical` : 'No high risk'}
+              {queueSummary.high > 0 ? `${queueSummary.high} urgent` : 'No urgent queue'}
             </span>
           </div>
           <div className="service-trace-summary">
@@ -1329,17 +1377,17 @@ export default async function DashboardPage() {
             <div>
               <span>Customer protection</span>
               <strong>{queueSummary.customerProtection}</strong>
-              <small>Booking risks</small>
+              <small>Booking checks</small>
             </div>
             <div>
-              <span>Finance risk</span>
+              <span>Finance checks</span>
               <strong>{queueSummary.financeCritical}</strong>
               <small>Payment, payout, debt</small>
             </div>
             <div>
               <span>Partner ops</span>
               <strong>{queueSummary.partnerCritical}</strong>
-              <small>Risk or verification</small>
+              <small>Reports or verification</small>
             </div>
           </div>
           {queueSummary.first && (
@@ -1377,7 +1425,7 @@ export default async function DashboardPage() {
                   <p className="muted">{item.detail}</p>
                   <p className="muted">{item.recommendedAction}</p>
                 </div>
-                <p>{item.severity.toUpperCase()}</p>
+                <p>{opsQueueSeverityLabel(item.severity)}</p>
               </Link>
             ))}
             {queue.length === 0 && (
@@ -1575,13 +1623,11 @@ function buildMatchingControlRoom(
   );
   const openRows = openMatching.slice(0, 8).map((booking) => {
     const savedPolicy = dashboardBookingPolicySnapshot(booking);
-    const bookingResponseWindowMinutes =
-      savedPolicy?.providerResponseWindowMinutes ?? responseWindowMinutes;
+    const bookingResponseWindowMinutes = savedPolicy?.providerResponseWindowMinutes ?? responseWindowMinutes;
     const bookingBackupRadiusMeters = savedPolicy?.backupProviderRadiusMeters ?? backupRadiusMeters;
     const bookingBackupLocationMaxAgeMinutes =
       savedPolicy?.backupProviderLocationMaxAgeMinutes ?? backupLocationMaxAgeMinutes;
-    const bookingBackupInvitationLimit =
-      savedPolicy?.backupProviderInvitationLimit ?? backupInvitationLimit;
+    const bookingBackupInvitationLimit = savedPolicy?.backupProviderInvitationLimit ?? backupInvitationLimit;
     const bookingBackupOpenMode = savedPolicy?.backupOpenMode ?? backupOpenMode;
     const bookingImmediateBackup = bookingBackupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
     const coordinate = parseCoordinatePair(booking.lat, booking.lng);
@@ -1596,11 +1642,11 @@ function buildMatchingControlRoom(
     const expired = booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false;
     const firstPickDeclined = Boolean(
       booking.preferredProvider?.id &&
-        (booking.participants ?? []).some(
-          (participant) =>
-            participant.providerProfile?.id === booking.preferredProvider?.id &&
-            participant.status === 'REJECTED',
-        ),
+      (booking.participants ?? []).some(
+        (participant) =>
+          participant.providerProfile?.id === booking.preferredProvider?.id &&
+          participant.status === 'REJECTED',
+      ),
     );
     const backupWindowOpen = bookingImmediateBackup || firstPickDeclined || expired;
     const urgent = expired || freshEligible.length === 0;
@@ -1670,7 +1716,7 @@ function buildMatchingControlRoom(
 
   return {
     openRows,
-    healthLabel: atRiskRows.length ? `${atRiskRows.length} risk` : 'Stable',
+    healthLabel: atRiskRows.length ? `${atRiskRows.length} attention` : 'Stable',
     healthPillClass: atRiskRows.length ? 'pill-danger' : 'pill-success',
     metrics: [
       {
@@ -1714,7 +1760,7 @@ function buildMatchingControlRoom(
     checks: [
       {
         status: atRiskRows.length ? 'Action needed' : 'Clear',
-        title: 'Timer and supply risk',
+        title: 'Timer and supply check',
         detail: atRiskRows.length
           ? `${atRiskRows.length} open matching booking(s) are expired or have no fresh eligible nearby partner.`
           : 'Open matching bookings have usable partner supply in the current sample.',
@@ -1784,19 +1830,17 @@ type DashboardPolicyOutcomeStats = {
   backupInviteCount: number;
 };
 
-function buildDashboardPolicyOutcome(
-  bookings: AdminBooking[],
-  settings: AdminOperationalPolicySetting[],
-) {
+function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOperationalPolicySetting[]) {
   const measuredBookings = bookings.filter((booking) => dashboardBookingPolicySnapshot(booking));
   const stats = dashboardPolicyOutcomeStats(measuredBookings);
   const liveWindow = dashboardPolicyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
   const liveRadius = dashboardPolicyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
-  const liveInviteCap = dashboardPolicyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
+  const liveInviteCap =
+    dashboardPolicyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
   const liveBackupMode =
     dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
-  const driftCount = measuredBookings.filter((booking) =>
-    dashboardPolicySnapshotDrift(booking, settings).length > 0,
+  const driftCount = measuredBookings.filter(
+    (booking) => dashboardPolicySnapshotDrift(booking, settings).length > 0,
   ).length;
   const lowBackupInviteCount = measuredBookings.filter(
     (booking) => booking.status === 'OPEN_MATCHING' && dashboardBookingBackupInviteCount(booking) === 0,
@@ -1860,7 +1904,11 @@ function buildDashboardPolicyOutcome(
             ? 'Open Operations Policy and compare cohorts before changing timer, radius, cap, or backup mode.'
             : 'Run a direct booking and backup partner flow, then return here.',
         href: '/operations-policy',
-        className: outcomeHealthy ? 'ops-task-done' : stats.sampleCount ? 'ops-task-pending' : 'ops-task-blocked',
+        className: outcomeHealthy
+          ? 'ops-task-done'
+          : stats.sampleCount
+            ? 'ops-task-pending'
+            : 'ops-task-blocked',
         pillClass: outcomeHealthy ? 'pill-success' : stats.sampleCount ? 'pill-warn' : 'pill-danger',
       },
       {
@@ -1880,7 +1928,9 @@ function buildDashboardPolicyOutcome(
       },
       {
         scope: driftCount ? 'Drift' : 'Aligned',
-        title: driftCount ? 'Some bookings were opened under older policy' : 'Measured bookings align with live policy',
+        title: driftCount
+          ? 'Some bookings were opened under older policy'
+          : 'Measured bookings align with live policy',
         detail: driftCount
           ? `${driftCount} measured booking(s) differ from the current live policy. This is normal after admin changes, but should be visible before manual action.`
           : 'No measured booking currently differs from live matching policy values.',
@@ -1939,10 +1989,7 @@ function dashboardBookingBackupInviteCount(booking: AdminBooking) {
   }, 0);
 }
 
-function dashboardPolicySnapshotDrift(
-  booking: AdminBooking,
-  settings: AdminOperationalPolicySetting[],
-) {
+function dashboardPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperationalPolicySetting[]) {
   const snapshot = dashboardBookingPolicySnapshot(booking);
   if (!snapshot) {
     return [];
@@ -2010,7 +2057,9 @@ function dashboardPolicyStringValue(settings: AdminOperationalPolicySetting[], k
   return typeof raw === 'string' ? raw : null;
 }
 
-function dashboardBookingPolicySnapshot(booking: AdminBooking): DashboardBookingMatchingPolicySnapshot | null {
+function dashboardBookingPolicySnapshot(
+  booking: AdminBooking,
+): DashboardBookingMatchingPolicySnapshot | null {
   const metadata = readPlainRecord(booking.metadata);
   const policy = readPlainRecord(metadata?.matchingPolicy);
   if (!policy) {
@@ -2019,9 +2068,7 @@ function dashboardBookingPolicySnapshot(booking: AdminBooking): DashboardBooking
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
     backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
-    backupProviderLocationMaxAgeMinutes: readOptionalNumber(
-      policy.backupProviderLocationMaxAgeMinutes,
-    ),
+    backupProviderLocationMaxAgeMinutes: readOptionalNumber(policy.backupProviderLocationMaxAgeMinutes),
     backupProviderInvitationLimit: readOptionalNumber(policy.backupProviderInvitationLimit),
     preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy.backupOpenMode),
@@ -2143,6 +2190,124 @@ function locationAgeMinutes(value?: string | null) {
     return null;
   }
   return Math.max(0, Math.round((Date.now() - timestamp) / 60000));
+}
+
+function buildDailyOperationsSnapshot(input: {
+  bookings: AdminBooking[];
+  providers: AdminProvider[];
+  appPresence: ReturnType<typeof buildAppPresence>;
+  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
+  failedNotifications: AdminNotification[];
+  cashSettlementSummary: AdminCashSettlementSummary;
+  activePayoutBatches: AdminPayoutBatch[];
+}): DailyOperationsSnapshotItem[] {
+  const todayBookings = input.bookings.filter((booking) =>
+    isBangkokToday(booking.scheduledStartAt ?? booking.createdAt),
+  );
+  const completedToday = input.bookings.filter(
+    (booking) =>
+      booking.status === 'COMPLETED' &&
+      isBangkokToday(booking.updatedAt ?? booking.scheduledEndAt ?? booking.createdAt),
+  );
+  const closedToday = input.bookings.filter(
+    (booking) =>
+      ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(booking.status) &&
+      isBangkokToday(booking.updatedAt ?? booking.createdAt),
+  );
+  const onlinePartners = input.providers.filter((provider) => provider.status.startsWith('ONLINE'));
+  const freshPartnerPins = onlinePartners.filter((provider) => {
+    const age = locationAgeMinutes(provider.currentLocationUpdatedAt);
+    return age !== null && age <= 30;
+  });
+
+  return [
+    {
+      label: 'Today bookings',
+      value: todayBookings.length.toString(),
+      helper: 'Scheduled or created today in Vietnam time',
+      href: '/bookings?date=today',
+      tone: todayBookings.length ? 'info' : 'ok',
+    },
+    {
+      label: 'Matching wait now',
+      value: input.bookingOps.openMatching.toString(),
+      helper: 'Customers waiting for partner response',
+      href: '/bookings?view=matching',
+      tone: input.bookingOps.openMatching ? 'warn' : 'ok',
+    },
+    {
+      label: 'Completed today',
+      value: completedToday.length.toString(),
+      helper: 'Finished work to close out',
+      href: '/bookings?status=COMPLETED',
+      tone: completedToday.length ? 'info' : 'ok',
+    },
+    {
+      label: 'Closed today',
+      value: closedToday.length.toString(),
+      helper: 'Cancelled, expired, no-show, or refunded records',
+      href: '/bookings?view=closeout',
+      tone: closedToday.length ? 'warn' : 'ok',
+    },
+    {
+      label: 'Active app customers',
+      value: input.appPresence.liveAppCustomers.toString(),
+      helper: `${input.appPresence.activeBookingCustomers} customer(s) attached to active work`,
+      href: '/app-sessions?role=CUSTOMER',
+      tone: input.appPresence.liveAppCustomers ? 'info' : 'warn',
+    },
+    {
+      label: 'Online partners',
+      value: onlinePartners.length.toString(),
+      helper: `${freshPartnerPins.length} with fresh location pins`,
+      href: '/partners?review=direct-ready',
+      tone: onlinePartners.length ? 'ok' : 'warn',
+    },
+    {
+      label: 'Cash fee block',
+      value: input.cashSettlementSummary.providerCount.toString(),
+      helper: money(input.cashSettlementSummary.totalDebtAmount, input.cashSettlementSummary.currency),
+      href: '/cash-settlements',
+      tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
+    },
+    {
+      label: 'Failed alerts',
+      value: input.failedNotifications.length.toString(),
+      helper: 'Notification rows needing retry or device check',
+      href: '/notifications?review=failed',
+      tone: input.failedNotifications.length ? 'warn' : 'ok',
+    },
+    {
+      label: 'Open payouts',
+      value: input.activePayoutBatches.length.toString(),
+      helper: 'Draft, processing, failed, or held payout batches',
+      href: '/payouts',
+      tone: input.activePayoutBatches.length ? 'info' : 'ok',
+    },
+    {
+      label: 'Closeout checks',
+      value: input.bookingOps.completedCloseoutRisk.toString(),
+      helper: 'Completed work missing finance records',
+      href: '/bookings?view=closeout',
+      tone: input.bookingOps.completedCloseoutRisk ? 'danger' : 'ok',
+    },
+  ];
+}
+
+function isBangkokToday(value?: string | null) {
+  if (!value) return false;
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return false;
+  return bangkokDateKey(new Date(timestamp)) === bangkokDateKey(new Date());
+}
+
+function bangkokDateKey(date: Date) {
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone: 'Asia/Bangkok',
+  }).format(date);
 }
 
 function timeUntilLabel(value: string) {
@@ -2504,7 +2669,8 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
     return Boolean(partner.blockedAt) || hasActiveSanction;
   }).length;
   const verificationBlockers = input.providers.filter((partner) => {
-    const verificationReady = partner.verification?.status === 'APPROVED' || partner.kyc?.status === 'APPROVED';
+    const verificationReady =
+      partner.verification?.status === 'APPROVED' || partner.kyc?.status === 'APPROVED';
     const bankReady = (partner.bankAccounts ?? []).some((account) => account.status === 'APPROVED');
     return !verificationReady || !bankReady;
   }).length;
@@ -2531,7 +2697,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       detail: 'Blocked accounts and active sanctions stay above booking convenience.',
       metricLabel: 'Account blocks',
       metricValue: activeAccountControls.toString(),
-      action: 'Open partner risk',
+      action: 'Open partner controls',
       href: '/partner-risk?sanction=ACTIVE',
       blockerCount: activeAccountControls,
     }),
@@ -2654,13 +2820,13 @@ function buildPartnerOpsQueueItem(
 
   if (partner.blockedAt || activeSanctions.length > 0) {
     return {
-      id: `${partner.id}-risk-block`,
+      id: `${partner.id}-account-control`,
       name,
       status: partner.blockedAt ? 'Account blocked' : 'Active sanction',
       detail: partner.blockedReason
         ? `Account control is active: ${partner.blockedReason}`
-        : 'Risk control is active. Review reports, sanctions, and payout holds before dispatch.',
-      action: 'Open risk review',
+        : 'Account control is active. Review reports, sanctions, and payout holds before dispatch.',
+      action: 'Open account review',
       href: `/partner-risk?q=${encodeURIComponent(partner.id)}`,
       className: 'ops-task-blocked',
       priority: 105,
@@ -3133,7 +3299,7 @@ function buildDashboardCommandSignals(input: {
       title: 'Partner lane',
       status: `${providerReviews.length} REVIEW`,
       detail: providerReviews.length
-        ? 'Partner verification, risk reports, sanctions, or KYC needs admin attention.'
+        ? 'Partner verification, reports, sanctions, or KYC needs admin attention.'
         : 'No partner review blocker in the current snapshot.',
       action: 'Open partners',
       href: '/partners',
@@ -3161,7 +3327,7 @@ function buildDashboardCommandSignals(input: {
           href: '/partners?review=kyc',
         },
         {
-          label: 'Risk reports',
+          label: 'Open reports',
           value: openProviderReports.length.toString(),
           tone: openProviderReports.length ? 'danger' : 'ok',
           href: '/partner-risk?status=OPEN',
@@ -3206,7 +3372,7 @@ function buildDashboardCommandSignals(input: {
       pillClass: paymentReviews ? 'pill-danger' : 'pill-success',
       breakdown: [
         {
-          label: 'Closeout risk',
+          label: 'Closeout checks',
           value: completedCloseoutRisk.length.toString(),
           tone: completedCloseoutRisk.length ? 'danger' : 'ok',
           href: '/bookings?view=closeout',
@@ -3224,7 +3390,7 @@ function buildDashboardCommandSignals(input: {
           href: '/payments?review=cash',
         },
         {
-          label: 'Release risk',
+          label: 'Release checks',
           value: (expiredPaymentRisk.length + noShowPaymentRisk.length).toString(),
           tone: expiredPaymentRisk.length + noShowPaymentRisk.length ? 'danger' : 'ok',
           href: '/bookings?view=payment',
@@ -3557,14 +3723,14 @@ function buildOpsQueue(input: {
       items.push({
         area: 'Partner',
         href: `/partners/${provider.id}`,
-        label: 'Partner risk report open',
+        label: 'Partner report open',
         detail: `${provider.displayName} has ${openReports.length} open report(s).`,
         severity: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity))
           ? 'high'
           : 'medium',
         owner: 'Partner Ops',
         priority: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity)) ? 89 : 64,
-        recommendedAction: 'Open the risk case, contact support evidence, and decide sanction or closure.',
+        recommendedAction: 'Open the report case, contact support evidence, and decide sanction or closure.',
       });
     }
     const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
@@ -3701,7 +3867,11 @@ function buildShiftCommandBriefing(input: {
       firstSignal?.detail ??
       'The current snapshot has no critical blocker. Keep the dispatch and finance lanes under observation.',
     primaryAction: {
-      label: firstQueueItem ? 'Open priority item' : firstSignal ? firstSignal.action : 'Open booking monitor',
+      label: firstQueueItem
+        ? 'Open priority item'
+        : firstSignal
+          ? firstSignal.action
+          : 'Open booking monitor',
       href: firstQueueItem?.href ?? firstSignal?.href ?? '/bookings',
     },
     stats: [
@@ -3805,7 +3975,7 @@ function buildOperatorStartChecklist(input: {
       status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
       detail: cashDebtPartners
         ? `${cashDebtPartners} partner(s) have cash fee or tax debt that can block new booking acceptance.`
-        : `${highQueueCount} high-priority queue item(s), ${input.bookingOps.completedCloseoutRisk} closeout risk.`,
+        : `${highQueueCount} high-priority queue item(s), ${input.bookingOps.completedCloseoutRisk} closeout check(s).`,
       action: cashDebtPartners ? 'Open cash settlements' : 'Open priority queue',
       href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',
       className: cashDebtPartners || highQueueCount ? 'ops-task-blocked' : 'ops-task-done',
@@ -3813,7 +3983,8 @@ function buildOperatorStartChecklist(input: {
     },
     {
       title: 'Check customer reachability',
-      status: notificationFailures || input.appPresence.disabledPushCustomers ? 'Contact risk' : 'Reachable',
+      status:
+        notificationFailures || input.appPresence.disabledPushCustomers ? 'Reachability check' : 'Reachable',
       detail: `${input.appPresence.liveAppCustomers} live customer(s), ${input.appPresence.disabledPushCustomers} push-disabled customer(s), ${notificationFailures} failed notification row(s).`,
       action: notificationFailures ? 'Open failed notifications' : 'Open app sessions',
       href: notificationFailures ? '/notifications?review=failed' : '/app-sessions?role=CUSTOMER',
@@ -4187,6 +4358,12 @@ function activePayoutHold(batch: AdminPayoutBatch) {
 
 function severityScore(severity: OpsQueueItem['severity']) {
   return severity === 'high' ? 3 : severity === 'medium' ? 2 : 1;
+}
+
+function opsQueueSeverityLabel(severity: OpsQueueItem['severity']) {
+  if (severity === 'high') return 'URGENT';
+  if (severity === 'medium') return 'WATCH';
+  return 'INFO';
 }
 
 function shortId(id?: string) {
