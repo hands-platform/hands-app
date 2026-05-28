@@ -1425,6 +1425,7 @@ try {
 }
 
 let delayedBackupBooking;
+let backupDeclineNotificationObserved = false;
 const backupOpenModeBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
   'matching.backup_open_mode',
@@ -1483,6 +1484,21 @@ try {
     );
   }
   await postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken);
+  await postJson(`/provider/bookings/${delayedBackupBooking.id}/reject`, backupProviderAuth.accessToken);
+  const delayedBackupCustomerNotifications = await getJson('/notifications', customerAuth.accessToken);
+  backupDeclineNotificationObserved = delayedBackupCustomerNotifications.some(
+    (notification) =>
+      notification.type === 'provider.rejected' &&
+      notification.data?.bookingId === delayedBackupBooking.id &&
+      notification.data?.providerProfileId === backupProviderAuth.user.providerProfile.id,
+  );
+  if (!backupDeclineNotificationObserved) {
+    throw new Error(
+      `Backup partner decline should create a customer notification: ${JSON.stringify(
+        delayedBackupCustomerNotifications,
+      )}`,
+    );
+  }
 } finally {
   await patchOperationalPolicyValue(
     adminAuth.accessToken,
@@ -1713,6 +1729,21 @@ if (expiredByAdminBooking.status !== 'EXPIRED' || expiredByAdminBooking.payment?
 
 await postJson(`/provider/bookings/${booking.id}/join`, providerAuth.accessToken);
 await postJson(`/provider/bookings/${hybridBooking.id}/join`, backupProviderAuth.accessToken);
+await postJson(`/provider/bookings/${hybridBooking.id}/accept`, backupProviderAuth.accessToken);
+const hybridCustomerNotifications = await getJson('/notifications', customerAuth.accessToken);
+const backupAcceptNotificationObserved = hybridCustomerNotifications.some(
+  (notification) =>
+    notification.type === 'provider.accepted' &&
+    notification.data?.bookingId === hybridBooking.id &&
+    notification.data?.providerProfileId === backupProviderAuth.user.providerProfile.id,
+);
+if (!backupAcceptNotificationObserved) {
+  throw new Error(
+    `Backup partner acceptance should create a customer notification: ${JSON.stringify(
+      hybridCustomerNotifications,
+    )}`,
+  );
+}
 
 const hybridMatched = await postJson(
   `/customer/bookings/${hybridBooking.id}/select-provider`,
@@ -2551,6 +2582,8 @@ console.log({
   hybridSelectedProviderId: adminHybridBooking?.selectedProvider?.id ?? null,
   hybridSwitchedToBackup:
     adminHybridBooking?.preferredProvider?.id !== adminHybridBooking?.selectedProvider?.id,
+  backupAcceptNotificationObserved,
+  backupDeclineNotificationObserved,
   preferredAcceptPolicyBookingId: preferredAcceptPolicyBooking?.id ?? null,
   preferredAcceptPolicyMatched: preferredAcceptPolicyMatched?.status === 'MATCHED',
   savedSelectedLocationId: savedSelectedLocation.id,
