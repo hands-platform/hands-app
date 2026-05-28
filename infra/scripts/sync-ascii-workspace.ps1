@@ -1,9 +1,16 @@
 param(
-  [string]$Target = "C:\dev\massage-on-demand-vn"
+  [string]$Target = "C:\dev\massage-vn-workspace\repo"
 )
 
 $ErrorActionPreference = "Stop"
 $source = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$targetFullPath = [System.IO.Path]::GetFullPath($Target)
+$sourceFullPath = [System.IO.Path]::GetFullPath($source.Path)
+
+if ($sourceFullPath.TrimEnd('\') -ieq $targetFullPath.TrimEnd('\')) {
+  Write-Host "Workspace is already in the standard HANDS path: $targetFullPath"
+  exit 0
+}
 
 if (-not (Test-Path "C:\dev")) {
   New-Item -ItemType Directory -Path "C:\dev" -Force | Out-Null

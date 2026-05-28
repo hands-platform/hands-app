@@ -16,7 +16,7 @@ export class HealthService {
   healthcheck() {
     return {
       ok: true,
-      service: 'massage-vn-api',
+      service: 'hands-api',
       timestamp: new Date().toISOString(),
       environment: this.config.get<string>('NODE_ENV') ?? 'development',
     };

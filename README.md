@@ -5,7 +5,7 @@ Original MVP for HANDS, a realtime on-demand massage marketplace serving all of 
 ## Apps
 
 - `apps/customer_app` - Flutter customer app.
-- `apps/provider_app` - Flutter provider app.
+- `apps/provider_app` - Flutter partner app.
 - `apps/admin_web` - Next.js admin dashboard.
 - `apps/api` - NestJS API, realtime gateway, matching, payments, jobs.
 
@@ -154,13 +154,13 @@ Dedicated installer for Git, Docker Desktop, and Flutter:
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\install-dev-tools-admin.ps1
 ```
 
-The smoke script covers demo OTP login, provider verification file presign/read-url, admin verification approval, booking creation, provider join, customer selection, chat, completion, review/tip, provider earnings, payout batch creation, admin refund, and notification reads.
+The smoke script covers demo OTP login, partner verification file presign/read-url, admin verification approval, booking creation, partner join, customer selection, chat, completion, review/tip, partner earnings, payout batch creation, admin refund, and notification reads.
 
 This repository is structured for small, commit-ready phases. Phase 1 includes reports, architecture docs, Docker, Prisma schema, backend skeleton, and starter mobile/admin UI.
 
 ## Mobile MVP
 
-Customer and provider apps now have runtime API clients, phone OTP request/verify screens, demo OTP login, Bearer-token REST calls, and Socket.IO JWT handshake setup. See:
+Customer and partner apps now have runtime API clients, phone OTP request/verify screens, demo OTP login, Bearer-token REST calls, and Socket.IO JWT handshake setup. See:
 
 - `docs/architecture/mobile-api-integration.md`
 - `docs/architecture/localization-strategy.md`
