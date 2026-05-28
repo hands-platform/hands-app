@@ -77,9 +77,9 @@ Chat access is limited to the booking customer, the selected partner, and admins
 - `POST /files/presign`
 - `GET /files/:id/read-url`
 
-Provider verification files must be private. Public provider gallery/profile images can later be served through CDN.
+Partner verification files must be private. Public partner gallery/profile images can later be served through CDN.
 
-For `provider-verification` uploads, providers may omit `providerVerificationId`; the API resolves or creates the provider's verification record automatically.
+For `provider-verification` uploads, partners may omit `providerVerificationId`; the API resolves or creates the partner's verification record automatically.
 
 ## Notifications
 
@@ -100,6 +100,12 @@ The retry queue stores DB notifications first. Delivery attempts are recorded in
 - `POST /admin/partners/:id/block`
 - `POST /admin/partners/:id/unblock`
 - `POST /admin/partners/:id/sync-supabase-role`
+- `POST /admin/partner-devices/:id/block`
+- `POST /admin/partner-devices/:id/unblock`
+- `POST /admin/partner-documents/:id/approve`
+- `POST /admin/partner-documents/:id/reject`
+- `POST /admin/partner-bank-accounts/:id/approve`
+- `POST /admin/partner-bank-accounts/:id/reject`
 - `GET /admin/partner-reports`
 - `POST /admin/partner-reports`
 - `PATCH /admin/partner-reports/:id`
@@ -119,7 +125,7 @@ The retry queue stores DB notifications first. Delivery attempts are recorded in
 - `PATCH /admin/reviews/:id/moderate`
 - `GET /admin/notifications`
 
-Legacy `/admin/providers`, `/admin/provider-reports`, and `/admin/provider-sanctions` aliases are kept for compatibility while the admin product language moves to Partner.
+Legacy `/admin/providers`, `/admin/provider-reports`, `/admin/provider-sanctions`, `/admin/provider-devices`, `/admin/provider-documents`, and `/admin/provider-bank-accounts` aliases are kept for compatibility while the admin product language moves to Partner.
 
 ## Payments
 
