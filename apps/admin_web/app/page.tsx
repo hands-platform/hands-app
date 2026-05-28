@@ -190,6 +190,7 @@ export default async function DashboardPage() {
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
   const policySummary = buildOperationalPolicySummary(operationalPolicies);
   const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies);
+  const policyOutcome = buildDashboardPolicyOutcome(bookings, operationalPolicies);
   const shiftBriefing = buildShiftCommandBriefing({
     queue,
     commandSignals,
@@ -322,6 +323,40 @@ export default async function DashboardPage() {
           <Link className="text-link" href="/audit-log">
             Audit log
           </Link>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Policy outcome pulse</h2>
+            <p className="muted">
+              First-screen readout of whether current matching policy is producing acceptable outcomes.
+              Deeper cohort analysis stays in Operations Policy.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy">
+            Review policy cohorts
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {policyOutcome.metrics.map((metric) => (
+            <div key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {policyOutcome.cards.map((card) => (
+            <Link className={`ops-task-card ${card.className}`} href={card.href} key={card.title}>
+              <span className={`pill ${card.pillClass}`}>{card.scope}</span>
+              <h3>{card.title}</h3>
+              <p>{card.detail}</p>
+              <small>{card.operatorAction}</small>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -1606,6 +1641,230 @@ function buildMatchingControlRoom(
       },
     ],
   };
+}
+
+type DashboardPolicyOutcomeStats = {
+  sampleCount: number;
+  matchedCount: number;
+  completedCount: number;
+  failedOutcomeCount: number;
+  participantCount: number;
+  backupInviteCount: number;
+};
+
+function buildDashboardPolicyOutcome(
+  bookings: AdminBooking[],
+  settings: AdminOperationalPolicySetting[],
+) {
+  const measuredBookings = bookings.filter((booking) => dashboardBookingPolicySnapshot(booking));
+  const stats = dashboardPolicyOutcomeStats(measuredBookings);
+  const liveWindow = dashboardPolicyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
+  const liveRadius = dashboardPolicyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const liveInviteCap = dashboardPolicyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
+  const liveBackupMode =
+    dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+  const driftCount = measuredBookings.filter((booking) =>
+    dashboardPolicySnapshotDrift(booking, settings).length > 0,
+  ).length;
+  const lowBackupInviteCount = measuredBookings.filter(
+    (booking) => booking.status === 'OPEN_MATCHING' && dashboardBookingBackupInviteCount(booking) === 0,
+  ).length;
+  const failedRate = stats.sampleCount > 0 ? stats.failedOutcomeCount / stats.sampleCount : 0;
+  const matchedRate = stats.sampleCount > 0 ? stats.matchedCount / stats.sampleCount : 0;
+  const avgInvites = dashboardAverageLabel(stats.backupInviteCount, stats.sampleCount, 'partner(s)');
+  const avgParticipants = dashboardAverageLabel(stats.participantCount, stats.sampleCount, 'partner(s)');
+  const outcomeHealthy = stats.sampleCount > 0 && matchedRate >= 0.7 && failedRate <= 0.15;
+
+  return {
+    metrics: [
+      {
+        label: 'Measured bookings',
+        value: String(stats.sampleCount),
+        helper: 'Bookings with saved matching policy snapshots.',
+      },
+      {
+        label: 'Matched rate',
+        value: dashboardPercentLabel(stats.matchedCount, stats.sampleCount),
+        helper: `${stats.matchedCount}/${stats.sampleCount} reached selected or active partner state.`,
+      },
+      {
+        label: 'Completed rate',
+        value: dashboardPercentLabel(stats.completedCount, stats.sampleCount),
+        helper: `${stats.completedCount}/${stats.sampleCount} completed service.`,
+      },
+      {
+        label: 'Failed outcome rate',
+        value: dashboardPercentLabel(stats.failedOutcomeCount, stats.sampleCount),
+        helper: 'Cancelled, expired, refunded, or no-show outcomes in measured bookings.',
+      },
+      {
+        label: 'Avg backup invites',
+        value: avgInvites,
+        helper: 'Read from booking backupNotificationTraces metadata.',
+      },
+      {
+        label: 'Avg participants',
+        value: avgParticipants,
+        helper: 'Partner join depth across measured bookings.',
+      },
+    ],
+    cards: [
+      {
+        scope: outcomeHealthy ? 'Healthy' : stats.sampleCount ? 'Review' : 'Needs data',
+        title: outcomeHealthy
+          ? 'Matching policy is performing in the current sample'
+          : stats.sampleCount
+            ? 'Policy outcomes need operator review'
+            : 'Policy outcome sample is not ready yet',
+        detail: stats.sampleCount
+          ? `${dashboardPercentLabel(stats.matchedCount, stats.sampleCount)} matched, ${dashboardPercentLabel(
+              stats.failedOutcomeCount,
+              stats.sampleCount,
+            )} failed outcome, ${avgInvites} backup invites.`
+          : 'Create measured bookings after policy setup so the dashboard can compare policy to outcomes.',
+        operatorAction: outcomeHealthy
+          ? 'Keep current policy stable while collecting more district and time-band results.'
+          : stats.sampleCount
+            ? 'Open Operations Policy and compare cohorts before changing timer, radius, cap, or backup mode.'
+            : 'Run a direct booking and backup partner flow, then return here.',
+        href: '/operations-policy',
+        className: outcomeHealthy ? 'ops-task-done' : stats.sampleCount ? 'ops-task-pending' : 'ops-task-blocked',
+        pillClass: outcomeHealthy ? 'pill-success' : stats.sampleCount ? 'pill-warn' : 'pill-danger',
+      },
+      {
+        scope: 'Live rules',
+        title: `${liveWindow}m wait / ${formatDistance(liveRadius)} / cap ${liveInviteCap}`,
+        detail:
+          liveBackupMode === 'IMMEDIATE_WITHIN_WINDOW'
+            ? 'Backup partners can be exposed during the first-pick response window.'
+            : 'Backup partners wait until first-pick decline or timer close.',
+        operatorAction:
+          lowBackupInviteCount > 0
+            ? `${lowBackupInviteCount} open matching booking(s) have no backup invite trace yet.`
+            : 'Backup exposure is traceable in the current measured sample.',
+        href: lowBackupInviteCount > 0 ? '/bookings?view=matching' : '/operations-policy',
+        className: lowBackupInviteCount > 0 ? 'ops-task-pending' : 'ops-task-done',
+        pillClass: lowBackupInviteCount > 0 ? 'pill-warn' : 'pill-success',
+      },
+      {
+        scope: driftCount ? 'Drift' : 'Aligned',
+        title: driftCount ? 'Some bookings were opened under older policy' : 'Measured bookings align with live policy',
+        detail: driftCount
+          ? `${driftCount} measured booking(s) differ from the current live policy. This is normal after admin changes, but should be visible before manual action.`
+          : 'No measured booking currently differs from live matching policy values.',
+        operatorAction: driftCount
+          ? 'Use booking detail snapshots before expiring, extending, or manually matching those requests.'
+          : 'Manual dispatch can use the current policy view with lower ambiguity.',
+        href: driftCount ? '/operations-policy' : '/bookings?view=matching',
+        className: driftCount ? 'ops-task-pending' : 'ops-task-done',
+        pillClass: driftCount ? 'pill-warn' : 'pill-success',
+      },
+    ],
+  };
+}
+
+function dashboardPolicyOutcomeStats(bookings: AdminBooking[]): DashboardPolicyOutcomeStats {
+  return bookings.reduce<DashboardPolicyOutcomeStats>(
+    (stats, booking) => {
+      stats.sampleCount += 1;
+      if (dashboardBookingHasMatchedPartner(booking)) {
+        stats.matchedCount += 1;
+      }
+      if (booking.status === 'COMPLETED') {
+        stats.completedCount += 1;
+      }
+      if (['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(booking.status)) {
+        stats.failedOutcomeCount += 1;
+      }
+      stats.participantCount += booking.participants?.length ?? 0;
+      stats.backupInviteCount += dashboardBookingBackupInviteCount(booking);
+      return stats;
+    },
+    {
+      sampleCount: 0,
+      matchedCount: 0,
+      completedCount: 0,
+      failedOutcomeCount: 0,
+      participantCount: 0,
+      backupInviteCount: 0,
+    },
+  );
+}
+
+function dashboardBookingHasMatchedPartner(booking: AdminBooking) {
+  return (
+    Boolean(booking.selectedProvider) ||
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status)
+  );
+}
+
+function dashboardBookingBackupInviteCount(booking: AdminBooking) {
+  const metadata = readPlainRecord(booking.metadata);
+  const traces = Array.isArray(metadata?.backupNotificationTraces) ? metadata.backupNotificationTraces : [];
+  return traces.reduce((total, value) => {
+    const trace = readPlainRecord(value);
+    return total + (readOptionalNumber(trace?.notifiedCount) ?? 0);
+  }, 0);
+}
+
+function dashboardPolicySnapshotDrift(
+  booking: AdminBooking,
+  settings: AdminOperationalPolicySetting[],
+) {
+  const snapshot = dashboardBookingPolicySnapshot(booking);
+  if (!snapshot) {
+    return [];
+  }
+  const comparisons = [
+    {
+      saved: snapshot.providerResponseWindowMinutes,
+      live: dashboardPolicyRawValue(settings, 'matching.provider_response_window_minutes'),
+    },
+    {
+      saved: snapshot.backupProviderRadiusMeters,
+      live: dashboardPolicyRawValue(settings, 'matching.backup_provider_radius_meters'),
+    },
+    {
+      saved: snapshot.backupProviderLocationMaxAgeMinutes,
+      live: dashboardPolicyRawValue(settings, 'matching.backup_provider_location_max_age_minutes'),
+    },
+    {
+      saved: snapshot.backupProviderInvitationLimit,
+      live: dashboardPolicyRawValue(settings, 'matching.backup_provider_invitation_limit'),
+    },
+    {
+      saved: snapshot.preferredAcceptMode,
+      live: dashboardPolicyRawValue(settings, 'matching.preferred_accept_mode'),
+    },
+    {
+      saved: snapshot.backupOpenMode,
+      live: dashboardPolicyRawValue(settings, 'matching.backup_open_mode'),
+    },
+  ];
+  return comparisons.filter(
+    (comparison) =>
+      comparison.saved !== null &&
+      comparison.saved !== undefined &&
+      String(comparison.saved) !== String(comparison.live),
+  );
+}
+
+function dashboardPolicyRawValue(settings: AdminOperationalPolicySetting[], key: string) {
+  return settings.find((setting) => setting.key === key)?.value;
+}
+
+function dashboardPercentLabel(count: number, total: number) {
+  if (total <= 0) {
+    return '0%';
+  }
+  return `${Math.round((count / total) * 100)}%`;
+}
+
+function dashboardAverageLabel(total: number, count: number, unit: string) {
+  if (count <= 0) {
+    return `0 ${unit}`;
+  }
+  return `${(total / count).toLocaleString('en', { maximumFractionDigits: 1 })} ${unit}`;
 }
 
 function dashboardPolicyNumberValue(settings: AdminOperationalPolicySetting[], key: string) {
