@@ -43,6 +43,12 @@ Output:
 C:\dev\massage-vn-workspace\repo\infra\setup\.generated\hands-external-registration-pack.md
 ```
 
+Operations dashboard runbook:
+
+```text
+C:\dev\massage-vn-workspace\repo\docs\architecture\operations-dashboard.md
+```
+
 ## Current Status
 
 - Local MVP services: ready on API `3100` and Admin `3101`

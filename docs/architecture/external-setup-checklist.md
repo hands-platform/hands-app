@@ -20,6 +20,12 @@ Use this staging template as the fill-in checklist when you receive external con
 C:\dev\massage-vn-workspace\repo\infra\env\hands-staging.env.example
 ```
 
+Use this admin runbook to understand the first-screen operating KPIs:
+
+```text
+C:\dev\massage-vn-workspace\repo\docs\architecture\operations-dashboard.md
+```
+
 ## Project Identity
 
 - App name: `HANDS`
