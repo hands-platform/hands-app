@@ -57,11 +57,23 @@ const pages = [
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
   {
     path: '/partner-risk',
-    markers: ['Partner Risk', 'Partner risk scorecard', 'Booking acceptance unblock board', 'Risk operation filters'],
+    markers: [
+      'Partner Risk',
+      'Partner risk scorecard',
+      'Booking acceptance unblock board',
+      'Acceptance unblock playbook',
+      'Risk operation filters',
+    ],
   },
   {
     path: '/provider-risk',
-    markers: ['Partner Risk', 'Partner risk scorecard', 'Booking acceptance unblock board', 'Risk operation filters'],
+    markers: [
+      'Partner Risk',
+      'Partner risk scorecard',
+      'Booking acceptance unblock board',
+      'Acceptance unblock playbook',
+      'Risk operation filters',
+    ],
   },
   {
     path: '/app-sessions',

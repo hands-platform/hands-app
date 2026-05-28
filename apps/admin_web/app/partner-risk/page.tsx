@@ -58,6 +58,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
   });
   const operatingBlocks = buildPartnerOperatingBlocks(providerWatchlist);
   const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist, riskPolicy);
+  const acceptanceUnblockPlaybook = buildAcceptanceUnblockPlaybook(acceptanceUnblockBoard);
   const riskScorecard = buildPartnerRiskScorecard(providers, providerWatchlist, riskPolicy);
 
   return (
@@ -264,6 +265,57 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
               ) : null}
               <span className="ops-task-card-action">{item.action}</span>
             </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Acceptance unblock playbook</h2>
+            <p className="muted">
+              Step-by-step operating order for restoring partner booking acceptance without mixing payout-only
+              gates into customer dispatch decisions.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              acceptanceUnblockPlaybook.some((step) => step.blockingCount) ? 'pill-warn' : 'pill-success'
+            }`}
+          >
+            {acceptanceUnblockPlaybook.reduce((sum, step) => sum + step.blockingCount, 0)} active blocker(s)
+          </span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {acceptanceUnblockPlaybook.map((step) => (
+            <div className="setup-stage-item" key={step.id}>
+              <span>{step.step}</span>
+              <div>
+                <strong>{step.title}</strong>
+                <p className="muted">{step.detail}</p>
+                <p className="muted">
+                  <strong>Booking impact:</strong> {step.bookingImpact}
+                </p>
+                <p className="muted">
+                  <strong>Payout impact:</strong> {step.payoutImpact}
+                </p>
+                <p className="muted">
+                  <strong>Customer impact:</strong> {step.customerImpact}
+                </p>
+                <div className="participant-list">
+                  <span className={`pill ${step.pillClass}`}>{step.status}</span>
+                  <span className="pill pill-info">{step.owner}</span>
+                  {step.partnerSamples.map((partner) => (
+                    <span className="pill pill-neutral" key={`${step.id}-${partner}`}>
+                      {partner}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <Link className="text-link" href={step.href}>
+                {step.action}
+              </Link>
+            </div>
           ))}
         </div>
       </section>
@@ -777,6 +829,23 @@ type BookingAcceptanceUnblockCard = {
   blockingCount: number;
   partnerSamples: string[];
   metrics: RiskCommandMetric[];
+};
+
+type AcceptanceUnblockPlaybookStep = {
+  id: string;
+  step: string;
+  owner: string;
+  title: string;
+  status: string;
+  pillClass: string;
+  detail: string;
+  bookingImpact: string;
+  payoutImpact: string;
+  customerImpact: string;
+  action: string;
+  href: string;
+  blockingCount: number;
+  partnerSamples: string[];
 };
 
 type PartnerRiskScoreBand = 'Critical' | 'High' | 'Watch' | 'Clear';
@@ -1386,6 +1455,121 @@ function buildBookingAcceptanceUnblockBoard(
         metric('Acceptance', 'Not blocked', 'ok'),
         metric('Payout', 'Blocked later', taxItems.length ? 'warn' : 'ok'),
       ],
+    },
+  ];
+}
+
+function buildAcceptanceUnblockPlaybook(
+  cards: BookingAcceptanceUnblockCard[],
+): AcceptanceUnblockPlaybookStep[] {
+  const byId = new Map(cards.map((card) => [card.id, card]));
+  const card = (id: string) => byId.get(id);
+
+  return [
+    {
+      id: 'playbook-wallet-debt',
+      step: '1',
+      owner: 'Finance',
+      title: 'Clear negative wallet first',
+      status: card('wallet-debt')?.status ?? 'UNKNOWN',
+      pillClass: card('wallet-debt')?.blockingCount ? 'pill-danger' : 'pill-success',
+      detail:
+        'Negative wallet is the strongest booking gate because cash bookings create unpaid HANDS fee debt.',
+      bookingImpact:
+        'Blocks direct acceptance and backup matching until deposit, admin offset, or earning offset is recorded.',
+      payoutImpact:
+        'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
+      customerImpact:
+        'Prevents assigning customers to partners who still owe settlement from previous cash services.',
+      action: card('wallet-debt')?.action ?? 'Open settlement queue',
+      href: card('wallet-debt')?.href ?? '/cash-settlements',
+      blockingCount: card('wallet-debt')?.blockingCount ?? 0,
+      partnerSamples: card('wallet-debt')?.partnerSamples ?? [],
+    },
+    {
+      id: 'playbook-account-controls',
+      step: '2',
+      owner: 'Trust',
+      title: 'Resolve account and sanction controls',
+      status: card('account-controls')?.status ?? 'UNKNOWN',
+      pillClass: card('account-controls')?.blockingCount ? 'pill-danger' : 'pill-success',
+      detail:
+        'Account blocks and active sanctions are deliberate safety controls and should stay above convenience.',
+      bookingImpact: 'Blocks partner visibility and booking acceptance while the restriction is active.',
+      payoutImpact: 'Payout holds should remain until the report or sanction has a clean audit outcome.',
+      customerImpact: 'Protects customers from partners under unresolved safety, fraud, or behavior review.',
+      action: card('account-controls')?.action ?? 'Review account blocks',
+      href: card('account-controls')?.href ?? '/partner-risk?sanction=ACTIVE',
+      blockingCount: card('account-controls')?.blockingCount ?? 0,
+      partnerSamples: card('account-controls')?.partnerSamples ?? [],
+    },
+    {
+      id: 'playbook-verification',
+      step: '3',
+      owner: 'KYC',
+      title: 'Approve identity and bank readiness',
+      status: card('verification-readiness')?.status ?? 'UNKNOWN',
+      pillClass: card('verification-readiness')?.blockingCount ? 'pill-danger' : 'pill-success',
+      detail:
+        'KYC, required CCCD/selfie documents, and bank approval are the Level 2 work gate for paid bookings.',
+      bookingImpact: 'Blocks paid booking acceptance and backup participation until the evidence is approved.',
+      payoutImpact: 'Bank approval is required before payout; tax remains staged until first earning.',
+      customerImpact: 'Keeps marketplace trust high while avoiding excessive signup friction.',
+      action: card('verification-readiness')?.action ?? 'Open acceptance-blocked partners',
+      href: card('verification-readiness')?.href ?? '/partners?review=acceptance-blocked',
+      blockingCount: card('verification-readiness')?.blockingCount ?? 0,
+      partnerSamples: card('verification-readiness')?.partnerSamples ?? [],
+    },
+    {
+      id: 'playbook-location',
+      step: '4',
+      owner: 'Dispatch',
+      title: 'Refresh stale partner location',
+      status: card('location-dispatch')?.status ?? 'UNKNOWN',
+      pillClass: card('location-dispatch')?.blockingCount ? 'pill-danger' : 'pill-warn',
+      detail:
+        'Location freshness controls distance sorting and the 10km backup invite pool, but it is often solved by reopening the app.',
+      bookingImpact: 'Can exclude partners from backup matching or make customer ETA expectations unreliable.',
+      payoutImpact: 'No direct payout impact, but location evidence may matter for disputes and no-show review.',
+      customerImpact: 'Improves nearby partner ordering and reduces wasted waiting time.',
+      action: card('location-dispatch')?.action ?? 'Open partner profiles',
+      href: card('location-dispatch')?.href ?? '/partners?review=location',
+      blockingCount: card('location-dispatch')?.blockingCount ?? 0,
+      partnerSamples: card('location-dispatch')?.partnerSamples ?? [],
+    },
+    {
+      id: 'playbook-device-contact',
+      step: '5',
+      owner: 'Ops',
+      title: 'Confirm device and alert reachability',
+      status: card('device-contact')?.status ?? 'UNKNOWN',
+      pillClass: card('device-contact')?.blockingCount ? 'pill-danger' : 'pill-warn',
+      detail:
+        'In-app alerts are active now and OS push is deferred, so recent app sessions and enabled devices matter.',
+      bookingImpact: 'Does not always hard-block acceptance, but weakens response rate and backup participation.',
+      payoutImpact: 'No direct payout impact.',
+      customerImpact: 'Reduces missed partner requests during the 10 minute response window.',
+      action: card('device-contact')?.action ?? 'Open app sessions',
+      href: card('device-contact')?.href ?? '/app-sessions',
+      blockingCount: card('device-contact')?.blockingCount ?? 0,
+      partnerSamples: card('device-contact')?.partnerSamples ?? [],
+    },
+    {
+      id: 'playbook-tax',
+      step: '6',
+      owner: 'Finance',
+      title: 'Keep tax as post-first-earning payout gate',
+      status: card('tax-after-first-earning')?.status ?? 'UNKNOWN',
+      pillClass: card('tax-after-first-earning')?.blockingCount ? 'pill-warn' : 'pill-success',
+      detail:
+        'Tax policy must be configured from day one, but partner tax profile collection waits until first earning.',
+      bookingImpact: 'Should not block first signup or first booking acceptance.',
+      payoutImpact: 'Blocks payout and withdrawal after first earning until MST, address, and agreements are complete.',
+      customerImpact: 'Reduces partner onboarding drop-off while finance remains controlled before payout.',
+      action: card('tax-after-first-earning')?.action ?? 'Open tax policy',
+      href: card('tax-after-first-earning')?.href ?? '/tax-policy',
+      blockingCount: card('tax-after-first-earning')?.blockingCount ?? 0,
+      partnerSamples: card('tax-after-first-earning')?.partnerSamples ?? [],
     },
   ];
 }
