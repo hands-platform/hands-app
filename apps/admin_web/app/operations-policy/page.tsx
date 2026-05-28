@@ -1028,6 +1028,9 @@ function buildPolicySimulation(
   const responseWindowMinutes =
     policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
   const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const backupLocationFreshnessMinutes =
+    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+  const backupInvitationLimit = policyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 20;
   const travelBufferMinutes = policyNumberValue(settings, 'matching.travel_buffer_minutes') ?? 30;
   const backupOpenMode =
     policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
@@ -1059,14 +1062,17 @@ function buildPolicySimulation(
   const eligiblePartners = partnerCandidates.filter(
     (item) => (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
   );
-  const freshEligible = eligiblePartners.filter((item) => (item.ageMinutes ?? Infinity) <= 30);
-  const partnerRows: PolicySimulatorPartnerRow[] = eligiblePartners.slice(0, 6).map((item) => ({
+  const freshEligible = eligiblePartners.filter(
+    (item) => (item.ageMinutes ?? Infinity) <= backupLocationFreshnessMinutes,
+  );
+  const invitedPartners = eligiblePartners.slice(0, backupInvitationLimit);
+  const partnerRows: PolicySimulatorPartnerRow[] = invitedPartners.slice(0, 6).map((item) => ({
     id: item.provider.id,
     name: item.provider.displayName ?? item.provider.user?.fullName ?? 'Partner',
-    status: (item.ageMinutes ?? Infinity) <= 30 ? 'Fresh' : 'Stale',
+    status: (item.ageMinutes ?? Infinity) <= backupLocationFreshnessMinutes ? 'Fresh' : 'Stale',
     distanceLabel: formatDistance(item.distanceMeters ?? 0),
     locationAgeLabel: formatLocationAge(item.ageMinutes),
-    pillClass: (item.ageMinutes ?? Infinity) <= 30 ? 'pill-success' : 'pill-warn',
+    pillClass: (item.ageMinutes ?? Infinity) <= backupLocationFreshnessMinutes ? 'pill-success' : 'pill-warn',
   }));
   const expiresAt = new Date(Date.now() + responseWindowMinutes * 60 * 1000);
   const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
@@ -1094,6 +1100,11 @@ function buildPolicySimulation(
         label: 'Backup radius',
         value: formatDistance(backupRadiusMeters),
         helper: `${eligiblePartners.length} usable partner(s), ${freshEligible.length} fresh location(s).`,
+      },
+      {
+        label: 'Backup invite cap',
+        value: `${backupInvitationLimit} partner(s)`,
+        helper: `${invitedPartners.length} partner(s) would be invited now after distance sorting.`,
       },
       {
         label: 'Partner alert',
@@ -1124,7 +1135,7 @@ function buildPolicySimulation(
         step: '2',
         title: immediateBackup ? 'Backup list opens immediately' : 'Backup list waits unless declined',
         detail: immediateBackup
-          ? `${eligiblePartners.length} partner(s) inside ${formatDistance(backupRadiusMeters)} can see or join while the first partner decides.`
+          ? `${invitedPartners.length}/${eligiblePartners.length} partner(s) inside ${formatDistance(backupRadiusMeters)} can see or join while the first partner decides.`
           : `Backup partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick partner declines.`,
         className: immediateBackup ? 'timeline-active' : 'timeline-warn',
         tags: [
