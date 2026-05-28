@@ -52,6 +52,7 @@ async function assertOperationalPolicyMetadata(accessToken) {
     'matching.provider_response_window_minutes',
     'matching.backup_provider_radius_meters',
     'matching.backup_provider_location_max_age_minutes',
+    'matching.backup_provider_invitation_limit',
     'matching.travel_buffer_minutes',
     'matching.preferred_accept_mode',
     'matching.backup_open_mode',
