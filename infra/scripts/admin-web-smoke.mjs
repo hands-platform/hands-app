@@ -66,6 +66,7 @@ const pages = [
     path: '/partners',
     markers: [
       'Partner Verification',
+      'Dispatch handoff links',
       'Dispatch capacity forecast',
       'Partner acceptance blocker board',
       'KYC review board',
@@ -86,6 +87,7 @@ const pages = [
     path: '/providers',
     markers: [
       'Partner Verification',
+      'Dispatch handoff links',
       'Dispatch capacity forecast',
       'Partner acceptance blocker board',
       'KYC review board',

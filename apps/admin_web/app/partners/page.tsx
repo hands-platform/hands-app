@@ -121,6 +121,18 @@ type PartnerShiftHandoff = {
     samples: string[];
   }>;
 };
+type PartnerDispatchHandoff = {
+  headline: string;
+  detail: string;
+  policyLabel: string;
+  links: Array<{
+    title: string;
+    value: string;
+    detail: string;
+    href: string;
+    tone: ProviderCommandLane['tone'];
+  }>;
+};
 type PartnerKycState = {
   status: string;
   missingDocuments: string[];
@@ -182,6 +194,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const acceptanceBlockerBoard = buildPartnerAcceptanceBlockerBoard(providers, opsPolicy);
   const kycReviewBoard = buildPartnerKycReviewBoard(providers);
   const shiftHandoff = buildPartnerShiftHandoff(providers, opsPolicy);
+  const dispatchHandoff = buildPartnerDispatchHandoff(allProviders, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
 
   return (
@@ -322,6 +335,31 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
         ))}
       </div>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Dispatch handoff links</h2>
+            <p className="muted">{dispatchHandoff.headline}</p>
+            <p className="muted">{dispatchHandoff.detail}</p>
+          </div>
+          <Link className="text-link" href="/operations-policy">
+            {dispatchHandoff.policyLabel}
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+          {dispatchHandoff.links.map((item) => (
+            <Link
+              className={`ops-task-breakdown-item ops-task-breakdown-${providerDashboardTone(item.tone)}`}
+              href={item.href}
+              key={item.title}
+            >
+              <span>{item.title}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -2246,6 +2284,88 @@ function buildPartnerShiftHandoff(
       },
     ],
     actions: actions.slice(0, 6),
+  };
+}
+
+function buildPartnerDispatchHandoff(
+  providers: AdminProvider[],
+  opsPolicy: ProviderOpsPolicy,
+): PartnerDispatchHandoff {
+  const directReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy));
+  const backupReady = providers.filter((provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible);
+  const acceptanceBlocked = providers.filter((provider) => !partnerCanAcceptBookingNow(provider, opsPolicy));
+  const cashDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0);
+  const locationRefresh = providers.filter((provider) =>
+    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
+  );
+  const pushRepair = providers.filter((provider) => !hasHealthyPush(provider));
+  const riskReview = providers.filter((provider) => hasOpenProviderRisk(provider));
+
+  return {
+    headline:
+      'When Bookings shows matching pressure, jump from here to the exact partner lane that can unblock dispatch.',
+    detail: `Current policy: first partner response window ${opsPolicy.responseWindowMinutes}m, backup radius ${formatDistanceMeters(
+      opsPolicy.backupRadiusMeters,
+    )}, fresh location within ${opsPolicy.staleLocationMinutes}m.`,
+    policyLabel: 'Edit dispatch policy',
+    links: [
+      {
+        title: 'Matching queue',
+        value: 'Open',
+        detail: 'Live bookings waiting for preferred response, backup supply, or customer selection.',
+        href: '/bookings?view=matching',
+        tone: 'info',
+      },
+      {
+        title: 'Direct ready',
+        value: directReady.length.toString(),
+        detail: 'Partners who can accept the first customer request immediately.',
+        href: '/partners?review=direct-ready',
+        tone: directReady.length ? 'ok' : 'warn',
+      },
+      {
+        title: '10km backup ready',
+        value: backupReady.length.toString(),
+        detail: 'Partners eligible to receive backup alerts and join the customer shortlist.',
+        href: '/partners?review=backup-ready',
+        tone: backupReady.length ? 'ok' : 'warn',
+      },
+      {
+        title: 'Acceptance blocked',
+        value: acceptanceBlocked.length.toString(),
+        detail: 'Partners blocked by KYC, bank, wallet, location, push, or safety gates.',
+        href: '/partners?review=acceptance-blocked',
+        tone: acceptanceBlocked.length ? 'danger' : 'ok',
+      },
+      {
+        title: 'Cash fee debt',
+        value: cashDebt.length.toString(),
+        detail: 'Negative wallet partners cannot accept bookings until company commission is settled.',
+        href: '/cash-settlements',
+        tone: cashDebt.length ? 'danger' : 'ok',
+      },
+      {
+        title: 'Location refresh',
+        value: locationRefresh.length.toString(),
+        detail: 'Partners who must reopen the app before distance-based matching can be trusted.',
+        href: '/partners?review=location',
+        tone: locationRefresh.length ? 'warn' : 'ok',
+      },
+      {
+        title: 'Push repair',
+        value: pushRepair.length.toString(),
+        detail: 'Partners who may miss direct or backup request alerts.',
+        href: '/partners?review=push',
+        tone: pushRepair.length ? 'warn' : 'ok',
+      },
+      {
+        title: 'Risk desk',
+        value: riskReview.length.toString(),
+        detail: 'Partners with reports or sanctions that should be checked before dispatch.',
+        href: '/partner-risk',
+        tone: riskReview.length ? 'danger' : 'info',
+      },
+    ],
   };
 }
 
