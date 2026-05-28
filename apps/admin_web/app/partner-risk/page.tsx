@@ -17,6 +17,7 @@ type RiskSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type PartnerRiskPolicy = {
   responseWindowMinutes: number;
   backupRadiusMeters: number;
+  invitationLimit: number;
   locationFreshnessMinutes: number;
 };
 
@@ -24,9 +25,11 @@ const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_respons
 const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
+const MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY = 'matching.backup_provider_invitation_limit';
 const DEFAULT_PARTNER_RISK_POLICY: PartnerRiskPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10000,
+  invitationLimit: 50,
   locationFreshnessMinutes: 30,
 };
 
@@ -87,7 +90,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           </span>
           <Link className="text-link" href="/operations-policy">
             {riskPolicy.responseWindowMinutes}m first-pick / {formatDistance(riskPolicy.backupRadiusMeters)} backup /
-            location {riskPolicy.locationFreshnessMinutes}m
+            {riskPolicy.invitationLimit} invite cap / location {riskPolicy.locationFreshnessMinutes}m
           </Link>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 12 }}>
@@ -1298,7 +1301,7 @@ function buildBookingAcceptanceUnblockBoard(
       detail: locationItems.length
         ? `Distance ranking, ${formatDistance(
             riskPolicy.backupRadiusMeters,
-          )} backup invitations, and customer expectations depend on fresh partner location.`
+          )} backup invitations, the ${riskPolicy.invitationLimit}-partner invite cap, and customer expectations depend on fresh partner location.`
         : 'Online partner locations are fresh enough for dispatch decisions.',
       operatorScript:
         'Ask the partner to reopen the app and refresh GPS before taking dispatch-sensitive bookings.',
@@ -1312,7 +1315,11 @@ function buildBookingAcceptanceUnblockBoard(
       metrics: [
         metric('Stale/missing', locationItems.length, locationItems.length ? 'warn' : 'ok'),
         metric('Acceptance', 'Policy gate', locationItems.length ? 'warn' : 'ok'),
-        metric('Radius', `${formatDistance(riskPolicy.backupRadiusMeters)} backup`, 'info'),
+        metric(
+          'Invite pool',
+          `${formatDistance(riskPolicy.backupRadiusMeters)} / ${riskPolicy.invitationLimit}`,
+          'info',
+        ),
       ],
     },
     {
@@ -1774,6 +1781,9 @@ function buildPartnerRiskPolicy(settings: AdminOperationalPolicySetting[]): Part
     backupRadiusMeters:
       readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY) ??
       DEFAULT_PARTNER_RISK_POLICY.backupRadiusMeters,
+    invitationLimit:
+      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY) ??
+      DEFAULT_PARTNER_RISK_POLICY.invitationLimit,
     locationFreshnessMinutes:
       readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
       DEFAULT_PARTNER_RISK_POLICY.locationFreshnessMinutes,
