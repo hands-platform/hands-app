@@ -197,6 +197,7 @@ if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
   const bookingBody = await fetchPage(bookingPath);
     const bookingMarkers = [
+      'Booking stage snapshot',
       'Applied operations policy',
       'Backup partner supply for this booking',
       'No-show alerts',
