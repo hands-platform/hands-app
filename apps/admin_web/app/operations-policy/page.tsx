@@ -39,6 +39,19 @@ type PolicySupplySensitivity = {
     pillClass: string;
   }>;
 };
+type OwnerDecisionPressure = {
+  alertCount: number;
+  summary: Array<{ label: string; value: string; helper: string }>;
+  cards: Array<{
+    title: string;
+    status: string;
+    detail: string;
+    operatorAction: string;
+    href: string;
+    className: string;
+    pillClass: string;
+  }>;
+};
 
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 
@@ -68,6 +81,12 @@ export default async function OperationsPolicyPage({
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
   const acceptanceMatrix = buildBookingAcceptanceMatrix(settings, providers);
   const supplySensitivity = buildPolicySupplySensitivity(settings, bookings, providers);
+  const ownerDecisionPressure = buildOwnerDecisionPressure(
+    bookings,
+    providers,
+    supplySensitivity,
+    acceptanceMatrix,
+  );
   const policyEnforcementTrace = buildPolicyEnforcementTrace(settings);
 
   return (
@@ -751,6 +770,39 @@ export default async function OperationsPolicyPage({
             </p>
           </div>
           <span className="pill pill-info">Review weekly</span>
+        </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className="risk-watch-header">
+            <div>
+              <h3>Current decision pressure</h3>
+              <p className="muted">
+                Data-driven signals that tell the owner which policy choice deserves attention first. This
+                keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence.
+              </p>
+            </div>
+            <span className={`pill ${ownerDecisionPressure.alertCount ? 'pill-warn' : 'pill-success'}`}>
+              {ownerDecisionPressure.alertCount} active signal(s)
+            </span>
+          </div>
+          <div className="service-trace-summary" style={{ marginTop: 12 }}>
+            {ownerDecisionPressure.summary.map((item) => (
+              <div key={item.label}>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <small>{item.helper}</small>
+              </div>
+            ))}
+          </div>
+          <div className="ops-task-grid" style={{ marginTop: 14 }}>
+            {ownerDecisionPressure.cards.map((item) => (
+              <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <h3>{item.title}</h3>
+                <p>{item.detail}</p>
+                <small>{item.operatorAction}</small>
+              </Link>
+            ))}
+          </div>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {ownerDecisionBacklog.map((item) => (
@@ -2573,6 +2625,136 @@ function compactAuditValue(value: unknown) {
     return JSON.stringify(value);
   }
   return String(value);
+}
+
+function buildOwnerDecisionPressure(
+  bookings: AdminBooking[],
+  providers: AdminProvider[],
+  supplySensitivity: PolicySupplySensitivity,
+  acceptanceMatrix: ReturnType<typeof buildBookingAcceptanceMatrix>,
+): OwnerDecisionPressure {
+  const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+  const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const activeBookings = bookings.filter((booking) => activeStatuses.has(booking.status));
+  const waitingFirstPick = openMatching.filter(
+    (booking) => booking.preferredProvider && !booking.selectedProvider,
+  );
+  const acceptedButNotFinal = openMatching.filter(
+    (booking) =>
+      !booking.selectedProvider &&
+      (booking.participants ?? []).some((participant) => participant.status === 'ACCEPTED'),
+  );
+  const backupInterest = openMatching.filter((booking) =>
+    (booking.participants ?? []).some(
+      (participant) =>
+        participant.status !== 'REJECTED' &&
+        participant.providerProfile?.id &&
+        participant.providerProfile.id !== booking.preferredProvider?.id,
+    ),
+  );
+  const currentUsableSupply = readSupplySummaryNumber(supplySensitivity, 'Current usable supply');
+  const staleExcluded = readSupplySummaryNumber(supplySensitivity, 'Stale excluded');
+  const hardBlockedInRadius = readSupplySummaryNumber(supplySensitivity, 'Hard blocked in radius');
+  const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE')).length;
+  const enabledPushPartners = providers.filter((provider) =>
+    (provider.user?.pushDevices ?? []).some((device) => device.enabled),
+  ).length;
+  const pushGap = Math.max(onlinePartners - enabledPushPartners, 0);
+  const acceptanceBlocked = acceptanceMatrix.blockingCount + hardBlockedInRadius;
+
+  const cards = [
+    {
+      title: 'First-pick response window',
+      status: waitingFirstPick.length ? 'Watch now' : 'Stable',
+      detail: waitingFirstPick.length
+        ? `${waitingFirstPick.length} open matching booking(s) are waiting on a first-pick partner. ${acceptedButNotFinal.length} already have accepted participants awaiting final customer choice.`
+        : 'No open booking is currently waiting on the first-pick response window.',
+      operatorAction: waitingFirstPick.length
+        ? 'Review matching wait time before shortening or extending the timer.'
+        : 'Keep the launch baseline unless new wait-time data changes.',
+      href: '/bookings?view=matching',
+      className: waitingFirstPick.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: waitingFirstPick.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Backup radius and supply',
+      status: currentUsableSupply > 0 ? 'Supply visible' : 'Supply thin',
+      detail: `${currentUsableSupply} usable partner(s) are inside the current policy sample. ${backupInterest.length} open booking(s) already show backup interest.`,
+      operatorAction:
+        currentUsableSupply > 0
+          ? 'Use the sensitivity table before changing the 10km radius.'
+          : 'Refresh partner locations or consider city/service supply rules before launch.',
+      href: '/partners?review=backup-ready',
+      className: currentUsableSupply > 0 ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: currentUsableSupply > 0 ? 'pill-success' : 'pill-danger',
+    },
+    {
+      title: 'Location freshness rule',
+      status: staleExcluded ? 'Refresh needed' : 'Fresh enough',
+      detail: `${staleExcluded} partner(s) are excluded only because their saved location is stale under the current freshness window.`,
+      operatorAction: staleExcluded
+        ? 'Ask partners to open the app and send location before loosening freshness rules.'
+        : 'Current location freshness is not excluding supply in the sample.',
+      href: '/partners?review=location',
+      className: staleExcluded ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: staleExcluded ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Wallet and hard blockers',
+      status: acceptanceBlocked ? 'Gate active' : 'Clear',
+      detail: `${acceptanceBlocked} partner blocker signal(s) affect booking acceptance or 10km backup participation.`,
+      operatorAction: acceptanceBlocked
+        ? 'Keep negative-wallet and identity gates strict until finance/risk clears the queue.'
+        : 'No current sample pressure to relax booking acceptance gates.',
+      href: acceptanceBlocked ? '/partners?review=acceptance-blocked' : '/partner-risk',
+      className: acceptanceBlocked ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: acceptanceBlocked ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Partner push readiness',
+      status: pushGap ? 'Push gap' : 'Ready',
+      detail: `${enabledPushPartners}/${onlinePartners} online partner(s) have enabled push devices in the current snapshot.`,
+      operatorAction: pushGap
+        ? 'Keep in-app request listing as the fallback until OneSignal device coverage is reliable.'
+        : 'Push coverage is ready enough for production-device testing.',
+      href: '/notifications?review=failed',
+      className: pushGap ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: pushGap ? 'pill-warn' : 'pill-success',
+    },
+  ];
+
+  return {
+    alertCount: cards.filter((card) => card.className !== 'ops-task-done').length,
+    summary: [
+      {
+        label: 'Open matching',
+        value: String(openMatching.length),
+        helper: 'Bookings where customers are waiting for partner response or final choice.',
+      },
+      {
+        label: 'Active service flow',
+        value: String(activeBookings.length),
+        helper: 'Matched, on-the-way, arrived, or in-service bookings affected by operator decisions.',
+      },
+      {
+        label: 'Usable supply',
+        value: String(currentUsableSupply),
+        helper: `${supplySensitivity.currentPolicyLabel} around ${supplySensitivity.referenceLabel}.`,
+      },
+      {
+        label: 'Acceptance blockers',
+        value: String(acceptanceBlocked),
+        helper: 'Wallet, identity, bank, risk, or radius blockers that change dispatch availability.',
+      },
+    ],
+    cards,
+  };
+}
+
+function readSupplySummaryNumber(supplySensitivity: PolicySupplySensitivity, label: string) {
+  const value = supplySensitivity.summary.find((item) => item.label === label)?.value;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function operationsOwnerDecisionBacklog() {
