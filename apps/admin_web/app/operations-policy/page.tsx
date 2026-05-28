@@ -320,7 +320,7 @@ export default async function OperationsPolicyPage({
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="matching-stage-impact" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Matching stage impact preview</h2>
@@ -964,6 +964,21 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
           <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
             {setting.enforced ? 'Live behavior' : 'Decision log'}
           </span>
+        </div>
+      </div>
+      <div className="ops-task-note" style={{ marginTop: 12 }}>
+        <strong>Before saving this policy</strong>
+        <p className="muted">
+          Review these operating surfaces first, then write the reason so the shift team can trace why the
+          behavior changed.
+        </p>
+        <div className="booking-radar" style={{ marginTop: 12 }}>
+          {impact.saveChecks.map((check) => (
+            <Link className="insight-card" href={check.href} key={`${setting.key}-${check.label}`}>
+              <strong>{check.label}</strong>
+              <p className="muted">{check.detail}</p>
+            </Link>
+          ))}
         </div>
       </div>
       {setting.options?.length ? (
@@ -3368,67 +3383,200 @@ function policyDisplayValue(setting: AdminOperationalPolicySetting, recommended 
   );
 }
 
-function policyImpactDetails(key: string) {
-  const details: Record<string, { area: string; title: string; detail: string }> = {
+type PolicySaveCheck = {
+  label: string;
+  detail: string;
+  href: string;
+};
+
+type PolicyImpactDetails = {
+  area: string;
+  title: string;
+  detail: string;
+  saveChecks: PolicySaveCheck[];
+};
+
+function policyImpactDetails(key: string): PolicyImpactDetails {
+  const details: Record<string, PolicyImpactDetails> = {
     'matching.provider_response_window_minutes': {
       area: 'Booking timer',
       title: 'Affects new booking expiry windows',
       detail:
         'New requests use this value for the first-pick partner response timer and Redis matching TTL. Existing open bookings keep their saved expiry.',
+      saveChecks: [
+        {
+          label: 'First-pick queue',
+          detail: 'Check how many bookings are still waiting for the preferred partner before shortening the timer.',
+          href: '/bookings?view=first-pick',
+        },
+        {
+          label: 'Customer choice backlog',
+          detail: 'Confirm customers are not already waiting too long after partners accept.',
+          href: '/bookings?view=customer-choice',
+        },
+      ],
     },
     'matching.backup_provider_radius_meters': {
       area: 'Partner supply',
       title: 'Controls who can see and join backup requests',
       detail:
         'Partner open-booking lists, join validation, backup notifications, and customer shortlist visibility use this radius.',
+      saveChecks: [
+        {
+          label: 'Stage impact preview',
+          detail: 'Preview how the selected radius changes backup supply and no-supply risk.',
+          href: '/operations-policy#matching-stage-impact',
+        },
+        {
+          label: '10km backup ready',
+          detail: 'Review partners that can actually receive and join backup requests.',
+          href: '/partners?review=backup-ready',
+        },
+      ],
     },
     'matching.backup_provider_invitation_limit': {
       area: 'Partner supply',
       title: 'Controls how many backup partners are exposed',
       detail:
         'Eligible backup partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.',
+      saveChecks: [
+        {
+          label: 'Backup notification load',
+          detail: 'Check delivery volume and failed partner alerts before raising invitation volume.',
+          href: '/notifications',
+        },
+        {
+          label: 'Backup shortlist',
+          detail: 'Confirm the customer shortlist will stay readable when more partners can join.',
+          href: '/bookings?view=backup',
+        },
+      ],
     },
     'matching.travel_buffer_minutes': {
       area: 'Availability',
       title: 'Controls partner availability after work',
       detail:
         'Nearby sorting and availability calculations use this buffer before a partner becomes eligible for another booking.',
+      saveChecks: [
+        {
+          label: 'Partner capacity',
+          detail: 'Review online partners and session freshness before reducing rest/travel time.',
+          href: '/app-sessions?role=PROVIDER&state=live',
+        },
+        {
+          label: 'Schedule pressure',
+          detail: 'Look for stacked bookings that may create late arrivals if the buffer is too low.',
+          href: '/bookings?view=matching',
+        },
+      ],
     },
     'matching.preferred_accept_mode': {
       area: 'Customer choice',
       title: 'Controls whether acceptance locks the booking',
       detail:
         'Auto-match is faster. Customer confirmation keeps the booking open after partner accept so the customer can make the final choice.',
+      saveChecks: [
+        {
+          label: 'Customer choice queue',
+          detail: 'Use this before switching toward customer-confirmation behavior.',
+          href: '/bookings?view=customer-choice',
+        },
+        {
+          label: 'Handoff repair',
+          detail: 'Check chat and service-start failures before making acceptance more automatic.',
+          href: '/bookings?view=handoff-repair',
+        },
+      ],
     },
     'matching.backup_open_mode': {
       area: 'Backup flow',
       title: 'Controls when other partners can participate',
       detail:
         'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks backup join until the first-pick response window passes, but opens immediately after first-pick decline.',
+      saveChecks: [
+        {
+          label: 'Open matching timeline',
+          detail: 'Check whether delayed backup would increase waiting anxiety on current bookings.',
+          href: '/bookings?view=matching',
+        },
+        {
+          label: 'Policy stage preview',
+          detail: 'Compare delayed and immediate backup impact before saving the mode.',
+          href: '/operations-policy#matching-stage-impact',
+        },
+      ],
     },
     'wallet.negative_balance_gate': {
       area: 'Wallet risk',
       title: 'Controls unpaid cash-fee debt enforcement',
       detail:
         'Block mode stops partners with negative cash-fee debt from accepting new work. Recovery mode permits one active booking so they can earn toward repayment.',
+      saveChecks: [
+        {
+          label: 'Cash debt queue',
+          detail: 'Review partners blocked by unpaid HANDS cash fees before changing acceptance gates.',
+          href: '/partners?review=cash-debt',
+        },
+        {
+          label: 'Settlement command queue',
+          detail: 'Check pending repayments and manual offsets before relaxing debt enforcement.',
+          href: '/cash-settlements',
+        },
+      ],
     },
     'cancellation.after_match_policy': {
       area: 'Cancellation money',
       title: 'Controls payment handling after partner commitment',
       detail:
         'Admin-review mode releases normal early cancellations. Auto-fee mode keeps matched cancellation payment holds for operator review.',
+      saveChecks: [
+        {
+          label: 'Cancellation closeout',
+          detail: 'Review cancellation reasons, matched state, and refund exposure before changing fee posture.',
+          href: '/bookings?view=closeout',
+        },
+        {
+          label: 'Refund command board',
+          detail: 'Check manual refund workload before holding more matched cancellations.',
+          href: '/refunds',
+        },
+      ],
     },
     'no_show.partner_report_policy': {
       area: 'No-show review',
       title: 'Controls no-show evidence and payment review posture',
       detail:
         'Admin-review mode keeps penalties manual. Evidence mode marks the policy in notes and audit logs for faster future automation.',
+      saveChecks: [
+        {
+          label: 'No-show board',
+          detail: 'Review active no-show cases and missing evidence before tightening no-show policy.',
+          href: '/bookings?view=no-show',
+        },
+        {
+          label: 'No-show alerts',
+          detail: 'Check alert delivery so partners and customers are informed before penalties are reviewed.',
+          href: '/notifications?review=no-show',
+        },
+      ],
     },
     'notification.partner_alert_channel': {
       area: 'Alert routing',
       title: 'Controls partner booking alert delivery provider',
       detail:
         'In-app mode records inbox notifications only. OneSignal mode routes partner booking alerts through OS push delivery and logs provider results.',
+      saveChecks: [
+        {
+          label: 'Delivery operations queue',
+          detail: 'Confirm failed delivery codes and disabled devices before changing alert routing.',
+          href: '/notifications',
+        },
+        {
+          label: 'Setup checklist',
+          detail: 'Verify OneSignal, app IDs, and secrets are configured before enabling external push.',
+          href: '/setup',
+        },
+      ],
     },
   };
 
@@ -3437,6 +3585,18 @@ function policyImpactDetails(key: string) {
       area: 'Operations',
       title: 'Operational policy',
       detail: 'This setting is tracked for auditability and future automation.',
+      saveChecks: [
+        {
+          label: 'Audit trail',
+          detail: 'Check recent policy changes and leave a clear reason before saving another change.',
+          href: '/audit-log',
+        },
+        {
+          label: 'Operations dashboard',
+          detail: 'Review live booking, partner, and customer health before changing behavior.',
+          href: '/',
+        },
+      ],
     }
   );
 }
