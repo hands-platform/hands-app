@@ -211,10 +211,13 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const dispatchHandoff = buildPartnerDispatchHandoff(allProviders, opsPolicy);
   const dailyActionQueue = buildPartnerDailyActionQueue(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
+  const partnerOperationRows = visibleProviders.map((provider) =>
+    buildPartnerOperationRow(provider, opsPolicy),
+  );
 
   return (
     <>
-      <h1>Partner Verification</h1>
+      <h1>Partners</h1>
       <div className="card" style={{ marginBottom: 16 }}>
         <form className="form-grid" action="/partners">
           <label>
@@ -296,7 +299,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="payout-setup">First earning payout setup</option>
               <option value="cash-debt">Cash fee debt</option>
               <option value="tax">Tax profile review</option>
-              <option value="security">Device/session risk</option>
+              <option value="security">Device/session check</option>
               <option value="risk">Reports/sanctions</option>
               <option value="blocked">Account blocks</option>
               <option value="location">Location freshness</option>
@@ -353,11 +356,128 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner daily action queue</h2>
+            <h2>Partner operations list</h2>
             <p className="muted">
-              The compact worklist for the current partner filter. It sorts partners by acceptance blockers,
-              payout/tax gates, location freshness, push readiness, and KYC urgency so operators can process
-              the queue without hunting through every board.
+              List-first partner control view. Operators can check onboarding, booking acceptance,
+              completed work, last work, wallet, location, push, services, and app activity before opening
+              the full partner record.
+            </p>
+          </div>
+          <div className="participant-list">
+            <span className="pill pill-info">{providers.length} partner(s)</span>
+            <span className="pill pill-success">
+              {providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length} can accept
+            </span>
+            <span className="pill pill-warn">
+              {providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length} wallet hold
+            </span>
+          </div>
+        </div>
+        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Partner</th>
+                <th>Basic checklist</th>
+                <th>Booking acceptance</th>
+                <th>Work history</th>
+                <th>Money</th>
+                <th>App/location</th>
+                <th>Next operator check</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody>
+              {partnerOperationRows.map((row) => (
+                <tr key={row.provider.id}>
+                  <td>
+                    <strong>{row.name}</strong>
+                    <p className="muted">{row.phone}</p>
+                    <div className="participant-list" style={{ marginTop: 6 }}>
+                      <span className="pill pill-info">{row.provider.level ?? 'LEVEL_1_SIGNUP'}</span>
+                      <span className={`pill ${row.provider.blockedAt ? 'pill-danger' : 'pill-success'}`}>
+                        {row.provider.blockedAt ? 'Account blocked' : 'Account open'}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="participant-list">
+                      {row.checklist.map((item) => (
+                        <span className={`pill ${partnerOperationPillClass(item.tone)}`} key={item.label}>
+                          {item.label}: {item.status}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`signal ${providerCommandToneClass(row.acceptanceTone)}`}>
+                      {row.acceptanceLabel}
+                    </span>
+                    <p className="muted" style={{ marginTop: 8 }}>
+                      {row.acceptanceDetail}
+                    </p>
+                  </td>
+                  <td>
+                    <strong>{row.completedWorkCount} completed</strong>
+                    <p className="muted">Last work: {row.lastWorkAt ? formatDate(row.lastWorkAt) : 'none'}</p>
+                    <p className="muted">First revenue: {providerHasFirstRevenueSignal(row.provider) ? 'yes' : 'no'}</p>
+                  </td>
+                  <td>
+                    <strong>{formatProviderMoney(row.walletBalance)}</strong>
+                    <p className="muted">
+                      {row.walletBalance < 0
+                        ? 'Company fee settlement is required before new booking acceptance.'
+                        : 'No negative wallet balance.'}
+                    </p>
+                    <p className="muted">Tax: {row.provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(row.provider) ? 'MISSING' : 'deferred')}</p>
+                  </td>
+                  <td>
+                    <strong>{providerLocationLabel(row.locationState)}</strong>
+                    <p className="muted">{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</p>
+                    <p className="muted">Last app activity: {row.lastActivityAt ? formatDate(row.lastActivityAt) : 'not recorded'}</p>
+                  </td>
+                  <td>
+                    <strong>{row.nextAction.status}</strong>
+                    <p className="muted">{row.nextAction.detail}</p>
+                    <p className="muted">{row.nextAction.operatorAction}</p>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={`/partners/${row.provider.id}`}>
+                      Open all records
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {partnerOperationRows.length === 0 ? (
+                <tr>
+                  <td colSpan={8}>
+                    <strong>No partners found</strong>
+                    <p className="muted">Change the filters or clear search to view partner records.</p>
+                  </td>
+                </tr>
+              ) : null}
+              {hiddenProviderCount > 0 ? (
+                <tr>
+                  <td colSpan={8}>
+                    <p className="muted">
+                      {hiddenProviderCount} more partner row(s) are hidden for page speed. Use search or
+                      filters to narrow this list.
+                    </p>
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner checklist work queue</h2>
+            <p className="muted">
+              Compact follow-up list for the current partner filter. It groups acceptance holds, payout/tax
+              gates, location freshness, push readiness, and KYC updates so operators can process records
+              without opening every detail page.
             </p>
           </div>
           <div className="participant-list">
@@ -514,7 +634,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner command center</h2>
             <p className="muted">
-              Operator overview across onboarding, dispatch readiness, payout/tax readiness, and trust risk.
+              Operator overview across onboarding, dispatch readiness, payout/tax readiness, and report follow-up.
             </p>
           </div>
           <span className="pill pill-info">Daily control view</span>
@@ -813,7 +933,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <th>Onboarding</th>
               <th>Ops readiness</th>
               <th>Location</th>
-              <th>Device Risk</th>
+              <th>Device/session</th>
               <th>Push Devices</th>
               <th>Files</th>
               <th>Services</th>
@@ -854,7 +974,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <PartnerBackupEligibilityCell provider={provider} opsPolicy={opsPolicy} />
                   {hasOpenProviderRisk(provider) ? (
                     <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
-                      Open risk desk
+                      Open reports
                     </Link>
                   ) : null}
                 </td>
@@ -1324,6 +1444,26 @@ type PartnerOpsBadge = {
   detail: string;
   tone: 'success' | 'danger' | 'warn' | 'info' | 'neutral';
 };
+type PartnerOperationChecklistItem = {
+  label: string;
+  status: string;
+  tone: ProviderCommandLane['tone'] | 'neutral';
+};
+type PartnerOperationRow = {
+  provider: AdminProvider;
+  name: string;
+  phone: string;
+  checklist: PartnerOperationChecklistItem[];
+  acceptanceLabel: string;
+  acceptanceDetail: string;
+  acceptanceTone: ProviderCommandLane['tone'];
+  completedWorkCount: number;
+  lastWorkAt: string | null;
+  walletBalance: number;
+  locationState: ProviderLocationState;
+  lastActivityAt: string | null;
+  nextAction: ProviderListAction;
+};
 
 function ProviderNextActionCell({
   provider,
@@ -1366,6 +1506,154 @@ function PartnerOpsBadgeList({
       ))}
     </div>
   );
+}
+
+function buildPartnerOperationRow(
+  provider: AdminProvider,
+  opsPolicy: ProviderOpsPolicy,
+): PartnerOperationRow {
+  const walletBalance = providerUnsettledWalletBalance(provider);
+  const locationState = providerLocationStatus(provider, opsPolicy);
+  const canAccept = partnerCanAcceptBookingNow(provider, opsPolicy);
+  const backupEligibility = partnerBackupMatchingEligibility(provider, opsPolicy);
+  const completedWorkCount = providerCompletedWorkCount(provider);
+  const firstRevenue = providerHasFirstRevenueSignal(provider);
+  const taxStatus = provider.taxProfile?.status ?? (firstRevenue ? 'MISSING' : 'deferred');
+  const nextAction = nextProviderListAction(provider, opsPolicy);
+
+  return {
+    provider,
+    name: providerDisplayName(provider),
+    phone: provider.user?.phone ?? provider.id,
+    checklist: [
+      {
+        label: 'KYC',
+        status:
+          provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
+            ? 'ok'
+            : provider.kyc?.status ?? 'missing',
+        tone:
+          provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
+            ? 'ok'
+            : provider.kyc?.status === 'REJECTED'
+              ? 'danger'
+              : 'warn',
+      },
+      {
+        label: 'Bank',
+        status: hasApprovedBankAccount(provider) ? 'ok' : provider.bankAccounts?.[0]?.status ?? 'missing',
+        tone: hasApprovedBankAccount(provider) ? 'ok' : 'warn',
+      },
+      {
+        label: 'Tax',
+        status: taxStatus,
+        tone: provider.taxProfile?.status === 'APPROVED' ? 'ok' : firstRevenue ? 'warn' : 'neutral',
+      },
+      {
+        label: 'Wallet',
+        status: walletBalance < 0 ? 'settlement needed' : 'clear',
+        tone: walletBalance < 0 ? 'danger' : 'ok',
+      },
+      {
+        label: 'Location',
+        status: locationState,
+        tone: locationState === 'recent' ? 'ok' : locationState === 'stale' ? 'warn' : 'neutral',
+      },
+      {
+        label: 'Push',
+        status: hasHealthyPush(provider) ? 'ready' : 'missing',
+        tone: hasHealthyPush(provider) ? 'ok' : 'warn',
+      },
+      {
+        label: 'Services',
+        status: providerActiveServiceCount(provider) > 0 ? `${providerActiveServiceCount(provider)} active` : 'none',
+        tone: providerActiveServiceCount(provider) > 0 ? 'ok' : 'warn',
+      },
+      {
+        label: 'App',
+        status: partnerHasAppActivity(provider) ? 'seen' : 'not seen',
+        tone: partnerHasAppActivity(provider) ? 'ok' : 'neutral',
+      },
+    ],
+    acceptanceLabel: canAccept ? 'Can accept bookings' : 'Acceptance on hold',
+    acceptanceDetail: canAccept
+      ? backupEligibility.eligible
+        ? `Ready for direct requests and ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} backup matching.`
+        : 'Ready for direct requests. Backup participation depends on booking location and policy.'
+      : partnerAcceptBlockerSummary(provider, opsPolicy),
+    acceptanceTone: canAccept ? 'ok' : 'warn',
+    completedWorkCount,
+    lastWorkAt: providerLastCompletedWorkAt(provider),
+    walletBalance,
+    locationState,
+    lastActivityAt: partnerLastActivityAt(provider),
+    nextAction,
+  };
+}
+
+function partnerOperationPillClass(tone: PartnerOperationChecklistItem['tone']) {
+  if (tone === 'ok') return 'pill-success';
+  if (tone === 'danger') return 'pill-danger';
+  if (tone === 'warn') return 'pill-warn';
+  if (tone === 'info') return 'pill-info';
+  return 'pill-neutral';
+}
+
+function providerActiveServiceCount(provider: AdminProvider) {
+  return (provider.services ?? []).filter((service) => service.active !== false).length;
+}
+
+function partnerHasAppActivity(provider: AdminProvider) {
+  return Boolean((provider.sessions ?? []).length || (provider.devices ?? []).length);
+}
+
+function providerCompletedWorkCount(provider: AdminProvider) {
+  return (provider.earnings ?? []).filter((earning) => {
+    if (earning.booking?.status === 'COMPLETED') return true;
+    return ['AVAILABLE', 'PAID'].includes(earning.status);
+  }).length;
+}
+
+function providerLastCompletedWorkAt(provider: AdminProvider) {
+  return latestTimestamp(
+    (provider.earnings ?? [])
+      .filter((earning) => earning.booking?.status === 'COMPLETED' || ['AVAILABLE', 'PAID'].includes(earning.status))
+      .flatMap((earning) => [
+        earning.booking?.scheduledStartAt,
+        earning.paidAt,
+        earning.availableAt,
+        earning.createdAt,
+      ]),
+  );
+}
+
+function partnerLastActivityAt(provider: AdminProvider) {
+  return latestTimestamp([
+    provider.currentLocationUpdatedAt,
+    provider.nextAvailableAt,
+    ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
+    ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
+    ...(provider.user?.pushDevices ?? []).map((device) => device.createdAt),
+    ...(provider.earnings ?? []).flatMap((earning) => [
+      earning.booking?.scheduledStartAt,
+      earning.createdAt,
+      earning.availableAt,
+      earning.paidAt,
+    ]),
+  ]);
+}
+
+function latestTimestamp(values: Array<string | null | undefined>) {
+  const latest = values
+    .map((value) => {
+      if (!value) return null;
+      const timestamp = Date.parse(value);
+      return Number.isFinite(timestamp) ? { value, timestamp } : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => (right?.timestamp ?? 0) - (left?.timestamp ?? 0))[0];
+
+  return latest?.value ?? null;
 }
 
 function ProviderIssuePills({
@@ -1473,10 +1761,10 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
         : 'Partner can still operate in Nest auth, but Supabase migration is pending.',
     },
     {
-      label: riskOpen ? 'Risk open' : providerSecurityLabel(securityState),
+      label: riskOpen ? 'Report follow-up' : providerSecurityLabel(securityState),
       tone: riskOpen || !['clear', 'missing'].includes(securityState) ? 'danger' : 'success',
       detail: riskOpen
-        ? 'There is an unresolved risk/report/sanction item for this partner.'
+        ? 'There is an unresolved report or sanction item for this partner.'
         : providerSecurityLabel(securityState),
     },
   ];
@@ -2175,18 +2463,18 @@ function buildProviderCommandCenter(
       ],
     },
     {
-      title: 'Trust and safety',
+      title: 'Reports and devices',
       status: accountBlocks > 0 || openRisk > 0 || deviceRisk > 0 ? 'Investigate' : 'Clear',
       tone: accountBlocks > 0 || openRisk > 0 ? 'danger' : deviceRisk > 0 ? 'warn' : 'ok',
       detail:
         accountBlocks > 0 || openRisk > 0
           ? 'Account blocks, reports, or active sanctions need operator attention.'
-          : 'No filtered partner has a major trust or device risk signal.',
+          : 'No filtered partner has open reports, active sanctions, or device follow-up items.',
       href: openRisk > 0 ? '/partner-risk' : '/partners?review=security',
       metrics: [
         providerCommandMetric('blocked', accountBlocks),
-        providerCommandMetric('open risk', openRisk),
-        providerCommandMetric('device risk', deviceRisk),
+        providerCommandMetric('open reports', openRisk),
+        providerCommandMetric('device checks', deviceRisk),
         providerCommandMetric(
           'shared device',
           providers.filter((provider) => providerSecurityStatus(provider) === 'shared').length,
@@ -2471,7 +2759,7 @@ function buildPartnerDispatchHandoff(
         tone: pushRepair.length ? 'warn' : 'ok',
       },
       {
-        title: 'Risk desk',
+        title: 'Reports desk',
         value: riskReview.length.toString(),
         detail: 'Partners with reports or sanctions that should be checked before dispatch.',
         href: '/partner-risk',
