@@ -41,6 +41,7 @@ const pages = [
       'Operations Policy',
       'Booking acceptance control matrix',
       'Current partner acceptance impact',
+      'Policy sensitivity preview',
       'Live matching policy',
       'Change reason',
     ],

@@ -19,6 +19,26 @@ type BookingMatchingPolicySnapshot = {
   backupOpenMode: string | null;
   travelBufferMinutes: number | null;
 };
+type PolicySupplySensitivity = {
+  referenceLabel: string;
+  currentPolicyLabel: string;
+  summary: Array<{ label: string; value: string; helper: string }>;
+  radiusRows: Array<{
+    radiusLabel: string;
+    eligible: number;
+    fresh: number;
+    hardBlocked: number;
+    operatorRead: string;
+    pillClass: string;
+  }>;
+  freshnessRows: Array<{
+    freshnessLabel: string;
+    eligible: number;
+    staleExcluded: number;
+    operatorRead: string;
+    pillClass: string;
+  }>;
+};
 
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 
@@ -47,6 +67,7 @@ export default async function OperationsPolicyPage({
   const policyAuditRows = operationalPolicyAuditRows(auditLogs);
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
   const acceptanceMatrix = buildBookingAcceptanceMatrix(settings, providers);
+  const supplySensitivity = buildPolicySupplySensitivity(settings, bookings, providers);
   const policyEnforcementTrace = buildPolicyEnforcementTrace(settings);
 
   return (
@@ -176,6 +197,90 @@ export default async function OperationsPolicyPage({
               <small>{item.helper}</small>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Policy sensitivity preview</h2>
+            <p className="muted">
+              Before changing radius or location freshness, compare how many partners would remain usable
+              around the latest customer coordinate. This keeps policy choices tied to real supply instead
+              of guesswork.
+            </p>
+          </div>
+          <span className="pill pill-info">{supplySensitivity.currentPolicyLabel}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {supplySensitivity.summary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="detail-grid" style={{ marginTop: 14 }}>
+          <div style={{ overflowX: 'auto' }}>
+            <h3>Backup radius sensitivity</h3>
+            <p className="muted">
+              Reference point: {supplySensitivity.referenceLabel}. Hard blockers include identity, bank,
+              cash-debt, and account risk.
+            </p>
+            <table className="table service-trace">
+              <thead>
+                <tr>
+                  <th>Radius</th>
+                  <th>Usable partners</th>
+                  <th>Fresh location</th>
+                  <th>Hard blocked</th>
+                  <th>Operator read</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supplySensitivity.radiusRows.map((row) => (
+                  <tr key={row.radiusLabel}>
+                    <td>
+                      <span className={`pill ${row.pillClass}`}>{row.radiusLabel}</span>
+                    </td>
+                    <td>{row.eligible}</td>
+                    <td>{row.fresh}</td>
+                    <td>{row.hardBlocked}</td>
+                    <td>{row.operatorRead}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <h3>Location freshness sensitivity</h3>
+            <p className="muted">
+              Shows how strict or loose freshness rules affect backup matching without real-time tracking.
+            </p>
+            <table className="table service-trace">
+              <thead>
+                <tr>
+                  <th>Freshness</th>
+                  <th>Eligible partners</th>
+                  <th>Stale excluded</th>
+                  <th>Operator read</th>
+                </tr>
+              </thead>
+              <tbody>
+                {supplySensitivity.freshnessRows.map((row) => (
+                  <tr key={row.freshnessLabel}>
+                    <td>
+                      <span className={`pill ${row.pillClass}`}>{row.freshnessLabel}</span>
+                    </td>
+                    <td>{row.eligible}</td>
+                    <td>{row.staleExcluded}</td>
+                    <td>{row.operatorRead}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
@@ -1358,6 +1463,116 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
   };
 }
 
+function buildPolicySupplySensitivity(
+  settings: AdminOperationalPolicySetting[],
+  bookings: AdminBooking[],
+  providers: AdminProvider[],
+): PolicySupplySensitivity {
+  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const freshnessMinutes =
+    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+  const walletGate =
+    policyStringValue(settings, 'wallet.negative_balance_gate') ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+  const hardWalletBlock = walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+  const reference = referenceBookingCoordinate(bookings);
+  const candidates = providers
+    .map((provider) => {
+      const coordinate = parseCoordinatePair(provider.currentLat, provider.currentLng);
+      const ageMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
+      const distanceMeters = coordinate
+        ? haversineDistanceMeters(reference.lat, reference.lng, coordinate.lat, coordinate.lng)
+        : null;
+      return {
+        provider,
+        ageMinutes,
+        distanceMeters,
+        hasCoordinate: Boolean(coordinate),
+        hardBlocked: partnerHardBlocked(provider, { hardWalletBlock }),
+        online: provider.status === 'ONLINE_AVAILABLE',
+      };
+    })
+    .filter((item) => item.hasCoordinate && item.distanceMeters !== null);
+  const currentUsable = candidates.filter(
+    (item) =>
+      item.online &&
+      !item.hardBlocked &&
+      (item.distanceMeters ?? Infinity) <= backupRadiusMeters &&
+      (item.ageMinutes ?? Infinity) <= freshnessMinutes,
+  );
+  const currentHardBlocked = candidates.filter(
+    (item) => item.hardBlocked && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
+  );
+  const currentStaleExcluded = candidates.filter(
+    (item) =>
+      item.online &&
+      !item.hardBlocked &&
+      (item.distanceMeters ?? Infinity) <= backupRadiusMeters &&
+      (item.ageMinutes === null || item.ageMinutes > freshnessMinutes),
+  );
+
+  const radiusOptions = uniqueNumbers([5000, 10000, backupRadiusMeters, 15000, 20000]).sort((a, b) => a - b);
+  const freshnessOptions = uniqueNumbers([10, 30, freshnessMinutes, 60, 120]).sort((a, b) => a - b);
+
+  return {
+    referenceLabel: reference.label,
+    currentPolicyLabel: `${formatDistance(backupRadiusMeters)} / ${freshnessMinutes}m fresh`,
+    summary: [
+      {
+        label: 'Coordinate sample',
+        value: candidates.length.toString(),
+        helper: `${providers.length} total partner(s), ${candidates.length} with saved coordinates.`,
+      },
+      {
+        label: 'Current usable supply',
+        value: currentUsable.length.toString(),
+        helper: 'Online, not hard-blocked, inside radius, and fresh enough.',
+      },
+      {
+        label: 'Hard blocked in radius',
+        value: currentHardBlocked.length.toString(),
+        helper: 'Identity, bank, wallet, or risk gates stop acceptance even if nearby.',
+      },
+      {
+        label: 'Stale excluded',
+        value: currentStaleExcluded.length.toString(),
+        helper: 'Could become usable by opening the Partner app and refreshing location.',
+      },
+    ],
+    radiusRows: radiusOptions.map((radius) => {
+      const insideRadius = candidates.filter((item) => (item.distanceMeters ?? Infinity) <= radius);
+      const eligible = insideRadius.filter(
+        (item) => item.online && !item.hardBlocked && (item.ageMinutes ?? Infinity) <= freshnessMinutes,
+      );
+      const fresh = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= freshnessMinutes);
+      const hardBlocked = insideRadius.filter((item) => item.hardBlocked);
+      return {
+        radiusLabel: formatDistance(radius),
+        eligible: eligible.length,
+        fresh: fresh.length,
+        hardBlocked: hardBlocked.length,
+        operatorRead: radiusSensitivityRead(radius, backupRadiusMeters, eligible.length),
+        pillClass: radius === backupRadiusMeters ? 'pill-info' : radius < backupRadiusMeters ? 'pill-warn' : 'pill-neutral',
+      };
+    }),
+    freshnessRows: freshnessOptions.map((freshness) => {
+      const insideRadius = candidates.filter(
+        (item) =>
+          item.online && !item.hardBlocked && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
+      );
+      const eligible = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= freshness);
+      const staleExcluded = insideRadius.length - eligible.length;
+      return {
+        freshnessLabel: `${freshness} min`,
+        eligible: eligible.length,
+        staleExcluded,
+        operatorRead: freshnessSensitivityRead(freshness, freshnessMinutes, eligible.length, staleExcluded),
+        pillClass:
+          freshness === freshnessMinutes ? 'pill-info' : freshness < freshnessMinutes ? 'pill-warn' : 'pill-neutral',
+      };
+    }),
+  };
+}
+
 function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) {
   const responseWindowMinutes =
     policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
@@ -2272,6 +2487,43 @@ function formatDistance(meters: number) {
     return `${Math.round(meters)} m`;
   }
   return `${(meters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+}
+
+function uniqueNumbers(values: number[]) {
+  return Array.from(new Set(values.filter((value) => Number.isFinite(value) && value > 0)));
+}
+
+function radiusSensitivityRead(radius: number, currentRadius: number, eligibleCount: number) {
+  if (eligibleCount === 0) {
+    return 'No usable backup supply at this radius. Operators should improve partner location/push readiness before relying on it.';
+  }
+  if (radius < currentRadius) {
+    return 'Tighter radius improves arrival quality but can create empty customer waiting screens in thin cities.';
+  }
+  if (radius > currentRadius) {
+    return 'Wider radius increases customer options, but operators should watch late arrivals and ignored alerts.';
+  }
+  return 'Current live radius. Use this as the baseline before changing matching policy.';
+}
+
+function freshnessSensitivityRead(
+  freshness: number,
+  currentFreshness: number,
+  eligibleCount: number,
+  staleExcluded: number,
+) {
+  if (eligibleCount === 0) {
+    return 'No usable partner remains under this freshness rule. Ask partners to reopen the app or loosen only with caution.';
+  }
+  if (freshness < currentFreshness) {
+    return 'Stricter freshness improves trust in distance, but may hide partners who update every 10 minutes imperfectly.';
+  }
+  if (freshness > currentFreshness) {
+    return 'Looser freshness exposes more supply, but stale pins can create bad arrival expectations.';
+  }
+  return staleExcluded
+    ? 'Current live freshness. Stale partners can be recovered by opening the Partner app.'
+    : 'Current live freshness. No stale partner is being excluded in this sample.';
 }
 
 function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
