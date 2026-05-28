@@ -328,11 +328,23 @@ export default async function DashboardPage() {
           <Link className="text-link" href="/bookings">
             Booking monitor
           </Link>
+          <Link className="text-link" href="/operations-policy">
+            Operations policy
+          </Link>
+          <Link className="text-link" href="/app-sessions">
+            App sessions
+          </Link>
+          <Link className="text-link" href="/cash-settlements">
+            Cash settlements
+          </Link>
           <Link className="text-link" href="/payments">
             Payments
           </Link>
           <Link className="text-link" href="/partners">
             Partner review
+          </Link>
+          <Link className="text-link" href="/partner-risk">
+            Partner risk
           </Link>
           <Link className="text-link" href="/tax-policy">
             Tax policy
