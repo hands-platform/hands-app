@@ -162,7 +162,11 @@ const bookingLinkMatch = bookingsBody.match(/href="\/bookings\/([^"]+)"/);
 if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
   const bookingBody = await fetchPage(bookingPath);
-  const bookingMarkers = ['Applied operations policy', 'Backup partner supply for this booking'];
+    const bookingMarkers = [
+      'Applied operations policy',
+      'Backup partner supply for this booking',
+      'No-show alerts',
+    ];
   const missing = bookingMarkers.filter((marker) => !bookingBody.includes(marker));
   if (missing.length > 0) {
     throw new Error(`${bookingPath} is missing expected markers: ${missing.join(', ')}`);
