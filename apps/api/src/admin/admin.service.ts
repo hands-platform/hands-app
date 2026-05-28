@@ -979,6 +979,39 @@ export class AdminService {
       noShowPolicy,
     });
 
+    await this.notifications.create({
+      userId: updated.customerProfile.userId,
+      type: 'booking.no_show',
+      title: 'No-show under review',
+      body: 'HANDS operations marked this booking as no-show. Payment and support review is pending.',
+      data: { bookingId, reason, noShowPolicy },
+    });
+
+    const partnerUserIds = new Set<string>();
+    if (updated.selectedProvider?.userId) {
+      partnerUserIds.add(updated.selectedProvider.userId);
+    }
+    if (updated.preferredProvider?.userId) {
+      partnerUserIds.add(updated.preferredProvider.userId);
+    }
+    for (const participant of updated.participants) {
+      if (participant.providerProfile.userId) {
+        partnerUserIds.add(participant.providerProfile.userId);
+      }
+    }
+
+    await Promise.all(
+      [...partnerUserIds].map((userId) =>
+        this.notifications.create({
+          userId,
+          type: 'booking.no_show',
+          title: 'Booking marked no-show',
+          body: 'HANDS operations marked this booking as no-show. Check the booking note before fee or payout follow-up.',
+          data: { bookingId, reason, noShowPolicy },
+        }),
+      ),
+    );
+
     return updated;
   }
 

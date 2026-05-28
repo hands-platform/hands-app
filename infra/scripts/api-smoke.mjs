@@ -1713,6 +1713,7 @@ try {
 
 const noShowBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
+  providerId: providerAuth.user.providerProfile.id,
   scheduledStartAt: new Date(Date.now() + 130 * 60_000).toISOString(),
   address: { line1: 'No-show operations smoke flow' },
   lat: 10.7769,
@@ -1728,6 +1729,22 @@ const markedNoShowBooking = await postJson(
 );
 if (markedNoShowBooking.status !== 'NO_SHOW') {
   throw new Error(`Admin no-show action did not update status: ${JSON.stringify(markedNoShowBooking)}`);
+}
+const noShowCustomerNotifications = await getJson('/notifications', customerAuth.accessToken);
+if (
+  !noShowCustomerNotifications.some(
+    (notification) => notification.type === 'booking.no_show' && notification.data?.bookingId === noShowBooking.id,
+  )
+) {
+  throw new Error(`No-show should notify the customer: ${JSON.stringify(noShowCustomerNotifications)}`);
+}
+const noShowPartnerNotifications = await getJson('/notifications', providerAuth.accessToken);
+if (
+  !noShowPartnerNotifications.some(
+    (notification) => notification.type === 'booking.no_show' && notification.data?.bookingId === noShowBooking.id,
+  )
+) {
+  throw new Error(`No-show should notify the preferred partner: ${JSON.stringify(noShowPartnerNotifications)}`);
 }
 
 const manuallyExpiredBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
@@ -2629,6 +2646,8 @@ console.log({
   cancelledBookingStatus: cancelledMomoBooking.status,
   cancelledPaymentStatus: cancelledMomoBooking.payment?.status ?? null,
   cancelledPaymentSyncSkipped: cancelledPaymentSync?.skipped ?? false,
+  noShowCustomerNotified: true,
+  noShowPartnerNotified: true,
   syncedMomoStatus: syncedMomo?.status ?? null,
   releasedMomoStatus: releasedMomo?.status ?? null,
   capturedCashStatus: capturedCash?.status ?? null,
