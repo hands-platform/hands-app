@@ -234,7 +234,7 @@ const externalRegistrationPlan = [
     status: 'Manual control',
     statusClass: 'pill-info',
     detail:
-      'hands.vn DNS and administration@hands.vn are managed manually. Add verification records only from official provider consoles.',
+      'hands.vn DNS and administration@hands.vn are managed manually. Add verification records only from official external service consoles.',
     env: ['hands.vn', 'administration@hands.vn'],
   },
   {
@@ -326,7 +326,7 @@ const externalRegistrationPlan = [
     provider: 'Google Play Console',
     owner: 'administration@hands.vn',
     detail:
-      'Create separate customer/partner signing keys outside Git, then use fingerprints for Android provider consoles.',
+      'Create separate customer/partner signing keys outside Git, then use fingerprints for Android external service consoles.',
     env: ['ANDROID_CUSTOMER_UPLOAD_KEYSTORE', 'ANDROID_PROVIDER_UPLOAD_KEYSTORE'],
   },
 ];

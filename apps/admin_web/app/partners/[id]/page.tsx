@@ -1602,7 +1602,7 @@ function buildProviderBookingAcceptance(
       ok: pricingReady,
       detail: pricingReady
         ? `${pricing.readyCount} service price option(s) can be booked.`
-        : 'No active provider service has a valid payout rule and customer price.',
+        : 'No active partner service has a valid payout rule and customer price.',
       action: pricingReady ? 'Clear' : 'Fix service pricing',
     },
   ];
