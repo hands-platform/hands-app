@@ -380,7 +380,7 @@ export default async function DashboardPage() {
           <Link className="text-link" href="/partners">
             Partner review
           </Link>
-          <Link className="text-link" href="/partner-risk">
+          <Link className="text-link" href="/partner-controls">
             Partner controls
           </Link>
           <Link className="text-link" href="/tax-policy">
@@ -1139,7 +1139,7 @@ export default async function DashboardPage() {
                 Funnel view for signup, KYC, banking, first revenue tax readiness, and trust badge.
               </p>
             </div>
-            <Link className="text-link" href="/partner-risk">
+            <Link className="text-link" href="/partner-controls">
               Review queue
             </Link>
           </div>
@@ -1256,7 +1256,7 @@ export default async function DashboardPage() {
               post-first-earning payout gate, not an initial booking gate.
             </p>
           </div>
-          <Link className="text-link" href="/partner-risk">
+          <Link className="text-link" href="/partner-controls">
             Full unblock playbook
           </Link>
         </div>
@@ -2698,7 +2698,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       metricLabel: 'Account blocks',
       metricValue: activeAccountControls.toString(),
       action: 'Open partner controls',
-      href: '/partner-risk?sanction=ACTIVE',
+      href: '/partner-controls?sanction=ACTIVE',
       blockerCount: activeAccountControls,
     }),
     dashboardAcceptanceStep({
@@ -2827,7 +2827,7 @@ function buildPartnerOpsQueueItem(
         ? `Account control is active: ${partner.blockedReason}`
         : 'Account control is active. Review reports, sanctions, and payout holds before dispatch.',
       action: 'Open account review',
-      href: `/partner-risk?q=${encodeURIComponent(partner.id)}`,
+      href: `/partner-controls?q=${encodeURIComponent(partner.id)}`,
       className: 'ops-task-blocked',
       priority: 105,
       metrics: [partnerOpsMetric('sanctions', activeSanctions.length.toString(), 'danger'), ...metrics],
@@ -3330,13 +3330,13 @@ function buildDashboardCommandSignals(input: {
           label: 'Open reports',
           value: openProviderReports.length.toString(),
           tone: openProviderReports.length ? 'danger' : 'ok',
-          href: '/partner-risk?status=OPEN',
+          href: '/partner-controls?status=OPEN',
         },
         {
           label: 'Active sanctions',
           value: activeProviderSanctions.length.toString(),
           tone: activeProviderSanctions.length ? 'danger' : 'ok',
-          href: '/partner-risk?sanction=ACTIVE',
+          href: '/partner-controls?sanction=ACTIVE',
         },
       ],
     },

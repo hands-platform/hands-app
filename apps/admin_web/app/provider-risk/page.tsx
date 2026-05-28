@@ -5,7 +5,7 @@ type PageProps = {
 };
 
 export default async function LegacyProviderRiskPage({ searchParams }: PageProps) {
-  redirect(`/partner-risk${buildQueryString(searchParams ? await searchParams : {})}`);
+  redirect(`/partner-controls${buildQueryString(searchParams ? await searchParams : {})}`);
 }
 
 function buildQueryString(params: Record<string, string | string[] | undefined>) {

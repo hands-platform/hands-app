@@ -97,7 +97,7 @@ const pages = [
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
   {
-    path: '/partner-risk',
+    path: '/partner-controls',
     markers: [
       'Partner Controls',
       'Partner control board',
@@ -106,6 +106,10 @@ const pages = [
       'Partner control command center',
       'System control watchlist',
     ],
+  },
+  {
+    path: '/partner-risk',
+    markers: ['Partner Controls', 'Partner control board', 'Booking acceptance unblock board'],
   },
   {
     path: '/provider-risk',

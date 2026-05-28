@@ -405,7 +405,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             Showing {visibleReports.length} report(s), {visibleSanctions.length} sanction(s)
           </span>
         </div>
-        <form className="form-grid" action="/partner-risk">
+        <form className="form-grid" action="/partner-controls">
           <label>
             Search
             <input name="q" defaultValue={filters.q} placeholder="Partner, phone, category, reason" />
@@ -442,7 +442,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           </label>
           <div className="actions full-span">
             <button type="submit">Apply filters</button>
-            <Link className="text-link" href="/partner-risk">
+            <Link className="text-link" href="/partner-controls">
               Clear filters
             </Link>
           </div>
@@ -522,7 +522,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                     {item.openReportCount > 0 ? (
                       <Link
                         className="text-link"
-                        href={`/partner-risk?q=${encodeURIComponent(item.provider.id)}`}
+                        href={`/partner-controls?q=${encodeURIComponent(item.provider.id)}`}
                       >
                         Report lane
                       </Link>
@@ -993,7 +993,7 @@ function buildPartnerControlBoardItem(
     actionLabel: reportsOpen.length || activeSanctions.length ? 'Open reports' : 'Open profile',
     actionHref:
       reportsOpen.length || activeSanctions.length
-        ? `/partner-risk?q=${encodeURIComponent(provider.id)}`
+        ? `/partner-controls?q=${encodeURIComponent(provider.id)}`
         : `/partners/${provider.id}`,
     operatorAction:
       walletBalance < 0
@@ -1177,7 +1177,7 @@ function partnerRiskScoreAction(input: {
   if (input.openReportCount > 0) {
     return {
       operatorAction: 'Resolve or escalate open reports before changing partner trust level.',
-      actionHref: `/partner-risk?q=${encodeURIComponent(input.provider.id)}`,
+      actionHref: `/partner-controls?q=${encodeURIComponent(input.provider.id)}`,
       actionLabel: 'Review reports',
     };
   }
@@ -1214,7 +1214,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       detail: urgentReports.length
         ? 'Critical or high reports need evidence review and a decision before partner trust changes.'
         : 'No critical or high partner report is currently open.',
-      href: urgentReports.length ? '/partner-risk?severity=HIGH_PLUS' : '/partner-risk?status=OPEN',
+      href: urgentReports.length ? '/partner-controls?severity=HIGH_PLUS' : '/partner-controls?status=OPEN',
       action: urgentReports.length ? 'Open critical + high lane' : 'Review open reports',
       className: urgentReports.length ? 'ops-task-blocked' : 'ops-task-done',
       metrics: [
@@ -1248,7 +1248,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       detail: activeSanctions.length
         ? 'Active sanctions are live operating controls and need clean audit follow-up.'
         : 'No active sanction is currently restricting partner operations.',
-      href: activeSanctions.length ? '/partner-risk?sanction=ACTIVE' : '/partner-risk',
+      href: activeSanctions.length ? '/partner-controls?sanction=ACTIVE' : '/partner-controls',
       action: activeSanctions.length ? 'Review active sanctions' : 'Open risk board',
       className: activeSanctions.length ? 'ops-task-pending' : 'ops-task-done',
       metrics: [
@@ -1263,7 +1263,9 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       detail: overdueReports.length
         ? 'Some open investigations have passed the target review window.'
         : 'Open partner reports are inside their review windows.',
-      href: overdueReports.length ? '/partner-risk?status=OPEN' : '/partner-risk?status=INVESTIGATING',
+      href: overdueReports.length
+        ? '/partner-controls?status=OPEN'
+        : '/partner-controls?status=INVESTIGATING',
       action: overdueReports.length ? 'Clear overdue reports' : 'Review investigations',
       className: overdueReports.length ? 'ops-task-blocked' : 'ops-task-done',
       metrics: [
@@ -1356,7 +1358,7 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         reason: 'Open reports can affect partner trust level, payout release, and future dispatch decisions.',
         operatorAction:
           'Move the report to investigating, resolve with notes, dismiss with evidence, or apply a sanction.',
-        href: `/partner-risk?q=${encodeURIComponent(item.provider.id)}`,
+        href: `/partner-controls?q=${encodeURIComponent(item.provider.id)}`,
         priority: item.severity === 'CRITICAL' ? 88 : 78,
       });
     }
@@ -1489,7 +1491,7 @@ function buildBookingAcceptanceUnblockBoard(
         'Keep the block active until evidence, notes, and the unblock reason are clear in the audit trail.',
       customerImpact: 'Customers will not see or match with partners under active account restrictions.',
       action: accountBlockedItems.length ? 'Review account blocks' : 'Open risk board',
-      href: accountBlockedItems.length ? '/partner-risk?sanction=ACTIVE' : '/partner-risk',
+      href: accountBlockedItems.length ? '/partner-controls?sanction=ACTIVE' : '/partner-controls',
       className: accountBlockedItems.length ? 'ops-task-blocked' : 'ops-task-done',
       blockingCount: accountBlockedItems.length,
       partnerSamples: partnerSamples(accountBlockedItems),
@@ -1635,7 +1637,7 @@ function buildAcceptanceUnblockPlaybook(
       payoutImpact: 'Payout holds should remain until the report or sanction has a clean audit outcome.',
       customerImpact: 'Protects customers from partners under unresolved safety, fraud, or behavior review.',
       action: card('account-controls')?.action ?? 'Review account blocks',
-      href: card('account-controls')?.href ?? '/partner-risk?sanction=ACTIVE',
+      href: card('account-controls')?.href ?? '/partner-controls?sanction=ACTIVE',
       blockingCount: card('account-controls')?.blockingCount ?? 0,
       partnerSamples: card('account-controls')?.partnerSamples ?? [],
     },
@@ -1768,7 +1770,7 @@ function buildRiskNextActions(input: {
           : 'Review evidence and move to investigating, resolved, dismissed, or sanction.',
       href: report.bookingId
         ? `/bookings/${report.bookingId}`
-        : `/partner-risk?q=${encodeURIComponent(report.id)}`,
+        : `/partner-controls?q=${encodeURIComponent(report.id)}`,
       tags: [
         { label: report.severity, tone: severityPill(report.severity) },
         { label: report.status, tone: statusPill(report.status) },
@@ -1804,7 +1806,7 @@ function buildRiskNextActions(input: {
         sanction.type === 'PAYOUT_HOLD'
           ? 'Resolve payout evidence before creating or paying payout batches.'
           : 'Keep or lift the sanction only with a clear audit trail.',
-      href: `/partner-risk?q=${encodeURIComponent(sanction.providerProfileId)}`,
+      href: `/partner-controls?q=${encodeURIComponent(sanction.providerProfileId)}`,
       tags: [
         { label: sanction.status, tone: 'pill-danger' },
         { label: sanction.type, tone: sanction.type === 'WARNING' ? 'pill-warn' : 'pill-danger' },

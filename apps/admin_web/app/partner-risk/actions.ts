@@ -75,6 +75,7 @@ function readOptional(formData: FormData, name: string) {
 
 function revalidateProviderRisk(providerProfileId?: string | null) {
   revalidatePath('/partner-risk');
+  revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');
   if (providerProfileId) {
