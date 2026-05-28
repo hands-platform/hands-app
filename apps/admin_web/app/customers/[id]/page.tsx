@@ -22,10 +22,11 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   const bookingStats = buildBookingStats(bookings);
   const addresses = buildAddressRows(customer);
   const latestBooking = bookings[0];
+  const lastCompletedBooking = bookings.find((booking) => booking.status === 'COMPLETED');
   const latestSession = customer.user?.appSessions?.[0];
   const pushDevices = customer.user?.pushDevices ?? [];
   const notifications = customer.user?.notifications ?? [];
-  const supportPlan = buildCustomerSupportPlan(customer, bookings, wallet, bookingStats, addresses);
+  const activityPlan = buildCustomerActivityPlan(customer, bookings, wallet, bookingStats, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
 
   return (
@@ -56,9 +57,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
 
       <section className="grid" style={{ marginBottom: 16 }}>
         <MetricCard label="Bookings" value={bookings.length.toString()} helper={`${bookingStats.active} active now`} />
-        <MetricCard label="Completed" value={bookingStats.completed.toString()} helper="Finished service count" />
-        <MetricCard label="Cancelled" value={bookingStats.cancelled.toString()} helper="Cancelled, expired, or refunded" />
-        <MetricCard label="No-show" value={bookingStats.noShow.toString()} helper="Needs penalty/support review" />
+        <MetricCard label="Completed work" value={bookingStats.completed.toString()} helper="Finished service records" />
+        <MetricCard label="Last work" value={lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None'} helper={lastCompletedBooking ? formatDate(lastCompletedBooking.updatedAt ?? lastCompletedBooking.scheduledStartAt ?? lastCompletedBooking.createdAt) : 'No completed service yet'} />
+        <MetricCard label="Closed bookings" value={bookingStats.cancelled.toString()} helper="Cancelled, expired, or refunded records" />
         <MetricCard label="Captured spend" value={formatMoney(wallet.capturedSpend)} helper="Captured customer payments" />
         <MetricCard label="Refunded" value={formatMoney(wallet.refundAmount)} helper={`${wallet.refundCount} refund row(s)`} />
         <MetricCard label="Saved addresses" value={addresses.length.toString()} helper="Profile and selected locations" />
@@ -72,16 +73,16 @@ export default async function CustomerDetailPage({ params }: PageProps) {
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Customer support action panel</h2>
+            <h2>Customer activity action panel</h2>
             <p className="muted">
-              One-screen operator plan for refund checks, booking recovery, chat review, address repair, and
-              customer contact.
+              Facts-only operator view for booking progress, completed work, archived chats, payment records,
+              addresses, and customer contact.
             </p>
           </div>
-          <span className={`pill ${customerSupportPillClass(supportPlan.tone)}`}>{supportPlan.status}</span>
+          <span className={`pill ${customerSupportPillClass(activityPlan.tone)}`}>{activityPlan.status}</span>
         </div>
         <div className="service-trace-summary">
-          {supportPlan.cards.map((card) => (
+          {activityPlan.cards.map((card) => (
             <Link className="text-link" href={card.href} key={card.title}>
               <span>{card.title}</span>
               <strong>{card.value}</strong>
@@ -89,21 +90,21 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             </Link>
           ))}
         </div>
-        <div className={`ops-task-note ${supportPlan.tone === 'danger' ? 'ops-task-blocked' : 'ops-task-pending'}`} style={{ marginTop: 14 }}>
+        <div className="ops-task-note ops-task-pending" style={{ marginTop: 14 }}>
           <div className="ops-row">
             <div>
-              <strong>{supportPlan.headline}</strong>
-              <p className="muted">{supportPlan.detail}</p>
+              <strong>{activityPlan.headline}</strong>
+              <p className="muted">{activityPlan.detail}</p>
               <div className="participant-list" style={{ marginTop: 8 }}>
-                {supportPlan.badges.map((badge) => (
+                {activityPlan.badges.map((badge) => (
                   <span className={`pill ${customerSupportPillClass(badge.tone)}`} key={badge.label}>
                     {badge.label}
                   </span>
                 ))}
               </div>
             </div>
-            <Link className="text-link" href={supportPlan.primaryHref}>
-              {supportPlan.primaryAction}
+            <Link className="text-link" href={activityPlan.primaryHref}>
+              {activityPlan.primaryAction}
             </Link>
           </div>
         </div>
@@ -113,7 +114,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             Quick note preset
             <select name="preset" defaultValue="">
               <option value="">Manual note only</option>
-              {supportPlan.presets.map((preset) => (
+              {activityPlan.presets.map((preset) => (
                 <option value={preset} key={preset}>
                   {preset}
                 </option>
@@ -132,13 +133,13 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             </select>
           </label>
           <label className="full-span">
-            Support note
+            Activity note
             <textarea
               name="note"
-              placeholder="Example: Customer contacted by phone, address confirmed, refund review moved to payments."
+              placeholder="Example: Customer contacted by phone, address confirmed, chat archive reviewed."
             />
           </label>
-          <button type="submit">Save customer ops note</button>
+          <button type="submit">Save customer activity note</button>
         </form>
       </section>
 
@@ -288,7 +289,10 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         <div className="risk-watch-header">
           <div>
             <h2>Chat history</h2>
-            <p className="muted">Recent messages grouped by booking so support can review context quickly.</p>
+            <p className="muted">
+              Admin archive for every matched booking. Customer and partner apps hide the chat after completion,
+              but operations keeps the full message history here.
+            </p>
           </div>
           <span className="pill pill-info">{bookings.filter((booking) => booking.chatRoom).length} rooms</span>
         </div>
@@ -442,7 +446,6 @@ function buildBookingStats(bookings: AdminBookingDetail[]) {
     active: bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length,
     completed: bookings.filter((booking) => booking.status === 'COMPLETED').length,
     cancelled: bookings.filter((booking) => ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)).length,
-    noShow: bookings.filter((booking) => booking.status === 'NO_SHOW').length,
   };
 }
 
@@ -470,7 +473,7 @@ function buildCustomerWallet(bookings: AdminBookingDetail[]) {
   );
 }
 
-function buildCustomerSupportPlan(
+function buildCustomerActivityPlan(
   customer: AdminCustomerDetail,
   bookings: AdminBookingDetail[],
   wallet: ReturnType<typeof buildCustomerWallet>,
@@ -478,48 +481,38 @@ function buildCustomerSupportPlan(
   addresses: Array<{ key: string; label: string; value: string }>,
 ) {
   const latestBooking = bookings[0];
+  const lastCompletedBooking = bookings.find((booking) => booking.status === 'COMPLETED');
   const unreadNotifications = customer.user?.notifications?.filter((notification) => !notification.readAt).length ?? 0;
   const paymentIssueCount = bookings.filter((booking) => {
     return booking.payment && !['AUTHORIZED', 'CAPTURED'].includes(booking.payment.status);
   }).length;
-  const chatIssueCount = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status) && !booking.chatRoom).length;
+  const chatArchiveCount = bookings.filter((booking) => booking.chatRoom).length;
   const missingAddress = addresses.length === 0;
-  const supportReasons = [
+  const activityFacts = [
     bookingStats.active > 0 ? `${bookingStats.active} active booking(s)` : null,
-    paymentIssueCount > 0 ? `${paymentIssueCount} payment issue(s)` : null,
-    wallet.refundAmount > 0 ? `${formatMoney(wallet.refundAmount)} refund exposure` : null,
-    bookingStats.noShow > 0 ? `${bookingStats.noShow} no-show case(s)` : null,
-    chatIssueCount > 0 ? `${chatIssueCount} chat repair issue(s)` : null,
+    bookingStats.completed > 0 ? `${bookingStats.completed} completed work record(s)` : null,
+    paymentIssueCount > 0 ? `${paymentIssueCount} payment status row(s)` : null,
+    wallet.refundAmount > 0 ? `${formatMoney(wallet.refundAmount)} refund record(s)` : null,
+    chatArchiveCount > 0 ? `${chatArchiveCount} archived chat room(s)` : null,
     missingAddress ? 'No saved address' : null,
   ].filter(Boolean) as string[];
-  const tone: 'success' | 'info' | 'warn' | 'danger' =
-    bookingStats.noShow > 0 || paymentIssueCount > 0
-      ? 'danger'
-      : bookingStats.active > 0 || wallet.refundAmount > 0 || missingAddress
-        ? 'warn'
-        : latestBooking
-          ? 'info'
-          : 'success';
+  const tone: 'success' | 'info' = latestBooking ? 'info' : 'success';
   const primaryHref =
-    paymentIssueCount > 0 || wallet.refundAmount > 0
-      ? '/payments'
-      : latestBooking?.id
+    latestBooking?.id
         ? `/bookings/${latestBooking.id}`
         : '/customers';
   const primaryAction =
-    paymentIssueCount > 0 || wallet.refundAmount > 0
-      ? 'Review payments'
-      : latestBooking?.id
+    latestBooking?.id
         ? 'Open latest booking'
         : 'Back to customers';
   return {
     tone,
-    status: supportReasons.length > 0 ? 'Needs review' : 'Stable',
-    headline: supportReasons.length > 0 ? supportReasons.join(' / ') : 'No immediate customer support blocker.',
+    status: latestBooking ? 'Activity recorded' : 'No bookings yet',
+    headline: activityFacts.length > 0 ? activityFacts.join(' / ') : 'No customer booking activity yet.',
     detail:
-      supportReasons.length > 0
-        ? 'Resolve the highest risk item first, then save an ops note so the next shift can continue from the same context.'
-        : 'Keep monitoring future bookings, push reachability, and address quality.',
+      activityFacts.length > 0
+        ? 'Use this panel to leave factual notes for the next operator. No customer ranking is calculated here.'
+        : 'When this customer books, the profile, booking, payment, chat archive, and address records will appear here.',
     primaryHref,
     primaryAction,
     cards: [
@@ -530,21 +523,29 @@ function buildCustomerSupportPlan(
         href: latestBooking ? `/bookings/${latestBooking.id}` : '/bookings',
       },
       {
-        title: 'Payment / refund',
-        value: `${paymentIssueCount} issue(s)`,
-        detail: `${formatMoney(wallet.refundAmount)} refund exposure`,
+        title: 'Last completed work',
+        value: lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None',
+        detail: lastCompletedBooking
+          ? `${bookingServiceLabel(lastCompletedBooking)} / ${formatDate(lastCompletedBooking.updatedAt ?? lastCompletedBooking.scheduledStartAt ?? lastCompletedBooking.createdAt)}`
+          : 'No finished service record',
+        href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : '/bookings',
+      },
+      {
+        title: 'Payment records',
+        value: `${paymentIssueCount} non-captured row(s)`,
+        detail: `${formatMoney(wallet.refundAmount)} refund records`,
         href: '/payments',
       },
       {
-        title: 'Chat review',
-        value: `${chatIssueCount} repair`,
-        detail: `${bookings.filter((booking) => booking.chatRoom).length} room(s) available`,
+        title: 'Chat archive',
+        value: `${chatArchiveCount} room(s)`,
+        detail: 'App chat closes after completion; admin keeps the archive',
         href: latestBooking ? `/bookings/${latestBooking.id}#chat` : '/bookings?view=chat',
       },
       {
-        title: 'Location quality',
+        title: 'Saved locations',
         value: addresses.length ? `${addresses.length} saved` : 'Missing',
-        detail: missingAddress ? 'Ask customer to confirm location' : 'Profile and selected pins exist',
+        detail: missingAddress ? 'No stored address row' : 'Profile and selected pins exist',
         href: latestBooking ? `/bookings/${latestBooking.id}#customer` : '/customers',
       },
       {
@@ -554,7 +555,7 @@ function buildCustomerSupportPlan(
         href: '/notifications',
       },
       {
-        title: 'Support trail',
+        title: 'Operator notes',
         value: `${customer.auditLogs?.length ?? 0} logs`,
         detail: 'Recent customer-linked audit actions',
         href: '/audit-log',
@@ -562,16 +563,16 @@ function buildCustomerSupportPlan(
     ],
     badges: [
       { label: bookingStats.active ? 'Live booking' : 'No live booking', tone: bookingStats.active ? 'warn' : 'success' },
-      { label: paymentIssueCount ? 'Payment review' : 'Payment clear', tone: paymentIssueCount ? 'danger' : 'success' },
-      { label: missingAddress ? 'Address missing' : 'Address ready', tone: missingAddress ? 'warn' : 'success' },
-      { label: chatIssueCount ? 'Chat repair' : 'Chat ok', tone: chatIssueCount ? 'warn' : 'success' },
+      { label: `${bookingStats.completed} completed`, tone: 'success' },
+      { label: `${chatArchiveCount} chat archive(s)`, tone: 'info' },
+      { label: missingAddress ? 'Address not saved' : 'Address saved', tone: missingAddress ? 'warn' : 'success' },
     ],
     presets: [
       'Customer contacted; waiting for reply.',
       'Address confirmed with customer.',
-      'Payment/refund review requested.',
-      'Chat history reviewed; no support blocker.',
-      'No-show case requires manager review.',
+      'Payment record checked.',
+      'Chat archive reviewed.',
+      'Booking completion confirmed.',
       'Customer asked to update saved address.',
     ],
   };
@@ -615,8 +616,8 @@ function bookingServiceLabel(booking: AdminBookingDetail) {
 function bookingStatusOperatorHint(booking: AdminBookingDetail) {
   if (ACTIVE_STATUSES.includes(booking.status)) return 'Live booking';
   if (booking.status === 'COMPLETED') return 'Closeout done';
-  if (booking.status === 'NO_SHOW') return 'Support review';
-  if (['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)) return 'Recovery / refund trail';
+  if (booking.status === 'NO_SHOW') return 'No-show record';
+  if (['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)) return 'Closed booking record';
   return 'Historical row';
 }
 

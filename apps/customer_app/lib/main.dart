@@ -2840,7 +2840,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                             title: action.title,
                             body: action.body,
                           ),
-                          if (chatRoomId != null) ...[
+                          if (chatRoomId != null &&
+                              isCustomerAppChatVisible(currentBooking)) ...[
                             const SizedBox(height: 12),
                             FilledButton.icon(
                               onPressed: loading
@@ -4611,8 +4612,7 @@ class _BookingsScreenState extends ConsumerState<BookingsScreen> {
           .compareTo(customerBookingTimestamp(left)));
     final activeCount = items.where(isCustomerActiveBooking).length;
     final closedCount = items.where(isCustomerClosedBooking).length;
-    final chatReadyCount =
-        items.where((booking) => booking['chatRoom'] != null).length;
+    final chatReadyCount = items.where(isCustomerAppChatVisible).length;
 
     return SafeArea(
       child: ListView(
@@ -4750,7 +4750,7 @@ class CustomerBookingHistoryCard extends StatelessWidget {
     final service = firstBookingService(booking);
     final provider = activeBookingProvider(booking);
     final payment = booking['payment'] as Map<String, dynamic>?;
-    final chatRoom = booking['chatRoom'] as Map<String, dynamic>?;
+    final chatVisible = isCustomerAppChatVisible(booking);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -4797,7 +4797,7 @@ class CustomerBookingHistoryCard extends StatelessWidget {
                 )),
                 BookingHistoryPill(
                     label: payment?['status']?.toString() ?? 'NO_PAYMENT'),
-                if (chatRoom != null)
+                if (chatVisible)
                   const BookingHistoryPill(
                       label: 'Chat ready', highlighted: true),
               ],
@@ -4868,6 +4868,13 @@ bool isCustomerActiveBooking(Map<String, dynamic> booking) {
 bool isCustomerClosedBooking(Map<String, dynamic> booking) {
   return const {'COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED'}
       .contains(booking['status']);
+}
+
+bool isCustomerAppChatVisible(Map<String, dynamic>? booking) {
+  if (booking == null) {
+    return false;
+  }
+  return asMap(booking['chatRoom']) != null && !isCustomerClosedBooking(booking);
 }
 
 String formatCustomerScheduleMoment(dynamic value) {
@@ -5005,7 +5012,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> loadLatestChat() async {
     final bookings = await ref.read(customerRepositoryProvider).listBookings();
     final bookingWithChat = bookings.map(asMap).firstWhere(
-          (item) => asMap(item?['chatRoom']) != null,
+          (item) => isCustomerAppChatVisible(item),
           orElse: () => null,
         );
     final latestBooking = bookings.isNotEmpty ? asMap(bookings.first) : null;
@@ -5023,6 +5030,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           '$providerName is on the way. Chat will open as soon as service start is triggered.',
         'IN_SERVICE' =>
           'The service is already in progress. Reload chat to join the live room.',
+        'COMPLETED' =>
+          'Service is complete. Chat is archived for admin records and no longer shown in the app.',
+        'CANCELLED' || 'EXPIRED' || 'REFUNDED' =>
+          'This booking is closed. Chat is archived for admin records.',
         _ =>
           'No service chat yet. The partner has to start the service first.',
       };
@@ -6084,7 +6095,6 @@ class WaitingCustomerAction {
 String chatActionLabel(String status) {
   return switch (status) {
     'IN_SERVICE' => 'Open service chat',
-    'COMPLETED' => 'Open chat history',
     _ => 'Open chat room',
   };
 }

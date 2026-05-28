@@ -10,7 +10,7 @@ export default async function CustomersPage() {
     return dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
   });
   const summary = buildCustomerSummary(rows);
-  const attentionRows = rows.filter((row) => row.needsAttention).slice(0, 8);
+  const recentActivityRows = rows.filter((row) => row.lastBookingAt || row.lastCompletedAt).slice(0, 8);
 
   return (
     <>
@@ -18,8 +18,8 @@ export default async function CustomersPage() {
         <div>
           <h1>Customer Management</h1>
           <p className="muted">
-            Customer command board for profile, booking history, cancellations, chat trace, wallet view,
-            saved addresses, app sessions, and push reachability.
+            Customer activity board for profile, booking history, completed work, chat archives, wallet view,
+            saved addresses, app sessions, and push reachability. This page records facts only, not customer ranking.
           </p>
         </div>
         <div className="actions">
@@ -34,11 +34,12 @@ export default async function CustomersPage() {
 
       <section className="grid" style={{ marginBottom: 16 }}>
         <MetricCard label="Customers" value={summary.total.toString()} helper="Total customer profiles" />
+        <MetricCard label="Joined recently" value={summary.recentJoins.toString()} helper="New accounts in 30 days" />
         <MetricCard label="In app now" value={summary.live.toString()} helper="Latest session under 30 minutes" />
         <MetricCard label="Active bookings" value={summary.activeBookings.toString()} helper="Needs live ops attention" />
-        <MetricCard label="Completed bookings" value={summary.completedBookings.toString()} helper="Completed service count" />
-        <MetricCard label="Cancelled / expired" value={summary.cancelledBookings.toString()} helper="Customer recovery queue" />
-        <MetricCard label="No-shows" value={summary.noShowBookings.toString()} helper="Review support and penalty trail" />
+        <MetricCard label="Completed work" value={summary.completedBookings.toString()} helper="Finished service records" />
+        <MetricCard label="Last work" value={summary.latestCompletedAt ? formatDate(summary.latestCompletedAt) : 'None'} helper="Newest completed service" />
+        <MetricCard label="Closed bookings" value={summary.cancelledBookings.toString()} helper="Cancelled, expired, or refunded records" />
         <MetricCard label="Saved addresses" value={summary.addresses.toString()} helper="Saved or selected locations" />
         <MetricCard label="Captured spend" value={formatMoney(summary.capturedSpend)} helper="Captured customer payments" />
       </section>
@@ -46,13 +47,13 @@ export default async function CustomersPage() {
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Customer command board</h2>
+            <h2>Customer activity board</h2>
             <p className="muted">
-              Fast queue for customers who need payment, cancellation, chat, address, or reachability review.
+              Recent customer activity by booking, completed work, payment, chat archive, address, and reachability.
             </p>
           </div>
-          <span className={`pill ${attentionRows.length ? 'pill-warn' : 'pill-success'}`}>
-            {attentionRows.length} attention
+          <span className="pill pill-info">
+            {recentActivityRows.length} recent
           </span>
         </div>
         <div className="service-trace-summary">
@@ -67,7 +68,7 @@ export default async function CustomersPage() {
             <small className="muted">Enabled device token exists</small>
           </div>
           <div>
-            <span>Refund exposure</span>
+            <span>Refund records</span>
             <strong>{formatMoney(summary.refundAmount)}</strong>
             <small className="muted">Refund rows in loaded history</small>
           </div>
@@ -77,9 +78,9 @@ export default async function CustomersPage() {
             <small className="muted">Rooms connected to bookings</small>
           </div>
           <div>
-            <span>Missing addresses</span>
+            <span>No saved address</span>
             <strong>{summary.missingAddress}</strong>
-            <small className="muted">Ask support to confirm location</small>
+            <small className="muted">Profile has no stored address row</small>
           </div>
           <div>
             <span>Payment issues</span>
@@ -87,24 +88,26 @@ export default async function CustomersPage() {
             <small className="muted">Pending, failed, released, or refunded</small>
           </div>
         </div>
-        {attentionRows.length > 0 ? (
+        {recentActivityRows.length > 0 ? (
           <table className="table" style={{ marginTop: 14 }}>
             <thead>
               <tr>
                 <th>Customer</th>
-                <th>Reason</th>
+                <th>Activity</th>
+                <th>Last completed work</th>
                 <th>Last booking</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
-              {attentionRows.map((row) => (
+              {recentActivityRows.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <strong>{row.name}</strong>
                     <p className="muted">{row.phone}</p>
                   </td>
-                  <td>{row.attentionReason}</td>
+                  <td>{row.activityLabel}</td>
+                  <td>{row.lastCompletedAt ? formatDate(row.lastCompletedAt) : 'No completed work yet'}</td>
                   <td>{row.lastBookingAt ? formatDate(row.lastBookingAt) : 'No booking'}</td>
                   <td>
                     <Link className="text-link" href={`/customers/${row.id}`}>
@@ -117,7 +120,7 @@ export default async function CustomersPage() {
           </table>
         ) : (
           <p className="muted" style={{ marginTop: 14 }}>
-            No customer needs immediate operator attention.
+            No customer booking activity has been recorded yet.
           </p>
         )}
       </section>
@@ -136,9 +139,9 @@ export default async function CustomersPage() {
           <thead>
             <tr>
               <th>Customer</th>
-              <th>Last booking</th>
+              <th>Joined</th>
+              <th>Last work</th>
               <th>Bookings</th>
-              <th>Cancel / no-show</th>
               <th>Wallet</th>
               <th>Addresses</th>
               <th>Reachability</th>
@@ -152,14 +155,14 @@ export default async function CustomersPage() {
                   <strong>{row.name}</strong>
                   <p className="muted">{row.phone}</p>
                 </td>
-                <td>{row.lastBookingAt ? formatDate(row.lastBookingAt) : 'No booking yet'}</td>
+                <td>{formatDate(row.joinedAt)}</td>
+                <td>
+                  <strong>{row.lastCompletedAt ? formatDate(row.lastCompletedAt) : 'No completed work'}</strong>
+                  <p className="muted">{row.lastCompletedLabel}</p>
+                </td>
                 <td>
                   <strong>{row.bookingCount}</strong>
                   <p className="muted">{row.activeBookings} active / {row.completedBookings} completed</p>
-                </td>
-                <td>
-                  <strong>{row.cancelledBookings}</strong>
-                  <p className="muted">{row.noShowBookings} no-show</p>
                 </td>
                 <td>
                   <strong>{formatMoney(row.capturedSpend)}</strong>
@@ -206,7 +209,6 @@ function buildCustomerRow(customer: AdminCustomer) {
   }, 0);
   const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
   const cancelledBookings = bookings.filter((booking) => CANCELLED_STATUSES.includes(booking.status)).length;
-  const noShowBookings = bookings.filter((booking) => booking.status === 'NO_SHOW').length;
   const completedBookings = bookings.filter((booking) => booking.status === 'COMPLETED').length;
   const paymentIssues = payments.filter((payment) => payment && !['AUTHORIZED', 'CAPTURED'].includes(payment.status)).length;
   const capturedSpend = payments
@@ -217,41 +219,42 @@ function buildCustomerRow(customer: AdminCustomer) {
     .map((booking) => booking.updatedAt ?? booking.createdAt ?? booking.scheduledStartAt)
     .filter(Boolean)
     .sort((left, right) => dateMs(right) - dateMs(left))[0];
+  const completedRows = bookings
+    .filter((booking) => booking.status === 'COMPLETED')
+    .sort((left, right) => dateMs(right.updatedAt ?? right.scheduledStartAt ?? right.createdAt) - dateMs(left.updatedAt ?? left.scheduledStartAt ?? left.createdAt));
+  const lastCompletedBooking = completedRows[0];
+  const lastCompletedAt = lastCompletedBooking?.updatedAt ?? lastCompletedBooking?.scheduledStartAt ?? lastCompletedBooking?.createdAt;
   const lastSeenAt = customer.user?.appSessions?.[0]?.lastSeenAt;
   const pushReachable = Boolean(customer.user?.pushDevices?.some((device) => device.enabled));
-  const needsAttention = activeBookings > 0 || cancelledBookings > 0 || noShowBookings > 0 || paymentIssues > 0 || addressCount === 0;
-  const attentionReason =
+  const activityLabel =
     activeBookings > 0
       ? `${activeBookings} active booking(s)`
-      : paymentIssues > 0
-        ? `${paymentIssues} payment issue(s)`
-        : noShowBookings > 0
-          ? `${noShowBookings} no-show row(s)`
-          : cancelledBookings > 0
-            ? `${cancelledBookings} cancelled / expired row(s)`
-            : addressCount === 0
-              ? 'No saved address'
-              : 'Review';
+      : completedBookings > 0
+        ? `${completedBookings} completed work record(s)`
+        : bookings.length > 0
+          ? `${bookings.length} booking record(s)`
+          : 'No booking history yet';
 
   return {
     id: customer.id,
     name: customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer',
     phone: customer.user?.phone ?? 'No phone',
+    joinedAt: customer.user?.createdAt,
     bookingCount: bookings.length,
     activeBookings,
     completedBookings,
     cancelledBookings,
-    noShowBookings,
     refundAmount,
     capturedSpend,
     addressCount,
     lastBookingAt,
+    lastCompletedAt,
+    lastCompletedLabel: lastCompletedBooking ? bookingServiceLabel(lastCompletedBooking) : 'No finished service record',
     lastSeenAt,
     pushReachable,
     paymentIssues,
     chatRooms: bookings.filter((booking) => booking.chatRoom).length,
-    needsAttention,
-    attentionReason,
+    activityLabel,
   };
 }
 
@@ -259,10 +262,10 @@ function buildCustomerSummary(rows: ReturnType<typeof buildCustomerRow>[]) {
   return {
     total: rows.length,
     live: rows.filter((row) => row.lastSeenAt && Date.now() - dateMs(row.lastSeenAt) <= 30 * 60_000).length,
+    recentJoins: rows.filter((row) => row.joinedAt && Date.now() - dateMs(row.joinedAt) <= 30 * 24 * 60 * 60_000).length,
     activeBookings: rows.reduce((sum, row) => sum + row.activeBookings, 0),
     completedBookings: rows.reduce((sum, row) => sum + row.completedBookings, 0),
     cancelledBookings: rows.reduce((sum, row) => sum + row.cancelledBookings, 0),
-    noShowBookings: rows.reduce((sum, row) => sum + row.noShowBookings, 0),
     addresses: rows.reduce((sum, row) => sum + row.addressCount, 0),
     capturedSpend: rows.reduce((sum, row) => sum + row.capturedSpend, 0),
     refundAmount: rows.reduce((sum, row) => sum + row.refundAmount, 0),
@@ -271,7 +274,14 @@ function buildCustomerSummary(rows: ReturnType<typeof buildCustomerRow>[]) {
     missingAddress: rows.filter((row) => row.addressCount === 0).length,
     paymentIssues: rows.reduce((sum, row) => sum + row.paymentIssues, 0),
     latestBookingAt: rows.map((row) => row.lastBookingAt).filter(Boolean).sort((left, right) => dateMs(right) - dateMs(left))[0],
+    latestCompletedAt: rows.map((row) => row.lastCompletedAt).filter(Boolean).sort((left, right) => dateMs(right) - dateMs(left))[0],
   };
+}
+
+function bookingServiceLabel(booking: NonNullable<AdminCustomer['bookings']>[number]) {
+  const first = booking.services?.[0];
+  if (!first?.service) return 'No service';
+  return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
 }
 
 function readAddressCount(value: unknown) {

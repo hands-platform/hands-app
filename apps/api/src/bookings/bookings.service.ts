@@ -666,7 +666,7 @@ export class BookingsService {
             data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
           },
         },
-        chatRoom: { create: {} },
+        chatRoom: { upsert: { create: {}, update: {} } },
       },
       include: { chatRoom: true, preferredProvider: true, selectedProvider: true, payment: true },
     });

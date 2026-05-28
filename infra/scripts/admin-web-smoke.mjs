@@ -52,9 +52,9 @@ const pages = [
     path: '/customers',
     markers: [
       'Customer Management',
-      'Customer command board',
+      'Customer activity board',
       'All customers',
-      'Last booking',
+      'Last work',
       'Wallet',
       'Saved addresses',
       'Reachability',
@@ -222,7 +222,7 @@ if (customerLinkMatch) {
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
     'Customer detail',
-    'Customer support action panel',
+    'Customer activity action panel',
     'Customer information',
     'Customer wallet',
     'Saved addresses',

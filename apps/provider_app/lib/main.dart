@@ -421,12 +421,12 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       });
     final visibleBookings = bookingItems.where((booking) {
       if (requestView == 'chat') {
-        return booking['chatRoom'] != null;
+        return isProviderAppChatVisible(booking);
       }
       if (requestView == 'all') {
         return true;
       }
-      return booking['chatRoom'] == null;
+      return !isProviderAppChatVisible(booking);
     }).toList();
 
     return SafeArea(
@@ -529,7 +529,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
             RequestFlowBar(
               activeStep: !isOnline
                   ? 0
-                  : (bookingItems.any((item) => item['chatRoom'] != null)
+                  : (bookingItems.any(isProviderAppChatVisible)
                       ? 3
                       : (bookingItems.any((item) => item['status'] == 'MATCHED')
                           ? 2
@@ -549,7 +549,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                     preferredProvider['userId'] != auth.userId;
               }).length,
               chatReady: bookingItems
-                  .where((booking) => booking['chatRoom'] != null)
+                  .where(isProviderAppChatVisible)
                   .length,
             ),
             const SizedBox(height: 16),
@@ -1030,6 +1030,13 @@ bool isProviderClosedBooking(Map<String, dynamic> booking) {
       .contains(booking['status']);
 }
 
+bool isProviderAppChatVisible(Map<String, dynamic>? booking) {
+  if (booking == null) {
+    return false;
+  }
+  return asMap(booking['chatRoom']) != null && !isProviderClosedBooking(booking);
+}
+
 String providerScheduleNextAction(Map<String, dynamic> booking) {
   return switch (booking['status']) {
     'OPEN_MATCHING' => 'Waiting for the guest to confirm a partner.',
@@ -1049,7 +1056,7 @@ int providerRequestPriority(
   final preferredProvider = booking['preferredProvider'];
   final isPreferredRequest = preferredProvider is Map<String, dynamic> &&
       preferredProvider['userId'] == currentUserId;
-  if (booking['chatRoom'] != null) {
+  if (isProviderAppChatVisible(booking)) {
     return 1;
   }
   if (booking['status'] == 'MATCHED' && isPreferredRequest) {
@@ -1601,7 +1608,7 @@ class OpenBookingCard extends StatelessWidget {
         booking['preferredProvider'] as Map<String, dynamic>?;
     final payment = asMap(booking['payment']);
     final hasPreferredProvider = preferredProvider != null;
-    final hasChat = booking['chatRoom'] != null;
+    final hasChat = isProviderAppChatVisible(booking);
     final isMatched = booking['status'] == 'MATCHED';
     final isCashBooking = providerBookingIsCash(booking);
     final customerAmount = payment?['amount'] ?? service?['basePrice'];
@@ -2150,7 +2157,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Future<void> loadLatestChat() async {
     final bookings = await ref.read(providerRepositoryProvider).listBookings();
     final bookingWithChat = bookings.map(asMap).firstWhere(
-          (item) => asMap(item?['chatRoom']) != null,
+          (item) => isProviderAppChatVisible(item),
           orElse: () => null,
         );
     final latestBooking = bookings.isNotEmpty ? asMap(bookings.first) : null;
@@ -2179,6 +2186,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             : 'A partner was selected already, so this chat room is not yours.',
         'IN_SERVICE' =>
           'Service is already in progress. Reload chat to join the live room.',
+        'COMPLETED' =>
+          'Service complete. Chat is archived for admin records and no longer shown in the app.',
+        'CANCELLED' || 'EXPIRED' || 'REFUNDED' =>
+          'This booking is closed. Chat is archived for admin records.',
         _ => 'No selected booking chat yet.',
       };
       setState(() => statusMessage = nextMessage);
@@ -4923,7 +4934,7 @@ ProviderRequestGuidance providerRequestGuidance({
   final hasPreferredProvider = preferredProvider != null;
   final preferredProviderName =
       preferredProvider?['displayName']?.toString().trim();
-  final hasChat = booking['chatRoom'] != null;
+  final hasChat = isProviderAppChatVisible(booking);
   final isMatched = booking['status'] == 'MATCHED';
   final actionBlockedByWallet =
       walletBlocked && ((isPreferredRequest && !isMatched) || !joined);
