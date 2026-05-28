@@ -167,6 +167,7 @@ type ProviderFilters = {
   security: string;
   readiness: string;
   review: string;
+  sort: string;
 };
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type ProviderOpsPolicy = {
@@ -196,7 +197,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
-  const allProviders = sortProviders(rawProviders, opsPolicy);
+  const allProviders = sortProviders(rawProviders, opsPolicy, filters.sort);
   const providers = filterProviders(allProviders, filters, opsPolicy);
   const visibleProviders = providers.slice(0, PROVIDER_LIST_RENDER_LIMIT);
   const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
@@ -308,6 +309,18 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="direct-ready">Direct request ready</option>
               <option value="backup-ready">10km backup ready</option>
               <option value="backup-blocked">10km backup blocked</option>
+            </select>
+          </label>
+          <label>
+            Sort
+            <select name="sort" defaultValue={filters.sort}>
+              <option value="ops-priority">Operations priority</option>
+              <option value="last-work">Last completed work</option>
+              <option value="completed-count">Completed work count</option>
+              <option value="last-activity">Last app activity</option>
+              <option value="location-freshness">Location freshness</option>
+              <option value="wallet-debt">Wallet debt first</option>
+              <option value="name">Name</option>
             </select>
           </label>
           <div className="actions full-span">
@@ -3722,8 +3735,33 @@ function hasOpenProviderRisk(provider: AdminProvider) {
   );
 }
 
-function sortProviders(providers: AdminProvider[], opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
+function sortProviders(
+  providers: AdminProvider[],
+  opsPolicy = DEFAULT_PROVIDER_OPS_POLICY,
+  sort = 'ops-priority',
+) {
   return [...providers].sort((left, right) => {
+    if (sort === 'last-work') {
+      return dateMs(providerLastCompletedWorkAt(right)) - dateMs(providerLastCompletedWorkAt(left));
+    }
+    if (sort === 'completed-count') {
+      return (
+        providerCompletedWorkCount(right) - providerCompletedWorkCount(left) ||
+        dateMs(providerLastCompletedWorkAt(right)) - dateMs(providerLastCompletedWorkAt(left))
+      );
+    }
+    if (sort === 'last-activity') {
+      return dateMs(partnerLastActivityAt(right)) - dateMs(partnerLastActivityAt(left));
+    }
+    if (sort === 'location-freshness') {
+      return dateMs(right.currentLocationUpdatedAt) - dateMs(left.currentLocationUpdatedAt);
+    }
+    if (sort === 'wallet-debt') {
+      return providerUnsettledWalletBalance(left) - providerUnsettledWalletBalance(right);
+    }
+    if (sort === 'name') {
+      return providerDisplayName(left).localeCompare(providerDisplayName(right));
+    }
     const leftPriority = providerPriority(left, opsPolicy);
     const rightPriority = providerPriority(right, opsPolicy);
     if (leftPriority !== rightPriority) {
@@ -3746,6 +3784,7 @@ function buildProviderFilters(params: Record<string, string | string[] | undefin
     security: readParam(params.security),
     readiness: readParam(params.readiness),
     review: normalizePartnerReviewFilter(readParam(params.review)),
+    sort: readPartnerSort(readParam(params.sort)),
   };
 }
 
@@ -3813,6 +3852,14 @@ function buildProviderActiveFilters(filters: ProviderFilters) {
           value: filters.review,
           label: `Review: ${filters.review}`,
           description: providerFilterDescription('review', filters.review),
+        }
+      : null,
+    filters.sort !== 'ops-priority'
+      ? {
+          kind: 'sort',
+          value: filters.sort,
+          label: `Sort: ${partnerSortLabel(filters.sort)}`,
+          description: 'Partner list sort order is changed for a specific operations review.',
         }
       : null,
   ].filter(Boolean) as Array<{ kind: string; value: string; label: string; description: string }>;
@@ -3889,6 +3936,30 @@ function readParam(value: string | string[] | undefined) {
 
 function normalizePartnerReviewFilter(value: string) {
   return value === 'risk' ? 'reports' : value;
+}
+
+function readPartnerSort(value: string) {
+  return [
+    'ops-priority',
+    'last-work',
+    'completed-count',
+    'last-activity',
+    'location-freshness',
+    'wallet-debt',
+    'name',
+  ].includes(value)
+    ? value
+    : 'ops-priority';
+}
+
+function partnerSortLabel(sort: string) {
+  if (sort === 'last-work') return 'last completed work';
+  if (sort === 'completed-count') return 'completed work count';
+  if (sort === 'last-activity') return 'last app activity';
+  if (sort === 'location-freshness') return 'location freshness';
+  if (sort === 'wallet-debt') return 'wallet debt first';
+  if (sort === 'name') return 'name';
+  return 'operations priority';
 }
 
 function filterProviders(
@@ -4215,6 +4286,14 @@ function formatDate(value?: string | null) {
     return 'invalid time';
   }
   return new Date(timestamp).toLocaleString();
+}
+
+function dateMs(value?: string | null) {
+  if (!value) {
+    return 0;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function formatRelativeAge(value?: string | null) {
