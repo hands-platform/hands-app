@@ -31,7 +31,7 @@ export default async function OperationsPolicyPage({
   const [settings, bookings, providers, auditLogs] = await Promise.all([
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminBooking[]>('/admin/bookings', []),
-    adminGet<AdminProvider[]>('/admin/providers', []),
+    adminGet<AdminProvider[]>('/admin/partners', []),
     adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
   ]);
   const matchingSettings = settings.filter((setting) => setting.category === 'Matching');

@@ -113,7 +113,7 @@ export default async function DashboardPage() {
     operationalPolicies,
   ] = await Promise.all([
     adminGet<AdminUser[]>('/admin/users', []),
-    adminGet<AdminProvider[]>('/admin/providers', []),
+    adminGet<AdminProvider[]>('/admin/partners', []),
     adminGet<AdminBooking[]>('/admin/bookings', []),
     adminGet<AdminPayment[]>('/admin/payments', []),
     adminGet<AdminEarningSummary>('/admin/earnings/summary', {

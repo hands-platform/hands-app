@@ -166,7 +166,7 @@ const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 export default async function ProvidersPage({ searchParams }: { searchParams?: ProvidersPageSearchParams }) {
   const filters = buildProviderFilters(searchParams ? await searchParams : {});
   const [rawProviders, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>('/admin/providers', []),
+    adminGet<AdminProvider[]>('/admin/partners', []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);

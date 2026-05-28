@@ -192,9 +192,25 @@ export class ProviderOnboardingController {
     return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.APPROVED);
   }
 
+  @Post('admin/partners/:id/kyc/approve')
+  @Roles(Role.ADMIN)
+  approvePartnerKyc(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
+    return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.APPROVED);
+  }
+
   @Post('admin/providers/:id/kyc/reject')
   @Roles(Role.ADMIN)
   rejectKyc(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.REJECTED, body.reason);
+  }
+
+  @Post('admin/partners/:id/kyc/reject')
+  @Roles(Role.ADMIN)
+  rejectPartnerKyc(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
     @Body() body: { reason?: string },
@@ -250,9 +266,30 @@ export class ProviderOnboardingController {
     return this.onboarding.reviewTaxProfile(user.id, providerProfileId, ProviderTaxProfileStatus.APPROVED);
   }
 
+  @Post('admin/partners/:id/tax-profile/approve')
+  @Roles(Role.ADMIN)
+  approvePartnerTaxProfile(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
+    return this.onboarding.reviewTaxProfile(user.id, providerProfileId, ProviderTaxProfileStatus.APPROVED);
+  }
+
   @Post('admin/providers/:id/tax-profile/reject')
   @Roles(Role.ADMIN)
   rejectTaxProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.onboarding.reviewTaxProfile(
+      user.id,
+      providerProfileId,
+      ProviderTaxProfileStatus.REJECTED,
+      body.reason,
+    );
+  }
+
+  @Post('admin/partners/:id/tax-profile/reject')
+  @Roles(Role.ADMIN)
+  rejectPartnerTaxProfile(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
     @Body() body: { reason?: string },

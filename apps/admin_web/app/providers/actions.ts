@@ -7,35 +7,35 @@ const MIN_REVIEW_REASON_LENGTH = 12;
 
 export async function approveProvider(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
-  await adminPost(`/admin/providers/${providerId}/approve`, {}, null);
+  await adminPost(`/admin/partners/${providerId}/approve`, {}, null);
   revalidateProviderPaths(providerId);
 }
 
 export async function rejectProvider(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
   const reason = readReviewReason(formData);
-  await adminPost(`/admin/providers/${providerId}/reject`, { reason }, null);
+  await adminPost(`/admin/partners/${providerId}/reject`, { reason }, null);
   revalidateProviderPaths(providerId);
 }
 
 export async function blockProviderAccount(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
   const reason = readReviewReason(formData);
-  await adminPost(`/admin/providers/${providerId}/block`, { reason }, null);
+  await adminPost(`/admin/partners/${providerId}/block`, { reason }, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
 
 export async function unblockProviderAccount(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
-  await adminPost(`/admin/providers/${providerId}/unblock`, {}, null);
+  await adminPost(`/admin/partners/${providerId}/unblock`, {}, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
 
 export async function syncSupabaseProviderRole(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
-  await adminPost(`/admin/providers/${providerId}/sync-supabase-role`, {}, null);
+  await adminPost(`/admin/partners/${providerId}/sync-supabase-role`, {}, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
@@ -68,7 +68,7 @@ export async function unblockProviderDevice(formData: FormData) {
 
 export async function approveProviderKyc(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
-  await adminPost(`/admin/providers/${providerId}/kyc/approve`, {}, null);
+  await adminPost(`/admin/partners/${providerId}/kyc/approve`, {}, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
@@ -76,7 +76,7 @@ export async function approveProviderKyc(formData: FormData) {
 export async function rejectProviderKyc(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
   const reason = readReviewReason(formData);
-  await adminPost(`/admin/providers/${providerId}/kyc/reject`, { reason }, null);
+  await adminPost(`/admin/partners/${providerId}/kyc/reject`, { reason }, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
@@ -128,7 +128,7 @@ export async function rejectProviderBankAccount(formData: FormData) {
 
 export async function approveProviderTaxProfile(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
-  await adminPost(`/admin/providers/${providerId}/tax-profile/approve`, {}, null);
+  await adminPost(`/admin/partners/${providerId}/tax-profile/approve`, {}, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
@@ -136,7 +136,7 @@ export async function approveProviderTaxProfile(formData: FormData) {
 export async function rejectProviderTaxProfile(formData: FormData) {
   const providerId = readRequiredFormString(formData, 'providerId');
   const reason = readReviewReason(formData);
-  await adminPost(`/admin/providers/${providerId}/tax-profile/reject`, { reason }, null);
+  await adminPost(`/admin/partners/${providerId}/tax-profile/reject`, { reason }, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }

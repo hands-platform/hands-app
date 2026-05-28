@@ -33,9 +33,9 @@ const DEFAULT_PARTNER_RISK_POLICY: PartnerRiskPolicy = {
 export default async function ProviderRiskPage({ searchParams }: { searchParams?: RiskSearchParams }) {
   const filters = buildFilters(searchParams ? await searchParams : {});
   const [providers, reports, sanctions, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>('/admin/providers', []),
-    adminGet<AdminProviderReport[]>('/admin/provider-reports', []),
-    adminGet<AdminProviderSanction[]>('/admin/provider-sanctions', []),
+    adminGet<AdminProvider[]>('/admin/partners', []),
+    adminGet<AdminProviderReport[]>('/admin/partner-reports', []),
+    adminGet<AdminProviderSanction[]>('/admin/partner-sanctions', []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const riskPolicy = buildPartnerRiskPolicy(operationalPolicies);
