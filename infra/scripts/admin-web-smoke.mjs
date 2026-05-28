@@ -17,6 +17,7 @@ const pages = [
       'Customers in app',
       'Partners in app',
       'Partner dispatch control',
+      'Acceptance unblock quick order',
       'Matching ops',
       'API source',
     ],

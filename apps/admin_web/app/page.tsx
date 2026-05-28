@@ -67,6 +67,21 @@ type PartnerOpsQueueItem = {
   metrics: Array<{ label: string; value: string; tone: 'ok' | 'warn' | 'danger' | 'info' }>;
 };
 
+type DashboardAcceptanceUnblockStep = {
+  id: string;
+  step: string;
+  owner: 'Finance' | 'Trust' | 'KYC' | 'Dispatch' | 'Ops';
+  title: string;
+  detail: string;
+  metricLabel: string;
+  metricValue: string;
+  action: string;
+  href: string;
+  className: string;
+  pillClass: string;
+  tone: 'ok' | 'warn' | 'danger' | 'info';
+};
+
 type DashboardBookingMatchingPolicySnapshot = {
   providerResponseWindowMinutes: number | null;
   backupProviderRadiusMeters: number | null;
@@ -178,6 +193,11 @@ export default async function DashboardPage() {
     cashSettlementSummary,
   );
   const partnerOpsQueue = buildPartnerOpsQueue(providers, cashDebtRows, appSessions);
+  const acceptanceUnblockQuickOrder = buildDashboardAcceptanceUnblockQuickOrder({
+    providers,
+    cashSettlementSummary,
+    partnerOpsQueue,
+  });
   const commandSignals = buildDashboardCommandSignals({
     providers,
     bookings,
@@ -1163,6 +1183,41 @@ export default async function DashboardPage() {
             <strong>{partnerOpsQueue.contactIssue}</strong>
             <small>No app session or push</small>
           </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Acceptance unblock quick order</h2>
+            <p className="muted">
+              First-screen sequence for restoring partner booking acceptance. Tax setup stays as a
+              post-first-earning payout gate, not an initial booking gate.
+            </p>
+          </div>
+          <Link className="text-link" href="/partner-risk">
+            Full unblock playbook
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {acceptanceUnblockQuickOrder.map((step) => (
+            <Link className={`ops-task-card ${step.className}`} href={step.href} key={step.id}>
+              <span className={`pill ${step.pillClass}`}>Step {step.step}</span>
+              <h3>{step.title}</h3>
+              <p>{step.detail}</p>
+              <div className="ops-task-breakdown">
+                <span className={`ops-task-breakdown-item ops-task-breakdown-${step.tone}`}>
+                  <span>{step.metricLabel}</span>
+                  <strong>{step.metricValue}</strong>
+                </span>
+                <span className="ops-task-breakdown-item ops-task-breakdown-info">
+                  <span>Owner</span>
+                  <strong>{step.owner}</strong>
+                </span>
+              </div>
+              <span className="ops-task-card-action">{step.action}</span>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -2423,6 +2478,132 @@ function buildPartnerOpsQueue(
     locationIssue: providers.filter((partner) => partnerLocationState(partner) !== 'recent').length,
     contactIssue: providers.filter((partner) => partnerContactState(partner, livePartnerUserIds) !== 'ready')
       .length,
+  };
+}
+
+function buildDashboardAcceptanceUnblockQuickOrder(input: {
+  providers: AdminProvider[];
+  cashSettlementSummary: AdminCashSettlementSummary;
+  partnerOpsQueue: ReturnType<typeof buildPartnerOpsQueue>;
+}): DashboardAcceptanceUnblockStep[] {
+  const activeAccountControls = input.providers.filter((partner) => {
+    const hasActiveSanction = (partner.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE');
+    return Boolean(partner.blockedAt) || hasActiveSanction;
+  }).length;
+  const verificationBlockers = input.providers.filter((partner) => {
+    const verificationReady = partner.verification?.status === 'APPROVED' || partner.kyc?.status === 'APPROVED';
+    const bankReady = (partner.bankAccounts ?? []).some((account) => account.status === 'APPROVED');
+    return !verificationReady || !bankReady;
+  }).length;
+  const taxPayoutGate = input.partnerOpsQueue.payoutSetup;
+
+  return [
+    dashboardAcceptanceStep({
+      id: 'dashboard-acceptance-cash-debt',
+      step: '1',
+      owner: 'Finance',
+      title: 'Clear cash fee debt',
+      detail: 'Negative wallet partners cannot accept direct requests or join 10km backup matching.',
+      metricLabel: 'Debt partners',
+      metricValue: input.cashSettlementSummary.providerCount.toString(),
+      action: 'Open cash settlements',
+      href: '/cash-settlements',
+      blockerCount: input.cashSettlementSummary.providerCount,
+    }),
+    dashboardAcceptanceStep({
+      id: 'dashboard-acceptance-account-control',
+      step: '2',
+      owner: 'Trust',
+      title: 'Resolve account controls',
+      detail: 'Blocked accounts and active sanctions stay above booking convenience.',
+      metricLabel: 'Account blocks',
+      metricValue: activeAccountControls.toString(),
+      action: 'Open partner risk',
+      href: '/partner-risk?sanction=ACTIVE',
+      blockerCount: activeAccountControls,
+    }),
+    dashboardAcceptanceStep({
+      id: 'dashboard-acceptance-kyc-bank',
+      step: '3',
+      owner: 'KYC',
+      title: 'Approve KYC and bank',
+      detail: 'Identity and bank approval are the Level 2 work gate for paid bookings.',
+      metricLabel: 'Needs review',
+      metricValue: verificationBlockers.toString(),
+      action: 'Open partner review',
+      href: '/partners?review=acceptance-blocked',
+      blockerCount: verificationBlockers,
+    }),
+    dashboardAcceptanceStep({
+      id: 'dashboard-acceptance-location',
+      step: '4',
+      owner: 'Dispatch',
+      title: 'Refresh partner location',
+      detail: 'The 10km backup pool depends on recent app-open location updates.',
+      metricLabel: 'Location gaps',
+      metricValue: input.partnerOpsQueue.locationIssue.toString(),
+      action: 'Open location queue',
+      href: '/partners?review=location',
+      blockerCount: input.partnerOpsQueue.locationIssue,
+      warnOnly: true,
+    }),
+    dashboardAcceptanceStep({
+      id: 'dashboard-acceptance-contact',
+      step: '5',
+      owner: 'Ops',
+      title: 'Confirm app contactability',
+      detail: 'Recent app session and enabled device state reduce missed 10 minute reply windows.',
+      metricLabel: 'Contact gaps',
+      metricValue: input.partnerOpsQueue.contactIssue.toString(),
+      action: 'Open app sessions',
+      href: '/app-sessions',
+      blockerCount: input.partnerOpsQueue.contactIssue,
+      warnOnly: true,
+    }),
+    dashboardAcceptanceStep({
+      id: 'dashboard-acceptance-tax-payout',
+      step: '6',
+      owner: 'Finance',
+      title: 'Collect tax after first earning',
+      detail: 'Tax profile is not a signup gate; it becomes a payout gate after revenue exists.',
+      metricLabel: 'Payout gates',
+      metricValue: taxPayoutGate.toString(),
+      action: 'Open tax policy',
+      href: '/tax-policy',
+      blockerCount: taxPayoutGate,
+      warnOnly: true,
+    }),
+  ];
+}
+
+function dashboardAcceptanceStep(input: {
+  id: string;
+  step: string;
+  owner: DashboardAcceptanceUnblockStep['owner'];
+  title: string;
+  detail: string;
+  metricLabel: string;
+  metricValue: string;
+  action: string;
+  href: string;
+  blockerCount: number;
+  warnOnly?: boolean;
+}): DashboardAcceptanceUnblockStep {
+  const hasBlocker = input.blockerCount > 0;
+  const tone = hasBlocker ? (input.warnOnly ? 'warn' : 'danger') : 'ok';
+  return {
+    id: input.id,
+    step: input.step,
+    owner: input.owner,
+    title: input.title,
+    detail: input.detail,
+    metricLabel: input.metricLabel,
+    metricValue: input.metricValue,
+    action: input.action,
+    href: input.href,
+    className: hasBlocker ? (input.warnOnly ? 'ops-task-pending' : 'ops-task-blocked') : 'ops-task-done',
+    pillClass: hasBlocker ? (input.warnOnly ? 'pill-warn' : 'pill-danger') : 'pill-success',
+    tone,
   };
 }
 
