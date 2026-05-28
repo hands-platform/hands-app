@@ -62,7 +62,18 @@ const pages = [
     path: '/provider-risk',
     markers: ['Partner Risk', 'Partner risk scorecard', 'Booking acceptance unblock board', 'Risk operation filters'],
   },
-  { path: '/app-sessions', markers: ['App Sessions', 'Session command board', 'Latest app sessions'] },
+  {
+    path: '/app-sessions',
+    markers: ['App Sessions', 'Session scope', 'Session command board', 'Latest app sessions'],
+  },
+  {
+    path: '/app-sessions?role=CUSTOMER&state=live',
+    markers: ['App Sessions', 'Filtered to customer sessions, live heartbeat', 'Latest app sessions'],
+  },
+  {
+    path: '/app-sessions?role=PROVIDER&state=live',
+    markers: ['App Sessions', 'Filtered to partner sessions, live heartbeat', 'Latest app sessions'],
+  },
   { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
   {
     path: '/partners',
