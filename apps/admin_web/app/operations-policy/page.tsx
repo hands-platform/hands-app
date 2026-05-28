@@ -52,6 +52,22 @@ type OwnerDecisionPressure = {
     pillClass: string;
   }>;
 };
+type MatchingStageImpactPreview = {
+  currentPolicyLabel: string;
+  summary: Array<{ label: string; value: string; helper: string }>;
+  rows: Array<{
+    scenario: string;
+    value: string;
+    stage1: number;
+    stage2: number;
+    stage3: number;
+    repair: number;
+    noSupply: number;
+    overdue: number;
+    operatorRead: string;
+    pillClass: string;
+  }>;
+};
 
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 
@@ -81,6 +97,7 @@ export default async function OperationsPolicyPage({
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
   const acceptanceMatrix = buildBookingAcceptanceMatrix(settings, providers);
   const supplySensitivity = buildPolicySupplySensitivity(settings, bookings, providers);
+  const matchingStageImpactPreview = buildMatchingStageImpactPreview(settings, bookings, providers);
   const ownerDecisionPressure = buildOwnerDecisionPressure(
     bookings,
     providers,
@@ -300,6 +317,71 @@ export default async function OperationsPolicyPage({
               </tbody>
             </table>
           </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Matching stage impact preview</h2>
+            <p className="muted">
+              Estimates how current open bookings would move across Stage 1/2/3/4 if the response window,
+              10km radius, or location freshness policy changed. This is a planning preview; saved booking
+              snapshots still protect live requests.
+            </p>
+          </div>
+          <span className="pill pill-info">{matchingStageImpactPreview.currentPolicyLabel}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {matchingStageImpactPreview.summary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th>Value</th>
+                <th>Stage 1 first-pick</th>
+                <th>Stage 2 backup</th>
+                <th>Stage 3 choice</th>
+                <th>Stage 4 repair</th>
+                <th>No supply</th>
+                <th>Overdue</th>
+                <th>Operator read</th>
+              </tr>
+            </thead>
+            <tbody>
+              {matchingStageImpactPreview.rows.map((row) => (
+                <tr key={`${row.scenario}-${row.value}`}>
+                  <td>
+                    <span className={`pill ${row.pillClass}`}>{row.scenario}</span>
+                  </td>
+                  <td>{row.value}</td>
+                  <td>{row.stage1}</td>
+                  <td>{row.stage2}</td>
+                  <td>{row.stage3}</td>
+                  <td>{row.repair}</td>
+                  <td>{row.noSupply}</td>
+                  <td>{row.overdue}</td>
+                  <td>{row.operatorRead}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <strong>How to use this preview</strong>
+          <p className="muted">
+            If a candidate value increases Stage 2 backup count without increasing stale/no-supply risk, it
+            may reduce customer waiting anxiety. If it increases overdue or no-supply count, improve partner
+            location freshness, push delivery, or city supply before changing policy.
+          </p>
         </div>
       </section>
 
@@ -1710,6 +1792,234 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       verify: 'Verify from Cash Settlements, Partner Risk, and a blocked accept attempt in the partner app.',
     },
   ];
+}
+
+function buildMatchingStageImpactPreview(
+  settings: AdminOperationalPolicySetting[],
+  bookings: AdminBooking[],
+  providers: AdminProvider[],
+): MatchingStageImpactPreview {
+  const responseWindowMinutes =
+    policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
+  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const freshnessMinutes =
+    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+  const hardWalletBlock =
+    (policyStringValue(settings, 'wallet.negative_balance_gate') ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE') ===
+    'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+  const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const liveHandoff = bookings.filter((booking) =>
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  );
+  const baseline = matchingStageImpactStats(bookings, providers, {
+    responseWindowMinutes,
+    backupRadiusMeters,
+    freshnessMinutes,
+    hardWalletBlock,
+  });
+  const responseOptions = uniqueNumbers([5, responseWindowMinutes, 10, 15]).sort((left, right) => left - right);
+  const radiusOptions = uniqueNumbers([5000, backupRadiusMeters, 10000, 15000]).sort((left, right) => left - right);
+  const freshnessOptions = uniqueNumbers([15, freshnessMinutes, 30, 60]).sort((left, right) => left - right);
+
+  const rows = [
+    ...responseOptions.map((value) => {
+      const stats = matchingStageImpactStats(bookings, providers, {
+        responseWindowMinutes: value,
+        backupRadiusMeters,
+        freshnessMinutes,
+        hardWalletBlock,
+      });
+      return matchingStageImpactRow('Response window', `${value} min`, stats, baseline, value === responseWindowMinutes);
+    }),
+    ...radiusOptions.map((value) => {
+      const stats = matchingStageImpactStats(bookings, providers, {
+        responseWindowMinutes,
+        backupRadiusMeters: value,
+        freshnessMinutes,
+        hardWalletBlock,
+      });
+      return matchingStageImpactRow('Backup radius', formatDistance(value), stats, baseline, value === backupRadiusMeters);
+    }),
+    ...freshnessOptions.map((value) => {
+      const stats = matchingStageImpactStats(bookings, providers, {
+        responseWindowMinutes,
+        backupRadiusMeters,
+        freshnessMinutes: value,
+        hardWalletBlock,
+      });
+      return matchingStageImpactRow('Location freshness', `${value} min`, stats, baseline, value === freshnessMinutes);
+    }),
+  ];
+
+  return {
+    currentPolicyLabel: `${responseWindowMinutes}m / ${formatDistance(backupRadiusMeters)} / ${freshnessMinutes}m fresh`,
+    summary: [
+      {
+        label: 'Open matching sample',
+        value: openBookings.length.toString(),
+        helper: 'Bookings currently waiting inside Stage 1, Stage 2, or Stage 3.',
+      },
+      {
+        label: 'Current Stage 2 backup',
+        value: baseline.stage2.toString(),
+        helper: 'Open bookings with usable backup partner supply under the current policy.',
+      },
+      {
+        label: 'Current no supply',
+        value: baseline.noSupply.toString(),
+        helper: 'Open bookings that would show customer waiting without usable backup supply.',
+      },
+      {
+        label: 'Stage 4 repair',
+        value: baseline.repair.toString(),
+        helper: `${liveHandoff.length} matched/live booking(s) checked for missing chat handoff.`,
+      },
+    ],
+    rows,
+  };
+}
+
+function matchingStageImpactStats(
+  bookings: AdminBooking[],
+  providers: AdminProvider[],
+  policy: {
+    responseWindowMinutes: number;
+    backupRadiusMeters: number;
+    freshnessMinutes: number;
+    hardWalletBlock: boolean;
+  },
+) {
+  return bookings.reduce(
+    (stats, booking) => {
+      const accepted = (booking.participants ?? []).filter(
+        (participant) => participant.status === 'ACCEPTED' || participant.status === 'SELECTED',
+      ).length;
+
+      if (
+        ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
+        !booking.chatRoom
+      ) {
+        stats.repair += 1;
+        return stats;
+      }
+
+      if (booking.status !== 'OPEN_MATCHING') {
+        return stats;
+      }
+
+      if (accepted > 0 && !booking.selectedProvider) {
+        stats.stage3 += 1;
+        return stats;
+      }
+
+      const eligibleBackup = eligibleBackupPartnersForBooking(booking, providers, policy);
+      const overdue = bookingOpenAgeMinutes(booking) > policy.responseWindowMinutes;
+      if (overdue) {
+        stats.overdue += 1;
+      }
+
+      if (eligibleBackup > 0) {
+        stats.stage2 += 1;
+      } else {
+        stats.stage1 += 1;
+        stats.noSupply += 1;
+      }
+      return stats;
+    },
+    { stage1: 0, stage2: 0, stage3: 0, repair: 0, noSupply: 0, overdue: 0 },
+  );
+}
+
+function matchingStageImpactRow(
+  scenario: string,
+  value: string,
+  stats: ReturnType<typeof matchingStageImpactStats>,
+  baseline: ReturnType<typeof matchingStageImpactStats>,
+  current: boolean,
+) {
+  return {
+    scenario,
+    value,
+    stage1: stats.stage1,
+    stage2: stats.stage2,
+    stage3: stats.stage3,
+    repair: stats.repair,
+    noSupply: stats.noSupply,
+    overdue: stats.overdue,
+    operatorRead: matchingStageImpactRead(stats, baseline, current),
+    pillClass: current ? 'pill-info' : stats.noSupply > baseline.noSupply || stats.overdue > baseline.overdue ? 'pill-warn' : 'pill-neutral',
+  };
+}
+
+function matchingStageImpactRead(
+  stats: ReturnType<typeof matchingStageImpactStats>,
+  baseline: ReturnType<typeof matchingStageImpactStats>,
+  current: boolean,
+) {
+  if (current) {
+    return 'Current live policy baseline. Compare other rows against this before saving a change.';
+  }
+  if (stats.noSupply > baseline.noSupply) {
+    return 'More bookings lose usable backup supply. Improve partner location/push readiness before choosing this.';
+  }
+  if (stats.overdue > baseline.overdue) {
+    return 'More first-pick windows become overdue. Customer wait anxiety and manual dispatch work may rise.';
+  }
+  if (stats.stage2 > baseline.stage2 && stats.noSupply <= baseline.noSupply) {
+    return 'More bookings can expose backup partner supply without increasing empty waiting screens.';
+  }
+  if (stats.noSupply < baseline.noSupply) {
+    return 'Fewer bookings look supply-starved, but confirm distance quality and stale pins before widening.';
+  }
+  return 'Operational shape is similar to the current policy. Use real outcome cohorts before changing.';
+}
+
+function eligibleBackupPartnersForBooking(
+  booking: AdminBooking,
+  providers: AdminProvider[],
+  policy: {
+    backupRadiusMeters: number;
+    freshnessMinutes: number;
+    hardWalletBlock: boolean;
+  },
+) {
+  const coordinate = parseCoordinatePair(booking.lat, booking.lng);
+  if (!coordinate) {
+    return 0;
+  }
+  const preferredId = booking.preferredProvider?.id;
+  return providers.filter((provider) => {
+    if (provider.id === preferredId || provider.status !== 'ONLINE_AVAILABLE') {
+      return false;
+    }
+    if (partnerHardBlocked(provider, { hardWalletBlock: policy.hardWalletBlock })) {
+      return false;
+    }
+    const providerCoordinate = parseCoordinatePair(provider.currentLat, provider.currentLng);
+    if (!providerCoordinate) {
+      return false;
+    }
+    const ageMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
+    if (ageMinutes === null || ageMinutes > policy.freshnessMinutes) {
+      return false;
+    }
+    return (
+      haversineDistanceMeters(
+        coordinate.lat,
+        coordinate.lng,
+        providerCoordinate.lat,
+        providerCoordinate.lng,
+      ) <= policy.backupRadiusMeters
+    );
+  }).length;
+}
+
+function bookingOpenAgeMinutes(booking: AdminBooking) {
+  const openedAt = Date.parse(booking.createdAt ?? booking.scheduledStartAt ?? '');
+  if (!Number.isFinite(openedAt)) {
+    return 0;
+  }
+  return Math.max(0, Math.round((Date.now() - openedAt) / 60000));
 }
 
 function buildPartnerAcceptancePolicyImpact(

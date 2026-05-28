@@ -55,6 +55,7 @@ const pages = [
       'Booking acceptance control matrix',
       'Current partner acceptance impact',
       'Policy sensitivity preview',
+      'Matching stage impact preview',
       'Live matching policy',
       'id="policy-matching-provider-response-window-minutes"',
       'id="policy-matching-backup-provider-radius-meters"',
