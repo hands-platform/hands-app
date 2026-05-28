@@ -40,8 +40,18 @@ export class AdminController {
     return this.admin.listProviders();
   }
 
+  @Get('partners')
+  partners() {
+    return this.admin.listProviders();
+  }
+
   @Get('providers/:id')
   providerDetail(@Param('id') providerProfileId: string) {
+    return this.admin.getProviderDetail(providerProfileId);
+  }
+
+  @Get('partners/:id')
+  partnerDetail(@Param('id') providerProfileId: string) {
     return this.admin.getProviderDetail(providerProfileId);
   }
 
@@ -69,8 +79,22 @@ export class AdminController {
     return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.APPROVED);
   }
 
+  @Post('partners/:id/approve')
+  approvePartner(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
+    return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.APPROVED);
+  }
+
   @Post('providers/:id/block')
   blockProviderAccount(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.admin.blockProviderAccount(user.id, providerProfileId, body.reason);
+  }
+
+  @Post('partners/:id/block')
+  blockPartnerAccount(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
     @Body() body: { reason?: string },
@@ -83,13 +107,40 @@ export class AdminController {
     return this.admin.unblockProviderAccount(user.id, providerProfileId);
   }
 
+  @Post('partners/:id/unblock')
+  unblockPartnerAccount(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
+    return this.admin.unblockProviderAccount(user.id, providerProfileId);
+  }
+
   @Get('provider-reports')
   providerReports() {
     return this.admin.listProviderReports();
   }
 
+  @Get('partner-reports')
+  partnerReports() {
+    return this.admin.listProviderReports();
+  }
+
   @Post('provider-reports')
   createProviderReport(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body()
+    body: {
+      providerProfileId?: string;
+      bookingId?: string | null;
+      source?: ProviderReportSource;
+      severity?: ProviderReportSeverity;
+      category?: string;
+      summary?: string;
+      details?: string | null;
+    },
+  ) {
+    return this.admin.createProviderReport(user.id, body);
+  }
+
+  @Post('partner-reports')
+  createPartnerReport(
     @CurrentUser() user: AuthenticatedUser,
     @Body()
     body: {
@@ -119,8 +170,27 @@ export class AdminController {
     return this.admin.updateProviderReport(user.id, reportId, body);
   }
 
+  @Patch('partner-reports/:id')
+  updatePartnerReport(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') reportId: string,
+    @Body()
+    body: {
+      status?: ProviderReportStatus;
+      severity?: ProviderReportSeverity;
+      resolutionNote?: string | null;
+    },
+  ) {
+    return this.admin.updateProviderReport(user.id, reportId, body);
+  }
+
   @Get('provider-sanctions')
   providerSanctions() {
+    return this.admin.listProviderSanctions();
+  }
+
+  @Get('partner-sanctions')
+  partnerSanctions() {
     return this.admin.listProviderSanctions();
   }
 
@@ -139,13 +209,38 @@ export class AdminController {
     return this.admin.createProviderSanction(user.id, providerProfileId, body);
   }
 
+  @Post('partners/:id/sanctions')
+  createPartnerSanction(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body()
+    body: {
+      type?: ProviderSanctionType;
+      reason?: string;
+      reportId?: string | null;
+      expiresAt?: string | null;
+    },
+  ) {
+    return this.admin.createProviderSanction(user.id, providerProfileId, body);
+  }
+
   @Post('provider-sanctions/:id/lift')
   liftProviderSanction(@CurrentUser() user: AuthenticatedUser, @Param('id') sanctionId: string) {
     return this.admin.liftProviderSanction(user.id, sanctionId);
   }
 
+  @Post('partner-sanctions/:id/lift')
+  liftPartnerSanction(@CurrentUser() user: AuthenticatedUser, @Param('id') sanctionId: string) {
+    return this.admin.liftProviderSanction(user.id, sanctionId);
+  }
+
   @Post('providers/:id/sync-supabase-role')
   syncProviderSupabaseRole(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
+    return this.admin.syncProviderSupabaseRole(user.id, providerProfileId);
+  }
+
+  @Post('partners/:id/sync-supabase-role')
+  syncPartnerSupabaseRole(@CurrentUser() user: AuthenticatedUser, @Param('id') providerProfileId: string) {
     return this.admin.syncProviderSupabaseRole(user.id, providerProfileId);
   }
 
@@ -165,6 +260,15 @@ export class AdminController {
 
   @Post('providers/:id/reject')
   rejectProvider(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { reason?: string },
+  ) {
+    return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.REJECTED, body.reason);
+  }
+
+  @Post('partners/:id/reject')
+  rejectPartner(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
     @Body() body: { reason?: string },

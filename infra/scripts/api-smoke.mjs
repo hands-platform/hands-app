@@ -453,6 +453,24 @@ if (resolvedProviderRiskReport.status !== 'RESOLVED' || resolvedProviderRiskRepo
     `Provider risk report was not updated correctly: ${JSON.stringify(resolvedProviderRiskReport)}`,
   );
 }
+const partnerRiskReports = await getJson('/admin/partner-reports', adminAuth.accessToken);
+if (!partnerRiskReports.some((report) => report.id === resolvedProviderRiskReport.id)) {
+  throw new Error(
+    `Partner risk report alias did not expose the provider report: ${JSON.stringify({
+      resolvedProviderRiskReport,
+      partnerRiskReports: partnerRiskReports.slice(0, 5),
+    })}`,
+  );
+}
+const partnerRiskSanctions = await getJson('/admin/partner-sanctions', adminAuth.accessToken);
+if (!partnerRiskSanctions.some((sanction) => sanction.id === liftedProviderRiskSanction.id)) {
+  throw new Error(
+    `Partner sanction alias did not expose the provider sanction: ${JSON.stringify({
+      liftedProviderRiskSanction,
+      partnerRiskSanctions: partnerRiskSanctions.slice(0, 5),
+    })}`,
+  );
+}
 
 const services = await request('/services');
 const service = services[0];
@@ -2336,7 +2354,25 @@ if (
   );
 }
 const adminProviders = await getJson('/admin/providers', adminAuth.accessToken);
+const adminPartners = await getJson('/admin/partners', adminAuth.accessToken);
+if (adminProviders.length !== adminPartners.length) {
+  throw new Error(
+    `Admin partner alias count does not match provider count: ${JSON.stringify({
+      providerCount: adminProviders.length,
+      partnerCount: adminPartners.length,
+    })}`,
+  );
+}
 const adminProvider = adminProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
+const adminPartner = adminPartners.find((item) => item.id === providerAuth.user.providerProfile.id);
+if (!adminPartner) {
+  throw new Error(
+    `Admin partner alias payload is missing the smoke partner: ${JSON.stringify({
+      providerProfileId: providerAuth.user.providerProfile.id,
+      adminPartners: adminPartners.slice(0, 5),
+    })}`,
+  );
+}
 if (!adminProvider?.user?.pushDevices?.some((device) => device.token === 'demo-provider-device-token')) {
   throw new Error(
     `Admin provider payload is missing registered push device: ${JSON.stringify(adminProvider)}`,
