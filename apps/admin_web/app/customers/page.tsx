@@ -17,15 +17,14 @@ type CustomerFilters = {
   booking: string;
   reachability: string;
   address: string;
+  sort: string;
 };
 
 export default async function CustomersPage({ searchParams }: { searchParams?: CustomersPageSearchParams }) {
   const filters = buildCustomerFilters(searchParams ? await searchParams : {});
   const customers = await adminGet<AdminCustomer[]>('/admin/customers', []);
-  const allRows = customers.map(buildCustomerRow).sort((left, right) => {
-    return dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
-  });
-  const rows = filterCustomerRows(allRows, filters);
+  const allRows = customers.map(buildCustomerRow);
+  const rows = sortCustomerRows(filterCustomerRows(allRows, filters), filters.sort);
   const summary = buildCustomerSummary(rows);
   const recentActivityRows = rows.filter((row) => row.lastBookingAt || row.lastCompletedAt).slice(0, 8);
   const activeFilters = buildCustomerActiveFilters(filters);
@@ -83,6 +82,19 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
               <option value="">All</option>
               <option value="saved">Saved address</option>
               <option value="missing">No saved address</option>
+            </select>
+          </label>
+          <label>
+            Sort
+            <select name="sort" defaultValue={filters.sort}>
+              <option value="last-booking">Last booking</option>
+              <option value="last-work">Last completed work</option>
+              <option value="booking-count">Booking count</option>
+              <option value="completed-count">Completed work count</option>
+              <option value="captured-spend">Captured spend</option>
+              <option value="last-seen">Last app session</option>
+              <option value="joined">First signup</option>
+              <option value="name">Name</option>
             </select>
           </label>
           <div className="actions full-span">
@@ -241,7 +253,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
           <div>
             <h2>All customers</h2>
             <p className="muted">
-              List view sorted by the latest booking progress date. Open a row to see all customer details.
+              List view sorted by {customerSortLabel(filters.sort)}. Open a row to see all customer details.
             </p>
           </div>
           <span className="pill pill-info">{rows.length} rows</span>
@@ -322,11 +334,39 @@ function buildCustomerFilters(params: Record<string, string | string[] | undefin
     booking: readSearchParam(params.booking),
     reachability: readSearchParam(params.reachability),
     address: readSearchParam(params.address),
+    sort: readCustomerSort(params.sort),
   };
 }
 
 function readSearchParam(value: string | string[] | undefined) {
   return (Array.isArray(value) ? value[0] : value)?.trim() ?? '';
+}
+
+function readCustomerSort(value: string | string[] | undefined) {
+  const sort = readSearchParam(value);
+  return [
+    'last-booking',
+    'last-work',
+    'booking-count',
+    'completed-count',
+    'captured-spend',
+    'last-seen',
+    'joined',
+    'name',
+  ].includes(sort)
+    ? sort
+    : 'last-booking';
+}
+
+function customerSortLabel(sort: string) {
+  if (sort === 'last-work') return 'last completed work';
+  if (sort === 'booking-count') return 'booking count';
+  if (sort === 'completed-count') return 'completed work count';
+  if (sort === 'captured-spend') return 'captured spend';
+  if (sort === 'last-seen') return 'last app session';
+  if (sort === 'joined') return 'first signup date';
+  if (sort === 'name') return 'customer name';
+  return 'latest booking progress date';
 }
 
 function filterCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], filters: CustomerFilters) {
@@ -349,12 +389,49 @@ function filterCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], filters
   });
 }
 
+function sortCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], sort: string) {
+  const sorted = [...rows];
+  sorted.sort((left, right) => {
+    if (sort === 'last-work') {
+      return dateMs(right.lastCompletedAt) - dateMs(left.lastCompletedAt);
+    }
+    if (sort === 'booking-count') {
+      return (
+        right.bookingCount - left.bookingCount || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt)
+      );
+    }
+    if (sort === 'completed-count') {
+      return (
+        right.completedBookings - left.completedBookings ||
+        dateMs(right.lastCompletedAt) - dateMs(left.lastCompletedAt)
+      );
+    }
+    if (sort === 'captured-spend') {
+      return (
+        right.capturedSpend - left.capturedSpend || dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt)
+      );
+    }
+    if (sort === 'last-seen') {
+      return dateMs(right.lastSeenAt) - dateMs(left.lastSeenAt);
+    }
+    if (sort === 'joined') {
+      return dateMs(right.joinedAt) - dateMs(left.joinedAt);
+    }
+    if (sort === 'name') {
+      return left.name.localeCompare(right.name);
+    }
+    return dateMs(right.lastBookingAt) - dateMs(left.lastBookingAt);
+  });
+  return sorted;
+}
+
 function buildCustomerActiveFilters(filters: CustomerFilters) {
   const labels: string[] = [];
   if (filters.q) labels.push(`Search: ${filters.q}`);
   if (filters.booking) labels.push(`Booking: ${filters.booking}`);
   if (filters.reachability) labels.push(`Reachability: ${filters.reachability}`);
   if (filters.address) labels.push(`Address: ${filters.address}`);
+  if (filters.sort !== 'last-booking') labels.push(`Sort: ${customerSortLabel(filters.sort)}`);
   return labels;
 }
 

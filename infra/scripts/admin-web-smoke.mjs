@@ -79,6 +79,10 @@ const pages = [
     ],
   },
   {
+    path: '/customers?sort=last-work',
+    markers: ['Customer Management', 'Sort: last completed work', 'All customers'],
+  },
+  {
     path: '/operations-policy',
     markers: [
       'Operations Policy',
