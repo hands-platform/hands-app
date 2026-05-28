@@ -112,6 +112,7 @@ const pages = [
     path: '/partners',
     markers: [
       'Partner Verification',
+      'Partner daily action queue',
       'Dispatch handoff links',
       'Dispatch capacity forecast',
       'Partner acceptance blocker board',
@@ -133,6 +134,7 @@ const pages = [
     path: '/providers',
     markers: [
       'Partner Verification',
+      'Partner daily action queue',
       'Dispatch handoff links',
       'Dispatch capacity forecast',
       'Partner acceptance blocker board',

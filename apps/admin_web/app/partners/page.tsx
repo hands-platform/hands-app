@@ -133,6 +133,20 @@ type PartnerDispatchHandoff = {
     tone: ProviderCommandLane['tone'];
   }>;
 };
+type PartnerDailyActionQueue = {
+  urgentCount: number;
+  blockedCount: number;
+  dispatchReadyCount: number;
+  rows: Array<{
+    provider: AdminProvider;
+    action: ProviderListAction;
+    href: string;
+    lane: string;
+    sla: string;
+    age: string;
+    tone: ProviderCommandLane['tone'];
+  }>;
+};
 type PartnerKycState = {
   status: string;
   missingDocuments: string[];
@@ -195,6 +209,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const kycReviewBoard = buildPartnerKycReviewBoard(providers);
   const shiftHandoff = buildPartnerShiftHandoff(providers, opsPolicy);
   const dispatchHandoff = buildPartnerDispatchHandoff(allProviders, opsPolicy);
+  const dailyActionQueue = buildPartnerDailyActionQueue(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
 
   return (
@@ -335,6 +350,80 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
         ))}
       </div>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner daily action queue</h2>
+            <p className="muted">
+              The compact worklist for the current partner filter. It sorts partners by acceptance blockers,
+              payout/tax gates, location freshness, push readiness, and KYC urgency so operators can process
+              the queue without hunting through every board.
+            </p>
+          </div>
+          <div className="participant-list">
+            <span className={`pill ${dailyActionQueue.urgentCount ? 'pill-danger' : 'pill-success'}`}>
+              {dailyActionQueue.urgentCount} urgent
+            </span>
+            <span className={`pill ${dailyActionQueue.blockedCount ? 'pill-warn' : 'pill-success'}`}>
+              {dailyActionQueue.blockedCount} blocked
+            </span>
+            <span className="pill pill-info">{dailyActionQueue.dispatchReadyCount} dispatch-ready</span>
+          </div>
+        </div>
+        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Priority</th>
+                <th>Partner</th>
+                <th>Work lane</th>
+                <th>Current blocker</th>
+                <th>Operator move</th>
+                <th>SLA</th>
+                <th>Age signal</th>
+                <th>Open</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dailyActionQueue.rows.map((row, index) => (
+                <tr key={`${row.provider.id}-${row.action.status}`}>
+                  <td>
+                    <span className={`pill ${partnerShiftPillClass(row.tone)}`}>#{index + 1}</span>
+                  </td>
+                  <td>
+                    <strong>{providerDisplayName(row.provider)}</strong>
+                    <p className="muted">{row.provider.user?.phone ?? row.provider.id}</p>
+                  </td>
+                  <td>{row.lane}</td>
+                  <td>
+                    <strong>{row.action.status}</strong>
+                    <p className="muted">{row.action.detail}</p>
+                  </td>
+                  <td>{row.action.operatorAction}</td>
+                  <td>{row.sla}</td>
+                  <td>{row.age}</td>
+                  <td>
+                    <Link className="text-link" href={row.href}>
+                      Open partner
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {dailyActionQueue.rows.length === 0 ? (
+                <tr>
+                  <td colSpan={8}>
+                    <strong>No partner work queue items</strong>
+                    <p className="muted">
+                      The current filter has no visible blockers. Keep monitoring dispatch demand and live
+                      booking pressure.
+                    </p>
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -2392,6 +2481,134 @@ function buildPartnerDispatchHandoff(
   };
 }
 
+function buildPartnerDailyActionQueue(
+  providers: AdminProvider[],
+  opsPolicy: ProviderOpsPolicy,
+): PartnerDailyActionQueue {
+  const actionRows = providers
+    .map((provider) => {
+      const action = nextProviderListAction(provider, opsPolicy);
+      return {
+        provider,
+        action,
+        href: partnerDetailActionHref(provider, action),
+        lane: partnerDailyActionLane(action.status),
+        sla: partnerDailyActionSla(action),
+        age: partnerDailyActionAgeSignal(provider, action),
+        tone: partnerDailyActionTone(action),
+      };
+    })
+    .filter((row) => row.action.tone !== 'done')
+    .sort((left, right) => {
+      if (left.action.priority !== right.action.priority) {
+        return right.action.priority - left.action.priority;
+      }
+      return providerDisplayName(left.provider).localeCompare(providerDisplayName(right.provider));
+    });
+
+  return {
+    urgentCount: actionRows.filter((row) => row.action.priority >= 85).length,
+    blockedCount: actionRows.filter((row) => row.action.tone === 'blocked').length,
+    dispatchReadyCount: providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length,
+    rows: actionRows.slice(0, 10),
+  };
+}
+
+function partnerDailyActionTone(action: ProviderListAction): ProviderCommandLane['tone'] {
+  if (action.tone === 'blocked' && action.priority >= 85) return 'danger';
+  if (action.tone === 'blocked') return 'warn';
+  if (action.tone === 'pending') return 'info';
+  return 'ok';
+}
+
+function partnerDailyActionLane(status: string) {
+  const laneByStatus: Record<string, string> = {
+    ACCOUNT: 'Safety',
+    PROFILE: 'Onboarding',
+    DOCUMENTS: 'KYC evidence',
+    KYC: 'KYC decision',
+    VERIFY: 'Partner approval',
+    'CASH DEBT': 'Cash settlement',
+    MEDIA: 'Public profile',
+    BANK: 'Bank payout',
+    TAX: 'Tax payout',
+    'TAX ADDRESS': 'Tax payout',
+    TERMS: 'Legal consent',
+    DEVICE: 'Device control',
+    SECURITY: 'Trust review',
+    LOCATION: 'Dispatch readiness',
+    PUSH: 'Alert readiness',
+    SUPABASE: 'Auth migration',
+  };
+  return laneByStatus[status] ?? 'Operations';
+}
+
+function partnerDailyActionSla(action: ProviderListAction) {
+  if (action.priority >= 90) return 'Same shift';
+  if (action.priority >= 80) return 'Today';
+  if (action.priority >= 65) return 'Before next booking';
+  if (action.priority >= 50) return 'Before dispatch';
+  return 'Backlog';
+}
+
+function partnerDailyActionAgeSignal(provider: AdminProvider, action: ProviderListAction) {
+  if (action.status === 'LOCATION') {
+    return providerLocationAgeLabel(provider.currentLocationUpdatedAt);
+  }
+  if (action.status === 'KYC' || action.status === 'DOCUMENTS') {
+    return providerSubmittedAgeLabel(provider.kyc?.submittedAt ?? provider.verification?.submittedAt);
+  }
+  if (action.status === 'VERIFY') {
+    return providerSubmittedAgeLabel(provider.verification?.submittedAt);
+  }
+  if (action.status === 'BANK') {
+    return providerReviewedAgeLabel(provider.bankAccounts?.[0]?.reviewedAt);
+  }
+  if (action.status === 'CASH DEBT') {
+    return 'Blocks acceptance now.';
+  }
+  if (action.status === 'PUSH') {
+    return latestPushAgeLabel(provider);
+  }
+  if (action.status === 'DEVICE' || action.status === 'SECURITY' || action.status === 'ACCOUNT') {
+    return latestSecurityAgeLabel(provider);
+  }
+  if (action.status === 'TAX' || action.status === 'TAX ADDRESS' || action.status === 'TERMS') {
+    return 'Required after first earning.';
+  }
+  return 'Review when queue reaches this row.';
+}
+
+function providerSubmittedAgeLabel(value?: string | null) {
+  if (!value) return 'No submitted timestamp.';
+  return `Submitted ${formatRelativeAge(value)}.`;
+}
+
+function providerReviewedAgeLabel(value?: string | null) {
+  if (!value) return 'No review timestamp.';
+  return `Reviewed ${formatRelativeAge(value)}.`;
+}
+
+function latestPushAgeLabel(provider: AdminProvider) {
+  const latestPushTime = (provider.user?.pushDevices ?? [])
+    .map((device) => Date.parse(device.createdAt ?? ''))
+    .filter(Number.isFinite)
+    .sort((left, right) => right - left)[0];
+  return latestPushTime ? `Latest push device ${formatRelativeAge(new Date(latestPushTime).toISOString())}.` : 'No push device registered.';
+}
+
+function latestSecurityAgeLabel(provider: AdminProvider) {
+  const latestSession = provider.sessions?.[0];
+  if (latestSession?.lastSeenAt) {
+    return `Last session ${formatRelativeAge(latestSession.lastSeenAt)}.`;
+  }
+  const blockedDevice = (provider.devices ?? []).find((device) => device.blockedAt);
+  if (blockedDevice?.blockedAt) {
+    return `Device blocked ${formatRelativeAge(blockedDevice.blockedAt)}.`;
+  }
+  return 'No recent session signal.';
+}
+
 function partnerSampleNames(providers: AdminProvider[], limit = 4) {
   return providers.slice(0, limit).map(providerDisplayName);
 }
@@ -3651,4 +3868,20 @@ function formatDate(value?: string | null) {
     return 'invalid time';
   }
   return new Date(timestamp).toLocaleString();
+}
+
+function formatRelativeAge(value?: string | null) {
+  if (!value) {
+    return 'with no timestamp';
+  }
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return 'at an invalid time';
+  }
+  const diffMinutes = Math.max(0, Math.round((Date.now() - timestamp) / 60_000));
+  if (diffMinutes < 1) return 'just now';
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${Math.round(diffHours / 24)}d ago`;
 }
