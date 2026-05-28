@@ -35,8 +35,8 @@ The booking service row stores the actual customer price used at checkout, so la
 ## Partner App Price Editor
 
 The Partner app Profile tab includes a service pricing card. It loads
-`GET /provider/services` and saves each row with
-`PATCH /provider/services/:serviceId`.
+`GET /partner/services` and saves each row with
+`PATCH /partner/services/:serviceId`.
 
 The card shows:
 
@@ -98,7 +98,7 @@ If the partner wallet is negative:
 - Admin finance can mark the cash fee as settled from Earnings, Payments, or Booking Detail after deposit or offset.
 - The settlement action requires a deposit reference or offset reference on the earning row.
 - The Partner app Earnings screen shows the debt amount and settlement instruction
-  returned by `GET /provider/earnings/summary`.
+  returned by `GET /partner/earnings/summary`.
 - The Partner app warns before accepting cash requests that direct customer cash can create
   wallet debt after completion.
 

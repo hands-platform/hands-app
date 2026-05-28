@@ -86,14 +86,14 @@ active for that booking.
 
 ## API Foundation
 
-Partner mobile routes currently keep the `/provider` prefix for API compatibility:
+Partner mobile routes now use the canonical `/partner` prefix. Legacy `/provider` aliases remain active for older builds:
 
-- `GET /provider/onboarding`
-- `PATCH /provider/onboarding/basic-profile`
-- `POST /provider/onboarding/kyc/submit`
-- `POST /provider/onboarding/bank-accounts`
-- `POST /provider/onboarding/tax-profile`
-- `POST /provider/onboarding/agreements`
+- `GET /partner/onboarding`
+- `PATCH /partner/onboarding/basic-profile`
+- `POST /partner/onboarding/kyc/submit`
+- `POST /partner/onboarding/bank-accounts`
+- `POST /partner/onboarding/tax-profile`
+- `POST /partner/onboarding/agreements`
 
 Admin tax policy routes:
 
@@ -102,7 +102,7 @@ Admin tax policy routes:
 - `PATCH /admin/tax-policy-versions/:id`
 - `POST /admin/tax-policy-versions/:id/rules`
 
-Existing routes such as `GET /provider/verification` and `POST /provider/verification/submit` remain active until the mobile onboarding UI fully moves to the richer KYC model.
+Existing legacy routes such as `GET /provider/verification` and `POST /provider/verification/submit` remain active for compatibility. New app builds should call `GET /partner/verification` and `POST /partner/verification/submit`.
 
 ## Policy Configuration
 
@@ -116,7 +116,7 @@ Current policy constants:
 - Partner agreement version: `PROVIDER_AGREEMENT_VERSION` from the API environment
 - Partner level requirement copy for Level 1 to Level 4
 
-`GET /provider/onboarding` returns these requirements in the snapshot so mobile screens can progressively move away from hardcoded onboarding gates. The API also rejects KYC submission if required identity documents are missing, so client-side checks are not the only protection.
+`GET /partner/onboarding` returns these requirements in the snapshot so mobile screens can progressively move away from hardcoded onboarding gates. The API also rejects KYC submission if required identity documents are missing, so client-side checks are not the only protection.
 
 ## Supabase/RLS Direction
 

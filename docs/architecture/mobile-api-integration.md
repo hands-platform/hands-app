@@ -9,7 +9,7 @@ The customer Flutter app now includes:
 - API client with Bearer token headers
 - Socket.IO client using JWT handshake auth
 - Service catalog loading from `GET /api/services`
-- Nearby partner loading from `GET /api/customer/providers/nearby`
+- Nearby partner loading from `GET /api/customer/partners/nearby`
 - Booking creation through `POST /api/customer/bookings`
 - Booking room join after booking creation
 - Realtime UI updates for `provider.joined`, `booking.matched`, `booking.expired`, and `provider.location.updated`
@@ -31,9 +31,9 @@ The partner Flutter app now includes:
 - Socket.IO client using JWT handshake auth
 - Online/offline API calls
 - REST location update calls on app open and every 10 minutes while open
-- Open booking loading from `GET /api/provider/bookings/open`
-- Join booking through `POST /api/provider/bookings/:id/join`
-- Accept/reject participation through `POST /api/provider/bookings/:id/accept` and `POST /api/provider/bookings/:id/reject`
+- Open booking loading from `GET /api/partner/bookings/open`
+- Join booking through `POST /api/partner/bookings/:id/join`
+- Accept/reject participation through `POST /api/partner/bookings/:id/accept` and `POST /api/partner/bookings/:id/reject`
 - Request screen state for online status, first-pick jobs, backup jobs, joined jobs, and customer-selection waiting state
 - Socket listeners for `booking.opened`, `booking.matched`, and `booking.expired`
 
@@ -43,7 +43,7 @@ The partner Flutter app now includes:
 - When a booking opens, the backend emits `booking.opened` to the booking room, the first-pick partner, and eligible backup partners.
 - The first-pick partner response window is 10 minutes.
 - Backup partners can join only when their last stored location is within 10km of the booking location.
-- Eligible backup partners receive a `booking.backup_available` notification and see the request in `GET /api/provider/bookings/open`.
+- Eligible backup partners receive a `booking.backup_available` notification and see the request in `GET /api/partner/bookings/open`.
 - Customer app refreshes the active booking when a partner joins or the booking status changes.
 - Partner app refreshes open jobs when a new booking opens or a matching job changes state.
 

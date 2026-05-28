@@ -4,7 +4,7 @@ The MVP creates a partner earning record when the selected partner completes a b
 
 ## Flow
 
-1. Partner calls `POST /provider/bookings/:id/complete`.
+1. Partner calls `POST /partner/bookings/:id/complete`.
 2. Booking status changes to `COMPLETED`.
 3. Payment status changes to `CAPTURED`.
 4. `ProviderEarning` is upserted by `bookingId`.

@@ -13,7 +13,7 @@
 - First-pick partner response window: 10 minutes.
 - Backup partner radius: 10km from the booking location.
 - Backup eligibility uses the partner's last stored location; the MVP does not run route or live navigation APIs.
-- Eligible backup partners receive `booking.backup_available` and can join through `POST /provider/bookings/:id/join`.
+- Eligible backup partners receive `booking.backup_available` and can join through `POST /partner/bookings/:id/join`.
 - Customer final selection remains the source of truth. The first-pick partner can accept first, but
   the customer still confirms the final partner before the booking is matched.
 

@@ -5,13 +5,15 @@ The MVP supports a simple verification loop for partners.
 ## Partner Flow
 
 1. Partner logs in.
-2. Partner requests `GET /provider/verification` to load or create the verification record.
+2. Partner requests `GET /partner/verification` to load or create the verification record.
 3. Partner requests `POST /files/presign` with `purpose=provider-verification` and `visibility=PRIVATE`.
 4. API creates a private `FileAsset` attached to the partner verification record with `uploadStatus=PENDING`.
 5. Partner uploads the file bytes to the returned PUT URL.
 6. Partner calls `POST /files/:id/complete` with optional `sizeBytes`; API marks the file `UPLOADED`.
-7. Partner calls `POST /provider/verification/submit`.
+7. Partner calls `POST /partner/verification/submit`.
 8. Verification status becomes `SUBMITTED`.
+
+Legacy `/provider/verification` routes remain available for older app builds.
 
 ## Admin Flow
 
