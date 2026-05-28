@@ -1640,7 +1640,7 @@ function buildMatchingControlRoom(
       {
         label: 'Fresh online supply',
         value: String(freshOnlinePartners.length),
-        helper: 'Online partners with a location update in the last 30 minutes.',
+        helper: `Online partners with a location update in the last ${backupLocationMaxAgeMinutes} minutes.`,
       },
     ],
     checks: [

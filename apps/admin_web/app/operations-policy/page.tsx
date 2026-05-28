@@ -1030,7 +1030,7 @@ function buildPolicySimulation(
   const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
   const backupLocationFreshnessMinutes =
     policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
-  const backupInvitationLimit = policyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 20;
+  const backupInvitationLimit = policyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
   const travelBufferMinutes = policyNumberValue(settings, 'matching.travel_buffer_minutes') ?? 30;
   const backupOpenMode =
     policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
