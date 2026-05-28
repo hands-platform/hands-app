@@ -165,6 +165,12 @@ if (providerLinkMatch) {
       'Partner ops command center',
       'Booking acceptance decision',
       'Partner acceptance unblock playbook',
+      'id="payout"',
+      'id="kyc"',
+      'id="service-pricing"',
+      'id="bank"',
+      'id="tax"',
+      'id="location"',
     ];
     const missing = providerMarkers.filter((marker) => !providerBody.includes(marker));
     if (missing.length > 0) {
