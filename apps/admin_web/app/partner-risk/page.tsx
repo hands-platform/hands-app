@@ -424,9 +424,9 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             Severity
             <select name="severity" defaultValue={filters.severity}>
               <option value="">All</option>
-              <option value="HIGH_PLUS">Critical + high</option>
-              <option value="CRITICAL">Critical</option>
-              <option value="HIGH">High</option>
+              <option value="HIGH_PLUS">Urgent + major</option>
+              <option value="CRITICAL">Urgent</option>
+              <option value="HIGH">Major</option>
               <option value="MEDIUM">Medium</option>
               <option value="LOW">Low</option>
             </select>
@@ -546,7 +546,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <div>
             <h2>Create partner report</h2>
             <p className="muted">
-              Use this for customer complaints, staff findings, payout risks, or safety notes.
+              Use this for customer complaints, staff findings, payout holds, or service safety notes.
             </p>
           </div>
         </div>
@@ -571,8 +571,8 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             <select name="severity" defaultValue="MEDIUM">
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">Major</option>
+              <option value="CRITICAL">Urgent</option>
             </select>
           </label>
           <label>
@@ -610,7 +610,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <div>
             <h2>Reports</h2>
             <p className="muted">
-              Open and investigating reports should be cleared before partner trust upgrades.
+              Open and investigating reports should be cleared before partner badge or payout changes.
             </p>
           </div>
           <span className="pill pill-info">{visibleReports.length} shown</span>
@@ -693,8 +693,8 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                     <select name="severity" defaultValue={report.severity}>
                       <option value="LOW">Low</option>
                       <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">High</option>
-                      <option value="CRITICAL">Critical</option>
+                      <option value="HIGH">Major</option>
+                      <option value="CRITICAL">Urgent</option>
                     </select>
                     <input name="resolutionNote" placeholder="Resolution or follow-up note" />
                     <button type="submit">Update</button>
@@ -869,31 +869,6 @@ type AcceptanceUnblockPlaybookStep = {
   partnerSamples: string[];
 };
 
-type PartnerRiskScoreBand = 'Critical' | 'High' | 'Watch' | 'Clear';
-
-type PartnerRiskScoreItem = {
-  provider: AdminProvider;
-  partner: string;
-  score: number;
-  band: PartnerRiskScoreBand;
-  tone: string;
-  status: string;
-  walletBalance: number;
-  acceptanceBlocked: boolean;
-  payoutBlocked: boolean;
-  dispatchRisk: boolean;
-  primaryReasons: string[];
-  operatorAction: string;
-  actionHref: string;
-  actionLabel: string;
-};
-
-type PartnerRiskScorecard = {
-  highestScore: number;
-  metrics: RiskCommandMetric[];
-  items: PartnerRiskScoreItem[];
-};
-
 function buildPartnerControlBoard(
   providers: AdminProvider[],
   watchlist: ProviderRiskWatchItem[],
@@ -1005,196 +980,6 @@ function buildPartnerControlBoardItem(
   };
 }
 
-function buildPartnerRiskScorecard(
-  providers: AdminProvider[],
-  watchlist: ProviderRiskWatchItem[],
-  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
-): PartnerRiskScorecard {
-  const watchByProvider = new Map(watchlist.map((item) => [item.provider.id, item]));
-  const items = providers.map((provider) =>
-    buildPartnerRiskScoreItem(provider, watchByProvider.get(provider.id), riskPolicy),
-  );
-  const visibleItems = items
-    .filter((item) => item.score > 0)
-    .sort((left, right) => right.score - left.score)
-    .slice(0, 12);
-  const criticalCount = items.filter((item) => item.band === 'Critical').length;
-  const highCount = items.filter((item) => item.band === 'High').length;
-  const acceptanceBlockedCount = items.filter((item) => item.acceptanceBlocked).length;
-  const payoutBlockedCount = items.filter((item) => item.payoutBlocked).length;
-  const dispatchRiskCount = items.filter((item) => item.dispatchRisk).length;
-
-  return {
-    highestScore: visibleItems[0]?.score ?? 0,
-    metrics: [
-      metric('Critical', criticalCount, criticalCount ? 'danger' : 'ok'),
-      metric('High', highCount, highCount ? 'warn' : 'ok'),
-      metric('Booking blocked', acceptanceBlockedCount, acceptanceBlockedCount ? 'danger' : 'ok'),
-      metric('Payout gated', payoutBlockedCount, payoutBlockedCount ? 'warn' : 'ok'),
-      metric('Dispatch risk', dispatchRiskCount, dispatchRiskCount ? 'info' : 'ok'),
-    ],
-    items: visibleItems,
-  };
-}
-
-function buildPartnerRiskScoreItem(
-  provider: AdminProvider,
-  watchItem: ProviderRiskWatchItem | undefined,
-  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
-): PartnerRiskScoreItem {
-  const signals = watchItem?.signals ?? [];
-  const walletBalance = watchItem?.walletBalance ?? providerUnsettledWalletBalance(provider);
-  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
-  const hasPayoutHold =
-    watchItem?.hasPayoutHold ?? activeSanctions.some((sanction) => sanction.type === 'PAYOUT_HOLD');
-  const hasAccountBlock =
-    Boolean(provider.blockedAt) || activeSanctions.some((sanction) => sanction.type === 'ACCOUNT_BLOCK');
-  const openReports = (provider.reports ?? []).filter((report) =>
-    ['OPEN', 'INVESTIGATING'].includes(report.status),
-  );
-  const highReports = openReports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity));
-  const reasons: string[] = [];
-  let score = 0;
-  let acceptanceBlocked = false;
-  let payoutBlocked = false;
-  let dispatchRisk = false;
-
-  const add = (points: number, reason: string) => {
-    score += points;
-    reasons.push(reason);
-  };
-
-  if (hasAccountBlock) {
-    add(35, 'account block');
-    acceptanceBlocked = true;
-  }
-  if (walletBalance < 0) {
-    add(35 + Math.min(10, Math.floor(Math.abs(walletBalance) / 500000)), 'cash fee debt');
-    acceptanceBlocked = true;
-    payoutBlocked = true;
-  }
-  if (hasPayoutHold) {
-    add(25, 'payout hold');
-    payoutBlocked = true;
-  }
-  if (highReports.length > 0) {
-    add(25, 'critical/high report');
-  } else if (openReports.length > 0) {
-    add(15, 'open report');
-  }
-  if (signals.some((signal) => signal.kind === 'DEVICE')) {
-    add(18, 'shared device');
-  }
-  if (signals.some((signal) => signal.kind === 'KYC')) {
-    add(22, 'KYC pending');
-    acceptanceBlocked = true;
-  }
-  if (signals.some((signal) => signal.kind === 'BANK')) {
-    add(16, 'bank pending');
-    payoutBlocked = true;
-  }
-  if (signals.some((signal) => signal.kind === 'TAX')) {
-    add(10, 'tax pending');
-    payoutBlocked = true;
-  }
-  if (providerLocationSignal(provider, riskPolicy)) {
-    add(12, 'location stale');
-    dispatchRisk = true;
-  }
-  if (partnerHasDeviceContactGap(provider)) {
-    add(8, 'push contact gap');
-    dispatchRisk = true;
-  }
-
-  score = Math.min(100, score);
-  const band = score >= 80 ? 'Critical' : score >= 50 ? 'High' : score >= 25 ? 'Watch' : 'Clear';
-  const primaryReasons = reasons.length ? reasons.slice(0, 4) : ['No active risk signal'];
-
-  return {
-    provider,
-    partner: adminProviderName(provider),
-    score,
-    band,
-    tone: partnerRiskScorePill(band),
-    status: provider.status,
-    walletBalance,
-    acceptanceBlocked,
-    payoutBlocked,
-    dispatchRisk,
-    primaryReasons,
-    ...partnerRiskScoreAction({
-      provider,
-      walletBalance,
-      acceptanceBlocked,
-      payoutBlocked,
-      dispatchRisk,
-      openReportCount: openReports.length,
-      hasPayoutHold,
-    }),
-  };
-}
-
-function partnerRiskScorePill(band: PartnerRiskScoreBand) {
-  if (band === 'Critical') return 'pill-danger';
-  if (band === 'High') return 'pill-warn';
-  if (band === 'Watch') return 'pill-info';
-  return 'pill-success';
-}
-
-function partnerRiskScoreAction(input: {
-  provider: AdminProvider;
-  walletBalance: number;
-  acceptanceBlocked: boolean;
-  payoutBlocked: boolean;
-  dispatchRisk: boolean;
-  openReportCount: number;
-  hasPayoutHold: boolean;
-}) {
-  if (input.walletBalance < 0) {
-    return {
-      operatorAction: `Collect or offset unpaid HANDS fee before booking acceptance unlocks. Reference ${cashDebtSettlementReference(
-        input.provider.id,
-      )}.`,
-      actionHref: '/cash-settlements',
-      actionLabel: 'Settle debt',
-    };
-  }
-  if (input.acceptanceBlocked) {
-    return {
-      operatorAction: 'Clear account, KYC, or bank blockers before this partner accepts paid work.',
-      actionHref: `/partners/${input.provider.id}`,
-      actionLabel: 'Clear blocker',
-    };
-  }
-  if (input.hasPayoutHold || input.payoutBlocked) {
-    return {
-      operatorAction:
-        'Keep work history visible, but block payout until finance, tax, or payout evidence is resolved.',
-      actionHref: '/payouts',
-      actionLabel: 'Open payouts',
-    };
-  }
-  if (input.openReportCount > 0) {
-    return {
-      operatorAction: 'Resolve or escalate open reports before changing partner trust level.',
-      actionHref: `/partner-controls?q=${encodeURIComponent(input.provider.id)}`,
-      actionLabel: 'Review reports',
-    };
-  }
-  if (input.dispatchRisk) {
-    return {
-      operatorAction: 'Ask partner to reopen the app, refresh GPS, and confirm push/device readiness.',
-      actionHref: '/app-sessions',
-      actionLabel: 'Check sessions',
-    };
-  }
-  return {
-    operatorAction: 'No immediate operator action is required.',
-    actionHref: `/partners/${input.provider.id}`,
-    actionLabel: 'Open profile',
-  };
-}
-
 function buildRiskCommandCenter(input: RiskCommandCenterInput) {
   const openReports = input.reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status));
   const urgentReports = openReports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity));
@@ -1212,14 +997,14 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       title: 'Safety triage',
       status: urgentReports.length ? 'URGENT' : 'CLEAR',
       detail: urgentReports.length
-        ? 'Critical or high reports need evidence review and a decision before partner trust changes.'
-        : 'No critical or high partner report is currently open.',
+        ? 'Urgent or major reports need evidence review and a decision before partner badge changes.'
+        : 'No urgent or major partner report is currently open.',
       href: urgentReports.length ? '/partner-controls?severity=HIGH_PLUS' : '/partner-controls?status=OPEN',
-      action: urgentReports.length ? 'Open critical + high lane' : 'Review open reports',
+      action: urgentReports.length ? 'Open urgent + major lane' : 'Review open reports',
       className: urgentReports.length ? 'ops-task-blocked' : 'ops-task-done',
       metrics: [
-        metric('Critical', urgentReports.filter((report) => report.severity === 'CRITICAL').length, 'danger'),
-        metric('High', urgentReports.filter((report) => report.severity === 'HIGH').length, 'warn'),
+        metric('Urgent', urgentReports.filter((report) => report.severity === 'CRITICAL').length, 'danger'),
+        metric('Major', urgentReports.filter((report) => report.severity === 'HIGH').length, 'warn'),
         metric('Open', openReports.length, openReports.length ? 'info' : 'ok'),
       ],
     },
@@ -1249,7 +1034,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
         ? 'Active sanctions are live operating controls and need clean audit follow-up.'
         : 'No active sanction is currently restricting partner operations.',
       href: activeSanctions.length ? '/partner-controls?sanction=ACTIVE' : '/partner-controls',
-      action: activeSanctions.length ? 'Review active sanctions' : 'Open risk board',
+      action: activeSanctions.length ? 'Review active sanctions' : 'Open control board',
       className: activeSanctions.length ? 'ops-task-pending' : 'ops-task-done',
       metrics: [
         metric('Sanctions', activeSanctions.length, activeSanctions.length ? 'warn' : 'ok'),
@@ -1338,9 +1123,10 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         severity: 'Payout hold',
         tone: 'pill-danger',
         title: `${partner} payout is on hold`,
-        reason: 'Active payout hold prevents normal payout processing until the underlying risk is cleared.',
+        reason:
+          'Active payout hold prevents normal payout processing until the underlying report is cleared.',
         operatorAction:
-          'Open the payout and risk lanes, resolve evidence, then lift the sanction if appropriate.',
+          'Open the payout and control lanes, resolve evidence, then lift the sanction if appropriate.',
         href: '/payouts',
         priority: 92,
       });
@@ -1351,11 +1137,11 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         id: `${item.provider.id}-open-report`,
         providerId: item.provider.id,
         partner,
-        impact: 'TRUST REVIEW',
+        impact: 'REPORT REVIEW',
         severity: `${item.openReportCount} report(s)`,
         tone: item.severity === 'CRITICAL' || item.severity === 'HIGH' ? 'pill-danger' : 'pill-warn',
-        title: `${partner} has open risk reports`,
-        reason: 'Open reports can affect partner trust level, payout release, and future dispatch decisions.',
+        title: `${partner} has open reports`,
+        reason: 'Open reports can affect partner badge, payout release, and future dispatch decisions.',
         operatorAction:
           'Move the report to investigating, resolve with notes, dismiss with evidence, or apply a sanction.',
         href: `/partner-controls?q=${encodeURIComponent(item.provider.id)}`,
@@ -1490,7 +1276,7 @@ function buildBookingAcceptanceUnblockBoard(
       operatorScript:
         'Keep the block active until evidence, notes, and the unblock reason are clear in the audit trail.',
       customerImpact: 'Customers will not see or match with partners under active account restrictions.',
-      action: accountBlockedItems.length ? 'Review account blocks' : 'Open risk board',
+      action: accountBlockedItems.length ? 'Review account blocks' : 'Open control board',
       href: accountBlockedItems.length ? '/partner-controls?sanction=ACTIVE' : '/partner-controls',
       className: accountBlockedItems.length ? 'ops-task-blocked' : 'ops-task-done',
       blockingCount: accountBlockedItems.length,
@@ -1554,10 +1340,10 @@ function buildBookingAcceptanceUnblockBoard(
     {
       id: 'device-contact',
       title: 'Push/contact readiness',
-      status: deviceItems.length ? 'CONTACT RISK' : 'READY',
+      status: deviceItems.length ? 'CONTACT CHECK' : 'READY',
       detail: deviceItems.length
         ? 'Partners without an enabled device can miss backup invitations and direct booking alerts.'
-        : 'Partner device readiness does not show a broad notification risk.',
+        : 'Partner device readiness does not show a broad notification follow-up.',
       operatorScript:
         'Confirm the partner has a current app session and enabled device before relying on push alerts.',
       customerImpact:
@@ -1569,7 +1355,7 @@ function buildBookingAcceptanceUnblockBoard(
       partnerSamples: partnerSamples(deviceItems),
       metrics: [
         metric('Contact gaps', deviceItems.length, deviceItems.length ? 'warn' : 'ok'),
-        metric('Push', 'Invite risk', deviceItems.length ? 'warn' : 'ok'),
+        metric('Push', 'Invite check', deviceItems.length ? 'warn' : 'ok'),
         metric('Fallback', 'Manual call', 'info'),
       ],
     },
@@ -1653,7 +1439,7 @@ function buildAcceptanceUnblockPlaybook(
       bookingImpact:
         'Blocks paid booking acceptance and backup participation until the evidence is approved.',
       payoutImpact: 'Bank approval is required before payout; tax remains staged until first earning.',
-      customerImpact: 'Keeps marketplace trust high while avoiding excessive signup friction.',
+      customerImpact: 'Keeps customer confidence high while avoiding excessive signup friction.',
       action: card('verification-readiness')?.action ?? 'Open acceptance-blocked partners',
       href: card('verification-readiness')?.href ?? '/partners?review=acceptance-blocked',
       blockingCount: card('verification-readiness')?.blockingCount ?? 0,
@@ -1833,7 +1619,7 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
           kind: 'search',
           value: filters.q,
           label: `Search: ${filters.q}`,
-          description: 'Risk rows are narrowed by partner, phone, category, reason, or report text.',
+          description: 'Control rows are narrowed by partner, phone, category, reason, or report text.',
         }
       : null,
     filters.status
@@ -1865,14 +1651,14 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
 
 function riskFilterDescription(kind: string, value: string) {
   if (kind === 'status' && value === 'OPEN') {
-    return 'Open reports need triage before partner trust or payout decisions.';
+    return 'Open reports need triage before partner badge or payout decisions.';
   }
   if (kind === 'status' && value === 'INVESTIGATING') {
     return 'Investigating reports need evidence, customer notes, or staff follow-up.';
   }
   if (kind === 'severity') {
     if (value === 'HIGH_PLUS') {
-      return 'Critical and high severity reports are prioritized together for safety review.';
+      return 'Urgent and major reports are prioritized together for safety review.';
     }
     return `${value.toLowerCase()} severity reports are prioritized for safety review.`;
   }
@@ -1882,7 +1668,7 @@ function riskFilterDescription(kind: string, value: string) {
   if (kind === 'sanction') {
     return 'Sanctions are narrowed to the selected lifecycle state.';
   }
-  return 'Risk board is narrowed by the active filter.';
+  return 'Control board is narrowed by the active filter.';
 }
 
 function emptyRiskMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
@@ -1930,7 +1716,7 @@ function buildRiskSummary(
       reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)).length.toString(),
     ],
     [
-      'Critical / high',
+      'Urgent / major',
       reports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity)).length.toString(),
     ],
     ['Active sanctions', sanctions.filter((sanction) => sanction.status === 'ACTIVE').length.toString()],
@@ -2040,7 +1826,7 @@ function providerRiskDetail(input: {
     return 'Partner cannot safely accept more cash/direct work until company fee debt is settled.';
   }
   if (input.openReportCount > 0) {
-    return 'Open report history needs operator review before trust, payout, or account changes.';
+    return 'Open report history needs operator review before badge, payout, or account changes.';
   }
   if (input.sharedDeviceCount > 0) {
     return 'Device overlap can indicate duplicate accounts or account sharing.';
@@ -2075,7 +1861,7 @@ function providerRiskNextStep(
   if (providerLocationSignal(input.provider, riskPolicy)) {
     return 'Ask the partner to reopen the app and refresh their current location before accepting bookings.';
   }
-  return 'Complete missing verification data before enabling higher trust or payout features.';
+  return 'Complete missing verification data before enabling higher badge or payout features.';
 }
 
 function providerLocationSignal(provider: AdminProvider, riskPolicy = DEFAULT_PARTNER_RISK_POLICY) {
