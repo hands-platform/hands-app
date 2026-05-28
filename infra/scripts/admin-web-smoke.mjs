@@ -173,6 +173,8 @@ const pages = [
   { path: '/partners?review=direct-ready', markers: ['Partners', 'Direct request ready'] },
   { path: '/partners?review=backup-ready', markers: ['Partners', '10km backup ready'] },
   { path: '/partners?review=backup-blocked', markers: ['Partners', '10km backup blocked'] },
+  { path: '/partners?review=reports', markers: ['Partners', 'Reports/sanctions'] },
+  { path: '/partners?review=risk', markers: ['Partners', 'Reports/sanctions'] },
   {
     path: '/providers',
     markers: [

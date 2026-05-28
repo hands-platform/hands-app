@@ -300,7 +300,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="cash-debt">Cash fee debt</option>
               <option value="tax">Tax profile review</option>
               <option value="security">Device/session check</option>
-              <option value="risk">Reports/sanctions</option>
+              <option value="reports">Reports/sanctions</option>
               <option value="blocked">Account blocks</option>
               <option value="location">Location freshness</option>
               <option value="push">Push alert readiness</option>
@@ -3565,7 +3565,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
     {
       label: 'Reports and sanctions',
       count: riskNeedsReview,
-      href: '/partners?review=risk',
+      href: '/partners?review=reports',
       detail:
         'Open reports or active sanctions should be reviewed before dispatch and profile badge changes.',
     },
@@ -3745,7 +3745,7 @@ function buildProviderFilters(params: Record<string, string | string[] | undefin
     location: readParam(params.location),
     security: readParam(params.security),
     readiness: readParam(params.readiness),
-    review: readParam(params.review),
+    review: normalizePartnerReviewFilter(readParam(params.review)),
   };
 }
 
@@ -3846,7 +3846,7 @@ function providerFilterDescription(kind: string, value: string) {
   if (kind === 'review' && value === 'push') {
     return 'Push readiness highlights partners whose devices cannot reliably receive booking alerts.';
   }
-  if (kind === 'review' && value === 'risk') {
+  if (kind === 'review' && value === 'reports') {
     return 'Report review highlights partners with open reports or active sanctions.';
   }
   if (kind === 'review' && value === 'public-media') {
@@ -3885,6 +3885,10 @@ function emptyProviderMessage(activeFilters: Array<{ description: string }>) {
 
 function readParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+}
+
+function normalizePartnerReviewFilter(value: string) {
+  return value === 'risk' ? 'reports' : value;
 }
 
 function filterProviders(
@@ -3959,7 +3963,7 @@ function providerMatchesReviewQueue(
   if (review === 'security') {
     return ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider));
   }
-  if (review === 'risk') {
+  if (review === 'reports') {
     return hasOpenProviderRisk(provider);
   }
   if (review === 'location') {
