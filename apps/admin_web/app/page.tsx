@@ -526,9 +526,14 @@ export default async function DashboardPage() {
               bookings use the current policy.
             </p>
           </div>
-          <Link className="text-link" href="/operations-policy">
-            Simulate policy
-          </Link>
+          <div className="participant-list">
+            <Link className="text-link" href="/bookings?view=matching">
+              Open matching timeline
+            </Link>
+            <Link className="text-link" href="/operations-policy">
+              Simulate policy
+            </Link>
+          </div>
         </div>
         <div className="service-trace-summary" style={{ marginTop: 12 }}>
           {matchingControl.metrics.map((metric) => (
