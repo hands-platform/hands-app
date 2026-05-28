@@ -580,6 +580,8 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                       {booking.expiresAt ? `Expires ${formatDate(booking.expiresAt)}` : 'No expiry set'}
                     </div>
                     <div className="muted">{matchingPolicySummaryLabel(matchingPolicy)}</div>
+                    <div className="muted">{customerVisibleStateLabel(booking)}</div>
+                    <div className="muted">{bookingBackupAlertTraceLabel(booking, currentTimeMs)}</div>
                   </td>
                   <td>
                     {booking.customerProfile?.user?.fullName ?? 'Customer'}
@@ -603,6 +605,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                       </span>
                       <span className={`pill ${bookingLocationToneClass(booking, currentTimeMs)}`}>
                         {bookingLocationPillLabel(booking, currentTimeMs)}
+                      </span>
+                      <span className={`pill ${bookingBackupAlertTraceTone(booking)}`}>
+                        {bookingBackupAlertTracePill(booking)}
                       </span>
                     </div>
                     <div className="participant-list" style={{ marginTop: 8 }}>
@@ -1905,6 +1910,116 @@ function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPo
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
   };
+}
+
+function customerVisibleStateLabel(booking: AdminBooking) {
+  const acceptedCount = acceptedParticipants(booking).length;
+  const fallbackCount = fallbackParticipants(booking).length;
+
+  if (['CANCELLED', 'EXPIRED', 'REFUNDED', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
+    return `Customer screen: closed as ${booking.status}`;
+  }
+  if (booking.selectedProvider) {
+    return `Customer screen: final partner ${booking.selectedProvider.displayName ?? 'selected'}${
+      booking.chatRoom ? ' with chat ready' : ' but chat not ready'
+    }`;
+  }
+  if (acceptedCount > 0) {
+    return `Customer screen: ${acceptedCount} accepted partner(s) ready for final choice`;
+  }
+  if (booking.status === 'OPEN_MATCHING' && booking.preferredProvider && isPreferredAwaitingDecision(booking)) {
+    return fallbackCount > 0
+      ? `Customer screen: first-pick wait plus ${fallbackCount} backup option(s)`
+      : 'Customer screen: first-pick waiting only';
+  }
+  if (booking.status === 'OPEN_MATCHING') {
+    return fallbackCount > 0
+      ? `Customer screen: ${fallbackCount} partner option(s) waiting`
+      : 'Customer screen: waiting for partners';
+  }
+  return `Customer screen: ${booking.status.toLowerCase().replaceAll('_', ' ')}`;
+}
+
+function bookingBackupAlertTraceLabel(booking: AdminBooking, nowMs: number) {
+  const summary = bookingBackupAlertTraceSummary(booking, nowMs);
+  if (!summary.batchCount) {
+    return 'Backup alerts: no batch recorded';
+  }
+  if (summary.totalNotified > 0) {
+    return `Backup alerts: ${summary.totalNotified} notified / ${summary.batchCount} batch(es)${
+      summary.lastAge ? ` / last ${summary.lastAge}` : ''
+    }`;
+  }
+  return `Backup alerts: ${summary.batchCount} batch(es), no eligible partner notified`;
+}
+
+function bookingBackupAlertTracePill(booking: AdminBooking) {
+  const summary = bookingBackupAlertTraceSummary(booking);
+  if (!summary.batchCount) {
+    return 'No backup trace';
+  }
+  if (summary.totalNotified > 0) {
+    return `${summary.totalNotified} backup alert(s)`;
+  }
+  return 'Backup trace empty';
+}
+
+function bookingBackupAlertTraceTone(booking: AdminBooking) {
+  const summary = bookingBackupAlertTraceSummary(booking);
+  if (summary.totalNotified > 0) {
+    return 'pill-success';
+  }
+  if (summary.batchCount > 0) {
+    return 'pill-warn';
+  }
+  if (booking.status === 'OPEN_MATCHING') {
+    return 'pill-danger';
+  }
+  return 'pill-neutral';
+}
+
+function bookingBackupAlertTraceSummary(booking: AdminBooking, nowMs = 0) {
+  const metadata = readPlainRecord(booking.metadata);
+  const traces = Array.isArray(metadata?.backupNotificationTraces)
+    ? metadata.backupNotificationTraces
+        .map(readPlainRecord)
+        .filter((item): item is Record<string, unknown> => Boolean(item))
+    : [];
+  const totalNotified = traces.reduce(
+    (sum, trace) => sum + (readOptionalNumber(trace.notifiedCount) ?? 0),
+    0,
+  );
+  const latest = traces.at(-1) ?? null;
+  const lastCreatedAt = readOptionalString(latest?.createdAt);
+  return {
+    batchCount: traces.length,
+    totalNotified,
+    lastStage: readOptionalString(latest?.stage),
+    lastCreatedAt,
+    lastAge: lastCreatedAt ? relativeTimeLabel(lastCreatedAt, nowMs) : null,
+  };
+}
+
+function relativeTimeLabel(value: string, nowMs: number) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return 'unknown time';
+  }
+
+  const reference = nowMs > 0 ? nowMs : Date.now();
+  const minutesAgo = Math.max(0, Math.round((reference - timestamp) / 60_000));
+  if (minutesAgo < 1) {
+    return 'just now';
+  }
+  if (minutesAgo < 60) {
+    return `${minutesAgo}m ago`;
+  }
+
+  const hoursAgo = Math.round(minutesAgo / 60);
+  if (hoursAgo < 24) {
+    return `${hoursAgo}h ago`;
+  }
+  return `${Math.round(hoursAgo / 24)}d ago`;
 }
 
 function money(amount: number, currency = 'VND') {
