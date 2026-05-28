@@ -1006,8 +1006,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
         <div className="card" id="chat">
           <h2>Chat transcript</h2>
+          <p className="muted">
+            Admin archive for this booking. Customer and partner apps can hide the room after completion, but
+            operations keeps the loaded transcript here.
+          </p>
           <div className="stack">
-            {messages.slice(-8).map((message) => (
+            {messages.map((message) => (
               <ChatBubble key={message.id} message={message} />
             ))}
             {messages.length === 0 && <p className="muted">No chat messages yet.</p>}

@@ -367,15 +367,13 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                         Mobile chat hides after service completion. Admin keeps this booking transcript.
                       </p>
                       <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
-                        {readPartnerChatMessages(record.booking)
-                          .slice(0, 8)
-                          .map((message) => (
-                            <div className="service-matrix-cell" key={message.id}>
-                              <strong>{chatSenderLabel(message)}</strong>
-                              <small>{formatDate(message.createdAt)}</small>
-                              <p style={{ margin: 0 }}>{message.body}</p>
-                            </div>
-                          ))}
+                        {readPartnerChatMessages(record.booking).map((message) => (
+                          <div className="service-matrix-cell" key={message.id}>
+                            <strong>{chatSenderLabel(message)}</strong>
+                            <small>{formatDate(message.createdAt)}</small>
+                            <p style={{ margin: 0 }}>{message.body}</p>
+                          </div>
+                        ))}
                         {!readPartnerChatMessages(record.booking).length ? (
                           <p className="muted">Chat room exists, but no message is stored yet.</p>
                         ) : null}

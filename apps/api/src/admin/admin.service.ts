@@ -508,7 +508,7 @@ export class AdminService {
         include: {
           messages: {
             orderBy: { createdAt: 'desc' as const },
-            take: 20,
+            take: 100,
             include: { sender: { select: { phone: true, fullName: true, roles: true } } },
           },
         },
@@ -1103,7 +1103,7 @@ export class AdminService {
           include: {
             messages: {
               orderBy: { createdAt: 'desc' },
-              take: 20,
+              take: 100,
               include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
             },
           },
