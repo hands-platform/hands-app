@@ -299,6 +299,13 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      <PartnerAcceptanceRepairCommandPanel
+        provider={provider}
+        bookingAcceptance={bookingAcceptance}
+        payoutOps={payoutOps}
+        dispatchPolicy={dispatchPolicy}
+      />
+
       <div className="card" id="payout" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -1526,6 +1533,24 @@ type PartnerDetailOpsBadge = {
   tone: ProviderOpsCard['tone'];
 };
 
+type PartnerAcceptanceRepairCommand = {
+  status: string;
+  tone: ProviderOpsCard['tone'];
+  partnerAppMessage: string;
+  customerImpact: string;
+  operatorDecision: string;
+  fallbackRouting: string;
+  steps: Array<{
+    owner: string;
+    blocker: string;
+    reason: string;
+    operatorAction: string;
+    href: string;
+    actionLabel: string;
+    tone: ProviderOpsCard['tone'];
+  }>;
+};
+
 function PartnerDetailReadinessSnapshot({
   provider,
   bookingAcceptance,
@@ -1569,6 +1594,75 @@ function PartnerDetailReadinessSnapshot({
             ? `Backup radius ${formatDistance(dispatchPolicy.backupRadiusMeters)}`
             : 'Resolve gate'}
         </small>
+      </div>
+    </div>
+  );
+}
+
+function PartnerAcceptanceRepairCommandPanel({
+  provider,
+  bookingAcceptance,
+  payoutOps,
+  dispatchPolicy,
+}: {
+  provider: ProviderDetail;
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>;
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>;
+  dispatchPolicy: PartnerDispatchPolicy;
+}) {
+  const command = buildPartnerAcceptanceRepairCommand(provider, bookingAcceptance, payoutOps, dispatchPolicy);
+
+  return (
+    <div className={`card ${cardClass(command.tone)}`} style={{ marginBottom: 16 }}>
+      <div className="risk-watch-header">
+        <div>
+          <h2>Booking acceptance repair command</h2>
+          <p className="muted">
+            Exact operator diagnosis for why this partner can or cannot accept direct requests and 10km backup
+            participation.
+          </p>
+        </div>
+        <span className={`pill ${pillClass(command.tone)}`}>{command.status}</span>
+      </div>
+      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        <div>
+          <span>Partner app block message</span>
+          <strong>{command.partnerAppMessage}</strong>
+          <small>What support should expect the partner to see.</small>
+        </div>
+        <div>
+          <span>Customer impact</span>
+          <strong>{command.customerImpact}</strong>
+          <small>How this affects customer choice and matching.</small>
+        </div>
+        <div>
+          <span>Operator decision</span>
+          <strong>{command.operatorDecision}</strong>
+          <small>Use this before manual override or dispatch.</small>
+        </div>
+        <div>
+          <span>Fallback routing</span>
+          <strong>{command.fallbackRouting}</strong>
+          <small>Where live demand should go while blocked.</small>
+        </div>
+      </div>
+      <div className="setup-stage-list" style={{ marginTop: 16 }}>
+        {command.steps.map((step, index) => (
+          <div className="setup-stage-item" key={`${step.owner}-${step.blocker}`}>
+            <span>{index + 1}</span>
+            <div>
+              <strong>{step.owner}: {step.blocker}</strong>
+              <p className="muted">{step.reason}</p>
+              <p className="muted">{step.operatorAction}</p>
+              <span className={`pill ${pillClass(step.tone)}`}>
+                {step.tone === 'done' ? 'Clear' : step.tone === 'blocked' ? 'Blocks booking' : 'Operator check'}
+              </span>
+            </div>
+            <Link className="text-link" href={step.href}>
+              {step.actionLabel}
+            </Link>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -1683,6 +1777,173 @@ function buildProviderBookingAcceptance(
     bookableServices: `${pricing.readyCount}/${pricing.rows.length}`,
     gates,
   };
+}
+
+function buildPartnerAcceptanceRepairCommand(
+  provider: ProviderDetail,
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+  dispatchPolicy: PartnerDispatchPolicy,
+): PartnerAcceptanceRepairCommand {
+  const blockedGates = bookingAcceptance.gates.filter((gate) => !gate.ok);
+  const status = bookingAcceptance.canAccept ? 'ACCEPT READY' : `${blockedGates.length} REPAIR STEP(S)`;
+  const partnerAppMessage = partnerAppBlockMessage(provider, bookingAcceptance, payoutOps, dispatchPolicy);
+  const customerImpact = bookingAcceptance.canAccept
+    ? 'Can appear in customer booking flow and final partner choice.'
+    : blockedGates.some((gate) => ['Wallet and cash debt', 'Account and sanctions', 'Identity and approval'].includes(gate.label))
+      ? 'Hide or avoid this partner for direct acceptance and backup shortlist until hard blockers are cleared.'
+      : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
+  const operatorDecision = bookingAcceptance.canAccept
+    ? 'No manual repair required. Monitor service quality and response speed.'
+    : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
+  const fallbackRouting = bookingAcceptance.canAccept
+    ? `Eligible for first-pick and backup participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
+    : 'Route urgent demand to direct-ready or backup-ready partners while this repair queue is open.';
+
+  const steps = blockedGates.map((gate) => partnerAcceptanceRepairStep(provider, gate));
+  if (!steps.length) {
+    steps.push({
+      owner: 'Ops',
+      blocker: 'No active blocker',
+      reason: 'All booking acceptance gates are currently clear for this partner.',
+      operatorAction: 'Keep monitoring customer reviews, response speed, and location freshness.',
+      href: `/partners/${provider.id}`,
+      actionLabel: 'Open profile',
+      tone: 'done',
+    });
+  }
+
+  if (providerHasFirstRevenueSignal(provider) && payoutOps.status !== 'UNLOCKED') {
+    steps.push({
+      owner: 'Finance',
+      blocker: 'Payout-only tax gate',
+      reason:
+        payoutOps.blockers[0] ??
+        'First earning exists, so tax profile, address, agreements, and payout holds must be reviewed before withdrawal.',
+      operatorAction:
+        'Do not block the first job retroactively, but keep payout locked until tax and agreement requirements are complete.',
+      href: `/partners/${provider.id}#payout`,
+      actionLabel: 'Open payout gate',
+      tone: 'pending',
+    });
+  }
+
+  return {
+    status,
+    tone: bookingAcceptance.canAccept ? 'done' : 'blocked',
+    partnerAppMessage,
+    customerImpact,
+    operatorDecision,
+    fallbackRouting,
+    steps,
+  };
+}
+
+function partnerAcceptanceRepairStep(
+  provider: ProviderDetail,
+  gate: BookingAcceptanceGate,
+): PartnerAcceptanceRepairCommand['steps'][number] {
+  const map: Record<
+    string,
+    {
+      owner: string;
+      href: string;
+      actionLabel: string;
+      tone: ProviderOpsCard['tone'];
+    }
+  > = {
+    'Wallet and cash debt': {
+      owner: 'Finance',
+      href: '/cash-settlements',
+      actionLabel: 'Open settlement',
+      tone: 'blocked',
+    },
+    'Account and sanctions': {
+      owner: 'Trust',
+      href: `/partner-risk?q=${encodeURIComponent(provider.id)}`,
+      actionLabel: 'Open risk desk',
+      tone: 'blocked',
+    },
+    'Identity and approval': {
+      owner: 'KYC',
+      href: `/partners/${provider.id}#kyc`,
+      actionLabel: 'Open KYC',
+      tone: 'blocked',
+    },
+    'Bank account': {
+      owner: 'Finance',
+      href: `/partners/${provider.id}#bank`,
+      actionLabel: 'Open bank',
+      tone: 'blocked',
+    },
+    'Online and reachable': {
+      owner: 'Ops',
+      href: `/app-sessions?role=PROVIDER&q=${encodeURIComponent(provider.user?.phone ?? provider.id)}`,
+      actionLabel: 'Open sessions',
+      tone: 'pending',
+    },
+    'Location freshness': {
+      owner: 'Dispatch',
+      href: `/partners/${provider.id}#location`,
+      actionLabel: 'Open location',
+      tone: 'pending',
+    },
+    'Bookable services': {
+      owner: 'Ops',
+      href: '/services',
+      actionLabel: 'Open services',
+      tone: 'blocked',
+    },
+  };
+  const config = map[gate.label] ?? {
+    owner: 'Ops',
+    href: `/partners/${provider.id}`,
+    actionLabel: 'Open partner',
+    tone: 'pending' as const,
+  };
+
+  return {
+    owner: config.owner,
+    blocker: gate.label,
+    reason: gate.detail,
+    operatorAction: gate.action,
+    href: config.href,
+    actionLabel: config.actionLabel,
+    tone: config.tone,
+  };
+}
+
+function partnerAppBlockMessage(
+  provider: ProviderDetail,
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+  dispatchPolicy: PartnerDispatchPolicy,
+) {
+  if (bookingAcceptance.canAccept) {
+    return 'Partner can accept booking requests.';
+  }
+  if (bookingAcceptance.cashDebt > 0) {
+    return 'Cannot accept bookings until unpaid HANDS commission is settled.';
+  }
+  if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
+    return 'Account requires admin review before accepting bookings.';
+  }
+  if (provider.verification?.status !== 'APPROVED' || provider.kyc?.status !== 'APPROVED') {
+    return 'Identity verification must be approved before accepting bookings.';
+  }
+  if (!hasApprovedBankAccount(provider)) {
+    return 'Bank account must be approved before receiving paid bookings.';
+  }
+  if (locationAgeMinutes(provider.currentLocationUpdatedAt) > dispatchPolicy.locationFreshnessMinutes) {
+    return 'Open the app to refresh location before receiving requests.';
+  }
+  if (!(provider.user?.pushDevices ?? []).some((device) => device.enabled)) {
+    return 'Open the app and enable alerts to receive booking requests.';
+  }
+  if (payoutOps.hold) {
+    return 'Payout is held by admin review; booking may require operator confirmation.';
+  }
+  return 'Partner is temporarily unavailable for booking acceptance.';
 }
 
 function buildPartnerAcceptanceUnblockPlaybook(

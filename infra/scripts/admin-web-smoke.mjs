@@ -185,6 +185,8 @@ if (providerLinkMatch) {
     const providerMarkers = [
       'Partner ops command center',
       'Booking acceptance decision',
+      'Booking acceptance repair command',
+      'Partner app block message',
       'Partner acceptance unblock playbook',
       'id="payout"',
       'id="kyc"',
