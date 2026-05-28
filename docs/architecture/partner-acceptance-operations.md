@@ -75,6 +75,48 @@ Operators should use these screens together:
 - `/cash-settlements`, `/earnings`, `/payouts`, and `/payments`: settle or offset cash fee debt.
 - `/tax-policy` and `/services`: manage tax, fee, service duration, minimum price, price step, and payout matrix policy.
 
+## Acceptance Unblock Playbook
+
+When a partner cannot accept a direct request or join backup matching, operators should resolve blockers in this order:
+
+1. Clear negative wallet first.
+   - Owner: Finance.
+   - Why: cash bookings can create unpaid HANDS fee/tax debt.
+   - Booking impact: direct acceptance and backup joining stay blocked until the debt is settled, offset, or explicitly recovered.
+   - Payout impact: finance should not release payout while the partner still owes HANDS settlement.
+
+2. Resolve account and sanction controls.
+   - Owner: Trust.
+   - Why: account blocks and active sanctions are intentional safety controls.
+   - Booking impact: partner visibility and acceptance remain blocked while the restriction is active.
+   - Payout impact: payout holds should stay until the report, sanction, or account review has a clean audit outcome.
+
+3. Approve identity and bank readiness.
+   - Owner: KYC.
+   - Why: CCCD/selfie evidence and approved bank data are the Level 2 work gate for paid bookings.
+   - Booking impact: paid booking acceptance and backup participation stay blocked until the evidence is approved.
+   - Payout impact: bank approval is required before payout; tax profile remains staged until first earning.
+
+4. Refresh stale partner location.
+   - Owner: Dispatch.
+   - Why: 10km backup matching depends on a recent stored partner location.
+   - Booking impact: stale location can exclude partners from backup matching or make distance ordering unreliable.
+   - Payout impact: no direct payout impact, but location evidence may matter for disputes.
+
+5. Confirm device and alert reachability.
+   - Owner: Ops.
+   - Why: partner response rate depends on recent app sessions and enabled devices while OS push is deferred.
+   - Booking impact: weak device state does not always hard-block acceptance, but it reduces response reliability.
+   - Payout impact: no direct payout impact.
+
+6. Keep tax as a post-first-earning payout gate.
+   - Owner: Finance.
+   - Why: tax policy must exist from day one, but tax profile collection should not increase signup friction before the first earning.
+   - Booking impact: missing tax profile should not block first booking acceptance.
+   - Payout impact: after first earning, tax profile, tax address, and payout/tax agreements block payout or withdrawal until complete.
+
+This order is mirrored in `/partner-risk` under `Acceptance unblock playbook`.
+
 ## No-Show Closeout
 
 No-show is an operational closeout state, not an automatic penalty in the MVP. It should be used only when a live booking cannot proceed because the customer or partner did not continue the service path.
