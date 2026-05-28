@@ -299,7 +299,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" id="payout" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Partner acceptance unblock playbook</h2>
@@ -1049,7 +1049,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </p>
         </div>
 
-        <div className="card">
+        <div className="card" id="kyc">
           <h2>KYC decision</h2>
           <div className="participant-list" style={{ marginBottom: 10 }}>
             <span className={`pill ${provider.kyc?.status === 'APPROVED' ? 'pill-success' : 'pill-warn'}`}>
@@ -1126,7 +1126,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </p>
         </div>
 
-        <div className="card">
+        <div className="card" id="service-pricing">
           <h2>Service price readiness</h2>
           <p className="muted">
             Customer apps only show options with an active partner service and an exact active payout rule.
@@ -1167,7 +1167,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           )}
         </div>
 
-        <div className="card">
+        <div className="card" id="documents">
           <h2>Typed documents</h2>
           {(provider.documents ?? []).length ? (
             provider.documents?.map((document) => (
@@ -1230,7 +1230,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           )}
         </div>
 
-        <div className="card">
+        <div className="card" id="media">
           <h2>Public profile media</h2>
           {(provider.user?.fileAssets ?? []).length ? (
             provider.user?.fileAssets?.map((file) => (
@@ -1290,7 +1290,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           )}
         </div>
 
-        <div className="card">
+        <div className="card" id="bank">
           <h2>Bank and payout gate</h2>
           {primaryBank ? (
             <>
@@ -1331,7 +1331,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           )}
         </div>
 
-        <div className="card">
+        <div className="card" id="tax">
           <h2>Tax profile</h2>
           {provider.taxProfile ? (
             <>
@@ -1369,7 +1369,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           )}
         </div>
 
-        <div className="card">
+        <div className="card" id="location">
           <h2>Location and activity</h2>
           <InfoLine
             label="Last location"
