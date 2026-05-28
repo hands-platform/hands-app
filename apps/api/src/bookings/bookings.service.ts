@@ -830,10 +830,35 @@ export class BookingsService {
       }
     }
 
-    return this.prisma.bookingParticipant.update({
+    const updatedParticipant = await this.prisma.bookingParticipant.update({
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
       data: { status, respondedAt: new Date() },
+      include: { providerProfile: true },
     });
+
+    if (status === ParticipantStatus.ACCEPTED) {
+      await this.notifications.create({
+        userId: booking.customerProfile.userId,
+        type: 'provider.accepted',
+        title: 'Backup partner is ready',
+        body: `${provider.displayName} can take this booking. Select this partner if you want to switch.`,
+        data: { bookingId, providerProfileId: provider.id },
+      });
+      this.matchingGateway.emitProviderAccepted(bookingId, updatedParticipant);
+    }
+
+    if (status === ParticipantStatus.REJECTED) {
+      await this.notifications.create({
+        userId: booking.customerProfile.userId,
+        type: 'provider.rejected',
+        title: 'Partner declined',
+        body: `${provider.displayName} cannot take this booking.`,
+        data: { bookingId, providerProfileId: provider.id },
+      });
+      this.matchingGateway.emitProviderRejected(bookingId, updatedParticipant);
+    }
+
+    return updatedParticipant;
   }
 
   private async notifyBackupProviders(input: {

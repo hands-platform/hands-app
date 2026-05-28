@@ -54,6 +54,10 @@ export class MatchingGateway implements OnGatewayConnection {
     this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('provider.accepted', payload);
   }
 
+  emitProviderRejected(bookingId: string, payload: unknown) {
+    this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('provider.rejected', payload);
+  }
+
   emitBookingOpened(bookingId: string, payload: unknown) {
     this.server.to(SOCKET_ROOMS.booking(bookingId)).emit('booking.opened', payload);
     this.server.to(SOCKET_ROOMS.providers()).emit('booking.opened', payload);
