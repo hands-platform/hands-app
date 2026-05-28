@@ -161,7 +161,11 @@ if (providerLinkMatch) {
   const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
   for (const providerPath of providerDetailPaths) {
     const providerBody = await fetchPage(providerPath);
-    const providerMarkers = ['Partner ops command center', 'Booking acceptance decision'];
+    const providerMarkers = [
+      'Partner ops command center',
+      'Booking acceptance decision',
+      'Partner acceptance unblock playbook',
+    ];
     const missing = providerMarkers.filter((marker) => !providerBody.includes(marker));
     if (missing.length > 0) {
       throw new Error(`${providerPath} is missing expected markers: ${missing.join(', ')}`);

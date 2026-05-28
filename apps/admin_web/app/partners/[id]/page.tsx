@@ -157,6 +157,11 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const registrationDossier = buildProviderRegistrationDossier(provider);
   const providerServicePricing = buildProviderServicePricing(provider);
   const bookingAcceptance = buildProviderBookingAcceptance(provider, providerServicePricing, dispatchPolicy);
+  const acceptanceUnblockPlaybook = buildPartnerAcceptanceUnblockPlaybook(
+    provider,
+    bookingAcceptance,
+    payoutOps,
+  );
   const kycEvidence = buildPartnerKycEvidence(provider);
   const canApproveKyc = kycEvidence.allRequiredApproved;
   const payoutHold = activePayoutHold(provider);
@@ -289,6 +294,49 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 <p className="muted">{gate.detail}</p>
               </div>
               <small>{gate.action}</small>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner acceptance unblock playbook</h2>
+            <p className="muted">
+              Operator order for restoring this partner's booking acceptance. Finance and trust blockers stay
+              first; tax stays deferred until first earning and then blocks payout, not initial dispatch.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              acceptanceUnblockPlaybook.some((step) => step.bookingBlocked) ? 'pill-danger' : 'pill-success'
+            }`}
+          >
+            {acceptanceUnblockPlaybook.filter((step) => step.bookingBlocked).length} booking blocker(s)
+          </span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          {acceptanceUnblockPlaybook.map((step) => (
+            <div className="setup-stage-item" key={step.id}>
+              <span>{step.step}</span>
+              <div>
+                <strong>{step.title}</strong>
+                <p className="muted">{step.detail}</p>
+                <p className="muted">
+                  <strong>Booking:</strong> {step.bookingImpact}
+                </p>
+                <p className="muted">
+                  <strong>Payout:</strong> {step.payoutImpact}
+                </p>
+                <div className="participant-list">
+                  <span className={`pill ${pillClass(step.tone)}`}>{step.status}</span>
+                  <span className="pill pill-info">{step.owner}</span>
+                </div>
+              </div>
+              <Link className="text-link" href={step.href}>
+                {step.action}
+              </Link>
             </div>
           ))}
         </div>
@@ -1457,6 +1505,21 @@ type BookingAcceptanceGate = {
   action: string;
 };
 
+type PartnerAcceptanceUnblockStep = {
+  id: string;
+  step: string;
+  owner: 'Finance' | 'Trust' | 'KYC' | 'Dispatch' | 'Ops';
+  title: string;
+  status: string;
+  detail: string;
+  bookingImpact: string;
+  payoutImpact: string;
+  action: string;
+  href: string;
+  tone: ProviderOpsCard['tone'];
+  bookingBlocked: boolean;
+};
+
 type PartnerDetailOpsBadge = {
   label: string;
   detail: string;
@@ -1620,6 +1683,142 @@ function buildProviderBookingAcceptance(
     bookableServices: `${pricing.readyCount}/${pricing.rows.length}`,
     gates,
   };
+}
+
+function buildPartnerAcceptanceUnblockPlaybook(
+  provider: ProviderDetail,
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+): PartnerAcceptanceUnblockStep[] {
+  const gate = (label: string) => bookingAcceptance.gates.find((item) => item.label === label);
+  const walletGate = gate('Wallet and cash debt');
+  const accountGate = gate('Account and sanctions');
+  const identityGate = gate('Identity and approval');
+  const bankGate = gate('Bank account');
+  const locationGate = gate('Location freshness');
+  const reachableGate = gate('Online and reachable');
+  const serviceGate = gate('Bookable services');
+  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
+  const payoutReady = payoutOps.status === 'UNLOCKED';
+  const payoutGateOpen = !hasFirstRevenue || payoutReady;
+
+  return [
+    {
+      id: 'cash-debt',
+      step: '1',
+      owner: 'Finance',
+      title: 'Clear wallet and cash fee debt',
+      status: walletGate?.ok ? 'CLEAR' : 'BLOCKING',
+      detail: walletGate?.detail ?? 'Wallet gate was not evaluated.',
+      bookingImpact: walletGate?.ok
+        ? 'Partner can pass the cash-debt booking gate.'
+        : 'Blocks direct acceptance and 10km backup participation until debt is settled or offset.',
+      payoutImpact: 'Finance should not release payout while HANDS fee/tax debt is still open.',
+      action: walletGate?.ok ? 'Open cash settlement history' : 'Settle cash debt',
+      href: '/cash-settlements',
+      tone: walletGate?.ok ? 'done' : 'blocked',
+      bookingBlocked: !walletGate?.ok,
+    },
+    {
+      id: 'account-risk',
+      step: '2',
+      owner: 'Trust',
+      title: 'Resolve account blocks and sanctions',
+      status: accountGate?.ok ? 'CLEAR' : 'RISK HOLD',
+      detail: accountGate?.detail ?? 'Account gate was not evaluated.',
+      bookingImpact: accountGate?.ok
+        ? 'No account-level restriction is blocking work.'
+        : 'Partner must stay hidden from assignment until account or sanction review is resolved.',
+      payoutImpact: 'Active sanctions can hold payout until support or risk closes the case.',
+      action: accountGate?.ok ? 'Open partner risk history' : 'Open risk desk',
+      href: `/partner-risk?q=${encodeURIComponent(provider.id)}`,
+      tone: accountGate?.ok ? 'done' : 'blocked',
+      bookingBlocked: !accountGate?.ok,
+    },
+    {
+      id: 'identity-bank',
+      step: '3',
+      owner: 'KYC',
+      title: 'Finish KYC, required documents, and bank',
+      status: identityGate?.ok && bankGate?.ok ? 'READY' : 'REVIEW',
+      detail: `${identityGate?.detail ?? 'Identity gate missing.'} ${bankGate?.detail ?? 'Bank gate missing.'}`,
+      bookingImpact:
+        identityGate?.ok && bankGate?.ok
+          ? 'Partner meets the Level 2 active-work gate.'
+          : 'Blocks paid booking acceptance until identity evidence and bank readiness are approved.',
+      payoutImpact: 'Approved bank is also required before partner payout can be prepared.',
+      action: identityGate?.ok && bankGate?.ok ? 'Review KYC evidence' : 'Finish KYC and bank review',
+      href: `/partners/${provider.id}#kyc`,
+      tone: identityGate?.ok && bankGate?.ok ? 'done' : 'blocked',
+      bookingBlocked: !(identityGate?.ok && bankGate?.ok),
+    },
+    {
+      id: 'location',
+      step: '4',
+      owner: 'Dispatch',
+      title: 'Refresh location for 10km matching',
+      status: locationGate?.ok ? 'FRESH' : 'STALE',
+      detail: locationGate?.detail ?? 'Location gate was not evaluated.',
+      bookingImpact: locationGate?.ok
+        ? 'Partner can be trusted for distance sorting and backup radius checks.'
+        : 'Partner may be excluded from nearby backup matching or show unreliable distance.',
+      payoutImpact: 'No direct payout impact, but location history can support dispute review.',
+      action: locationGate?.ok ? 'Open location history' : 'Ask partner to open app',
+      href: `/partners/${provider.id}#location`,
+      tone: locationGate?.ok ? 'done' : 'pending',
+      bookingBlocked: !locationGate?.ok,
+    },
+    {
+      id: 'contactability',
+      step: '5',
+      owner: 'Ops',
+      title: 'Confirm app reachability',
+      status: reachableGate?.ok ? 'REACHABLE' : 'CONTACT GAP',
+      detail: reachableGate?.detail ?? 'Reachability gate was not evaluated.',
+      bookingImpact: reachableGate?.ok
+        ? 'Partner should receive direct booking alerts during the response window.'
+        : 'Partner may miss the 10 minute first-pick window or backup invite.',
+      payoutImpact: 'No direct payout impact.',
+      action: reachableGate?.ok ? 'Open app sessions' : 'Check devices and sessions',
+      href: `/app-sessions?role=PROVIDER&q=${encodeURIComponent(provider.user?.phone ?? provider.id)}`,
+      tone: reachableGate?.ok ? 'done' : 'pending',
+      bookingBlocked: !reachableGate?.ok,
+    },
+    {
+      id: 'service-pricing',
+      step: '6',
+      owner: 'Ops',
+      title: 'Confirm bookable service pricing',
+      status: serviceGate?.ok ? 'BOOKABLE' : 'PRICE GAP',
+      detail: serviceGate?.detail ?? 'Service pricing gate was not evaluated.',
+      bookingImpact: serviceGate?.ok
+        ? 'At least one service option can be shown to customers.'
+        : 'Customer app should hide partner services until the exact payout rule exists.',
+      payoutImpact: 'Correct payout rules protect partner net, HANDS fee, tax, and cash debt calculations.',
+      action: serviceGate?.ok ? 'Open service pricing' : 'Fix service pricing',
+      href: '/services',
+      tone: serviceGate?.ok ? 'done' : 'blocked',
+      bookingBlocked: !serviceGate?.ok,
+    },
+    {
+      id: 'tax-after-first-earning',
+      step: '7',
+      owner: 'Finance',
+      title: 'Collect tax only after first earning',
+      status: payoutGateOpen ? (hasFirstRevenue ? 'PAYOUT READY' : 'DEFERRED') : 'PAYOUT GATE',
+      detail: hasFirstRevenue
+        ? payoutOps.blockers[0] ?? 'First earning exists; verify tax, address, agreements, and payout holds.'
+        : 'Do not force tax profile during initial signup. Keep tax policy configured, then collect partner tax data after first earning.',
+      bookingImpact: 'This should not block the partner from receiving the first booking.',
+      payoutImpact: payoutGateOpen
+        ? 'No tax-related payout blocker is currently visible.'
+        : 'Blocks withdrawal or payout until tax profile, address, and required agreements are complete.',
+      action: hasFirstRevenue ? 'Open payout and tax gate' : 'Review tax policy',
+      href: hasFirstRevenue ? `/partners/${provider.id}#payout` : '/tax-policy',
+      tone: payoutGateOpen ? 'done' : 'pending',
+      bookingBlocked: false,
+    },
+  ];
 }
 
 function buildPartnerDetailOpsBadges(
