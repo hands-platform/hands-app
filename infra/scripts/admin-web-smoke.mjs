@@ -3,7 +3,14 @@ const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101';
 const pages = [
   {
     path: '/',
-    markers: ['HANDS Admin', 'Shift command briefing', 'Partner dispatch control', 'Matching ops', 'API source'],
+    markers: [
+      'HANDS Admin',
+      'Shift command briefing',
+      'Opening shift checklist',
+      'Partner dispatch control',
+      'Matching ops',
+      'API source',
+    ],
   },
   {
     path: '/bookings',

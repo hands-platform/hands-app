@@ -95,6 +95,15 @@ type ShiftBriefing = {
   }>;
   nextActions: OpsQueueItem[];
 };
+type OperatorStartChecklistItem = {
+  title: string;
+  status: string;
+  detail: string;
+  action: string;
+  href: string;
+  className: string;
+  pillClass: string;
+};
 
 export default async function DashboardPage() {
   const [
@@ -202,6 +211,17 @@ export default async function DashboardPage() {
     failedNotifications,
     cashSettlementSummary,
     activePayoutBatches,
+  });
+  const operatorStartChecklist = buildOperatorStartChecklist({
+    queue,
+    bookingOps,
+    appPresence,
+    partnerSupply,
+    matchingControl,
+    failedNotifications,
+    cashSettlementSummary,
+    activePayoutBatches,
+    externalReadiness,
   });
 
   const metrics = [
@@ -420,6 +440,38 @@ export default async function DashboardPage() {
               </p>
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Opening shift checklist</h2>
+            <p className="muted">
+              A simple order for the first admin pass: protect waiting customers, confirm partner supply,
+              clear money blockers, then check external integrations.
+            </p>
+          </div>
+          <span
+            className={`signal ${
+              operatorStartChecklist.some((item) => item.pillClass === 'pill-danger')
+                ? 'signal-warn'
+                : 'signal-ok'
+            }`}
+          >
+            {operatorStartChecklist.filter((item) => item.pillClass !== 'pill-success').length} action(s)
+          </span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {operatorStartChecklist.map((item, index) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+              <small>Step {index + 1}</small>
+              <span className={`pill ${item.pillClass}`}>{item.status}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <span className="ops-task-card-action">{item.action}</span>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -3492,6 +3544,100 @@ function buildShiftCommandBriefing(input: {
     ],
     nextActions: input.queue.slice(0, 4),
   };
+}
+
+function buildOperatorStartChecklist(input: {
+  queue: OpsQueueItem[];
+  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
+  appPresence: ReturnType<typeof buildAppPresence>;
+  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
+  failedNotifications: AdminNotification[];
+  cashSettlementSummary: AdminCashSettlementSummary;
+  activePayoutBatches: AdminPayoutBatch[];
+  externalReadiness: AdminExternalReadiness;
+}): OperatorStartChecklistItem[] {
+  const openMatchingRisk = input.matchingControl.openRows.filter(
+    (row) => row.expired || row.freshEligibleCount === 0,
+  ).length;
+  const highQueueCount = input.queue.filter((item) => item.severity === 'high').length;
+  const missingPartnerSupply =
+    input.partnerSupply.onlineAvailable === 0 || input.partnerSupply.staleLocation > 0;
+  const cashDebtPartners = input.cashSettlementSummary.providerCount;
+  const notificationFailures = input.failedNotifications.length;
+  const payoutWork = input.activePayoutBatches.length;
+  const deferredCategories = new Set(input.externalReadiness.deferredCategories ?? []);
+  const externalSetupNeedsReview =
+    input.externalReadiness.currentStageOk === false ||
+    input.externalReadiness.checks.some(
+      (check) => check.status === 'BLOCKED' && !deferredCategories.has(check.category),
+    );
+
+  return [
+    {
+      title: 'Protect waiting customers',
+      status: openMatchingRisk || input.bookingOps.noShowSignal ? 'Dispatch first' : 'Clear',
+      detail: openMatchingRisk
+        ? `${openMatchingRisk} open matching booking(s) have expired timers or no fresh 10km partner supply.`
+        : `${input.bookingOps.openMatching} matching wait, ${input.bookingOps.noShowSignal} no-show signal.`,
+      action: 'Open matching queue',
+      href: openMatchingRisk ? '/bookings?view=matching' : '/bookings',
+      className: openMatchingRisk ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: openMatchingRisk ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Confirm partner supply',
+      status: missingPartnerSupply ? 'Refresh supply' : 'Ready',
+      detail: `${input.partnerSupply.onlineAvailable} available, ${input.partnerSupply.staleLocation} stale location, ${input.partnerSupply.supplyPressureLabel} pressure.`,
+      action: 'Open partners',
+      href: missingPartnerSupply ? '/partners?review=location' : '/partners?review=direct-ready',
+      className: missingPartnerSupply ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: missingPartnerSupply ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Clear acceptance blockers',
+      status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
+      detail: cashDebtPartners
+        ? `${cashDebtPartners} partner(s) have cash fee or tax debt that can block new booking acceptance.`
+        : `${highQueueCount} high-priority queue item(s), ${input.bookingOps.completedCloseoutRisk} closeout risk.`,
+      action: cashDebtPartners ? 'Open cash settlements' : 'Open priority queue',
+      href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',
+      className: cashDebtPartners || highQueueCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: cashDebtPartners || highQueueCount ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Check customer reachability',
+      status: notificationFailures || input.appPresence.disabledPushCustomers ? 'Contact risk' : 'Reachable',
+      detail: `${input.appPresence.liveAppCustomers} live customer(s), ${input.appPresence.disabledPushCustomers} push-disabled customer(s), ${notificationFailures} failed notification row(s).`,
+      action: notificationFailures ? 'Open failed notifications' : 'Open app sessions',
+      href: notificationFailures ? '/notifications?review=failed' : '/app-sessions?role=CUSTOMER',
+      className: notificationFailures ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: notificationFailures ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Confirm finance handoff',
+      status: payoutWork ? 'Finance open' : 'No payout batch',
+      detail: `${payoutWork} active payout batch(es), ${money(
+        input.cashSettlementSummary.totalDebtAmount,
+        input.cashSettlementSummary.currency,
+      )} cash debt total.`,
+      action: payoutWork ? 'Open payouts' : 'Open earnings',
+      href: payoutWork ? '/payouts' : '/earnings',
+      className: payoutWork ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: payoutWork ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Verify external setup',
+      status: externalSetupNeedsReview ? 'Setup pending' : 'Ready enough',
+      detail: externalSetupNeedsReview
+        ? 'One or more required external integration checks still need account values or console work.'
+        : 'Current-stage external checks are clear; deferred production providers stay tracked in Setup.',
+      action: 'Open setup',
+      href: '/setup',
+      className: externalSetupNeedsReview ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: externalSetupNeedsReview ? 'pill-warn' : 'pill-success',
+    },
+  ];
 }
 
 function opsQueueCardClass(severity: OpsQueueItem['severity']) {
