@@ -788,7 +788,7 @@ export default async function DashboardPage() {
                 Dispatch exceptions that should be checked before they become customer complaints.
               </p>
             </div>
-            <Link className="text-link" href="/bookings?view=high-risk">
+            <Link className="text-link" href="/bookings?view=attention">
               Attention bookings
             </Link>
           </div>
@@ -796,7 +796,7 @@ export default async function DashboardPage() {
             <Link className="text-link" href="/bookings?view=matching">
               Matching ops
             </Link>
-            <Link className="text-link" href="/bookings?view=high-risk">
+            <Link className="text-link" href="/bookings?view=attention">
               Attention bookings
             </Link>
           </div>
@@ -3238,7 +3238,7 @@ function buildDashboardCommandSignals(input: {
         ? 'Some open matching windows are expired and need operator review.'
         : 'Monitor open matching, quiet chat rooms, and partner assignment.',
       action: 'Open booking monitor',
-      href: staleOpenMatching.length || matchedWithoutChat.length ? '/bookings?view=high-risk' : '/bookings',
+      href: staleOpenMatching.length || matchedWithoutChat.length ? '/bookings?view=attention' : '/bookings',
       priority: staleOpenMatching.length || matchedWithoutChat.length ? 95 : openMatching.length ? 70 : 25,
       severity:
         staleOpenMatching.length || matchedWithoutChat.length
@@ -3267,7 +3267,7 @@ function buildDashboardCommandSignals(input: {
           label: 'Expired windows',
           value: staleOpenMatching.length.toString(),
           tone: staleOpenMatching.length ? 'danger' : 'ok',
-          href: '/bookings?view=high-risk',
+          href: '/bookings?view=attention',
         },
         {
           label: 'Formal expired',
@@ -3291,7 +3291,7 @@ function buildDashboardCommandSignals(input: {
           label: 'Matched no chat',
           value: matchedWithoutChat.length.toString(),
           tone: matchedWithoutChat.length ? 'danger' : 'ok',
-          href: '/bookings?view=high-risk',
+          href: '/bookings?view=attention',
         },
       ],
     },
@@ -3975,7 +3975,7 @@ function buildOperatorStartChecklist(input: {
       status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
       detail: cashDebtPartners
         ? `${cashDebtPartners} partner(s) have cash fee or tax debt that can block new booking acceptance.`
-        : `${highQueueCount} high-priority queue item(s), ${input.bookingOps.completedCloseoutRisk} closeout check(s).`,
+        : `${highQueueCount} priority queue item(s), ${input.bookingOps.completedCloseoutRisk} closeout check(s).`,
       action: cashDebtPartners ? 'Open cash settlements' : 'Open priority queue',
       href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',
       className: cashDebtPartners || highQueueCount ? 'ops-task-blocked' : 'ops-task-done',
