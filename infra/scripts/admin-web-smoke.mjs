@@ -86,7 +86,10 @@ const pages = [
   },
   { path: '/providers?review=cash-debt', markers: ['Partner Verification', 'Cash fee debt'] },
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
-  { path: '/setup', markers: ['External setup', 'External registration handoff', 'Current blockers'] },
+  {
+    path: '/setup',
+    markers: ['External setup', 'External registration handoff', 'Current blockers', 'Runtime operations policy'],
+  },
   { path: '/tax-policy', markers: ['Tax policy', 'Policy health'] },
 ];
 

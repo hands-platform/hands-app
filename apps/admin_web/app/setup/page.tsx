@@ -116,6 +116,40 @@ const setupOrder = [
     ],
   },
   {
+    id: 'operations-policy',
+    title: 'Runtime operations policy',
+    phase: 'Dispatch policy control',
+    operatorAction:
+      'Review matching, backup partner radius, wallet gate, cancellation, no-show, and notification policy before live dispatch testing.',
+    exitCriteria:
+      'Operations Policy page shows the intended 10 minute first-pick window, 10km backup radius, customer final confirmation, and negative-wallet hard block.',
+    purpose:
+      'Required so operational rules can be changed from admin without hardcoding dispatch, tax, cancellation, or no-show behavior in the apps.',
+    env: [
+      'MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES',
+      'MATCHING_BACKUP_PROVIDER_RADIUS_METERS',
+      'MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES',
+      'MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT',
+      'MATCHING_PREFERRED_ACCEPT_MODE',
+      'MATCHING_BACKUP_OPEN_MODE',
+      'WALLET_NEGATIVE_BALANCE_GATE',
+      'CANCELLATION_AFTER_MATCH_POLICY',
+      'NO_SHOW_PARTNER_REPORT_POLICY',
+      'NOTIFICATION_PARTNER_ALERT_CHANNEL',
+    ],
+    notes: [
+      'Env values are seed/default hints; day-to-day changes should be made from /operations-policy so updates are audited.',
+      'MVP rule: selected first partner gets 10 minutes, other eligible partners within 10km can still join the shortlist.',
+      'Customers always make the final partner selection; no automatic final matching.',
+      'Partners with negative wallet balance cannot accept new bookings until the cash fee debt is settled or offset.',
+    ],
+    commands: [
+      'Open http://localhost:3101/operations-policy',
+      'node infra\\scripts\\api-smoke.mjs',
+      'npm.cmd run admin:web-smoke',
+    ],
+  },
+  {
     id: 'payments',
     title: 'Vietnam payment gateways',
     phase: 'Commercial E2E',
@@ -222,6 +256,22 @@ const externalRegistrationPlan = [
     detail:
       'Keys are stored in ignored local env files. Use tiles and geocoding only; no routing, directions, or live tracking APIs.',
     env: ['MAPTILER_API_KEY', 'GEOAPIFY_API_KEY'],
+  },
+  {
+    id: 'operations-policy',
+    groupId: 'operations-policy',
+    title: 'Runtime matching and acceptance policy',
+    provider: 'HANDS Admin',
+    owner: 'Operations team',
+    status: 'Admin controlled',
+    statusClass: 'pill-info',
+    detail:
+      '10 minute first-pick response, 10km backup partner radius, customer final selection, and negative-wallet acceptance block are controlled from Operations Policy.',
+    env: [
+      'MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES',
+      'MATCHING_BACKUP_PROVIDER_RADIUS_METERS',
+      'WALLET_NEGATIVE_BALANCE_GATE',
+    ],
   },
   {
     id: 'vonage-phone',
