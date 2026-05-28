@@ -48,7 +48,6 @@ export class AdminService {
   listUsers() {
     return this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 500,
       include: {
         customerProfile: true,
         providerProfile: true,
@@ -418,6 +417,25 @@ export class AdminService {
             },
           },
         },
+        preferredBookings: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: this.providerBookingInclude(),
+        },
+        selectedBookings: {
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          include: this.providerBookingInclude(),
+        },
+        participants: {
+          orderBy: { joinedAt: 'desc' },
+          take: 10,
+          include: {
+            booking: {
+              include: this.providerBookingInclude(),
+            },
+          },
+        },
         locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
         earnings: {
           orderBy: { createdAt: 'desc' },
@@ -470,6 +488,29 @@ export class AdminService {
       : [];
 
     return { ...provider, sharedDeviceMatches };
+  }
+
+  private providerBookingInclude() {
+    return {
+      customerProfile: {
+        include: {
+          user: { select: { phone: true, fullName: true } },
+        },
+      },
+      services: { include: { service: true } },
+      participants: true,
+      chatRoom: {
+        include: {
+          messages: {
+            orderBy: { createdAt: 'desc' as const },
+            take: 5,
+            include: { sender: { select: { phone: true, fullName: true, roles: true } } },
+          },
+        },
+      },
+      payment: true,
+      review: true,
+    };
   }
 
   async enablePushDevice(actorId: string, pushDeviceId: string) {

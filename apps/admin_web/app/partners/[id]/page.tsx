@@ -59,6 +59,42 @@ type PartnerKycEvidence = {
     fileLabel: string;
   }>;
 };
+type PartnerDetailBooking = {
+  id: string;
+  status?: string;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
+  createdAt?: string;
+  address?: unknown;
+  customerProfile?: {
+    user?: { phone?: string | null; fullName?: string | null } | null;
+  } | null;
+  services?: Array<{
+    id: string;
+    price?: number;
+    quantity?: number;
+    service?: { name?: string; durationMin?: number | null } | null;
+  }>;
+  participants?: Array<{
+    id: string;
+    providerProfileId: string;
+    status: string;
+    joinedAt?: string;
+    respondedAt?: string | null;
+  }>;
+  chatRoom?: {
+    id: string;
+    createdAt?: string;
+    messages?: Array<{
+      id: string;
+      body: string;
+      createdAt?: string;
+      sender?: { phone?: string | null; fullName?: string | null; roles?: string[] | null } | null;
+    }>;
+  } | null;
+  payment?: { method?: string; status?: string; amount?: number; currency?: string | null } | null;
+  review?: { rating?: number; comment?: string | null; createdAt?: string } | null;
+};
 
 const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
@@ -119,6 +155,15 @@ type ProviderDetail = AdminProvider & {
     createdAt: string;
     actor?: { phone?: string | null; fullName?: string | null } | null;
   }>;
+  preferredBookings?: PartnerDetailBooking[];
+  selectedBookings?: PartnerDetailBooking[];
+  participants?: Array<{
+    id: string;
+    status: string;
+    joinedAt?: string;
+    respondedAt?: string | null;
+    booking?: PartnerDetailBooking | null;
+  }>;
 };
 
 export default async function ProviderDetailPage({ params }: PageProps) {
@@ -166,6 +211,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const canApproveKyc = kycEvidence.allRequiredApproved;
   const payoutHold = activePayoutHold(provider);
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
+  const partnerBookingArchive = buildPartnerBookingArchive(provider);
+  const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
 
   return (
     <>
@@ -232,6 +279,134 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
         <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner full record index</h2>
+            <p className="muted">
+              Factual partner record map for operators. Use these links to jump to identity, booking/chat,
+              payout, documents, app activity, agreements, and review history without making a separate
+              activity page.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerBookingArchive.length} booking record(s)</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <a href="#booking-chat-records">
+            <span>Booking and chat</span>
+            <strong>{partnerBookingArchive.length}</strong>
+            <small>Preferred, selected, and joined requests.</small>
+          </a>
+          <a href="#payout">
+            <span>Wallet and payout</span>
+            <strong>{formatCurrency(cashFeeDebtAmount(provider))}</strong>
+            <small>Cash fee debt and payout status.</small>
+          </a>
+          <a href="#documents">
+            <span>KYC documents</span>
+            <strong>{missingApprovedRequiredKycDocuments(provider).length} missing</strong>
+            <small>CCCD front/back and selfie evidence.</small>
+          </a>
+          <a href="#app-activity">
+            <span>App activity</span>
+            <strong>{(provider.sessions ?? []).length + (provider.devices ?? []).length}</strong>
+            <small>Sessions, devices, push, and location records.</small>
+          </a>
+        </div>
+      </div>
+
+      <div className="card" id="booking-chat-records" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking and chat records</h2>
+            <p className="muted">
+              Every matched booking should have a chat room. Completed service chats disappear from mobile
+              apps, but the admin archive remains visible here.
+            </p>
+          </div>
+          <Link className="text-link" href={`/bookings?q=${encodeURIComponent(provider.id)}`}>
+            Open bookings
+          </Link>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          {partnerBookingArchive.length ? (
+            partnerBookingArchive.slice(0, 10).map((record) => (
+              <div className="setup-stage-item" key={`${record.booking.id}-${record.relation}`}>
+                <span>{record.relation}</span>
+                <div>
+                  <strong>
+                    {bookingServiceLabel(record.booking)} / {record.booking.status ?? 'UNKNOWN'}
+                  </strong>
+                  <p className="muted">
+                    Customer {partnerBookingCustomer(record.booking)} / scheduled{' '}
+                    {formatDate(record.booking.scheduledStartAt)}
+                  </p>
+                  <p className="muted">
+                    Payment {record.booking.payment?.method ?? 'UNKNOWN'} /{' '}
+                    {formatCurrency(record.booking.payment?.amount ?? 0, record.booking.payment?.currency ?? 'VND')}
+                    {' / '}
+                    participants {record.booking.participants?.length ?? 0}
+                  </p>
+                  <p className="muted">
+                    Chat {record.booking.chatRoom?.id ?? 'not created'} / messages{' '}
+                    {record.booking.chatRoom?.messages?.length ?? 0}
+                    {record.lastMessage ? ` / last: ${record.lastMessage}` : ''}
+                  </p>
+                </div>
+                <Link className="text-link" href={`/bookings/${record.booking.id}`}>
+                  Open booking
+                </Link>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No booking records yet</strong>
+                <p className="muted">Preferred, selected, and joined booking records will appear here.</p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card" id="app-activity" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Recent app and operations activity</h2>
+            <p className="muted">
+              Date-ordered factual activity only: location updates, app sessions, devices, earnings, payouts,
+              booking participation, and verification changes.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerActivityRecords.length} event(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          {partnerActivityRecords.length ? (
+            partnerActivityRecords.slice(0, 16).map((record) => (
+              <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
+                <span>{record.type}</span>
+                <div>
+                  <strong>{record.title}</strong>
+                  <p className="muted">{record.detail}</p>
+                </div>
+                <small>{formatDate(record.at)}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No activity has been recorded yet</strong>
+                <p className="muted">App login, booking, location, payout, and verification records appear here.</p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
+        </div>
       </div>
 
       <PartnerDetailReadinessSnapshot
@@ -311,7 +486,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <h2>Partner acceptance unblock playbook</h2>
             <p className="muted">
-              Operator order for restoring this partner's booking acceptance. Finance and trust blockers stay
+              Operator order for restoring this partner's booking acceptance. Finance and account-control
+              blockers stay
               first; tax stays deferred until first earning and then blocks payout, not initial dispatch.
             </p>
           </div>
@@ -354,7 +530,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <h2>Partner ops command center</h2>
             <p className="muted">
-              One-page operating view for dispatch, payout, risk, and the next admin action.
+              One-page operating view for dispatch, payout, reports, and the next admin action.
             </p>
           </div>
           <span className={`pill ${opsSummary.ready ? 'pill-success' : 'pill-warn'}`}>
@@ -411,7 +587,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               </p>
             </div>
             <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
-              Risk desk
+              Reports desk
             </Link>
           </div>
         ) : null}
@@ -590,7 +766,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             </p>
           </div>
           <span className={`pill ${securitySummary.risky ? 'pill-danger' : 'pill-success'}`}>
-            {securitySummary.risky ? 'Risk review' : 'No active risk'}
+            {securitySummary.risky ? 'Follow-up needed' : 'No active follow-up'}
           </span>
         </div>
         <div className="ops-task-grid">
@@ -704,14 +880,14 @@ export default async function ProviderDetailPage({ params }: PageProps) {
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Risk reports and sanctions</h2>
+            <h2>Reports and account controls</h2>
             <p className="muted">
               Keep customer complaints, staff findings, payout holds, and account blocks visible on the
               partner profile.
             </p>
           </div>
           <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
-            Open risk desk
+            Open reports desk
           </Link>
         </div>
         <form className="form-grid" action={createProviderReport} style={{ marginBottom: 16 }}>
@@ -740,7 +916,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </label>
           <label className="full-span">
             Summary
-            <input name="summary" placeholder="Short risk report summary" required />
+            <input name="summary" placeholder="Short report summary" required />
           </label>
           <label className="full-span">
             Details
@@ -783,7 +959,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 <option value="WARNING">Warning</option>
                 <option value="PAYOUT_HOLD">Payout hold</option>
                 <option value="ACCOUNT_BLOCK">Account block</option>
-                <option value="TRUST_BADGE_REMOVAL">Trust badge removal</option>
+                <option value="TRUST_BADGE_REMOVAL">Profile badge removal</option>
               </select>
             </label>
             <label>
@@ -862,7 +1038,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                           <option value="WARNING">Warning</option>
                           <option value="PAYOUT_HOLD">Payout hold</option>
                           <option value="ACCOUNT_BLOCK">Account block</option>
-                          <option value="TRUST_BADGE_REMOVAL">Trust badge removal</option>
+                          <option value="TRUST_BADGE_REMOVAL">Profile badge removal</option>
                         </select>
                         <input
                           name="reason"
@@ -924,7 +1100,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <h2>Partner level path</h2>
             <p className="muted">
-              Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and Level 4 trust badge
+              Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and Level 4 profile badge
               gates.
             </p>
           </div>
@@ -1048,7 +1224,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <InfoLine label="Service area" value={formatJsonSummary(provider.serviceArea)} />
           <InfoLine label="Rating" value={formatRating(provider)} />
           <InfoLine label="Next available" value={formatDate(provider.nextAvailableAt)} />
-          <InfoLine label="Trusted at" value={formatDate(provider.trustedAt)} />
+          <InfoLine label="Profile badge updated at" value={formatDate(provider.trustedAt)} />
           <InfoLine label="User name" value={provider.user?.fullName} />
           <InfoLine label="Supabase user" value={provider.user?.supabaseUserId} />
           <p className="muted">
@@ -1515,7 +1691,7 @@ type BookingAcceptanceGate = {
 type PartnerAcceptanceUnblockStep = {
   id: string;
   step: string;
-  owner: 'Finance' | 'Trust' | 'KYC' | 'Dispatch' | 'Ops';
+  owner: 'Finance' | 'Account' | 'KYC' | 'Dispatch' | 'Ops';
   title: string;
   status: string;
   detail: string;
@@ -1549,6 +1725,18 @@ type PartnerAcceptanceRepairCommand = {
     actionLabel: string;
     tone: ProviderOpsCard['tone'];
   }>;
+};
+type PartnerBookingArchiveRecord = {
+  relation: 'Preferred' | 'Selected' | 'Joined';
+  booking: PartnerDetailBooking;
+  lastMessage: string | null;
+};
+type PartnerActivityRecord = {
+  id: string;
+  type: string;
+  at: string;
+  title: string;
+  detail: string;
 };
 
 function PartnerDetailReadinessSnapshot({
@@ -1668,6 +1856,177 @@ function PartnerAcceptanceRepairCommandPanel({
   );
 }
 
+function buildPartnerBookingArchive(provider: ProviderDetail): PartnerBookingArchiveRecord[] {
+  const records = new Map<string, PartnerBookingArchiveRecord>();
+
+  for (const booking of provider.preferredBookings ?? []) {
+    records.set(`${booking.id}:Preferred`, {
+      relation: 'Preferred',
+      booking,
+      lastMessage: lastBookingMessage(booking),
+    });
+  }
+  for (const booking of provider.selectedBookings ?? []) {
+    records.set(`${booking.id}:Selected`, {
+      relation: 'Selected',
+      booking,
+      lastMessage: lastBookingMessage(booking),
+    });
+  }
+  for (const participant of provider.participants ?? []) {
+    if (!participant.booking) continue;
+    records.set(`${participant.booking.id}:Joined`, {
+      relation: 'Joined',
+      booking: participant.booking,
+      lastMessage: lastBookingMessage(participant.booking),
+    });
+  }
+
+  return [...records.values()].sort(
+    (left, right) => dateValue(right.booking.scheduledStartAt ?? right.booking.createdAt) -
+      dateValue(left.booking.scheduledStartAt ?? left.booking.createdAt),
+  );
+}
+
+function buildPartnerActivityRecords(
+  provider: ProviderDetail,
+  bookings: PartnerBookingArchiveRecord[],
+): PartnerActivityRecord[] {
+  const records: PartnerActivityRecord[] = [];
+
+  for (const bookingRecord of bookings) {
+    records.push({
+      id: bookingRecord.booking.id,
+      type: 'BOOKING',
+      at: bookingRecord.booking.scheduledStartAt ?? bookingRecord.booking.createdAt ?? '',
+      title: `${bookingRecord.relation} booking ${shortRiskId(bookingRecord.booking.id)}`,
+      detail: `${bookingServiceLabel(bookingRecord.booking)} / ${bookingRecord.booking.status ?? 'UNKNOWN'} / customer ${partnerBookingCustomer(
+        bookingRecord.booking,
+      )}`,
+    });
+    if (bookingRecord.booking.chatRoom?.messages?.[0]) {
+      const message = bookingRecord.booking.chatRoom.messages[0];
+      records.push({
+        id: message.id,
+        type: 'CHAT',
+        at: message.createdAt ?? bookingRecord.booking.createdAt ?? '',
+        title: `Chat message in ${shortRiskId(bookingRecord.booking.id)}`,
+        detail: `${message.sender?.fullName ?? message.sender?.phone ?? message.sender?.roles?.join(', ') ?? 'Unknown'}: ${trimText(
+          message.body,
+          90,
+        )}`,
+      });
+    }
+  }
+
+  for (const session of provider.sessions ?? []) {
+    records.push({
+      id: session.id,
+      type: 'SESSION',
+      at: session.lastSeenAt ?? session.loggedInAt ?? '',
+      title: `Partner app session ${session.suspicious ? 'needs follow-up' : 'recorded'}`,
+      detail: `IP ${session.ipAddress ?? 'missing'} / app ${session.appVersion ?? 'unknown'} / device ${maskDeviceId(
+        session.deviceId,
+      )}`,
+    });
+  }
+
+  for (const device of provider.devices ?? []) {
+    records.push({
+      id: device.id,
+      type: 'DEVICE',
+      at: device.lastSeenAt ?? device.updatedAt ?? device.createdAt ?? '',
+      title: `Device ${device.blockedAt ? 'blocked' : device.enabled ? 'enabled' : 'disabled'}`,
+      detail: `${device.platform ?? 'unknown platform'} / ${maskDeviceId(device.deviceId)}${
+        device.blockReason ? ` / ${device.blockReason}` : ''
+      }`,
+    });
+  }
+
+  for (const snapshot of provider.locationSnapshots ?? []) {
+    records.push({
+      id: snapshot.id,
+      type: 'LOCATION',
+      at: snapshot.recordedAt,
+      title: 'Location snapshot',
+      detail: `${snapshot.lat}, ${snapshot.lng}`,
+    });
+  }
+
+  for (const earning of provider.earnings ?? []) {
+    records.push({
+      id: earning.id,
+      type: 'EARNING',
+      at: earning.createdAt ?? earning.availableAt ?? earning.paidAt ?? '',
+      title: `${earning.status} earning ${shortRiskId(earning.id)}`,
+      detail: `Gross ${formatCurrency(earning.grossAmount)} / platform fee ${formatCurrency(
+        earning.platformFee,
+      )} / net ${formatCurrency(earning.netAmount)}`,
+    });
+  }
+
+  for (const batch of provider.payoutBatches ?? []) {
+    records.push({
+      id: batch.id,
+      type: 'PAYOUT',
+      at: batch.createdAt ?? batch.paidAt ?? '',
+      title: `${batch.status} payout batch ${shortRiskId(batch.id)}`,
+      detail: `${formatCurrency(batch.totalNetAmount)}${batch.transferRef ? ` / ${batch.transferRef}` : ''}`,
+    });
+  }
+
+  for (const log of provider.verificationLogs ?? []) {
+    records.push({
+      id: log.id,
+      type: 'VERIFY',
+      at: log.createdAt,
+      title: log.action,
+      detail: `${log.fromStatus ?? 'none'} -> ${log.toStatus ?? 'none'} / ${
+        log.actor?.fullName ?? log.actor?.phone ?? 'system'
+      }`,
+    });
+  }
+
+  return records
+    .filter((record) => Number.isFinite(dateValue(record.at)))
+    .sort((left, right) => dateValue(right.at) - dateValue(left.at));
+}
+
+function lastBookingMessage(booking: PartnerDetailBooking) {
+  const message = booking.chatRoom?.messages?.[0];
+  if (!message) return null;
+  return trimText(message.body, 80);
+}
+
+function bookingServiceLabel(booking: PartnerDetailBooking) {
+  const labels = (booking.services ?? [])
+    .map((item) => {
+      const name = item.service?.name ?? 'Service';
+      const duration = item.service?.durationMin ? ` ${item.service.durationMin}m` : '';
+      return `${name}${duration}`;
+    })
+    .filter(Boolean);
+  return labels.length ? labels.join(', ') : 'No service';
+}
+
+function partnerBookingCustomer(booking: PartnerDetailBooking) {
+  return (
+    booking.customerProfile?.user?.fullName ??
+    booking.customerProfile?.user?.phone ??
+    'Unknown customer'
+  );
+}
+
+function trimText(value: string, maxLength: number) {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+function dateValue(value?: string | null) {
+  if (!value) return Number.NaN;
+  return Date.parse(value);
+}
+
 function buildProviderBookingAcceptance(
   provider: ProviderDetail,
   pricing: ReturnType<typeof buildProviderServicePricing>,
@@ -1699,9 +2058,9 @@ function buildProviderBookingAcceptance(
       detail: hasAccountBlock
         ? `Account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
         : activeSanctions.length > 0
-          ? `${activeSanctions.length} active sanction(s) require risk review.`
+          ? `${activeSanctions.length} active sanction(s) require account-control review.`
           : 'No account block or active sanction is visible.',
-      action: hasAccountBlock || activeSanctions.length > 0 ? 'Review risk desk' : 'Clear',
+      action: hasAccountBlock || activeSanctions.length > 0 ? 'Review reports desk' : 'Clear',
     },
     {
       label: 'Identity and approval',
@@ -1859,9 +2218,9 @@ function partnerAcceptanceRepairStep(
       tone: 'blocked',
     },
     'Account and sanctions': {
-      owner: 'Trust',
+      owner: 'Account',
       href: `/partner-risk?q=${encodeURIComponent(provider.id)}`,
-      actionLabel: 'Open risk desk',
+      actionLabel: 'Open reports',
       tone: 'blocked',
     },
     'Identity and approval': {
@@ -1983,15 +2342,15 @@ function buildPartnerAcceptanceUnblockPlaybook(
     {
       id: 'account-risk',
       step: '2',
-      owner: 'Trust',
+      owner: 'Account',
       title: 'Resolve account blocks and sanctions',
       status: accountGate?.ok ? 'CLEAR' : 'RISK HOLD',
       detail: accountGate?.detail ?? 'Account gate was not evaluated.',
       bookingImpact: accountGate?.ok
         ? 'No account-level restriction is blocking work.'
         : 'Partner must stay hidden from assignment until account or sanction review is resolved.',
-      payoutImpact: 'Active sanctions can hold payout until support or risk closes the case.',
-      action: accountGate?.ok ? 'Open partner risk history' : 'Open risk desk',
+      payoutImpact: 'Active sanctions can hold payout until support closes the case.',
+      action: accountGate?.ok ? 'Open partner report history' : 'Open reports',
       href: `/partner-risk?q=${encodeURIComponent(provider.id)}`,
       tone: accountGate?.ok ? 'done' : 'blocked',
       bookingBlocked: !accountGate?.ok,
@@ -2021,7 +2380,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
       status: locationGate?.ok ? 'FRESH' : 'STALE',
       detail: locationGate?.detail ?? 'Location gate was not evaluated.',
       bookingImpact: locationGate?.ok
-        ? 'Partner can be trusted for distance sorting and backup radius checks.'
+        ? 'Partner location is usable for distance sorting and backup radius checks.'
         : 'Partner may be excluded from nearby backup matching or show unreliable distance.',
       payoutImpact: 'No direct payout impact, but location history can support dispute review.',
       action: locationGate?.ok ? 'Open location history' : 'Ask partner to open app',
@@ -2256,7 +2615,7 @@ function buildProviderOpsSummary(
             ? payoutBlockers(provider).join(' ')
             : 'Tax profile, tax address, and full payout gate stay deferred until first earning.',
       action: payoutHold
-        ? 'Lift the sanction only after finance/risk follow-up is resolved.'
+        ? 'Lift the sanction only after finance or account-control follow-up is resolved.'
         : payoutReady
           ? 'Partner can request payout when earnings are available.'
           : hasFirstRevenue
@@ -2348,7 +2707,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
             ? blockers.join(' ')
             : 'Deferred until first earning.',
       action: payoutHold
-        ? 'Resolve the risk/finance reason before lifting the hold.'
+        ? 'Resolve the finance or account-control reason before lifting the hold.'
         : payoutReady
           ? 'Partner may be paid when an eligible batch exists.'
           : hasFirstRevenue
@@ -2524,18 +2883,18 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
       blocked: hasCompletedService && !level3Ready,
     },
     {
-      level: 'LEVEL 4 - Trust badge',
-      status: trustedReady ? 'TRUSTED' : level3Ready ? 'OPTIONAL' : 'LOCKED',
+      level: 'LEVEL 4 - Profile badge',
+      status: trustedReady ? 'BADGE READY' : level3Ready ? 'OPTIONAL' : 'LOCKED',
       detail: trustedReady
-        ? 'Partner has the trusted badge level.'
+        ? 'Partner has the profile badge level.'
         : level3Ready
-          ? 'Partner is eligible for manual trust review after service quality checks.'
-          : 'Trust badge should wait until payout-level compliance and service quality are proven.',
+          ? 'Partner is eligible for manual profile badge review after records are complete.'
+          : 'Profile badge should wait until payout-level compliance and service records are complete.',
       operatorAction: trustedReady
         ? 'Monitor reviews and reports.'
         : level3Ready
           ? 'Review experience evidence, service photos, reports, and customer reviews.'
-          : 'No trust badge action yet.',
+          : 'No profile badge action yet.',
       ready: trustedReady,
       blocked: false,
     },
@@ -2786,7 +3145,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
         : 'A block, device issue, or suspicious session needs admin review.',
       operatorAction: securityClear
         ? 'Continue normal monitoring.'
-        : 'Review device/session section and risk desk before approval or payout.',
+        : 'Review device/session section and reports desk before approval or payout.',
     },
   ];
 
@@ -2871,7 +3230,7 @@ function nextProviderAction(
       title: 'Next admin action',
       status: 'PAYOUT HOLD',
       detail: `Finance is locked by active payout hold: ${payoutHold.reason}`,
-      action: 'Review risk notes and lift the sanction only when payout can safely resume.',
+      action: 'Review report notes and lift the sanction only when payout can safely resume.',
       tone: 'blocked',
     };
   }
