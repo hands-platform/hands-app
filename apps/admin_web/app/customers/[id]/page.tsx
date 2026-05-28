@@ -7,7 +7,14 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
-const ACTIVE_STATUSES = ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'];
+const ACTIVE_STATUSES = [
+  'CREATED',
+  'OPEN_MATCHING',
+  'MATCHED',
+  'PROVIDER_ON_THE_WAY',
+  'ARRIVED',
+  'IN_SERVICE',
+];
 
 export default async function CustomerDetailPage({ params }: PageProps) {
   const { id } = await params;
@@ -28,7 +35,10 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   const notifications = customer.user?.notifications ?? [];
   const activityPlan = buildCustomerActivityPlan(customer, bookings, wallet, bookingStats, addresses);
   const chatRooms = bookings.filter((booking) => booking.chatRoom);
-  const chatMessageCount = chatRooms.reduce((sum, booking) => sum + (booking.chatRoom?.messages?.length ?? 0), 0);
+  const chatMessageCount = chatRooms.reduce(
+    (sum, booking) => sum + (booking.chatRoom?.messages?.length ?? 0),
+    0,
+  );
   const customerActivityRecords = buildCustomerActivityRecords(customer, bookings, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
 
@@ -59,13 +69,49 @@ export default async function CustomerDetailPage({ params }: PageProps) {
       </section>
 
       <section className="grid" style={{ marginBottom: 16 }}>
-        <MetricCard label="Bookings" value={bookings.length.toString()} helper={`${bookingStats.active} active now`} />
-        <MetricCard label="Completed work" value={bookingStats.completed.toString()} helper="Finished service records" />
-        <MetricCard label="Last work" value={lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None'} helper={lastCompletedBooking ? formatDate(lastCompletedBooking.updatedAt ?? lastCompletedBooking.scheduledStartAt ?? lastCompletedBooking.createdAt) : 'No completed service yet'} />
-        <MetricCard label="Closed bookings" value={bookingStats.cancelled.toString()} helper="Cancelled, expired, or refunded records" />
-        <MetricCard label="Captured spend" value={formatMoney(wallet.capturedSpend)} helper="Captured customer payments" />
-        <MetricCard label="Refunded" value={formatMoney(wallet.refundAmount)} helper={`${wallet.refundCount} refund row(s)`} />
-        <MetricCard label="Saved addresses" value={addresses.length.toString()} helper="Profile and selected locations" />
+        <MetricCard
+          label="Bookings"
+          value={bookings.length.toString()}
+          helper={`${bookingStats.active} active now`}
+        />
+        <MetricCard
+          label="Completed work"
+          value={bookingStats.completed.toString()}
+          helper="Finished service records"
+        />
+        <MetricCard
+          label="Last work"
+          value={lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None'}
+          helper={
+            lastCompletedBooking
+              ? formatDate(
+                  lastCompletedBooking.updatedAt ??
+                    lastCompletedBooking.scheduledStartAt ??
+                    lastCompletedBooking.createdAt,
+                )
+              : 'No completed service yet'
+          }
+        />
+        <MetricCard
+          label="Closed bookings"
+          value={bookingStats.cancelled.toString()}
+          helper="Cancelled, expired, or refunded records"
+        />
+        <MetricCard
+          label="Captured spend"
+          value={formatMoney(wallet.capturedSpend)}
+          helper="Captured customer payments"
+        />
+        <MetricCard
+          label="Refunded"
+          value={formatMoney(wallet.refundAmount)}
+          helper={`${wallet.refundCount} refund row(s)`}
+        />
+        <MetricCard
+          label="Saved addresses"
+          value={addresses.length.toString()}
+          helper="Profile and selected locations"
+        />
         <MetricCard
           label="App session"
           value={latestSession ? 'Seen' : 'None'}
@@ -197,7 +243,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             <h2>Customer information</h2>
             <p className="muted">Identity, contact, reachability, and app activity for support operators.</p>
           </div>
-          <span className={`pill ${pushDevices.some((device) => device.enabled) ? 'pill-success' : 'pill-neutral'}`}>
+          <span
+            className={`pill ${pushDevices.some((device) => device.enabled) ? 'pill-success' : 'pill-neutral'}`}
+          >
             {pushDevices.some((device) => device.enabled) ? 'Push reachable' : 'No push device'}
           </span>
         </div>
@@ -283,7 +331,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         <div className="risk-watch-header">
           <div>
             <h2>Booking and cancellation history</h2>
-            <p className="muted">All loaded bookings with partner, service, payment, refund, review, and chat state.</p>
+            <p className="muted">
+              All loaded bookings with partner, service, payment, refund, review, and chat state.
+            </p>
           </div>
           <span className="pill pill-info">{bookings.length} bookings</span>
         </div>
@@ -314,13 +364,21 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                   <span className={`pill ${bookingStatusPillClass(booking.status)}`}>{booking.status}</span>
                   <p className="muted">{bookingStatusOperatorHint(booking)}</p>
                 </td>
-                <td>{booking.selectedProvider?.displayName ?? booking.preferredProvider?.displayName ?? 'No partner'}</td>
                 <td>
-                  <strong>{booking.payment?.status ?? 'No payment'}</strong>
-                  <p className="muted">{booking.payment ? formatMoney(Number(booking.payment.amount ?? 0)) : 'No amount'}</p>
+                  {booking.selectedProvider?.displayName ??
+                    booking.preferredProvider?.displayName ??
+                    'No partner'}
                 </td>
                 <td>
-                  <strong>{booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} messages` : 'No room'}</strong>
+                  <strong>{booking.payment?.status ?? 'No payment'}</strong>
+                  <p className="muted">
+                    {booking.payment ? formatMoney(Number(booking.payment.amount ?? 0)) : 'No amount'}
+                  </p>
+                </td>
+                <td>
+                  <strong>
+                    {booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} messages` : 'No room'}
+                  </strong>
                 </td>
                 <td>
                   <Link className="text-link" href={`/bookings/${booking.id}`}>
@@ -338,11 +396,13 @@ export default async function CustomerDetailPage({ params }: PageProps) {
           <div>
             <h2>Chat history</h2>
             <p className="muted">
-              Admin archive for every matched booking. Customer and partner apps hide the chat after completion,
-              but operations keeps the full message history here.
+              Admin archive for every matched booking. Customer and partner apps hide the chat after
+              completion, but operations keeps the full message history here.
             </p>
           </div>
-          <span className="pill pill-info">{bookings.filter((booking) => booking.chatRoom).length} rooms</span>
+          <span className="pill pill-info">
+            {bookings.filter((booking) => booking.chatRoom).length} rooms
+          </span>
         </div>
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
           {bookings.filter((booking) => booking.chatRoom).length > 0 ? (
@@ -353,8 +413,12 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                 <div className="card" key={booking.id}>
                   <div className="risk-watch-header">
                     <div>
-                      <strong>{shortId(booking.id)} / {bookingServiceLabel(booking)}</strong>
-                      <p className="muted">{booking.status} / Room {booking.chatRoom?.id}</p>
+                      <strong>
+                        {shortId(booking.id)} / {bookingServiceLabel(booking)}
+                      </strong>
+                      <p className="muted">
+                        {booking.status} / Room {booking.chatRoom?.id}
+                      </p>
                     </div>
                     <Link className="text-link" href={`/bookings/${booking.id}`}>
                       Open booking
@@ -363,7 +427,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                   <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
                     {readChatMessages(booking).map((message) => (
                       <div className="ops-task-note" key={message.id}>
-                        <strong>{message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender'}</strong>
+                        <strong>
+                          {message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender'}
+                        </strong>
                         <p>{message.body}</p>
                         <p className="muted">{formatDate(message.createdAt)}</p>
                       </div>
@@ -405,7 +471,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               <span>NONE</span>
               <div>
                 <strong>No customer activity has been recorded yet</strong>
-                <p className="muted">Bookings, messages, address pins, sessions, and operator notes will appear here.</p>
+                <p className="muted">
+                  Bookings, messages, address pins, sessions, and operator notes will appear here.
+                </p>
               </div>
               <small>0</small>
             </div>
@@ -421,7 +489,10 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               pushDevices.map((device) => (
                 <div className="ops-row" key={device.id}>
                   <strong>{device.platform}</strong>
-                  <span>{device.enabled ? 'Enabled' : 'Disabled'} / {formatDate(device.updatedAt ?? device.createdAt)}</span>
+                  <span>
+                    {device.enabled ? 'Enabled' : 'Disabled'} /{' '}
+                    {formatDate(device.updatedAt ?? device.createdAt)}
+                  </span>
                 </div>
               ))
             ) : (
@@ -437,7 +508,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               (customer.user?.appSessions ?? []).slice(0, 8).map((session) => (
                 <div className="ops-row" key={session.id}>
                   <strong>{session.platform ?? session.role}</strong>
-                  <span>{session.active ? 'Active' : 'Inactive'} / {formatDate(session.lastSeenAt)}</span>
+                  <span>
+                    {session.active ? 'Active' : 'Inactive'} / {formatDate(session.lastSeenAt)}
+                  </span>
                 </div>
               ))
             ) : (
@@ -451,7 +524,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
         <div className="risk-watch-header">
           <div>
             <h2>Recent customer notifications</h2>
-            <p className="muted">Delivery status helps support explain missed booking, payment, and chat updates.</p>
+            <p className="muted">
+              Delivery status helps support explain missed booking, payment, and chat updates.
+            </p>
           </div>
           <span className="pill pill-info">{notifications.length} rows</span>
         </div>
@@ -529,7 +604,8 @@ function buildBookingStats(bookings: AdminBookingDetail[]) {
   return {
     active: bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length,
     completed: bookings.filter((booking) => booking.status === 'COMPLETED').length,
-    cancelled: bookings.filter((booking) => ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)).length,
+    cancelled: bookings.filter((booking) => ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status))
+      .length,
   };
 }
 
@@ -566,7 +642,8 @@ function buildCustomerActivityPlan(
 ) {
   const latestBooking = bookings[0];
   const lastCompletedBooking = bookings.find((booking) => booking.status === 'COMPLETED');
-  const unreadNotifications = customer.user?.notifications?.filter((notification) => !notification.readAt).length ?? 0;
+  const unreadNotifications =
+    customer.user?.notifications?.filter((notification) => !notification.readAt).length ?? 0;
   const paymentIssueCount = bookings.filter((booking) => {
     return booking.payment && !['AUTHORIZED', 'CAPTURED'].includes(booking.payment.status);
   }).length;
@@ -581,14 +658,8 @@ function buildCustomerActivityPlan(
     missingAddress ? 'No saved address' : null,
   ].filter(Boolean) as string[];
   const tone: 'success' | 'info' = latestBooking ? 'info' : 'success';
-  const primaryHref =
-    latestBooking?.id
-        ? `/bookings/${latestBooking.id}`
-        : '/customers';
-  const primaryAction =
-    latestBooking?.id
-        ? 'Open latest booking'
-        : 'Back to customers';
+  const primaryHref = latestBooking?.id ? `/bookings/${latestBooking.id}` : '/customers';
+  const primaryAction = latestBooking?.id ? 'Open latest booking' : 'Back to customers';
   return {
     tone,
     status: latestBooking ? 'Activity recorded' : 'No bookings yet',
@@ -646,10 +717,16 @@ function buildCustomerActivityPlan(
       },
     ],
     badges: [
-      { label: bookingStats.active ? 'Live booking' : 'No live booking', tone: bookingStats.active ? 'warn' : 'success' },
+      {
+        label: bookingStats.active ? 'Live booking' : 'No live booking',
+        tone: bookingStats.active ? 'warn' : 'success',
+      },
       { label: `${bookingStats.completed} completed`, tone: 'success' },
       { label: `${chatArchiveCount} chat archive(s)`, tone: 'info' },
-      { label: missingAddress ? 'Address not saved' : 'Address saved', tone: missingAddress ? 'warn' : 'success' },
+      {
+        label: missingAddress ? 'Address not saved' : 'Address saved',
+        tone: missingAddress ? 'warn' : 'success',
+      },
     ],
     presets: [
       'Customer contacted; waiting for reply.',
@@ -666,10 +743,18 @@ function buildAddressRows(customer: AdminCustomerDetail) {
   const rows: Array<{ key: string; label: string; value: string }> = [];
   if (Array.isArray(customer.addresses)) {
     customer.addresses.forEach((address, index) => {
-      rows.push({ key: `profile-${index}`, label: `Profile address ${index + 1}`, value: stringifyAddress(address) });
+      rows.push({
+        key: `profile-${index}`,
+        label: `Profile address ${index + 1}`,
+        value: stringifyAddress(address),
+      });
     });
   } else if (customer.addresses) {
-    rows.push({ key: 'profile-address', label: 'Profile address', value: stringifyAddress(customer.addresses) });
+    rows.push({
+      key: 'profile-address',
+      label: 'Profile address',
+      value: stringifyAddress(customer.addresses),
+    });
   }
   for (const location of customer.selectedLocations ?? []) {
     rows.push({
@@ -683,7 +768,7 @@ function buildAddressRows(customer: AdminCustomerDetail) {
 
 function readChatMessages(booking: AdminBookingDetail): AdminChatMessage[] {
   return [...(booking.chatRoom?.messages ?? [])].sort((left, right) => {
-    return dateMs(right.createdAt) - dateMs(left.createdAt);
+    return dateMs(left.createdAt) - dateMs(right.createdAt);
   });
 }
 
@@ -849,7 +934,10 @@ function buildCustomerActivityRecords(
 }
 
 function bookingTotal(booking: AdminBookingDetail) {
-  return (booking.services ?? []).reduce((sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 1), 0);
+  return (booking.services ?? []).reduce(
+    (sum, item) => sum + Number(item.price ?? 0) * Number(item.quantity ?? 1),
+    0,
+  );
 }
 
 function bookingServiceLabel(booking: AdminBookingDetail) {

@@ -95,6 +95,9 @@ type PartnerDetailBooking = {
   payment?: { method?: string; status?: string; amount?: number; currency?: string | null } | null;
   review?: { rating?: number; comment?: string | null; createdAt?: string } | null;
 };
+type PartnerDetailChatMessage = NonNullable<
+  NonNullable<PartnerDetailBooking['chatRoom']>['messages']
+>[number];
 
 const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
@@ -357,6 +360,36 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                     {record.booking.chatRoom?.messages?.length ?? 0}
                     {record.lastMessage ? ` / last: ${record.lastMessage}` : ''}
                   </p>
+                  {record.booking.chatRoom ? (
+                    <div className="ops-task-note" style={{ marginTop: 10 }}>
+                      <strong>Admin chat archive</strong>
+                      <p className="muted">
+                        Mobile chat hides after service completion. Admin keeps this booking transcript.
+                      </p>
+                      <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+                        {readPartnerChatMessages(record.booking)
+                          .slice(0, 8)
+                          .map((message) => (
+                            <div className="service-matrix-cell" key={message.id}>
+                              <strong>{chatSenderLabel(message)}</strong>
+                              <small>{formatDate(message.createdAt)}</small>
+                              <p style={{ margin: 0 }}>{message.body}</p>
+                            </div>
+                          ))}
+                        {!readPartnerChatMessages(record.booking).length ? (
+                          <p className="muted">Chat room exists, but no message is stored yet.</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="ops-task-note" style={{ marginTop: 10 }}>
+                      <strong>Chat room missing</strong>
+                      <p className="muted">
+                        A matched booking should create a chat room. Open the booking detail if this booking
+                        is already matched or in service.
+                      </p>
+                    </div>
+                  )}
                 </div>
                 <Link className="text-link" href={`/bookings/${record.booking.id}`}>
                   Open booking
@@ -2010,6 +2043,23 @@ function lastBookingMessage(booking: PartnerDetailBooking) {
   const message = booking.chatRoom?.messages?.[0];
   if (!message) return null;
   return trimText(message.body, 80);
+}
+
+function readPartnerChatMessages(booking: PartnerDetailBooking) {
+  return [...(booking.chatRoom?.messages ?? [])].sort((left, right) => {
+    return dateValue(left.createdAt) - dateValue(right.createdAt);
+  });
+}
+
+function chatSenderLabel(message: PartnerDetailChatMessage) {
+  const role = message.sender?.roles?.includes('CUSTOMER')
+    ? 'Customer'
+    : message.sender?.roles?.includes('PROVIDER')
+      ? 'Partner'
+      : message.sender?.roles?.includes('ADMIN')
+        ? 'Admin'
+        : 'Sender';
+  return `${role}: ${message.sender?.fullName ?? message.sender?.phone ?? 'Unknown'}`;
 }
 
 function bookingServiceLabel(booking: PartnerDetailBooking) {

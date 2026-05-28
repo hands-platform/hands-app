@@ -264,15 +264,20 @@ export class AdminService {
       }
     }
 
-    const auditLog = await this.writeAudit(actorId, 'customer.ops_note.add', `customer:${customerProfileId}`, {
-      customerProfileId,
-      customerUserId: customer.userId,
-      customerPhone: customer.user.phone,
-      customerName: customer.user.fullName,
-      bookingId,
-      note: content,
-      preset,
-    });
+    const auditLog = await this.writeAudit(
+      actorId,
+      'customer.ops_note.add',
+      `customer:${customerProfileId}`,
+      {
+        customerProfileId,
+        customerUserId: customer.userId,
+        customerPhone: customer.user.phone,
+        customerName: customer.user.fullName,
+        bookingId,
+        note: content,
+        preset,
+      },
+    );
 
     return { ok: true, auditLog };
   }
@@ -503,7 +508,7 @@ export class AdminService {
         include: {
           messages: {
             orderBy: { createdAt: 'desc' as const },
-            take: 5,
+            take: 20,
             include: { sender: { select: { phone: true, fullName: true, roles: true } } },
           },
         },
@@ -2147,7 +2152,11 @@ export class AdminService {
     });
   }
 
-  async updateOperationalPolicySetting(actorId: string, key: string, input: { value?: unknown; reason?: string }) {
+  async updateOperationalPolicySetting(
+    actorId: string,
+    key: string,
+    input: { value?: unknown; reason?: string },
+  ) {
     const definition = OPERATIONAL_POLICY_DEFINITIONS.find((item) => item.key === key);
     if (!definition) {
       throw new NotFoundException('Operational policy setting not found');
