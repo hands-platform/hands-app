@@ -14,6 +14,10 @@ type BookingView =
   | 'active'
   | 'high-risk'
   | 'matching'
+  | 'first-pick'
+  | 'backup'
+  | 'customer-choice'
+  | 'handoff-repair'
   | 'no-supply'
   | 'payment'
   | 'cash-debt'
@@ -106,6 +110,24 @@ type BookingDispatchPartnerShortcut = {
   tone: BookingCommandLane['tone'];
 };
 
+type BookingListStageKey =
+  | 'intake'
+  | 'first-pick'
+  | 'backup'
+  | 'customer-choice'
+  | 'handoff'
+  | 'handoff-repair'
+  | 'closeout';
+
+type BookingListStage = {
+  key: BookingListStageKey;
+  label: string;
+  detail: string;
+  action: string;
+  tone: BookingCommandLane['tone'];
+  href: string;
+};
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
@@ -168,11 +190,16 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const highRisk = orderedBookings.filter((booking) =>
       bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
     );
+    const stageCounts = bookingStageCounts(orderedBookings, currentTimeMs);
     return [
       ['Active bookings', active.length.toString()],
       ['Open matching', open.length.toString()],
       ['Matched', matched.length.toString()],
       ['High risk', highRisk.length.toString()],
+      ['Stage 1 first-pick', (stageCounts.get('first-pick') ?? 0).toString()],
+      ['Stage 2 backup', (stageCounts.get('backup') ?? 0).toString()],
+      ['Stage 3 customer choice', (stageCounts.get('customer-choice') ?? 0).toString()],
+      ['Stage 4 handoff repair', (stageCounts.get('handoff-repair') ?? 0).toString()],
       ['No partners yet', noParticipants.length.toString()],
       ['First-pick pending', preferredPending.length.toString()],
       ['Fallback options', waitingSelection.length.toString()],
@@ -225,6 +252,22 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     }
     if (view === 'matching') {
       return orderedBookings.filter((booking) => bookingMatchingEscalationNeedsOps(booking, currentTimeMs));
+    }
+    if (view === 'first-pick') {
+      return orderedBookings.filter((booking) => bookingListStage(booking, currentTimeMs).key === 'first-pick');
+    }
+    if (view === 'backup') {
+      return orderedBookings.filter((booking) => bookingListStage(booking, currentTimeMs).key === 'backup');
+    }
+    if (view === 'customer-choice') {
+      return orderedBookings.filter(
+        (booking) => bookingListStage(booking, currentTimeMs).key === 'customer-choice',
+      );
+    }
+    if (view === 'handoff-repair') {
+      return orderedBookings.filter(
+        (booking) => bookingListStage(booking, currentTimeMs).key === 'handoff-repair',
+      );
     }
     if (view === 'no-supply') {
       return orderedBookings.filter(
@@ -623,7 +666,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
           <thead>
             <tr>
               <th>Booking</th>
-              <th>Flow</th>
+              <th>Stage / Flow</th>
               <th>Customer</th>
               <th>Partners</th>
               <th>Payment</th>
@@ -639,6 +682,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               const servicePayoutLabel = bookingServicePayoutRuleLabel(booking);
               const pricingPolicy = bookingPricingPolicySignal(booking);
               const matchingPolicy = bookingMatchingPolicySnapshot(booking);
+              const stage = bookingListStage(booking, currentTimeMs);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -657,7 +701,16 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="muted">{recencyLabel(booking, nowMs)}</div>
                   </td>
                   <td>
-                    <StatusBadge status={booking.status} />
+                    <Link className={`pill ${stagePillClass(stage.tone)}`} href={stage.href}>
+                      {stage.label}
+                    </Link>
+                    <div className="muted" style={{ marginTop: 8 }}>
+                      {stage.detail}
+                    </div>
+                    <div className="muted">{stage.action}</div>
+                    <div style={{ marginTop: 8 }}>
+                      <StatusBadge status={booking.status} />
+                    </div>
                     <div className="muted">Chat {booking.chatRoom ? 'ready' : 'not ready'}</div>
                     <div className="muted">
                       {booking.expiresAt ? `Expires ${formatDate(booking.expiresAt)}` : 'No expiry set'}
@@ -810,6 +863,34 @@ const bookingViewOptions: Array<{
     description: 'direct first-pick, backup partner, final customer selection, and chat handoff work.',
     operatorHint:
       'Use this during live dispatch to manage the 10-minute partner response window and backup partner escalation.',
+  },
+  {
+    view: 'first-pick',
+    label: 'Stage 1 first-pick',
+    description: 'open bookings where the selected partner still has the first response window.',
+    operatorHint:
+      'Use this to watch the 10-minute response window, push delivery, KYC, wallet gate, and partner decision timing.',
+  },
+  {
+    view: 'backup',
+    label: 'Stage 2 backup',
+    description: 'open bookings where backup partners can join or need a dispatch nudge.',
+    operatorHint:
+      'Use this to manage the 10km backup partner pool, stale location checks, and backup alert delivery.',
+  },
+  {
+    view: 'customer-choice',
+    label: 'Stage 3 choice',
+    description: 'open bookings with accepted partners waiting for customer final selection.',
+    operatorHint:
+      'Use this when customer support should guide the customer to choose one final partner before chat unlocks.',
+  },
+  {
+    view: 'handoff-repair',
+    label: 'Stage 4 repair',
+    description: 'matched bookings whose final partner is selected but chat handoff is missing.',
+    operatorHint:
+      'Use this as a dispatch repair queue. Chat must be fixed before arrival, start, and completion flow.',
   },
   {
     view: 'no-supply',
@@ -1405,6 +1486,120 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
   ];
 }
 
+function bookingStageCounts(bookings: AdminBooking[], nowMs: number) {
+  return bookings.reduce((counts, booking) => {
+    const stage = bookingListStage(booking, nowMs).key;
+    counts.set(stage, (counts.get(stage) ?? 0) + 1);
+    return counts;
+  }, new Map<BookingListStageKey, number>());
+}
+
+function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
+  const terminalStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
+  const fallbackCount = fallbackParticipants(booking).length;
+  const acceptedCount = acceptedParticipants(booking).length;
+
+  if (terminalStatuses.has(booking.status)) {
+    return {
+      key: 'closeout',
+      label: 'Closeout',
+      detail: `Closed as ${booking.status}.`,
+      action: 'Confirm payment, refund, review, no-show, and audit trail before archiving.',
+      tone: booking.status === 'COMPLETED' ? 'ok' : 'warn',
+      href: `/bookings/${booking.id}`,
+    };
+  }
+
+  if (
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
+    !booking.chatRoom
+  ) {
+    return {
+      key: 'handoff-repair',
+      label: 'Stage 4 repair',
+      detail: 'Final partner exists, but chat is not ready.',
+      action: 'Repair chat before the partner moves further through the service flow.',
+      tone: 'danger',
+      href: `/bookings/${booking.id}#chat`,
+    };
+  }
+
+  if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+    return {
+      key: 'handoff',
+      label: 'Stage 4 handoff',
+      detail: bookingLocationNeedsOps(booking, nowMs)
+        ? 'Chat is ready, but partner location needs review.'
+        : 'Chat and service handoff are available.',
+      action: 'Watch location, arrival, service start, completion, and closeout.',
+      tone: bookingLocationNeedsOps(booking, nowMs) ? 'warn' : 'ok',
+      href: `/bookings/${booking.id}#chat`,
+    };
+  }
+
+  if (booking.status === 'OPEN_MATCHING' && acceptedCount > 0 && !booking.selectedProvider) {
+    return {
+      key: 'customer-choice',
+      label: 'Stage 3 choice',
+      detail: `${acceptedCount} accepted partner(s) are waiting for customer selection.`,
+      action: 'Prompt customer support to help the customer choose the final partner.',
+      tone: 'warn',
+      href: `/bookings/${booking.id}#participants`,
+    };
+  }
+
+  if (booking.status === 'OPEN_MATCHING' && fallbackCount > 0) {
+    return {
+      key: 'backup',
+      label: 'Stage 2 backup',
+      detail: `${fallbackCount} backup partner(s) are visible while matching stays open.`,
+      action: bookingBackupAlertTraceSummary(booking).totalNotified > 0
+        ? 'Monitor backup alert delivery and customer shortlist quality.'
+        : 'Nudge eligible 10km partners or check backup alert creation.',
+      tone: 'info',
+      href: `/bookings/${booking.id}#participants`,
+    };
+  }
+
+  if (booking.status === 'OPEN_MATCHING') {
+    const expired = bookingMatchingWindowExpired(booking, nowMs);
+    return {
+      key: 'first-pick',
+      label: 'Stage 1 first-pick',
+      detail: expired
+        ? 'The first response window is overdue and no usable backup partner is visible.'
+        : 'Preferred partner is inside the first response window.',
+      action: expired
+        ? 'Escalate backup supply or close/extend the request intentionally.'
+        : 'Watch partner response, wallet gate, push delivery, and KYC status.',
+      tone: expired ? 'danger' : 'warn',
+      href: `/bookings/${booking.id}#participants`,
+    };
+  }
+
+  return {
+    key: 'intake',
+    label: 'Stage 0 intake',
+    detail: `Booking is ${booking.status.toLowerCase().replaceAll('_', ' ')}.`,
+    action: 'Confirm service, customer location, payment state, and first partner before opening matching.',
+    tone: 'info',
+    href: `/bookings/${booking.id}`,
+  };
+}
+
+function stagePillClass(tone: BookingCommandLane['tone']) {
+  if (tone === 'danger') {
+    return 'pill-danger';
+  }
+  if (tone === 'warn') {
+    return 'pill-warn';
+  }
+  if (tone === 'ok') {
+    return 'pill-success';
+  }
+  return 'pill-info';
+}
+
 function buildMatchingEscalationRows(
   bookings: AdminBooking[],
   nowMs: number,
@@ -1697,6 +1892,18 @@ function emptyBookingMessage(view: BookingView) {
   }
   if (view === 'matching') {
     return 'No matching escalation bookings match this queue. First-pick, backup supply, customer selection, and chat handoff are clear.';
+  }
+  if (view === 'first-pick') {
+    return 'No Stage 1 first-pick bookings are waiting. The direct partner response window is clear.';
+  }
+  if (view === 'backup') {
+    return 'No Stage 2 backup bookings need partner participation review right now.';
+  }
+  if (view === 'customer-choice') {
+    return 'No Stage 3 customer choice bookings are waiting. Accepted partners are not blocked on customer selection.';
+  }
+  if (view === 'handoff-repair') {
+    return 'No Stage 4 handoff repair bookings are missing chat.';
   }
   if (view === 'no-supply') {
     return 'No open matching booking is waiting without partner supply.';
