@@ -691,7 +691,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <span>{item.action.status}</span>
               <div>
                 <strong>
-                  <Link className="text-link" href={`/partners/${item.provider.id}`}>
+                  <Link className="text-link" href={partnerDetailActionHref(item.provider, item.action)}>
                     {providerDisplayName(item.provider)}
                   </Link>
                 </strong>
@@ -826,7 +826,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                         <p className="muted">
                           {file.key}
                           {' / '}
-                          <Link className="text-link" href={`/partners/${provider.id}`}>
+                          <Link className="text-link" href={`/partners/${provider.id}#documents`}>
                             open detail to view
                           </Link>
                         </p>
@@ -994,7 +994,7 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
                 {document.fileAsset?.id ? (
                   <>
                     {' / '}
-                    <Link className="text-link" href={`/partners/${provider.id}`}>
+                    <Link className="text-link" href={`/partners/${provider.id}#documents`}>
                       open detail to view
                     </Link>
                   </>
@@ -1171,7 +1171,7 @@ function ProviderPublicMediaQueueCell({ provider }: { provider: AdminProvider })
         </div>
       ))}
       {media.length > 4 ? (
-        <Link className="text-link" href={`/partners/${provider.id}`}>
+        <Link className="text-link" href={`/partners/${provider.id}#media`}>
           Review {media.length - 4} more media item(s)
         </Link>
       ) : null}
@@ -1482,6 +1482,29 @@ function buildProviderPriorityLane(providers: AdminProvider[], opsPolicy: Provid
     items: ranked.slice(0, 6),
     blockedCount: ranked.filter((item) => item.action.tone === 'blocked').length,
   };
+}
+
+function partnerDetailActionHref(provider: AdminProvider, action: ProviderListAction) {
+  const anchorByStatus: Record<string, string> = {
+    ACCOUNT: 'payout',
+    PROFILE: 'kyc',
+    DOCUMENTS: 'documents',
+    KYC: 'kyc',
+    VERIFY: 'kyc',
+    'CASH DEBT': 'payout',
+    MEDIA: 'media',
+    BANK: 'bank',
+    TAX: 'tax',
+    'TAX ADDRESS': 'tax',
+    TERMS: 'tax',
+    DEVICE: 'location',
+    SECURITY: 'location',
+    LOCATION: 'location',
+    PUSH: 'location',
+    SUPABASE: 'kyc',
+  };
+  const anchor = anchorByStatus[action.status];
+  return anchor ? `/partners/${provider.id}#${anchor}` : `/partners/${provider.id}`;
 }
 
 function nextProviderListAction(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY): ProviderListAction {
