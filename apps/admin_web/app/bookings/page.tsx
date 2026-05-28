@@ -18,6 +18,10 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     view === 'attention' ||
     view === 'high-risk' ||
     view === 'matching' ||
+    view === 'first-pick' ||
+    view === 'backup' ||
+    view === 'customer-choice' ||
+    view === 'handoff-repair' ||
     view === 'no-supply' ||
     view === 'payment' ||
     view === 'cash-debt' ||
