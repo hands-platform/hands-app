@@ -112,7 +112,7 @@ async function expectRequestFailure(label, fn, expectedStatus) {
 
 async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, label) {
   const providerProfileId = providerAuth.user.providerProfile.id;
-  await postJson(`/admin/providers/${providerProfileId}/approve`, adminAccessToken);
+  await postJson(`/admin/partners/${providerProfileId}/approve`, adminAccessToken);
 
   let onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
   if (onboarding.kyc?.status !== 'APPROVED') {
@@ -148,7 +148,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
         await postJson(`/admin/provider-documents/${document.id}/approve`, adminAccessToken);
       }
     }
-    await postJson(`/admin/providers/${providerProfileId}/kyc/approve`, adminAccessToken);
+    await postJson(`/admin/partners/${providerProfileId}/kyc/approve`, adminAccessToken);
   }
 
   onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
@@ -355,7 +355,7 @@ if (unblockedProviderDeviceSession.blocked !== false || unblockedProviderDeviceS
     `Unblocked provider device still appears blocked: ${JSON.stringify(unblockedProviderDeviceSession)}`,
   );
 }
-await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/block`, adminAuth.accessToken, {
+await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/block`, adminAuth.accessToken, {
   reason: 'Smoke test account-level provider block',
 });
 const accountBlockedProviderDeviceSession = await postJson(
@@ -383,7 +383,7 @@ await expectRequestFailure(
   () => postJson('/provider/online', providerAuth.accessToken),
   400,
 );
-await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/unblock`, adminAuth.accessToken);
+await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/unblock`, adminAuth.accessToken);
 const accountUnblockedProviderDeviceSession = await postJson(
   '/provider/device-session',
   providerAuth.accessToken,
@@ -405,7 +405,7 @@ if (
   );
 }
 
-const providerRiskReport = await postJson('/admin/provider-reports', adminAuth.accessToken, {
+const providerRiskReport = await postJson('/admin/partner-reports', adminAuth.accessToken, {
   providerProfileId: providerAuth.user.providerProfile.id,
   category: 'smoke-risk',
   summary: 'Smoke provider risk report',
@@ -417,7 +417,7 @@ if (providerRiskReport.status !== 'OPEN' || providerRiskReport.severity !== 'HIG
   throw new Error(`Provider risk report was not created correctly: ${JSON.stringify(providerRiskReport)}`);
 }
 const providerRiskSanction = await postJson(
-  `/admin/providers/${providerAuth.user.providerProfile.id}/sanctions`,
+  `/admin/partners/${providerAuth.user.providerProfile.id}/sanctions`,
   adminAuth.accessToken,
   {
     reportId: providerRiskReport.id,
@@ -431,7 +431,7 @@ if (providerRiskSanction.status !== 'ACTIVE' || providerRiskSanction.type !== 'W
   );
 }
 const liftedProviderRiskSanction = await postJson(
-  `/admin/provider-sanctions/${providerRiskSanction.id}/lift`,
+  `/admin/partner-sanctions/${providerRiskSanction.id}/lift`,
   adminAuth.accessToken,
 );
 if (liftedProviderRiskSanction.status !== 'LIFTED') {
@@ -440,7 +440,7 @@ if (liftedProviderRiskSanction.status !== 'LIFTED') {
   );
 }
 const resolvedProviderRiskReport = await patchJson(
-  `/admin/provider-reports/${providerRiskReport.id}`,
+  `/admin/partner-reports/${providerRiskReport.id}`,
   adminAuth.accessToken,
   {
     status: 'RESOLVED',
@@ -860,9 +860,9 @@ if (
 await postJson('/provider/verification/submit', providerAuth.accessToken, {
   fileIds: [verificationUpload.file.id],
 });
-await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/approve`, adminAuth.accessToken);
+await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/approve`, adminAuth.accessToken);
 const providerSupabaseRoleSync = await postJson(
-  `/admin/providers/${providerAuth.user.providerProfile.id}/sync-supabase-role`,
+  `/admin/partners/${providerAuth.user.providerProfile.id}/sync-supabase-role`,
   adminAuth.accessToken,
 );
 if (!['SKIPPED', 'SYNCED'].includes(providerSupabaseRoleSync.status)) {
@@ -871,7 +871,7 @@ if (!['SKIPPED', 'SYNCED'].includes(providerSupabaseRoleSync.status)) {
   );
 }
 await postJson(
-  `/admin/providers/${backupProviderAuth.user.providerProfile.id}/approve`,
+  `/admin/partners/${backupProviderAuth.user.providerProfile.id}/approve`,
   adminAuth.accessToken,
 );
 const verificationReadUrl = await getJson(
@@ -997,12 +997,12 @@ await expectRequestFailure(
   'KYC approve before required documents are approved',
   () =>
     postJson(
-      `/admin/providers/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`,
+      `/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`,
       adminAuth.accessToken,
     ),
   400,
 );
-await postJson(`/admin/providers/${kycNegativeProviderAuth.user.providerProfile.id}/approve`, adminAuth.accessToken);
+await postJson(`/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/approve`, adminAuth.accessToken);
 await postJson('/provider/online', kycNegativeProviderAuth.accessToken);
 await postJson('/provider/location', kycNegativeProviderAuth.accessToken, {
   lat: 10.7772,
@@ -1034,7 +1034,7 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
     await postJson(`/admin/provider-documents/${document.id}/approve`, adminAuth.accessToken);
   }
 }
-await postJson(`/admin/providers/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
+await postJson(`/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
 const missingBankBookingGateError = await expectRequestFailure(
   'Partner without approved bank account cannot receive direct booking',
   () =>
@@ -1075,7 +1075,7 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
     await postJson(`/admin/provider-documents/${document.id}/approve`, adminAuth.accessToken);
   }
 }
-await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
+await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
 const onboardingBankAccount = await postJson('/provider/onboarding/bank-accounts', providerAuth.accessToken, {
   bankName: 'Vietcombank',
   accountNumber: '000012345678',
@@ -1091,7 +1091,7 @@ await postJson('/provider/onboarding/tax-profile', providerAuth.accessToken, {
   registeredAddress: 'District 1, Ho Chi Minh City, Vietnam',
 });
 await postJson(
-  `/admin/providers/${providerAuth.user.providerProfile.id}/tax-profile/approve`,
+  `/admin/partners/${providerAuth.user.providerProfile.id}/tax-profile/approve`,
   adminAuth.accessToken,
 );
 for (const type of ['TERMS', 'PRIVACY', 'LOCATION', 'PAYOUT', 'TAX']) {
@@ -2184,17 +2184,17 @@ if (providerEarningsSummary.walletBlocked === true || providerEarningsSummary.wa
     `Online payment earning should keep provider wallet positive: ${JSON.stringify(providerEarningsSummary)}`,
   );
 }
-const existingPayoutHolds = await getJson('/admin/provider-sanctions', adminAuth.accessToken);
+const existingPayoutHolds = await getJson('/admin/partner-sanctions', adminAuth.accessToken);
 for (const sanction of existingPayoutHolds.filter(
   (item) =>
     item.providerProfileId === providerAuth.user.providerProfile.id &&
     item.type === 'PAYOUT_HOLD' &&
     item.status === 'ACTIVE',
 )) {
-  await postJson(`/admin/provider-sanctions/${sanction.id}/lift`, adminAuth.accessToken);
+  await postJson(`/admin/partner-sanctions/${sanction.id}/lift`, adminAuth.accessToken);
 }
 const payoutHoldSanction = await postJson(
-  `/admin/providers/${providerAuth.user.providerProfile.id}/sanctions`,
+  `/admin/partners/${providerAuth.user.providerProfile.id}/sanctions`,
   adminAuth.accessToken,
   {
     type: 'PAYOUT_HOLD',
@@ -2212,7 +2212,7 @@ await expectRequestFailure(
   400,
 );
 const liftedPayoutHoldSanction = await postJson(
-  `/admin/provider-sanctions/${payoutHoldSanction.id}/lift`,
+  `/admin/partner-sanctions/${payoutHoldSanction.id}/lift`,
   adminAuth.accessToken,
 );
 if (liftedPayoutHoldSanction.status !== 'LIFTED') {
@@ -2353,59 +2353,69 @@ if (
     })}`,
   );
 }
-const adminProviders = await getJson('/admin/providers', adminAuth.accessToken);
 const adminPartners = await getJson('/admin/partners', adminAuth.accessToken);
-if (adminProviders.length !== adminPartners.length) {
+const legacyAdminProviders = await getJson('/admin/providers', adminAuth.accessToken);
+if (legacyAdminProviders.length !== adminPartners.length) {
   throw new Error(
-    `Admin partner alias count does not match provider count: ${JSON.stringify({
-      providerCount: adminProviders.length,
+    `Legacy admin provider alias count does not match partner count: ${JSON.stringify({
+      providerCount: legacyAdminProviders.length,
       partnerCount: adminPartners.length,
     })}`,
   );
 }
-const adminProvider = adminProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
 const adminPartner = adminPartners.find((item) => item.id === providerAuth.user.providerProfile.id);
+const legacyAdminProvider = legacyAdminProviders.find(
+  (item) => item.id === providerAuth.user.providerProfile.id,
+);
 if (!adminPartner) {
   throw new Error(
-    `Admin partner alias payload is missing the smoke partner: ${JSON.stringify({
+    `Admin partner payload is missing the smoke partner: ${JSON.stringify({
       providerProfileId: providerAuth.user.providerProfile.id,
       adminPartners: adminPartners.slice(0, 5),
     })}`,
   );
 }
-if (!adminProvider?.user?.pushDevices?.some((device) => device.token === 'demo-provider-device-token')) {
+if (legacyAdminProvider?.id !== adminPartner.id) {
   throw new Error(
-    `Admin provider payload is missing registered push device: ${JSON.stringify(adminProvider)}`,
+    `Legacy admin provider alias does not return the smoke partner: ${JSON.stringify({
+      legacyAdminProvider,
+      adminPartner,
+    })}`,
+  );
+}
+if (!adminPartner?.user?.pushDevices?.some((device) => device.token === 'demo-provider-device-token')) {
+  throw new Error(
+    `Admin partner payload is missing registered push device: ${JSON.stringify(adminPartner)}`,
   );
 }
 if (
-  adminProvider?.kyc?.status !== 'APPROVED' ||
-  !adminProvider?.bankAccounts?.some((account) => account.status === 'APPROVED') ||
-  adminProvider?.taxProfile?.status !== 'APPROVED'
+  adminPartner?.kyc?.status !== 'APPROVED' ||
+  !adminPartner?.bankAccounts?.some((account) => account.status === 'APPROVED') ||
+  adminPartner?.taxProfile?.status !== 'APPROVED'
 ) {
   throw new Error(
-    `Admin provider payload is missing onboarding review state: ${JSON.stringify(adminProvider)}`,
+    `Admin partner payload is missing onboarding review state: ${JSON.stringify(adminPartner)}`,
   );
 }
 if (
-  !adminProvider?.user?.fileAssets?.some(
+  !adminPartner?.user?.fileAssets?.some(
     (file) => file.id === publicProfileImageUpload.file.id && file.reviewStatus === 'APPROVED',
   )
 ) {
   throw new Error(
-    `Admin provider payload is missing approved public media: ${JSON.stringify(adminProvider)}`,
+    `Admin partner payload is missing approved public media: ${JSON.stringify(adminPartner)}`,
   );
 }
-const adminBackupProvider = adminProviders.find(
+const adminBackupPartner = adminPartners.find(
   (item) => item.id === backupProviderAuth.user.providerProfile.id,
 );
 if (
-  !adminBackupProvider?.user?.pushDevices?.some(
+  !adminBackupPartner?.user?.pushDevices?.some(
     (device) => device.token === 'demo-backup-provider-device-token',
   )
 ) {
   throw new Error(
-    `Admin backup provider payload is missing registered push device: ${JSON.stringify(adminBackupProvider)}`,
+    `Admin backup partner payload is missing registered push device: ${JSON.stringify(adminBackupPartner)}`,
   );
 }
 const payment = await getJson('/admin/payments', adminAuth.accessToken).then((payments) =>
@@ -2490,8 +2500,8 @@ console.log({
   providerAppSessionId: providerAppSession.id,
   adminCustomerAppSessionReady: true,
   adminAppSessionCount: adminAppSessions.length,
-  adminProviderPushDeviceCount: adminProvider?.user?.pushDevices?.length ?? 0,
-  adminBackupProviderPushDeviceCount: adminBackupProvider?.user?.pushDevices?.length ?? 0,
+  adminPartnerPushDeviceCount: adminPartner?.user?.pushDevices?.length ?? 0,
+  adminBackupPartnerPushDeviceCount: adminBackupPartner?.user?.pushDevices?.length ?? 0,
   providerDeviceSessionId: providerDeviceSession.session?.id ?? null,
   providerDeviceBlockRoundTrip:
     blockedProviderDeviceSession.blocked === true && unblockedProviderDeviceSession.blocked === false,

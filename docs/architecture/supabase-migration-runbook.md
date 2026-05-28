@@ -54,7 +54,7 @@ Mobile Supabase OTP flow uses a bridge session:
 Provider migration options:
 
 1. Preferred for MVP migration: keep provider onboarding/approval in the Nest admin flow first, then let Supabase OTP link by phone number.
-2. Later production option: set provider role metadata through the trusted admin action `POST /api/admin/providers/:id/sync-supabase-role` after verification. Do not let the mobile client self-assign provider role metadata.
+2. Later production option: set partner role metadata through the trusted admin action `POST /api/admin/partners/:id/sync-supabase-role` after verification. Do not let the mobile client self-assign partner role metadata.
 3. Run `npm.cmd run auth:supabase-smoke` after configuring `SUPABASE_JWT_SECRET`; the smoke test checks customer mapping, provider mapping, invalid audience rejection, and provider role escalation rejection.
 
 Provider role metadata sync:

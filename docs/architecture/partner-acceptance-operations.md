@@ -88,8 +88,10 @@ Admin visibility:
 - `apps/admin_web/app/operations-policy/page.tsx`
 - `apps/admin_web/app/bookings/booking-monitor.tsx`
 - `apps/admin_web/app/bookings/[id]/page.tsx`
-- `apps/admin_web/app/providers/page.tsx`
-- `apps/admin_web/app/provider-risk/page.tsx`
+- `apps/admin_web/app/partners/page.tsx`
+- `apps/admin_web/app/partner-risk/page.tsx`
+
+Legacy `/providers` and `/provider-risk` pages redirect to these canonical partner routes so older links keep working.
 
 Partner mobile behavior:
 

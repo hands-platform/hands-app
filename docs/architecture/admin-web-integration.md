@@ -4,7 +4,7 @@
 
 Admin Web now calls the protected backend admin APIs from server components:
 
-- `GET /api/admin/providers`
+- `GET /api/admin/partners`
 - `GET /api/admin/bookings`
 - `GET /api/admin/payments`
 - `GET /api/admin/reviews`
@@ -37,7 +37,7 @@ If the API is unavailable during build or local UI development, pages render emp
 ## Next Admin Work
 
 - Add real admin login UI and session cookies.
-- Add partner approve/reject actions.
+- Keep partner approve/reject/block/unblock actions aligned with the canonical `/admin/partners` API aliases.
 - Add refund action wiring.
 - Add coupon CRUD.
 - Add audit log writes and audit log list API.

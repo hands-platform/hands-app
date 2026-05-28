@@ -77,9 +77,19 @@ The retry queue stores DB notifications first. Delivery attempts are recorded in
 ## Admin
 
 - `GET /admin/users`
-- `GET /admin/providers`
-- `POST /admin/providers/:id/approve`
-- `POST /admin/providers/:id/reject`
+- `GET /admin/partners`
+- `GET /admin/partners/:id`
+- `POST /admin/partners/:id/approve`
+- `POST /admin/partners/:id/reject`
+- `POST /admin/partners/:id/block`
+- `POST /admin/partners/:id/unblock`
+- `POST /admin/partners/:id/sync-supabase-role`
+- `GET /admin/partner-reports`
+- `POST /admin/partner-reports`
+- `PATCH /admin/partner-reports/:id`
+- `GET /admin/partner-sanctions`
+- `POST /admin/partners/:id/sanctions`
+- `POST /admin/partner-sanctions/:id/lift`
 - `GET /admin/bookings`
 - `GET /admin/payments`
 - `POST /admin/payments/:id/refund`
@@ -92,6 +102,8 @@ The retry queue stores DB notifications first. Delivery attempts are recorded in
 - `GET /admin/reviews`
 - `PATCH /admin/reviews/:id/moderate`
 - `GET /admin/notifications`
+
+Legacy `/admin/providers`, `/admin/provider-reports`, and `/admin/provider-sanctions` aliases are kept for compatibility while the admin product language moves to Partner.
 
 ## Payments
 
