@@ -842,7 +842,12 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
   const recommended = policyDisplayValue(setting, true);
   const impact = policyImpactDetails(setting.key);
   return (
-    <form action={updateOperationalPolicy} className="card" style={{ margin: 0 }}>
+    <form
+      action={updateOperationalPolicy}
+      className="card"
+      id={policySettingAnchor(setting.key)}
+      style={{ margin: 0 }}
+    >
       <input type="hidden" name="key" value={setting.key} />
       <input type="hidden" name="valueType" value={valueType} />
       <div className="risk-watch-header">
@@ -941,6 +946,10 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
       )}
     </form>
   );
+}
+
+function policySettingAnchor(key: string) {
+  return `policy-${key.replaceAll('.', '-').replaceAll('_', '-')}`;
 }
 
 function DecisionHint({
@@ -2820,7 +2829,7 @@ function operationsOwnerDecisionBacklog() {
         'Start with a single 10km radius, then add city/service overrides after Ho Chi Minh City data is stable.',
       decisionTrigger:
         'Revisit when backup alerts are ignored often, or accepted backup partners are repeatedly too far away.',
-      href: '/operations-policy',
+      href: '/operations-policy#policy-matching-backup-provider-radius-meters',
       className: 'ops-task-pending',
       pillClass: 'pill-info',
     },
@@ -2928,7 +2937,7 @@ function operationsOwnerDecisionBacklog() {
         'Keep in-app first locally, then enable OneSignal once production credentials and failure dashboards are ready.',
       decisionTrigger:
         'Revisit immediately after OneSignal production setup is complete and device delivery logs are visible.',
-      href: '/notifications',
+      href: '/operations-policy#policy-notification-partner-alert-channel',
       className: 'ops-task-done',
       pillClass: 'pill-success',
     },
