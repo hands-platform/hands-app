@@ -216,6 +216,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
   const partnerBookingArchive = buildPartnerBookingArchive(provider);
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
+  const partnerActivitySummary = buildPartnerActivitySummary(partnerActivityRecords);
 
   return (
     <>
@@ -418,9 +419,18 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </div>
           <span className="pill pill-info">{partnerActivityRecords.length} event(s)</span>
         </div>
+        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+          {partnerActivitySummary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
         <div className="setup-stage-list" style={{ marginTop: 16 }}>
           {partnerActivityRecords.length ? (
-            partnerActivityRecords.slice(0, 16).map((record) => (
+            partnerActivityRecords.map((record) => (
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
                 <span>{record.type}</span>
                 <div>
@@ -2035,6 +2045,46 @@ function buildPartnerActivityRecords(
   return records
     .filter((record) => Number.isFinite(dateValue(record.at)))
     .sort((left, right) => dateValue(right.at) - dateValue(left.at));
+}
+
+function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
+  const financeTypes = new Set(['EARNING', 'PAYOUT']);
+  const count = (predicate: (record: PartnerActivityRecord) => boolean) => records.filter(predicate).length;
+  const latestAt = records[0]?.at;
+  const oldestAt = records[records.length - 1]?.at;
+
+  return [
+    {
+      label: 'Range',
+      value: latestAt ? formatDate(latestAt) : 'None',
+      helper: oldestAt ? `Oldest loaded: ${formatDate(oldestAt)}` : 'No partner activity loaded.',
+    },
+    {
+      label: 'Bookings',
+      value: count((record) => record.type === 'BOOKING').toString(),
+      helper: 'Preferred, selected, and joined booking records.',
+    },
+    {
+      label: 'Chat',
+      value: count((record) => record.type === 'CHAT').toString(),
+      helper: 'Booking messages visible in admin archive.',
+    },
+    {
+      label: 'App and device',
+      value: count((record) => ['SESSION', 'DEVICE'].includes(record.type)).toString(),
+      helper: 'Login sessions and device records.',
+    },
+    {
+      label: 'Location',
+      value: count((record) => record.type === 'LOCATION').toString(),
+      helper: 'Last known location snapshots.',
+    },
+    {
+      label: 'Finance and verification',
+      value: count((record) => financeTypes.has(record.type) || record.type === 'VERIFY').toString(),
+      helper: 'Earnings, payout batches, and verification changes.',
+    },
+  ];
 }
 
 function lastBookingMessage(booking: PartnerDetailBooking) {
