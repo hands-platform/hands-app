@@ -19,6 +19,8 @@ const pages = [
       'Partner dispatch control',
       'Acceptance unblock quick order',
       'Matching ops',
+      '/operations-policy#policy-matching-provider-response-window-minutes',
+      '/operations-policy#policy-wallet-negative-balance-gate',
       'API source',
     ],
   },

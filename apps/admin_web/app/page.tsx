@@ -636,6 +636,9 @@ export default async function DashboardPage() {
               <span>{item.label}</span>
               <strong>{item.value}</strong>
               <small>{item.helper}</small>
+              <Link className="text-link" href={item.href}>
+                Tune
+              </Link>
             </div>
           ))}
         </div>
@@ -662,7 +665,9 @@ export default async function DashboardPage() {
                         Current {override.current} / recommended {override.recommended}
                       </p>
                     </div>
-                    <span className="pill pill-info">{override.category}</span>
+                    <Link className="pill pill-info" href={override.href}>
+                      {override.category}
+                    </Link>
                   </div>
                 ))}
                 {policySummary.activeOverrides.length === 0 ? (
@@ -694,9 +699,9 @@ export default async function DashboardPage() {
                         {change.current} changed {change.changedAtLabel}
                       </p>
                     </div>
-                    <span className={`pill ${change.enforced ? 'pill-success' : 'pill-warn'}`}>
+                    <Link className={`pill ${change.enforced ? 'pill-success' : 'pill-warn'}`} href={change.href}>
                       {change.enforced ? 'Live' : 'Planning'}
-                    </span>
+                    </Link>
                   </div>
                 ))}
                 {policySummary.recentChanges.length === 0 ? (
@@ -713,6 +718,9 @@ export default async function DashboardPage() {
               <h3>{decision.label}</h3>
               <p>{decision.current}</p>
               <small>{decision.recommendation}</small>
+              <Link className="text-link" href={decision.href}>
+                Open policy
+              </Link>
             </div>
           ))}
         </div>
@@ -4015,6 +4023,7 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
       current: policyOptionLabel(setting),
       recommended: policyOptionLabel(setting, true),
       enforced: setting.enforced,
+      href: operationalPolicyHref(setting.key),
     }));
   const recentChanges = settings
     .filter((setting) => isRecentOperationalPolicyChange(setting.updatedAt))
@@ -4025,6 +4034,7 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
       current: policyOptionLabel(setting),
       changedAtLabel: relativeTimeLabel(setting.updatedAt),
       enforced: setting.enforced,
+      href: operationalPolicyHref(setting.key),
     }));
   const healthLabel = activeOverrides.length ? `${activeOverrides.length} override(s)` : 'Baseline';
   const healthHelper = activeOverrides.length
@@ -4075,6 +4085,7 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
         recommendation: `Recommended: ${policyOptionLabel(setting, true)}`,
         className: aligned ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: aligned ? 'pill-success' : 'pill-warn',
+        href: operationalPolicyHref(setting.key),
       };
     });
 
@@ -4115,7 +4126,12 @@ function policyMetric(setting: AdminOperationalPolicySetting | undefined, label:
     label,
     value: setting ? formatPolicyValue(setting.value, setting.unit) : '-',
     helper,
+    href: setting ? operationalPolicyHref(setting.key) : '/operations-policy',
   };
+}
+
+function operationalPolicyHref(key: string) {
+  return `/operations-policy#policy-${key.replaceAll('.', '-').replaceAll('_', '-')}`;
 }
 
 function policyOptionLabel(setting: AdminOperationalPolicySetting, useRecommended = false) {
