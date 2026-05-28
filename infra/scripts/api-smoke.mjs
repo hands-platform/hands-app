@@ -1207,6 +1207,26 @@ await postJson('/provider/location', walletDebtProviderAuth.accessToken, {
   lng: 106.6992,
 });
 
+const partnerAliasInitialMe = await getJson('/partner/me', backupProviderAuth.accessToken);
+if (partnerAliasInitialMe.providerProfile?.id !== backupProviderAuth.user.providerProfile.id) {
+  throw new Error(
+    `Partner alias /partner/me did not return the expected profile: ${JSON.stringify(partnerAliasInitialMe)}`,
+  );
+}
+const partnerAliasInitialServices = await getJson('/partner/services/groups', backupProviderAuth.accessToken);
+if (!Array.isArray(partnerAliasInitialServices) || partnerAliasInitialServices.length === 0) {
+  throw new Error(`Partner alias /partner/services/groups did not return service groups.`);
+}
+const partnerAliasLocation = await postJson('/partner/location', backupProviderAuth.accessToken, {
+  lat: 10.7825,
+  lng: 106.6951,
+});
+if (partnerAliasLocation.currentLat === null || partnerAliasLocation.currentLng === null) {
+  throw new Error(
+    `Partner alias /partner/location did not persist location: ${JSON.stringify(partnerAliasLocation)}`,
+  );
+}
+
 const savedSelectedLocation = await postJson('/customer/locations/selected', customerAuth.accessToken, {
   lat: 10.7769,
   lng: 106.7009,
@@ -1293,6 +1313,10 @@ assertBookingPricing('Open matching base-price', bookingDetail, {
   paymentAmount: service.basePrice,
 });
 assertBookingMatchingWindow('Open matching base-price', bookingDetail, 10);
+const partnerAliasOpenBookings = await getJson('/partner/bookings/open', providerAuth.accessToken);
+if (!partnerAliasOpenBookings.some((item) => item.id === booking.id)) {
+  throw new Error(`Partner alias /partner/bookings/open did not include an open booking.`);
+}
 
 const hybridBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -2569,6 +2593,10 @@ console.log({
   adminAppSessionCount: adminAppSessions.length,
   adminPartnerPushDeviceCount: adminPartner?.user?.pushDevices?.length ?? 0,
   adminBackupPartnerPushDeviceCount: adminBackupPartner?.user?.pushDevices?.length ?? 0,
+  partnerAliasMeReady:
+    partnerAliasInitialMe.providerProfile?.id === backupProviderAuth.user.providerProfile.id,
+  partnerAliasServiceGroupCount: partnerAliasInitialServices.length,
+  partnerAliasOpenBookingReady: true,
   providerDeviceSessionId: providerDeviceSession.session?.id ?? null,
   providerDeviceBlockRoundTrip:
     blockedProviderDeviceSession.blocked === true && unblockedProviderDeviceSession.blocked === false,
