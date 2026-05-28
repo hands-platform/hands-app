@@ -55,6 +55,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
   });
   const operatingBlocks = buildPartnerOperatingBlocks(providerWatchlist);
   const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist, riskPolicy);
+  const riskScorecard = buildPartnerRiskScorecard(providers, providerWatchlist, riskPolicy);
 
   return (
     <>
@@ -145,6 +146,69 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
         ) : (
           <p className="muted" style={{ marginTop: 12 }}>
             No risk action currently needs operator review.
+          </p>
+        )}
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner risk scorecard</h2>
+            <p className="muted">
+              Converts booking blockers, wallet debt, KYC gaps, payout holds, location freshness, and
+              device reachability into one operating score.
+            </p>
+          </div>
+          <span className={`pill ${riskScorecard.highestScore >= 80 ? 'pill-danger' : 'pill-info'}`}>
+            Highest score {riskScorecard.highestScore}
+          </span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {riskScorecard.metrics.map((scoreMetric) => (
+            <div className="ops-task-card" key={scoreMetric.label}>
+              <small>{scoreMetric.label}</small>
+              <h3>{scoreMetric.value}</h3>
+              <div className="ops-task-breakdown">
+                <span className={`ops-task-breakdown-item ${scoreMetric.tone}`}>
+                  <span>Risk score</span>
+                  <strong>{scoreMetric.label}</strong>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+        {riskScorecard.items.length ? (
+          <div className="setup-stage-list" style={{ marginTop: 12 }}>
+            {riskScorecard.items.map((item) => (
+              <div className="setup-stage-item" key={item.provider.id}>
+                <span>{item.score}/100</span>
+                <div>
+                  <strong>{item.partner}</strong>
+                  <p className="muted">
+                    {item.status} / Wallet {formatMoney(item.walletBalance)} / {item.primaryReasons.join(', ')}
+                  </p>
+                  <p className="muted">{item.operatorAction}</p>
+                  <div className="participant-list">
+                    <span className={`pill ${item.tone}`}>{item.band}</span>
+                    {item.acceptanceBlocked ? <span className="pill pill-danger">Booking blocked</span> : null}
+                    {item.payoutBlocked ? <span className="pill pill-warn">Payout gated</span> : null}
+                    {item.dispatchRisk ? <span className="pill pill-info">Dispatch risk</span> : null}
+                  </div>
+                </div>
+                <div className="actions">
+                  <Link className="text-link" href={`/partners/${item.provider.id}`}>
+                    Profile
+                  </Link>
+                  <Link className="text-link" href={item.actionHref}>
+                    {item.actionLabel}
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No partner currently has enough risk to appear in the scorecard.
           </p>
         )}
       </section>
@@ -711,6 +775,220 @@ type BookingAcceptanceUnblockCard = {
   partnerSamples: string[];
   metrics: RiskCommandMetric[];
 };
+
+type PartnerRiskScoreBand = 'Critical' | 'High' | 'Watch' | 'Clear';
+
+type PartnerRiskScoreItem = {
+  provider: AdminProvider;
+  partner: string;
+  score: number;
+  band: PartnerRiskScoreBand;
+  tone: string;
+  status: string;
+  walletBalance: number;
+  acceptanceBlocked: boolean;
+  payoutBlocked: boolean;
+  dispatchRisk: boolean;
+  primaryReasons: string[];
+  operatorAction: string;
+  actionHref: string;
+  actionLabel: string;
+};
+
+type PartnerRiskScorecard = {
+  highestScore: number;
+  metrics: RiskCommandMetric[];
+  items: PartnerRiskScoreItem[];
+};
+
+function buildPartnerRiskScorecard(
+  providers: AdminProvider[],
+  watchlist: ProviderRiskWatchItem[],
+  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
+): PartnerRiskScorecard {
+  const watchByProvider = new Map(watchlist.map((item) => [item.provider.id, item]));
+  const items = providers.map((provider) =>
+    buildPartnerRiskScoreItem(provider, watchByProvider.get(provider.id), riskPolicy),
+  );
+  const visibleItems = items
+    .filter((item) => item.score > 0)
+    .sort((left, right) => right.score - left.score)
+    .slice(0, 12);
+  const criticalCount = items.filter((item) => item.band === 'Critical').length;
+  const highCount = items.filter((item) => item.band === 'High').length;
+  const acceptanceBlockedCount = items.filter((item) => item.acceptanceBlocked).length;
+  const payoutBlockedCount = items.filter((item) => item.payoutBlocked).length;
+  const dispatchRiskCount = items.filter((item) => item.dispatchRisk).length;
+
+  return {
+    highestScore: visibleItems[0]?.score ?? 0,
+    metrics: [
+      metric('Critical', criticalCount, criticalCount ? 'danger' : 'ok'),
+      metric('High', highCount, highCount ? 'warn' : 'ok'),
+      metric('Booking blocked', acceptanceBlockedCount, acceptanceBlockedCount ? 'danger' : 'ok'),
+      metric('Payout gated', payoutBlockedCount, payoutBlockedCount ? 'warn' : 'ok'),
+      metric('Dispatch risk', dispatchRiskCount, dispatchRiskCount ? 'info' : 'ok'),
+    ],
+    items: visibleItems,
+  };
+}
+
+function buildPartnerRiskScoreItem(
+  provider: AdminProvider,
+  watchItem: ProviderRiskWatchItem | undefined,
+  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
+): PartnerRiskScoreItem {
+  const signals = watchItem?.signals ?? [];
+  const walletBalance = watchItem?.walletBalance ?? providerUnsettledWalletBalance(provider);
+  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
+  const hasPayoutHold =
+    watchItem?.hasPayoutHold ?? activeSanctions.some((sanction) => sanction.type === 'PAYOUT_HOLD');
+  const hasAccountBlock =
+    Boolean(provider.blockedAt) || activeSanctions.some((sanction) => sanction.type === 'ACCOUNT_BLOCK');
+  const openReports = (provider.reports ?? []).filter((report) =>
+    ['OPEN', 'INVESTIGATING'].includes(report.status),
+  );
+  const highReports = openReports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity));
+  const reasons: string[] = [];
+  let score = 0;
+  let acceptanceBlocked = false;
+  let payoutBlocked = false;
+  let dispatchRisk = false;
+
+  const add = (points: number, reason: string) => {
+    score += points;
+    reasons.push(reason);
+  };
+
+  if (hasAccountBlock) {
+    add(35, 'account block');
+    acceptanceBlocked = true;
+  }
+  if (walletBalance < 0) {
+    add(35 + Math.min(10, Math.floor(Math.abs(walletBalance) / 500000)), 'cash fee debt');
+    acceptanceBlocked = true;
+    payoutBlocked = true;
+  }
+  if (hasPayoutHold) {
+    add(25, 'payout hold');
+    payoutBlocked = true;
+  }
+  if (highReports.length > 0) {
+    add(25, 'critical/high report');
+  } else if (openReports.length > 0) {
+    add(15, 'open report');
+  }
+  if (signals.some((signal) => signal.kind === 'DEVICE')) {
+    add(18, 'shared device');
+  }
+  if (signals.some((signal) => signal.kind === 'KYC')) {
+    add(22, 'KYC pending');
+    acceptanceBlocked = true;
+  }
+  if (signals.some((signal) => signal.kind === 'BANK')) {
+    add(16, 'bank pending');
+    payoutBlocked = true;
+  }
+  if (signals.some((signal) => signal.kind === 'TAX')) {
+    add(10, 'tax pending');
+    payoutBlocked = true;
+  }
+  if (providerLocationSignal(provider, riskPolicy)) {
+    add(12, 'location stale');
+    dispatchRisk = true;
+  }
+  if (partnerHasDeviceContactGap(provider)) {
+    add(8, 'push contact gap');
+    dispatchRisk = true;
+  }
+
+  score = Math.min(100, score);
+  const band = score >= 80 ? 'Critical' : score >= 50 ? 'High' : score >= 25 ? 'Watch' : 'Clear';
+  const primaryReasons = reasons.length ? reasons.slice(0, 4) : ['No active risk signal'];
+
+  return {
+    provider,
+    partner: adminProviderName(provider),
+    score,
+    band,
+    tone: partnerRiskScorePill(band),
+    status: provider.status,
+    walletBalance,
+    acceptanceBlocked,
+    payoutBlocked,
+    dispatchRisk,
+    primaryReasons,
+    ...partnerRiskScoreAction({
+      provider,
+      walletBalance,
+      acceptanceBlocked,
+      payoutBlocked,
+      dispatchRisk,
+      openReportCount: openReports.length,
+      hasPayoutHold,
+    }),
+  };
+}
+
+function partnerRiskScorePill(band: PartnerRiskScoreBand) {
+  if (band === 'Critical') return 'pill-danger';
+  if (band === 'High') return 'pill-warn';
+  if (band === 'Watch') return 'pill-info';
+  return 'pill-success';
+}
+
+function partnerRiskScoreAction(input: {
+  provider: AdminProvider;
+  walletBalance: number;
+  acceptanceBlocked: boolean;
+  payoutBlocked: boolean;
+  dispatchRisk: boolean;
+  openReportCount: number;
+  hasPayoutHold: boolean;
+}) {
+  if (input.walletBalance < 0) {
+    return {
+      operatorAction: `Collect or offset unpaid HANDS fee before booking acceptance unlocks. Reference ${cashDebtSettlementReference(
+        input.provider.id,
+      )}.`,
+      actionHref: '/cash-settlements',
+      actionLabel: 'Settle debt',
+    };
+  }
+  if (input.acceptanceBlocked) {
+    return {
+      operatorAction: 'Clear account, KYC, or bank blockers before this partner accepts paid work.',
+      actionHref: `/partners/${input.provider.id}`,
+      actionLabel: 'Clear blocker',
+    };
+  }
+  if (input.hasPayoutHold || input.payoutBlocked) {
+    return {
+      operatorAction: 'Keep work history visible, but block payout until finance, tax, or payout evidence is resolved.',
+      actionHref: '/payouts',
+      actionLabel: 'Open payouts',
+    };
+  }
+  if (input.openReportCount > 0) {
+    return {
+      operatorAction: 'Resolve or escalate open reports before changing partner trust level.',
+      actionHref: `/partner-risk?q=${encodeURIComponent(input.provider.id)}`,
+      actionLabel: 'Review reports',
+    };
+  }
+  if (input.dispatchRisk) {
+    return {
+      operatorAction: 'Ask partner to reopen the app, refresh GPS, and confirm push/device readiness.',
+      actionHref: '/app-sessions',
+      actionLabel: 'Check sessions',
+    };
+  }
+  return {
+    operatorAction: 'No immediate operator action is required.',
+    actionHref: `/partners/${input.provider.id}`,
+    actionLabel: 'Open profile',
+  };
+}
 
 function buildRiskCommandCenter(input: RiskCommandCenterInput) {
   const openReports = input.reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status));
