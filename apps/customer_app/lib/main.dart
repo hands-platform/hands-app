@@ -2488,6 +2488,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
       'provider.joined': 'A backup partner joined this request.',
       'provider.accepted':
           'A partner accepted. Confirm this partner or choose another available option.',
+      'provider.rejected':
+          'A partner declined. We will keep showing available options.',
       'booking.matched': 'Your partner confirmed the booking.',
       'booking.opened': 'The request is still open for partner responses.',
       'booking.expired': 'This booking expired or was cancelled.',
@@ -2511,6 +2513,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
       'provider.location.updated',
       'provider.joined',
       'provider.accepted',
+      'provider.rejected',
       'booking.matched',
       'booking.opened',
       'booking.expired',
