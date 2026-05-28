@@ -2,6 +2,12 @@ import Link from 'next/link';
 import { AdminAppSession, adminGet } from '../../lib/admin-api';
 
 type SessionState = 'live' | 'recent' | 'stale' | 'expired';
+type AppSessionsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type SessionFilters = {
+  role: 'CUSTOMER' | 'PROVIDER' | null;
+  state: SessionState | null;
+  platform: string | null;
+};
 type SessionCommandCard = {
   title: string;
   value: string;
@@ -15,14 +21,21 @@ const LIVE_WINDOW_MS = 5 * 60_000;
 const RECENT_WINDOW_MS = 30 * 60_000;
 const STALE_WINDOW_MS = 24 * 60 * 60_000;
 
-export default async function AppSessionsPage() {
-  const sessions = await adminGet<AdminAppSession[]>('/admin/app-sessions', []);
+export default async function AppSessionsPage({
+  searchParams,
+}: {
+  searchParams?: AppSessionsPageSearchParams;
+}) {
+  const filters = buildSessionFilters((await searchParams) ?? {});
+  const allSessions = await adminGet<AdminAppSession[]>('/admin/app-sessions', []);
+  const sessions = filterSessions(allSessions, filters);
   const summary = buildSessionSummary(sessions);
   const roleRows = buildRoleRows(sessions);
   const platformRows = buildPlatformRows(sessions);
   const versionRows = buildVersionRows(sessions);
   const riskRows = buildSessionRiskRows(sessions);
   const commandCards = buildSessionCommandCards(sessions, riskRows);
+  const activeFilterLabel = sessionFilterLabel(filters);
 
   return (
     <>
@@ -40,6 +53,31 @@ export default async function AppSessionsPage() {
           <Link className="text-link" href="/notifications">
             Notifications
           </Link>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Session scope</h2>
+            <p className="muted">
+              {activeFilterLabel}. Showing {sessions.length} of {allSessions.length} heartbeat record(s).
+            </p>
+          </div>
+          <Link className="text-link" href="/app-sessions">
+            Clear filters
+          </Link>
+        </div>
+        <div className="actions" style={{ marginTop: 12, justifyContent: 'flex-start' }}>
+          {sessionQuickFilters.map((item) => (
+            <Link
+              className={`pill ${item.href === sessionFilterHref(filters) ? 'pill-success' : 'pill-info'}`}
+              href={item.href}
+              key={item.href}
+            >
+              {item.label}
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -207,6 +245,72 @@ export default async function AppSessionsPage() {
       </section>
     </>
   );
+}
+
+const sessionQuickFilters = [
+  { label: 'All sessions', href: '/app-sessions' },
+  { label: 'Live customers', href: '/app-sessions?role=CUSTOMER&state=live' },
+  { label: 'Live partners', href: '/app-sessions?role=PROVIDER&state=live' },
+  { label: 'Recent customers', href: '/app-sessions?role=CUSTOMER&state=recent' },
+  { label: 'Stale sessions', href: '/app-sessions?state=stale' },
+  { label: 'Expired sessions', href: '/app-sessions?state=expired' },
+];
+
+function buildSessionFilters(params: Record<string, string | string[] | undefined>): SessionFilters {
+  const role = singleParam(params.role)?.toUpperCase();
+  const state = singleParam(params.state)?.toLowerCase();
+  const platform = singleParam(params.platform)?.toLowerCase() ?? null;
+
+  return {
+    role: role === 'PARTNER' || role === 'PROVIDER' ? 'PROVIDER' : role === 'CUSTOMER' ? 'CUSTOMER' : null,
+    state: isSessionState(state) ? state : null,
+    platform,
+  };
+}
+
+function filterSessions(sessions: AdminAppSession[], filters: SessionFilters) {
+  return sessions.filter((session) => {
+    if (filters.role && session.role !== filters.role) {
+      return false;
+    }
+
+    if (filters.state && sessionState(session) !== filters.state) {
+      return false;
+    }
+
+    if (filters.platform && (session.platform ?? 'unknown').toLowerCase() !== filters.platform) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function sessionFilterLabel(filters: SessionFilters) {
+  const parts = [
+    filters.role === 'PROVIDER' ? 'partner sessions' : filters.role === 'CUSTOMER' ? 'customer sessions' : null,
+    filters.state ? `${filters.state} heartbeat` : null,
+    filters.platform ? `${filters.platform} platform` : null,
+  ].filter(Boolean);
+
+  return parts.length ? `Filtered to ${parts.join(', ')}` : 'Showing all customer, partner, and admin app sessions';
+}
+
+function sessionFilterHref(filters: SessionFilters) {
+  const params = new URLSearchParams();
+  if (filters.role) params.set('role', filters.role);
+  if (filters.state) params.set('state', filters.state);
+  if (filters.platform) params.set('platform', filters.platform);
+  const query = params.toString();
+  return query ? `/app-sessions?${query}` : '/app-sessions';
+}
+
+function singleParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function isSessionState(value: string | undefined): value is SessionState {
+  return value === 'live' || value === 'recent' || value === 'stale' || value === 'expired';
 }
 
 function InfoRow({ label, value, detail }: { label: string; value: string; detail: string }) {
