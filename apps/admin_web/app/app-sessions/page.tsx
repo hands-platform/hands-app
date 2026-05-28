@@ -33,8 +33,8 @@ export default async function AppSessionsPage({
   const roleRows = buildRoleRows(sessions);
   const platformRows = buildPlatformRows(sessions);
   const versionRows = buildVersionRows(sessions);
-  const riskRows = buildSessionRiskRows(sessions);
-  const commandCards = buildSessionCommandCards(sessions, riskRows);
+  const checkRows = buildSessionCheckRows(sessions);
+  const commandCards = buildSessionCommandCards(sessions, checkRows);
   const activeFilterLabel = sessionFilterLabel(filters);
 
   return (
@@ -96,11 +96,11 @@ export default async function AppSessionsPage({
           <div>
             <h2>Session command board</h2>
             <p className="muted">
-              Live demand, partner supply, push reachability, and shared-device risk for the current shift.
+              Live demand, partner supply, push reachability, and shared-device checks for the current shift.
             </p>
           </div>
-          <span className={`pill ${riskRows.length ? 'pill-warn' : 'pill-success'}`}>
-            {riskRows.length ? `${riskRows.length} risk item(s)` : 'Clear'}
+          <span className={`pill ${checkRows.length ? 'pill-warn' : 'pill-success'}`}>
+            {checkRows.length ? `${checkRows.length} check item(s)` : 'Clear'}
           </span>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 12 }}>
@@ -161,18 +161,18 @@ export default async function AppSessionsPage({
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Session risk queue</h2>
+            <h2>Session check queue</h2>
             <p className="muted">
               Watch old app versions, stale sessions, missing push readiness, and duplicate device usage.
             </p>
           </div>
-          <span className={`pill ${riskRows.length ? 'pill-warn' : 'pill-success'}`}>
-            {riskRows.length ? `${riskRows.length} review` : 'No session risk'}
+          <span className={`pill ${checkRows.length ? 'pill-warn' : 'pill-success'}`}>
+            {checkRows.length ? `${checkRows.length} review` : 'No session check'}
           </span>
         </div>
-        {riskRows.length ? (
+        {checkRows.length ? (
           <div className="ops-task-grid" style={{ marginTop: 12 }}>
-            {riskRows.slice(0, 12).map((item) => (
+            {checkRows.slice(0, 12).map((item) => (
               <div className={`ops-task-card ${item.tone}`} key={item.key}>
                 <small>{item.status}</small>
                 <h3>{item.title}</h3>
@@ -288,12 +288,18 @@ function filterSessions(sessions: AdminAppSession[], filters: SessionFilters) {
 
 function sessionFilterLabel(filters: SessionFilters) {
   const parts = [
-    filters.role === 'PROVIDER' ? 'partner sessions' : filters.role === 'CUSTOMER' ? 'customer sessions' : null,
+    filters.role === 'PROVIDER'
+      ? 'partner sessions'
+      : filters.role === 'CUSTOMER'
+        ? 'customer sessions'
+        : null,
     filters.state ? `${filters.state} heartbeat` : null,
     filters.platform ? `${filters.platform} platform` : null,
   ].filter(Boolean);
 
-  return parts.length ? `Filtered to ${parts.join(', ')}` : 'Showing all customer, partner, and admin app sessions';
+  return parts.length
+    ? `Filtered to ${parts.join(', ')}`
+    : 'Showing all customer, partner, and admin app sessions';
 }
 
 function sessionFilterHref(filters: SessionFilters) {
@@ -350,7 +356,7 @@ function buildSessionSummary(sessions: AdminAppSession[]): Array<[string, string
 
 function buildSessionCommandCards(
   sessions: AdminAppSession[],
-  riskRows: ReturnType<typeof buildSessionRiskRows>,
+  checkRows: ReturnType<typeof buildSessionCheckRows>,
 ): SessionCommandCard[] {
   const liveCustomers = sessions.filter(
     (session) => session.role === 'CUSTOMER' && sessionState(session) === 'live',
@@ -369,7 +375,7 @@ function buildSessionCommandCards(
       (session.user?.pushDevices ?? []).length > 0 &&
       !(session.user?.pushDevices ?? []).some((device) => device.enabled),
   );
-  const sharedDeviceRisk = riskRows.filter((row) => row.status === 'SHARED DEVICE').length;
+  const sharedDeviceChecks = checkRows.filter((row) => row.status === 'SHARED DEVICE').length;
   const expiredSessions = sessions.filter((session) => sessionState(session) === 'expired');
 
   return [
@@ -378,7 +384,9 @@ function buildSessionCommandCards(
       value: `${liveCustomers.length} live`,
       status: liveCustomers.length ? 'ACTIVE' : 'QUIET',
       detail: `${recentCustomers.length} customer session(s) were seen recently but are not live now.`,
-      action: liveCustomers.length ? 'Watch matching wait and payment holds' : 'Monitor campaign and support channels',
+      action: liveCustomers.length
+        ? 'Watch matching wait and payment holds'
+        : 'Monitor campaign and support channels',
       tone: liveCustomers.length ? 'ops-task-pending' : 'ops-task-done',
     },
     {
@@ -386,7 +394,9 @@ function buildSessionCommandCards(
       value: `${livePartners.length} live`,
       status: livePartners.length ? 'AVAILABLE' : 'LOW SUPPLY',
       detail: `${recentPartners.length} partner session(s) were recently active but not live now.`,
-      action: livePartners.length ? 'Compare against open matching demand' : 'Prompt partners to open the app',
+      action: livePartners.length
+        ? 'Compare against open matching demand'
+        : 'Prompt partners to open the app',
       tone: livePartners.length ? 'ops-task-done' : 'ops-task-blocked',
     },
     {
@@ -394,23 +404,29 @@ function buildSessionCommandCards(
       value: `${disabledPushUsers.length} issue(s)`,
       status: disabledPushUsers.length ? 'FIX TOKENS' : 'READY',
       detail: 'Users with only disabled push tokens may miss booking, chat, payout, or KYC updates.',
-      action: disabledPushUsers.length ? 'Open notifications and refresh app tokens' : 'No push action needed',
+      action: disabledPushUsers.length
+        ? 'Open notifications and refresh app tokens'
+        : 'No push action needed',
       tone: disabledPushUsers.length ? 'ops-task-pending' : 'ops-task-done',
     },
     {
       title: 'Shared device safety',
-      value: `${sharedDeviceRisk} device(s)`,
-      status: sharedDeviceRisk ? 'REVIEW' : 'CLEAR',
+      value: `${sharedDeviceChecks} device(s)`,
+      status: sharedDeviceChecks ? 'REVIEW' : 'CLEAR',
       detail: 'Multiple accounts on one device can indicate family phones, staff testing, or account misuse.',
-      action: sharedDeviceRisk ? 'Review account safety before dispatching' : 'No duplicate device risk visible',
-      tone: sharedDeviceRisk ? 'ops-task-blocked' : 'ops-task-done',
+      action: sharedDeviceChecks
+        ? 'Review account/device notes before dispatching'
+        : 'No duplicate device check visible',
+      tone: sharedDeviceChecks ? 'ops-task-blocked' : 'ops-task-done',
     },
     {
       title: 'Expired app heartbeat',
       value: `${expiredSessions.length} expired`,
       status: expiredSessions.length ? 'STALE' : 'FRESH',
       detail: 'Old sessions should not be treated as live customer demand or partner supply.',
-      action: expiredSessions.length ? 'Use current location and push state before dispatch' : 'Session snapshot is fresh',
+      action: expiredSessions.length
+        ? 'Use current location and push state before dispatch'
+        : 'Session snapshot is fresh',
       tone: expiredSessions.length ? 'ops-task-pending' : 'ops-task-done',
     },
   ];
@@ -464,7 +480,7 @@ function buildVersionRows(sessions: AdminAppSession[]) {
   );
 }
 
-function buildSessionRiskRows(sessions: AdminAppSession[]) {
+function buildSessionCheckRows(sessions: AdminAppSession[]) {
   const rows: Array<{
     key: string;
     status: string;

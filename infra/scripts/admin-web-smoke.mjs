@@ -126,7 +126,13 @@ const pages = [
   },
   {
     path: '/app-sessions',
-    markers: ['App Sessions', 'Session scope', 'Session command board', 'Latest app sessions'],
+    markers: [
+      'App Sessions',
+      'Session scope',
+      'Session command board',
+      'Session check queue',
+      'Latest app sessions',
+    ],
   },
   {
     path: '/app-sessions?role=CUSTOMER&state=live',
