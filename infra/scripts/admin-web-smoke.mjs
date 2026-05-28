@@ -45,7 +45,12 @@ const pages = [
   },
   {
     path: '/bookings?view=matching',
-    markers: ['Booking Monitor', 'Matching ops', 'Matching flow timeline', 'Dispatch partner repair shortcuts'],
+    markers: [
+      'Booking Monitor',
+      'Matching ops',
+      'Matching flow timeline',
+      'Dispatch partner repair shortcuts',
+    ],
   },
   { path: '/bookings?view=customer-choice', markers: ['Booking Monitor', 'Stage 3 choice'] },
   { path: '/bookings?view=handoff-repair', markers: ['Booking Monitor', 'Stage 4 repair'] },
@@ -94,21 +99,23 @@ const pages = [
   {
     path: '/partner-risk',
     markers: [
-      'Partner Risk',
-      'Partner risk scorecard',
+      'Partner Controls',
+      'Partner control board',
       'Booking acceptance unblock board',
       'Acceptance unblock playbook',
-      'Risk operation filters',
+      'Partner control command center',
+      'System control watchlist',
     ],
   },
   {
     path: '/provider-risk',
     markers: [
-      'Partner Risk',
-      'Partner risk scorecard',
+      'Partner Controls',
+      'Partner control board',
       'Booking acceptance unblock board',
       'Acceptance unblock playbook',
-      'Risk operation filters',
+      'Partner control command center',
+      'System control watchlist',
     ],
   },
   {
@@ -165,7 +172,12 @@ const pages = [
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
   {
     path: '/setup',
-    markers: ['External setup', 'External registration handoff', 'Current blockers', 'Runtime operations policy'],
+    markers: [
+      'External setup',
+      'External registration handoff',
+      'Current blockers',
+      'Runtime operations policy',
+    ],
   },
   { path: '/tax-policy', markers: ['Tax policy', 'Policy health'] },
 ];
@@ -254,17 +266,17 @@ const bookingLinkMatch = bookingsBody.match(/href="\/bookings\/([^"]+)"/);
 if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
   const bookingBody = await fetchPage(bookingPath);
-    const bookingMarkers = [
-      'Booking full record index',
-      'Booking stage snapshot',
-      'Applied operations policy',
-      'Dispatch candidate decision matrix',
-      'Excluded partner groups',
-      'Backup partner supply for this booking',
-      'No-show alerts',
-      'Attention checks',
-      'Booking chronological activity',
-    ];
+  const bookingMarkers = [
+    'Booking full record index',
+    'Booking stage snapshot',
+    'Applied operations policy',
+    'Dispatch candidate decision matrix',
+    'Excluded partner groups',
+    'Backup partner supply for this booking',
+    'No-show alerts',
+    'Attention checks',
+    'Booking chronological activity',
+  ];
   const missing = bookingMarkers.filter((marker) => !bookingBody.includes(marker));
   if (missing.length > 0) {
     throw new Error(`${bookingPath} is missing expected markers: ${missing.join(', ')}`);

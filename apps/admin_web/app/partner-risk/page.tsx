@@ -21,6 +21,24 @@ type PartnerRiskPolicy = {
   locationFreshnessMinutes: number;
 };
 
+type PartnerControlBoardItem = {
+  provider: AdminProvider;
+  partner: string;
+  status: string;
+  walletBalance: number;
+  reasons: string[];
+  controls: Array<{ label: string; className: string }>;
+  actionLabel: string;
+  actionHref: string;
+  operatorAction: string;
+  priority: number;
+};
+
+type PartnerControlBoard = {
+  metrics: RiskCommandMetric[];
+  items: PartnerControlBoardItem[];
+};
+
 const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
@@ -59,13 +77,13 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
   const operatingBlocks = buildPartnerOperatingBlocks(providerWatchlist);
   const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist, riskPolicy);
   const acceptanceUnblockPlaybook = buildAcceptanceUnblockPlaybook(acceptanceUnblockBoard);
-  const riskScorecard = buildPartnerRiskScorecard(providers, providerWatchlist, riskPolicy);
+  const partnerControlBoard = buildPartnerControlBoard(providers, providerWatchlist);
 
   return (
     <>
-      <h1>Partner Risk</h1>
+      <h1>Partner Controls</h1>
       <p className="muted">
-        Track partner reports, active sanctions, account blocks, payout holds, and safety follow-up in one
+        Track partner reports, active sanctions, account blocks, payout holds, and operations follow-up in one
         operator view.
       </p>
 
@@ -81,17 +99,17 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Risk command center</h2>
+            <h2>Partner control command center</h2>
             <p className="muted">
-              One-screen triage for safety, finance blocks, account controls, and investigation SLA.
+              One-screen triage for finance blocks, account controls, document review, and investigation SLA.
             </p>
           </div>
           <span className={`pill ${commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}`}>
             {commandCenter.urgentCount ? `${commandCenter.urgentCount} urgent` : 'No urgent lane'}
           </span>
           <Link className="text-link" href="/operations-policy">
-            {riskPolicy.responseWindowMinutes}m first-pick / {formatDistance(riskPolicy.backupRadiusMeters)} backup /
-            {riskPolicy.invitationLimit} invite cap / location {riskPolicy.locationFreshnessMinutes}m
+            {riskPolicy.responseWindowMinutes}m first-pick / {formatDistance(riskPolicy.backupRadiusMeters)}{' '}
+            backup /{riskPolicy.invitationLimit} invite cap / location {riskPolicy.locationFreshnessMinutes}m
           </Link>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 12 }}>
@@ -149,7 +167,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           </div>
         ) : (
           <p className="muted" style={{ marginTop: 12 }}>
-            No risk action currently needs operator review.
+            No partner control action currently needs operator review.
           </p>
         )}
       </section>
@@ -157,46 +175,48 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner risk scorecard</h2>
+            <h2>Partner control board</h2>
             <p className="muted">
-              Converts booking blockers, wallet debt, KYC gaps, payout holds, location freshness, and
-              device reachability into one operating score.
+              Shows factual partner controls without scoring people: booking blocks, wallet debt, payout
+              gates, document gaps, location freshness, and device reachability.
             </p>
           </div>
-          <span className={`pill ${riskScorecard.highestScore >= 80 ? 'pill-danger' : 'pill-info'}`}>
-            Highest score {riskScorecard.highestScore}
-          </span>
+          <span className="pill pill-info">{partnerControlBoard.items.length} partner(s)</span>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 12 }}>
-          {riskScorecard.metrics.map((scoreMetric) => (
-            <div className="ops-task-card" key={scoreMetric.label}>
-              <small>{scoreMetric.label}</small>
-              <h3>{scoreMetric.value}</h3>
+          {partnerControlBoard.metrics.map((controlMetric) => (
+            <div className="ops-task-card" key={controlMetric.label}>
+              <small>{controlMetric.label}</small>
+              <h3>{controlMetric.value}</h3>
               <div className="ops-task-breakdown">
-                <span className={`ops-task-breakdown-item ${scoreMetric.tone}`}>
-                  <span>Risk score</span>
-                  <strong>{scoreMetric.label}</strong>
+                <span className={`ops-task-breakdown-item ${controlMetric.tone}`}>
+                  <span>Control type</span>
+                  <strong>{controlMetric.label}</strong>
                 </span>
               </div>
             </div>
           ))}
         </div>
-        {riskScorecard.items.length ? (
+        {partnerControlBoard.items.length ? (
           <div className="setup-stage-list" style={{ marginTop: 12 }}>
-            {riskScorecard.items.map((item) => (
+            {partnerControlBoard.items.map((item) => (
               <div className="setup-stage-item" key={item.provider.id}>
-                <span>{item.score}/100</span>
+                <span>{item.status}</span>
                 <div>
                   <strong>{item.partner}</strong>
                   <p className="muted">
-                    {item.status} / Wallet {formatMoney(item.walletBalance)} / {item.primaryReasons.join(', ')}
+                    Wallet {formatMoney(item.walletBalance)} / {item.reasons.join(', ')}
                   </p>
                   <p className="muted">{item.operatorAction}</p>
                   <div className="participant-list">
-                    <span className={`pill ${item.tone}`}>{item.band}</span>
-                    {item.acceptanceBlocked ? <span className="pill pill-danger">Booking blocked</span> : null}
-                    {item.payoutBlocked ? <span className="pill pill-warn">Payout gated</span> : null}
-                    {item.dispatchRisk ? <span className="pill pill-info">Dispatch risk</span> : null}
+                    {item.controls.map((control) => (
+                      <span
+                        className={`pill ${control.className}`}
+                        key={`${item.provider.id}-${control.label}`}
+                      >
+                        {control.label}
+                      </span>
+                    ))}
                   </div>
                 </div>
                 <div className="actions">
@@ -212,7 +232,8 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           </div>
         ) : (
           <p className="muted" style={{ marginTop: 12 }}>
-            No partner currently has enough risk to appear in the scorecard.
+            No partner currently has an active account, wallet, document, payout, location, or device
+            follow-up.
           </p>
         )}
       </section>
@@ -222,8 +243,8 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <div>
             <h2>Booking acceptance unblock board</h2>
             <p className="muted">
-              Shows which partners cannot accept or join bookings now, which issues only affect payout,
-              and exactly where staff should clear the blocker.
+              Shows which partners cannot accept or join bookings now, which issues only affect payout, and
+              exactly where staff should clear the blocker.
             </p>
           </div>
           <span
@@ -360,7 +381,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           </div>
         ) : (
           <p className="muted" style={{ marginTop: 12 }}>
-            No partner currently has a risk signal that should block operations.
+            No partner currently has a control signal that should block operations.
           </p>
         )}
       </section>
@@ -368,7 +389,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header" style={{ marginBottom: 12 }}>
           <div>
-            <h2>Risk operation filters</h2>
+            <h2>Control filters</h2>
             <p className="muted">
               Dashboard links land here with the exact investigation lane already selected.
             </p>
@@ -377,7 +398,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
                 Active queue: {activeFilters.map((filter) => filter.description).join(' ')}
               </p>
             ) : (
-              <p className="muted">No risk filter is active. Showing every report and sanction lane.</p>
+              <p className="muted">No control filter is active. Showing every report and sanction lane.</p>
             )}
           </div>
           <span className={`pill ${activeFilters.length ? 'pill-warn' : 'pill-success'}`}>
@@ -441,7 +462,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>System risk watchlist</h2>
+            <h2>System control watchlist</h2>
             <p className="muted">
               Automatic partner signals from wallet debt, sanctions, onboarding gaps, devices, and recent
               report history.
@@ -453,7 +474,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <thead>
             <tr>
               <th>Partner</th>
-              <th>Risk signals</th>
+              <th>Control signals</th>
               <th>Money / access</th>
               <th>Operator next step</th>
             </tr>
@@ -513,7 +534,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             ))}
             {!providerWatchlist.length ? (
               <tr>
-                <td colSpan={4}>No automatic partner risk signals are active.</td>
+                <td colSpan={4}>No automatic partner control signals are active.</td>
               </tr>
             ) : null}
           </tbody>
@@ -873,6 +894,117 @@ type PartnerRiskScorecard = {
   items: PartnerRiskScoreItem[];
 };
 
+function buildPartnerControlBoard(
+  providers: AdminProvider[],
+  watchlist: ProviderRiskWatchItem[],
+): PartnerControlBoard {
+  const watchByProvider = new Map(watchlist.map((item) => [item.provider.id, item]));
+  const items = providers
+    .map((provider) => buildPartnerControlBoardItem(provider, watchByProvider.get(provider.id)))
+    .filter((item): item is PartnerControlBoardItem => Boolean(item))
+    .sort((left, right) => right.priority - left.priority || left.partner.localeCompare(right.partner))
+    .slice(0, 12);
+  const bookingBlocked = items.filter((item) =>
+    item.controls.some((control) => control.label === 'Booking blocked'),
+  );
+  const payoutGated = items.filter((item) =>
+    item.controls.some((control) => control.label === 'Payout gated'),
+  );
+  const documentReview = items.filter((item) =>
+    item.controls.some((control) => control.label === 'Documents'),
+  );
+  const locationFollowUp = items.filter((item) =>
+    item.controls.some((control) => control.label === 'Location'),
+  );
+
+  return {
+    metrics: [
+      metric('Active controls', items.length, items.length ? 'warn' : 'ok'),
+      metric('Booking blocks', bookingBlocked.length, bookingBlocked.length ? 'danger' : 'ok'),
+      metric('Payout gates', payoutGated.length, payoutGated.length ? 'warn' : 'ok'),
+      metric('Documents', documentReview.length, documentReview.length ? 'warn' : 'ok'),
+      metric('Location checks', locationFollowUp.length, locationFollowUp.length ? 'info' : 'ok'),
+    ],
+    items,
+  };
+}
+
+function buildPartnerControlBoardItem(
+  provider: AdminProvider,
+  watchItem: ProviderRiskWatchItem | undefined,
+): PartnerControlBoardItem | null {
+  const walletBalance = providerUnsettledWalletBalance(provider);
+  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
+  const reportsOpen = (provider.reports ?? []).filter((report) =>
+    ['OPEN', 'INVESTIGATING'].includes(report.status),
+  );
+  const reasons = watchItem?.signals.map((signal) => signal.label) ?? [];
+  const controls: PartnerControlBoardItem['controls'] = [];
+  let priority = 0;
+
+  if (
+    provider.blockedAt ||
+    walletBalance < 0 ||
+    activeSanctions.some((sanction) => sanction.type === 'ACCOUNT_BLOCK')
+  ) {
+    controls.push({ label: 'Booking blocked', className: 'pill-danger' });
+    priority += 100;
+  }
+  if (activeSanctions.some((sanction) => sanction.type === 'PAYOUT_HOLD')) {
+    controls.push({ label: 'Payout gated', className: 'pill-warn' });
+    priority += 80;
+  }
+  if (reportsOpen.length > 0 || activeSanctions.length > 0) {
+    controls.push({ label: 'Reports', className: 'pill-info' });
+    priority += 60;
+  }
+  if (
+    !provider.kyc ||
+    provider.kyc.status !== 'APPROVED' ||
+    !(provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED')
+  ) {
+    controls.push({ label: 'Documents', className: 'pill-warn' });
+    priority += 40;
+  }
+  if (watchItem?.signals.some((signal) => signal.kind === 'LOCATION')) {
+    controls.push({ label: 'Location', className: 'pill-info' });
+    priority += 25;
+  }
+  if (watchItem?.signals.some((signal) => signal.kind === 'DEVICE')) {
+    controls.push({ label: 'Device', className: 'pill-info' });
+    priority += 20;
+  }
+  if (!watchItem && controls.length === 0) return null;
+
+  const status = controls.some((control) => control.label === 'Booking blocked')
+    ? 'Blocked'
+    : controls.some((control) => control.label === 'Payout gated')
+      ? 'Payout'
+      : 'Review';
+  const fallbackReasons = reasons.length ? reasons : controls.map((control) => control.label);
+
+  return {
+    provider,
+    partner: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+    status,
+    walletBalance,
+    reasons: fallbackReasons.slice(0, 5),
+    controls,
+    actionLabel: reportsOpen.length || activeSanctions.length ? 'Open reports' : 'Open profile',
+    actionHref:
+      reportsOpen.length || activeSanctions.length
+        ? `/partner-risk?q=${encodeURIComponent(provider.id)}`
+        : `/partners/${provider.id}`,
+    operatorAction:
+      walletBalance < 0
+        ? 'Collect the cash fee deposit or approve an auditable offset before this partner accepts more bookings.'
+        : activeSanctions.length
+          ? 'Review active account or payout controls and record the next operation decision.'
+          : 'Open the partner profile and clear the missing document, location, or device follow-up.',
+    priority,
+  };
+}
+
 function buildPartnerRiskScorecard(
   providers: AdminProvider[],
   watchlist: ProviderRiskWatchItem[],
@@ -1036,7 +1168,8 @@ function partnerRiskScoreAction(input: {
   }
   if (input.hasPayoutHold || input.payoutBlocked) {
     return {
-      operatorAction: 'Keep work history visible, but block payout until finance, tax, or payout evidence is resolved.',
+      operatorAction:
+        'Keep work history visible, but block payout until finance, tax, or payout evidence is resolved.',
       actionHref: '/payouts',
       actionLabel: 'Open payouts',
     };
@@ -1187,7 +1320,8 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         tone: 'pill-danger',
         title: `${partner} account is blocked`,
         reason: item.provider.blockedReason || 'Partner account is restricted by an admin control.',
-        operatorAction: 'Review evidence and unblock only when the audit trail clearly explains the decision.',
+        operatorAction:
+          'Review evidence and unblock only when the audit trail clearly explains the decision.',
         href: `/partners/${item.provider.id}`,
         priority: 105,
       });
@@ -1203,7 +1337,8 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         tone: 'pill-danger',
         title: `${partner} payout is on hold`,
         reason: 'Active payout hold prevents normal payout processing until the underlying risk is cleared.',
-        operatorAction: 'Open the payout and risk lanes, resolve evidence, then lift the sanction if appropriate.',
+        operatorAction:
+          'Open the payout and risk lanes, resolve evidence, then lift the sanction if appropriate.',
         href: '/payouts',
         priority: 92,
       });
@@ -1219,7 +1354,8 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         tone: item.severity === 'CRITICAL' || item.severity === 'HIGH' ? 'pill-danger' : 'pill-warn',
         title: `${partner} has open risk reports`,
         reason: 'Open reports can affect partner trust level, payout release, and future dispatch decisions.',
-        operatorAction: 'Move the report to investigating, resolve with notes, dismiss with evidence, or apply a sanction.',
+        operatorAction:
+          'Move the report to investigating, resolve with notes, dismiss with evidence, or apply a sanction.',
         href: `/partner-risk?q=${encodeURIComponent(item.provider.id)}`,
         priority: item.severity === 'CRITICAL' ? 88 : 78,
       });
@@ -1237,7 +1373,8 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         title: `${partner} location needs refresh`,
         reason:
           'Distance sorting and configured invitation-radius decisions can be wrong when online location is missing or stale.',
-        operatorAction: 'Ask the partner to reopen the app and refresh location before accepting dispatch-sensitive bookings.',
+        operatorAction:
+          'Ask the partner to reopen the app and refresh location before accepting dispatch-sensitive bookings.',
         href: `/partners/${item.provider.id}`,
         priority: 64,
       });
@@ -1252,7 +1389,8 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         severity: 'KYC pending',
         tone: 'pill-warn',
         title: `${partner} KYC is not approved`,
-        reason: 'Partner can remain in onboarding, but activity level should not be upgraded without identity approval.',
+        reason:
+          'Partner can remain in onboarding, but activity level should not be upgraded without identity approval.',
         operatorAction: 'Review CCCD/CMND and selfie documents, then approve, reject, or request reupload.',
         href: `/partners/${item.provider.id}`,
         priority: 56,
@@ -1268,7 +1406,8 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         severity: 'Bank pending',
         tone: 'pill-warn',
         title: `${partner} bank account is not approved`,
-        reason: 'Partner may work only if policy allows it, but payout cannot be released without a verified account.',
+        reason:
+          'Partner may work only if policy allows it, but payout cannot be released without a verified account.',
         operatorAction: 'Review bank name, account holder, QR/banking data, and account-change history.',
         href: `/partners/${item.provider.id}`,
         priority: 48,
@@ -1284,8 +1423,10 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
         severity: 'Tax pending',
         tone: 'pill-info',
         title: `${partner} tax profile is not approved`,
-        reason: 'Tax data should be requested after first earning, but tax rules must already exist in the system.',
-        operatorAction: 'Keep earning calculation policy active, then require tax profile before payout or wallet withdrawal.',
+        reason:
+          'Tax data should be requested after first earning, but tax rules must already exist in the system.',
+        operatorAction:
+          'Keep earning calculation policy active, then require tax profile before payout or wallet withdrawal.',
         href: '/tax-policy',
         priority: 36,
       });
@@ -1303,16 +1444,12 @@ function buildBookingAcceptanceUnblockBoard(
   const accountBlockedItems = watchlist.filter(
     (item) => item.provider.blockedAt || item.signals.some((signal) => signal.kind === 'BLOCK'),
   );
-  const locationItems = watchlist.filter((item) =>
-    item.signals.some((signal) => signal.kind === 'LOCATION'),
-  );
+  const locationItems = watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'LOCATION'));
   const verificationItems = watchlist.filter((item) =>
     item.signals.some((signal) => ['KYC', 'BANK'].includes(signal.kind)),
   );
   const deviceItems = watchlist.filter((item) => partnerHasDeviceContactGap(item.provider));
-  const taxItems = watchlist.filter((item) =>
-    item.signals.some((signal) => signal.kind === 'TAX'),
-  );
+  const taxItems = watchlist.filter((item) => item.signals.some((signal) => signal.kind === 'TAX'));
 
   return [
     {
@@ -1350,8 +1487,7 @@ function buildBookingAcceptanceUnblockBoard(
         : 'No account block is currently preventing partner booking acceptance.',
       operatorScript:
         'Keep the block active until evidence, notes, and the unblock reason are clear in the audit trail.',
-      customerImpact:
-        'Customers will not see or match with partners under active account restrictions.',
+      customerImpact: 'Customers will not see or match with partners under active account restrictions.',
       action: accountBlockedItems.length ? 'Review account blocks' : 'Open risk board',
       href: accountBlockedItems.length ? '/partner-risk?sanction=ACTIVE' : '/partner-risk',
       className: accountBlockedItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -1512,7 +1648,8 @@ function buildAcceptanceUnblockPlaybook(
       pillClass: card('verification-readiness')?.blockingCount ? 'pill-danger' : 'pill-success',
       detail:
         'KYC, required CCCD/selfie documents, and bank approval are the Level 2 work gate for paid bookings.',
-      bookingImpact: 'Blocks paid booking acceptance and backup participation until the evidence is approved.',
+      bookingImpact:
+        'Blocks paid booking acceptance and backup participation until the evidence is approved.',
       payoutImpact: 'Bank approval is required before payout; tax remains staged until first earning.',
       customerImpact: 'Keeps marketplace trust high while avoiding excessive signup friction.',
       action: card('verification-readiness')?.action ?? 'Open acceptance-blocked partners',
@@ -1529,8 +1666,10 @@ function buildAcceptanceUnblockPlaybook(
       pillClass: card('location-dispatch')?.blockingCount ? 'pill-danger' : 'pill-warn',
       detail:
         'Location freshness controls distance sorting and the 10km backup invite pool, but it is often solved by reopening the app.',
-      bookingImpact: 'Can exclude partners from backup matching or make customer ETA expectations unreliable.',
-      payoutImpact: 'No direct payout impact, but location evidence may matter for disputes and no-show review.',
+      bookingImpact:
+        'Can exclude partners from backup matching or make customer ETA expectations unreliable.',
+      payoutImpact:
+        'No direct payout impact, but location evidence may matter for disputes and no-show review.',
       customerImpact: 'Improves nearby partner ordering and reduces wasted waiting time.',
       action: card('location-dispatch')?.action ?? 'Open partner profiles',
       href: card('location-dispatch')?.href ?? '/partners?review=location',
@@ -1546,7 +1685,8 @@ function buildAcceptanceUnblockPlaybook(
       pillClass: card('device-contact')?.blockingCount ? 'pill-danger' : 'pill-warn',
       detail:
         'In-app alerts are active now and OS push is deferred, so recent app sessions and enabled devices matter.',
-      bookingImpact: 'Does not always hard-block acceptance, but weakens response rate and backup participation.',
+      bookingImpact:
+        'Does not always hard-block acceptance, but weakens response rate and backup participation.',
       payoutImpact: 'No direct payout impact.',
       customerImpact: 'Reduces missed partner requests during the 10 minute response window.',
       action: card('device-contact')?.action ?? 'Open app sessions',
@@ -1564,7 +1704,8 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'Tax policy must be configured from day one, but partner tax profile collection waits until first earning.',
       bookingImpact: 'Should not block first signup or first booking acceptance.',
-      payoutImpact: 'Blocks payout and withdrawal after first earning until MST, address, and agreements are complete.',
+      payoutImpact:
+        'Blocks payout and withdrawal after first earning until MST, address, and agreements are complete.',
       customerImpact: 'Reduces partner onboarding drop-off while finance remains controlled before payout.',
       action: card('tax-after-first-earning')?.action ?? 'Open tax policy',
       href: card('tax-after-first-earning')?.href ?? '/tax-policy',
@@ -1911,12 +2052,15 @@ function providerRiskDetail(input: {
   return 'Partner has onboarding or compliance gaps that need staff follow-up.';
 }
 
-function providerRiskNextStep(input: {
-  walletBalance: number;
-  hasPayoutHold: boolean;
-  openReportCount: number;
-  provider: AdminProvider;
-}, riskPolicy = DEFAULT_PARTNER_RISK_POLICY) {
+function providerRiskNextStep(
+  input: {
+    walletBalance: number;
+    hasPayoutHold: boolean;
+    openReportCount: number;
+    provider: AdminProvider;
+  },
+  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
+) {
   if (input.walletBalance < 0) {
     return `Confirm partner deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
   }
