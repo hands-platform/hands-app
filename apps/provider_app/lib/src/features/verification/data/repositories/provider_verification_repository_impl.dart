@@ -10,7 +10,7 @@ class ProviderVerificationRepositoryImpl
 
   @override
   Future<Map<String, dynamic>> verification() async {
-    final result = await _api.getJson('/provider/verification');
+    final result = await _api.getJson('/partner/verification');
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
@@ -74,7 +74,7 @@ class ProviderVerificationRepositoryImpl
     List<String> fileIds = const [],
   }) async {
     final result = await _api
-        .postJson('/provider/verification/submit', {'fileIds': fileIds});
+        .postJson('/partner/verification/submit', {'fileIds': fileIds});
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 }

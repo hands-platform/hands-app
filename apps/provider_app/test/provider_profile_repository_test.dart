@@ -22,7 +22,7 @@ void main() {
         requests.add('${request.method} ${request.uri.path}');
         request.response.headers.contentType = ContentType.json;
 
-        if (request.method == 'GET' && request.uri.path == '/provider/me') {
+        if (request.method == 'GET' && request.uri.path == '/partner/me') {
           request.response.write(jsonEncode({
             'providerProfile': {
               'currentLat': null,
@@ -53,10 +53,10 @@ void main() {
     );
 
     expect(requests, [
-      'POST /provider/device-session',
-      'POST /provider/online',
-      'GET /provider/me',
-      'POST /provider/offline',
+      'POST /partner/device-session',
+      'POST /partner/online',
+      'GET /partner/me',
+      'POST /partner/offline',
     ]);
 
     await server.close(force: true);
@@ -101,7 +101,7 @@ void main() {
       ),
     );
 
-    expect(requests, ['POST /provider/device-session']);
+    expect(requests, ['POST /partner/device-session']);
 
     await server.close(force: true);
   });
@@ -145,7 +145,7 @@ void main() {
       ),
     );
 
-    expect(requests, ['POST /provider/device-session']);
+    expect(requests, ['POST /partner/device-session']);
 
     await server.close(force: true);
   });

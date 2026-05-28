@@ -24,11 +24,11 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
   @override
   Future<void> goOnline() async {
     await recordDeviceSession();
-    await _api.postJson('/provider/online', {});
+    await _api.postJson('/partner/online', {});
     try {
       await updateLocation();
     } catch (_) {
-      await _api.postJson('/provider/offline', {});
+      await _api.postJson('/partner/offline', {});
       rethrow;
     }
   }
@@ -37,7 +37,7 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
   Future<Map<String, dynamic>> recordDeviceSession() async {
     final identity = await _deviceIdentityDataSource.currentIdentity();
     final result =
-        await _api.postJson('/provider/device-session', identity.toJson());
+        await _api.postJson('/partner/device-session', identity.toJson());
     final record = result is Map<String, dynamic>
         ? result
         : <String, dynamic>{'ok': true};
@@ -59,7 +59,7 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
 
   @override
   Future<void> goOffline() async {
-    await _api.postJson('/provider/offline', {});
+    await _api.postJson('/partner/offline', {});
   }
 
   @override
@@ -75,14 +75,14 @@ class ProviderProfileRepositoryImpl implements ProviderProfileRepository {
       throw StateError(
           'Location permission is required before sharing partner location.');
     }
-    await _api.postJson('/provider/location', {'lat': lat, 'lng': lng});
+    await _api.postJson('/partner/location', {'lat': lat, 'lng': lng});
     _socket.updateLocation(lat: lat, lng: lng, bookingId: bookingId);
     return {'lat': lat, 'lng': lng};
   }
 
   @override
   Future<Map<String, dynamic>> providerMe() async {
-    final result = await _api.getJson('/provider/me');
+    final result = await _api.getJson('/partner/me');
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 

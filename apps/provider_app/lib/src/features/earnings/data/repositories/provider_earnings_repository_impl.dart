@@ -8,19 +8,19 @@ class ProviderEarningsRepositoryImpl implements ProviderEarningsRepository {
 
   @override
   Future<Map<String, dynamic>> earningsSummary() async {
-    final result = await _api.getJson('/provider/earnings/summary');
+    final result = await _api.getJson('/partner/earnings/summary');
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
   @override
   Future<List<dynamic>> earnings() async {
-    final result = await _api.getJson('/provider/earnings');
+    final result = await _api.getJson('/partner/earnings');
     return result is List<dynamic> ? result : [];
   }
 
   @override
   Future<List<dynamic>> payoutBatches() async {
-    final result = await _api.getJson('/provider/earnings/payout-batches');
+    final result = await _api.getJson('/partner/earnings/payout-batches');
     return result is List<dynamic> ? result : [];
   }
 }

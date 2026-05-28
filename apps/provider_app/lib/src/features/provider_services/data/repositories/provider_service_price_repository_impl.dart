@@ -11,7 +11,7 @@ class ProviderServicePriceRepositoryImpl
 
   @override
   Future<List<ProviderServicePrice>> listServices() async {
-    final result = await _api.getJson('/provider/services/groups');
+    final result = await _api.getJson('/partner/services/groups');
     return _serviceItemsFromResult(result)
         .map((item) =>
             ProviderServicePriceModel.fromJson(Map<String, dynamic>.from(item)))
@@ -25,7 +25,7 @@ class ProviderServicePriceRepositoryImpl
     required int price,
     required bool active,
   }) async {
-    final result = await _api.patchJson('/provider/services/$serviceId', {
+    final result = await _api.patchJson('/partner/services/$serviceId', {
       'price': price,
       'active': active,
     });

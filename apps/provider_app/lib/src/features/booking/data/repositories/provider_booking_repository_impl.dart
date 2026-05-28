@@ -10,13 +10,13 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
 
   @override
   Future<List<dynamic>> openBookings() async {
-    final result = await _api.getJson('/provider/bookings/open');
+    final result = await _api.getJson('/partner/bookings/open');
     return result is List<dynamic> ? result : [];
   }
 
   @override
   Future<List<dynamic>> listBookings() async {
-    final result = await _api.getJson('/provider/bookings');
+    final result = await _api.getJson('/partner/bookings');
     return result is List<dynamic> ? result : [];
   }
 
@@ -56,7 +56,7 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
 
   @override
   Future<Map<String, dynamic>> joinBooking(String bookingId) async {
-    final result = await _api.postJson('/provider/bookings/$bookingId/join', {})
+    final result = await _api.postJson('/partner/bookings/$bookingId/join', {})
         as Map<String, dynamic>;
     _socket.joinBooking(bookingId);
     return result;
@@ -65,21 +65,21 @@ class ProviderBookingRepositoryImpl implements ProviderBookingRepository {
   @override
   Future<Map<String, dynamic>> acceptBooking(String bookingId) async {
     final result =
-        await _api.postJson('/provider/bookings/$bookingId/accept', {});
+        await _api.postJson('/partner/bookings/$bookingId/accept', {});
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
   @override
   Future<Map<String, dynamic>> rejectBooking(String bookingId) async {
     final result =
-        await _api.postJson('/provider/bookings/$bookingId/reject', {});
+        await _api.postJson('/partner/bookings/$bookingId/reject', {});
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
   @override
   Future<Map<String, dynamic>> startBooking(String bookingId) async {
     final result =
-        await _api.postJson('/provider/bookings/$bookingId/start', {});
+        await _api.postJson('/partner/bookings/$bookingId/start', {});
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 }

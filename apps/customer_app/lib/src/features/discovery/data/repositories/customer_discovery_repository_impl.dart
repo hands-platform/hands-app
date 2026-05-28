@@ -18,7 +18,7 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
     required double lng,
   }) async {
     final result =
-        await _api.getJson('/customer/providers/nearby?lat=$lat&lng=$lng');
+        await _api.getJson('/customer/partners/nearby?lat=$lat&lng=$lng');
     return result is List<dynamic> ? result : [];
   }
 
@@ -37,7 +37,7 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
 
   @override
   Future<Map<String, dynamic>> getProviderDetail(String providerId) async {
-    final result = await _api.getJson('/customer/providers/$providerId');
+    final result = await _api.getJson('/customer/partners/$providerId');
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 }

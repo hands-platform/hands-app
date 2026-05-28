@@ -22,20 +22,20 @@ void main() {
         request.response.headers.contentType = ContentType.json;
 
         switch ('${request.method} ${request.uri.path}') {
-          case 'GET /provider/onboarding':
+          case 'GET /partner/onboarding':
             request.response.write(jsonEncode({
               'level': 'LEVEL_1_SIGNUP',
               'nextRequiredActions': ['BASIC_PROFILE'],
             }));
-          case 'PATCH /provider/onboarding/basic-profile':
+          case 'PATCH /partner/onboarding/basic-profile':
             request.response.write(jsonEncode({'ok': true}));
-          case 'POST /provider/onboarding/bank-accounts':
+          case 'POST /partner/onboarding/bank-accounts':
             request.response.write(jsonEncode({'ok': true}));
-          case 'POST /provider/onboarding/tax-profile':
+          case 'POST /partner/onboarding/tax-profile':
             request.response.write(jsonEncode({'ok': true}));
-          case 'POST /provider/onboarding/agreements':
+          case 'POST /partner/onboarding/agreements':
             request.response.write(jsonEncode({'ok': true}));
-          case 'POST /provider/onboarding/kyc/submit':
+          case 'POST /partner/onboarding/kyc/submit':
             request.response.write(jsonEncode({'ok': true}));
           default:
             request.response.statusCode = 404;
@@ -68,12 +68,12 @@ void main() {
 
     expect(snapshot['level'], 'LEVEL_1_SIGNUP');
     expect(requests, [
-      'GET /provider/onboarding',
-      'PATCH /provider/onboarding/basic-profile',
-      'POST /provider/onboarding/bank-accounts',
-      'POST /provider/onboarding/tax-profile',
-      'POST /provider/onboarding/agreements',
-      'POST /provider/onboarding/kyc/submit',
+      'GET /partner/onboarding',
+      'PATCH /partner/onboarding/basic-profile',
+      'POST /partner/onboarding/bank-accounts',
+      'POST /partner/onboarding/tax-profile',
+      'POST /partner/onboarding/agreements',
+      'POST /partner/onboarding/kyc/submit',
     ]);
     expect(bodies.first['displayName'], 'Linh Wellness');
     expect(bodies.last['cccdNumber'], '000000000000');

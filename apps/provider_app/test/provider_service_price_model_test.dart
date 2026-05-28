@@ -170,7 +170,7 @@ void main() {
 
     final services = await repository.listServices();
 
-    expect(api.getPath, '/provider/services/groups');
+    expect(api.getPath, '/partner/services/groups');
     expect(services, hasLength(2));
     expect(services.map((service) => service.id), [
       'svc-foot-60',
@@ -287,7 +287,7 @@ class _FakeApiClient extends ApiClient {
 
   @override
   Future<dynamic> patchJson(String path, Map<String, dynamic> body) async {
-    expect(path, '/provider/services/svc-foot-60');
+    expect(path, '/partner/services/svc-foot-60');
     expect(body['price'], 600000);
     expect(body['active'], isTrue);
     return patchResponse;

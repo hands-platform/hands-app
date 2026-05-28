@@ -8,7 +8,7 @@ class ProviderOnboardingRepositoryImpl implements ProviderOnboardingRepository {
 
   @override
   Future<Map<String, dynamic>> snapshot() async {
-    final result = await _api.getJson('/provider/onboarding');
+    final result = await _api.getJson('/partner/onboarding');
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
@@ -16,7 +16,7 @@ class ProviderOnboardingRepositoryImpl implements ProviderOnboardingRepository {
   Future<Map<String, dynamic>> updateBasicProfile(
       Map<String, dynamic> input) async {
     final result =
-        await _api.patchJson('/provider/onboarding/basic-profile', input);
+        await _api.patchJson('/partner/onboarding/basic-profile', input);
     return result is Map<String, dynamic> ? result : <String, dynamic>{};
   }
 
@@ -25,7 +25,7 @@ class ProviderOnboardingRepositoryImpl implements ProviderOnboardingRepository {
     String? cccdNumber,
     List<Map<String, String>> documents = const [],
   }) async {
-    final result = await _api.postJson('/provider/onboarding/kyc/submit', {
+    final result = await _api.postJson('/partner/onboarding/kyc/submit', {
       if (cccdNumber != null && cccdNumber.trim().isNotEmpty)
         'cccdNumber': cccdNumber,
       'documents': documents,
@@ -40,7 +40,7 @@ class ProviderOnboardingRepositoryImpl implements ProviderOnboardingRepository {
     required String accountHolderName,
     Map<String, dynamic>? qrBankingInfo,
   }) async {
-    final result = await _api.postJson('/provider/onboarding/bank-accounts', {
+    final result = await _api.postJson('/partner/onboarding/bank-accounts', {
       'bankName': bankName,
       if (accountNumber != null && accountNumber.trim().isNotEmpty)
         'accountNumber': accountNumber,
@@ -56,7 +56,7 @@ class ProviderOnboardingRepositoryImpl implements ProviderOnboardingRepository {
     required String legalName,
     required String registeredAddress,
   }) async {
-    final result = await _api.postJson('/provider/onboarding/tax-profile', {
+    final result = await _api.postJson('/partner/onboarding/tax-profile', {
       if (taxCode != null && taxCode.trim().isNotEmpty) 'taxCode': taxCode,
       'legalName': legalName,
       'registeredAddress': registeredAddress,
@@ -70,7 +70,7 @@ class ProviderOnboardingRepositoryImpl implements ProviderOnboardingRepository {
     required String version,
     String? deviceId,
   }) async {
-    final result = await _api.postJson('/provider/onboarding/agreements', {
+    final result = await _api.postJson('/partner/onboarding/agreements', {
       'type': type,
       'version': version,
       if (deviceId != null && deviceId.trim().isNotEmpty) 'deviceId': deviceId,
