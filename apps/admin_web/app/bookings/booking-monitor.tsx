@@ -158,10 +158,10 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   const orderedBookings = useMemo(
     () =>
       [...bookings].sort((left, right) => {
-        const leftScore = bookingPriority(left);
-        const rightScore = bookingPriority(right);
-        if (leftScore !== rightScore) {
-          return rightScore - leftScore;
+        const leftPriority = bookingPriority(left);
+        const rightPriority = bookingPriority(right);
+        if (leftPriority !== rightPriority) {
+          return rightPriority - leftPriority;
         }
 
         return bookingTimestamp(right) - bookingTimestamp(left);
@@ -1733,7 +1733,7 @@ function bookingDashboardTone(tone: BookingCommandLane['tone']) {
 
 function commandToneLabel(tone: BookingCommandLane['tone']) {
   if (tone === 'danger') {
-    return 'Critical';
+    return 'Immediate check';
   }
   if (tone === 'warn') {
     return 'Watch';

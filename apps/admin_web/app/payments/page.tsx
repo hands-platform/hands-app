@@ -199,10 +199,10 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
 
 function sortPayments(payments: AdminPayment[]) {
   return [...payments].sort((left, right) => {
-    const leftScore = paymentPriority(left);
-    const rightScore = paymentPriority(right);
-    if (leftScore !== rightScore) {
-      return rightScore - leftScore;
+    const leftPriority = paymentPriority(left);
+    const rightPriority = paymentPriority(right);
+    if (leftPriority !== rightPriority) {
+      return rightPriority - leftPriority;
     }
 
     return (right.id || '').localeCompare(left.id || '');

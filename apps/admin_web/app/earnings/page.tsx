@@ -542,9 +542,9 @@ export default async function EarningsPage() {
 
 function sortEarnings(earnings: AdminEarning[]) {
   return [...earnings].sort((left, right) => {
-    const scoreDiff = earningPriority(left) - earningPriority(right);
-    if (scoreDiff !== 0) {
-      return scoreDiff;
+    const priorityDiff = earningPriority(left) - earningPriority(right);
+    if (priorityDiff !== 0) {
+      return priorityDiff;
     }
     return Date.parse(right.createdAt ?? '') - Date.parse(left.createdAt ?? '');
   });

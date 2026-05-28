@@ -908,8 +908,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <select name="severity" defaultValue="MEDIUM">
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">Major</option>
+              <option value="CRITICAL">Urgent</option>
             </select>
           </label>
           <label>
@@ -1029,8 +1029,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                         <select name="severity" defaultValue={report.severity}>
                           <option value="LOW">Low</option>
                           <option value="MEDIUM">Medium</option>
-                          <option value="HIGH">High</option>
-                          <option value="CRITICAL">Critical</option>
+                          <option value="HIGH">Major</option>
+                          <option value="CRITICAL">Urgent</option>
                         </select>
                         <input name="resolutionNote" placeholder="Resolution note" />
                         <button type="submit">Update</button>
@@ -1231,7 +1231,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <InfoLine label="Service area" value={formatJsonSummary(provider.serviceArea)} />
           <InfoLine label="Rating" value={formatRating(provider)} />
           <InfoLine label="Next available" value={formatDate(provider.nextAvailableAt)} />
-          <InfoLine label="Profile badge updated at" value={formatDate(provider.trustedAt)} />
+          <InfoLine label="Profile badge reviewed at" value={formatDate(provider.trustedAt)} />
           <InfoLine label="User name" value={provider.user?.fullName} />
           <InfoLine label="Supabase user" value={provider.user?.supabaseUserId} />
           <p className="muted">

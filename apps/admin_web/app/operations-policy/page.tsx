@@ -2392,7 +2392,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
       {
-        scope: 'Partner risk',
+        scope: 'Partner controls',
         title: 'Negative wallet gate protects cash-fee debt',
         detail:
           'Partners with unpaid cash-fee debt should be blocked from accepting or joining until settlement is posted.',

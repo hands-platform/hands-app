@@ -540,9 +540,9 @@ function PayoutStatusForm({
 
 function sortBatches(batches: AdminPayoutBatch[]) {
   return [...batches].sort((left, right) => {
-    const scoreDiff = payoutPriority(left.status) - payoutPriority(right.status);
-    if (scoreDiff !== 0) {
-      return scoreDiff;
+    const priorityDiff = payoutPriority(left.status) - payoutPriority(right.status);
+    if (priorityDiff !== 0) {
+      return priorityDiff;
     }
     return Date.parse(right.createdAt) - Date.parse(left.createdAt);
   });

@@ -1370,9 +1370,9 @@ export default async function DashboardPage() {
           </div>
           <div className="service-trace-summary">
             <div>
-              <span>Critical</span>
+              <span>Immediate checks</span>
               <strong>{queueSummary.high}</strong>
-              <small>High severity actions</small>
+              <small>Highest-priority actions</small>
             </div>
             <div>
               <span>Customer protection</span>
@@ -1381,12 +1381,12 @@ export default async function DashboardPage() {
             </div>
             <div>
               <span>Finance checks</span>
-              <strong>{queueSummary.financeCritical}</strong>
+              <strong>{queueSummary.financeImmediate}</strong>
               <small>Payment, payout, debt</small>
             </div>
             <div>
               <span>Partner ops</span>
-              <strong>{queueSummary.partnerCritical}</strong>
+              <strong>{queueSummary.partnerImmediate}</strong>
               <small>Reports or verification</small>
             </div>
           </div>
@@ -3827,7 +3827,7 @@ function buildOpsQueue(input: {
   return items.sort(
     (left, right) =>
       right.priority - left.priority ||
-      severityScore(right.severity) - severityScore(left.severity) ||
+      severityPriorityValue(right.severity) - severityPriorityValue(left.severity) ||
       left.area.localeCompare(right.area),
   );
 }
@@ -4027,10 +4027,10 @@ function buildOpsQueueSummary(queue: OpsQueueItem[]) {
   const high = queue.filter((item) => item.severity === 'high').length;
   const medium = queue.filter((item) => item.severity === 'medium').length;
   const low = queue.filter((item) => item.severity === 'low').length;
-  const financeCritical = queue.filter(
+  const financeImmediate = queue.filter(
     (item) => item.severity === 'high' && ['Payment', 'Finance', 'Payout'].includes(item.area),
   ).length;
-  const partnerCritical = queue.filter((item) => item.severity === 'high' && item.area === 'Partner').length;
+  const partnerImmediate = queue.filter((item) => item.severity === 'high' && item.area === 'Partner').length;
   const customerProtection = queue.filter((item) => item.area === 'Booking').length;
   const byArea = queue.reduce(
     (counts, item) => {
@@ -4044,8 +4044,8 @@ function buildOpsQueueSummary(queue: OpsQueueItem[]) {
     high,
     medium,
     low,
-    financeCritical,
-    partnerCritical,
+    financeImmediate,
+    partnerImmediate,
     customerProtection,
     byArea,
     first: queue[0],
@@ -4356,7 +4356,7 @@ function activePayoutHold(batch: AdminPayoutBatch) {
   );
 }
 
-function severityScore(severity: OpsQueueItem['severity']) {
+function severityPriorityValue(severity: OpsQueueItem['severity']) {
   return severity === 'high' ? 3 : severity === 'medium' ? 2 : 1;
 }
 

@@ -2671,7 +2671,7 @@ function buildPartnerShiftHandoff(
     tone,
     label:
       tone === 'danger'
-        ? 'Critical'
+        ? 'Immediate check'
         : tone === 'warn'
           ? 'Action needed'
           : tone === 'ok'
@@ -2795,7 +2795,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Location refresh',
         value: locationRefresh.length.toString(),
-        detail: 'Partners who must reopen the app before distance-based matching can be trusted.',
+        detail: 'Partners who must reopen the app before distance-based matching uses their location.',
         href: '/partners?review=location',
         tone: locationRefresh.length ? 'warn' : 'ok',
       },
@@ -2997,7 +2997,7 @@ function providerCommandToneClass(tone: ProviderCommandLane['tone']) {
 
 function providerCommandToneLabel(tone: ProviderCommandLane['tone']) {
   if (tone === 'danger') {
-    return 'Critical';
+    return 'Immediate check';
   }
   if (tone === 'warn') {
     return 'Watch';
@@ -3177,7 +3177,7 @@ function buildPartnerAcceptanceBlockerBoard(
         title: 'Location freshness',
         count: locationHold.length,
         status: locationHold.length ? 'Needs app open' : 'Fresh',
-        detail: `Backup matching uses the last location. Partners older than ${opsPolicy.staleLocationMinutes} minutes should not be trusted for 10km dispatch.`,
+        detail: `Backup matching uses the last location. Partners older than ${opsPolicy.staleLocationMinutes} minutes need an app-open refresh before 10km dispatch.`,
         operatorAction:
           'Ask partners to open the app so location refreshes before they receive or join requests.',
         href: '/partners?review=location',
@@ -3724,10 +3724,10 @@ function hasOpenProviderRisk(provider: AdminProvider) {
 
 function sortProviders(providers: AdminProvider[], opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   return [...providers].sort((left, right) => {
-    const leftScore = providerPriority(left, opsPolicy);
-    const rightScore = providerPriority(right, opsPolicy);
-    if (leftScore !== rightScore) {
-      return rightScore - leftScore;
+    const leftPriority = providerPriority(left, opsPolicy);
+    const rightPriority = providerPriority(right, opsPolicy);
+    if (leftPriority !== rightPriority) {
+      return rightPriority - leftPriority;
     }
 
     return (left.displayName || left.user?.fullName || left.user?.phone || '').localeCompare(
