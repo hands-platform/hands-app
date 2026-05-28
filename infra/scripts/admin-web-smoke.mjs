@@ -211,6 +211,8 @@ if (bookingLinkMatch) {
     const bookingMarkers = [
       'Booking stage snapshot',
       'Applied operations policy',
+      'Dispatch candidate decision matrix',
+      'Excluded partner groups',
       'Backup partner supply for this booking',
       'No-show alerts',
     ];

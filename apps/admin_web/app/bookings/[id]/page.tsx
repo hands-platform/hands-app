@@ -305,6 +305,90 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
+            <h2>Dispatch candidate decision matrix</h2>
+            <p className="muted">
+              Reservation-specific readout for who can be used now, who is excluded, and what the operator
+              should fix before extending customer wait time.
+            </p>
+          </div>
+          <span className={`pill ${backupSupply.candidateCommand.tone}`}>
+            {backupSupply.candidateCommand.status}
+          </span>
+        </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className="ops-row">
+            <div>
+              <strong>{backupSupply.candidateCommand.title}</strong>
+              <p className="muted">{backupSupply.candidateCommand.detail}</p>
+            </div>
+            <Link className="text-link" href={backupSupply.candidateCommand.href}>
+              {backupSupply.candidateCommand.action}
+            </Link>
+          </div>
+        </div>
+        <div className="grid" style={{ marginTop: 14 }}>
+          <div className="card">
+            <h3>Top usable partners</h3>
+            <p className="muted">
+              Closest eligible partners under the booking pin, radius, online, verification, and location
+              freshness gates.
+            </p>
+            <div className="setup-stage-list" style={{ marginTop: 12 }}>
+              {backupSupply.topCandidates.map((row) => (
+                <div className="setup-stage-item" key={`candidate-${row.id}`}>
+                  <span>GO</span>
+                  <div>
+                    <strong>{row.name}</strong>
+                    <p className="muted">
+                      {row.distance} / {row.locationAge}
+                    </p>
+                  </div>
+                  <Link className="text-link" href={`/partners/${row.id}`}>
+                    Open
+                  </Link>
+                </div>
+              ))}
+              {backupSupply.topCandidates.length === 0 ? (
+                <div className="setup-stage-item">
+                  <span>NONE</span>
+                  <div>
+                    <strong>No usable partner candidate</strong>
+                    <p className="muted">Use the exclusion groups to decide whether to refresh location, widen policy, or contact partners.</p>
+                  </div>
+                  <Link className="text-link" href="/partners?review=backup-ready">
+                    Open backup queue
+                  </Link>
+                </div>
+              ) : null}
+            </div>
+          </div>
+          <div className="card">
+            <h3>Excluded partner groups</h3>
+            <p className="muted">Grouped by the first operational reason they cannot join this booking.</p>
+            <div className="setup-stage-list" style={{ marginTop: 12 }}>
+              {backupSupply.excludedGroups.map((group) => (
+                <div className="setup-stage-item" key={group.label}>
+                  <span>{group.count ? 'FIX' : 'OK'}</span>
+                  <div>
+                    <strong>{group.label}</strong>
+                    <p className="muted">{group.detail}</p>
+                    {group.samples.length ? (
+                      <p className="muted">Sample: {group.samples.join(', ')}</p>
+                    ) : null}
+                  </div>
+                  <Link className="text-link" href={group.href}>
+                    {group.count}
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
             <h2>Backup partner supply for this booking</h2>
             <p className="muted">
               Booking-pin view of who can join as a backup partner, and exactly why others are excluded.
@@ -2165,7 +2249,7 @@ function bookingBackupPartnerSupply(
   const preferredProviderId = booking.preferredProvider?.id;
   const selectedProviderId = booking.selectedProvider?.id;
 
-  const rows = hasCustomerPin
+  const evaluatedRows = hasCustomerPin
     ? providers
         .map((provider) => {
           const lat = Number(provider.currentLat);
@@ -2233,22 +2317,34 @@ function bookingBackupPartnerSupply(
           if (leftDistance !== rightDistance) return leftDistance - rightDistance;
           return left.name.localeCompare(right.name);
         })
-        .slice(0, 8)
     : [];
 
-  const eligibleCount = rows.filter((row) => row.eligible).length;
-  const nearbyExcluded = rows.filter(
+  const rows = evaluatedRows.slice(0, 8);
+  const eligibleRows = evaluatedRows.filter((row) => row.eligible);
+  const eligibleCount = eligibleRows.length;
+  const nearbyExcluded = evaluatedRows.filter(
     (row) => !row.eligible && row.distanceMeters !== null && row.distanceMeters <= radiusMeters,
   ).length;
-  const outOfRadius = rows.filter(
+  const outOfRadius = evaluatedRows.filter(
     (row) => (row.distanceMeters ?? Number.POSITIVE_INFINITY) > radiusMeters,
   ).length;
-  const staleOrMissing = rows.filter((row) =>
+  const staleOrMissing = evaluatedRows.filter((row) =>
     row.blockers.some((blocker) => blocker.startsWith('location')),
   ).length;
+  const excludedGroups = bookingBackupPartnerExcludedGroups(evaluatedRows, radiusMeters);
+  const candidateCommand = bookingBackupCandidateCommand({
+    hasCustomerPin,
+    eligibleCount,
+    nearbyExcluded,
+    staleOrMissing,
+    outOfRadius,
+  });
 
   return {
     rows,
+    topCandidates: eligibleRows.slice(0, 5),
+    excludedGroups,
+    candidateCommand,
     eligibleCount,
     decisionStatus: hasCustomerPin ? (eligibleCount ? 'Supply available' : 'Supply risk') : 'Missing pin',
     decisionTone: hasCustomerPin ? (eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
@@ -2289,6 +2385,115 @@ function bookingBackupPartnerSupply(
         helper: 'Nearest eligible backup partners opened for this request before notifications are created.',
       },
     ],
+  };
+}
+
+function bookingBackupPartnerExcludedGroups(
+  rows: Array<{
+    name: string;
+    blockers: string[];
+  }>,
+  radiusMeters: number,
+) {
+  const group = (label: string, href: string, detail: string, match: (blocker: string) => boolean) => {
+    const matched = rows.filter((row) => row.blockers.some(match));
+    return {
+      label,
+      count: matched.length,
+      detail,
+      href,
+      samples: matched.slice(0, 3).map((row) => row.name),
+    };
+  };
+
+  return [
+    group(
+      'Account blocked',
+      '/partners?review=blocked',
+      'Partner account is blocked and should not receive direct or backup work.',
+      (blocker) => blocker === 'account blocked',
+    ),
+    group(
+      'Verification not approved',
+      '/partners?review=kyc',
+      'Partner needs KYC/verification approval before paid dispatch.',
+      (blocker) => blocker.startsWith('verification'),
+    ),
+    group(
+      'Not online available',
+      '/partners?readiness=approved-offline',
+      'Partner must open the app or become online available before they can be relied on.',
+      (blocker) => blocker.startsWith('status'),
+    ),
+    group(
+      'Location stale or missing',
+      '/partners?review=location',
+      'Partner location must be refreshed before 10km backup decisions are trusted.',
+      (blocker) => blocker.startsWith('location') || blocker === 'no current coordinates',
+    ),
+    group(
+      `Outside ${formatDistanceMeters(radiusMeters)}`,
+      '/operations-policy#policy-matching-backup-provider-radius-meters',
+      'Partner is outside the configured backup radius for this booking pin.',
+      (blocker) => blocker.startsWith('outside'),
+    ),
+  ];
+}
+
+function bookingBackupCandidateCommand(input: {
+  hasCustomerPin: boolean;
+  eligibleCount: number;
+  nearbyExcluded: number;
+  staleOrMissing: number;
+  outOfRadius: number;
+}) {
+  if (!input.hasCustomerPin) {
+    return {
+      status: 'NO PIN',
+      tone: 'pill-danger',
+      title: 'Customer location must be confirmed first',
+      detail: 'Distance, 10km backup eligibility, and partner exclusion reasons cannot be trusted without a booking pin.',
+      href: '/bookings',
+      action: 'Open bookings',
+    };
+  }
+  if (input.eligibleCount > 0) {
+    return {
+      status: 'SUPPLY READY',
+      tone: 'pill-success',
+      title: 'This booking has usable backup partner supply',
+      detail: `${input.eligibleCount} partner(s) can be nudged or exposed to the customer shortlist under current policy.`,
+      href: '/partners?review=backup-ready',
+      action: 'Open backup-ready',
+    };
+  }
+  if (input.nearbyExcluded > 0 || input.staleOrMissing > 0) {
+    return {
+      status: 'REPAIR SUPPLY',
+      tone: 'pill-warn',
+      title: 'Nearby partners exist but are blocked',
+      detail: 'Prioritize app-open/location refresh, online status, and KYC before extending customer wait time.',
+      href: '/partners?review=backup-blocked',
+      action: 'Open blocked partners',
+    };
+  }
+  if (input.outOfRadius > 0) {
+    return {
+      status: 'NO 10KM SUPPLY',
+      tone: 'pill-warn',
+      title: 'Partners are outside the configured backup radius',
+      detail: 'Do not widen radius blindly. Check city supply, customer location accuracy, and operations policy first.',
+      href: '/operations-policy#policy-matching-backup-provider-radius-meters',
+      action: 'Review radius policy',
+    };
+  }
+  return {
+    status: 'NO SUPPLY',
+    tone: 'pill-danger',
+    title: 'No partner supply is available for this booking',
+    detail: 'Escalate to support, confirm service location, or prepare customer cancellation/refund handling.',
+    href: '/partners',
+    action: 'Open partners',
   };
 }
 
