@@ -42,6 +42,7 @@ export default async function OperationsPolicyPage({
   const matchingPlaybook = buildMatchingPlaybook(settings);
   const policySimulation = buildPolicySimulation(settings, bookings, providers);
   const impactDashboard = buildPolicyImpactDashboard(settings, bookings);
+  const policyEffectAnalysis = buildPolicyEffectAnalysis(settings, bookings);
   const policyDrilldown = buildPolicyDrilldown(bookings, settings);
   const policyAuditRows = operationalPolicyAuditRows(auditLogs);
   const recommendationReview = buildPolicyRecommendationReview(settings, bookings);
@@ -173,6 +174,90 @@ export default async function OperationsPolicyPage({
               <span>{item.label}</span>
               <strong>{item.value}</strong>
               <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Policy outcome effect</h2>
+            <p className="muted">
+              Groups real bookings by the policy snapshot saved at booking open. Use this before changing
+              the 10 minute response window, 10km backup radius, invite cap, or backup opening mode.
+            </p>
+          </div>
+          <span className={`pill ${policyEffectAnalysis.sampleCount ? 'pill-info' : 'pill-warn'}`}>
+            {policyEffectAnalysis.sampleCount} booking(s) with saved policy
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {policyEffectAnalysis.metrics.map((metric) => (
+            <div key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Policy cohort</th>
+                <th>Sample</th>
+                <th>Matched / completed</th>
+                <th>Backup supply</th>
+                <th>Risk</th>
+                <th>Operator read</th>
+              </tr>
+            </thead>
+            <tbody>
+              {policyEffectAnalysis.rows.map((row) => (
+                <tr key={row.key}>
+                  <td>
+                    <strong>{row.policy}</strong>
+                    <p className="muted">{row.value}</p>
+                  </td>
+                  <td>{row.sample}</td>
+                  <td>
+                    <strong>{row.matchedRate}</strong>
+                    <p className="muted">{row.completedRate} completed</p>
+                  </td>
+                  <td>
+                    <strong>{row.avgBackupInvites}</strong>
+                    <p className="muted">{row.avgParticipants} joined avg</p>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.riskPill}`}>{row.riskLabel}</span>
+                    <p className="muted" style={{ marginTop: 6 }}>
+                      {row.riskDetail}
+                    </p>
+                  </td>
+                  <td>
+                    <p style={{ margin: 0 }}>{row.operatorRead}</p>
+                  </td>
+                </tr>
+              ))}
+              {policyEffectAnalysis.rows.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    No policy snapshots are available yet. Create a fresh customer booking, then check this
+                    section again after partners accept, reject, or complete the request.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {policyEffectAnalysis.cards.map((card) => (
+            <div className={`ops-task-card ${card.className}`} key={card.title}>
+              <span className={`pill ${card.pillClass}`}>{card.scope}</span>
+              <h3>{card.title}</h3>
+              <p>{card.detail}</p>
+              <small>{card.operatorAction}</small>
             </div>
           ))}
         </div>
@@ -1672,6 +1757,268 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       },
     ],
   };
+}
+
+type PolicyEffectStats = {
+  sampleCount: number;
+  matchedCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  expiredCount: number;
+  noShowCount: number;
+  participantCount: number;
+  backupInviteCount: number;
+};
+
+function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bookings: AdminBooking[]) {
+  const sampledBookings = bookings.filter((booking) => readBookingMatchingPolicySnapshot(booking));
+  const globalStats = policyEffectStatsForBookings(sampledBookings);
+  const globalMatchedRate =
+    globalStats.sampleCount > 0 ? globalStats.matchedCount / globalStats.sampleCount : 0;
+  const rows = [
+    ...buildPolicyEffectRows({
+      policy: 'First-pick response window',
+      settings,
+      bookings: sampledBookings,
+      settingKey: 'matching.provider_response_window_minutes',
+      readValue: (snapshot) => snapshot.providerResponseWindowMinutes,
+      formatValue: (value) => `${value} min`,
+      globalMatchedRate,
+    }),
+    ...buildPolicyEffectRows({
+      policy: 'Backup radius',
+      settings,
+      bookings: sampledBookings,
+      settingKey: 'matching.backup_provider_radius_meters',
+      readValue: (snapshot) => snapshot.backupProviderRadiusMeters,
+      formatValue: (value) => formatDistance(Number(value)),
+      globalMatchedRate,
+    }),
+    ...buildPolicyEffectRows({
+      policy: 'Backup invite cap',
+      settings,
+      bookings: sampledBookings,
+      settingKey: 'matching.backup_provider_invitation_limit',
+      readValue: (snapshot) => snapshot.backupProviderInvitationLimit,
+      formatValue: (value) => `${value} partner(s)`,
+      globalMatchedRate,
+    }),
+    ...buildPolicyEffectRows({
+      policy: 'Backup opening mode',
+      settings,
+      bookings: sampledBookings,
+      settingKey: 'matching.backup_open_mode',
+      readValue: (snapshot) => snapshot.backupOpenMode,
+      formatValue: (value) => formatSnapshotPolicyValue(settings, 'matching.backup_open_mode', value),
+      globalMatchedRate,
+    }),
+    ...buildPolicyEffectRows({
+      policy: 'First-pick accept mode',
+      settings,
+      bookings: sampledBookings,
+      settingKey: 'matching.preferred_accept_mode',
+      readValue: (snapshot) => snapshot.preferredAcceptMode,
+      formatValue: (value) => formatSnapshotPolicyValue(settings, 'matching.preferred_accept_mode', value),
+      globalMatchedRate,
+    }),
+  ]
+    .sort((left, right) => right.sampleRaw - left.sampleRaw || left.policy.localeCompare(right.policy))
+    .slice(0, 12);
+
+  const totalRiskCount = globalStats.cancelledCount + globalStats.expiredCount + globalStats.noShowCount;
+  const avgBackupInvites = averageLabel(globalStats.backupInviteCount, globalStats.sampleCount, 'partner(s)');
+  const currentInviteCap = policyDisplayByKey(settings, 'matching.backup_provider_invitation_limit');
+  const currentRadius = policyDisplayByKey(settings, 'matching.backup_provider_radius_meters');
+
+  return {
+    sampleCount: sampledBookings.length,
+    metrics: [
+      {
+        label: 'Matched rate',
+        value: percentLabel(globalStats.matchedCount, globalStats.sampleCount),
+        helper: `${globalStats.matchedCount}/${globalStats.sampleCount} sampled booking(s) reached a selected or active partner.`,
+      },
+      {
+        label: 'Completed rate',
+        value: percentLabel(globalStats.completedCount, globalStats.sampleCount),
+        helper: `${globalStats.completedCount}/${globalStats.sampleCount} sampled booking(s) completed service.`,
+      },
+      {
+        label: 'Avg backup invites',
+        value: avgBackupInvites,
+        helper: 'Uses stored backupNotificationTraces from booking metadata, not just live partner supply.',
+      },
+      {
+        label: 'Cancelled / expired / no-show',
+        value: String(totalRiskCount),
+        helper: `${globalStats.cancelledCount} cancelled, ${globalStats.expiredCount} expired, ${globalStats.noShowCount} no-show.`,
+      },
+    ],
+    rows,
+    cards: [
+      {
+        scope: 'Evidence',
+        title: sampledBookings.length ? 'Policy snapshots are measurable' : 'Create more measured bookings',
+        detail: sampledBookings.length
+          ? 'Each booking opened under a saved policy can now be compared against outcome, partner joins, and backup invite batches.'
+          : 'The dashboard needs bookings with metadata.matchingPolicy before it can compare policy outcomes.',
+        operatorAction: sampledBookings.length
+          ? 'Use these cohorts before changing response window, backup radius, invite cap, or accept mode.'
+          : 'Create a fresh booking after policy setup, then run through accept/reject/backup scenarios.',
+        className: sampledBookings.length ? 'ops-task-done' : 'ops-task-pending',
+        pillClass: sampledBookings.length ? 'pill-success' : 'pill-warn',
+      },
+      {
+        scope: 'Current rule',
+        title: `Backup exposure: ${currentRadius}, cap ${currentInviteCap}`,
+        detail:
+          'Backup partner exposure should balance speed, push cost, and customer choice clarity. A high cap can notify too many partners; a low cap can hide useful supply.',
+        operatorAction:
+          globalStats.backupInviteCount > 0
+            ? `Current sample averages ${avgBackupInvites} per measured booking.`
+            : 'No backup invite batch was found in the measured sample yet.',
+        className: 'ops-task-pending',
+        pillClass: 'pill-info',
+      },
+      {
+        scope: 'Risk',
+        title: totalRiskCount ? 'Review failed booking cohorts before changing policy' : 'No failed outcome spike in sample',
+        detail: totalRiskCount
+          ? 'Cancelled, expired, or no-show bookings may point to response-window, supply, payment, or partner readiness problems.'
+          : 'The sampled policy snapshots do not show cancelled, expired, or no-show pressure yet.',
+        operatorAction: totalRiskCount
+          ? 'Open the booking drill-down and compare failed bookings against their saved policy snapshot.'
+          : 'Keep collecting results across more districts and time bands before treating this as final.',
+        className: totalRiskCount ? 'ops-task-blocked' : 'ops-task-done',
+        pillClass: totalRiskCount ? 'pill-danger' : 'pill-success',
+      },
+    ],
+  };
+}
+
+function buildPolicyEffectRows(input: {
+  policy: string;
+  settings: AdminOperationalPolicySetting[];
+  bookings: AdminBooking[];
+  settingKey: string;
+  readValue: (snapshot: BookingMatchingPolicySnapshot) => string | number | null;
+  formatValue: (value: string | number) => string;
+  globalMatchedRate: number;
+}) {
+  const groups = new Map<string, { value: string; bookings: AdminBooking[] }>();
+  for (const booking of input.bookings) {
+    const snapshot = readBookingMatchingPolicySnapshot(booking);
+    if (!snapshot) {
+      continue;
+    }
+    const rawValue = input.readValue(snapshot);
+    if (rawValue === null || rawValue === undefined) {
+      continue;
+    }
+    const value = input.formatValue(rawValue);
+    const key = `${input.policy}:${value}`;
+    const group = groups.get(key) ?? { value, bookings: [] };
+    group.bookings.push(booking);
+    groups.set(key, group);
+  }
+
+  return Array.from(groups.entries()).map(([key, group]) => {
+    const stats = policyEffectStatsForBookings(group.bookings);
+    const matchedRateValue = stats.sampleCount > 0 ? stats.matchedCount / stats.sampleCount : 0;
+    const riskCount = stats.cancelledCount + stats.expiredCount + stats.noShowCount;
+    const sampleTooSmall = stats.sampleCount < 5;
+    const belowAverage = matchedRateValue + 0.05 < input.globalMatchedRate;
+    const atRisk = riskCount > 0 || belowAverage;
+    const liveValue = policyDisplayByKey(input.settings, input.settingKey);
+
+    return {
+      key,
+      policy: input.policy,
+      value: group.value,
+      sampleRaw: stats.sampleCount,
+      sample: `${stats.sampleCount} booking(s)`,
+      matchedRate: percentLabel(stats.matchedCount, stats.sampleCount),
+      completedRate: percentLabel(stats.completedCount, stats.sampleCount),
+      avgBackupInvites: averageLabel(stats.backupInviteCount, stats.sampleCount, 'partner(s)'),
+      avgParticipants: averageLabel(stats.participantCount, stats.sampleCount, 'partner(s)'),
+      riskLabel: sampleTooSmall ? 'Low sample' : atRisk ? 'Review' : 'Healthy',
+      riskPill: sampleTooSmall ? 'pill-warn' : atRisk ? 'pill-danger' : 'pill-success',
+      riskDetail: `${riskCount} failed outcome(s) / live value now ${liveValue}.`,
+      operatorRead: sampleTooSmall
+        ? 'Keep collecting data before deciding. This cohort is useful for debugging, not final policy choice.'
+        : belowAverage
+          ? 'Matched rate is below the measured average. Check partner supply, alert delivery, and customer wait before expanding this value.'
+          : atRisk
+            ? 'Outcome risk exists. Review the booking detail snapshots before changing this policy again.'
+            : 'This cohort is currently performing at or above the measured average in the sampled bookings.',
+    };
+  });
+}
+
+function policyEffectStatsForBookings(bookings: AdminBooking[]): PolicyEffectStats {
+  return bookings.reduce<PolicyEffectStats>(
+    (stats, booking) => {
+      stats.sampleCount += 1;
+      if (bookingHasMatchedPartner(booking)) {
+        stats.matchedCount += 1;
+      }
+      if (booking.status === 'COMPLETED') {
+        stats.completedCount += 1;
+      }
+      if (booking.status === 'CANCELLED' || booking.status === 'REFUNDED') {
+        stats.cancelledCount += 1;
+      }
+      if (booking.status === 'EXPIRED') {
+        stats.expiredCount += 1;
+      }
+      if (booking.status === 'NO_SHOW') {
+        stats.noShowCount += 1;
+      }
+      stats.participantCount += booking.participants?.length ?? 0;
+      stats.backupInviteCount += bookingBackupInviteCount(booking);
+      return stats;
+    },
+    {
+      sampleCount: 0,
+      matchedCount: 0,
+      completedCount: 0,
+      cancelledCount: 0,
+      expiredCount: 0,
+      noShowCount: 0,
+      participantCount: 0,
+      backupInviteCount: 0,
+    },
+  );
+}
+
+function bookingHasMatchedPartner(booking: AdminBooking) {
+  return (
+    Boolean(booking.selectedProvider) ||
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status)
+  );
+}
+
+function bookingBackupInviteCount(booking: AdminBooking) {
+  const metadata = readPlainRecord(booking.metadata);
+  const traces = Array.isArray(metadata?.backupNotificationTraces) ? metadata.backupNotificationTraces : [];
+  return traces.reduce((total, value) => {
+    const trace = readPlainRecord(value);
+    return total + (readOptionalNumber(trace?.notifiedCount) ?? 0);
+  }, 0);
+}
+
+function percentLabel(count: number, total: number) {
+  if (total <= 0) {
+    return '0%';
+  }
+  return `${Math.round((count / total) * 100)}%`;
+}
+
+function averageLabel(total: number, count: number, unit: string) {
+  if (count <= 0) {
+    return `0 ${unit}`;
+  }
+  return `${(total / count).toLocaleString('en', { maximumFractionDigits: 1 })} ${unit}`;
 }
 
 type PolicyDrilldownPill = {
