@@ -76,6 +76,18 @@ type BookingMatchingEscalationRow = {
   tags: string[];
 };
 
+type BookingMatchingFlowStep = {
+  stage: string;
+  title: string;
+  status: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  detail: string;
+  operatorAction: string;
+  href: string;
+  metrics: Array<{ label: string; value: string }>;
+  bookings: AdminBooking[];
+};
+
 type BookingMatchingPolicySnapshot = {
   providerResponseWindowMinutes: number | null;
   backupProviderRadiusMeters: number | null;
@@ -194,6 +206,10 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   );
   const matchingEscalationRows = useMemo(
     () => buildMatchingEscalationRows(orderedBookings, currentTimeMs),
+    [currentTimeMs, orderedBookings],
+  );
+  const matchingFlowTimeline = useMemo(
+    () => buildMatchingFlowTimeline(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
   const dispatchPartnerShortcuts = useMemo(
@@ -383,6 +399,41 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               <small>{lane.operatorAction}</small>
             </Link>
           ))}
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <h3>Matching flow timeline</h3>
+          <p className="muted">
+            Stage view for direct partner requests, 10km backup participation, customer final choice, and
+            chat/location handoff.
+          </p>
+          <div className="ops-task-grid" style={{ marginTop: 12 }}>
+            {matchingFlowTimeline.map((step) => (
+              <Link className="ops-task-card" href={step.href} key={step.stage}>
+                <span className={`signal ${commandToneClass(step.tone)}`}>{step.stage}</span>
+                <h3>{step.title}</h3>
+                <p>{step.detail}</p>
+                <div className="participant-list">
+                  <span className="pill">{step.status}</span>
+                  {step.metrics.map((metricItem) => (
+                    <span className="pill" key={`${step.stage}-${metricItem.label}`}>
+                      {metricItem.label}: {metricItem.value}
+                    </span>
+                  ))}
+                </div>
+                {step.bookings.length > 0 ? (
+                  <div className="stack">
+                    {step.bookings.slice(0, 3).map((booking) => (
+                      <span className="muted" key={`${step.stage}-${booking.id}`}>
+                        {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
+                        {bookingMatchingWindowLabel(booking, currentTimeMs)}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+                <small>{step.operatorAction}</small>
+              </Link>
+            ))}
+          </div>
         </div>
         <div style={{ marginTop: 16 }}>
           <h3>Dispatch partner repair shortcuts</h3>
@@ -1259,6 +1310,97 @@ function buildBookingDispatchPartnerShortcuts(
       detail: 'Tune response window, backup radius, invitation limits, and stale location rules.',
       href: '/operations-policy',
       tone: 'info',
+    },
+  ];
+}
+
+function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): BookingMatchingFlowStep[] {
+  const open = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const firstPickWaiting = open.filter(
+    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
+  );
+  const firstPickExpired = firstPickWaiting.filter((booking) => bookingMatchingWindowExpired(booking, nowMs));
+  const noSupply = open.filter((booking) => fallbackParticipants(booking).length === 0);
+  const backupVisible = open.filter((booking) => fallbackParticipants(booking).length > 0);
+  const backupAlerted = open.filter((booking) => bookingBackupAlertTraceSummary(booking).totalNotified > 0);
+  const customerChoice = open.filter((booking) => bookingHasAcceptedPartner(booking));
+  const matched = bookings.filter((booking) => booking.status === 'MATCHED');
+  const matchedWithoutChat = matched.filter((booking) => !booking.chatRoom);
+  const liveHandoff = bookings.filter((booking) =>
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  );
+  const locationRisk = liveHandoff.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
+
+  return [
+    {
+      stage: 'Stage 1',
+      title: 'Direct first-pick request',
+      status: firstPickExpired.length ? 'Timer expired' : firstPickWaiting.length ? 'Waiting' : 'Clear',
+      tone: firstPickExpired.length ? 'danger' : firstPickWaiting.length ? 'warn' : 'ok',
+      detail:
+        firstPickWaiting.length > 0
+          ? 'Customer selected a preferred partner and the first response window is running.'
+          : 'No direct first-pick request is currently waiting.',
+      operatorAction:
+        'Watch the 10-minute response window, partner push delivery, and wallet/KYC gates before manually intervening.',
+      href: firstPickExpired.length ? '/bookings?view=high-risk' : '/bookings?view=matching',
+      metrics: [metric('waiting', firstPickWaiting.length), metric('expired', firstPickExpired.length)],
+      bookings: firstPickExpired.length ? firstPickExpired : firstPickWaiting,
+    },
+    {
+      stage: 'Stage 2',
+      title: '10km backup participation',
+      status: noSupply.length ? 'Supply gap' : backupVisible.length ? 'Backup visible' : 'Clear',
+      tone: noSupply.length ? 'warn' : backupVisible.length ? 'info' : 'ok',
+      detail:
+        noSupply.length > 0
+          ? 'Some open bookings have no backup partner for the customer to choose.'
+          : 'Backup partners are visible or no backup lane is currently needed.',
+      operatorAction:
+        'Use backup-ready partners, location freshness, alert delivery, and radius policy before widening operations rules.',
+      href: noSupply.length ? '/partners?review=backup-ready' : '/bookings?view=matching',
+      metrics: [
+        metric('no backup', noSupply.length),
+        metric('visible', backupVisible.length),
+        metric('alerted', backupAlerted.length),
+      ],
+      bookings: noSupply.length ? noSupply : backupVisible,
+    },
+    {
+      stage: 'Stage 3',
+      title: 'Customer final partner choice',
+      status: customerChoice.length ? 'Needs customer' : 'Clear',
+      tone: customerChoice.length ? 'warn' : 'ok',
+      detail:
+        customerChoice.length > 0
+          ? 'One or more partners are ready, but the customer has not locked the final partner.'
+          : 'No open booking is waiting on customer final selection.',
+      operatorAction:
+        'Prompt support to guide the customer while partner availability and wait anxiety are still fresh.',
+      href: '/bookings?view=matching',
+      metrics: [metric('choice needed', customerChoice.length), metric('matched', matched.length)],
+      bookings: customerChoice,
+    },
+    {
+      stage: 'Stage 4',
+      title: 'Chat and location handoff',
+      status: matchedWithoutChat.length ? 'Repair chat' : locationRisk.length ? 'Location risk' : 'Ready',
+      tone: matchedWithoutChat.length ? 'danger' : locationRisk.length ? 'warn' : liveHandoff.length ? 'info' : 'ok',
+      detail:
+        matchedWithoutChat.length > 0
+          ? 'A final partner is selected, but the chat room is missing.'
+          : locationRisk.length > 0
+            ? 'A live booking has stale or missing partner location.'
+            : 'Matched and live bookings have no visible chat/location handoff blocker.',
+      operatorAction:
+        'Repair chat first, then confirm partner location before arrival, service start, and payment closeout.',
+      href: matchedWithoutChat.length ? '/bookings?view=high-risk' : '/bookings?view=location',
+      metrics: [
+        metric('chat repair', matchedWithoutChat.length),
+        metric('location risk', locationRisk.length),
+        metric('live handoff', liveHandoff.length),
+      ],
+      bookings: matchedWithoutChat.length ? matchedWithoutChat : locationRisk,
     },
   ];
 }
