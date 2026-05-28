@@ -86,6 +86,14 @@ type BookingMatchingPolicySnapshot = {
   travelBufferMinutes: number | null;
 };
 
+type BookingDispatchPartnerShortcut = {
+  title: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone: BookingCommandLane['tone'];
+};
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
@@ -186,6 +194,10 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   );
   const matchingEscalationRows = useMemo(
     () => buildMatchingEscalationRows(orderedBookings, currentTimeMs),
+    [currentTimeMs, orderedBookings],
+  );
+  const dispatchPartnerShortcuts = useMemo(
+    () => buildBookingDispatchPartnerShortcuts(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
   );
 
@@ -371,6 +383,26 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               <small>{lane.operatorAction}</small>
             </Link>
           ))}
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <h3>Dispatch partner repair shortcuts</h3>
+          <p className="muted">
+            Use these when a matching booking needs partner supply, partner acceptance repair, cash-fee cleanup,
+            or policy adjustment.
+          </p>
+          <div className="service-trace-summary" style={{ marginTop: 12 }}>
+            {dispatchPartnerShortcuts.map((item) => (
+              <Link
+                className={`ops-task-breakdown-item ops-task-breakdown-${bookingDashboardTone(item.tone)}`}
+                href={item.href}
+                key={item.title}
+              >
+                <span>{item.title}</span>
+                <strong>{item.value}</strong>
+                <small>{item.detail}</small>
+              </Link>
+            ))}
+          </div>
         </div>
         <div className="participant-list" style={{ marginTop: 14 }}>
           {matchingEscalationRows.slice(0, 6).map((item) => (
@@ -1165,6 +1197,72 @@ function buildMatchingEscalationBoard(
   ];
 }
 
+function buildBookingDispatchPartnerShortcuts(
+  bookings: AdminBooking[],
+  nowMs: number,
+): BookingDispatchPartnerShortcut[] {
+  const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const noPartnerSupply = openMatching.filter((booking) => (booking.participants?.length ?? 0) === 0);
+  const firstPickWaiting = openMatching.filter(
+    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
+  );
+  const customerSelection = openMatching.filter((booking) => bookingHasAcceptedPartner(booking));
+  const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
+  const locationRisk = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
+
+  return [
+    {
+      title: 'Partner handoff',
+      value: 'Open',
+      detail: 'Full partner command view with direct, backup, KYC, wallet, location, and alert lanes.',
+      href: '/partners',
+      tone: openMatching.length ? 'info' : 'ok',
+    },
+    {
+      title: 'Direct-ready partners',
+      value: firstPickWaiting.length.toString(),
+      detail: 'Use when preferred partners must answer inside the response window.',
+      href: '/partners?review=direct-ready',
+      tone: firstPickWaiting.length ? 'warn' : 'ok',
+    },
+    {
+      title: '10km backup-ready',
+      value: noPartnerSupply.length.toString(),
+      detail: 'Use when open matching has no backup supply or customer options.',
+      href: '/partners?review=backup-ready',
+      tone: noPartnerSupply.length ? 'warn' : 'ok',
+    },
+    {
+      title: 'Acceptance blockers',
+      value: customerSelection.length.toString(),
+      detail: 'Repair KYC, bank, wallet, location, push, or safety gates before dispatch pressure rises.',
+      href: '/partners?review=acceptance-blocked',
+      tone: customerSelection.length ? 'info' : 'ok',
+    },
+    {
+      title: 'Cash fee debt',
+      value: cashDebt.length.toString(),
+      detail: 'Cash bookings can create negative partner wallets that block future acceptance.',
+      href: '/cash-settlements',
+      tone: cashDebt.length ? 'danger' : 'ok',
+    },
+    {
+      title: 'Location refresh',
+      value: locationRisk.length.toString(),
+      detail: 'Live booking location risk should send operators to partner location freshness review.',
+      href: '/partners?review=location',
+      tone: locationRisk.length ? 'warn' : 'ok',
+    },
+    {
+      title: 'Policy controls',
+      value: 'Edit',
+      detail: 'Tune response window, backup radius, invitation limits, and stale location rules.',
+      href: '/operations-policy',
+      tone: 'info',
+    },
+  ];
+}
+
 function buildMatchingEscalationRows(
   bookings: AdminBooking[],
   nowMs: number,
@@ -1290,6 +1388,13 @@ function commandToneClass(tone: BookingCommandLane['tone']) {
     return 'signal-info';
   }
   return 'signal-ok';
+}
+
+function bookingDashboardTone(tone: BookingCommandLane['tone']) {
+  if (tone === 'danger') return 'danger';
+  if (tone === 'warn') return 'warn';
+  if (tone === 'info') return 'info';
+  return 'ok';
 }
 
 function commandToneLabel(tone: BookingCommandLane['tone']) {
