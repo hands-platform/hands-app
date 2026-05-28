@@ -47,9 +47,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   );
   const pricingAuditRows = servicePricingAuditRows(auditLogs);
   const actionNotice = serviceActionNotice(params);
-  const catalogScopeLabel = serviceSearchQuery
-    ? `Filtered by "${serviceSearchQuery}"`
-    : 'All service types';
+  const catalogScopeLabel = serviceSearchQuery ? `Filtered by "${serviceSearchQuery}"` : 'All service types';
 
   return (
     <>
@@ -75,7 +73,11 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         <form className="form-grid compact-form" action="/services">
           <label className="full-span">
             Find service type, duration, group key, or price
-            <input name="q" placeholder="foot massage, 90, 450000, deep_tissue" defaultValue={serviceSearchQuery} />
+            <input
+              name="q"
+              placeholder="foot massage, 90, 450000, deep_tissue"
+              defaultValue={serviceSearchQuery}
+            />
           </label>
           <button type="submit">Search catalog</button>
           {serviceSearchQuery ? (
@@ -144,13 +146,13 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             <strong>{bookingTraceSummary.missingTraceCount}</strong>
           </div>
           <div>
-            <span>Projected risky scenarios</span>
-            <strong>{pricePolicyPreviewSummary.riskyScenarioCount}</strong>
+            <span>Projected policy checks</span>
+            <strong>{pricePolicyPreviewSummary.policyCheckCount}</strong>
           </div>
         </div>
         <div className="actions" style={{ marginTop: 12 }}>
           <a className="text-link" href="/bookings?view=pricing">
-            Open pricing-risk bookings
+            Open pricing-check bookings
           </a>
           <a className="text-link" href="/audit-log?bucket=Service%2FPricing">
             Review service pricing audit
@@ -255,7 +257,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
           <div>
             <h2>Booking readiness queue</h2>
             <p className="muted">
-              Shows services that can block customer booking or create an unsafe finance result before
+              Shows services that can block customer booking or create a negative finance result before
               partners start using those prices.
             </p>
           </div>
@@ -487,13 +489,13 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             <p className="muted">
               Before changing service prices, compare the current minimum price against common one-step
               scenarios. This helps avoid accidentally creating zero-margin prices or partner payouts that
-              make cash bookings unsafe.
+              create cash booking closeout problems.
             </p>
           </div>
           <span
-            className={`pill ${pricePolicyPreviewSummary.riskyScenarioCount ? 'pill-warn' : 'pill-success'}`}
+            className={`pill ${pricePolicyPreviewSummary.policyCheckCount ? 'pill-warn' : 'pill-success'}`}
           >
-            {pricePolicyPreviewSummary.riskyScenarioCount} risky scenario(s)
+            {pricePolicyPreviewSummary.policyCheckCount} policy check(s)
           </span>
         </div>
         <div className="service-trace-summary">
@@ -548,7 +550,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                 <th>Customer + step</th>
                 <th>Partner + step</th>
                 <th>Both + step</th>
-                <th>Risk</th>
+                <th>Check</th>
               </tr>
             </thead>
             <tbody>
@@ -583,7 +585,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                     <ScenarioPreviewCell scenario={row.balancedStepScenario} />
                   </td>
                   <td>
-                    <span className={`pill ${row.riskTone}`}>{row.riskLabel}</span>
+                    <span className={`pill ${row.checkTone}`}>{row.checkLabel}</span>
                     <p className="muted">{row.nextAction}</p>
                   </td>
                 </tr>
@@ -596,7 +598,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
         {hiddenPricePolicyPreviewRowCount ? (
           <p className="muted">
             Showing first {visiblePricePolicyPreviewRows.length} of {pricePolicyPreviewRows.length} preview
-            row(s). Risk summaries above still use the full active catalog.
+            row(s). Check summaries above still use the full active catalog.
           </p>
         ) : null}
       </section>
@@ -1507,20 +1509,20 @@ function servicePricePolicyPreviewRows(
       const scenarios = [customerStepScenario, providerStepScenario, balancedStepScenario].filter(
         Boolean,
       ) as PricePolicyScenario[];
-      const riskyScenarios = scenarios.filter(
+      const flaggedScenarios = scenarios.filter(
         (scenario) =>
           scenario.providerPayoutAmount > scenario.customerPrice ||
           scenario.finance.actualCompanyCommission <= 0,
       );
-      const riskLabel = !baseRule
+      const checkLabel = !baseRule
         ? 'Missing base rule'
-        : riskyScenarios.length
-          ? `${riskyScenarios.length} risky`
-          : 'Safe preview';
-      const riskTone = !baseRule ? 'pill-danger' : riskyScenarios.length ? 'pill-warn' : 'pill-success';
+        : flaggedScenarios.length
+          ? `${flaggedScenarios.length} check(s)`
+          : 'Positive preview';
+      const checkTone = !baseRule ? 'pill-danger' : flaggedScenarios.length ? 'pill-warn' : 'pill-success';
       const nextAction = !baseRule
         ? 'Add the base payout rule first.'
-        : riskyScenarios.length
+        : flaggedScenarios.length
           ? 'Review partner payout or tax/cost assumptions before saving a price change.'
           : 'These one-step scenarios keep a positive projected company commission.';
 
@@ -1533,8 +1535,8 @@ function servicePricePolicyPreviewRows(
         customerStepScenario,
         providerStepScenario,
         balancedStepScenario,
-        riskLabel,
-        riskTone,
+        checkLabel,
+        checkTone,
         nextAction,
       };
     });
@@ -1553,8 +1555,8 @@ function servicePricePolicyPreviewSummary(rows: ReturnType<typeof servicePricePo
       balancedStepCommission:
         summary.balancedStepCommission + (row.balancedStepScenario?.finance.actualCompanyCommission ?? 0),
       missingBaseRuleCount: summary.missingBaseRuleCount + (row.baseRule ? 0 : 1),
-      riskyScenarioCount:
-        summary.riskyScenarioCount +
+      policyCheckCount:
+        summary.policyCheckCount +
         [row.customerStepScenario, row.providerStepScenario, row.balancedStepScenario].filter(
           (scenario) =>
             scenario &&
@@ -1569,7 +1571,7 @@ function servicePricePolicyPreviewSummary(rows: ReturnType<typeof servicePricePo
       providerStepCommission: 0,
       balancedStepCommission: 0,
       missingBaseRuleCount: 0,
-      riskyScenarioCount: 0,
+      policyCheckCount: 0,
     },
   );
 }
@@ -1595,7 +1597,7 @@ function buildPricePolicyScenario(
     currency: baseRule.currency,
     finance,
     tone: overpaysProvider ? 'pill-danger' : hasPositiveCommission ? 'pill-success' : 'pill-warn',
-    status: overpaysProvider ? 'Overpays' : hasPositiveCommission ? 'Safe' : 'Low margin',
+    status: overpaysProvider ? 'Overpays' : hasPositiveCommission ? 'Positive' : 'Check margin',
   };
 }
 
@@ -2013,9 +2015,9 @@ function buildBookingReadinessQueue(
       return items;
     })
     .sort((left, right) => {
-      const leftScore = left.tone === 'blocked' ? 0 : 1;
-      const rightScore = right.tone === 'blocked' ? 0 : 1;
-      return leftScore - rightScore || left.title.localeCompare(right.title);
+      const leftPriority = left.tone === 'blocked' ? 0 : 1;
+      const rightPriority = right.tone === 'blocked' ? 0 : 1;
+      return leftPriority - rightPriority || left.title.localeCompare(right.title);
     });
 }
 
