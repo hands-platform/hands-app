@@ -272,7 +272,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="">All</option>
               <option value="account-blocked">Account blocked</option>
               <option value="blocked">Blocked device</option>
-              <option value="suspicious">Suspicious session</option>
+              <option value="suspicious">Flagged session</option>
               <option value="shared">Shared device</option>
               <option value="missing">No app device</option>
               <option value="clear">Clear</option>
@@ -358,18 +358,20 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner operations list</h2>
             <p className="muted">
-              List-first partner control view. Operators can check onboarding, booking acceptance,
-              completed work, last work, wallet, location, push, services, and app activity before opening
-              the full partner record.
+              List-first partner control view. Operators can check onboarding, booking acceptance, completed
+              work, last work, wallet, location, push, services, and app activity before opening the full
+              partner record.
             </p>
           </div>
           <div className="participant-list">
             <span className="pill pill-info">{providers.length} partner(s)</span>
             <span className="pill pill-success">
-              {providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length} can accept
+              {providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length} can
+              accept
             </span>
             <span className="pill pill-warn">
-              {providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length} wallet hold
+              {providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length} wallet
+              hold
             </span>
           </div>
         </div>
@@ -420,7 +422,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <td>
                     <strong>{row.completedWorkCount} completed</strong>
                     <p className="muted">Last work: {row.lastWorkAt ? formatDate(row.lastWorkAt) : 'none'}</p>
-                    <p className="muted">First revenue: {providerHasFirstRevenueSignal(row.provider) ? 'yes' : 'no'}</p>
+                    <p className="muted">
+                      First revenue: {providerHasFirstRevenueSignal(row.provider) ? 'yes' : 'no'}
+                    </p>
                   </td>
                   <td>
                     <strong>{formatProviderMoney(row.walletBalance)}</strong>
@@ -429,12 +433,19 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                         ? 'Company fee settlement is required before new booking acceptance.'
                         : 'No negative wallet balance.'}
                     </p>
-                    <p className="muted">Tax: {row.provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(row.provider) ? 'MISSING' : 'deferred')}</p>
+                    <p className="muted">
+                      Tax:{' '}
+                      {row.provider.taxProfile?.status ??
+                        (providerHasFirstRevenueSignal(row.provider) ? 'MISSING' : 'deferred')}
+                    </p>
                   </td>
                   <td>
                     <strong>{providerLocationLabel(row.locationState)}</strong>
                     <p className="muted">{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</p>
-                    <p className="muted">Last app activity: {row.lastActivityAt ? formatDate(row.lastActivityAt) : 'not recorded'}</p>
+                    <p className="muted">
+                      Last app activity:{' '}
+                      {row.lastActivityAt ? formatDate(row.lastActivityAt) : 'not recorded'}
+                    </p>
                   </td>
                   <td>
                     <strong>{row.nextAction.status}</strong>
@@ -609,7 +620,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
         </div>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {shiftHandoff.actions.map((item) => (
-            <Link className={`ops-task-card ${partnerShiftCardClass(item.tone)}`} href={item.href} key={item.title}>
+            <Link
+              className={`ops-task-card ${partnerShiftCardClass(item.tone)}`}
+              href={item.href}
+              key={item.title}
+            >
               <span className={`pill ${partnerShiftPillClass(item.tone)}`}>{item.scope}</span>
               <h3>{item.title}</h3>
               <p>{item.detail}</p>
@@ -634,7 +649,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner command center</h2>
             <p className="muted">
-              Operator overview across onboarding, dispatch readiness, payout/tax readiness, and report follow-up.
+              Operator overview across onboarding, dispatch readiness, payout/tax readiness, and report
+              follow-up.
             </p>
           </div>
           <span className="pill pill-info">Daily control view</span>
@@ -672,7 +688,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </p>
           </div>
           <div className="participant-list">
-            <span className={`pill ${acceptanceBlockerBoard.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}>
+            <span
+              className={`pill ${acceptanceBlockerBoard.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}
+            >
               {acceptanceBlockerBoard.hardBlocked} hard blocked
             </span>
             <span className="pill pill-info">{acceptanceBlockerBoard.eligibleNow} can accept now</span>
@@ -683,9 +701,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <Link className="card" href={card.href} key={card.title}>
               <p>{card.title}</p>
               <h2>{card.count}</h2>
-              <span className={`signal ${providerCommandToneClass(card.tone)}`}>
-                {card.status}
-              </span>
+              <span className={`signal ${providerCommandToneClass(card.tone)}`}>{card.status}</span>
               <p className="muted" style={{ marginTop: 8 }}>
                 {card.detail}
               </p>
@@ -729,9 +745,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <Link className="card" href={card.href} key={card.title}>
               <p>{card.title}</p>
               <h2>{card.count}</h2>
-              <span className={`signal ${providerCommandToneClass(card.tone)}`}>
-                {card.status}
-              </span>
+              <span className={`signal ${providerCommandToneClass(card.tone)}`}>{card.status}</span>
               <p className="muted" style={{ marginTop: 8 }}>
                 {card.detail}
               </p>
@@ -826,8 +840,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <div>
                     <strong>{lane.city}</strong>
                     <p className="muted">
-                      {lane.ready}/{lane.total} ready, {lane.online} online, {lane.locationNeedsRefresh}{' '}
-                      need location refresh, {lane.blocked} blocked.
+                      {lane.ready}/{lane.total} ready, {lane.online} online, {lane.locationNeedsRefresh} need
+                      location refresh, {lane.blocked} blocked.
                     </p>
                   </div>
                   <Link className="text-link" href={`/partners?q=${encodeURIComponent(lane.city)}`}>
@@ -973,7 +987,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <p className="muted">{providerActionHint(provider, opsPolicy)}</p>
                   <PartnerBackupEligibilityCell provider={provider} opsPolicy={opsPolicy} />
                   {hasOpenProviderRisk(provider) ? (
-                    <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
+                    <Link
+                      className="text-link"
+                      href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
+                    >
                       Open reports
                     </Link>
                   ) : null}
@@ -1500,7 +1517,11 @@ function PartnerOpsBadgeList({
   return (
     <div className="participant-list" style={{ marginBottom: 8 }}>
       {badges.map((badge) => (
-        <span className={`pill ${partnerOpsBadgePillClass(badge.tone)}`} key={badge.label} title={badge.detail}>
+        <span
+          className={`pill ${partnerOpsBadgePillClass(badge.tone)}`}
+          key={badge.label}
+          title={badge.detail}
+        >
           {badge.label}
         </span>
       ))}
@@ -1531,7 +1552,7 @@ function buildPartnerOperationRow(
         status:
           provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
             ? 'ok'
-            : provider.kyc?.status ?? 'missing',
+            : (provider.kyc?.status ?? 'missing'),
         tone:
           provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
             ? 'ok'
@@ -1541,7 +1562,7 @@ function buildPartnerOperationRow(
       },
       {
         label: 'Bank',
-        status: hasApprovedBankAccount(provider) ? 'ok' : provider.bankAccounts?.[0]?.status ?? 'missing',
+        status: hasApprovedBankAccount(provider) ? 'ok' : (provider.bankAccounts?.[0]?.status ?? 'missing'),
         tone: hasApprovedBankAccount(provider) ? 'ok' : 'warn',
       },
       {
@@ -1566,7 +1587,10 @@ function buildPartnerOperationRow(
       },
       {
         label: 'Services',
-        status: providerActiveServiceCount(provider) > 0 ? `${providerActiveServiceCount(provider)} active` : 'none',
+        status:
+          providerActiveServiceCount(provider) > 0
+            ? `${providerActiveServiceCount(provider)} active`
+            : 'none',
         tone: providerActiveServiceCount(provider) > 0 ? 'ok' : 'warn',
       },
       {
@@ -1617,7 +1641,10 @@ function providerCompletedWorkCount(provider: AdminProvider) {
 function providerLastCompletedWorkAt(provider: AdminProvider) {
   return latestTimestamp(
     (provider.earnings ?? [])
-      .filter((earning) => earning.booking?.status === 'COMPLETED' || ['AVAILABLE', 'PAID'].includes(earning.status))
+      .filter(
+        (earning) =>
+          earning.booking?.status === 'COMPLETED' || ['AVAILABLE', 'PAID'].includes(earning.status),
+      )
       .flatMap((earning) => [
         earning.booking?.scheduledStartAt,
         earning.paidAt,
@@ -1722,9 +1749,10 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
           : 'No negative wallet balance is blocking booking acceptance.',
     },
     {
-      label: verificationApproved && kycState.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
-        ? 'KYC ok'
-        : 'KYC needed',
+      label:
+        verificationApproved && kycState.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
+          ? 'KYC ok'
+          : 'KYC needed',
       tone:
         verificationApproved && kycState.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
           ? 'success'
@@ -1786,7 +1814,8 @@ function partnerAcceptBlockerSummary(provider: AdminProvider, opsPolicy: Provide
   if (provider.status !== 'ONLINE_AVAILABLE') blockers.push(`status ${provider.status}`);
   if (locationState !== 'recent') blockers.push(`location ${locationState}`);
   if (!hasHealthyPush(provider)) blockers.push('push missing');
-  if (!['clear', 'missing'].includes(securityState)) blockers.push(providerSecurityLabel(securityState).toLowerCase());
+  if (!['clear', 'missing'].includes(securityState))
+    blockers.push(providerSecurityLabel(securityState).toLowerCase());
 
   return blockers.length ? `Blocked by: ${blockers.join(', ')}.` : 'Booking acceptance is blocked by policy.';
 }
@@ -1813,25 +1842,24 @@ function PartnerBackupEligibilityCell({
       <div className="risk-watch-header">
         <div>
           <strong>Backup matching eligibility</strong>
-          <p className="muted">
-            {eligibility.detail}
-          </p>
+          <p className="muted">{eligibility.detail}</p>
         </div>
         <span className={`pill ${eligibility.eligible ? 'pill-success' : 'pill-warn'}`}>
           {eligibility.eligible ? 'Candidate ready' : 'Excluded'}
         </span>
       </div>
       <div className="participant-list" style={{ marginTop: 8 }}>
-        <span className="pill pill-info">
-          Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}
-        </span>
+        <span className="pill pill-info">Radius: {formatDistanceMeters(opsPolicy.backupRadiusMeters)}</span>
         <span className="pill pill-info">First window: {opsPolicy.responseWindowMinutes}m</span>
         <span className="pill pill-info">Location: {opsPolicy.staleLocationMinutes}m fresh</span>
       </div>
       {eligibility.blockers.length ? (
         <div className="participant-list" style={{ marginTop: 8 }}>
           {eligibility.blockers.map((blocker) => (
-            <span className={`pill ${blocker.severity === 'hard' ? 'pill-danger' : 'pill-warn'}`} key={blocker.label}>
+            <span
+              className={`pill ${blocker.severity === 'hard' ? 'pill-danger' : 'pill-warn'}`}
+              key={blocker.label}
+            >
               {blocker.label}
             </span>
           ))}
@@ -1884,7 +1912,10 @@ function partnerDetailActionHref(provider: AdminProvider, action: ProviderListAc
   return anchor ? `/partners/${provider.id}#${anchor}` : `/partners/${provider.id}`;
 }
 
-function nextProviderListAction(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY): ProviderListAction {
+function nextProviderListAction(
+  provider: AdminProvider,
+  opsPolicy = DEFAULT_PROVIDER_OPS_POLICY,
+): ProviderListAction {
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
   const primaryBank = provider.bankAccounts?.[0];
   const firstRevenueSignal = providerHasFirstRevenueSignal(provider);
@@ -2016,7 +2047,7 @@ function nextProviderListAction(provider: AdminProvider, opsPolicy = DEFAULT_PRO
       detail:
         securityState === 'shared'
           ? 'A device appears on more than one partner profile.'
-          : 'Recent partner session has a suspicious risk flag.',
+          : 'Recent partner session has a flagged session record.',
       operatorAction: 'Review device/session history before relying on this partner for dispatch.',
       tone: 'blocked',
       priority: 67,
@@ -2088,8 +2119,9 @@ function partnerKycState(provider: AdminProvider): PartnerKycState {
   const pendingDocuments = requiredDocumentStatuses.filter((documentStatus) =>
     ['PENDING_REVIEW', 'UPLOADED'].includes(documentStatus),
   ).length;
-  const rejectedDocuments = requiredDocumentStatuses.filter((documentStatus) => documentStatus === 'REJECTED')
-    .length;
+  const rejectedDocuments = requiredDocumentStatuses.filter(
+    (documentStatus) => documentStatus === 'REJECTED',
+  ).length;
   const blockedByDocuments = status !== 'APPROVED' && missingDocuments.length > 0;
   const readyToApprove = Boolean(provider.kyc) && status !== 'APPROVED' && missingDocuments.length === 0;
   const needsReview =
@@ -2237,7 +2269,7 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
       ) : null}
       {blockedDevices.length ? <p className="muted">{blockedDevices.length} blocked device(s)</p> : null}
       {suspiciousSessions.length ? (
-        <p className="muted">{suspiciousSessions.length} suspicious session(s)</p>
+        <p className="muted">{suspiciousSessions.length} flagged session(s)</p>
       ) : null}
       {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
       <Link className="text-link" href={`/partners/${provider.id}`}>
@@ -2315,7 +2347,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
   }
   const securityState = providerSecurityStatus(provider);
   if (securityState !== 'clear') {
-    return 'Partner has a device/session security item. Review it before dispatching high-risk bookings.';
+    return 'Partner has a device/session security item. Review it before dispatching customer bookings.';
   }
   if (!provider.user?.supabaseUserId) {
     return 'Partner is operational in Nest auth. Supabase role sync will become available after Supabase OTP login links this phone.';
@@ -2351,7 +2383,10 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
     blockers.push({ label: 'not online available', severity: 'soft' });
   }
   if (locationState !== 'recent') {
-    blockers.push({ label: `location ${locationState}`, severity: locationState === 'missing' ? 'hard' : 'soft' });
+    blockers.push({
+      label: `location ${locationState}`,
+      severity: locationState === 'missing' ? 'hard' : 'soft',
+    });
   }
   if (!hasHealthyPush(provider)) {
     blockers.push({ label: 'push missing', severity: 'soft' });
@@ -2470,7 +2505,7 @@ function buildProviderCommandCenter(
         accountBlocks > 0 || openRisk > 0
           ? 'Account blocks, reports, or active sanctions need operator attention.'
           : 'No filtered partner has open reports, active sanctions, or device follow-up items.',
-      href: openRisk > 0 ? '/partner-risk' : '/partners?review=security',
+      href: openRisk > 0 ? '/partner-controls' : '/partners?review=security',
       metrics: [
         providerCommandMetric('blocked', accountBlocks),
         providerCommandMetric('open reports', openRisk),
@@ -2489,13 +2524,17 @@ function buildPartnerShiftHandoff(
   opsPolicy: ProviderOpsPolicy,
 ): PartnerShiftHandoff {
   const acceptReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy));
-  const backupReady = providers.filter((provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible);
+  const backupReady = providers.filter(
+    (provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible,
+  );
   const hardBlocked = providers.filter(partnerHasHardAcceptanceBlocker);
   const cashDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0);
   const readyKyc = providers.filter((provider) => partnerKycState(provider).readyToApprove);
   const kycBlocked = providers.filter((provider) => {
     const kycState = partnerKycState(provider);
-    return kycState.blockedByDocuments || kycState.rejectedDocuments > 0 || provider.kyc?.status === 'REJECTED';
+    return (
+      kycState.blockedByDocuments || kycState.rejectedDocuments > 0 || provider.kyc?.status === 'REJECTED'
+    );
   });
   const locationRefresh = providers.filter((provider) =>
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
@@ -2525,7 +2564,8 @@ function buildPartnerShiftHandoff(
           title: 'Approve KYC records that are ready',
           scope: 'KYC review',
           detail: `${readyKyc.length} partner(s) have required CCCD/selfie evidence ready for admin decision.`,
-          operatorAction: 'Open each detail page, verify evidence, then approve or reject with a clear reason.',
+          operatorAction:
+            'Open each detail page, verify evidence, then approve or reject with a clear reason.',
           href: '/partners?review=kyc',
           tone: 'warn' as const,
           samples: partnerSampleNames(readyKyc),
@@ -2536,7 +2576,8 @@ function buildPartnerShiftHandoff(
           title: 'Request KYC resubmission where evidence is blocked',
           scope: 'Identity blocker',
           detail: `${kycBlocked.length} partner(s) cannot move forward because identity evidence is missing or rejected.`,
-          operatorAction: 'Use rejection reasons and resubmission guidance before the partner can become dispatch-ready.',
+          operatorAction:
+            'Use rejection reasons and resubmission guidance before the partner can become dispatch-ready.',
           href: '/partners?review=documents',
           tone: 'warn' as const,
           samples: partnerSampleNames(kycBlocked),
@@ -2556,10 +2597,10 @@ function buildPartnerShiftHandoff(
       : null,
     securityRisk.length
       ? {
-          title: 'Review device or account risk before dispatch',
-          scope: 'Trust gate',
-          detail: `${securityRisk.length} partner(s) have blocked devices, suspicious sessions, shared devices, or account block state.`,
-          operatorAction: 'Open partner risk/security history before relying on them for customer bookings.',
+          title: 'Review device or account controls before dispatch',
+          scope: 'Control gate',
+          detail: `${securityRisk.length} partner(s) have blocked devices, flagged sessions, shared devices, or account block state.`,
+          operatorAction: 'Open partner control history before relying on them for customer bookings.',
           href: '/partners?review=security',
           tone: 'danger' as const,
           samples: partnerSampleNames(securityRisk),
@@ -2581,7 +2622,8 @@ function buildPartnerShiftHandoff(
           title: 'Repair request alert readiness',
           scope: 'Alerts',
           detail: `${pushMissing.length} partner(s) have no enabled push device, so urgent booking alerts may be missed.`,
-          operatorAction: 'Ask partners to reopen the app and register notifications before relying on push outreach.',
+          operatorAction:
+            'Ask partners to reopen the app and register notifications before relying on push outreach.',
           href: '/partners?review=push',
           tone: 'info' as const,
           samples: partnerSampleNames(pushMissing),
@@ -2592,7 +2634,8 @@ function buildPartnerShiftHandoff(
           title: 'Moderate public partner media',
           scope: 'Profile',
           detail: `${publicMedia.length} partner(s) have profile/gallery media waiting for admin review.`,
-          operatorAction: 'Approve original, safe media or reject unclear uploads before final visual redesign.',
+          operatorAction:
+            'Approve original, safe media or reject unclear uploads before final visual redesign.',
           href: '/partners?review=public-media',
           tone: 'info' as const,
           samples: partnerSampleNames(publicMedia),
@@ -2611,7 +2654,10 @@ function buildPartnerShiftHandoff(
       : null,
   ].filter((item): item is PartnerShiftHandoff['actions'][number] => Boolean(item));
 
-  const topAction = actions.find((item) => item.tone === 'danger') ?? actions.find((item) => item.tone === 'warn') ?? actions[0];
+  const topAction =
+    actions.find((item) => item.tone === 'danger') ??
+    actions.find((item) => item.tone === 'warn') ??
+    actions[0];
   const tone =
     cashDebt.length || securityRisk.length
       ? 'danger'
@@ -2692,7 +2738,9 @@ function buildPartnerDispatchHandoff(
   opsPolicy: ProviderOpsPolicy,
 ): PartnerDispatchHandoff {
   const directReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy));
-  const backupReady = providers.filter((provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible);
+  const backupReady = providers.filter(
+    (provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible,
+  );
   const acceptanceBlocked = providers.filter((provider) => !partnerCanAcceptBookingNow(provider, opsPolicy));
   const cashDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0);
   const locationRefresh = providers.filter((provider) =>
@@ -2733,7 +2781,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Acceptance blocked',
         value: acceptanceBlocked.length.toString(),
-        detail: 'Partners blocked by KYC, bank, wallet, location, push, or safety gates.',
+        detail: 'Partners blocked by KYC, bank, wallet, location, push, or control gates.',
         href: '/partners?review=acceptance-blocked',
         tone: acceptanceBlocked.length ? 'danger' : 'ok',
       },
@@ -2762,7 +2810,7 @@ function buildPartnerDispatchHandoff(
         title: 'Reports desk',
         value: riskReview.length.toString(),
         detail: 'Partners with reports or sanctions that should be checked before dispatch.',
-        href: '/partner-risk',
+        href: '/partner-controls',
         tone: riskReview.length ? 'danger' : 'info',
       },
     ],
@@ -2882,7 +2930,9 @@ function latestPushAgeLabel(provider: AdminProvider) {
     .map((device) => Date.parse(device.createdAt ?? ''))
     .filter(Number.isFinite)
     .sort((left, right) => right - left)[0];
-  return latestPushTime ? `Latest push device ${formatRelativeAge(new Date(latestPushTime).toISOString())}.` : 'No push device registered.';
+  return latestPushTime
+    ? `Latest push device ${formatRelativeAge(new Date(latestPushTime).toISOString())}.`
+    : 'No push device registered.';
 }
 
 function latestSecurityAgeLabel(provider: AdminProvider) {
@@ -2994,14 +3044,15 @@ function buildPartnerDispatchForecast(
       {
         label: 'Ready now',
         value: `${readyNow}/${providers.length}`,
-        detail: 'Approved, online, fresh location, clean device risk, and push-ready partners.',
+        detail: 'Approved, online, fresh location, clear device checks, and push-ready partners.',
         tone: readyNow > 0 ? 'ok' : 'warn',
         href: '/partners?readiness=ready',
       },
       {
         label: 'Recoverable today',
         value: recoverableNow.toString(),
-        detail: 'Approved partners likely recoverable by going online, refreshing location, or enabling push.',
+        detail:
+          'Approved partners likely recoverable by going online, refreshing location, or enabling push.',
         tone: recoverableNow > 0 ? 'info' : 'ok',
         href: recoverableNow > 0 ? '/partners?readiness=approved-offline' : '/partners',
       },
@@ -3009,14 +3060,15 @@ function buildPartnerDispatchForecast(
         label: 'Online capacity',
         value: `${online}/${bookingBase}`,
         detail:
-          'Partners currently online versus the pool that has passed identity, bank, wallet, and safety gates.',
+          'Partners currently online versus the pool that has passed identity, bank, wallet, and control gates.',
         tone: online > 0 ? 'info' : bookingBase > 0 ? 'warn' : 'danger',
         href: '/partners?providerStatus=ONLINE_AVAILABLE',
       },
       {
         label: 'Hard blockers',
         value: hardBlocked.toString(),
-        detail: 'Identity, account, cash debt, or security blockers that should not be bypassed by dispatch.',
+        detail:
+          'Identity, account, cash debt, or device/session blockers that should not be bypassed by dispatch.',
         tone: hardBlocked > 0 ? 'danger' : 'ok',
         href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=security',
       },
@@ -3058,9 +3110,9 @@ function buildPartnerDispatchForecast(
         tone: payoutLocked > 0 ? 'warn' : 'ok',
       },
       {
-        label: 'Security review',
+        label: 'Device/session review',
         count: securityRisk,
-        detail: 'Blocked, shared, suspicious, or account-blocked partner devices/sessions.',
+        detail: 'Blocked, shared, flagged, or account-blocked partner devices/sessions.',
         href: '/partners?review=security',
         tone: securityRisk > 0 ? 'danger' : 'ok',
       },
@@ -3074,9 +3126,10 @@ function buildPartnerAcceptanceBlockerBoard(
   opsPolicy: ProviderOpsPolicy,
 ): PartnerAcceptanceBlockerBoard {
   const cashDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0);
-  const accountOrSecurity = providers.filter((provider) =>
-    Boolean(provider.blockedAt) ||
-    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+  const accountOrSecurity = providers.filter(
+    (provider) =>
+      Boolean(provider.blockedAt) ||
+      ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   );
   const locationHold = providers.filter((provider) =>
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
@@ -3101,19 +3154,22 @@ function buildPartnerAcceptanceBlockerBoard(
         title: 'Cash fee settlement',
         count: cashDebt.length,
         status: cashDebt.length ? 'Blocks accept' : 'Clear',
-        detail: 'Negative wallet from cash bookings blocks booking acceptance until HANDS fee settlement is posted.',
+        detail:
+          'Negative wallet from cash bookings blocks booking acceptance until HANDS fee settlement is posted.',
         operatorAction: 'Open the cash debt queue and confirm settlement before allowing more booking work.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
         samples: partnerBlockerSamples(cashDebt),
       },
       {
-        title: 'Account and device risk',
+        title: 'Account and device controls',
         count: accountOrSecurity.length,
         status: accountOrSecurity.length ? 'Do not dispatch' : 'Clear',
-        detail: 'Blocked accounts, blocked devices, shared devices, or suspicious sessions must stay out of matching.',
-        operatorAction: 'Resolve account controls in Partner Risk before overriding any booking decision.',
-        href: '/partner-risk',
+        detail:
+          'Blocked accounts, blocked devices, shared devices, or flagged sessions must stay out of matching.',
+        operatorAction:
+          'Resolve account controls in Partner Controls before overriding any booking decision.',
+        href: '/partner-controls',
         tone: accountOrSecurity.length ? 'danger' : 'ok',
         samples: partnerBlockerSamples(accountOrSecurity),
       },
@@ -3121,9 +3177,9 @@ function buildPartnerAcceptanceBlockerBoard(
         title: 'Location freshness',
         count: locationHold.length,
         status: locationHold.length ? 'Needs app open' : 'Fresh',
-        detail:
-          `Backup matching uses the last location. Partners older than ${opsPolicy.staleLocationMinutes} minutes should not be trusted for 10km dispatch.`,
-        operatorAction: 'Ask partners to open the app so location refreshes before they receive or join requests.',
+        detail: `Backup matching uses the last location. Partners older than ${opsPolicy.staleLocationMinutes} minutes should not be trusted for 10km dispatch.`,
+        operatorAction:
+          'Ask partners to open the app so location refreshes before they receive or join requests.',
         href: '/partners?review=location',
         tone: locationHold.length ? 'warn' : 'ok',
         samples: partnerBlockerSamples(locationHold),
@@ -3133,7 +3189,8 @@ function buildPartnerAcceptanceBlockerBoard(
         count: pushHold.length,
         status: pushHold.length ? 'Alert gap' : 'Ready',
         detail: 'Partners without enabled push devices may miss first-pick and backup participation prompts.',
-        operatorAction: 'Use in-app refresh, token registration, or contact fallback before relying on them for demand.',
+        operatorAction:
+          'Use in-app refresh, token registration, or contact fallback before relying on them for demand.',
         href: '/partners?review=push',
         tone: pushHold.length ? 'warn' : 'ok',
         samples: partnerBlockerSamples(pushHold),
@@ -3154,7 +3211,8 @@ function buildPartnerAcceptanceBlockerBoard(
         count: bankBookingHold.length,
         status: bankBookingHold.length ? 'Blocks booking' : 'Approved',
         detail: 'A partner needs at least one approved bank account before receiving paid booking work.',
-        operatorAction: 'Approve or reject bank account evidence so booking readiness matches API enforcement.',
+        operatorAction:
+          'Approve or reject bank account evidence so booking readiness matches API enforcement.',
         href: '/partners?review=bank',
         tone: bankBookingHold.length ? 'warn' : 'ok',
         samples: partnerBlockerSamples(bankBookingHold),
@@ -3165,7 +3223,8 @@ function buildPartnerAcceptanceBlockerBoard(
         status: firstEarningPayoutGate.length ? 'Payout locked' : 'Deferred',
         detail:
           'Tax and full payout setup are requested after first earning, not before signup, to reduce onboarding drop-off.',
-        operatorAction: 'Keep booking work possible, but block withdrawals until tax, address, bank, and terms are complete.',
+        operatorAction:
+          'Keep booking work possible, but block withdrawals until tax, address, bank, and terms are complete.',
         href: '/partners?review=payout-setup',
         tone: firstEarningPayoutGate.length ? 'info' : 'ok',
         samples: partnerBlockerSamples(firstEarningPayoutGate),
@@ -3218,8 +3277,7 @@ function buildPartnerKycReviewBoard(providers: AdminProvider[]): PartnerKycRevie
         count: rejectedKyc.length,
         detail:
           'Rejected KYC should not disappear from operations until the partner has clear instructions and uploads corrected evidence.',
-        operatorAction:
-          'Use the partner detail resubmission guidance so support can send a precise message.',
+        operatorAction: 'Use the partner detail resubmission guidance so support can send a precise message.',
         href: '/partners?review=kyc',
       },
       {
@@ -3324,23 +3382,18 @@ function partnerBlockerSamples(providers: AdminProvider[]) {
 }
 
 function buildPartnerSupplyLanes(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
-  const lanes = new Map<
-    string,
-    PartnerDispatchForecast['supplyLanes'][number]
-  >();
+  const lanes = new Map<string, PartnerDispatchForecast['supplyLanes'][number]>();
 
   for (const provider of providers) {
     const city = provider.city?.trim() || 'Unknown city';
-    const lane =
-      lanes.get(city) ??
-      {
-        city,
-        total: 0,
-        ready: 0,
-        online: 0,
-        locationNeedsRefresh: 0,
-        blocked: 0,
-      };
+    const lane = lanes.get(city) ?? {
+      city,
+      total: 0,
+      ready: 0,
+      online: 0,
+      locationNeedsRefresh: 0,
+      blocked: 0,
+    };
 
     lane.total += 1;
     if (providerDispatchReady(provider, opsPolicy)) {
@@ -3408,8 +3461,8 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
     ['Public media review', publicMediaReview.toString()],
     ['First earning setup', payoutSetupReview.toString()],
     ['Wallet debt', walletDebt.toString()],
-    ['Open risk', openRisk.toString()],
-    ['Device risk', deviceRisk.toString()],
+    ['Open reports', openRisk.toString()],
+    ['Device checks', deviceRisk.toString()],
     ['Ready for dispatch', readyNow.toString()],
   ] as const;
 }
@@ -3423,7 +3476,9 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
   const publicMediaNeedsReview = providers.filter(providerPublicMediaNeedsReview).length;
   const bankNeedsReview = providers.filter((provider) => !hasApprovedBankAccount(provider)).length;
   const payoutSetupNeedsReview = providers.filter(providerPayoutSetupNeedsReview).length;
-  const cashDebtNeedsReview = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
+  const cashDebtNeedsReview = providers.filter(
+    (provider) => providerUnsettledWalletBalance(provider) < 0,
+  ).length;
   const taxNeedsReview = providers.filter(providerTaxNeedsReview).length;
   const locationNeedsReview = providers.filter((provider) =>
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
@@ -3447,7 +3502,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       count: acceptanceBlocked,
       href: '/partners?review=acceptance-blocked',
       detail:
-        'Partners who cannot accept direct requests now because identity, bank, wallet, location, push, or safety gates are not satisfied.',
+        'Partners who cannot accept direct requests now because identity, bank, wallet, location, push, or control gates are not satisfied.',
     },
     {
       label: 'Account blocks',
@@ -3502,23 +3557,23 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       detail: 'Freelance tax profiles should be approved only after MST and registered address are checked.',
     },
     {
-      label: 'Device/session risk',
+      label: 'Device/session review',
       count: securityNeedsReview,
       href: '/partners?review=security',
-      detail: 'Blocked, shared, or suspicious partner app devices need operator review.',
+      detail: 'Blocked, shared, or flagged partner app devices need operator review.',
     },
     {
       label: 'Reports and sanctions',
       count: riskNeedsReview,
       href: '/partners?review=risk',
-      detail: 'Open reports or active sanctions should be reviewed before dispatch and trust badge changes.',
+      detail:
+        'Open reports or active sanctions should be reviewed before dispatch and profile badge changes.',
     },
     {
       label: 'Location freshness',
       count: locationNeedsReview,
       href: '/partners?review=location',
-      detail:
-        `Partners with missing, expired, or older-than-${opsPolicy.staleLocationMinutes}m locations should reopen the Partner app before dispatch.`,
+      detail: `Partners with missing, expired, or older-than-${opsPolicy.staleLocationMinutes}m locations should reopen the Partner app before dispatch.`,
     },
     {
       label: 'Push alert readiness',
@@ -3573,7 +3628,7 @@ function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVI
   const kycStatus = provider.kyc?.status ?? 'MISSING';
   const bankStatus = hasApprovedBankAccount(provider)
     ? 'APPROVED'
-    : provider.bankAccounts?.[0]?.status ?? 'MISSING';
+    : (provider.bankAccounts?.[0]?.status ?? 'MISSING');
   const taxStatus = provider.taxProfile?.status ?? 'MISSING';
 
   if (provider.blockedAt) {
@@ -3632,7 +3687,7 @@ function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVI
   if (securityState === 'blocked') {
     issues.push({ label: 'device blocked', severity: 'high' });
   } else if (securityState === 'suspicious') {
-    issues.push({ label: 'session suspicious', severity: 'high' });
+    issues.push({ label: 'session flagged', severity: 'high' });
   } else if (securityState === 'shared') {
     issues.push({ label: 'shared device', severity: 'high' });
   } else if (securityState === 'missing') {
@@ -3701,7 +3756,7 @@ function buildProviderActiveFilters(filters: ProviderFilters) {
           kind: 'search',
           value: filters.q,
           label: `Search: ${filters.q}`,
-          description: 'Partner list is narrowed by name, phone, location, service, or risk text.',
+          description: 'Partner list is narrowed by name, phone, location, service, report, or control text.',
         }
       : null,
     filters.verification
@@ -3783,7 +3838,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Location freshness is narrowed so dispatch can check stale or missing partner pins.';
   }
   if (kind === 'security') {
-    return 'Security review is narrowed to device, session, or account risk state.';
+    return 'Security review is narrowed to device, session, or account control state.';
   }
   if (kind === 'readiness') {
     return 'Readiness shows whether a partner can safely appear in customer discovery and dispatch.';
@@ -3792,7 +3847,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Push readiness highlights partners whose devices cannot reliably receive booking alerts.';
   }
   if (kind === 'review' && value === 'risk') {
-    return 'Risk review highlights partners with open reports or active sanctions.';
+    return 'Report review highlights partners with open reports or active sanctions.';
   }
   if (kind === 'review' && value === 'public-media') {
     return 'Public media review highlights uploaded partner photos that are pending or rejected.';
@@ -4015,7 +4070,7 @@ function sharedDeviceIds(provider: AdminProvider) {
 function providerSecurityLabel(status: ProviderSecurityState) {
   if (status === 'account-blocked') return 'Account blocked';
   if (status === 'blocked') return 'Device blocked';
-  if (status === 'suspicious') return 'Suspicious session';
+  if (status === 'suspicious') return 'Flagged session';
   if (status === 'shared') return 'Shared device';
   if (status === 'missing') return 'No app device';
   return 'Security clear';

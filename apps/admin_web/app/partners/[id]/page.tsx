@@ -345,7 +345,10 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                   </p>
                   <p className="muted">
                     Payment {record.booking.payment?.method ?? 'UNKNOWN'} /{' '}
-                    {formatCurrency(record.booking.payment?.amount ?? 0, record.booking.payment?.currency ?? 'VND')}
+                    {formatCurrency(
+                      record.booking.payment?.amount ?? 0,
+                      record.booking.payment?.currency ?? 'VND',
+                    )}
                     {' / '}
                     participants {record.booking.participants?.length ?? 0}
                   </p>
@@ -401,7 +404,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               <span>NONE</span>
               <div>
                 <strong>No activity has been recorded yet</strong>
-                <p className="muted">App login, booking, location, payout, and verification records appear here.</p>
+                <p className="muted">
+                  App login, booking, location, payout, and verification records appear here.
+                </p>
               </div>
               <small>0</small>
             </div>
@@ -452,7 +457,9 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <span className="pill pill-info">
             First response window: {dispatchPolicy.responseWindowMinutes}m
           </span>
-          <span className="pill pill-info">Backup radius: {formatDistance(dispatchPolicy.backupRadiusMeters)}</span>
+          <span className="pill pill-info">
+            Backup radius: {formatDistance(dispatchPolicy.backupRadiusMeters)}
+          </span>
           <span className="pill pill-info">
             Backup location: {dispatchPolicy.locationFreshnessMinutes}m fresh
           </span>
@@ -487,8 +494,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <h2>Partner acceptance unblock playbook</h2>
             <p className="muted">
               Operator order for restoring this partner's booking acceptance. Finance and account-control
-              blockers stay
-              first; tax stays deferred until first earning and then blocks payout, not initial dispatch.
+              blockers stay first; tax stays deferred until first earning and then blocks payout, not initial
+              dispatch.
             </p>
           </div>
           <span
@@ -586,7 +593,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
                 Started {formatDate(payoutOps.hold.startsAt)} / expires {formatDate(payoutOps.hold.expiresAt)}
               </p>
             </div>
-            <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
+            <Link className="text-link" href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}>
               Reports desk
             </Link>
           </div>
@@ -762,7 +769,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           <div>
             <h2>Device and session security</h2>
             <p className="muted">
-              Watch for shared devices, suspicious sessions, blocked devices, and stale partner app activity.
+              Watch for shared devices, flagged sessions, blocked devices, and stale partner app activity.
             </p>
           </div>
           <span className={`pill ${securitySummary.risky ? 'pill-danger' : 'pill-success'}`}>
@@ -886,7 +893,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               partner profile.
             </p>
           </div>
-          <Link className="text-link" href={`/partner-risk?q=${encodeURIComponent(provider.id)}`}>
+          <Link className="text-link" href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}>
             Open reports desk
           </Link>
         </div>
@@ -1839,11 +1846,17 @@ function PartnerAcceptanceRepairCommandPanel({
           <div className="setup-stage-item" key={`${step.owner}-${step.blocker}`}>
             <span>{index + 1}</span>
             <div>
-              <strong>{step.owner}: {step.blocker}</strong>
+              <strong>
+                {step.owner}: {step.blocker}
+              </strong>
               <p className="muted">{step.reason}</p>
               <p className="muted">{step.operatorAction}</p>
               <span className={`pill ${pillClass(step.tone)}`}>
-                {step.tone === 'done' ? 'Clear' : step.tone === 'blocked' ? 'Blocks booking' : 'Operator check'}
+                {step.tone === 'done'
+                  ? 'Clear'
+                  : step.tone === 'blocked'
+                    ? 'Blocks booking'
+                    : 'Operator check'}
               </span>
             </div>
             <Link className="text-link" href={step.href}>
@@ -1883,7 +1896,8 @@ function buildPartnerBookingArchive(provider: ProviderDetail): PartnerBookingArc
   }
 
   return [...records.values()].sort(
-    (left, right) => dateValue(right.booking.scheduledStartAt ?? right.booking.createdAt) -
+    (left, right) =>
+      dateValue(right.booking.scheduledStartAt ?? right.booking.createdAt) -
       dateValue(left.booking.scheduledStartAt ?? left.booking.createdAt),
   );
 }
@@ -2011,9 +2025,7 @@ function bookingServiceLabel(booking: PartnerDetailBooking) {
 
 function partnerBookingCustomer(booking: PartnerDetailBooking) {
   return (
-    booking.customerProfile?.user?.fullName ??
-    booking.customerProfile?.user?.phone ??
-    'Unknown customer'
+    booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Unknown customer'
   );
 }
 
@@ -2149,7 +2161,9 @@ function buildPartnerAcceptanceRepairCommand(
   const partnerAppMessage = partnerAppBlockMessage(provider, bookingAcceptance, payoutOps, dispatchPolicy);
   const customerImpact = bookingAcceptance.canAccept
     ? 'Can appear in customer booking flow and final partner choice.'
-    : blockedGates.some((gate) => ['Wallet and cash debt', 'Account and sanctions', 'Identity and approval'].includes(gate.label))
+    : blockedGates.some((gate) =>
+          ['Wallet and cash debt', 'Account and sanctions', 'Identity and approval'].includes(gate.label),
+        )
       ? 'Hide or avoid this partner for direct acceptance and backup shortlist until hard blockers are cleared.'
       : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
   const operatorDecision = bookingAcceptance.canAccept
@@ -2219,7 +2233,7 @@ function partnerAcceptanceRepairStep(
     },
     'Account and sanctions': {
       owner: 'Account',
-      href: `/partner-risk?q=${encodeURIComponent(provider.id)}`,
+      href: `/partner-controls?q=${encodeURIComponent(provider.id)}`,
       actionLabel: 'Open reports',
       tone: 'blocked',
     },
@@ -2340,18 +2354,18 @@ function buildPartnerAcceptanceUnblockPlaybook(
       bookingBlocked: !walletGate?.ok,
     },
     {
-      id: 'account-risk',
+      id: 'account-controls',
       step: '2',
       owner: 'Account',
       title: 'Resolve account blocks and sanctions',
-      status: accountGate?.ok ? 'CLEAR' : 'RISK HOLD',
+      status: accountGate?.ok ? 'CLEAR' : 'CONTROL HOLD',
       detail: accountGate?.detail ?? 'Account gate was not evaluated.',
       bookingImpact: accountGate?.ok
         ? 'No account-level restriction is blocking work.'
         : 'Partner must stay hidden from assignment until account or sanction review is resolved.',
       payoutImpact: 'Active sanctions can hold payout until support closes the case.',
       action: accountGate?.ok ? 'Open partner report history' : 'Open reports',
-      href: `/partner-risk?q=${encodeURIComponent(provider.id)}`,
+      href: `/partner-controls?q=${encodeURIComponent(provider.id)}`,
       tone: accountGate?.ok ? 'done' : 'blocked',
       bookingBlocked: !accountGate?.ok,
     },
@@ -2427,7 +2441,8 @@ function buildPartnerAcceptanceUnblockPlaybook(
       title: 'Collect tax only after first earning',
       status: payoutGateOpen ? (hasFirstRevenue ? 'PAYOUT READY' : 'DEFERRED') : 'PAYOUT GATE',
       detail: hasFirstRevenue
-        ? payoutOps.blockers[0] ?? 'First earning exists; verify tax, address, agreements, and payout holds.'
+        ? (payoutOps.blockers[0] ??
+          'First earning exists; verify tax, address, agreements, and payout holds.')
         : 'Do not force tax profile during initial signup. Keep tax policy configured, then collect partner tax data after first earning.',
       bookingImpact: 'This should not block the partner from receiving the first booking.',
       payoutImpact: payoutGateOpen
@@ -2468,7 +2483,7 @@ function buildPartnerDetailOpsBadges(
       tone: bookingAcceptance.canAccept ? 'done' : 'pending',
       detail: bookingAcceptance.canAccept
         ? `Can be considered inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
-        : 'Backup matching uses the same safety gates, plus booking-distance filtering.',
+        : 'Backup matching uses the same control gates, plus booking-distance filtering.',
     },
     {
       label: cashDebt > 0 ? 'Cash debt' : 'Wallet clear',
@@ -2501,7 +2516,7 @@ function buildPartnerDetailOpsBadges(
       detail:
         enabledPushCount > 0
           ? `${enabledPushCount} enabled push device(s) can receive booking alerts.`
-          : onlineGate?.detail ?? 'No enabled push device is registered.',
+          : (onlineGate?.detail ?? 'No enabled push device is registered.'),
     },
     {
       label: serviceGate?.ok ? 'Services bookable' : 'Pricing needed',
@@ -2519,10 +2534,7 @@ function buildPartnerDetailOpsBadges(
   ];
 }
 
-function buildProviderOpsSummary(
-  provider: ProviderDetail,
-  dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY,
-) {
+function buildProviderOpsSummary(provider: ProviderDetail, dispatchPolicy = DEFAULT_PARTNER_DISPATCH_POLICY) {
   const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
   const hasRecentLocation = locationMinutes <= dispatchPolicy.locationFreshnessMinutes;
   const hasEnabledPush = (provider.user?.pushDevices ?? []).some((device) => device.enabled);
@@ -2777,11 +2789,11 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       tone: blockedDevices.length ? 'blocked' : 'done',
     },
     {
-      title: 'Suspicious sessions',
+      title: 'Flagged sessions',
       status: suspiciousSessions.length ? `${suspiciousSessions.length} WATCH` : 'CLEAR',
       detail: suspiciousSessions.length
-        ? suspiciousSessions.map((session) => session.suspiciousReason ?? 'Suspicious login').join(' ')
-        : 'No suspicious session flag is currently recorded.',
+        ? suspiciousSessions.map((session) => session.suspiciousReason ?? 'Flagged login').join(' ')
+        : 'No flagged session record is currently saved.',
       action: suspiciousSessions.length
         ? 'Confirm identity and review recent app/device activity.'
         : 'No action.',
@@ -3141,8 +3153,8 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
       ok: securityClear,
       status: securityClear ? 'CLEAR' : 'WATCH',
       detail: securityClear
-        ? 'No account block, blocked partner device, or suspicious session is active.'
-        : 'A block, device issue, or suspicious session needs admin review.',
+        ? 'No account block, blocked partner device, or flagged session is active.'
+        : 'A block, device issue, or flagged session needs admin review.',
       operatorAction: securityClear
         ? 'Continue normal monitoring.'
         : 'Review device/session section and reports desk before approval or payout.',
@@ -3465,9 +3477,7 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
       fileLabel: document?.fileAsset?.contentType ?? document?.fileAsset?.key ?? 'No file uploaded',
     };
   });
-  const missingDocuments = rows
-    .filter((row) => row.status !== 'APPROVED')
-    .map((row) => row.type);
+  const missingDocuments = rows.filter((row) => row.status !== 'APPROVED').map((row) => row.type);
   const allRequiredApproved = missingDocuments.length === 0;
   const rejectedDocuments = rows.filter((row) => row.status === 'REJECTED');
   const legalNameReady = Boolean(provider.legalName?.trim());

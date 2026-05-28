@@ -45,6 +45,7 @@ export async function enablePushDevice(formData: FormData) {
   await adminPost(`/admin/push-devices/${pushDeviceId}/enable`, {}, null);
   revalidatePath('/partners');
   revalidatePath('/partner-risk');
+  revalidatePath('/partner-controls');
   revalidatePath('/notifications');
   revalidatePath('/audit-log');
 }
@@ -165,6 +166,7 @@ function readOptionalProviderId(formData: FormData) {
 function revalidateProviderPaths(providerId?: string | null) {
   revalidatePath('/partners');
   revalidatePath('/partner-risk');
+  revalidatePath('/partner-controls');
   if (providerId) {
     revalidatePath(`/partners/${providerId}`);
   }
