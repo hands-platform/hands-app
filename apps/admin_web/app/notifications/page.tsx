@@ -59,6 +59,10 @@ export default async function NotificationsPage({
           <h2>{channelSummary.partnerAlertCount}</h2>
         </div>
         <div className="card">
+          <p>No-show alerts</p>
+          <h2>{summary.noShow}</h2>
+        </div>
+        <div className="card">
           <p>OneSignal route</p>
           <h2>{channelSummary.oneSignalDeliveries}</h2>
         </div>
@@ -353,6 +357,7 @@ function buildSummary(notifications: AdminNotification[]) {
     skipped: countDeliveries(notifications, 'SKIPPED'),
     failed: countDeliveries(notifications, 'FAILED'),
     disabledDevices: countDisabledDevices(notifications),
+    noShow: notifications.filter((notification) => notification.type === 'booking.no_show').length,
     payoutSetup: notifications.filter(
       (notification) => notification.type === 'provider.payout_setup_required',
     ).length,
@@ -381,6 +386,7 @@ const notificationFilterLinks = [
     href: '/notifications?review=partner-alerts',
     review: 'partner-alerts',
   },
+  { label: 'No-show', href: '/notifications?review=no-show', review: 'no-show' },
   { label: 'OneSignal', href: '/notifications?review=onesignal', review: 'onesignal' },
   { label: 'In-app route', href: '/notifications?review=in-app-route', review: 'in-app-route' },
 ];
@@ -437,6 +443,9 @@ function notificationMatchesReview(notification: AdminNotification, review: stri
   if (review === 'partner-alerts') {
     return isPartnerAlert(notification.type);
   }
+  if (review === 'no-show') {
+    return notification.type === 'booking.no_show';
+  }
   if (review === 'onesignal') {
     return deliveries.some((delivery) => delivery.provider === 'ONESIGNAL');
   }
@@ -470,6 +479,9 @@ function notificationFilterDescription(review: string) {
   }
   if (review === 'partner-alerts') {
     return 'booking and payout alerts sent to partners.';
+  }
+  if (review === 'no-show') {
+    return 'customer and partner alerts created when operations marks a booking as no-show.';
   }
   if (review === 'onesignal') {
     return 'notifications that attempted OS push delivery through OneSignal.';
@@ -558,6 +570,9 @@ function humanizeType(type: string) {
 }
 
 function typeMeaning(type: string) {
+  if (type.includes('no_show')) {
+    return 'No-show support review alert';
+  }
   if (type.includes('booking')) {
     return 'Booking lifecycle alert';
   }

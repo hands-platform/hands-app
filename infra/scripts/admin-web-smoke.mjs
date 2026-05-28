@@ -52,7 +52,8 @@ const pages = [
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
   { path: '/reviews', markers: ['Reviews And Reports', 'Review command board'] },
-  { path: '/notifications', markers: ['Notifications', 'Delivery operations queue'] },
+  { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
+  { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
   {
     path: '/partner-risk',
