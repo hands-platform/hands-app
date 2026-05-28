@@ -145,7 +145,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
         (item) => item.type === type && item.status !== 'APPROVED',
       );
       if (document) {
-        await postJson(`/admin/provider-documents/${document.id}/approve`, adminAccessToken);
+        await postJson(`/admin/partner-documents/${document.id}/approve`, adminAccessToken);
       }
     }
     await postJson(`/admin/partners/${providerProfileId}/kyc/approve`, adminAccessToken);
@@ -159,7 +159,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
       accountHolderName: `${label} Partner`,
     });
     await postJson(
-      `/admin/provider-bank-accounts/${bankAccount.bankAccount.id}/approve`,
+      `/admin/partner-bank-accounts/${bankAccount.bankAccount.id}/approve`,
       adminAccessToken,
     );
   }
@@ -331,7 +331,7 @@ if (
     `Provider device session was not recorded correctly: ${JSON.stringify(providerDeviceSession)}`,
   );
 }
-await postJson(`/admin/provider-devices/${providerDeviceSession.device.id}/block`, adminAuth.accessToken, {
+await postJson(`/admin/partner-devices/${providerDeviceSession.device.id}/block`, adminAuth.accessToken, {
   reason: 'Smoke test duplicate-device block',
 });
 const blockedProviderDeviceSession = await postJson('/provider/device-session', providerAuth.accessToken, {
@@ -344,7 +344,7 @@ if (blockedProviderDeviceSession.blocked !== true || blockedProviderDeviceSessio
     `Blocked provider device was not rejected by device-session: ${JSON.stringify(blockedProviderDeviceSession)}`,
   );
 }
-await postJson(`/admin/provider-devices/${providerDeviceSession.device.id}/unblock`, adminAuth.accessToken);
+await postJson(`/admin/partner-devices/${providerDeviceSession.device.id}/unblock`, adminAuth.accessToken);
 const unblockedProviderDeviceSession = await postJson('/provider/device-session', providerAuth.accessToken, {
   deviceId: providerSmokeDeviceId,
   platform: 'android',
@@ -1035,7 +1035,7 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
     (item) => item.type === type && item.status !== 'APPROVED',
   );
   if (document) {
-    await postJson(`/admin/provider-documents/${document.id}/approve`, adminAuth.accessToken);
+    await postJson(`/admin/partner-documents/${document.id}/approve`, adminAuth.accessToken);
   }
 }
 await postJson(`/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
@@ -1076,7 +1076,7 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
     (item) => item.type === type && item.status !== 'APPROVED',
   );
   if (document) {
-    await postJson(`/admin/provider-documents/${document.id}/approve`, adminAuth.accessToken);
+    await postJson(`/admin/partner-documents/${document.id}/approve`, adminAuth.accessToken);
   }
 }
 await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
@@ -1086,7 +1086,7 @@ const onboardingBankAccount = await postJson('/provider/onboarding/bank-accounts
   accountHolderName: 'Smoke Provider',
 });
 await postJson(
-  `/admin/provider-bank-accounts/${onboardingBankAccount.bankAccount.id}/approve`,
+  `/admin/partner-bank-accounts/${onboardingBankAccount.bankAccount.id}/approve`,
   adminAuth.accessToken,
 );
 await postJson('/provider/onboarding/tax-profile', providerAuth.accessToken, {

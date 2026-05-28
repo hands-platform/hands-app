@@ -60,7 +60,7 @@ export class AdminController {
     return this.admin.enablePushDevice(user.id, pushDeviceId);
   }
 
-  @Post('provider-devices/:id/block')
+  @Post(['provider-devices/:id/block', 'partner-devices/:id/block'])
   blockProviderDevice(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerDeviceId: string,
@@ -69,7 +69,7 @@ export class AdminController {
     return this.admin.blockProviderDevice(user.id, providerDeviceId, body.reason);
   }
 
-  @Post('provider-devices/:id/unblock')
+  @Post(['provider-devices/:id/unblock', 'partner-devices/:id/unblock'])
   unblockProviderDevice(@CurrentUser() user: AuthenticatedUser, @Param('id') providerDeviceId: string) {
     return this.admin.unblockProviderDevice(user.id, providerDeviceId);
   }

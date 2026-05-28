@@ -218,13 +218,13 @@ export class ProviderOnboardingController {
     return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.REJECTED, body.reason);
   }
 
-  @Post('admin/provider-documents/:id/approve')
+  @Post(['admin/provider-documents/:id/approve', 'admin/partner-documents/:id/approve'])
   @Roles(Role.ADMIN)
   approveProviderDocument(@CurrentUser() user: AuthenticatedUser, @Param('id') documentId: string) {
     return this.onboarding.reviewProviderDocument(user.id, documentId, ProviderDocumentStatus.APPROVED);
   }
 
-  @Post('admin/provider-documents/:id/reject')
+  @Post(['admin/provider-documents/:id/reject', 'admin/partner-documents/:id/reject'])
   @Roles(Role.ADMIN)
   rejectProviderDocument(
     @CurrentUser() user: AuthenticatedUser,
@@ -239,13 +239,13 @@ export class ProviderOnboardingController {
     );
   }
 
-  @Post('admin/provider-bank-accounts/:id/approve')
+  @Post(['admin/provider-bank-accounts/:id/approve', 'admin/partner-bank-accounts/:id/approve'])
   @Roles(Role.ADMIN)
   approveBankAccount(@CurrentUser() user: AuthenticatedUser, @Param('id') bankAccountId: string) {
     return this.onboarding.reviewBankAccount(user.id, bankAccountId, ProviderBankAccountStatus.APPROVED);
   }
 
-  @Post('admin/provider-bank-accounts/:id/reject')
+  @Post(['admin/provider-bank-accounts/:id/reject', 'admin/partner-bank-accounts/:id/reject'])
   @Roles(Role.ADMIN)
   rejectBankAccount(
     @CurrentUser() user: AuthenticatedUser,

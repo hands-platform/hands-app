@@ -53,7 +53,7 @@ export async function blockProviderDevice(formData: FormData) {
   const providerId = readOptionalProviderId(formData);
   const providerDeviceId = readRequiredFormString(formData, 'providerDeviceId');
   const reason = readReviewReason(formData);
-  await adminPost(`/admin/provider-devices/${providerDeviceId}/block`, { reason }, null);
+  await adminPost(`/admin/partner-devices/${providerDeviceId}/block`, { reason }, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
@@ -61,7 +61,7 @@ export async function blockProviderDevice(formData: FormData) {
 export async function unblockProviderDevice(formData: FormData) {
   const providerId = readOptionalProviderId(formData);
   const providerDeviceId = readRequiredFormString(formData, 'providerDeviceId');
-  await adminPost(`/admin/provider-devices/${providerDeviceId}/unblock`, {}, null);
+  await adminPost(`/admin/partner-devices/${providerDeviceId}/unblock`, {}, null);
   revalidateProviderPaths(providerId);
   revalidatePath('/audit-log');
 }
@@ -83,7 +83,7 @@ export async function rejectProviderKyc(formData: FormData) {
 
 export async function approveProviderDocument(formData: FormData) {
   const documentId = readRequiredFormString(formData, 'documentId');
-  await adminPost(`/admin/provider-documents/${documentId}/approve`, {}, null);
+  await adminPost(`/admin/partner-documents/${documentId}/approve`, {}, null);
   revalidateProviderPaths(readOptionalProviderId(formData));
   revalidatePath('/audit-log');
 }
@@ -91,7 +91,7 @@ export async function approveProviderDocument(formData: FormData) {
 export async function rejectProviderDocument(formData: FormData) {
   const documentId = readRequiredFormString(formData, 'documentId');
   const reason = readReviewReason(formData);
-  await adminPost(`/admin/provider-documents/${documentId}/reject`, { reason }, null);
+  await adminPost(`/admin/partner-documents/${documentId}/reject`, { reason }, null);
   revalidateProviderPaths(readOptionalProviderId(formData));
   revalidatePath('/audit-log');
 }
@@ -113,7 +113,7 @@ export async function rejectPublicProviderMedia(formData: FormData) {
 
 export async function approveProviderBankAccount(formData: FormData) {
   const bankAccountId = readRequiredFormString(formData, 'bankAccountId');
-  await adminPost(`/admin/provider-bank-accounts/${bankAccountId}/approve`, {}, null);
+  await adminPost(`/admin/partner-bank-accounts/${bankAccountId}/approve`, {}, null);
   revalidateProviderPaths(readOptionalProviderId(formData));
   revalidatePath('/audit-log');
 }
@@ -121,7 +121,7 @@ export async function approveProviderBankAccount(formData: FormData) {
 export async function rejectProviderBankAccount(formData: FormData) {
   const bankAccountId = readRequiredFormString(formData, 'bankAccountId');
   const reason = readReviewReason(formData);
-  await adminPost(`/admin/provider-bank-accounts/${bankAccountId}/reject`, { reason }, null);
+  await adminPost(`/admin/partner-bank-accounts/${bankAccountId}/reject`, { reason }, null);
   revalidateProviderPaths(readOptionalProviderId(formData));
   revalidatePath('/audit-log');
 }
