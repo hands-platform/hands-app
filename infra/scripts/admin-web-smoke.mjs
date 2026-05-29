@@ -250,6 +250,7 @@ if (providerLinkMatch) {
     const providerBody = await fetchPage(providerPath);
     const providerMarkers = [
       'Partner ops command center',
+      'Partner master facts',
       'Partner full record index',
       'Booking and chat records',
       'Recent app and operations activity',

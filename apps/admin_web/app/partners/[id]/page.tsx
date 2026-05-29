@@ -230,6 +230,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     isWithinDetailDateFilter(record.at, dateFilters),
   );
   const partnerActivitySummary = buildPartnerActivitySummary(filteredPartnerActivityRecords);
+  const partnerMasterFacts = buildPartnerMasterFacts(
+    provider,
+    partnerBookingArchive,
+    primaryBank,
+    payoutOps,
+    bookingAcceptance,
+  );
 
   return (
     <>
@@ -296,6 +303,28 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
         <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
+      </div>
+
+      <div className="card" id="partner-master-facts" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner master facts</h2>
+            <p className="muted">
+              Single-page operating sheet for identity, verification, service, booking, revenue, tax,
+              location, review, and account facts.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerMasterFacts.length} field(s)</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {partnerMasterFacts.map((fact) => (
+            <div key={fact.label}>
+              <span>{fact.label}</span>
+              <strong>{fact.value}</strong>
+              <small className="muted">{fact.helper}</small>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -2160,6 +2189,140 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
       helper: 'Earnings, payout batches, and verification changes.',
     },
   ];
+}
+
+function buildPartnerMasterFacts(
+  provider: ProviderDetail,
+  bookingArchive: PartnerBookingArchiveRecord[],
+  primaryBank: NonNullable<ProviderDetail['bankAccounts']>[number] | null,
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+) {
+  const earnings = provider.earnings ?? [];
+  const completedBookings = bookingArchive.filter((record) => record.booking.status === 'COMPLETED').length;
+  const cancelledBookings = bookingArchive.filter((record) =>
+    ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(record.booking.status ?? ''),
+  ).length;
+  const totalRevenue = earnings.reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0);
+  const platformFee = earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0);
+  const payoutReadyAmount = earnings
+    .filter((earning) => earning.status === 'AVAILABLE')
+    .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
+  const latestAccessAt = latestPartnerAccessAt(provider);
+  const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
+  const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
+  const activeReports = (provider.reports ?? []).filter((report) => report.status !== 'RESOLVED');
+
+  return [
+    {
+      label: 'Partner ID',
+      value: provider.id,
+      helper: 'Internal admin identifier',
+    },
+    {
+      label: 'Real / activity name',
+      value: `${provider.legalName ?? 'Legal name missing'} / ${
+        provider.activityNickname ?? provider.displayName ?? 'No activity name'
+      }`,
+      helper: `Display name: ${provider.displayName ?? 'Not saved'}`,
+    },
+    {
+      label: 'Phone / email',
+      value: provider.user?.phone ?? 'No phone',
+      helper: provider.user?.email ?? 'No email',
+    },
+    {
+      label: 'Gender / birth',
+      value: `${provider.gender ?? 'Not saved'} / ${formatDate(provider.dateOfBirth)}`,
+      helper: 'Basic partner profile field',
+    },
+    {
+      label: 'Address / city',
+      value: provider.residentialAddress ?? 'Residential address not saved',
+      helper: provider.city ?? 'City not saved',
+    },
+    {
+      label: 'Joined / recent access',
+      value: formatDate(provider.user?.createdAt),
+      helper: latestAccessAt ? `Recent app access ${formatDate(latestAccessAt)}` : 'No app session recorded',
+    },
+    {
+      label: 'Current state',
+      value: provider.status,
+      helper: `${enabledPushCount} enabled push device(s)`,
+    },
+    {
+      label: 'Verification level',
+      value: provider.level ?? 'LEVEL_1_SIGNUP',
+      helper: `KYC ${provider.kyc?.status ?? 'DRAFT'} / profile ${provider.verification?.status ?? 'DRAFT'}`,
+    },
+    {
+      label: 'Services',
+      value: bookingAcceptance.bookableServices,
+      helper: 'Bookable service price rows against admin pricing policy',
+    },
+    {
+      label: 'Location',
+      value: locationAgeLabel(provider.currentLocationUpdatedAt),
+      helper:
+        provider.currentLat && provider.currentLng
+          ? `${provider.currentLat}, ${provider.currentLng}`
+          : 'No GPS pin',
+    },
+    {
+      label: 'Bookings',
+      value: `${bookingArchive.length} total`,
+      helper: `${completedBookings} completed / ${cancelledBookings} cancelled`,
+    },
+    {
+      label: 'Reviews',
+      value: `${Number(provider.ratingAvg ?? 0).toFixed(1)} avg`,
+      helper: `${provider.reviewCount ?? 0} review(s)`,
+    },
+    {
+      label: 'Revenue',
+      value: formatCurrency(totalRevenue),
+      helper: `Platform fee ${formatCurrency(platformFee)}`,
+    },
+    {
+      label: 'Payout',
+      value: payoutOps.status,
+      helper: `Available ${formatCurrency(payoutReadyAmount)} / cash debt ${formatCurrency(
+        cashFeeDebtAmount(provider),
+      )}`,
+    },
+    {
+      label: 'Tax profile',
+      value: provider.taxProfile?.status ?? 'DEFERRED',
+      helper: providerHasFirstRevenueSignal(provider)
+        ? 'Tax profile required after first earning'
+        : 'Tax profile can stay deferred until first earning',
+    },
+    {
+      label: 'Bank account',
+      value: primaryBank?.status ?? 'MISSING',
+      helper: primaryBank ? `${primaryBank.bankName} / ${primaryBank.accountHolderName}` : 'No bank row',
+    },
+    {
+      label: 'Account state',
+      value: provider.blockedAt ? 'BLOCKED' : 'OPEN',
+      helper: provider.blockedReason ?? 'No account block reason',
+    },
+    {
+      label: 'Admin records',
+      value: `${activeReports.length} open report(s) / ${activeSanctions.length} active sanction(s)`,
+      helper: 'Factual records only; no person scoring is applied',
+    },
+  ];
+}
+
+function latestPartnerAccessAt(provider: ProviderDetail) {
+  return [
+    ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
+    ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
+  ]
+    .filter(Boolean)
+    .sort((left, right) => dateValue(right) - dateValue(left))[0];
 }
 
 function lastBookingMessage(booking: PartnerDetailBooking) {
