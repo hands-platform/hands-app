@@ -12,6 +12,7 @@ import {
   isWithinDetailActivityType,
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
+import { buildCsvDataHref } from '../../../lib/csv-export';
 import { addCustomerOpsNote } from './actions';
 
 type PageProps = {
@@ -95,6 +96,18 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     isWithinDetailDateFilter(log.createdAt, dateFilters),
   );
   const accountFacts = buildCustomerAccountFacts(customer, bookings, addresses);
+  const filteredActivityCsvHref = buildCsvDataHref(
+    filteredCustomerActivityRecords.map((record) => ({
+      type: record.type,
+      date: formatDate(record.at),
+      title: record.title,
+      detail: record.detail,
+      record_id: record.id,
+      customer_id: customer.id,
+      customer_phone: customer.user?.phone ?? '',
+    })),
+    ['type', 'date', 'title', 'detail', 'record_id', 'customer_id', 'customer_phone'],
+  );
 
   return (
     <>
@@ -265,6 +278,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           </label>
           <div className="actions">
             <button type="submit">Apply filter</button>
+            <a
+              className="text-link"
+              download={`hands-customer-${shortId(customer.id)}-activity.csv`}
+              href={filteredActivityCsvHref}
+            >
+              Export activity CSV
+            </a>
             <Link className="text-link" href={`/customers/${customer.id}`}>
               Clear
             </Link>

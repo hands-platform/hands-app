@@ -18,6 +18,7 @@ import {
   isWithinDetailActivityType,
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
+import { buildCsvDataHref } from '../../../lib/csv-export';
 import {
   approveProvider,
   approveProviderBankAccount,
@@ -263,6 +264,18 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     providerServicePricing,
     dispatchPolicy,
   );
+  const filteredActivityCsvHref = buildCsvDataHref(
+    filteredPartnerActivityRecords.map((record) => ({
+      type: record.type,
+      date: formatDate(record.at),
+      title: record.title,
+      detail: record.detail,
+      record_id: record.id,
+      partner_id: provider.id,
+      partner_phone: provider.user?.phone ?? '',
+    })),
+    ['type', 'date', 'title', 'detail', 'record_id', 'partner_id', 'partner_phone'],
+  );
 
   return (
     <>
@@ -464,6 +477,13 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </label>
           <div className="actions">
             <button type="submit">Apply filter</button>
+            <a
+              className="text-link"
+              download={`hands-partner-${shortRiskId(provider.id)}-activity.csv`}
+              href={filteredActivityCsvHref}
+            >
+              Export activity CSV
+            </a>
             <Link className="text-link" href={`/partners/${provider.id}`}>
               Clear
             </Link>
