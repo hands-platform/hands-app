@@ -6,6 +6,12 @@ import {
   isWithinDetailDateFilter,
   readDetailDateFilters,
 } from '../../../lib/detail-date-filter';
+import {
+  DetailActivityTypeOption,
+  detailActivityTypeLabel,
+  isWithinDetailActivityType,
+  readDetailActivityType,
+} from '../../../lib/detail-activity-filter';
 import { addCustomerOpsNote } from './actions';
 
 type PageProps = {
@@ -22,9 +28,24 @@ const ACTIVE_STATUSES = [
   'IN_SERVICE',
 ];
 
+const CUSTOMER_ACTIVITY_TYPE_OPTIONS = [
+  { value: 'all', label: 'All event types', types: [] },
+  { value: 'booking_work', label: 'Bookings and completed work', types: ['BOOKING', 'WORK'] },
+  { value: 'chat', label: 'Chat archive', types: ['CHAT'] },
+  { value: 'payment', label: 'Payments and refunds', types: ['PAYMENT', 'REFUND'] },
+  { value: 'address_app', label: 'Addresses, sessions, devices', types: ['ADDRESS', 'SESSION', 'DEVICE'] },
+  {
+    value: 'support',
+    label: 'Notifications, reviews, staff records',
+    types: ['NOTICE', 'REVIEW', 'OPS', 'AUDIT'],
+  },
+] satisfies DetailActivityTypeOption[];
+
 export default async function CustomerDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const dateFilters = readDetailDateFilters(searchParams ? await searchParams : {});
+  const detailSearchParams = searchParams ? await searchParams : {};
+  const dateFilters = readDetailDateFilters(detailSearchParams);
+  const activityType = readDetailActivityType(detailSearchParams, CUSTOMER_ACTIVITY_TYPE_OPTIONS);
   const customer = await adminGet<AdminCustomerDetail | null>(`/admin/customers/${id}`, null);
 
   if (!customer) {
@@ -61,8 +82,10 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       readChatMessages(booking).some((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
     );
   });
-  const filteredCustomerActivityRecords = customerActivityRecords.filter((record) =>
-    isWithinDetailDateFilter(record.at, dateFilters),
+  const filteredCustomerActivityRecords = customerActivityRecords.filter(
+    (record) =>
+      isWithinDetailDateFilter(record.at, dateFilters) &&
+      isWithinDetailActivityType(record.type, activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS),
   );
   const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
   const filteredNotifications = notifications.filter((notification) =>
@@ -204,13 +227,28 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               customer data.
             </p>
           </div>
-          <span className="pill pill-info">{dateFilters.label}</span>
+          <div className="participant-list">
+            <span className="pill pill-info">{dateFilters.label}</span>
+            <span className="pill pill-neutral">
+              {detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}
+            </span>
+          </div>
         </div>
         <form className="form-grid" action={`/customers/${customer.id}`} style={{ marginTop: 14 }}>
           <label>
             Preset
             <select name="range" defaultValue={dateFilters.range}>
               {detailDateRangeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Record type
+            <select name="type" defaultValue={activityType}>
+              {CUSTOMER_ACTIVITY_TYPE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -246,7 +284,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <span>Filtered activity</span>
             <strong>{filteredCustomerActivityRecords.length}</strong>
-            <small>Factual app and operations events.</small>
+            <small>
+              {detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)} in this period.
+            </small>
           </div>
           <div>
             <span>Filtered notices</span>

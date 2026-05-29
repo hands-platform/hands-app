@@ -13,6 +13,12 @@ import {
   readDetailDateFilters,
 } from '../../../lib/detail-date-filter';
 import {
+  DetailActivityTypeOption,
+  detailActivityTypeLabel,
+  isWithinDetailActivityType,
+  readDetailActivityType,
+} from '../../../lib/detail-activity-filter';
+import {
   approveProvider,
   approveProviderBankAccount,
   approveProviderDocument,
@@ -115,6 +121,14 @@ const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   backupRadiusMeters: 10_000,
   locationFreshnessMinutes: 30,
 };
+const PARTNER_ACTIVITY_TYPE_OPTIONS = [
+  { value: 'all', label: 'All event types', types: [] },
+  { value: 'booking_chat', label: 'Bookings and chat archive', types: ['BOOKING', 'CHAT'] },
+  { value: 'app_device', label: 'App sessions and devices', types: ['SESSION', 'DEVICE'] },
+  { value: 'location', label: 'Location snapshots', types: ['LOCATION'] },
+  { value: 'finance', label: 'Earnings and payouts', types: ['EARNING', 'PAYOUT'] },
+  { value: 'verification', label: 'Verification changes', types: ['VERIFY'] },
+] satisfies DetailActivityTypeOption[];
 
 type ProviderDetail = AdminProvider & {
   locationSnapshots?: Array<{ id: string; lat: string | number; lng: string | number; recordedAt: string }>;
@@ -177,7 +191,9 @@ type ProviderDetail = AdminProvider & {
 
 export default async function ProviderDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const dateFilters = readDetailDateFilters(searchParams ? await searchParams : {});
+  const detailSearchParams = searchParams ? await searchParams : {};
+  const dateFilters = readDetailDateFilters(detailSearchParams);
+  const activityType = readDetailActivityType(detailSearchParams, PARTNER_ACTIVITY_TYPE_OPTIONS);
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(`/admin/partners/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
@@ -226,8 +242,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const filteredPartnerBookingArchive = partnerBookingArchive.filter((record) =>
     isWithinDetailDateFilter(record.booking.scheduledStartAt ?? record.booking.createdAt, dateFilters),
   );
-  const filteredPartnerActivityRecords = partnerActivityRecords.filter((record) =>
-    isWithinDetailDateFilter(record.at, dateFilters),
+  const filteredPartnerActivityRecords = partnerActivityRecords.filter(
+    (record) =>
+      isWithinDetailDateFilter(record.at, dateFilters) &&
+      isWithinDetailActivityType(record.type, activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
   );
   const partnerActivitySummary = buildPartnerActivitySummary(filteredPartnerActivityRecords);
   const partnerMasterFacts = buildPartnerMasterFacts(
@@ -408,13 +426,28 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               data.
             </p>
           </div>
-          <span className="pill pill-info">{dateFilters.label}</span>
+          <div className="participant-list">
+            <span className="pill pill-info">{dateFilters.label}</span>
+            <span className="pill pill-neutral">
+              {detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS)}
+            </span>
+          </div>
         </div>
         <form className="form-grid" action={`/partners/${provider.id}`} style={{ marginTop: 14 }}>
           <label>
             Preset
             <select name="range" defaultValue={dateFilters.range}>
               {detailDateRangeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Record type
+            <select name="type" defaultValue={activityType}>
+              {PARTNER_ACTIVITY_TYPE_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -445,7 +478,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <span>Filtered activity</span>
             <strong>{filteredPartnerActivityRecords.length}</strong>
-            <small>App, location, finance, and verification events.</small>
+            <small>
+              {detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS)} in this period.
+            </small>
           </div>
           <div>
             <span>Loaded bookings</span>
