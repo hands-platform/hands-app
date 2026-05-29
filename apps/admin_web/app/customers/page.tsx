@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminCustomer, adminGet } from '../../lib/admin-api';
+import { buildCsvDataHref } from '../../lib/csv-export';
 
 const ACTIVE_STATUSES = [
   'CREATED',
@@ -34,6 +35,54 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   const summary = buildCustomerSummary(rows);
   const recentActivityRows = rows.filter((row) => row.lastBookingAt || row.lastCompletedAt).slice(0, 8);
   const activeFilters = buildCustomerActiveFilters(filters);
+  const customerListCsvHref = buildCsvDataHref(
+    rows.map((row) => ({
+      customer_id: row.id,
+      name: row.name,
+      phone: row.phone,
+      email: row.email,
+      joined_at: row.joinedAt ?? '',
+      recent_access_at: row.lastSeenAt ?? '',
+      last_completed_work_at: row.lastCompletedAt ?? '',
+      last_booking_at: row.lastBookingAt ?? '',
+      booking_count: row.bookingCount,
+      active_booking_count: row.activeBookings,
+      completed_work_count: row.completedBookings,
+      closed_booking_count: row.cancelledBookings,
+      captured_spend_vnd: row.capturedSpend,
+      refund_amount_vnd: row.refundAmount,
+      address_count: row.addressCount,
+      push_reachable: row.pushReachable,
+      in_app_now: row.isLive,
+      chat_room_count: row.chatRooms,
+      payment_issue_count: row.paymentIssues,
+      latest_memo: row.latestMemoTitle,
+      latest_memo_detail: row.latestMemoDetail,
+    })),
+    [
+      'customer_id',
+      'name',
+      'phone',
+      'email',
+      'joined_at',
+      'recent_access_at',
+      'last_completed_work_at',
+      'last_booking_at',
+      'booking_count',
+      'active_booking_count',
+      'completed_work_count',
+      'closed_booking_count',
+      'captured_spend_vnd',
+      'refund_amount_vnd',
+      'address_count',
+      'push_reachable',
+      'in_app_now',
+      'chat_room_count',
+      'payment_issue_count',
+      'latest_memo',
+      'latest_memo_detail',
+    ],
+  );
 
   return (
     <>
@@ -139,6 +188,13 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
             <Link className="text-link" href="/customers">
               Clear filters
             </Link>
+            <a
+              className="text-link"
+              download={`hands-customers-${filters.sort}.csv`}
+              href={customerListCsvHref}
+            >
+              Export CSV
+            </a>
             <span className="muted">
               Showing {rows.length} of {allRows.length} customer row(s)
             </span>

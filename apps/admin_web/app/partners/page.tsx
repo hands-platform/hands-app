@@ -6,6 +6,7 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
+import { buildCsvDataHref } from '../../lib/csv-export';
 import {
   approveProvider,
   approveProviderBankAccount,
@@ -216,6 +217,72 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     buildPartnerOperationRow(provider, opsPolicy),
   );
   const partnerMasterRows = visibleProviders.map((provider) => buildPartnerMasterRow(provider, opsPolicy));
+  const partnerExportRows = providers.map((provider) => {
+    const master = buildPartnerMasterRow(provider, opsPolicy);
+    const operations = buildPartnerOperationRow(provider, opsPolicy);
+    return {
+      partner_id: provider.id,
+      display_name: master.displayName,
+      legal_name: master.legalName,
+      phone: master.phone,
+      gender: master.gender,
+      status: master.status,
+      level: master.level,
+      kyc_status: master.kycStatus,
+      verification_status: provider.verification?.status ?? 'DRAFT',
+      joined_at: master.joinedAt ?? '',
+      recent_access_at: master.lastSeenAt ?? '',
+      location_state: master.locationState,
+      location_updated_at: provider.currentLocationUpdatedAt ?? '',
+      booking_count: master.bookingCount,
+      completed_work_count: master.completedCount,
+      closed_booking_count: master.cancelledCount,
+      rating: master.rating,
+      review_count: master.reviewCount,
+      gross_revenue_vnd: master.grossRevenue,
+      platform_fee_vnd: master.platformFee,
+      pending_payout_vnd: master.pendingPayout,
+      available_payout_vnd: master.availablePayout,
+      wallet_balance_vnd: operations.walletBalance,
+      can_accept_booking: operations.acceptanceLabel,
+      acceptance_detail: operations.acceptanceDetail,
+      next_operator_status: operations.nextAction.status,
+      next_operator_action: operations.nextAction.operatorAction,
+      account_state: master.accountBlocked ? 'Blocked' : 'Open',
+      account_note: master.accountNote,
+    };
+  });
+  const partnerListCsvHref = buildCsvDataHref(partnerExportRows, [
+    'partner_id',
+    'display_name',
+    'legal_name',
+    'phone',
+    'gender',
+    'status',
+    'level',
+    'kyc_status',
+    'verification_status',
+    'joined_at',
+    'recent_access_at',
+    'location_state',
+    'location_updated_at',
+    'booking_count',
+    'completed_work_count',
+    'closed_booking_count',
+    'rating',
+    'review_count',
+    'gross_revenue_vnd',
+    'platform_fee_vnd',
+    'pending_payout_vnd',
+    'available_payout_vnd',
+    'wallet_balance_vnd',
+    'can_accept_booking',
+    'acceptance_detail',
+    'next_operator_status',
+    'next_operator_action',
+    'account_state',
+    'account_note',
+  ]);
 
   return (
     <>
@@ -329,6 +396,13 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <Link className="text-link" href="/partners">
               Clear filters
             </Link>
+            <a
+              className="text-link"
+              download={`hands-partners-${filters.sort}.csv`}
+              href={partnerListCsvHref}
+            >
+              Export CSV
+            </a>
             <span className="muted">
               Showing {visibleProviders.length} of {providers.length} matching partners
               {providers.length !== allProviders.length ? ` (${allProviders.length} total)` : ''}
