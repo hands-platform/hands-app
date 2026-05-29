@@ -27,6 +27,10 @@ const pages = [
       '/operations-policy#policy-matching-provider-response-window-minutes',
       '/operations-policy#policy-wallet-negative-balance-gate',
       'API source',
+      'Admin menu map',
+      'Customer Management',
+      'Partner Management',
+      'Finance Operations',
     ],
   },
   {

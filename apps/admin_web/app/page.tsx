@@ -350,6 +350,73 @@ export default async function DashboardPage() {
       'Prioritized items generated from booking, payment, partner, and notification state.',
     ],
   ];
+  const adminMenuMap = [
+    {
+      label: 'Customer Management',
+      href: '/customers',
+      primary: 'Customer list and customer detail',
+      helper:
+        'Profiles, booking history, chat archive, wallet-style payment view, saved addresses, and CS notes.',
+      links: [
+        ['Customers', '/customers'],
+        ['Reviews', '/reviews'],
+        ['Coupons', '/coupons'],
+        ['Notifications', '/notifications'],
+      ],
+    },
+    {
+      label: 'Partner Management',
+      href: '/partners',
+      primary: 'Partner list and partner detail',
+      helper:
+        'KYC, service setup, booking acceptance, app activity, location freshness, tax, payout, and account controls.',
+      links: [
+        ['Partners', '/partners'],
+        ['Partner controls', '/partner-controls'],
+        ['Partner checks', '/partner-risk'],
+        ['App sessions', '/app-sessions'],
+      ],
+    },
+    {
+      label: 'Booking Operations',
+      href: '/bookings',
+      primary: 'Live booking monitor',
+      helper:
+        'Matching wait, first-pick response, 10km backup participation, customer choice, chat, and closeout flow.',
+      links: [
+        ['All bookings', '/bookings'],
+        ['Matching', '/bookings?view=matching'],
+        ['Backup queue', '/bookings?view=backup'],
+        ['Chat handoff', '/bookings?view=chat'],
+      ],
+    },
+    {
+      label: 'Finance Operations',
+      href: '/earnings',
+      primary: 'Payments, wallet, tax, payout',
+      helper:
+        'Cash fee debt, platform fees, withholding, refunds, payout batches, and partner settlement readiness.',
+      links: [
+        ['Payments', '/payments'],
+        ['Earnings', '/earnings'],
+        ['Cash settlements', '/cash-settlements'],
+        ['Payouts', '/payouts'],
+      ],
+    },
+    {
+      label: 'Policy and Catalog',
+      href: '/operations-policy',
+      primary: 'Rules operators can change',
+      helper:
+        'Matching windows, backup radius, booking gates, service options, price policy, tax policy, and setup checks.',
+      links: [
+        ['Operations policy', '/operations-policy'],
+        ['Services', '/services'],
+        ['Tax policy', '/tax-policy'],
+        ['Setup', '/setup'],
+      ],
+    },
+  ];
 
   return (
     <>
@@ -392,6 +459,41 @@ export default async function DashboardPage() {
           <Link className="text-link" href="/audit-log">
             Audit log
           </Link>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Admin menu map</h2>
+            <p className="muted">
+              Recommended operating structure for staff: start with the dashboard, then open the specific
+              customer, partner, booking, finance, or policy workspace.
+            </p>
+          </div>
+          <Link className="text-link" href="/audit-log">
+            Audit trail
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {adminMenuMap.map((group) => (
+            <div key={group.label}>
+              <span>{group.label}</span>
+              <strong>
+                <Link className="text-link" href={group.href}>
+                  {group.primary}
+                </Link>
+              </strong>
+              <small>{group.helper}</small>
+              <div className="actions" style={{ marginTop: 10 }}>
+                {group.links.map(([label, href]) => (
+                  <Link className="text-link" href={href} key={href}>
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
