@@ -70,6 +70,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const filteredAuditLogs = recentAuditLogs.filter((log) =>
     isWithinDetailDateFilter(log.createdAt, dateFilters),
   );
+  const accountFacts = buildCustomerAccountFacts(customer, bookings, addresses);
 
   return (
     <>
@@ -370,6 +371,28 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <strong>{notifications.length}</strong>
             <small className="muted">Recent in-app rows</small>
           </div>
+        </div>
+      </section>
+
+      <section className="card" id="customer-account-facts" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer account facts</h2>
+            <p className="muted">
+              Factual profile, booking, payment, support, and account fields. Missing values are shown as not
+              captured instead of guessed.
+            </p>
+          </div>
+          <span className="pill pill-info">{accountFacts.length} field(s)</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {accountFacts.map((fact) => (
+            <div key={fact.label}>
+              <span>{fact.label}</span>
+              <strong>{fact.value}</strong>
+              <small className="muted">{fact.helper}</small>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -732,6 +755,134 @@ function buildCustomerWallet(bookings: AdminBookingDetail[]) {
   );
 }
 
+function buildCustomerAccountFacts(
+  customer: AdminCustomerDetail,
+  bookings: AdminBookingDetail[],
+  addresses: Array<{ key: string; label: string; value: string }>,
+) {
+  const sessions = customer.user?.appSessions ?? [];
+  const pushDevices = customer.user?.pushDevices ?? [];
+  const latestSession = sessions[0];
+  const refunds = bookings.flatMap((booking) => [
+    ...(booking.payment?.refunds ?? []),
+    ...(booking.refunds ?? []),
+  ]);
+  const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
+  const completedBookings = bookings.filter((booking) => booking.status === 'COMPLETED').length;
+  const cancelledBookings = bookings.filter((booking) =>
+    ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status),
+  ).length;
+  const notes = (customer.auditLogs ?? []).filter((log) => log.action === 'customer.ops_note.add');
+  const latestPaymentBooking = bookings.find((booking) => booking.payment);
+  const frequentService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
+  const frequentPartner = mostCommonLabel(
+    bookings
+      .map(
+        (booking) =>
+          booking.selectedProvider?.displayName ??
+          booking.preferredProvider?.displayName ??
+          booking.selectedProvider?.user?.fullName ??
+          booking.preferredProvider?.user?.fullName,
+      )
+      .filter(Boolean) as string[],
+  );
+
+  return [
+    {
+      label: 'Customer ID',
+      value: customer.id,
+      helper: 'Internal admin identifier',
+    },
+    {
+      label: 'Login method',
+      value: customer.user?.phone ? 'Phone OTP' : 'Not captured',
+      helper: 'Phone auth remains the primary customer login method',
+    },
+    {
+      label: 'Gender',
+      value: 'Not captured',
+      helper: 'Customer app does not collect this field yet',
+    },
+    {
+      label: 'Birth / age',
+      value: 'Not captured',
+      helper: 'Add later only if operations really needs it',
+    },
+    {
+      label: 'Nationality / language',
+      value: 'Not captured',
+      helper: 'Designed for VN, EN, KO, ZH, and JA localization later',
+    },
+    {
+      label: 'Signup source',
+      value: 'Mobile app / phone',
+      helper: 'Campaign attribution table is not connected yet',
+    },
+    {
+      label: 'Account state',
+      value: 'Open',
+      helper: 'No customer suspension or deletion request is recorded',
+    },
+    {
+      label: 'Recent login IP',
+      value: latestSession?.ipAddress ?? 'Not saved',
+      helper: latestSession ? formatDate(latestSession.lastSeenAt) : 'No app session recorded',
+    },
+    {
+      label: 'Devices',
+      value: `${sessions.length} session(s) / ${pushDevices.length} push device(s)`,
+      helper: `${pushDevices.filter((device) => device.enabled).length} enabled push device(s)`,
+    },
+    {
+      label: 'Bookings',
+      value: `${bookings.length} total`,
+      helper: `${activeBookings} active / ${completedBookings} completed / ${cancelledBookings} cancelled`,
+    },
+    {
+      label: 'Frequently used service',
+      value: frequentService ?? 'Not enough bookings',
+      helper: 'Calculated from loaded booking history, not a customer score',
+    },
+    {
+      label: 'Preferred partner',
+      value: frequentPartner ?? 'Not enough bookings',
+      helper: 'Most repeated selected or preferred partner in this archive',
+    },
+    {
+      label: 'Last payment',
+      value: latestPaymentBooking?.payment?.method ?? 'No payment',
+      helper: latestPaymentBooking?.payment
+        ? `${latestPaymentBooking.payment.status} / ${formatMoney(Number(latestPaymentBooking.payment.amount ?? 0))}`
+        : 'No payment row loaded',
+    },
+    {
+      label: 'Refund records',
+      value: refunds.length.toString(),
+      helper: formatMoney(refunds.reduce((sum, refund) => sum + Number(refund.amount ?? 0), 0)),
+    },
+    {
+      label: 'Saved addresses',
+      value: addresses.length.toString(),
+      helper: addresses[0]?.value ?? 'No saved customer address',
+    },
+    {
+      label: 'CS / admin notes',
+      value: notes.length.toString(),
+      helper: notes[0]?.createdAt ? `Latest ${formatDate(notes[0].createdAt)}` : 'No support note saved',
+    },
+    {
+      label: 'Terms agreement',
+      value: 'Not captured',
+      helper: 'Customer agreement history table can be added in the Supabase phase',
+    },
+    {
+      label: 'Withdrawal request',
+      value: 'None recorded',
+      helper: 'No customer deletion request table is connected yet',
+    },
+  ];
+}
+
 function buildCustomerActivityPlan(
   customer: AdminCustomerDetail,
   bookings: AdminBookingDetail[],
@@ -1043,6 +1194,15 @@ function bookingServiceLabel(booking: AdminBookingDetail) {
   const first = booking.services?.[0];
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
+}
+
+function mostCommonLabel(values: string[]) {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    if (!value || value === 'No service') continue;
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
 }
 
 function reviewBookingServiceLabel(booking?: { services?: AdminBookingDetail['services'] }) {

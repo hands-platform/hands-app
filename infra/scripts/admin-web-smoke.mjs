@@ -294,6 +294,7 @@ if (customerLinkMatch) {
     'Customer full record index',
     'Customer activity action panel',
     'Customer information',
+    'Customer account facts',
     'Customer wallet',
     'Saved addresses',
     'Booking and cancellation history',
