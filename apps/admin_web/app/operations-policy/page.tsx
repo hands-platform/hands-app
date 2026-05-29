@@ -2090,7 +2090,7 @@ function buildPartnerAcceptancePolicyImpact(
     (provider) => !partnerLocationFresh(provider, policy.backupLocationFreshnessMinutes),
   );
   const pushGaps = providers.filter((provider) => !partnerHasEnabledPush(provider));
-  const accountRisk = providers.filter((provider) => partnerAccountRisk(provider));
+  const accountFollowUps = providers.filter((provider) => partnerAccountRisk(provider));
   const softRecovery = providers.filter(
     (provider) =>
       !partnerCanAcceptUnderCurrentPolicy(provider, policy) && !partnerHardBlocked(provider, policy),
@@ -2136,8 +2136,8 @@ function buildPartnerAcceptancePolicyImpact(
       helper: 'Partner may not receive first-pick or backup participation alerts.',
     },
     {
-      label: 'Account risk',
-      value: accountRisk.length.toString(),
+      label: 'Account follow-up',
+      value: accountFollowUps.length.toString(),
       helper:
         'Blocked account, active sanction, blocked device, suspicious session, or shared device signal.',
     },
@@ -2485,7 +2485,8 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
     .sort((left, right) => right.sampleRaw - left.sampleRaw || left.policy.localeCompare(right.policy))
     .slice(0, 12);
 
-  const totalRiskCount = globalStats.cancelledCount + globalStats.expiredCount + globalStats.noShowCount;
+  const totalOutcomeCheckCount =
+    globalStats.cancelledCount + globalStats.expiredCount + globalStats.noShowCount;
   const avgBackupInvites = averageLabel(globalStats.backupInviteCount, globalStats.sampleCount, 'partner(s)');
   const currentInviteCap = policyDisplayByKey(settings, 'matching.backup_provider_invitation_limit');
   const currentRadius = policyDisplayByKey(settings, 'matching.backup_provider_radius_meters');
@@ -2510,7 +2511,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       },
       {
         label: 'Cancelled / expired / no-show',
-        value: String(totalRiskCount),
+        value: String(totalOutcomeCheckCount),
         helper: `${globalStats.cancelledCount} cancelled, ${globalStats.expiredCount} expired, ${globalStats.noShowCount} no-show.`,
       },
     ],
@@ -2541,18 +2542,18 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
         pillClass: 'pill-info',
       },
       {
-        scope: 'Risk',
-        title: totalRiskCount
+        scope: 'Outcome checks',
+        title: totalOutcomeCheckCount
           ? 'Review failed booking cohorts before changing policy'
           : 'No failed outcome spike in sample',
-        detail: totalRiskCount
+        detail: totalOutcomeCheckCount
           ? 'Cancelled, expired, or no-show bookings may point to response-window, supply, payment, or partner readiness problems.'
           : 'The sampled policy snapshots do not show cancelled, expired, or no-show pressure yet.',
-        operatorAction: totalRiskCount
+        operatorAction: totalOutcomeCheckCount
           ? 'Open the booking drill-down and compare failed bookings against their saved policy snapshot.'
           : 'Keep collecting results across more districts and time bands before treating this as final.',
-        className: totalRiskCount ? 'ops-task-blocked' : 'ops-task-done',
-        pillClass: totalRiskCount ? 'pill-danger' : 'pill-success',
+        className: totalOutcomeCheckCount ? 'ops-task-blocked' : 'ops-task-done',
+        pillClass: totalOutcomeCheckCount ? 'pill-danger' : 'pill-success',
       },
     ],
   };
@@ -3145,7 +3146,8 @@ function buildOwnerDecisionPressure(
       {
         label: 'Acceptance blockers',
         value: String(acceptanceBlocked),
-        helper: 'Wallet, identity, bank, risk, or radius blockers that change dispatch availability.',
+        helper:
+          'Wallet, identity, bank, account-control, or radius blockers that change dispatch availability.',
       },
     ],
     cards,
@@ -3565,7 +3567,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       ],
     },
     'wallet.negative_balance_gate': {
-      area: 'Wallet risk',
+      area: 'Wallet controls',
       title: 'Controls unpaid cash-fee debt enforcement',
       detail:
         'Block mode stops partners with negative cash-fee debt from accepting new work. Recovery mode permits one active booking so they can earn toward repayment.',

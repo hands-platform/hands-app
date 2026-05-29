@@ -5,7 +5,12 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/provider-risk',
-        destination: '/partner-risk',
+        destination: '/partner-controls',
+        permanent: false,
+      },
+      {
+        source: '/partner-risk',
+        destination: '/partner-controls',
         permanent: false,
       },
       {
