@@ -3105,9 +3105,9 @@ function buildOwnerDecisionPressure(
       status: acceptanceBlocked ? 'Gate active' : 'Clear',
       detail: `${acceptanceBlocked} partner blocker signal(s) affect booking acceptance or 10km backup participation.`,
       operatorAction: acceptanceBlocked
-        ? 'Keep negative-wallet and identity gates strict until finance/risk clears the queue.'
+        ? 'Keep negative-wallet and identity gates strict until finance and partner controls clear the queue.'
         : 'No current sample pressure to relax booking acceptance gates.',
-      href: acceptanceBlocked ? '/partners?review=acceptance-blocked' : '/partner-risk',
+      href: acceptanceBlocked ? '/partners?review=acceptance-blocked' : '/partner-controls',
       className: acceptanceBlocked ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: acceptanceBlocked ? 'pill-danger' : 'pill-success',
     },

@@ -19,6 +19,7 @@ export async function updatePayoutTransferRef(formData: FormData) {
   );
   revalidatePath('/payouts');
   revalidatePath('/partner-risk');
+  revalidatePath('/partner-controls');
   revalidatePath('/partners');
 }
 
@@ -51,6 +52,7 @@ async function updatePayoutStatus(formData: FormData, status: 'PROCESSING' | 'PA
   revalidatePath('/payouts');
   revalidatePath('/earnings');
   revalidatePath('/partner-risk');
+  revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');
 }

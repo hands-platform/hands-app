@@ -12,15 +12,20 @@ export async function markEarningPaid(formData: FormData) {
   const settlementRef = String(formData.get('settlementRef') ?? '').trim();
   const settlementNotes = String(formData.get('settlementNotes') ?? '').trim();
 
-  await adminPost(`/admin/earnings/${earningId}/mark-paid`, {
-    settlementRef: settlementRef || undefined,
-    settlementNotes: settlementNotes || undefined,
-  }, null);
+  await adminPost(
+    `/admin/earnings/${earningId}/mark-paid`,
+    {
+      settlementRef: settlementRef || undefined,
+      settlementNotes: settlementNotes || undefined,
+    },
+    null,
+  );
   revalidatePath('/earnings');
   revalidatePath('/payouts');
   revalidatePath('/payments');
   revalidatePath('/bookings');
   revalidatePath('/partner-risk');
+  revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');
 }
@@ -31,14 +36,19 @@ export async function createProviderPayout(formData: FormData) {
     return;
   }
 
-  await adminPost('/admin/payout-batches', {
-    providerProfileId,
-    transferRef: String(formData.get('transferRef') ?? '') || undefined,
-    notes: 'Created from earnings dashboard',
-  }, null);
+  await adminPost(
+    '/admin/payout-batches',
+    {
+      providerProfileId,
+      transferRef: String(formData.get('transferRef') ?? '') || undefined,
+      notes: 'Created from earnings dashboard',
+    },
+    null,
+  );
   revalidatePath('/earnings');
   revalidatePath('/payouts');
   revalidatePath('/partner-risk');
+  revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');
 }

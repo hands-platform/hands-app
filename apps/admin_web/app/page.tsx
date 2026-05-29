@@ -373,7 +373,7 @@ export default async function DashboardPage() {
       links: [
         ['Partners', '/partners'],
         ['Partner controls', '/partner-controls'],
-        ['Partner checks', '/partner-risk'],
+        ['Partner checks', '/partner-controls'],
         ['App sessions', '/app-sessions'],
       ],
     },
