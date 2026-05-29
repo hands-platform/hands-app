@@ -2,26 +2,52 @@ import './globals.css';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 
-const links = [
-  ['/', 'Dashboard'],
-  ['/customers', 'Customers'],
-  ['/partners', 'Partners'],
-  ['/partner-controls', 'Partner Controls'],
-  ['/app-sessions', 'App Sessions'],
-  ['/bookings', 'Bookings'],
-  ['/operations-policy', 'Operations Policy'],
-  ['/services', 'Services'],
-  ['/payments', 'Payments'],
-  ['/refunds', 'Refunds'],
-  ['/earnings', 'Earnings'],
-  ['/cash-settlements', 'Cash Settlements'],
-  ['/payouts', 'Payouts'],
-  ['/tax-policy', 'Tax Policy'],
-  ['/reviews', 'Reviews'],
-  ['/notifications', 'Notifications'],
-  ['/coupons', 'Coupons'],
-  ['/audit-log', 'Audit Log'],
-  ['/setup', 'Setup'],
+const navSections = [
+  {
+    label: 'Command',
+    links: [
+      ['/', 'Operations Dashboard'],
+      ['/bookings', 'Booking Monitor'],
+      ['/operations-policy', 'Operations Policy'],
+    ],
+  },
+  {
+    label: 'Customers',
+    links: [
+      ['/customers', 'Customer List'],
+      ['/reviews', 'Reviews'],
+      ['/coupons', 'Coupons'],
+      ['/notifications', 'Notifications'],
+    ],
+  },
+  {
+    label: 'Partners',
+    links: [
+      ['/partners', 'Partner List'],
+      ['/partner-controls', 'Partner Controls'],
+      ['/partner-risk', 'Partner Activity Checks'],
+      ['/app-sessions', 'App Sessions'],
+    ],
+  },
+  {
+    label: 'Finance',
+    links: [
+      ['/payments', 'Payments'],
+      ['/refunds', 'Refunds'],
+      ['/earnings', 'Earnings'],
+      ['/cash-settlements', 'Cash Settlements'],
+      ['/payouts', 'Payouts'],
+      ['/tax-policy', 'Tax Policy'],
+    ],
+  },
+  {
+    label: 'Catalog and System',
+    links: [
+      ['/services', 'Service Catalog'],
+      ['/audit-log', 'Audit Log'],
+      ['/setup', 'Setup'],
+    ],
+  },
 ];
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -30,12 +56,20 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <div className="shell">
           <aside className="sidebar">
-            <strong>HANDS Admin</strong>
+            <div className="brand-block">
+              <strong>HANDS Admin</strong>
+              <span>Vietnam operations console</span>
+            </div>
             <nav className="nav">
-              {links.map(([href, label]) => (
-                <Link key={href} href={href}>
-                  {label}
-                </Link>
+              {navSections.map((section) => (
+                <section className="nav-section" key={section.label}>
+                  <span className="nav-section-label">{section.label}</span>
+                  {section.links.map(([href, label]) => (
+                    <Link key={href} href={href}>
+                      {label}
+                    </Link>
+                  ))}
+                </section>
               ))}
             </nav>
           </aside>
