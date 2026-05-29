@@ -305,6 +305,8 @@ if (customerLinkMatch) {
     'Booking and cancellation history',
     'Chat history',
     'Customer chronological activity',
+    'Bookings and work',
+    'Support trail',
     'Recent customer notifications',
     'Customer audit trail',
   ];

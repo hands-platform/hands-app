@@ -64,6 +64,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const filteredCustomerActivityRecords = customerActivityRecords.filter((record) =>
     isWithinDetailDateFilter(record.at, dateFilters),
   );
+  const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
   );
@@ -575,6 +576,15 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </p>
           </div>
           <span className="pill pill-info">{filteredCustomerActivityRecords.length} event(s)</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+          {customerActivitySummary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
         </div>
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
           {filteredCustomerActivityRecords.length > 0 ? (
@@ -1181,6 +1191,47 @@ function buildCustomerActivityRecords(
   return records
     .filter((record) => Boolean(record.at))
     .sort((left, right) => dateMs(right.at) - dateMs(left.at));
+}
+
+function buildCustomerActivitySummary(
+  records: Array<{ id: string; type: string; at: string; title: string; detail: string }>,
+) {
+  const count = (types: string[]) => records.filter((record) => types.includes(record.type)).length;
+  const latestAt = records[0]?.at;
+  const oldestAt = records[records.length - 1]?.at;
+
+  return [
+    {
+      label: 'Loaded range',
+      value: latestAt ? formatDate(latestAt) : 'None',
+      helper: oldestAt ? `Oldest loaded: ${formatDate(oldestAt)}` : 'No customer activity in this period.',
+    },
+    {
+      label: 'Bookings and work',
+      value: count(['BOOKING', 'WORK']).toString(),
+      helper: 'Booking creation, status, and completed service records.',
+    },
+    {
+      label: 'Chat archive',
+      value: count(['CHAT']).toString(),
+      helper: 'Messages retained for admin after mobile chat is hidden.',
+    },
+    {
+      label: 'Payment records',
+      value: count(['PAYMENT', 'REFUND']).toString(),
+      helper: 'Captured, pending, refunded, or disputed payment events.',
+    },
+    {
+      label: 'Address and app',
+      value: count(['ADDRESS', 'SESSION', 'DEVICE']).toString(),
+      helper: 'Saved locations, app sessions, and push device changes.',
+    },
+    {
+      label: 'Support trail',
+      value: count(['NOTICE', 'REVIEW', 'OPS', 'AUDIT']).toString(),
+      helper: 'Notifications, reviews, staff notes, and audit records.',
+    },
+  ];
 }
 
 function bookingTotal(booking: AdminBookingDetail) {
