@@ -334,6 +334,35 @@ export class AdminService {
         taxProfile: true,
         reports: { orderBy: { createdAt: 'desc' }, take: 5 },
         sanctions: { orderBy: { createdAt: 'desc' }, take: 5 },
+        preferredBookings: {
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+          include: {
+            services: { include: { service: true } },
+            payment: true,
+          },
+        },
+        selectedBookings: {
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+          include: {
+            services: { include: { service: true } },
+            payment: true,
+            review: true,
+          },
+        },
+        participants: {
+          orderBy: { joinedAt: 'desc' },
+          take: 100,
+          include: {
+            booking: {
+              include: {
+                services: { include: { service: true } },
+                payment: true,
+              },
+            },
+          },
+        },
         agreements: { orderBy: { acceptedAt: 'desc' } },
         services: {
           include: {
@@ -348,10 +377,10 @@ export class AdminService {
           },
         },
         earnings: {
-          where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] } },
+          where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
           orderBy: { createdAt: 'desc' },
           take: 50,
-          include: { booking: { include: { payment: true } } },
+          include: { booking: { include: { payment: true, services: { include: { service: true } } } } },
         },
         sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
         devices: { orderBy: { lastSeenAt: 'desc' }, take: 10 },

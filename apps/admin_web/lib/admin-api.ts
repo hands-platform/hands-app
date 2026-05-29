@@ -201,6 +201,15 @@ export type AdminProvider = {
   }>;
   reports?: AdminProviderReport[];
   sanctions?: AdminProviderSanction[];
+  preferredBookings?: AdminBooking[];
+  selectedBookings?: AdminBooking[];
+  participants?: Array<{
+    id: string;
+    status: string;
+    joinedAt?: string;
+    respondedAt?: string | null;
+    booking?: AdminBooking | null;
+  }>;
   sessions?: Array<{
     id: string;
     deviceId?: string | null;
@@ -263,6 +272,9 @@ export type AdminProvider = {
     id?: string;
     fullName?: string | null;
     phone?: string;
+    email?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
     supabaseUserId?: string | null;
     fileAssets?: Array<{
       id: string;

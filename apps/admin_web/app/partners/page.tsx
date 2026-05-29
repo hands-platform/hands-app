@@ -215,6 +215,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const partnerOperationRows = visibleProviders.map((provider) =>
     buildPartnerOperationRow(provider, opsPolicy),
   );
+  const partnerMasterRows = visibleProviders.map((provider) => buildPartnerMasterRow(provider, opsPolicy));
 
   return (
     <>
@@ -366,6 +367,120 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           </div>
         ))}
       </div>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner master list</h2>
+            <p className="muted">
+              Compact admin list for ID, profile, contact, onboarding level, app status, location freshness,
+              booking volume, reviews, revenue, payout readiness, and account state.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerMasterRows.length} visible row(s)</span>
+        </div>
+        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Partner ID</th>
+                <th>Profile</th>
+                <th>Name / activity name</th>
+                <th>Phone</th>
+                <th>Gender</th>
+                <th>Current state</th>
+                <th>Level</th>
+                <th>Joined / recent access</th>
+                <th>Location</th>
+                <th>Bookings</th>
+                <th>Reviews</th>
+                <th>Revenue</th>
+                <th>Payout</th>
+                <th>Account</th>
+                <th>Open</th>
+              </tr>
+            </thead>
+            <tbody>
+              {partnerMasterRows.map((row) => (
+                <tr key={row.provider.id}>
+                  <td>
+                    <code>{row.provider.id}</code>
+                  </td>
+                  <td>
+                    <div
+                      className="media-thumb"
+                      aria-label={`${row.displayName} profile thumbnail placeholder`}
+                    >
+                      {row.initials}
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{row.displayName}</strong>
+                    <p className="muted">{row.legalName}</p>
+                  </td>
+                  <td>{row.phone}</td>
+                  <td>{row.gender}</td>
+                  <td>
+                    <span className={`pill ${row.online ? 'pill-success' : 'pill-neutral'}`}>
+                      {row.status}
+                    </span>
+                  </td>
+                  <td>
+                    <strong>{row.level}</strong>
+                    <p className="muted">KYC {row.kycStatus}</p>
+                  </td>
+                  <td>
+                    <strong>{row.joinedAt ? formatDate(row.joinedAt) : 'Not recorded'}</strong>
+                    <p className="muted">
+                      Recent access: {row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}
+                    </p>
+                  </td>
+                  <td>
+                    <strong>{providerLocationLabel(row.locationState)}</strong>
+                    <p className="muted">{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</p>
+                  </td>
+                  <td>
+                    <strong>{row.bookingCount} total</strong>
+                    <p className="muted">
+                      {row.completedCount} completed / {row.cancelledCount} cancelled
+                    </p>
+                  </td>
+                  <td>
+                    <strong>{row.rating}</strong>
+                    <p className="muted">{row.reviewCount} review(s)</p>
+                  </td>
+                  <td>
+                    <strong>{formatProviderMoney(row.grossRevenue)}</strong>
+                    <p className="muted">Platform fee {formatProviderMoney(row.platformFee)}</p>
+                  </td>
+                  <td>
+                    <strong>{formatProviderMoney(row.pendingPayout)}</strong>
+                    <p className="muted">Available {formatProviderMoney(row.availablePayout)}</p>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.accountBlocked ? 'pill-danger' : 'pill-success'}`}>
+                      {row.accountBlocked ? 'Blocked' : 'Open'}
+                    </span>
+                    <p className="muted">{row.accountNote}</p>
+                  </td>
+                  <td>
+                    <Link className="text-link" href={`/partners/${row.provider.id}`}>
+                      Detail
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {partnerMasterRows.length === 0 ? (
+                <tr>
+                  <td colSpan={15}>
+                    <strong>No partner rows found</strong>
+                    <p className="muted">Change the filters or clear search to view partner records.</p>
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </section>
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -1494,6 +1609,32 @@ type PartnerOperationRow = {
   lastActivityAt: string | null;
   nextAction: ProviderListAction;
 };
+type PartnerMasterRow = {
+  provider: AdminProvider;
+  initials: string;
+  displayName: string;
+  legalName: string;
+  phone: string;
+  gender: string;
+  status: string;
+  online: boolean;
+  level: string;
+  kycStatus: string;
+  joinedAt: string | null;
+  lastSeenAt: string | null;
+  locationState: ProviderLocationState;
+  bookingCount: number;
+  completedCount: number;
+  cancelledCount: number;
+  rating: string;
+  reviewCount: number;
+  grossRevenue: number;
+  platformFee: number;
+  pendingPayout: number;
+  availablePayout: number;
+  accountBlocked: boolean;
+  accountNote: string;
+};
 
 function ProviderNextActionCell({
   provider,
@@ -1628,6 +1769,80 @@ function buildPartnerOperationRow(
   };
 }
 
+function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPolicy): PartnerMasterRow {
+  const bookingRows = providerBookingRows(provider);
+  const earnings = provider.earnings ?? [];
+  const displayName = providerDisplayName(provider);
+  const lastSeenAt = partnerLastSessionAt(provider);
+  const accountBlocked = Boolean(provider.blockedAt);
+
+  return {
+    provider,
+    initials: partnerInitials(displayName),
+    displayName,
+    legalName: provider.legalName ?? provider.user?.fullName ?? 'Legal name not saved',
+    phone: provider.user?.phone ?? 'No phone',
+    gender: provider.gender ?? 'Not saved',
+    status: provider.status,
+    online: provider.status !== 'OFFLINE',
+    level: provider.level ?? 'LEVEL_1_SIGNUP',
+    kycStatus: provider.kyc?.status ?? 'DRAFT',
+    joinedAt: provider.user?.createdAt ?? null,
+    lastSeenAt,
+    locationState: providerLocationStatus(provider, opsPolicy),
+    bookingCount: bookingRows.length,
+    completedCount:
+      bookingRows.filter((booking) => booking.status === 'COMPLETED').length ||
+      providerCompletedWorkCount(provider),
+    cancelledCount: bookingRows.filter((booking) =>
+      ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status),
+    ).length,
+    rating: formatProviderRating(provider.ratingAvg),
+    reviewCount: Number(provider.reviewCount ?? 0),
+    grossRevenue: earnings.reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0),
+    platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
+    pendingPayout: earnings
+      .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status))
+      .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0),
+    availablePayout: earnings
+      .filter((earning) => earning.status === 'AVAILABLE')
+      .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0),
+    accountBlocked,
+    accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
+  };
+}
+
+function providerBookingRows(provider: AdminProvider) {
+  const records = new Map<string, NonNullable<AdminProvider['selectedBookings']>[number]>();
+  for (const booking of provider.preferredBookings ?? []) {
+    records.set(booking.id, booking);
+  }
+  for (const booking of provider.selectedBookings ?? []) {
+    records.set(booking.id, booking);
+  }
+  for (const participant of provider.participants ?? []) {
+    if (participant.booking) records.set(participant.booking.id, participant.booking);
+  }
+  return [...records.values()];
+}
+
+function partnerInitials(value: string) {
+  const parts = value
+    .split(/\s+/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (!parts.length) return 'P';
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
+}
+
+function formatProviderRating(value: AdminProvider['ratingAvg']) {
+  const rating = Number(value ?? 0);
+  return Number.isFinite(rating) ? rating.toFixed(1) : '0.0';
+}
+
 function partnerOperationPillClass(tone: PartnerOperationChecklistItem['tone']) {
   if (tone === 'ok') return 'pill-success';
   if (tone === 'danger') return 'pill-danger';
@@ -1680,6 +1895,13 @@ function partnerLastActivityAt(provider: AdminProvider) {
       earning.availableAt,
       earning.paidAt,
     ]),
+  ]);
+}
+
+function partnerLastSessionAt(provider: AdminProvider) {
+  return latestTimestamp([
+    ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
+    ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
   ]);
 }
 

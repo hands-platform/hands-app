@@ -18,6 +18,12 @@ type CustomerFilters = {
   reachability: string;
   address: string;
   sort: string;
+  joinedFrom: string;
+  joinedTo: string;
+  seen: string;
+  minBookings: number | null;
+  minCompleted: number | null;
+  minSpend: number | null;
 };
 
 export default async function CustomersPage({ searchParams }: { searchParams?: CustomersPageSearchParams }) {
@@ -54,7 +60,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
         <form className="form-grid" action="/customers">
           <label>
             Search
-            <input name="q" defaultValue={filters.q} placeholder="Name, phone, customer id" />
+            <input name="q" defaultValue={filters.q} placeholder="Name, phone, email, customer id" />
           </label>
           <label>
             Booking state
@@ -83,6 +89,37 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
               <option value="saved">Saved address</option>
               <option value="missing">No saved address</option>
             </select>
+          </label>
+          <label>
+            Joined from
+            <input type="date" name="joinedFrom" defaultValue={filters.joinedFrom} />
+          </label>
+          <label>
+            Joined to
+            <input type="date" name="joinedTo" defaultValue={filters.joinedTo} />
+          </label>
+          <label>
+            Recent access
+            <select name="seen" defaultValue={filters.seen}>
+              <option value="">All</option>
+              <option value="live">In app now</option>
+              <option value="7d">Seen in 7 days</option>
+              <option value="30d">Seen in 30 days</option>
+              <option value="inactive-30d">No access 30 days</option>
+              <option value="never">No app session</option>
+            </select>
+          </label>
+          <label>
+            Min bookings
+            <input name="minBookings" defaultValue={filters.minBookings ?? ''} inputMode="numeric" />
+          </label>
+          <label>
+            Min completed
+            <input name="minCompleted" defaultValue={filters.minCompleted ?? ''} inputMode="numeric" />
+          </label>
+          <label>
+            Min paid amount
+            <input name="minSpend" defaultValue={filters.minSpend ?? ''} inputMode="numeric" />
           </label>
           <label>
             Sort
@@ -258,61 +295,92 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
           </div>
           <span className="pill pill-info">{rows.length} rows</span>
         </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Joined</th>
-              <th>Last work</th>
-              <th>Bookings</th>
-              <th>Wallet</th>
-              <th>Addresses</th>
-              <th>Reachability</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.name}</strong>
-                  <p className="muted">{row.phone}</p>
-                </td>
-                <td>{formatDate(row.joinedAt)}</td>
-                <td>
-                  <strong>
-                    {row.lastCompletedAt ? formatDate(row.lastCompletedAt) : 'No completed work'}
-                  </strong>
-                  <p className="muted">{row.lastCompletedLabel}</p>
-                </td>
-                <td>
-                  <strong>{row.bookingCount}</strong>
-                  <p className="muted">
-                    {row.activeBookings} active / {row.completedBookings} completed
-                  </p>
-                </td>
-                <td>
-                  <strong>{formatMoney(row.capturedSpend)}</strong>
-                  <p className="muted">{formatMoney(row.refundAmount)} refunded</p>
-                </td>
-                <td>{row.addressCount}</td>
-                <td>
-                  <span className={`pill ${row.pushReachable ? 'pill-success' : 'pill-neutral'}`}>
-                    {row.pushReachable ? 'Push ready' : 'No push'}
-                  </span>
-                  <p className="muted">
-                    {row.lastSeenAt ? `Seen ${formatDate(row.lastSeenAt)}` : 'No session'}
-                  </p>
-                </td>
-                <td>
-                  <Link className="text-link" href={`/customers/${row.id}`}>
-                    Details
-                  </Link>
-                </td>
+        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Customer</th>
+                <th>Customer ID</th>
+                <th>Phone / email</th>
+                <th>Joined</th>
+                <th>Recent access</th>
+                <th>Last work</th>
+                <th>Bookings</th>
+                <th>Completed</th>
+                <th>Cancelled</th>
+                <th>Total paid</th>
+                <th>Memo</th>
+                <th>Addresses</th>
+                <th>Open</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{row.name}</strong>
+                    <p className="muted">First signup: {formatDate(row.joinedAt)}</p>
+                  </td>
+                  <td>
+                    <code>{row.id}</code>
+                  </td>
+                  <td>
+                    <strong>{row.phone}</strong>
+                    <p className="muted">{row.email}</p>
+                  </td>
+                  <td>{formatDate(row.joinedAt)}</td>
+                  <td>
+                    <strong>{row.lastSeenAt ? formatDate(row.lastSeenAt) : 'No session'}</strong>
+                    <p className="muted">{row.isLive ? 'In app now' : 'Not live'}</p>
+                  </td>
+                  <td>
+                    <strong>
+                      {row.lastCompletedAt ? formatDate(row.lastCompletedAt) : 'No completed work'}
+                    </strong>
+                    <p className="muted">{row.lastCompletedLabel}</p>
+                  </td>
+                  <td>
+                    <strong>{row.bookingCount}</strong>
+                    <p className="muted">
+                      {row.activeBookings} active / last{' '}
+                      {row.lastBookingAt ? formatDate(row.lastBookingAt) : 'none'}
+                    </p>
+                  </td>
+                  <td>
+                    <strong>{row.completedBookings}</strong>
+                    <p className="muted">Actual finished work</p>
+                  </td>
+                  <td>
+                    <strong>{row.cancelledBookings}</strong>
+                    <p className="muted">Cancelled / expired / refunded</p>
+                  </td>
+                  <td>
+                    <strong>{formatMoney(row.capturedSpend)}</strong>
+                    <p className="muted">{formatMoney(row.refundAmount)} refunded</p>
+                  </td>
+                  <td>
+                    <strong>{row.latestMemoTitle}</strong>
+                    <p className="muted">{row.latestMemoDetail}</p>
+                  </td>
+                  <td>{row.addressCount}</td>
+                  <td>
+                    <Link className="text-link" href={`/customers/${row.id}`}>
+                      Details
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {rows.length === 0 ? (
+                <tr>
+                  <td colSpan={13}>
+                    <strong>No customers found</strong>
+                    <p className="muted">Change the filters or clear search to view customer records.</p>
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </section>
     </>
   );
@@ -335,6 +403,12 @@ function buildCustomerFilters(params: Record<string, string | string[] | undefin
     reachability: readSearchParam(params.reachability),
     address: readSearchParam(params.address),
     sort: readCustomerSort(params.sort),
+    joinedFrom: readDateParam(params.joinedFrom),
+    joinedTo: readDateParam(params.joinedTo),
+    seen: readSearchParam(params.seen),
+    minBookings: readPositiveNumber(params.minBookings),
+    minCompleted: readPositiveNumber(params.minCompleted),
+    minSpend: readPositiveNumber(params.minSpend),
   };
 }
 
@@ -358,6 +432,19 @@ function readCustomerSort(value: string | string[] | undefined) {
     : 'last-booking';
 }
 
+function readDateParam(value: string | string[] | undefined) {
+  const date = readSearchParam(value);
+  return /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '';
+}
+
+function readPositiveNumber(value: string | string[] | undefined) {
+  const raw = readSearchParam(value).replaceAll(',', '');
+  if (!raw) return null;
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed) || parsed < 0) return null;
+  return Math.floor(parsed);
+}
+
 function customerSortLabel(sort: string) {
   if (sort === 'last-work') return 'last completed work';
   if (sort === 'booking-count') return 'booking count';
@@ -372,7 +459,10 @@ function customerSortLabel(sort: string) {
 function filterCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], filters: CustomerFilters) {
   const query = filters.q.toLowerCase();
   return rows.filter((row) => {
-    if (query && ![row.name, row.phone, row.id].some((value) => value.toLowerCase().includes(query))) {
+    if (
+      query &&
+      ![row.name, row.phone, row.email, row.id].some((value) => value.toLowerCase().includes(query))
+    ) {
       return false;
     }
     if (filters.booking === 'active' && row.activeBookings === 0) return false;
@@ -383,8 +473,18 @@ function filterCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], filters
     if (filters.reachability === 'push-ready' && !row.pushReachable) return false;
     if (filters.reachability === 'no-push' && row.pushReachable) return false;
     if (filters.reachability === 'no-session' && row.lastSeenAt) return false;
+    if (filters.seen === 'live' && !row.isLive) return false;
+    if (filters.seen === '7d' && !isWithinRecentDays(row.lastSeenAt, 7)) return false;
+    if (filters.seen === '30d' && !isWithinRecentDays(row.lastSeenAt, 30)) return false;
+    if (filters.seen === 'inactive-30d' && isWithinRecentDays(row.lastSeenAt, 30)) return false;
+    if (filters.seen === 'never' && row.lastSeenAt) return false;
     if (filters.address === 'saved' && row.addressCount === 0) return false;
     if (filters.address === 'missing' && row.addressCount > 0) return false;
+    if (filters.joinedFrom && !isOnOrAfterDate(row.joinedAt, filters.joinedFrom)) return false;
+    if (filters.joinedTo && !isOnOrBeforeDate(row.joinedAt, filters.joinedTo)) return false;
+    if (filters.minBookings !== null && row.bookingCount < filters.minBookings) return false;
+    if (filters.minCompleted !== null && row.completedBookings < filters.minCompleted) return false;
+    if (filters.minSpend !== null && row.capturedSpend < filters.minSpend) return false;
     return true;
   });
 }
@@ -431,6 +531,12 @@ function buildCustomerActiveFilters(filters: CustomerFilters) {
   if (filters.booking) labels.push(`Booking: ${filters.booking}`);
   if (filters.reachability) labels.push(`Reachability: ${filters.reachability}`);
   if (filters.address) labels.push(`Address: ${filters.address}`);
+  if (filters.joinedFrom) labels.push(`Joined from: ${filters.joinedFrom}`);
+  if (filters.joinedTo) labels.push(`Joined to: ${filters.joinedTo}`);
+  if (filters.seen) labels.push(`Recent access: ${filters.seen}`);
+  if (filters.minBookings !== null) labels.push(`Min bookings: ${filters.minBookings}`);
+  if (filters.minCompleted !== null) labels.push(`Min completed: ${filters.minCompleted}`);
+  if (filters.minSpend !== null) labels.push(`Min paid amount: ${formatMoney(filters.minSpend)}`);
   if (filters.sort !== 'last-booking') labels.push(`Sort: ${customerSortLabel(filters.sort)}`);
   return labels;
 }
@@ -478,6 +584,9 @@ function buildCustomerRow(customer: AdminCustomer) {
   const lastSeenAt = customer.user?.appSessions?.[0]?.lastSeenAt;
   const isLive = Boolean(lastSeenAt && Date.now() - dateMs(lastSeenAt) <= 30 * 60_000);
   const pushReachable = Boolean(customer.user?.pushDevices?.some((device) => device.enabled));
+  const latestMemo = [...(customer.auditLogs ?? [])].sort(
+    (left, right) => dateMs(right.createdAt) - dateMs(left.createdAt),
+  )[0];
   const activityLabel =
     activeBookings > 0
       ? `${activeBookings} active booking(s)`
@@ -491,6 +600,7 @@ function buildCustomerRow(customer: AdminCustomer) {
     id: customer.id,
     name: customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer',
     phone: customer.user?.phone ?? 'No phone',
+    email: customer.user?.email ?? 'No email',
     joinedAt: customer.user?.createdAt,
     bookingCount: bookings.length,
     activeBookings,
@@ -510,6 +620,10 @@ function buildCustomerRow(customer: AdminCustomer) {
     paymentIssues,
     chatRooms: bookings.filter((booking) => booking.chatRoom).length,
     activityLabel,
+    latestMemoTitle: latestMemo?.action ?? 'No memo',
+    latestMemoDetail: latestMemo
+      ? compactText(compactJson(latestMemo.metadata), 72)
+      : 'No internal memo saved yet',
   };
 }
 
@@ -553,10 +667,39 @@ function readAddressCount(value: unknown) {
   return 0;
 }
 
+function isWithinRecentDays(value: string | null | undefined, days: number) {
+  if (!value) return false;
+  return Date.now() - dateMs(value) <= days * 24 * 60 * 60_000;
+}
+
+function isOnOrAfterDate(value: string | null | undefined, date: string) {
+  if (!value) return false;
+  return dateMs(value) >= new Date(`${date}T00:00:00`).getTime();
+}
+
+function isOnOrBeforeDate(value: string | null | undefined, date: string) {
+  if (!value) return false;
+  return dateMs(value) <= new Date(`${date}T23:59:59.999`).getTime();
+}
+
 function dateMs(value?: string | null) {
   if (!value) return 0;
   const ms = new Date(value).getTime();
   return Number.isFinite(ms) ? ms : 0;
+}
+
+function compactText(value: string, maxLength: number) {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+function compactJson(value: unknown) {
+  if (!value) return 'No metadata';
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return 'Metadata unavailable';
+  }
 }
 
 function formatDate(value?: string | null) {
