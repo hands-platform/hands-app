@@ -8,6 +8,11 @@ import {
   providerDocumentReviewHint,
 } from '../../../lib/admin-api';
 import {
+  detailDateRangeOptions,
+  isWithinDetailDateFilter,
+  readDetailDateFilters,
+} from '../../../lib/detail-date-filter';
+import {
   approveProvider,
   approveProviderBankAccount,
   approveProviderDocument,
@@ -35,6 +40,7 @@ import {
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 type PartnerDispatchPolicy = {
   responseWindowMinutes: number;
@@ -169,8 +175,9 @@ type ProviderDetail = AdminProvider & {
   }>;
 };
 
-export default async function ProviderDetailPage({ params }: PageProps) {
+export default async function ProviderDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const dateFilters = readDetailDateFilters(searchParams ? await searchParams : {});
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(`/admin/partners/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
@@ -216,7 +223,13 @@ export default async function ProviderDetailPage({ params }: PageProps) {
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
   const partnerBookingArchive = buildPartnerBookingArchive(provider);
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
-  const partnerActivitySummary = buildPartnerActivitySummary(partnerActivityRecords);
+  const filteredPartnerBookingArchive = partnerBookingArchive.filter((record) =>
+    isWithinDetailDateFilter(record.booking.scheduledStartAt ?? record.booking.createdAt, dateFilters),
+  );
+  const filteredPartnerActivityRecords = partnerActivityRecords.filter((record) =>
+    isWithinDetailDateFilter(record.at, dateFilters),
+  );
+  const partnerActivitySummary = buildPartnerActivitySummary(filteredPartnerActivityRecords);
 
   return (
     <>
@@ -321,6 +334,67 @@ export default async function ProviderDetailPage({ params }: PageProps) {
         </div>
       </div>
 
+      <div className="card" id="record-date-filter" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Record date filter</h2>
+            <p className="muted">
+              Narrow booking, chat, app, location, payout, and verification records without changing partner
+              data.
+            </p>
+          </div>
+          <span className="pill pill-info">{dateFilters.label}</span>
+        </div>
+        <form className="form-grid" action={`/partners/${provider.id}`} style={{ marginTop: 14 }}>
+          <label>
+            Preset
+            <select name="range" defaultValue={dateFilters.range}>
+              {detailDateRangeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            From
+            <input type="date" name="from" defaultValue={dateFilters.from} />
+          </label>
+          <label>
+            To
+            <input type="date" name="to" defaultValue={dateFilters.to} />
+          </label>
+          <div className="actions">
+            <button type="submit">Apply filter</button>
+            <Link className="text-link" href={`/partners/${provider.id}`}>
+              Clear
+            </Link>
+          </div>
+        </form>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Filtered booking archive</span>
+            <strong>{filteredPartnerBookingArchive.length}</strong>
+            <small>Preferred, selected, and joined records.</small>
+          </div>
+          <div>
+            <span>Filtered activity</span>
+            <strong>{filteredPartnerActivityRecords.length}</strong>
+            <small>App, location, finance, and verification events.</small>
+          </div>
+          <div>
+            <span>Loaded bookings</span>
+            <strong>{partnerBookingArchive.length}</strong>
+            <small>Total visible archive before this filter.</small>
+          </div>
+          <div>
+            <span>Loaded events</span>
+            <strong>{partnerActivityRecords.length}</strong>
+            <small>Total factual activity before this filter.</small>
+          </div>
+        </div>
+      </div>
+
       <div className="card" id="booking-chat-records" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -335,8 +409,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           </Link>
         </div>
         <div className="setup-stage-list" style={{ marginTop: 16 }}>
-          {partnerBookingArchive.length ? (
-            partnerBookingArchive.slice(0, 10).map((record) => (
+          {filteredPartnerBookingArchive.length ? (
+            filteredPartnerBookingArchive.slice(0, 10).map((record) => (
               <div className="setup-stage-item" key={`${record.booking.id}-${record.relation}`}>
                 <span>{record.relation}</span>
                 <div>
@@ -399,8 +473,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <div className="setup-stage-item">
               <span>NONE</span>
               <div>
-                <strong>No booking records yet</strong>
-                <p className="muted">Preferred, selected, and joined booking records will appear here.</p>
+                <strong>No booking records matched this date filter</strong>
+                <p className="muted">Clear the date filter or choose a wider range to review the archive.</p>
               </div>
               <small>0</small>
             </div>
@@ -417,7 +491,7 @@ export default async function ProviderDetailPage({ params }: PageProps) {
               booking participation, and verification changes.
             </p>
           </div>
-          <span className="pill pill-info">{partnerActivityRecords.length} event(s)</span>
+          <span className="pill pill-info">{filteredPartnerActivityRecords.length} event(s)</span>
         </div>
         <div className="service-trace-summary" style={{ marginTop: 14 }}>
           {partnerActivitySummary.map((item) => (
@@ -429,8 +503,8 @@ export default async function ProviderDetailPage({ params }: PageProps) {
           ))}
         </div>
         <div className="setup-stage-list" style={{ marginTop: 16 }}>
-          {partnerActivityRecords.length ? (
-            partnerActivityRecords.map((record) => (
+          {filteredPartnerActivityRecords.length ? (
+            filteredPartnerActivityRecords.map((record) => (
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
                 <span>{record.type}</span>
                 <div>
@@ -444,9 +518,10 @@ export default async function ProviderDetailPage({ params }: PageProps) {
             <div className="setup-stage-item">
               <span>NONE</span>
               <div>
-                <strong>No activity has been recorded yet</strong>
+                <strong>No activity matched this date filter</strong>
                 <p className="muted">
-                  App login, booking, location, payout, and verification records appear here.
+                  Clear the date filter or choose a wider range to review app, location, payout, and
+                  verification records.
                 </p>
               </div>
               <small>0</small>

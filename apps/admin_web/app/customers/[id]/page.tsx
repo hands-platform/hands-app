@@ -1,10 +1,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { AdminBookingDetail, AdminChatMessage, AdminCustomerDetail, adminGet } from '../../../lib/admin-api';
+import {
+  detailDateRangeOptions,
+  isWithinDetailDateFilter,
+  readDetailDateFilters,
+} from '../../../lib/detail-date-filter';
 import { addCustomerOpsNote } from './actions';
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 const ACTIVE_STATUSES = [
@@ -16,8 +22,9 @@ const ACTIVE_STATUSES = [
   'IN_SERVICE',
 ];
 
-export default async function CustomerDetailPage({ params }: PageProps) {
+export default async function CustomerDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
+  const dateFilters = readDetailDateFilters(searchParams ? await searchParams : {});
   const customer = await adminGet<AdminCustomerDetail | null>(`/admin/customers/${id}`, null);
 
   if (!customer) {
@@ -41,6 +48,28 @@ export default async function CustomerDetailPage({ params }: PageProps) {
   );
   const customerActivityRecords = buildCustomerActivityRecords(customer, bookings, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
+  const filteredBookings = bookings.filter((booking) =>
+    isWithinDetailDateFilter(booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt, dateFilters),
+  );
+  const filteredChatBookings = bookings.filter((booking) => {
+    if (!booking.chatRoom) return false;
+    return (
+      isWithinDetailDateFilter(
+        booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt,
+        dateFilters,
+      ) ||
+      readChatMessages(booking).some((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
+    );
+  });
+  const filteredCustomerActivityRecords = customerActivityRecords.filter((record) =>
+    isWithinDetailDateFilter(record.at, dateFilters),
+  );
+  const filteredNotifications = notifications.filter((notification) =>
+    isWithinDetailDateFilter(notification.createdAt, dateFilters),
+  );
+  const filteredAuditLogs = recentAuditLogs.filter((log) =>
+    isWithinDetailDateFilter(log.createdAt, dateFilters),
+  );
 
   return (
     <>
@@ -161,6 +190,67 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             <strong>{customerActivityRecords.length}</strong>
             <small>Date-ordered app and operations events.</small>
           </a>
+        </div>
+      </section>
+
+      <section className="card" id="record-date-filter" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Record date filter</h2>
+            <p className="muted">
+              Narrow booking, chat, notification, audit, and activity records without changing the saved
+              customer data.
+            </p>
+          </div>
+          <span className="pill pill-info">{dateFilters.label}</span>
+        </div>
+        <form className="form-grid" action={`/customers/${customer.id}`} style={{ marginTop: 14 }}>
+          <label>
+            Preset
+            <select name="range" defaultValue={dateFilters.range}>
+              {detailDateRangeOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            From
+            <input type="date" name="from" defaultValue={dateFilters.from} />
+          </label>
+          <label>
+            To
+            <input type="date" name="to" defaultValue={dateFilters.to} />
+          </label>
+          <div className="actions">
+            <button type="submit">Apply filter</button>
+            <Link className="text-link" href={`/customers/${customer.id}`}>
+              Clear
+            </Link>
+          </div>
+        </form>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Filtered bookings</span>
+            <strong>{filteredBookings.length}</strong>
+            <small>Matching, completed, cancelled, and refunded records.</small>
+          </div>
+          <div>
+            <span>Filtered chat rooms</span>
+            <strong>{filteredChatBookings.length}</strong>
+            <small>Rooms with booking or message dates in this period.</small>
+          </div>
+          <div>
+            <span>Filtered activity</span>
+            <strong>{filteredCustomerActivityRecords.length}</strong>
+            <small>Factual app and operations events.</small>
+          </div>
+          <div>
+            <span>Filtered notices</span>
+            <strong>{filteredNotifications.length}</strong>
+            <small>Customer notification rows.</small>
+          </div>
         </div>
       </section>
 
@@ -335,7 +425,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               All loaded bookings with partner, service, payment, refund, review, and chat state.
             </p>
           </div>
-          <span className="pill pill-info">{bookings.length} bookings</span>
+          <span className="pill pill-info">{filteredBookings.length} bookings</span>
         </div>
         <table className="table" style={{ marginTop: 14 }}>
           <thead>
@@ -350,7 +440,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             </tr>
           </thead>
           <tbody>
-            {bookings.map((booking) => (
+            {filteredBookings.map((booking) => (
               <tr key={booking.id}>
                 <td>
                   <strong>{shortId(booking.id)}</strong>
@@ -389,6 +479,11 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             ))}
           </tbody>
         </table>
+        {filteredBookings.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No booking record matched this date filter.
+          </p>
+        ) : null}
       </section>
 
       <section className="card" id="chat-history" style={{ marginBottom: 16 }}>
@@ -400,32 +495,29 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               completion, but operations keeps the full message history here.
             </p>
           </div>
-          <span className="pill pill-info">
-            {bookings.filter((booking) => booking.chatRoom).length} rooms
-          </span>
+          <span className="pill pill-info">{filteredChatBookings.length} rooms</span>
         </div>
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {bookings.filter((booking) => booking.chatRoom).length > 0 ? (
-            bookings
-              .filter((booking) => booking.chatRoom)
-              .slice(0, 12)
-              .map((booking) => (
-                <div className="card" key={booking.id}>
-                  <div className="risk-watch-header">
-                    <div>
-                      <strong>
-                        {shortId(booking.id)} / {bookingServiceLabel(booking)}
-                      </strong>
-                      <p className="muted">
-                        {booking.status} / Room {booking.chatRoom?.id}
-                      </p>
-                    </div>
-                    <Link className="text-link" href={`/bookings/${booking.id}`}>
-                      Open booking
-                    </Link>
+          {filteredChatBookings.length > 0 ? (
+            filteredChatBookings.slice(0, 12).map((booking) => (
+              <div className="card" key={booking.id}>
+                <div className="risk-watch-header">
+                  <div>
+                    <strong>
+                      {shortId(booking.id)} / {bookingServiceLabel(booking)}
+                    </strong>
+                    <p className="muted">
+                      {booking.status} / Room {booking.chatRoom?.id}
+                    </p>
                   </div>
-                  <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
-                    {readChatMessages(booking).map((message) => (
+                  <Link className="text-link" href={`/bookings/${booking.id}`}>
+                    Open booking
+                  </Link>
+                </div>
+                <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+                  {readChatMessages(booking)
+                    .filter((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
+                    .map((message) => (
                       <div className="ops-task-note" key={message.id}>
                         <strong>
                           {message.sender?.fullName ?? message.sender?.phone ?? 'Unknown sender'}
@@ -434,11 +526,18 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                         <p className="muted">{formatDate(message.createdAt)}</p>
                       </div>
                     ))}
-                  </div>
+                  {readChatMessages(booking).filter((message) =>
+                    isWithinDetailDateFilter(message.createdAt, dateFilters),
+                  ).length === 0 ? (
+                    <p className="muted">
+                      No messages in this date filter, but the room belongs to this period.
+                    </p>
+                  ) : null}
                 </div>
-              ))
+              </div>
+            ))
           ) : (
-            <p className="muted">No chat rooms for this customer yet.</p>
+            <p className="muted">No chat rooms matched this date filter.</p>
           )}
         </div>
       </section>
@@ -452,11 +551,11 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               addresses, app sessions, push devices, notifications, reviews, and operator notes.
             </p>
           </div>
-          <span className="pill pill-info">{customerActivityRecords.length} event(s)</span>
+          <span className="pill pill-info">{filteredCustomerActivityRecords.length} event(s)</span>
         </div>
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {customerActivityRecords.length > 0 ? (
-            customerActivityRecords.slice(0, 40).map((record) => (
+          {filteredCustomerActivityRecords.length > 0 ? (
+            filteredCustomerActivityRecords.slice(0, 40).map((record) => (
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
                 <span>{record.type}</span>
                 <div>
@@ -470,9 +569,9 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             <div className="setup-stage-item">
               <span>NONE</span>
               <div>
-                <strong>No customer activity has been recorded yet</strong>
+                <strong>No customer activity matched this date filter</strong>
                 <p className="muted">
-                  Bookings, messages, address pins, sessions, and operator notes will appear here.
+                  Clear the date filter or choose a wider range to review the full activity archive.
                 </p>
               </div>
               <small>0</small>
@@ -528,7 +627,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
               Delivery status helps support explain missed booking, payment, and chat updates.
             </p>
           </div>
-          <span className="pill pill-info">{notifications.length} rows</span>
+          <span className="pill pill-info">{filteredNotifications.length} rows</span>
         </div>
         <table className="table" style={{ marginTop: 14 }}>
           <thead>
@@ -540,7 +639,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             </tr>
           </thead>
           <tbody>
-            {notifications.slice(0, 20).map((notification) => (
+            {filteredNotifications.slice(0, 20).map((notification) => (
               <tr key={notification.id}>
                 <td>
                   <strong>{notification.title}</strong>
@@ -561,7 +660,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             <h2>Customer audit trail</h2>
             <p className="muted">Recent operator notes and system actions attached to this customer.</p>
           </div>
-          <span className="pill pill-info">{recentAuditLogs.length} logs</span>
+          <span className="pill pill-info">{filteredAuditLogs.length} logs</span>
         </div>
         <table className="table" style={{ marginTop: 14 }}>
           <thead>
@@ -573,7 +672,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
             </tr>
           </thead>
           <tbody>
-            {recentAuditLogs.slice(0, 20).map((log) => (
+            {filteredAuditLogs.slice(0, 20).map((log) => (
               <tr key={log.id}>
                 <td>{log.action}</td>
                 <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>

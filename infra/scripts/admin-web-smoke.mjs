@@ -259,6 +259,18 @@ if (providerLinkMatch) {
       throw new Error(`${providerPath} is missing expected markers: ${missing.join(', ')}`);
     }
     console.log(`PASS ${providerPath}`);
+
+    const filteredProviderBody = await fetchPage(`${providerPath}?range=30d`);
+    const filteredProviderMarkers = ['Record date filter', 'Filtered booking archive', 'Filtered activity'];
+    const missingFilteredProviderMarkers = filteredProviderMarkers.filter(
+      (marker) => !filteredProviderBody.includes(marker),
+    );
+    if (missingFilteredProviderMarkers.length > 0) {
+      throw new Error(
+        `${providerPath}?range=30d is missing expected markers: ${missingFilteredProviderMarkers.join(', ')}`,
+      );
+    }
+    console.log(`PASS ${providerPath}?range=30d`);
   }
 }
 
@@ -285,6 +297,23 @@ if (customerLinkMatch) {
     throw new Error(`${customerPath} is missing expected markers: ${missing.join(', ')}`);
   }
   console.log(`PASS ${customerPath}`);
+
+  const filteredCustomerBody = await fetchPage(`${customerPath}?range=7d`);
+  const filteredCustomerMarkers = [
+    'Record date filter',
+    'Filtered bookings',
+    'Filtered chat rooms',
+    'Filtered activity',
+  ];
+  const missingFilteredCustomerMarkers = filteredCustomerMarkers.filter(
+    (marker) => !filteredCustomerBody.includes(marker),
+  );
+  if (missingFilteredCustomerMarkers.length > 0) {
+    throw new Error(
+      `${customerPath}?range=7d is missing expected markers: ${missingFilteredCustomerMarkers.join(', ')}`,
+    );
+  }
+  console.log(`PASS ${customerPath}?range=7d`);
 }
 
 const bookingsBody = await fetchPage('/bookings');
