@@ -213,6 +213,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const dispatchHandoff = buildPartnerDispatchHandoff(allProviders, opsPolicy);
   const dailyActionQueue = buildPartnerDailyActionQueue(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
+  const filterSummary = buildPartnerFilterSummary(providers, allProviders, opsPolicy, activeFilters.length);
   const partnerOperationRows = visibleProviders.map((provider) =>
     buildPartnerOperationRow(provider, opsPolicy),
   );
@@ -433,6 +434,32 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           )}
         </form>
       </div>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Current filter summary</h2>
+            <p className="muted">
+              A factual snapshot of the partner rows currently loaded on this page before export, review,
+              dispatch checks, or account follow-up.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerSortLabel(filters.sort)}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+          {filterSummary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small className="muted">{item.detail}</small>
+              {item.href ? (
+                <Link className="text-link" href={item.href}>
+                  Open subset
+                </Link>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </section>
       <div className="grid" style={{ marginBottom: 16 }}>
         {summary.map(([label, value]) => (
           <div className="card" key={label}>
@@ -3774,6 +3801,76 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
     ['Device checks', deviceRisk.toString()],
     ['Ready for dispatch', readyNow.toString()],
   ] as const;
+}
+
+function buildPartnerFilterSummary(
+  providers: AdminProvider[],
+  allProviders: AdminProvider[],
+  opsPolicy: ProviderOpsPolicy,
+  activeFilterCount: number,
+) {
+  const directReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length;
+  const backupReady = providers.filter(
+    (provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible,
+  ).length;
+  const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
+  const locationNeedsRefresh = providers.filter(
+    (provider) => providerLocationStatus(provider, opsPolicy) !== 'recent',
+  ).length;
+  const kycOrDocumentWork = providers.filter(
+    (provider) =>
+      partnerNeedsKycReview(provider) ||
+      missingApprovedRequiredKycDocuments(provider).length > 0 ||
+      (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
+  ).length;
+  const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
+
+  return [
+    {
+      label: 'Filtered rows',
+      value: `${providers.length}/${allProviders.length}`,
+      detail:
+        activeFilterCount > 0
+          ? `${activeFilterCount} active filter(s) are narrowing the partner list`
+          : 'No active filters, full partner list is available for export',
+    },
+    {
+      label: 'Direct ready',
+      value: directReady.toString(),
+      detail: 'Can accept a direct customer request with current policy gates',
+      href: '/partners?review=direct-ready',
+    },
+    {
+      label: '10km backup ready',
+      value: backupReady.toString(),
+      detail: `Can join fallback matching inside ${formatDistanceMeters(opsPolicy.backupRadiusMeters)}`,
+      href: '/partners?review=backup-ready',
+    },
+    {
+      label: 'Wallet settlement',
+      value: walletDebt.toString(),
+      detail: 'Negative wallet balance blocks new booking acceptance',
+      href: '/partners?review=cash-debt',
+    },
+    {
+      label: 'Location refresh',
+      value: locationNeedsRefresh.toString(),
+      detail: `Location older than ${opsPolicy.staleLocationMinutes}m, expired, or missing`,
+      href: '/partners?review=location',
+    },
+    {
+      label: 'KYC/doc work',
+      value: kycOrDocumentWork.toString(),
+      detail: 'Identity, selfie, or required document items needing completion or review',
+      href: '/partners?review=kyc',
+    },
+    {
+      label: 'Push reachable',
+      value: pushReady.toString(),
+      detail: 'Partners with an enabled push device for request alerts',
+      href: '/partners?review=push',
+    },
+  ];
 }
 
 function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {

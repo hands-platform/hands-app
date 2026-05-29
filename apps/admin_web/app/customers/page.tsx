@@ -35,6 +35,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   const summary = buildCustomerSummary(rows);
   const recentActivityRows = rows.filter((row) => row.lastBookingAt || row.lastCompletedAt).slice(0, 8);
   const activeFilters = buildCustomerActiveFilters(filters);
+  const filterSummary = buildCustomerFilterSummary(rows, allRows, summary, activeFilters.length);
   const customerListCsvHref = buildCsvDataHref(
     rows.map((row) => ({
       customer_id: row.id,
@@ -215,6 +216,28 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
             </p>
           )}
         </form>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Current filter summary</h2>
+            <p className="muted">
+              A factual snapshot of the customer rows currently loaded on this page before export or follow-up
+              work.
+            </p>
+          </div>
+          <span className="pill pill-info">{filters.sort ? customerSortLabel(filters.sort) : 'Default'}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 14 }}>
+          {filterSummary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small className="muted">{item.detail}</small>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="grid" style={{ marginBottom: 16 }}>
@@ -709,6 +732,54 @@ function buildCustomerSummary(rows: ReturnType<typeof buildCustomerRow>[]) {
       .filter(Boolean)
       .sort((left, right) => dateMs(right) - dateMs(left))[0],
   };
+}
+
+function buildCustomerFilterSummary(
+  rows: ReturnType<typeof buildCustomerRow>[],
+  allRows: ReturnType<typeof buildCustomerRow>[],
+  summary: ReturnType<typeof buildCustomerSummary>,
+  activeFilterCount: number,
+) {
+  const totalBookings = rows.reduce((sum, row) => sum + row.bookingCount, 0);
+  const noAppSession = rows.filter((row) => !row.lastSeenAt).length;
+  const completedShare =
+    totalBookings > 0 ? Math.round((summary.completedBookings / totalBookings) * 100) : 0;
+
+  return [
+    {
+      label: 'Filtered rows',
+      value: `${rows.length}/${allRows.length}`,
+      detail:
+        activeFilterCount > 0
+          ? `${activeFilterCount} active filter(s) are narrowing the customer list`
+          : 'No active filters, full customer list is loaded',
+    },
+    {
+      label: 'Completed work',
+      value: summary.completedBookings.toString(),
+      detail: `${completedShare}% of booking records in this result are completed`,
+    },
+    {
+      label: 'Latest work',
+      value: summary.latestCompletedAt ? formatDate(summary.latestCompletedAt) : 'None',
+      detail: 'Most recent completed service in the current result',
+    },
+    {
+      label: 'No app session',
+      value: noAppSession.toString(),
+      detail: 'Customer accounts without a saved app session record',
+    },
+    {
+      label: 'Address follow-up',
+      value: summary.missingAddress.toString(),
+      detail: 'Customer profiles without saved or selected address records',
+    },
+    {
+      label: 'Payment follow-up',
+      value: summary.paymentIssues.toString(),
+      detail: 'Payment records that are not authorized or captured',
+    },
+  ];
 }
 
 function bookingServiceLabel(booking: NonNullable<AdminCustomer['bookings']>[number]) {
