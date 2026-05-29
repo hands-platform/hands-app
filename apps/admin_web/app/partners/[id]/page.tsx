@@ -237,6 +237,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     payoutOps,
     bookingAcceptance,
   );
+  const partnerOperatingChecklist = buildPartnerOperatingChecklist(
+    provider,
+    primaryBank,
+    payoutOps,
+    bookingAcceptance,
+    providerServicePricing,
+    dispatchPolicy,
+  );
 
   return (
     <>
@@ -360,6 +368,34 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <strong>{(provider.sessions ?? []).length + (provider.devices ?? []).length}</strong>
             <small>Sessions, devices, push, and location records.</small>
           </a>
+        </div>
+      </div>
+
+      <div className="card" id="partner-operating-checklist" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner operating checklist</h2>
+            <p className="muted">
+              Factual work-control checklist for support and operations. This does not score the partner; it
+              only shows whether bookings, payout, tax, location, and service setup need action.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerOperatingChecklist.length} check(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          {partnerOperatingChecklist.map((item) => (
+            <div className="setup-stage-item" key={item.area}>
+              <span>{item.area}</span>
+              <div>
+                <strong>{item.status}</strong>
+                <p className="muted">{item.detail}</p>
+                <span className={`pill ${pillClass(item.tone)}`}>{item.nextAction}</span>
+              </div>
+              <Link className="text-link" href={item.href}>
+                Open
+              </Link>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -1860,6 +1896,14 @@ type PartnerDetailOpsBadge = {
   detail: string;
   tone: ProviderOpsCard['tone'];
 };
+type PartnerOperatingChecklistItem = {
+  area: string;
+  status: string;
+  detail: string;
+  nextAction: string;
+  href: string;
+  tone: ProviderOpsCard['tone'];
+};
 
 type PartnerAcceptanceRepairCommand = {
   status: string;
@@ -2312,6 +2356,142 @@ function buildPartnerMasterFacts(
       label: 'Admin records',
       value: `${activeReports.length} open report(s) / ${activeSanctions.length} active sanction(s)`,
       helper: 'Factual records only; no person scoring is applied',
+    },
+  ];
+}
+
+function buildPartnerOperatingChecklist(
+  provider: ProviderDetail,
+  primaryBank: NonNullable<ProviderDetail['bankAccounts']>[number] | null,
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+  providerServicePricing: ReturnType<typeof buildProviderServicePricing>,
+  dispatchPolicy: PartnerDispatchPolicy,
+): PartnerOperatingChecklistItem[] {
+  const cashDebt = cashFeeDebtAmount(provider);
+  const missingKycDocs = missingApprovedRequiredKycDocuments(provider);
+  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
+  const taxReady = provider.taxProfile?.status === 'APPROVED';
+  const addressReady = Boolean(provider.residentialAddress?.trim());
+  const agreementsAccepted = provider.agreements?.length ?? 0;
+  const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
+  const locationFresh = locationMinutes <= dispatchPolicy.locationFreshnessMinutes;
+  const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
+  const deviceCount = provider.devices?.length ?? 0;
+  const sessionCount = provider.sessions?.length ?? 0;
+
+  return [
+    {
+      area: 'Account',
+      status: provider.blockedAt ? 'Account hold' : 'Account open',
+      detail: provider.blockedAt
+        ? (provider.blockedReason ?? 'Account is held by admin.')
+        : 'No account hold is currently recorded.',
+      nextAction: provider.blockedAt ? 'Review account hold' : 'No account action',
+      href: `/partners/${provider.id}#admin`,
+      tone: provider.blockedAt ? 'blocked' : 'done',
+    },
+    {
+      area: 'Booking',
+      status: bookingAcceptance.canAccept ? 'Can accept bookings' : 'Booking acceptance on hold',
+      detail: bookingAcceptance.primaryReason,
+      nextAction: bookingAcceptance.canAccept ? 'Ready for requests' : 'Resolve booking gate',
+      href: `/partners/${provider.id}#booking-chat-records`,
+      tone: bookingAcceptance.canAccept ? 'done' : 'blocked',
+    },
+    {
+      area: 'Cash',
+      status: cashDebt > 0 ? 'Cash fee debt exists' : 'Cash fee clear',
+      detail:
+        cashDebt > 0
+          ? `Partner wallet has ${formatCurrency(cashDebt)} unpaid HANDS commission from cash bookings.`
+          : 'No unpaid cash commission is blocking new booking acceptance.',
+      nextAction: cashDebt > 0 ? 'Collect or offset debt' : 'No cash action',
+      href: '/cash-settlements',
+      tone: cashDebt > 0 ? 'blocked' : 'done',
+    },
+    {
+      area: 'KYC',
+      status:
+        provider.kyc?.status === 'APPROVED' && missingKycDocs.length === 0
+          ? 'KYC complete'
+          : 'KYC needs review',
+      detail:
+        missingKycDocs.length > 0
+          ? `Missing approved document(s): ${missingKycDocs.join(', ')}.`
+          : `KYC ${provider.kyc?.status ?? 'DRAFT'} / profile ${provider.verification?.status ?? 'DRAFT'}.`,
+      nextAction: missingKycDocs.length > 0 ? 'Review documents' : 'Check verification',
+      href: `/partners/${provider.id}#kyc`,
+      tone:
+        provider.kyc?.status === 'APPROVED' && missingKycDocs.length === 0
+          ? 'done'
+          : provider.kyc?.status === 'REJECTED'
+            ? 'blocked'
+            : 'pending',
+    },
+    {
+      area: 'Bank',
+      status: primaryBank?.status === 'APPROVED' ? 'Bank approved' : 'Bank setup needed',
+      detail: primaryBank
+        ? `${primaryBank.bankName} / ${primaryBank.accountHolderName} / ${primaryBank.status}`
+        : 'No primary bank account is saved.',
+      nextAction: primaryBank?.status === 'APPROVED' ? 'Ready for payout' : 'Review bank account',
+      href: `/partners/${provider.id}#bank`,
+      tone: primaryBank?.status === 'APPROVED' ? 'done' : 'pending',
+    },
+    {
+      area: 'Tax',
+      status: hasFirstRevenue
+        ? taxReady
+          ? 'Tax profile ready'
+          : 'Tax required after first earning'
+        : 'Tax deferred',
+      detail: hasFirstRevenue
+        ? `Tax ${provider.taxProfile?.status ?? 'MISSING'} / address ${
+            addressReady ? 'saved' : 'missing'
+          } / agreements ${agreementsAccepted}.`
+        : 'Do not force tax information before the first earning. Policy remains configured in admin.',
+      nextAction: hasFirstRevenue && !taxReady ? 'Collect tax profile' : 'Review tax policy',
+      href: hasFirstRevenue ? `/partners/${provider.id}#tax` : '/tax-policy',
+      tone: hasFirstRevenue && !taxReady ? 'pending' : 'done',
+    },
+    {
+      area: 'Payout',
+      status: payoutOps.status,
+      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate is clear or deferred.',
+      nextAction: payoutOps.tone === 'done' ? 'No payout action' : 'Review payout gate',
+      href: `/partners/${provider.id}#payout`,
+      tone: payoutOps.tone,
+    },
+    {
+      area: 'Services',
+      status:
+        providerServicePricing.readyCount > 0
+          ? `${providerServicePricing.readyCount} bookable option(s)`
+          : 'No bookable service price',
+      detail: `${providerServicePricing.rows.length} service row(s) loaded. Prices must respect admin minimum and step policy.`,
+      nextAction:
+        providerServicePricing.readyCount > 0 ? 'Ready for service selection' : 'Fix service pricing',
+      href: `/partners/${provider.id}#service-pricing`,
+      tone: providerServicePricing.readyCount > 0 ? 'done' : 'blocked',
+    },
+    {
+      area: 'Location',
+      status: locationFresh ? 'Location fresh' : 'Location refresh needed',
+      detail: `Last location is ${locationAgeLabel(
+        provider.currentLocationUpdatedAt,
+      )}; backup matching policy allows ${dispatchPolicy.locationFreshnessMinutes}m.`,
+      nextAction: locationFresh ? 'Ready for distance checks' : 'Ask app reopen/location update',
+      href: `/partners/${provider.id}#location`,
+      tone: locationFresh ? 'done' : 'pending',
+    },
+    {
+      area: 'App',
+      status: enabledPushCount > 0 ? 'App reachable' : 'Push device missing',
+      detail: `${enabledPushCount} enabled push device(s), ${deviceCount} device row(s), ${sessionCount} session row(s).`,
+      nextAction: enabledPushCount > 0 ? 'Can receive alerts' : 'Register device token',
+      href: `/partners/${provider.id}#app-activity`,
+      tone: enabledPushCount > 0 ? 'done' : 'pending',
     },
   ];
 }

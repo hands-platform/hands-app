@@ -256,6 +256,8 @@ if (providerLinkMatch) {
       'Partner ops command center',
       'Partner master facts',
       'Partner full record index',
+      'Partner operating checklist',
+      'Factual work-control checklist',
       'Booking and chat records',
       'Recent app and operations activity',
       'Booking acceptance decision',
