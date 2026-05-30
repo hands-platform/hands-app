@@ -393,12 +393,17 @@ if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
   const bookingBody = await fetchPage(bookingPath);
   const bookingMarkers = [
-      'Booking full record index',
-      'Chat lifecycle and retention',
-      'Open customer record',
-      'Partner record link',
-      'Booking stage snapshot',
-      'Applied operations policy',
+    'Booking full record index',
+    'Chat lifecycle and retention',
+    'Open customer record',
+    'Partner record link',
+    'Booking stage snapshot',
+    'Applied operations policy',
+    'Payment and refund',
+    'Finance trace',
+    'Chat transcript',
+    'Location trail',
+    'Booking alert trace',
     'Dispatch candidate decision matrix',
     'Excluded partner groups',
     'Backup partner supply for this booking',
