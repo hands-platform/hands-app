@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HANDS IA and Flow Report</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f7faf2;
+        color: #172019;
+      }
+      main {
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 40px 20px;
+      }
+      section {
+        background: #ffffff;
+        border: 1px solid #dfe8d8;
+        border-radius: 8px;
+        padding: 24px;
+        margin: 16px 0;
+      }
+      h1 {
+        font-size: 34px;
+        margin: 0 0 12px;
+      }
+      h2 {
+        margin-top: 0;
+      }
+      a {
+        color: #386f2d;
+        font-weight: 700;
+      }
+      ul {
+        line-height: 1.8;
+      }
+      .pill {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #e5f3dc;
+        margin-right: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>HANDS IA and Flow Report</h1>
+      <p>
+        Glow static-analysis material was used only as a legal reference for broad flow
+        organization. HANDS keeps its own Vietnam-only product scope, backend, database,
+        admin, and mobile app architecture.
+      </p>
+      <p>
+        <span class="pill">Vietnam only</span>
+        <span class="pill">Customer App</span>
+        <span class="pill">Partner App</span>
+        <span class="pill">Admin</span>
+      </p>
+
+      <section>
+        <h2>Scope</h2>
+        <ul>
+          <li>Customer app, partner app, admin dashboard are separated.</li>
+          <li>Country selection, affiliate, store member, and franchise flows are excluded.</li>
+          <li>Partner terminology is used for visible product/admin language.</li>
+          <li>Existing NestJS, Prisma, PostgreSQL/PostGIS, Redis, BullMQ, Flutter, and Next.js stack stays intact.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Generated Documents</h2>
+        <ul>
+          <li><a href="./01-customer-app-ia.md">01-customer-app-ia.md</a></li>
+          <li><a href="./02-partner-app-ia.md">02-partner-app-ia.md</a></li>
+          <li><a href="./03-admin-ia.md">03-admin-ia.md</a></li>
+          <li><a href="./04-customer-flow.md">04-customer-flow.md</a></li>
+          <li><a href="./05-partner-flow.md">05-partner-flow.md</a></li>
+          <li><a href="./06-booking-flow.md">06-booking-flow.md</a></li>
+          <li><a href="./07-auth-flow.md">07-auth-flow.md</a></li>
+          <li><a href="./08-payment-flow.md">08-payment-flow.md</a></li>
+          <li><a href="./09-chat-flow.md">09-chat-flow.md</a></li>
+          <li><a href="./10-settlement-flow.md">10-settlement-flow.md</a></li>
+          <li><a href="./11-page-specs-customer.md">11-page-specs-customer.md</a></li>
+          <li><a href="./12-page-specs-partner.md">12-page-specs-partner.md</a></li>
+          <li><a href="./13-api-mapping.md">13-api-mapping.md</a></li>
+          <li><a href="./14-db-domain-mapping.md">14-db-domain-mapping.md</a></li>
+          <li><a href="./15-dev-implementation-plan.md">15-dev-implementation-plan.md</a></li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Next Recommended Work</h2>
+        <ul>
+          <li>Turn the docs into admin checklist issues.</li>
+          <li>Reconcile product booking statuses with the current Prisma enum without breaking existing flows.</li>
+          <li>Continue deepening Customer and Partner detail pages with factual activity records and chat archive access.</li>
+        </ul>
+      </section>
+    </main>
+  </body>
+</html>
