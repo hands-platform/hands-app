@@ -383,7 +383,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <label>
             Sort
             <select name="sort" defaultValue={filters.sort}>
-              <option value="ops-priority">Operations priority</option>
+              <option value="ops-priority">Checklist order</option>
               <option value="last-work">Last completed work</option>
               <option value="completed-count">Completed work count</option>
               <option value="last-activity">Last app activity</option>
@@ -734,7 +734,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <table className="table service-trace">
             <thead>
               <tr>
-                <th>Priority</th>
+                <th>Order</th>
                 <th>Partner</th>
                 <th>Work lane</th>
                 <th>Current blocker</th>
@@ -1127,10 +1127,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner priority lane</h2>
+            <h2>Partner checklist lane</h2>
             <p className="muted">
-              The next operators should open these partner profiles first. This is derived from profile, KYC,
-              document, bank, tax, location, and push readiness.
+              Suggested operator order for fixing factual blockers. This is not a partner score; it is derived
+              from profile, KYC, document, bank, tax, wallet, location, and push readiness.
             </p>
           </div>
           <span className={`pill ${priorityLane.blockedCount === 0 ? 'pill-success' : 'pill-danger'}`}>
@@ -4252,7 +4252,7 @@ function buildProviderActiveFilters(filters: ProviderFilters) {
           kind: 'sort',
           value: filters.sort,
           label: `Sort: ${partnerSortLabel(filters.sort)}`,
-          description: 'Partner list sort order is changed for a specific operations review.',
+          description: 'Partner list sort order is changed for a specific checklist review.',
         }
       : null,
   ].filter(Boolean) as Array<{ kind: string; value: string; label: string; description: string }>;
@@ -4352,7 +4352,7 @@ function partnerSortLabel(sort: string) {
   if (sort === 'location-freshness') return 'location freshness';
   if (sort === 'wallet-debt') return 'wallet debt first';
   if (sort === 'name') return 'name';
-  return 'operations priority';
+  return 'checklist order';
 }
 
 function filterProviders(
