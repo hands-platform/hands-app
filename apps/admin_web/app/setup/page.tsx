@@ -331,6 +331,55 @@ const externalRegistrationPlan = [
   },
 ];
 
+const projectControlSequence = [
+  {
+    phase: 'Phase A',
+    title: 'Admin operating core',
+    status: 'Active now',
+    detail:
+      'Keep customer, partner, booking, payment, wallet, chat archive, service pricing, tax, and operations policy visible from admin.',
+  },
+  {
+    phase: 'Phase B',
+    title: 'Backend rule consistency',
+    status: 'Next',
+    detail:
+      'Align admin-configurable rules with booking acceptance, 10 minute response windows, 10km backup invitations, wallet gates, fees, and tax logs.',
+  },
+  {
+    phase: 'Phase C',
+    title: 'Mobile E2E hardening',
+    status: 'After rules',
+    detail:
+      'Run customer and partner flows through address selection, direct booking, backup matching, chat, location share, completion, and wallet effects.',
+  },
+  {
+    phase: 'Phase D',
+    title: 'Production integrations',
+    status: 'Deferred',
+    detail:
+      'Connect Vonage, OneSignal, MoMo, VNPay, production storage/CDN, and Android release signing only after local E2E remains stable.',
+  },
+  {
+    phase: 'Phase E',
+    title: 'Design and localization',
+    status: 'Later',
+    detail:
+      'Apply the final Figma design and language packs after the operational flow stops changing daily.',
+  },
+];
+
+const verifiedBaseline = [
+  'API typecheck and build pass.',
+  'Admin typecheck, build, and 53-page smoke pass.',
+  'Customer Flutter analyze/test pass.',
+  'Partner Flutter analyze/test pass.',
+  'Firebase imports are removed from mobile apps.',
+  'MapTiler and Geoapify checks pass.',
+  'Supabase schema guard passes.',
+  'Secret leak guard passes.',
+];
+
 export default async function SetupPage() {
   const readiness = await apiGet<AdminExternalReadiness>('/health/external', {
     ok: false,
@@ -396,6 +445,59 @@ export default async function SetupPage() {
           value={summary.missing}
           helper="Secret values are never displayed here."
         />
+      </section>
+
+      <section className="detail-grid" style={{ marginBottom: 16 }}>
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Master progress control</h2>
+              <p className="muted">
+                This is the single operating order for HANDS MVP work. Keep new requests inside this sequence
+                unless an urgent production blocker appears.
+              </p>
+            </div>
+            <span className="signal signal-info">Roadmap locked</span>
+          </div>
+          <div className="setup-stage-list">
+            {projectControlSequence.map((item) => (
+              <div className="setup-stage-item" key={item.phase}>
+                <span>{item.phase}</span>
+                <strong>{item.title}</strong>
+                <p>{item.detail}</p>
+                <small>{item.status}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Verified baseline</h2>
+              <p className="muted">
+                These checks were used to reset the project state before continuing. If one fails later, fix it
+                before moving to the next feature.
+              </p>
+            </div>
+            <span className="signal signal-ok">{verifiedBaseline.length} checks</span>
+          </div>
+          <div className="setup-command-list">
+            {verifiedBaseline.map((item) => (
+              <code key={item}>{item}</code>
+            ))}
+          </div>
+          <div className="setup-command-block" style={{ marginTop: 16 }}>
+            <h3>Single source of truth</h3>
+            <p className="muted">
+              Update this file whenever a phase changes, a skipped item is resumed, or a new external dependency
+              becomes required.
+            </p>
+            <div className="setup-command-list">
+              <code>docs\architecture\master-progress-roadmap.md</code>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -504,6 +606,7 @@ export default async function SetupPage() {
             </p>
             <div className="setup-command-list">
               <code>docs\architecture\operator-registration-plan.md</code>
+              <code>docs\architecture\master-progress-roadmap.md</code>
               <code>infra\setup\.generated\hands-external-registration-pack.md</code>
               <code>infra\supabase\.generated\hands-staging-setup.sql</code>
             </div>
