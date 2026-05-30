@@ -914,7 +914,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card" id="customer">
-          <h2>Customer</h2>
+          <div className="risk-watch-header">
+            <h2>Customer</h2>
+            {booking.customerProfile?.id && (
+              <Link className="text-link" href={`/customers/${booking.customerProfile.id}`}>
+                Open customer record
+              </Link>
+            )}
+          </div>
           <InfoRow label="Name" value={booking.customerProfile?.user?.fullName ?? 'Customer'} />
           <InfoRow label="Phone" value={booking.customerProfile?.user?.phone ?? 'No phone'} />
           <InfoRow label="Address" value={addressLine} />
@@ -946,7 +953,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card" id="handoff">
-          <h2>Partner handoff</h2>
+          <div className="risk-watch-header">
+            <h2>Partner handoff</h2>
+            {finalProvider?.id && (
+              <Link className="text-link" href={`/partners/${finalProvider.id}`}>
+                Open partner record
+              </Link>
+            )}
+            {!finalProvider?.id && <span className="pill pill-neutral">Partner record link pending</span>}
+          </div>
           <InfoRow label="Preferred" value={providerName(booking.preferredProvider)} />
           <InfoRow label="Final" value={providerName(finalProvider)} />
           <InfoRow label="Final phone" value={finalProvider?.user?.phone ?? 'No phone'} />
@@ -988,6 +1003,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
                     {participant.status}
                   </span>
                   <div className="muted">{distanceLabel(participant.distanceMeters)}</div>
+                  {participant.providerProfile?.id && (
+                    <Link className="text-link" href={`/partners/${participant.providerProfile.id}`}>
+                      Open partner record
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}

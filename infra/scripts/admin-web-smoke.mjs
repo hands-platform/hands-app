@@ -371,6 +371,8 @@ if (bookingLinkMatch) {
   const bookingMarkers = [
       'Booking full record index',
       'Chat lifecycle and retention',
+      'Open customer record',
+      'Partner record link',
       'Booking stage snapshot',
       'Applied operations policy',
     'Dispatch candidate decision matrix',
