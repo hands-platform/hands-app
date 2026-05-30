@@ -88,6 +88,20 @@ const pages = [
     ],
   },
   {
+    path: '/chat-archive',
+    markers: [
+      'Chat Archive',
+      'Chat archive index',
+      'Message transcript preview',
+      'Export messages CSV',
+      'Admin retained',
+    ],
+  },
+  {
+    path: '/chat-archive?sender=partner&range=30d',
+    markers: ['Chat Archive', 'Sender', 'Message transcript preview'],
+  },
+  {
     path: '/customers?sort=last-work',
     markers: ['Customer Management', 'Sort: last completed work', 'All customers'],
   },

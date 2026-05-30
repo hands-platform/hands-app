@@ -300,6 +300,11 @@ export class AdminController {
     return this.admin.listBookings();
   }
 
+  @Get('chat-archive')
+  chatArchive() {
+    return this.admin.listChatArchive();
+  }
+
   @Get('bookings/:id')
   bookingDetail(@Param('id') id: string) {
     return this.admin.getBookingDetail(id);

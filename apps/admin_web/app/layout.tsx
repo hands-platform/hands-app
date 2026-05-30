@@ -15,6 +15,7 @@ const navSections = [
     label: 'Customers',
     links: [
       ['/customers', 'Customer List'],
+      ['/chat-archive', 'Chat Archive'],
       ['/reviews', 'Reviews'],
       ['/coupons', 'Coupons'],
       ['/notifications', 'Notifications'],

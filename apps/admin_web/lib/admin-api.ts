@@ -400,6 +400,9 @@ export function providerDocumentReviewHint(type?: string | null) {
 
 export type AdminBooking = {
   id: string;
+  customerProfileId?: string;
+  preferredProviderId?: string | null;
+  selectedProviderId?: string | null;
   status: string;
   createdAt?: string;
   updatedAt?: string;
@@ -459,7 +462,7 @@ export type AdminBooking = {
   } | null;
   refunds?: AdminRefund[];
   earning?: AdminEarning | null;
-  customerProfile?: { user?: { fullName?: string | null; phone?: string } };
+  customerProfile?: { id?: string; user?: { fullName?: string | null; phone?: string } };
   selectedProvider?: {
     id?: string;
     displayName?: string | null;

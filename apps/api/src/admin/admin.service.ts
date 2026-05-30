@@ -1070,6 +1070,34 @@ export class AdminService {
     });
   }
 
+  listChatArchive() {
+    return this.prisma.booking.findMany({
+      where: {
+        chatRoom: { isNot: null },
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 200,
+      include: {
+        customerProfile: { include: { user: true } },
+        preferredProvider: { include: { user: true } },
+        selectedProvider: { include: { user: true } },
+        participants: { include: { providerProfile: { include: { user: true } } } },
+        services: { include: { service: true } },
+        payment: true,
+        review: true,
+        chatRoom: {
+          include: {
+            messages: {
+              orderBy: { createdAt: 'asc' },
+              take: 200,
+              include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
+            },
+          },
+        },
+      },
+    });
+  }
+
   async getBookingDetail(id: string) {
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id },
