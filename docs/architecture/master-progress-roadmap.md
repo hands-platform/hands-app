@@ -28,7 +28,8 @@ Checked commands:
 - `npm.cmd run typecheck`: PASS
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
 - `npm.cmd run build --workspace @massage-vn/admin-web`: PASS
-- `node infra/scripts/admin-web-smoke.mjs`: PASS, 53 admin pages. On the current dev server this can take about 150 seconds, so short shell timeouts may fail even when the app is healthy.
+- `node infra/scripts/admin-web-smoke.mjs`: PASS, 52 admin pages plus dynamic detail checks. On the current dev server this can take about 130-170 seconds, so short shell timeouts may fail even when the app is healthy.
+- `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 10 tests
 - `flutter analyze` in partner app: PASS
@@ -74,6 +75,7 @@ Admin dashboard:
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.
+- Admin smoke tests now support targeted page checks through `ADMIN_WEB_SMOKE_PATHS`, while full smoke still verifies the full admin surface.
 
 Customer mobile app:
 
@@ -111,7 +113,7 @@ These are intentionally not blockers for local MVP development:
 
 Rule: Do not let these block admin/backend/mobile local flow work. Keep them visible in setup docs and checks.
 
-## Current Fragmentation Risks
+## Current Fragmentation Watch Items
 
 The codebase is healthy, but the work can become fragmented in these areas:
 
