@@ -1059,8 +1059,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div className="card">
             <h3>City supply lanes</h3>
             <p className="muted">
-              Use this to decide where partner onboarding, location refresh, or push registration should be
-              pushed first.
+              Use this to see which partner onboarding, location refresh, or push registration records need
+              operator attention.
             </p>
             <div className="setup-stage-list" style={{ marginTop: 12 }}>
               {dispatchForecast.supplyLanes.map((lane) => (
@@ -1097,7 +1097,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Review queue</h2>
             <p className="muted">
-              Prioritized partner issues for KYC, documents, payout readiness, device alerts, and dispatch
+              Grouped partner records for KYC, documents, payout readiness, device alerts, and dispatch
               location freshness.
             </p>
           </div>
