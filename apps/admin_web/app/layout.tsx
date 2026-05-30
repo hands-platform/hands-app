@@ -26,7 +26,6 @@ const navSections = [
     links: [
       ['/partners', 'Partner List'],
       ['/partner-controls', 'Partner Controls'],
-      ['/partner-controls', 'Partner Activity Checks'],
       ['/app-sessions', 'App Sessions'],
     ],
   },
