@@ -612,7 +612,7 @@ export default async function DashboardPage() {
           ))}
           {shiftBriefing.nextActions.length === 0 && (
             <div className="ops-task-note">
-              <strong>No urgent queue item is visible.</strong>
+              <strong>No same-shift queue item is visible.</strong>
               <p className="muted">
                 Keep watching live matching, partner locations, cash debt, and notification delivery as demand
                 changes.
@@ -1467,7 +1467,7 @@ export default async function DashboardPage() {
               </p>
             </div>
             <span className={`signal ${queueSummary.high > 0 ? 'signal-warn' : 'signal-ok'}`}>
-              {queueSummary.high > 0 ? `${queueSummary.high} urgent` : 'No urgent queue'}
+              {queueSummary.high > 0 ? `${queueSummary.high} same-shift` : 'No same-shift queue'}
             </span>
           </div>
           <div className="service-trace-summary">
@@ -1751,7 +1751,7 @@ function buildMatchingControlRoom(
       ),
     );
     const backupWindowOpen = bookingImmediateBackup || firstPickDeclined || expired;
-    const urgent = expired || freshEligible.length === 0;
+    const needsSameShiftDispatch = expired || freshEligible.length === 0;
     const customerReadyToChoose = participantCount > 0;
     const hasCustomerPin = Boolean(coordinate);
     const customerState = customerReadyToChoose ? 'Customer can choose' : 'Customer waiting';
@@ -1795,8 +1795,8 @@ function buildMatchingControlRoom(
       id: booking.id,
       title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
       detail,
-      status: urgent ? 'Dispatch now' : 'Watch',
-      pillClass: urgent ? 'pill-danger' : 'pill-warn',
+      status: needsSameShiftDispatch ? 'Dispatch now' : 'Watch',
+      pillClass: needsSameShiftDispatch ? 'pill-danger' : 'pill-warn',
       eligibleCount: eligiblePartners.length,
       freshEligibleCount: freshEligible.length,
       expired,
@@ -4463,7 +4463,7 @@ function severityPriorityValue(severity: OpsQueueItem['severity']) {
 }
 
 function opsQueueSeverityLabel(severity: OpsQueueItem['severity']) {
-  if (severity === 'high') return 'URGENT';
+  if (severity === 'high') return 'SAME-SHIFT';
   if (severity === 'medium') return 'WATCH';
   return 'INFO';
 }

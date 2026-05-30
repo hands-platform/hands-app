@@ -58,7 +58,6 @@ const pages = [
     ],
   },
   { path: '/bookings?view=attention', markers: ['Booking Monitor', 'Attention queue'] },
-  { path: '/bookings?view=high-risk', markers: ['Booking Monitor', 'Attention queue'] },
   { path: '/bookings?view=first-pick', markers: ['Booking Monitor', 'Stage 1 first-pick'] },
   { path: '/bookings?view=backup', markers: ['Booking Monitor', 'Stage 2 backup'] },
   { path: '/bookings?view=customer-choice', markers: ['Booking Monitor', 'Stage 3 choice'] },

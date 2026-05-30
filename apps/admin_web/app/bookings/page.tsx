@@ -16,7 +16,6 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
   const status = Array.isArray(statusValue) ? statusValue[0] : statusValue;
   if (
     view === 'attention' ||
-    view === 'high-risk' ||
     view === 'matching' ||
     view === 'first-pick' ||
     view === 'backup' ||
@@ -33,7 +32,7 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     view === 'no-show' ||
     view === 'all'
   ) {
-    return view === 'high-risk' ? 'attention' : view;
+    return view;
   }
   if (status === 'EXPIRED') {
     return 'expired';

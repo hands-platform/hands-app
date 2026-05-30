@@ -539,7 +539,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
           <div>
             <h2>Next operator actions</h2>
             <p className="muted">
-              Highest priority bookings sorted by customer impact, finance follow-up, and operational aging.
+              Booking checklist ordered by customer wait, finance follow-up, and operational aging.
             </p>
           </div>
           <span className={`pill ${nextActions.length > 0 ? 'pill-warn' : 'pill-success'}`}>
@@ -560,7 +560,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               </div>
               <p className="muted">{item.detail}</p>
               <p>
-                <strong>{item.owner}</strong> / {item.priority}: {item.operatorAction}
+                <strong>{item.owner}</strong> / {actionOrderLabel(item.priority)}: {item.operatorAction}
               </p>
               <p className="muted">
                 {bookingCustomerLabel(item.booking)} / {bookingProviderLabel(item.booking)}
@@ -568,7 +568,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               <div className="participant-list" style={{ marginTop: 10 }}>
                 <span className="pill">{item.booking.status}</span>
                 <span className="pill">{item.owner}</span>
-                <span className="pill">{item.priority}</span>
+                <span className="pill">{actionOrderLabel(item.priority)}</span>
                 <span className="pill">{bookingAgeLabel(item.booking, currentTimeMs)}</span>
                 {item.tags.map((tag) => (
                   <span className="pill" key={tag}>
@@ -857,7 +857,7 @@ const bookingViewOptions: Array<{
     view: 'attention',
     label: 'Attention queue',
     description: 'bookings with expired matching, unresolved payment, or missing chat after matching.',
-    operatorHint: 'Use this as the first dispatch triage view when the dashboard shows attention needed.',
+    operatorHint: 'Use this as the first dispatch checklist view when the dashboard shows attention needed.',
   },
   {
     view: 'matching',
@@ -1667,7 +1667,7 @@ function buildMatchingEscalationRows(
           title: 'First-pick pending with backup ready',
           detail: 'Backup partners are visible while the preferred partner still has first chance.',
           operatorAction:
-            'Let the timer run or guide the customer to select a backup partner if the request is urgent.',
+            'Let the timer run or guide the customer to select a backup partner when wait time is becoming visible.',
           tone: 'info',
           tags: [...baseTags, selectionPathLabel(booking)],
         };
@@ -1729,6 +1729,13 @@ function bookingDashboardTone(tone: BookingCommandLane['tone']) {
   if (tone === 'warn') return 'warn';
   if (tone === 'info') return 'info';
   return 'ok';
+}
+
+function actionOrderLabel(priority: BookingNextAction['priority']) {
+  if (priority === 'P0') return 'Same-shift';
+  if (priority === 'P1') return 'Active watch';
+  if (priority === 'P2') return 'Follow-up';
+  return 'Routine';
 }
 
 function commandToneLabel(tone: BookingCommandLane['tone']) {

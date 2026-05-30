@@ -705,7 +705,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <span
             className={`pill ${dispatchSteps.some((step) => step.priority === 'Now') ? 'pill-warn' : 'pill-success'}`}
           >
-            {dispatchSteps.filter((step) => step.priority === 'Now').length} urgent
+            {dispatchSteps.filter((step) => step.priority === 'Now').length} same-shift
           </span>
         </div>
         <div className="dispatch-checklist">
@@ -1634,7 +1634,7 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
   if (booking.chatRoom && booking.status === 'IN_SERVICE') {
     return 'Service is live. Keep chat and location visible until completion.';
   }
-  return 'No urgent action is required. Continue monitoring this booking from the timeline.';
+  return 'No same-shift action is required. Continue monitoring this booking from the timeline.';
 }
 
 function opsBadges(booking: AdminBookingDetail) {
@@ -2032,7 +2032,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
       priority: 'Done',
       title: 'Normal monitoring',
       detail:
-        'No urgent operator action is active. Keep this booking visible until the next status transition.',
+        'No same-shift operator action is active. Keep this booking visible until the next status transition.',
       owner: 'Operations',
       tone: 'pill-success',
     });
@@ -3034,7 +3034,7 @@ function bookingCustomerWaitPanel(
   let signalStatus = 'Monitor';
   let signalTone = 'pill-info';
   let headline = 'Booking is being monitored.';
-  let detail = 'No urgent matching handoff is visible.';
+  let detail = 'No same-shift matching handoff is visible.';
   let nextActionHref = `/bookings/${booking.id}`;
   let nextActionLabel = 'Stay on booking';
 
