@@ -66,9 +66,11 @@ Admin dashboard:
 - Booking monitor with matching stages, first-pick, backup, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Customer list and customer detail with activity, booking history, chat history, wallet/payment context, addresses, app sessions, notes, exports.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
+- Partner queue wording is checklist/order based, not score/ranking based. Operator ordering is for fixing factual blockers only.
 - Services page with service groups, duration options, minimum price, price step, payout policy, fee/tax visibility.
 - Tax policy page with versioned tax rules.
 - Operations policy page for matching and wallet gates.
+- Operations policy behavior is API-backed and smoke-tested for 10 minute first-pick response, 10km backup notification/visibility, customer final partner selection, and negative-wallet booking blocks.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.
@@ -223,8 +225,8 @@ The next safest implementation order is:
 
 1. Tighten customer and partner detail pages around factual activity and chat history.
 2. Make booking detail the strongest cross-linking source of truth.
-3. Review operations policy page and ensure the 10-minute/10km matching policy is both visible and API-backed.
-4. Add any missing backend tests for matching policy and wallet gate.
+3. Keep operations policy visible in admin and guarded by smoke/API tests whenever matching rules change.
+4. Add any missing backend tests for service pricing, payout/tax logs, and cash wallet debt.
 5. Then return to mobile E2E screens.
 
 ## Definition Of Done For Each Small Step

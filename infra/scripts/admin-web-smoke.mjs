@@ -22,6 +22,7 @@ const pages = [
       'Partners in app',
       'Partner dispatch control',
       'Acceptance unblock quick order',
+      'Operations checklist queue',
       'Matching ops',
       'Open matching timeline',
       '/operations-policy#policy-matching-provider-response-window-minutes',

@@ -1287,7 +1287,7 @@ export default async function DashboardPage() {
           <div>
             <h2>Partner dispatch control</h2>
             <p className="muted">
-              Priority partner queue for booking acceptance blockers, location readiness, first-revenue payout
+              Partner checklist queue for booking acceptance blockers, location readiness, first-revenue payout
               requirements, and app contactability.
             </p>
           </div>
@@ -1396,7 +1396,7 @@ export default async function DashboardPage() {
           <span
             className={`signal ${queue.some((item) => item.severity === 'high') ? 'signal-warn' : 'signal-ok'}`}
           >
-            {queue.some((item) => item.severity === 'high') ? 'Urgent priority open' : 'Stable'}
+            {queue.some((item) => item.severity === 'high') ? 'Checklist action open' : 'Stable'}
           </span>
         </div>
         {topCommandSignal && (
@@ -1460,9 +1460,9 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="risk-watch-header">
             <div>
-              <h2>Operations priority queue</h2>
+              <h2>Operations checklist queue</h2>
               <p className="muted">
-                Generated from the latest admin API snapshot. It orders customer protection, partner controls,
+                Generated from the latest admin API snapshot. It groups customer protection, partner controls,
                 payment release, cash debt, and payout recovery together.
               </p>
             </div>
@@ -1474,7 +1474,7 @@ export default async function DashboardPage() {
             <div>
               <span>Immediate checks</span>
               <strong>{queueSummary.high}</strong>
-              <small>Highest-priority actions</small>
+              <small>Same-shift checklist actions</small>
             </div>
             <div>
               <span>Customer protection</span>
@@ -1503,7 +1503,7 @@ export default async function DashboardPage() {
                 <h3>{queueSummary.first.label}</h3>
                 <p>{queueSummary.first.recommendedAction}</p>
                 <p className="muted">
-                  Owner: {queueSummary.first.owner} - Priority {queueSummary.first.priority} -{' '}
+                  Owner: {queueSummary.first.owner} - Checklist weight {queueSummary.first.priority} -{' '}
                   {queueSummary.first.detail}
                 </p>
               </div>
@@ -1521,7 +1521,7 @@ export default async function DashboardPage() {
               >
                 <div>
                   <span className="muted">
-                    {item.area} - {item.owner} - Priority {item.priority}
+                    {item.area} - {item.owner} - Checklist weight {item.priority}
                   </span>
                   <strong>{item.label}</strong>
                   <p className="muted">{item.detail}</p>
@@ -3970,7 +3970,7 @@ function buildShiftCommandBriefing(input: {
       'The current snapshot has no critical blocker. Keep the dispatch and finance lanes under observation.',
     primaryAction: {
       label: firstQueueItem
-        ? 'Open priority item'
+        ? 'Open checklist item'
         : firstSignal
           ? firstSignal.action
           : 'Open booking monitor',
@@ -4077,8 +4077,8 @@ function buildOperatorStartChecklist(input: {
       status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
       detail: cashDebtPartners
         ? `${cashDebtPartners} partner(s) have cash fee or tax debt that can block new booking acceptance.`
-        : `${highQueueCount} priority queue item(s), ${input.bookingOps.completedCloseoutRisk} closeout check(s).`,
-      action: cashDebtPartners ? 'Open cash settlements' : 'Open priority queue',
+        : `${highQueueCount} checklist item(s), ${input.bookingOps.completedCloseoutRisk} closeout check(s).`,
+      action: cashDebtPartners ? 'Open cash settlements' : 'Open checklist queue',
       href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',
       className: cashDebtPartners || highQueueCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebtPartners || highQueueCount ? 'pill-danger' : 'pill-success',
