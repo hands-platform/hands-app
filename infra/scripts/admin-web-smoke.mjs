@@ -259,13 +259,26 @@ const pages = [
   { path: '/tax-policy', markers: ['Tax policy', 'Policy health'] },
 ];
 
+const requestedSmokePaths = (process.env.ADMIN_WEB_SMOKE_PATHS ?? '')
+  .split(',')
+  .map((path) => path.trim())
+  .filter(Boolean);
+const smokePages =
+  requestedSmokePaths.length > 0
+    ? pages.filter((page) => requestedSmokePaths.includes(page.path))
+    : pages;
+
+if (requestedSmokePaths.length > 0 && smokePages.length === 0) {
+  throw new Error(`No admin smoke pages matched ADMIN_WEB_SMOKE_PATHS=${requestedSmokePaths.join(',')}`);
+}
+
 async function fetchPage(path, redirectDepth = 0, attempt = 0) {
   let response;
   try {
     response = await fetch(`${baseUrl}${path}`, { redirect: 'manual' });
   } catch (error) {
-    if (attempt < 2) {
-      await delay(750 * (attempt + 1));
+    if (attempt < 6) {
+      await delay(1_000 * (attempt + 1));
       return fetchPage(path, redirectDepth, attempt + 1);
     }
     throw error;
@@ -287,7 +300,16 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-for (const page of pages) {
+function shouldRunDeepSection(pathPrefix) {
+  if (requestedSmokePaths.length === 0) {
+    return true;
+  }
+  return requestedSmokePaths.some(
+    (path) => path === pathPrefix || path.startsWith(`${pathPrefix}/`) || path.startsWith(`${pathPrefix}?`),
+  );
+}
+
+for (const page of smokePages) {
   const body = await fetchPage(page.path);
   const missing = page.markers.filter((marker) => !body.includes(marker));
   if (missing.length > 0) {
@@ -296,7 +318,9 @@ for (const page of pages) {
   console.log(`PASS ${page.path}`);
 }
 
-const providersBody = await fetchPage('/providers');
+const providersBody = shouldRunDeepSection('/partners') || shouldRunDeepSection('/providers')
+  ? await fetchPage('/providers')
+  : '';
 const providerLinkMatch = providersBody.match(/href="\/(?:partners|providers)\/([^"]+)"/);
 if (providerLinkMatch) {
   const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
@@ -341,7 +365,7 @@ if (providerLinkMatch) {
   }
 }
 
-const customersBody = await fetchPage('/customers');
+const customersBody = shouldRunDeepSection('/customers') ? await fetchPage('/customers') : '';
 const customerLinkMatch = customersBody.match(/href="\/customers\/([^"]+)"/);
 if (customerLinkMatch) {
   const customerPath = `/customers/${customerLinkMatch[1]}`;
@@ -386,7 +410,7 @@ if (customerLinkMatch) {
   console.log(`PASS ${customerPath}?range=7d`);
 }
 
-const bookingsBody = await fetchPage('/bookings');
+const bookingsBody = shouldRunDeepSection('/bookings') ? await fetchPage('/bookings') : '';
 const bookingLinkMatch = bookingsBody.match(/href="\/bookings\/([^"]+)"/);
 if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
@@ -417,4 +441,4 @@ if (bookingLinkMatch) {
   console.log(`PASS ${bookingPath}`);
 }
 
-console.log(`Admin web smoke passed for ${pages.length} page(s) at ${baseUrl}.`);
+console.log(`Admin web smoke passed for ${smokePages.length} page(s) at ${baseUrl}.`);
