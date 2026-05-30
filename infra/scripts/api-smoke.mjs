@@ -1333,6 +1333,47 @@ assertBookingPricing('Direct provider custom-price', hybridBookingDetail, {
   paymentAmount: higherCustomerPrice,
 });
 assertBookingMatchingWindow('Direct provider custom-price', hybridBookingDetail, 10);
+const hybridBackupNotifications = await getJson('/notifications', backupProviderAuth.accessToken);
+const hybridBackupNotification = hybridBackupNotifications.find(
+  (notification) =>
+    notification.type === 'booking.backup_available' &&
+    notification.data?.bookingId === hybridBooking.id &&
+    notification.data?.providerProfileId === backupProviderAuth.user.providerProfile.id,
+);
+if (
+  !hybridBackupNotification ||
+  hybridBackupNotification.data?.backupProviderRadiusMeters !== 10000 ||
+  typeof hybridBackupNotification.data?.distanceMeters !== 'number' ||
+  hybridBackupNotification.data.distanceMeters > 10000
+) {
+  throw new Error(
+    `Direct booking should notify eligible 10km backup partners: ${JSON.stringify({
+      hybridBackupNotification,
+      hybridBackupNotifications,
+    })}`,
+  );
+}
+const hybridAdminBooking = await getJson(`/admin/bookings/${hybridBooking.id}`, adminAuth.accessToken);
+const hybridBackupNotificationTraces = Array.isArray(
+  hybridAdminBooking.metadata?.backupNotificationTraces,
+)
+  ? hybridAdminBooking.metadata.backupNotificationTraces
+  : [];
+const hybridInitialBackupTrace = hybridBackupNotificationTraces.find(
+  (trace) =>
+    trace.stage === 'initial_open' &&
+    trace.backupProviderRadiusMeters === 10000 &&
+    trace.providers?.some(
+      (provider) => provider.providerProfileId === backupProviderAuth.user.providerProfile.id,
+    ),
+);
+if (!hybridInitialBackupTrace || hybridInitialBackupTrace.notifiedCount < 1) {
+  throw new Error(
+    `Direct booking should persist backup notification trace metadata: ${JSON.stringify(
+      hybridBackupNotificationTraces,
+    )}`,
+  );
+}
 
 let preferredAcceptPolicyBooking;
 let preferredAcceptPolicyMatched;
