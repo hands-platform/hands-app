@@ -93,7 +93,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
           <p className="muted">
             Customer activity board for profile, booking history, completed work, chat archives, wallet view,
             saved addresses, app sessions, and push reachability. This page records facts only, not customer
-            priority scoring.
+            scoring.
           </p>
         </div>
         <div className="actions">
