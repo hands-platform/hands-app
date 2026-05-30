@@ -236,8 +236,17 @@ const pages = [
   { path: '/tax-policy', markers: ['Tax policy', 'Policy health'] },
 ];
 
-async function fetchPage(path, redirectDepth = 0) {
-  const response = await fetch(`${baseUrl}${path}`, { redirect: 'manual' });
+async function fetchPage(path, redirectDepth = 0, attempt = 0) {
+  let response;
+  try {
+    response = await fetch(`${baseUrl}${path}`, { redirect: 'manual' });
+  } catch (error) {
+    if (attempt < 2) {
+      await delay(750 * (attempt + 1));
+      return fetchPage(path, redirectDepth, attempt + 1);
+    }
+    throw error;
+  }
   const body = await response.text();
   if ([307, 308].includes(response.status) && redirectDepth < 3) {
     const location = response.headers.get('location');
@@ -249,6 +258,10 @@ async function fetchPage(path, redirectDepth = 0) {
     throw new Error(`${path} returned ${response.status}: ${body.slice(0, 240)}`);
   }
   return body;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 for (const page of pages) {
@@ -356,9 +369,10 @@ if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
   const bookingBody = await fetchPage(bookingPath);
   const bookingMarkers = [
-    'Booking full record index',
-    'Booking stage snapshot',
-    'Applied operations policy',
+      'Booking full record index',
+      'Chat lifecycle and retention',
+      'Booking stage snapshot',
+      'Applied operations policy',
     'Dispatch candidate decision matrix',
     'Excluded partner groups',
     'Backup partner supply for this booking',

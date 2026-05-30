@@ -66,6 +66,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const operationsTrace = bookingOperationsTrace(booking, booking.auditLogs ?? []);
   const bookingActivityRecords = buildBookingActivityRecords(booking, rawNotifications);
   const bookingActivitySummary = buildBookingActivitySummary(bookingActivityRecords);
+  const chatLifecycle = bookingChatLifecycle(booking, messages.length);
 
   return (
     <>
@@ -158,6 +159,41 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <strong>{bookingActivityRecords.length}</strong>
             <small>Date-ordered operational history.</small>
           </a>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Chat lifecycle and retention</h2>
+            <p className="muted">
+              Chat is a required operational handoff after matching/service start. Mobile apps may hide it
+              after service closeout, but admin keeps the full archive for support and dispute review.
+            </p>
+          </div>
+          <span className={`pill ${chatLifecycle.tone}`}>{chatLifecycle.status}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Mobile customer app</span>
+            <strong>{chatLifecycle.customerState}</strong>
+            <small>{chatLifecycle.customerDetail}</small>
+          </div>
+          <div>
+            <span>Mobile partner app</span>
+            <strong>{chatLifecycle.partnerState}</strong>
+            <small>{chatLifecycle.partnerDetail}</small>
+          </div>
+          <div>
+            <span>Admin archive</span>
+            <strong>{chatLifecycle.adminState}</strong>
+            <small>{chatLifecycle.adminDetail}</small>
+          </div>
+          <div>
+            <span>Room</span>
+            <strong>{chatLifecycle.roomLabel}</strong>
+            <small>{messages.length} message(s) retained.</small>
+          </div>
         </div>
       </section>
 
@@ -1126,6 +1162,51 @@ function ActionLink({ href, label }: { href: string; label: string }) {
       {label}
     </a>
   );
+}
+
+function bookingChatLifecycle(booking: AdminBookingDetail, messageCount: number) {
+  const roomLabel = booking.chatRoom ? shortId(booking.chatRoom.id) : 'No room yet';
+  const terminalStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
+
+  if (!booking.chatRoom) {
+    return {
+      status: 'Not created',
+      tone: 'pill-neutral',
+      customerState: 'Locked',
+      customerDetail: 'Customer chat appears after final partner handoff.',
+      partnerState: 'Locked',
+      partnerDetail: 'Partner chat appears after match/service start.',
+      adminState: 'Waiting',
+      adminDetail: 'No transcript exists yet.',
+      roomLabel,
+    };
+  }
+
+  if (terminalStatuses.has(booking.status)) {
+    return {
+      status: 'Admin retained',
+      tone: 'pill-success',
+      customerState: 'Hidden after closeout',
+      customerDetail: 'Customer app can hide the active room when the service record is closed.',
+      partnerState: 'Hidden after closeout',
+      partnerDetail: 'Partner app can hide the active room after completion or closeout.',
+      adminState: 'Archived',
+      adminDetail: `${messageCount} message(s) kept for support, refund, and dispute review.`,
+      roomLabel,
+    };
+  }
+
+  return {
+    status: 'Live',
+    tone: 'pill-info',
+    customerState: 'Visible',
+    customerDetail: 'Customer can coordinate with the assigned partner.',
+    partnerState: 'Visible',
+    partnerDetail: 'Partner can message the customer during handoff and service.',
+    adminState: 'Live archive',
+    adminDetail: `${messageCount} message(s) visible now and retained after closeout.`,
+    roomLabel,
+  };
 }
 
 function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
