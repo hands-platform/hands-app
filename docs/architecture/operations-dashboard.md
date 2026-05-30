@@ -24,17 +24,17 @@ The dashboard answers these shift questions:
 | --- | --- | --- |
 | Total reservation volume | `Total bookings` | Confirm the loaded admin snapshot size before making shift decisions. |
 | Current matching pressure | `Open matching`, `Matching control room` | Open Booking Monitor and protect waiting customers before the response window expires. |
-| Completed services | `Completed bookings`, `Closeout risk` | Confirm capture, earning, tax, fee, wallet, review, and notification closeout. |
+| Completed services | `Completed bookings`, `Closeout follow-up` | Confirm capture, earning, tax, fee, wallet, review, and notification closeout. |
 | Cancelled reservations | `Cancelled bookings` | Check refund or payment release outcome. |
-| No-show risk | `No-show signal` | Review payment, customer communication, and partner settlement impact. |
+| No-show follow-up | `No-show signal` | Review payment, customer communication, and partner settlement impact. |
 | Hourly demand | `Hourly booking demand` | Plan partner supply by time slot and identify peak-hour gaps. |
 | Regional demand | `Regional booking demand` | Compare demand by city/district and partner location freshness. |
 | Active app presence | `Customers in app`, `Partners in app`, `Active customers` | Distinguish live app demand/supply from stale users. |
 | Partner supply | `Online partners`, `Partner dispatch control` | Review direct-ready, backup-ready, blocked, or stale partners. |
 | Cash settlement pressure | `Cash debt` | Open Cash Settlements before negative-wallet partners accept more bookings. |
 | Finance pressure | `Payment holds`, `Available payout`, `Open payout batches` | Open Payments, Earnings, or Payouts to close money tasks. |
-| Notification risk | `Failed notifications` | Retry or inspect disabled devices before customers or partners miss critical state changes. |
-| Prioritized next work | `Action queue`, `Shift command briefing`, `Opening shift checklist` | Follow the first recommended action instead of scanning pages manually. |
+| Notification follow-up | `Failed notifications` | Retry or inspect disabled devices before customers or partners miss critical state changes. |
+| Checklist next work | `Action queue`, `Shift command briefing`, `Opening shift checklist` | Follow the first recommended action instead of scanning pages manually. |
 
 ## Shift Flow
 
@@ -42,7 +42,7 @@ The dashboard answers these shift questions:
 2. Open the primary recommended action.
 3. Use `Opening shift checklist` to clear waiting customers, partner supply, cash debt, payouts, notifications, and setup blockers.
 4. Review `Policy outcome pulse` when matching outcomes look slow or unstable.
-5. Use `Matching control room` for open matching rows, timer risk, backup supply, saved policy snapshots, and partner location freshness.
+5. Use `Matching control room` for open matching rows, timer state, backup supply, saved policy snapshots, and partner location freshness.
 6. Use hourly and regional demand panels to decide whether to widen partner outreach, run incentives, or adjust staffing.
 7. Finish with `Action queue` and `Audit Log` so manual decisions remain traceable.
 
@@ -53,7 +53,7 @@ The dashboard links to these deeper operating pages:
 - `/bookings` for live booking, matching, no-show, closeout, and customer final selection.
 - `/operations-policy` for response windows, backup radius, wallet gates, cancellation/no-show policy, and owner decision backlog.
 - `/partners` for KYC, acceptance blockers, partner readiness, location freshness, device/push health, and payout/tax readiness.
-- `/partner-risk` for partner risk scoring and unblock actions.
+- `/partner-controls` for factual partner controls, account blocks, wallet debt, location freshness, device state, and unblock actions.
 - `/cash-settlements` for negative wallet debt created by cash bookings.
 - `/payments`, `/refunds`, `/earnings`, and `/payouts` for finance operations.
 - `/notifications` for failed delivery and disabled device review.

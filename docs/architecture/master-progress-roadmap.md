@@ -239,4 +239,4 @@ Every step should finish with:
 - Relevant smoke/test passes.
 - No secret leaks.
 - Git commit pushed to `develop`.
-- This roadmap updated if status or priority changes.
+- This roadmap updated if status, scope, or operating order changes.

@@ -71,7 +71,7 @@ Operators should use these screens together:
 - `/bookings?view=matching`: monitor live matching escalation, backup supply, customer final selection, and chat handoff.
 - `/bookings/:id`: inspect one booking's policy snapshot, participants, alerts, finance trace, and audit trace.
 - `/partners`: review partner acceptance blockers across wallet, account, location, push, KYC, and payout gates.
-- `/partner-risk`: drill into unblock actions for debt, risk, location, push, verification, tax, and payout readiness.
+- `/partner-controls`: drill into unblock actions for debt, location, push, verification, tax, payout readiness, and saved report/sanction records.
 - `/cash-settlements`, `/earnings`, `/payouts`, and `/payments`: settle or offset cash fee debt.
 - `/tax-policy` and `/services`: manage tax, fee, service duration, minimum price, price step, and payout matrix policy.
 
@@ -115,7 +115,7 @@ When a partner cannot accept a direct request or join backup matching, operators
    - Booking impact: missing tax profile should not block first booking acceptance.
    - Payout impact: after first earning, tax profile, tax address, and payout/tax agreements block payout or withdrawal until complete.
 
-This order is mirrored in `/partner-risk` under `Acceptance unblock playbook`.
+This order is mirrored in `/partner-controls` under `Acceptance unblock playbook`.
 
 ## No-Show Closeout
 
@@ -149,7 +149,7 @@ Admin visibility:
 - `apps/admin_web/app/bookings/[id]/page.tsx`
 - `apps/admin_web/app/notifications/page.tsx`
 - `apps/admin_web/app/partners/page.tsx`
-- `apps/admin_web/app/partner-risk/page.tsx`
+- `apps/admin_web/app/partner-controls/page.tsx` and `apps/admin_web/app/partner-risk/page.tsx`
 
 Legacy `/providers` and `/provider-risk` pages redirect to these canonical partner routes so older links keep working.
 
