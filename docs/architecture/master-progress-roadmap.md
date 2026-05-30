@@ -28,7 +28,7 @@ Checked commands:
 - `npm.cmd run typecheck`: PASS
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
 - `npm.cmd run build --workspace @massage-vn/admin-web`: PASS
-- `node infra/scripts/admin-web-smoke.mjs`: PASS, 53 admin pages
+- `node infra/scripts/admin-web-smoke.mjs`: PASS, 53 admin pages. On the current dev server this can take about 150 seconds, so short shell timeouts may fail even when the app is healthy.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 10 tests
 - `flutter analyze` in partner app: PASS
@@ -71,6 +71,7 @@ Admin dashboard:
 - Operations policy page for matching and wallet gates.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
+- Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.
 
 Customer mobile app:
 
@@ -141,6 +142,7 @@ Goal: Admin staff can understand and control the business without needing databa
 
 5. Setup page as operational checklist
    - Show external integration readiness and what is deferred.
+   - Keep the master progress control sequence visible so work does not fragment across admin, backend, mobile, and external services.
 
 ### Phase B: Backend Rule Consistency
 
