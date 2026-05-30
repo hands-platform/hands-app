@@ -101,11 +101,11 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <div>
             <h2>Partner control command center</h2>
             <p className="muted">
-              One-screen triage for finance blocks, account controls, document review, and investigation SLA.
+              One-screen review for finance blocks, account controls, document review, and investigation SLA.
             </p>
           </div>
           <span className={`pill ${commandCenter.urgentCount ? 'pill-danger' : 'pill-success'}`}>
-            {commandCenter.urgentCount ? `${commandCenter.urgentCount} urgent` : 'No urgent lane'}
+            {commandCenter.urgentCount ? `${commandCenter.urgentCount} time-sensitive` : 'No time-sensitive lane'}
           </span>
           <Link className="text-link" href="/operations-policy">
             {riskPolicy.responseWindowMinutes}m first-pick / {formatDistance(riskPolicy.backupRadiusMeters)}{' '}
@@ -137,7 +137,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <div>
             <h2>Next operator actions</h2>
             <p className="muted">
-              Prioritized by severity, wallet impact, active sanctions, and how long the item has waited.
+              Sorted by saved report level, wallet impact, active controls, and how long the item has waited.
             </p>
           </div>
           <span className="pill pill-info">{commandCenter.nextActions.length} action(s)</span>
@@ -391,7 +391,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
           <div>
             <h2>Control filters</h2>
             <p className="muted">
-              Dashboard links land here with the exact investigation lane already selected.
+              Dashboard links land here with the exact review lane already selected.
             </p>
             {activeFilters.length > 0 ? (
               <p className="muted">
@@ -421,10 +421,10 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             </select>
           </label>
           <label>
-            Severity
+            Report level
             <select name="severity" defaultValue={filters.severity}>
               <option value="">All</option>
-              <option value="HIGH_PLUS">Urgent + major</option>
+              <option value="HIGH_PLUS">Urgent + major reports</option>
               <option value="CRITICAL">Urgent</option>
               <option value="HIGH">Major</option>
               <option value="MEDIUM">Medium</option>
@@ -567,7 +567,7 @@ export default async function ProviderRiskPage({ searchParams }: { searchParams?
             <input name="category" placeholder="safety, payout, behavior, identity" required />
           </label>
           <label>
-            Severity
+            Report level
             <select name="severity" defaultValue="MEDIUM">
               <option value="LOW">Low</option>
               <option value="MEDIUM">Medium</option>
@@ -1634,7 +1634,7 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
       ? {
           kind: 'severity',
           value: filters.severity,
-          label: `Severity: ${filters.severity === 'HIGH_PLUS' ? 'CRITICAL + HIGH' : filters.severity}`,
+          label: `Report level: ${filters.severity === 'HIGH_PLUS' ? 'CRITICAL + HIGH' : filters.severity}`,
           description: riskFilterDescription('severity', filters.severity),
         }
       : null,

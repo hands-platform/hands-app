@@ -1503,7 +1503,7 @@ export default async function DashboardPage() {
                 <h3>{queueSummary.first.label}</h3>
                 <p>{queueSummary.first.recommendedAction}</p>
                 <p className="muted">
-                  Owner: {queueSummary.first.owner} - Checklist weight {queueSummary.first.priority} -{' '}
+                  Owner: {queueSummary.first.owner} - Checklist position {queueSummary.first.priority} -{' '}
                   {queueSummary.first.detail}
                 </p>
               </div>
@@ -1521,7 +1521,7 @@ export default async function DashboardPage() {
               >
                 <div>
                   <span className="muted">
-                    {item.area} - {item.owner} - Checklist weight {item.priority}
+                    {item.area} - {item.owner} - Checklist position {item.priority}
                   </span>
                   <strong>{item.label}</strong>
                   <p className="muted">{item.detail}</p>
