@@ -2544,13 +2544,13 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       {
         scope: 'Outcome checks',
         title: totalOutcomeCheckCount
-          ? 'Review failed booking cohorts before changing policy'
-          : 'No failed outcome spike in sample',
+          ? 'Review closed booking cohorts before changing policy'
+          : 'No closed-outcome spike in sample',
         detail: totalOutcomeCheckCount
           ? 'Cancelled, expired, or no-show bookings may point to response-window, supply, payment, or partner readiness problems.'
           : 'The sampled policy snapshots do not show cancelled, expired, or no-show pressure yet.',
         operatorAction: totalOutcomeCheckCount
-          ? 'Open the booking drill-down and compare failed bookings against their saved policy snapshot.'
+          ? 'Open the booking drill-down and compare closed bookings against their saved policy snapshot.'
           : 'Keep collecting results across more districts and time bands before treating this as final.',
         className: totalOutcomeCheckCount ? 'ops-task-blocked' : 'ops-task-done',
         pillClass: totalOutcomeCheckCount ? 'pill-danger' : 'pill-success',
@@ -2606,13 +2606,13 @@ function buildPolicyEffectRows(input: {
       avgParticipants: averageLabel(stats.participantCount, stats.sampleCount, 'partner(s)'),
       riskLabel: sampleTooSmall ? 'Low sample' : atRisk ? 'Review' : 'Healthy',
       riskPill: sampleTooSmall ? 'pill-warn' : atRisk ? 'pill-danger' : 'pill-success',
-      riskDetail: `${riskCount} failed outcome(s) / live value now ${liveValue}.`,
+      riskDetail: `${riskCount} closed outcome(s) to review / live value now ${liveValue}.`,
       operatorRead: sampleTooSmall
         ? 'Keep collecting data before deciding. This cohort is useful for debugging, not final policy choice.'
         : belowAverage
           ? 'Matched rate is below the measured average. Check partner supply, alert delivery, and customer wait before expanding this value.'
           : atRisk
-            ? 'Outcome risk exists. Review the booking detail snapshots before changing this policy again.'
+            ? 'Closed or below-average outcomes exist. Review the booking detail snapshots before changing this policy again.'
             : 'This cohort is currently performing at or above the measured average in the sampled bookings.',
     };
   });
@@ -3299,19 +3299,19 @@ function operationsOwnerDecisionBacklog() {
       owner: 'Growth',
       title: 'Partner alert channel',
       question:
-        'When should urgent booking alerts move from in-app only to mandatory OneSignal push delivery?',
+        'When should time-sensitive booking alerts move from in-app only to mandatory OneSignal push delivery?',
       signal:
         'Review delivery failure rate, disabled devices, missed requests, and production push credential readiness.',
       options: [
         {
           label: 'In-app first',
           tradeoff:
-            'Lowest setup risk and easiest local testing, but partners may miss requests when the app is closed.',
+            'Lowest setup work and easiest local testing, but partners may miss requests when the app is closed.',
         },
         {
           label: 'OneSignal required',
           tradeoff:
-            'Better booking reach and urgency, but depends on production credentials and delivery monitoring.',
+            'Better booking reach, but depends on production credentials and delivery monitoring.',
         },
       ],
       recommendation:
