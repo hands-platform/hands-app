@@ -125,6 +125,7 @@ Admin dashboard:
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.
 - Admin smoke tests now support targeted page checks through `ADMIN_WEB_SMOKE_PATHS`, while full smoke still verifies the full admin surface.
+- Admin smoke tests now strip rendered HTML to visible text and fail when legacy backup wording or people-scoring terms are exposed in operator-facing pages.
 
 Customer mobile app:
 

@@ -337,12 +337,44 @@ function shouldRunDeepSection(pathPrefix) {
   );
 }
 
+function visibleTextFromHtml(body) {
+  return body
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&#x27;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function assertNoLegacyVisibleLanguage(path, body) {
+  const visibleText = visibleTextFromHtml(body);
+  const bannedPatterns = [
+    { label: 'legacy backup wording', pattern: /\b[Bb]ackup\b/ },
+    { label: 'people scoring wording', pattern: /\b(score|scoring|VIP|tip|tips)\b/i },
+  ];
+  const violations = bannedPatterns
+    .map((rule) => ({ ...rule, match: visibleText.match(rule.pattern) }))
+    .filter((rule) => rule.match);
+  if (violations.length > 0) {
+    throw new Error(
+      `${path} contains visible banned operator wording: ${violations
+        .map((rule) => `${rule.label} (${rule.match?.[0]})`)
+        .join(', ')}`,
+    );
+  }
+}
+
 for (const page of smokePages) {
   const body = await fetchPage(page.path);
   const missing = page.markers.filter((marker) => !body.includes(marker));
   if (missing.length > 0) {
     throw new Error(`${page.path} is missing expected markers: ${missing.join(', ')}`);
   }
+  assertNoLegacyVisibleLanguage(page.path, body);
   console.log(`PASS ${page.path}`);
 }
 
@@ -380,6 +412,7 @@ if (providerLinkMatch) {
     if (missing.length > 0) {
       throw new Error(`${providerPath} is missing expected markers: ${missing.join(', ')}`);
     }
+    assertNoLegacyVisibleLanguage(providerPath, providerBody);
     console.log(`PASS ${providerPath}`);
 
     const filteredProviderBody = await fetchPage(`${providerPath}?range=30d`);
@@ -392,6 +425,7 @@ if (providerLinkMatch) {
         `${providerPath}?range=30d is missing expected markers: ${missingFilteredProviderMarkers.join(', ')}`,
       );
     }
+    assertNoLegacyVisibleLanguage(`${providerPath}?range=30d`, filteredProviderBody);
     console.log(`PASS ${providerPath}?range=30d`);
   }
 }
@@ -423,6 +457,7 @@ if (customerLinkMatch) {
   if (missing.length > 0) {
     throw new Error(`${customerPath} is missing expected markers: ${missing.join(', ')}`);
   }
+  assertNoLegacyVisibleLanguage(customerPath, customerBody);
   console.log(`PASS ${customerPath}`);
 
   const filteredCustomerBody = await fetchPage(`${customerPath}?range=7d`);
@@ -440,6 +475,7 @@ if (customerLinkMatch) {
       `${customerPath}?range=7d is missing expected markers: ${missingFilteredCustomerMarkers.join(', ')}`,
     );
   }
+  assertNoLegacyVisibleLanguage(`${customerPath}?range=7d`, filteredCustomerBody);
   console.log(`PASS ${customerPath}?range=7d`);
 }
 
@@ -477,6 +513,7 @@ if (bookingLinkMatch) {
   if (missing.length > 0) {
     throw new Error(`${bookingPath} is missing expected markers: ${missing.join(', ')}`);
   }
+  assertNoLegacyVisibleLanguage(bookingPath, bookingBody);
   console.log(`PASS ${bookingPath}`);
 }
 
