@@ -87,7 +87,7 @@ export default async function PartnerControlsPage({
     <>
       <h1>Partner Controls</h1>
       <p className="muted">
-        Track partner reports, active sanctions, account blocks, payout holds, and operations follow-up in one
+        Track partner reports, account controls, booking blocks, payout holds, and operations follow-up in one
         operator view.
       </p>
 
@@ -402,11 +402,11 @@ export default async function PartnerControlsPage({
                 Active queue: {activeFilters.map((filter) => filter.description).join(' ')}
               </p>
             ) : (
-              <p className="muted">No control filter is active. Showing every report and sanction lane.</p>
+              <p className="muted">No control filter is active. Showing every report and account-control lane.</p>
             )}
           </div>
           <span className={`pill ${activeFilters.length ? 'pill-warn' : 'pill-success'}`}>
-            Showing {visibleReports.length} report(s), {visibleSanctions.length} sanction(s)
+            Showing {visibleReports.length} report(s), {visibleSanctions.length} account control(s)
           </span>
         </div>
         <form className="form-grid" action="/partner-controls">
@@ -436,7 +436,7 @@ export default async function PartnerControlsPage({
             </select>
           </label>
           <label>
-            Sanction
+            Account control
             <select name="sanction" defaultValue={filters.sanction}>
               <option value="">All</option>
               <option value="ACTIVE">Active</option>
@@ -466,9 +466,9 @@ export default async function PartnerControlsPage({
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>System control watchlist</h2>
+            <h2>System control checklist</h2>
             <p className="muted">
-              Automatic partner signals from wallet debt, sanctions, onboarding gaps, devices, and recent
+              Automatic partner signals from wallet debt, account controls, onboarding gaps, devices, and recent
               report history.
             </p>
           </div>
@@ -625,7 +625,7 @@ export default async function PartnerControlsPage({
               <th>Report</th>
               <th>Partner</th>
               <th>Status</th>
-              <th>Sanction</th>
+              <th>Account control</th>
               <th>Action</th>
             </tr>
           </thead>
@@ -676,7 +676,7 @@ export default async function PartnerControlsPage({
                     </select>
                     <input
                       name="reason"
-                      placeholder="Sanction reason"
+                      placeholder="Account control reason"
                       required
                       minLength={12}
                       maxLength={500}
@@ -718,9 +718,9 @@ export default async function PartnerControlsPage({
       <section className="card">
         <div className="risk-watch-header">
           <div>
-            <h2>Sanctions</h2>
+            <h2>Account controls</h2>
             <p className="muted">
-              Active sanctions are operational controls. Lift them only with a clear audit trail.
+              Active account controls restrict work or payout. Lift them only with a clear audit trail.
             </p>
           </div>
           <span className="pill pill-info">{visibleSanctions.length} shown</span>
@@ -728,7 +728,7 @@ export default async function PartnerControlsPage({
         <table className="table">
           <thead>
             <tr>
-              <th>Sanction</th>
+              <th>Control</th>
               <th>Partner</th>
               <th>Linked report</th>
               <th>Timeline</th>
@@ -767,7 +767,7 @@ export default async function PartnerControlsPage({
                       <p className="muted">{sanction.report.summary}</p>
                     </>
                   ) : (
-                    <span className="muted">Manual sanction</span>
+                    <span className="muted">Manual account control</span>
                   )}
                 </td>
                 <td>
@@ -780,7 +780,7 @@ export default async function PartnerControlsPage({
                     <form action={liftProviderSanction}>
                       <input type="hidden" name="providerProfileId" value={sanction.providerProfileId} />
                       <input type="hidden" name="sanctionId" value={sanction.id} />
-                      <button type="submit">Lift sanction</button>
+                      <button type="submit">Lift control</button>
                     </form>
                   ) : (
                     <span className="muted">Closed</span>
@@ -1035,13 +1035,13 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
       title: 'Access controls',
       status: activeSanctions.length ? 'LIVE' : 'CLEAR',
       detail: activeSanctions.length
-        ? 'Active sanctions are live operating controls and need clean audit follow-up.'
-        : 'No active sanction is currently restricting partner operations.',
+        ? 'Active account controls are live operating controls and need clean audit follow-up.'
+        : 'No active account control is currently restricting partner operations.',
       href: activeSanctions.length ? '/partner-controls?sanction=ACTIVE' : '/partner-controls',
-      action: activeSanctions.length ? 'Review active sanctions' : 'Open control board',
+      action: activeSanctions.length ? 'Review active controls' : 'Open control board',
       className: activeSanctions.length ? 'ops-task-pending' : 'ops-task-done',
       metrics: [
-        metric('Sanctions', activeSanctions.length, activeSanctions.length ? 'warn' : 'ok'),
+        metric('Controls', activeSanctions.length, activeSanctions.length ? 'warn' : 'ok'),
         metric('Account blocks', activeAccountBlocks.length, activeAccountBlocks.length ? 'danger' : 'ok'),
         metric('Shared devices', sharedDeviceItems.length, sharedDeviceItems.length ? 'warn' : 'ok'),
       ],
@@ -1130,7 +1130,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         reason:
           'Active payout hold prevents normal payout processing until the underlying report is cleared.',
         operatorAction:
-          'Open the payout and control lanes, resolve evidence, then lift the sanction if appropriate.',
+          'Open the payout and control lanes, resolve evidence, then lift the account control if appropriate.',
         href: '/payouts',
         priority: 92,
       });
@@ -1147,7 +1147,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         title: `${partner} has open reports`,
         reason: 'Open reports can affect partner badge, payout release, and future dispatch decisions.',
         operatorAction:
-          'Move the report to investigating, resolve with notes, dismiss with evidence, or apply a sanction.',
+          'Move the report to investigating, resolve with notes, dismiss with evidence, or apply an account control.',
         href: `/partner-controls?q=${encodeURIComponent(item.provider.id)}`,
         priority: item.severity === 'CRITICAL' ? 88 : 78,
       });
@@ -1159,7 +1159,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         id: `${item.provider.id}-location`,
         providerId: item.provider.id,
         partner,
-        impact: 'DISPATCH RISK',
+        impact: 'DISPATCH CHECK',
         severity: locationSignal.label,
         tone: 'pill-warn',
         title: `${partner} location needs refresh`,
@@ -1418,13 +1418,13 @@ function buildAcceptanceUnblockPlaybook(
       id: 'playbook-account-controls',
       step: '2',
       owner: 'Trust',
-      title: 'Resolve account and sanction controls',
+      title: 'Resolve account controls',
       status: card('account-controls')?.status ?? 'UNKNOWN',
       pillClass: card('account-controls')?.blockingCount ? 'pill-danger' : 'pill-success',
       detail:
-        'Account blocks and active sanctions are deliberate safety controls and should stay above convenience.',
+        'Account blocks and active account controls are deliberate operational controls and should stay above convenience.',
       bookingImpact: 'Blocks partner visibility and booking acceptance while the restriction is active.',
-      payoutImpact: 'Payout holds should remain until the report or sanction has a clean audit outcome.',
+      payoutImpact: 'Payout holds should remain until the report or account control has a clean audit outcome.',
       customerImpact: 'Protects customers from partners under unresolved safety, fraud, or behavior review.',
       action: card('account-controls')?.action ?? 'Review account blocks',
       href: card('account-controls')?.href ?? '/partner-controls?sanction=ACTIVE',
@@ -1556,8 +1556,8 @@ function buildRiskNextActions(input: {
       detail: `${providerNameOrId(report.providerProfile, report.providerProfileId)} / ${report.category} / ${report.status} / ${ageLabel(ageHours)} old`,
       operatorAction:
         ageHours >= slaHours
-          ? `Past ${slaHours}h target. Add resolution note, assign sanction, or dismiss with evidence.`
-          : 'Review evidence and move to investigating, resolved, dismissed, or sanction.',
+          ? `Past ${slaHours}h target. Add resolution note, assign account control, or dismiss with evidence.`
+          : 'Review evidence and move to investigating, resolved, dismissed, or account control.',
       href: report.bookingId
         ? `/bookings/${report.bookingId}`
         : `/partner-controls?q=${encodeURIComponent(report.id)}`,
@@ -1590,12 +1590,12 @@ function buildRiskNextActions(input: {
       id: `sanction-${sanction.id}`,
       priority: sanction.type === 'ACCOUNT_BLOCK' ? 90 : sanction.type === 'PAYOUT_HOLD' ? 82 : 60,
       status: sanction.type,
-      title: `${providerNameOrId(sanction.providerProfile, sanction.providerProfileId)} sanction active`,
+      title: `${providerNameOrId(sanction.providerProfile, sanction.providerProfileId)} account control active`,
       detail: sanction.reason,
       operatorAction:
         sanction.type === 'PAYOUT_HOLD'
           ? 'Resolve payout evidence before creating or paying payout batches.'
-          : 'Keep or lift the sanction only with a clear audit trail.',
+          : 'Keep or lift the account control only with a clear audit trail.',
       href: `/partner-controls?q=${encodeURIComponent(sanction.providerProfileId)}`,
       tags: [
         { label: sanction.status, tone: 'pill-danger' },
@@ -1646,7 +1646,7 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
       ? {
           kind: 'sanction',
           value: filters.sanction,
-          label: `Sanction: ${filters.sanction}`,
+          label: `Control: ${filters.sanction}`,
           description: controlFilterDescription('sanction', filters.sanction),
         }
       : null,
@@ -1667,16 +1667,16 @@ function controlFilterDescription(kind: string, value: string) {
     return `${value.toLowerCase()} severity reports are prioritized for safety review.`;
   }
   if (kind === 'sanction' && value === 'ACTIVE') {
-    return 'Active sanctions are live operating controls and should be lifted only with a clear audit trail.';
+    return 'Active account controls restrict work or payout and should be lifted only with a clear audit trail.';
   }
   if (kind === 'sanction') {
-    return 'Sanctions are narrowed to the selected lifecycle state.';
+    return 'Account controls are narrowed to the selected lifecycle state.';
   }
   return 'Control board is narrowed by the active filter.';
 }
 
 function emptyRiskMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
-  const subject = kind === 'report' ? 'partner reports' : 'partner sanctions';
+  const subject = kind === 'report' ? 'partner reports' : 'partner account controls';
   if (activeFilters.length === 0) {
     return `No ${subject} loaded yet.`;
   }
@@ -1723,7 +1723,7 @@ function buildPartnerControlSummary(
       'Urgent / major',
       reports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity)).length.toString(),
     ],
-    ['Active sanctions', sanctions.filter((sanction) => sanction.status === 'ACTIVE').length.toString()],
+    ['Active controls', sanctions.filter((sanction) => sanction.status === 'ACTIVE').length.toString()],
     ['Blocked accounts', providers.filter((provider) => provider.blockedAt).length.toString()],
     ['Wallet debt', watchlist.filter((item) => item.walletBalance < 0).length.toString()],
     [
@@ -1860,7 +1860,7 @@ function partnerControlNextStep(
     return 'Resolve payout hold evidence before creating or paying payout batches.';
   }
   if (input.openReportCount > 0) {
-    return 'Update report status with resolution note or apply a sanction if needed.';
+    return 'Update report status with resolution note or apply an account control if needed.';
   }
   if (providerLocationSignal(input.provider, controlPolicy)) {
     return 'Ask the partner to reopen the app and refresh their current location before accepting bookings.';
