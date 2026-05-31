@@ -181,8 +181,8 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Partner control board</h2>
             <p className="muted">
-              Shows factual partner controls without scoring people: booking blocks, wallet debt, payout
-              gates, document gaps, location freshness, and device reachability.
+              Shows factual partner controls for booking blocks, wallet debt, payout gates, document gaps,
+              location freshness, and device reachability.
             </p>
           </div>
           <span className="pill pill-info">{partnerControlBoard.items.length} partner(s)</span>
@@ -1296,7 +1296,7 @@ function buildBookingAcceptanceUnblockBoard(
       title: 'Location freshness controls dispatch',
       status: locationItems.length ? 'DISPATCH HOLD' : 'READY',
       detail: locationItems.length
-        ? `Distance ranking, ${formatDistance(
+        ? `Distance ordering, ${formatDistance(
             controlPolicy.backupRadiusMeters,
           )} backup invitations, the ${controlPolicy.invitationLimit}-partner invite cap, and customer expectations depend on fresh partner location.`
         : 'Online partner locations are fresh enough for dispatch decisions.',

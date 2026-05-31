@@ -376,7 +376,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <h2>Partner operator command queue</h2>
             <p className="muted">
               Same-shift partner operations queue for onboarding, booking acceptance, payout, location, app
-              reachability, and service setup. This is factual handling only, not partner scoring.
+              reachability, and service setup. This is factual handling for operators.
             </p>
           </div>
           <span className={`pill ${pillClass(partnerOperatorCommandQueue.tone)}`}>
@@ -561,8 +561,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner operating checklist</h2>
             <p className="muted">
-              Factual work-control checklist for support and operations. This does not score the partner; it
-              only shows whether bookings, payout, tax, location, and service setup need action.
+              Factual work-control checklist for support and operations. It shows whether bookings, payout,
+              tax, location, and service setup need action.
             </p>
           </div>
           <span className="pill pill-info">{partnerOperatingChecklist.length} check(s)</span>
@@ -3062,7 +3062,7 @@ function buildPartnerMasterFacts(
     {
       label: 'Admin records',
       value: `${activeReports.length} open report(s) / ${activeSanctions.length} active control(s)`,
-      helper: 'Factual records only; no person scoring is applied',
+      helper: 'Factual admin records only',
     },
   ];
 }

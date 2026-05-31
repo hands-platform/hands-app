@@ -1129,8 +1129,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner checklist lane</h2>
             <p className="muted">
-              Suggested operator order for fixing factual blockers. This is not a partner score; it is derived
-              from profile, KYC, document, bank, tax, wallet, location, and push readiness.
+              Suggested operator order for fixing factual blockers from profile, KYC, document, bank, tax,
+              wallet, location, and push readiness.
             </p>
           </div>
           <span className={`pill ${priorityLane.blockedCount === 0 ? 'pill-success' : 'pill-danger'}`}>

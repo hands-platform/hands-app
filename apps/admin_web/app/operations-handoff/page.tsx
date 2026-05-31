@@ -374,7 +374,7 @@ export default async function OperationsHandoffPage() {
           <div className="toolbar">
             <div>
               <h2>Partner handoff</h2>
-              <p className="muted">Partner state without scoring: app, wallet, identity, location, and work facts.</p>
+              <p className="muted">Partner state from app, wallet, identity, location, and work facts.</p>
             </div>
             <Link className="text-link" href="/partners">
               Partner list

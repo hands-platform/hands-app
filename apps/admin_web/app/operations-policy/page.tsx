@@ -1523,7 +1523,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     {
       title: 'Marketplace partner pool',
       status: baselineRadius ? 'Default policy' : 'Custom policy',
-      detail: `Marketplace participation currently uses ${formatDistance(backupRadiusMeters)} as an operating alert/ranking policy.`,
+      detail: `Marketplace participation currently uses ${formatDistance(backupRadiusMeters)} as an operating alert and distance-ordering policy.`,
       operatorAction: baselineRadius
         ? 'This matches the current operating baseline for partner participation alerts.'
         : 'Review city supply, arrival time, and ignored marketplace alerts before changing policy.',
