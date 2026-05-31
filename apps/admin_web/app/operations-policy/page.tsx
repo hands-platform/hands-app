@@ -436,9 +436,9 @@ export default async function OperationsPolicyPage({
                     <p className="muted">{row.avgParticipants} joined avg</p>
                   </td>
                   <td>
-                    <span className={`pill ${row.riskPill}`}>{row.riskLabel}</span>
+                    <span className={`pill ${row.outcomePill}`}>{row.outcomeLabel}</span>
                     <p className="muted" style={{ marginTop: 6 }}>
-                      {row.riskDetail}
+                      {row.outcomeDetail}
                     </p>
                   </td>
                   <td>
@@ -2588,10 +2588,10 @@ function buildPolicyEffectRows(input: {
   return Array.from(groups.entries()).map(([key, group]) => {
     const stats = policyEffectStatsForBookings(group.bookings);
     const matchedRateValue = stats.sampleCount > 0 ? stats.matchedCount / stats.sampleCount : 0;
-    const riskCount = stats.cancelledCount + stats.expiredCount + stats.noShowCount;
+    const closedOutcomeCount = stats.cancelledCount + stats.expiredCount + stats.noShowCount;
     const sampleTooSmall = stats.sampleCount < 5;
     const belowAverage = matchedRateValue + 0.05 < input.globalMatchedRate;
-    const atRisk = riskCount > 0 || belowAverage;
+    const needsOutcomeReview = closedOutcomeCount > 0 || belowAverage;
     const liveValue = policyDisplayByKey(input.settings, input.settingKey);
 
     return {
@@ -2604,14 +2604,14 @@ function buildPolicyEffectRows(input: {
       completedRate: percentLabel(stats.completedCount, stats.sampleCount),
       avgBackupInvites: averageLabel(stats.backupInviteCount, stats.sampleCount, 'partner(s)'),
       avgParticipants: averageLabel(stats.participantCount, stats.sampleCount, 'partner(s)'),
-      riskLabel: sampleTooSmall ? 'Low sample' : atRisk ? 'Review' : 'Healthy',
-      riskPill: sampleTooSmall ? 'pill-warn' : atRisk ? 'pill-danger' : 'pill-success',
-      riskDetail: `${riskCount} closed outcome(s) to review / live value now ${liveValue}.`,
+      outcomeLabel: sampleTooSmall ? 'Low sample' : needsOutcomeReview ? 'Check outcomes' : 'On track',
+      outcomePill: sampleTooSmall ? 'pill-warn' : needsOutcomeReview ? 'pill-danger' : 'pill-success',
+      outcomeDetail: `${closedOutcomeCount} closed outcome(s) to review / live value now ${liveValue}.`,
       operatorRead: sampleTooSmall
         ? 'Keep collecting data before deciding. This cohort is useful for debugging, not final policy choice.'
         : belowAverage
           ? 'Matched rate is below the measured average. Check partner supply, alert delivery, and customer wait before expanding this value.'
-          : atRisk
+          : needsOutcomeReview
             ? 'Closed or below-average outcomes exist. Review the booking detail snapshots before changing this policy again.'
             : 'This cohort is currently performing at or above the measured average in the sampled bookings.',
     };
