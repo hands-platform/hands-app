@@ -35,6 +35,7 @@ const ACTIVE_STATUSES = [
   'ARRIVED',
   'IN_SERVICE',
 ];
+const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 
 const CUSTOMER_ACTIVITY_TYPE_OPTIONS = [
   { value: 'all', label: 'All event types', types: [] },
@@ -190,8 +191,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         />
         <MetricCard
           label="Closed bookings"
-          value={bookingStats.cancelled.toString()}
-          helper="Cancelled, expired, or refunded records"
+          value={bookingStats.closed.toString()}
+          helper={`Customer ${bookingStats.customerClosed} / admin ${bookingStats.adminClosed} / partner ${bookingStats.partnerClosed} / no-show ${bookingStats.noShow}`}
         />
         <MetricCard
           label="Captured spend"
@@ -642,6 +643,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                 <td>
                   <span className={`pill ${bookingStatusPillClass(booking.status)}`}>{booking.status}</span>
                   <p className="muted">{bookingStatusOperatorHint(booking)}</p>
+                  {isClosedCustomerBooking(booking) ? (
+                    <p className="muted">
+                      {formatDate(booking.closedAt)} / {bookingClosureLabel(booking)}
+                    </p>
+                  ) : null}
                 </td>
                 <td>
                   {booking.selectedProvider?.displayName ??
@@ -961,11 +967,17 @@ function CustomerOperatorCommandAction({
 }
 
 function buildBookingStats(bookings: AdminBookingDetail[]) {
+  const closedBookings = bookings.filter((booking) => CLOSED_BOOKING_STATUSES.includes(booking.status));
   return {
     active: bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length,
     completed: bookings.filter((booking) => booking.status === 'COMPLETED').length,
     cancelled: bookings.filter((booking) => ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status))
       .length,
+    closed: closedBookings.length,
+    customerClosed: closedBookings.filter((booking) => booking.closedByRole === 'CUSTOMER').length,
+    adminClosed: closedBookings.filter((booking) => booking.closedByRole === 'ADMIN').length,
+    partnerClosed: closedBookings.filter((booking) => booking.closedByRole === 'PROVIDER').length,
+    noShow: bookings.filter((booking) => booking.status === 'NO_SHOW').length,
   };
 }
 
@@ -1646,9 +1658,21 @@ function buildCustomerActivityRecords(
       title: `${booking.status} booking ${shortId(booking.id)}`,
       detail: `${bookingServiceLabel(booking)} / partner ${
         booking.selectedProvider?.displayName ?? booking.preferredProvider?.displayName ?? 'not selected'
-      } / scheduled ${formatDate(booking.scheduledStartAt)}`,
+      } / scheduled ${formatDate(booking.scheduledStartAt)}${
+        isClosedCustomerBooking(booking) ? ` / ${bookingClosureLabel(booking)}` : ''
+      }`,
       href: `/bookings/${booking.id}`,
     });
+    if (isClosedCustomerBooking(booking) && booking.closedAt) {
+      records.push({
+        id: `${booking.id}-closure`,
+        type: 'BOOKING',
+        at: booking.closedAt,
+        title: `Booking closed ${shortId(booking.id)}`,
+        detail: bookingClosureLabel(booking),
+        href: `/bookings/${booking.id}`,
+      });
+    }
 
     if (booking.status === 'COMPLETED') {
       records.push({
@@ -1960,6 +1984,24 @@ function bookingStatusOperatorHint(booking: AdminBookingDetail) {
   if (booking.status === 'NO_SHOW') return 'No-show record';
   if (['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)) return 'Closed booking record';
   return 'Historical row';
+}
+
+function isClosedCustomerBooking(booking: AdminBookingDetail) {
+  return CLOSED_BOOKING_STATUSES.includes(booking.status);
+}
+
+function bookingClosureLabel(booking: AdminBookingDetail) {
+  const actor =
+    booking.closedByRole === 'CUSTOMER'
+      ? 'customer'
+      : booking.closedByRole === 'PROVIDER'
+        ? 'partner'
+        : booking.closedByRole === 'ADMIN'
+          ? 'admin'
+          : 'system';
+  const reason = booking.closedReason ? booking.closedReason.replace(/_/g, ' ') : 'no reason saved';
+  const note = booking.closedNote ? ` / ${compactText(booking.closedNote, 90)}` : '';
+  return `${actor} closure / ${reason}${note}`;
 }
 
 function bookingChatArchiveLabel(booking: AdminBookingDetail) {
