@@ -30,6 +30,7 @@ type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevic
 type AdminProviderPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
 type ProviderLocationState = 'recent' | 'stale' | 'expired' | 'missing';
 type ProviderSecurityState = 'clear' | 'account-blocked' | 'blocked' | 'suspicious' | 'shared' | 'missing';
+const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 type ProviderCommandLane = {
   title: string;
   status: string;
@@ -237,7 +238,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       location_updated_at: provider.currentLocationUpdatedAt ?? '',
       booking_count: master.bookingCount,
       completed_work_count: master.completedCount,
-      closed_booking_count: master.cancelledCount,
+      closed_booking_count: master.closedCount,
+      customer_closed_count: master.customerClosedCount,
+      admin_closed_count: master.adminClosedCount,
+      partner_closed_count: master.partnerClosedCount,
+      no_show_count: master.noShowCount,
       review_average: master.reviewAverage,
       review_count: master.reviewCount,
       gross_revenue_vnd: master.grossRevenue,
@@ -270,6 +275,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     'booking_count',
     'completed_work_count',
     'closed_booking_count',
+    'customer_closed_count',
+    'admin_closed_count',
+    'partner_closed_count',
+    'no_show_count',
     'review_average',
     'review_count',
     'gross_revenue_vnd',
@@ -542,7 +551,14 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <td>
                     <strong>{row.bookingCount} total</strong>
                     <p className="muted">
-                      {row.completedCount} completed / {row.cancelledCount} cancelled
+                      {row.completedCount} completed / {row.closedCount} closed
+                    </p>
+                    <p className="muted">
+                      Customer {row.customerClosedCount} / admin {row.adminClosedCount} / partner{' '}
+                      {row.partnerClosedCount}
+                    </p>
+                    <p className="muted">
+                      {row.noShowCount} no-show
                     </p>
                   </td>
                   <td>
@@ -1726,7 +1742,11 @@ type PartnerMasterRow = {
   locationState: ProviderLocationState;
   bookingCount: number;
   completedCount: number;
-  cancelledCount: number;
+  closedCount: number;
+  customerClosedCount: number;
+  adminClosedCount: number;
+  partnerClosedCount: number;
+  noShowCount: number;
   reviewAverage: string;
   reviewCount: number;
   grossRevenue: number;
@@ -1876,6 +1896,7 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
   const displayName = providerDisplayName(provider);
   const lastSeenAt = partnerLastSessionAt(provider);
   const accountBlocked = Boolean(provider.blockedAt);
+  const closedRows = bookingRows.filter((booking) => CLOSED_BOOKING_STATUSES.includes(booking.status));
 
   return {
     provider,
@@ -1895,9 +1916,11 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     completedCount:
       bookingRows.filter((booking) => booking.status === 'COMPLETED').length ||
       providerCompletedWorkCount(provider),
-    cancelledCount: bookingRows.filter((booking) =>
-      ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status),
-    ).length,
+    closedCount: closedRows.length,
+    customerClosedCount: closedRows.filter((booking) => booking.closedByRole === 'CUSTOMER').length,
+    adminClosedCount: closedRows.filter((booking) => booking.closedByRole === 'ADMIN').length,
+    partnerClosedCount: closedRows.filter((booking) => booking.closedByRole === 'PROVIDER').length,
+    noShowCount: bookingRows.filter((booking) => booking.status === 'NO_SHOW').length,
     reviewAverage: formatProviderRating(provider.ratingAvg),
     reviewCount: Number(provider.reviewCount ?? 0),
     grossRevenue: earnings.reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0),
