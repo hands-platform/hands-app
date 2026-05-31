@@ -77,6 +77,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messageCount: messages.length,
     notificationCount: notificationTrace.rows.length,
   });
+  const operatingTimeline = bookingOperatingTimeline({
+    booking,
+    addressLine,
+    addressPin,
+    latestLocation,
+    messages,
+    notifications: rawNotifications,
+  });
 
   return (
     <>
@@ -202,6 +210,31 @@ export default async function BookingDetailPage({ params }: PageProps) {
               {operatingSnapshot.hrefLabel}
             </Link>
           </div>
+        </div>
+      </section>
+
+      <section className="card" id="operating-timeline" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Operating timeline</h2>
+            <p className="muted">
+              Time-ordered operating trail for address confirmation, partner participation, customer final
+              choice, chat, location, payment, wallet, tax, fee, and audit events.
+            </p>
+          </div>
+          <span className="pill pill-info">{operatingTimeline.length} step(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {operatingTimeline.map((item) => (
+            <div className="setup-stage-item" key={item.id}>
+              <span>{item.type}</span>
+              <div>
+                <strong>{item.title}</strong>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.at ? formatDate(item.at) : item.status}</small>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -1270,6 +1303,315 @@ function bookingChatLifecycle(booking: AdminBookingDetail, messageCount: number)
     adminDetail: `${messageCount} message(s) visible now and retained after closeout.`,
     roomLabel,
   };
+}
+
+type BookingOperatingTimelineItem = {
+  id: string;
+  type: string;
+  title: string;
+  detail: string;
+  at?: string | null;
+  status: string;
+};
+
+function bookingOperatingTimeline({
+  booking,
+  addressLine,
+  addressPin,
+  latestLocation,
+  messages,
+  notifications,
+}: {
+  booking: AdminBookingDetail;
+  addressLine: string;
+  addressPin: string;
+  latestLocation?: AdminLocationSnapshot;
+  messages: AdminChatMessage[];
+  notifications: AdminNotification[];
+}) {
+  const items: BookingOperatingTimelineItem[] = [];
+  const pendingItems: BookingOperatingTimelineItem[] = [];
+  const paymentCurrency = booking.payment?.currency ?? booking.earning?.currency ?? 'VND';
+
+  const addItem = (item: BookingOperatingTimelineItem) => {
+    if (item.at) {
+      items.push(item);
+      return;
+    }
+    pendingItems.push(item);
+  };
+
+  addItem({
+    id: `created-${booking.id}`,
+    type: 'BOOK',
+    title: 'Booking created',
+    detail: `${booking.customerProfile?.user?.phone ?? 'Customer'} requested ${bookingServiceOptionLabel(booking)}.`,
+    at: booking.createdAt,
+    status: 'Recorded',
+  });
+
+  addItem({
+    id: `address-${booking.addressSnapshot?.id ?? booking.id}`,
+    type: 'ADDR',
+    title: booking.addressSnapshot ? 'Address snapshot locked' : 'Address snapshot missing',
+    detail: booking.addressSnapshot
+      ? `${compactActivityText(addressLine, 84)} / pin ${addressPin}`
+      : 'This booking is still using legacy address data. Confirm before dispatch.',
+    at: booking.addressSnapshot?.createdAt,
+    status: booking.addressSnapshot ? 'Locked' : 'Pending',
+  });
+
+  if (booking.openedAt || booking.status !== 'CREATED') {
+    addItem({
+      id: `matching-opened-${booking.id}`,
+      type: 'MATCH',
+      title: 'Matching window opened',
+      detail: booking.preferredProvider
+        ? `First-pick partner: ${providerName(booking.preferredProvider)}.`
+        : 'No first-pick partner is attached to this booking.',
+      at: booking.openedAt ?? booking.createdAt,
+      status: 'Open',
+    });
+  }
+
+  if (booking.expiresAt) {
+    addItem({
+      id: `expires-${booking.id}`,
+      type: 'TTL',
+      title: 'Auto-close timer set',
+      detail: 'If no final partner is selected before this time, operations should close or follow up.',
+      at: booking.expiresAt,
+      status: 'Timer',
+    });
+  }
+
+  for (const participant of booking.participants ?? []) {
+    const partnerName = providerName(participant.providerProfile);
+    addItem({
+      id: `participant-joined-${participant.id}`,
+      type: 'JOIN',
+      title: `${partnerName} joined shortlist`,
+      detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
+        participant.providerStatusAtJoin ?? 'status unknown'
+      }`,
+      at: participant.joinedAt,
+      status: 'Joined',
+    });
+    if (participant.respondedAt) {
+      addItem({
+        id: `participant-responded-${participant.id}`,
+        type: 'REPLY',
+        title: `${partnerName} responded`,
+        detail: `Partner response recorded as ${participant.status}.`,
+        at: participant.respondedAt,
+        status: participant.status,
+      });
+    }
+  }
+
+  if (booking.selectedProvider) {
+    addItem({
+      id: `selected-${booking.selectedProvider.id ?? booking.id}`,
+      type: 'SELECT',
+      title: 'Customer final partner selected',
+      detail: `${providerName(booking.selectedProvider)} is the final customer-selected partner.`,
+      at: booking.updatedAt,
+      status: 'Selected',
+    });
+  } else if (booking.status === 'OPEN_MATCHING') {
+    addItem({
+      id: `selection-pending-${booking.id}`,
+      type: 'SELECT',
+      title: 'Customer final choice pending',
+      detail: 'Customer still needs to select one final partner before chat handoff.',
+      status: 'Pending',
+    });
+  }
+
+  if (booking.chatRoom) {
+    addItem({
+      id: `chat-ready-${booking.chatRoom.id}`,
+      type: 'CHAT',
+      title: 'Chat room ready',
+      detail: `${messages.length} message(s) are retained for admin support.`,
+      at: messages[0]?.createdAt ?? booking.updatedAt,
+      status: 'Ready',
+    });
+  } else if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+    addItem({
+      id: `chat-missing-${booking.id}`,
+      type: 'CHAT',
+      title: 'Chat handoff missing',
+      detail: 'Matched or active booking has no chat room linked yet.',
+      status: 'Repair',
+    });
+  }
+
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage) {
+    addItem({
+      id: `chat-last-${lastMessage.id}`,
+      type: 'MSG',
+      title: 'Latest chat message',
+      detail: `${lastMessage.sender?.fullName ?? lastMessage.sender?.phone ?? 'Sender'}: ${compactActivityText(
+        lastMessage.body,
+        90,
+      )}`,
+      at: lastMessage.createdAt,
+      status: 'Message',
+    });
+  }
+
+  if (latestLocation) {
+    addItem({
+      id: `location-${latestLocation.id}`,
+      type: 'LOC',
+      title: 'Latest partner location shared',
+      detail: `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(
+        booking,
+      )}`,
+      at: latestLocation.recordedAt,
+      status: 'Location',
+    });
+  } else if (['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+    addItem({
+      id: `location-missing-${booking.id}`,
+      type: 'LOC',
+      title: 'Partner location not shared',
+      detail: 'Active service state has no linked partner location snapshot.',
+      status: 'Pending',
+    });
+  }
+
+  if (booking.payment) {
+    addItem({
+      id: `payment-${booking.payment.id ?? booking.id}`,
+      type: 'PAY',
+      title: `Payment ${booking.payment.status}`,
+      detail: `${booking.payment.method} / ${money(booking.payment.amount, paymentCurrency)} / ${
+        booking.payment.providerRef ?? 'no provider ref'
+      }`,
+      at: booking.createdAt,
+      status: booking.payment.status,
+    });
+  }
+
+  if (booking.earning) {
+    addItem({
+      id: `earning-${booking.earning.id}`,
+      type: 'EARN',
+      title: `Partner earning ${booking.earning.status}`,
+      detail: `${money(booking.earning.netAmount, booking.earning.currency)} net / ${money(
+        booking.earning.platformFee,
+        booking.earning.currency,
+      )} platform fee.`,
+      at: booking.earning.createdAt,
+      status: booking.earning.status,
+    });
+  }
+
+  for (const refund of booking.refunds ?? booking.payment?.refunds ?? []) {
+    const refundReason = 'reason' in refund ? refund.reason : null;
+
+    addItem({
+      id: `refund-${refund.id}`,
+      type: 'REFUND',
+      title: `Refund ${refund.status}`,
+      detail: `${money(refund.amount, paymentCurrency)} / ${refundReason ?? 'No reason note'}`,
+      at: refund.createdAt,
+      status: refund.status,
+    });
+  }
+
+  for (const taxLog of booking.taxLogs ?? []) {
+    addItem({
+      id: `tax-${taxLog.id}`,
+      type: 'TAX',
+      title: 'Tax withholding logged',
+      detail: `${money(taxLog.withholdingAmount, taxLog.currency)} withheld from ${money(
+        taxLog.taxableAmount,
+        taxLog.currency,
+      )} taxable amount.`,
+      at: taxLog.createdAt,
+      status: 'Logged',
+    });
+  }
+
+  for (const feeLog of booking.platformFeeLogs ?? []) {
+    addItem({
+      id: `fee-${feeLog.id}`,
+      type: 'FEE',
+      title: 'Platform fee logged',
+      detail: `${money(feeLog.platformFeeAmount, feeLog.currency)} company fee from ${money(
+        feeLog.grossAmount,
+        feeLog.currency,
+      )} gross.`,
+      at: feeLog.createdAt,
+      status: 'Logged',
+    });
+  }
+
+  for (const walletEntry of booking.walletLedgerEntries ?? []) {
+    addItem({
+      id: `wallet-${walletEntry.id}`,
+      type: 'WALLET',
+      title: `Wallet ${walletEntry.type}`,
+      detail: `${money(walletEntry.amount, walletEntry.currency)} / ${walletEntry.notes ?? walletEntry.sourceKey}`,
+      at: walletEntry.createdAt,
+      status: walletEntry.type,
+    });
+  }
+
+  if (booking.review) {
+    addItem({
+      id: `review-${booking.review.id}`,
+      type: 'REVIEW',
+      title: 'Customer review submitted',
+      detail: `${booking.review.rating}/5 / tip ${money(booking.review.tipAmount, paymentCurrency)}.`,
+      at: booking.review.createdAt,
+      status: 'Review',
+    });
+  }
+
+  const relatedNotifications = notifications
+    .filter((notification) => notificationDataBookingId(notification) === booking.id)
+    .sort((left, right) => safeTime(right.createdAt) - safeTime(left.createdAt))
+    .slice(0, 4);
+  for (const notification of relatedNotifications) {
+    addItem({
+      id: `notification-${notification.id}`,
+      type: 'ALERT',
+      title: notification.title,
+      detail: `${humanizeNotificationType(notification.type)} / ${compactActivityText(notification.body, 90)}`,
+      at: notification.createdAt,
+      status: 'Alert',
+    });
+  }
+
+  for (const task of booking.opsTasks ?? []) {
+    addItem({
+      id: `ops-task-${task.id}`,
+      type: 'OPS',
+      title: `${humanizeAuditAction(task.type)} / ${task.status}`,
+      detail: task.note ?? 'Operator checklist task updated.',
+      at: task.updatedAt,
+      status: task.status,
+    });
+  }
+
+  for (const log of (booking.auditLogs ?? []).slice(0, 6)) {
+    addItem({
+      id: `audit-${log.id}`,
+      type: 'AUDIT',
+      title: humanizeAuditAction(log.action),
+      detail: auditMetadataSummary(log.metadata) || log.target,
+      at: log.createdAt,
+      status: 'Audit',
+    });
+  }
+
+  const sorted = items.sort((left, right) => safeTime(left.at) - safeTime(right.at));
+  return [...sorted.slice(-18), ...pendingItems].slice(0, 22);
 }
 
 function bookingOperatingSnapshot({
