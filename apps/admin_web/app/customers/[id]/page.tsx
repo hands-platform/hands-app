@@ -113,6 +113,17 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     pushDevices,
     notifications,
   });
+  const customerOperatingLedger = buildCustomerOperatingLedger({
+    customer,
+    bookings,
+    wallet,
+    bookingStats,
+    addresses,
+    latestSession,
+    pushDevices,
+    notifications,
+    activityRecords: customerActivityRecords,
+  });
   const filteredActivityCsvHref = buildCsvDataHref(
     filteredCustomerActivityRecords.map((record) => ({
       type: record.type,
@@ -287,6 +298,43 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <small>Date-ordered app and operations events.</small>
           </a>
         </div>
+      </section>
+
+      <section className="card" id="customer-operating-ledger" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer operating ledger</h2>
+            <p className="muted">
+              Compact factual ledger for account, booking work, chat archive, payment, wallet, address,
+              app device, notification, and operator history. No customer score is calculated here.
+            </p>
+          </div>
+          <span className="pill pill-info">{customerOperatingLedger.length} record areas</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>Evidence</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customerOperatingLedger.map((row) => (
+              <tr key={row.area}>
+                <td>{row.area}</td>
+                <td>{row.status}</td>
+                <td>{row.evidence}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" id="record-date-filter" style={{ marginBottom: 16 }}>
@@ -880,6 +928,13 @@ type CustomerActivityRecord = {
   href?: string;
 };
 
+type CustomerOperatingLedgerRow = {
+  area: string;
+  status: string;
+  evidence: string;
+  href: string;
+};
+
 function CustomerOperatorCommandAction({
   customerId,
   command,
@@ -1302,6 +1357,127 @@ function buildCustomerAccountFacts(
       label: 'Withdrawal request',
       value: 'None recorded',
       helper: 'No customer deletion request table is connected yet',
+    },
+  ];
+}
+
+function buildCustomerOperatingLedger({
+  customer,
+  bookings,
+  wallet,
+  bookingStats,
+  addresses,
+  latestSession,
+  pushDevices,
+  notifications,
+  activityRecords,
+}: {
+  customer: AdminCustomerDetail;
+  bookings: AdminBookingDetail[];
+  wallet: ReturnType<typeof buildCustomerWallet>;
+  bookingStats: ReturnType<typeof buildBookingStats>;
+  addresses: Array<{ key: string; label: string; value: string }>;
+  latestSession?: AdminAppSession;
+  pushDevices: CustomerPushDevice[];
+  notifications: AdminNotification[];
+  activityRecords: CustomerActivityRecord[];
+}): CustomerOperatingLedgerRow[] {
+  const latestBooking = bookings[0];
+  const lastCompletedBooking = bookings.find((booking) => booking.status === 'COMPLETED');
+  const chatRooms = bookings.filter((booking) => booking.chatRoom);
+  const chatMessages = bookings.reduce((sum, booking) => sum + readChatMessages(booking).length, 0);
+  const refundRows = bookings.reduce(
+    (sum, booking) => sum + (booking.payment?.refunds?.length ?? 0) + (booking.refunds?.length ?? 0),
+    0,
+  );
+  const enabledPushCount = pushDevices.filter((device) => device.enabled).length;
+  const unreadNotifications = notifications.filter((notification) => !notification.readAt).length;
+  const notes = (customer.auditLogs ?? []).filter((log) => log.action === 'customer.ops_note.add');
+
+  return [
+    {
+      area: 'Account',
+      status: customer.user?.phone ? 'Phone linked' : 'Phone missing',
+      evidence: `${customer.user?.fullName ?? 'Unnamed customer'} / ${customer.user?.phone ?? 'No phone'} / joined ${formatDate(
+        customer.user?.createdAt,
+      )}`,
+      href: `/customers/${customer.id}#customer-info`,
+    },
+    {
+      area: 'Booking work',
+      status: `${bookings.length} booking(s)`,
+      evidence: `${bookingStats.active} active / ${bookingStats.completed} completed / ${bookingStats.cancelled} closed`,
+      href: `/customers/${customer.id}#booking-history`,
+    },
+    {
+      area: 'Latest booking',
+      status: latestBooking ? latestBooking.status : 'No booking',
+      evidence: latestBooking
+        ? `${shortId(latestBooking.id)} / ${bookingServiceLabel(latestBooking)} / ${formatDate(
+            latestBooking.scheduledStartAt ?? latestBooking.createdAt,
+          )}`
+        : 'No booking record loaded for this customer.',
+      href: latestBooking ? `/bookings/${latestBooking.id}` : `/customers/${customer.id}#booking-history`,
+    },
+    {
+      area: 'Last completed work',
+      status: lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None',
+      evidence: lastCompletedBooking
+        ? `${bookingServiceLabel(lastCompletedBooking)} / ${formatDate(
+            lastCompletedBooking.updatedAt ??
+              lastCompletedBooking.scheduledEndAt ??
+              lastCompletedBooking.scheduledStartAt,
+          )}`
+        : 'No completed service record loaded.',
+      href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : `/customers/${customer.id}#booking-history`,
+    },
+    {
+      area: 'Chat archive',
+      status: `${chatRooms.length} room(s)`,
+      evidence: `${chatMessages} retained message(s). Admin keeps chat after mobile chat hides.`,
+      href: `/customers/${customer.id}#chat-history`,
+    },
+    {
+      area: 'Payment and wallet',
+      status: formatMoney(wallet.capturedSpend),
+      evidence: `${formatMoney(wallet.pendingPaymentAmount)} pending or authorized / ${refundRows} refund row(s) / ${formatMoney(
+        wallet.cashBookingAmount,
+      )} cash booking amount`,
+      href: `/customers/${customer.id}#wallet`,
+    },
+    {
+      area: 'Addresses',
+      status: addresses.length ? `${addresses.length} saved` : 'No saved address',
+      evidence: addresses[0]?.value ?? 'No customer address or selected map pin loaded.',
+      href: `/customers/${customer.id}#addresses`,
+    },
+    {
+      area: 'App access',
+      status: latestSession ? 'Session saved' : 'No session',
+      evidence: latestSession
+        ? `${latestSession.platform ?? 'Unknown platform'} / ${latestSession.ipAddress ?? 'No IP'} / ${formatDate(
+            latestSession.lastSeenAt,
+          )}`
+        : 'No customer app session row loaded.',
+      href: `/customers/${customer.id}#customer-info`,
+    },
+    {
+      area: 'Devices and notices',
+      status: `${enabledPushCount} push-ready`,
+      evidence: `${pushDevices.length} push device(s) / ${notifications.length} notification row(s) / ${unreadNotifications} unread`,
+      href: `/customers/${customer.id}#notifications`,
+    },
+    {
+      area: 'Activity timeline',
+      status: `${activityRecords.length} event(s)`,
+      evidence: 'Date-ordered factual booking, work, chat, payment, address, app, and support records.',
+      href: `/customers/${customer.id}#customer-activity`,
+    },
+    {
+      area: 'Operator notes',
+      status: `${notes.length} note(s)`,
+      evidence: `${customer.auditLogs?.length ?? 0} customer-linked audit row(s) retained for staff handoff.`,
+      href: `/customers/${customer.id}#audit-trail`,
     },
   ];
 }

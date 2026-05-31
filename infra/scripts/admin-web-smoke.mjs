@@ -405,6 +405,7 @@ if (customerLinkMatch) {
     'Customer detail',
     'Customer operator command queue',
     'Customer full record index',
+    'Customer operating ledger',
     'Customer activity action panel',
     'Customer information',
     'Customer account facts',
