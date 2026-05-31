@@ -99,8 +99,8 @@ When a partner cannot accept a direct request or join backup matching, operators
 
 4. Refresh stale partner location.
    - Owner: Dispatch.
-   - Why: 10km backup matching depends on a recent stored partner location.
-   - Booking impact: stale location can exclude partners from backup matching or make distance ordering unreliable.
+   - Why: marketplace matching decisions depend on a recent stored partner location.
+   - Booking impact: stale location can weaken marketplace matching or make distance ordering unreliable.
    - Payout impact: no direct payout impact, but location evidence may matter for disputes.
 
 5. Confirm device and alert reachability.

@@ -1017,7 +1017,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <h2>Dispatch capacity forecast</h2>
             <p className="muted">
               Converts the filtered partner list into dispatch capacity, recovery work, and city-level supply
-              signals for direct requests and 10km backup matching.
+              signals for direct requests and marketplace matching.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy">
@@ -2946,7 +2946,7 @@ function buildPartnerShiftHandoff(
       ? {
           title: 'Refresh partner locations for dispatch accuracy',
           scope: 'Location',
-          detail: `${locationRefresh.length} partner(s) need a current location before direct request or 10km backup matching.`,
+          detail: `${locationRefresh.length} partner(s) need a current location before direct request or marketplace matching.`,
           operatorAction: `Ask partners to open the app; location must be fresh within ${opsPolicy.staleLocationMinutes} minutes.`,
           href: '/partners?review=location',
           tone: acceptReady.length ? ('info' as const) : ('warn' as const),

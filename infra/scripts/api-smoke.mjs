@@ -1347,7 +1347,7 @@ if (
   hybridBackupNotification.data.distanceMeters > 10000
 ) {
   throw new Error(
-    `Direct booking should notify eligible 10km backup partners: ${JSON.stringify({
+    `Direct booking should notify eligible marketplace partners: ${JSON.stringify({
       hybridBackupNotification,
       hybridBackupNotifications,
     })}`,

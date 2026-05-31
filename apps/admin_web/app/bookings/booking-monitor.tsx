@@ -1351,9 +1351,9 @@ function buildBookingDispatchPartnerShortcuts(
       tone: firstPickWaiting.length ? 'warn' : 'ok',
     },
     {
-      title: '10km backup-ready',
+      title: 'Marketplace-ready',
       value: noPartnerSupply.length.toString(),
-      detail: 'Use when open matching has no backup supply or customer options.',
+      detail: 'Use when open matching has no marketplace supply or customer options.',
       href: '/partners?review=backup-ready',
       tone: noPartnerSupply.length ? 'warn' : 'ok',
     },

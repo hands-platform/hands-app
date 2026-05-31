@@ -2899,13 +2899,13 @@ function bookingBackupPartnerExcludedGroups(
     group(
       'Location stale or missing',
       '/partners?review=location',
-      'Partner location must be refreshed before 10km backup decisions are trusted.',
+      'Partner location should be refreshed before marketplace decisions are trusted.',
       (blocker) => blocker.startsWith('location') || blocker === 'no current coordinates',
     ),
     group(
       `Outside ${formatDistanceMeters(radiusMeters)}`,
       '/operations-policy#policy-matching-backup-provider-radius-meters',
-      'Partner is outside the configured backup radius for this booking pin.',
+      'Partner is outside the configured marketplace policy distance for this booking pin.',
       (blocker) => blocker.startsWith('outside'),
     ),
   ];
@@ -2924,7 +2924,7 @@ function bookingBackupCandidateCommand(input: {
       tone: 'pill-danger',
       title: 'Customer location must be confirmed first',
       detail:
-        'Distance, 10km backup eligibility, and partner exclusion reasons cannot be trusted without a booking pin.',
+        'Distance, marketplace eligibility, and partner exclusion reasons cannot be trusted without a booking pin.',
       href: '/bookings',
       action: 'Open bookings',
     };

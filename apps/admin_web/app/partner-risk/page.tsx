@@ -1453,9 +1453,9 @@ function buildAcceptanceUnblockPlaybook(
       status: card('location-dispatch')?.status ?? 'UNKNOWN',
       pillClass: card('location-dispatch')?.blockingCount ? 'pill-danger' : 'pill-warn',
       detail:
-        'Location freshness controls distance sorting and the 10km backup invite pool, but it is often solved by reopening the app.',
+        'Location freshness controls distance sorting and marketplace invite quality, but it is often solved by reopening the app.',
       bookingImpact:
-        'Can exclude partners from backup matching or make customer ETA expectations unreliable.',
+        'Can weaken marketplace matching or make customer ETA expectations unreliable.',
       payoutImpact:
         'No direct payout impact, but location evidence may matter for disputes and no-show review.',
       customerImpact: 'Improves nearby partner ordering and reduces wasted waiting time.',

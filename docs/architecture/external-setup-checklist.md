@@ -444,23 +444,23 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-28:
 - Geoapify API key: configured locally in ignored `.env`; geocoding verification passing
 - Supabase URL / anon key / JWT secret / service role key: configured locally in ignored `.env`
 - Supabase SQL bundle: applied successfully to `hands-staging`
-- Supabase Phone Auth provider screen: do not fill yet; Vonage OTP is deferred
+- Supabase Phone Auth provider screen: do not fill yet; production SMS OTP is deferred
 - Supabase REST/storage verification: passing with service role
 - API Supabase auth smoke: passing locally
 - Runtime operations policy: exposed in Admin Setup and Operations Policy, covered by admin web smoke and API smoke
 - No-show closeout alerts: customer and partner notification rows are created when Admin marks no-show, with `/notifications?review=no-show` and booking detail trace coverage
 - Supabase Phone Auth/SMS: deferred
-- Planned SMS provider: Vonage
-- Mobile auth switch: still `AUTH_BACKEND=nest` locally until Vonage + Supabase Phone Auth E2E is configured
+- Planned SMS provider path: Twilio Verify for beta, then Viettel/FPT or another Vietnam-capable production provider
+- Mobile auth switch: still `AUTH_BACKEND=nest` locally until SMS provider + Supabase Phone Auth E2E is configured
 - Secret hygiene: Supabase publishable/anon/service/JWT secret values, MapTiler, and Geoapify keys must stay only in ignored `.env` files or external secret storage, never in Git
 - Local MinIO storage: ready for MVP
-- Production SMS provider: Vonage planned, credentials not filled
+- Production SMS provider: not selected/finalized, credentials not filled
 - MoMo / VNPay merchant credentials: not filled
 - Production S3 or Cloudflare R2: not filled, local MinIO is enough for MVP
 
 Phase-specific external checks currently block only on missing external console values:
 
-- `supabase-auth`: deferred until Vonage credentials and Supabase Phone Auth are ready
+- `supabase-auth`: deferred until SMS provider credentials and Supabase Phone Auth are ready
 - `maps`: ready locally with MapTiler and Geoapify keys
 - `payments`: `MOMO_PARTNER_CODE`, `MOMO_ACCESS_KEY`, `MOMO_SECRET_KEY`, `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`
 
@@ -468,7 +468,7 @@ The next external setup items to complete are:
 
 - production push provider decision
 - OneSignal app ID and REST API key, only when OS push E2E starts
-- Vonage credentials, only when Supabase Phone Auth/SMS E2E starts
+- SMS provider credentials, only when Supabase Phone Auth/SMS E2E starts
 - MoMo and VNPay merchant credentials, only when payment E2E starts
 
 ## Recommended Fill Order
@@ -476,7 +476,7 @@ The next external setup items to complete are:
 1. Supabase project URL / anon key / JWT secret
 2. MapTiler and Geoapify keys
 3. Runtime operations policy review in Admin
-4. Supabase Phone Auth SMS configuration with Vonage
+4. Supabase Phone Auth SMS configuration with selected provider
 5. MoMo and VNPay credentials
 6. Storage / CDN credentials
 7. Production push provider

@@ -60,7 +60,7 @@ C:\dev\massage-vn-workspace\repo\docs\architecture\operations-dashboard.md
 - Supabase staging: created and SQL applied
 - MapTiler and Geoapify: configured locally and verified
 - Runtime operations policy: managed in Admin at `/operations-policy`
-- External production-like registrations still pending: Vonage Phone Auth, OneSignal, MoMo/VNPay, production storage/CDN
+- External production-like registrations still pending: production SMS Phone Auth, OneSignal, MoMo/VNPay, production storage/CDN
 
 ## Registration Order
 
@@ -117,7 +117,7 @@ Registered:
 
 Deferred:
 
-- Phone Auth with Vonage SMS, until OTP E2E setup
+- Phone Auth with selected SMS provider, until OTP E2E setup
 
 Set:
 
@@ -140,7 +140,7 @@ npm.cmd run external:check:supabase
 npm.cmd run auth:supabase-smoke
 ```
 
-Do not enable `AUTH_BACKEND=supabase` for normal app testing until Vonage Phone Auth is configured and verified.
+Do not enable `AUTH_BACKEND=supabase` for normal app testing until SMS Phone Auth is configured and verified.
 
 ### 2. MapTiler And Geoapify
 
@@ -283,7 +283,7 @@ npm.cmd run external:check:production
 Purpose:
 
 - Real phone OTP delivery in Vietnam.
-- This is planned with Vonage and deferred until the OTP E2E pass.
+- Use Twilio Verify for beta if useful, then evaluate Viettel/FPT or another Vietnam-capable provider before production OTP.
 
 Set only if the backend SMS provider is used:
 

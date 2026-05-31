@@ -2057,7 +2057,7 @@ function PartnerAcceptanceRepairCommandPanel({
         <div>
           <h2>Booking acceptance repair command</h2>
           <p className="muted">
-            Exact operator diagnosis for why this partner can or cannot accept direct requests and 10km backup
+            Exact operator diagnosis for why this partner can or cannot accept direct requests and marketplace
             participation.
           </p>
         </div>

@@ -73,7 +73,7 @@ console.log(
             'Copy infra/env/hands-staging.env.example values into .env after external consoles are ready.',
             'Paste infra/supabase/.generated/hands-staging-setup.sql into Supabase SQL Editor.',
             'Run npm.cmd run external:check:supabase for Supabase core values.',
-            'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when Vonage/Supabase Phone Auth E2E starts.',
+            'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when the chosen SMS provider/Supabase Phone Auth E2E starts.',
           ]
         : failed.map((result) => result.fix),
     },

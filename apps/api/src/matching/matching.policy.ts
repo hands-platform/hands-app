@@ -248,7 +248,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
         label: 'In-app now, push later',
-        tradeoff: 'Keeps MVP stable until OneSignal/Vonage production accounts are fully approved.',
+        tradeoff: 'Keeps MVP stable until OneSignal and production SMS accounts are fully approved.',
       },
       {
         value: PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS,

@@ -391,7 +391,7 @@ export default async function OperationsPolicyPage({
             <h2>Policy outcome effect</h2>
             <p className="muted">
               Groups real bookings by the policy snapshot saved at booking open. Use this before changing the
-              10 minute response window, 10km backup radius, invite cap, or backup opening mode.
+              10 minute response window, marketplace policy, invite cap, or marketplace opening mode.
             </p>
           </div>
           <span className={`pill ${policyEffectAnalysis.sampleCount ? 'pill-info' : 'pill-warn'}`}>
@@ -821,8 +821,8 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Phone OTP"
-            recommendation="Keep Vonage deferred until account setup is complete."
-            detail="Use internal/demo auth for local development, then turn on phone auth once Vonage credentials and sender rules are ready."
+            recommendation="Keep production SMS deferred until provider selection is complete."
+            detail="Use internal/demo auth for local development, then turn on phone auth once Twilio beta or Vietnam SMS provider credentials and sender rules are ready."
           />
           <DecisionHint
             title="Cancellation after match"
@@ -1576,7 +1576,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
         : 'Booking notifications are recorded in-app until OneSignal production setup is fully ready.',
       operatorAction: pushReady
         ? 'Watch delivery failures and disabled devices on the Notifications board.'
-        : 'Keep this until OneSignal/Vonage production credentials and monitoring are complete.',
+        : 'Keep this until OneSignal and production SMS credentials/monitoring are complete.',
       className: pushReady ? 'ops-task-done' : 'ops-task-pending',
       pillClass: pushReady ? 'pill-success' : 'pill-info',
       blocking: false,
@@ -2128,7 +2128,7 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Location block',
       value: locationBlocked.length.toString(),
-      helper: `Missing or older than ${policy.backupLocationFreshnessMinutes} minute(s), so 10km backup matching should not trust it.`,
+      helper: `Missing or older than ${policy.backupLocationFreshnessMinutes} minute(s), so marketplace matching should not trust it.`,
     },
     {
       label: 'Push gap',

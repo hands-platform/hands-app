@@ -144,7 +144,7 @@ export default async function NotificationsPage({
                 <span className="pill pill-success">Ready</span>
                 <h3 style={{ marginTop: 10 }}>Delivery path is clean</h3>
                 <p className="muted">
-                  Keep monitoring failed sends after OneSignal/Vonage production credentials are enabled.
+                  Keep monitoring failed sends after OneSignal and production SMS credentials are enabled.
                 </p>
               </div>
             )}

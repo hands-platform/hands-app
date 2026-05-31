@@ -69,7 +69,7 @@ const content = [
   '--   provider_locations, customer_selected_locations, and nearby_providers are now covered by hands-core-schema.sql.',
   '-- - After applying this SQL, run npm.cmd run external:check:supabase for core Supabase readiness.',
   '-- - Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when',
-  '--   Vonage/Supabase Phone Auth E2E starts.',
+  '--   chosen SMS provider/Supabase Phone Auth E2E starts.',
   '',
   ...bundledSections.flatMap((section) => [
     '',
@@ -106,7 +106,7 @@ console.log(
         'Open the generated SQL file and paste it into Supabase SQL Editor for the HANDS staging project.',
         'Set SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET, and SUPABASE_SERVICE_ROLE_KEY in the API environment.',
         'Run npm.cmd run external:check:supabase.',
-        'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when Vonage/Supabase Phone Auth E2E starts.',
+        'Run npm.cmd run external:check:supabase-auth and npm.cmd run auth:supabase-smoke only when the chosen SMS provider/Supabase Phone Auth E2E starts.',
       ],
     },
     null,
