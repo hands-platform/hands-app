@@ -18,6 +18,9 @@ type CustomerFilters = {
   booking: string;
   reachability: string;
   address: string;
+  payment: string;
+  chat: string;
+  memo: string;
   sort: string;
   joinedFrom: string;
   joinedTo: string;
@@ -52,11 +55,13 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       closed_booking_count: row.cancelledBookings,
       captured_spend_vnd: row.capturedSpend,
       refund_amount_vnd: row.refundAmount,
+      payment_count: row.paymentCount,
       address_count: row.addressCount,
       push_reachable: row.pushReachable,
       in_app_now: row.isLive,
       chat_room_count: row.chatRooms,
       payment_issue_count: row.paymentIssues,
+      admin_memo_count: row.memoCount,
       latest_memo: row.latestMemoTitle,
       latest_memo_detail: row.latestMemoDetail,
     })),
@@ -75,11 +80,13 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       'closed_booking_count',
       'captured_spend_vnd',
       'refund_amount_vnd',
+      'payment_count',
       'address_count',
       'push_reachable',
       'in_app_now',
       'chat_room_count',
       'payment_issue_count',
+      'admin_memo_count',
       'latest_memo',
       'latest_memo_detail',
     ],
@@ -138,6 +145,32 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
               <option value="">All</option>
               <option value="saved">Saved address</option>
               <option value="missing">No saved address</option>
+            </select>
+          </label>
+          <label>
+            Payment
+            <select name="payment" defaultValue={filters.payment}>
+              <option value="">All</option>
+              <option value="captured">Captured payment</option>
+              <option value="issue">Payment follow-up</option>
+              <option value="refund">Refund history</option>
+              <option value="no-payment">No payment record</option>
+            </select>
+          </label>
+          <label>
+            Chat archive
+            <select name="chat" defaultValue={filters.chat}>
+              <option value="">All</option>
+              <option value="has-chat">Has chat archive</option>
+              <option value="no-chat">No chat archive</option>
+            </select>
+          </label>
+          <label>
+            Admin memo
+            <select name="memo" defaultValue={filters.memo}>
+              <option value="">All</option>
+              <option value="has-memo">Has memo</option>
+              <option value="no-memo">No memo</option>
             </select>
           </label>
           <label>
@@ -388,6 +421,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
                 <th>Completed</th>
                 <th>Cancelled</th>
                 <th>Total paid</th>
+                <th>Ops trail</th>
                 <th>Memo</th>
                 <th>Addresses</th>
                 <th>Open</th>
@@ -438,6 +472,12 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
                     <p className="muted">{formatMoney(row.refundAmount)} refunded</p>
                   </td>
                   <td>
+                    <strong>{row.chatRooms} chat room(s)</strong>
+                    <p className="muted">
+                      {row.paymentIssues} payment follow-up / {row.memoCount} memo(s)
+                    </p>
+                  </td>
+                  <td>
                     <strong>{row.latestMemoTitle}</strong>
                     <p className="muted">{row.latestMemoDetail}</p>
                   </td>
@@ -451,7 +491,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
               ))}
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={13}>
+                  <td colSpan={14}>
                     <strong>No customers found</strong>
                     <p className="muted">Change the filters or clear search to view customer records.</p>
                   </td>
@@ -481,6 +521,9 @@ function buildCustomerFilters(params: Record<string, string | string[] | undefin
     booking: readSearchParam(params.booking),
     reachability: readSearchParam(params.reachability),
     address: readSearchParam(params.address),
+    payment: readSearchParam(params.payment),
+    chat: readSearchParam(params.chat),
+    memo: readSearchParam(params.memo),
     sort: readCustomerSort(params.sort),
     joinedFrom: readDateParam(params.joinedFrom),
     joinedTo: readDateParam(params.joinedTo),
@@ -540,7 +583,9 @@ function filterCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], filters
   return rows.filter((row) => {
     if (
       query &&
-      ![row.name, row.phone, row.email, row.id].some((value) => value.toLowerCase().includes(query))
+      ![row.name, row.phone, row.email, row.id, row.latestMemoTitle, row.latestMemoDetail].some((value) =>
+        value.toLowerCase().includes(query),
+      )
     ) {
       return false;
     }
@@ -559,6 +604,14 @@ function filterCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], filters
     if (filters.seen === 'never' && row.lastSeenAt) return false;
     if (filters.address === 'saved' && row.addressCount === 0) return false;
     if (filters.address === 'missing' && row.addressCount > 0) return false;
+    if (filters.payment === 'captured' && row.capturedSpend <= 0) return false;
+    if (filters.payment === 'issue' && row.paymentIssues === 0) return false;
+    if (filters.payment === 'refund' && row.refundAmount <= 0) return false;
+    if (filters.payment === 'no-payment' && row.paymentCount > 0) return false;
+    if (filters.chat === 'has-chat' && row.chatRooms === 0) return false;
+    if (filters.chat === 'no-chat' && row.chatRooms > 0) return false;
+    if (filters.memo === 'has-memo' && row.memoCount === 0) return false;
+    if (filters.memo === 'no-memo' && row.memoCount > 0) return false;
     if (filters.joinedFrom && !isOnOrAfterDate(row.joinedAt, filters.joinedFrom)) return false;
     if (filters.joinedTo && !isOnOrBeforeDate(row.joinedAt, filters.joinedTo)) return false;
     if (filters.minBookings !== null && row.bookingCount < filters.minBookings) return false;
@@ -610,6 +663,9 @@ function buildCustomerActiveFilters(filters: CustomerFilters) {
   if (filters.booking) labels.push(`Booking: ${filters.booking}`);
   if (filters.reachability) labels.push(`Reachability: ${filters.reachability}`);
   if (filters.address) labels.push(`Address: ${filters.address}`);
+  if (filters.payment) labels.push(`Payment: ${filters.payment}`);
+  if (filters.chat) labels.push(`Chat: ${filters.chat}`);
+  if (filters.memo) labels.push(`Memo: ${filters.memo}`);
   if (filters.joinedFrom) labels.push(`Joined from: ${filters.joinedFrom}`);
   if (filters.joinedTo) labels.push(`Joined to: ${filters.joinedTo}`);
   if (filters.seen) labels.push(`Recent access: ${filters.seen}`);
@@ -666,6 +722,7 @@ function buildCustomerRow(customer: AdminCustomer) {
   const latestMemo = [...(customer.auditLogs ?? [])].sort(
     (left, right) => dateMs(right.createdAt) - dateMs(left.createdAt),
   )[0];
+  const memoCount = customer.auditLogs?.length ?? 0;
   const activityLabel =
     activeBookings > 0
       ? `${activeBookings} active booking(s)`
@@ -685,6 +742,7 @@ function buildCustomerRow(customer: AdminCustomer) {
     activeBookings,
     completedBookings,
     cancelledBookings,
+    paymentCount: payments.length,
     refundAmount,
     capturedSpend,
     addressCount,
@@ -698,6 +756,7 @@ function buildCustomerRow(customer: AdminCustomer) {
     pushReachable,
     paymentIssues,
     chatRooms: bookings.filter((booking) => booking.chatRoom).length,
+    memoCount,
     activityLabel,
     latestMemoTitle: latestMemo?.action ?? 'No memo',
     latestMemoDetail: latestMemo
