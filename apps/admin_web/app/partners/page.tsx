@@ -238,7 +238,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       booking_count: master.bookingCount,
       completed_work_count: master.completedCount,
       closed_booking_count: master.cancelledCount,
-      rating: master.rating,
+      review_average: master.reviewAverage,
       review_count: master.reviewCount,
       gross_revenue_vnd: master.grossRevenue,
       platform_fee_vnd: master.platformFee,
@@ -270,7 +270,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     'booking_count',
     'completed_work_count',
     'closed_booking_count',
-    'rating',
+    'review_average',
     'review_count',
     'gross_revenue_vnd',
     'platform_fee_vnd',
@@ -493,7 +493,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <th>Joined / recent access</th>
                 <th>Location</th>
                 <th>Bookings</th>
-                <th>Reviews</th>
+                <th>Review history</th>
                 <th>Revenue</th>
                 <th>Payout</th>
                 <th>Account</th>
@@ -546,7 +546,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </p>
                   </td>
                   <td>
-                    <strong>{row.rating}</strong>
+                    <strong>{row.reviewAverage} avg</strong>
                     <p className="muted">{row.reviewCount} review(s)</p>
                   </td>
                   <td>
@@ -1727,7 +1727,7 @@ type PartnerMasterRow = {
   bookingCount: number;
   completedCount: number;
   cancelledCount: number;
-  rating: string;
+  reviewAverage: string;
   reviewCount: number;
   grossRevenue: number;
   platformFee: number;
@@ -1898,7 +1898,7 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     cancelledCount: bookingRows.filter((booking) =>
       ['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status),
     ).length,
-    rating: formatProviderRating(provider.ratingAvg),
+    reviewAverage: formatProviderRating(provider.ratingAvg),
     reviewCount: Number(provider.reviewCount ?? 0),
     grossRevenue: earnings.reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0),
     platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
