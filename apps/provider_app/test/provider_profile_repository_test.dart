@@ -73,7 +73,7 @@ void main() {
         request.response.write(jsonEncode({
           'blocked': true,
           'device': {
-            'blockReason': 'Duplicate account risk',
+            'blockReason': 'Duplicate account review',
           },
         }));
         await request.response.close();
@@ -96,7 +96,7 @@ void main() {
         isA<StateError>().having(
           (error) => error.message,
           'message',
-          contains('Duplicate account risk'),
+          contains('Duplicate account review'),
         ),
       ),
     );

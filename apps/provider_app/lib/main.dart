@@ -412,10 +412,10 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
             ref.read(providerLocationHeartbeatProvider).snapshot;
     final bookingItems = openBookings.whereType<Map<String, dynamic>>().toList()
       ..sort((left, right) {
-        final leftScore = providerRequestPriority(left, auth?.userId);
-        final rightScore = providerRequestPriority(right, auth?.userId);
-        if (leftScore != rightScore) {
-          return rightScore.compareTo(leftScore);
+        final leftPriority = providerRequestPriority(left, auth?.userId);
+        final rightPriority = providerRequestPriority(right, auth?.userId);
+        if (leftPriority != rightPriority) {
+          return rightPriority.compareTo(leftPriority);
         }
         return bookingTimestamp(right).compareTo(bookingTimestamp(left));
       });
@@ -1835,7 +1835,7 @@ class OpenBookingCard extends StatelessWidget {
                 ((isPreferredRequest && !isMatched) ||
                     (!isPreferredRequest && !joined))) ...[
               const SizedBox(height: 12),
-              InfoCard(text: providerCashBookingRiskHint(booking)),
+              InfoCard(text: providerCashBookingSettlementHint(booking)),
             ],
             const SizedBox(height: 12),
             if (isPreferredRequest && !isMatched)
@@ -5123,7 +5123,7 @@ bool providerBookingIsCash(Map<String, dynamic> booking) {
       booking['paymentMethod']?.toString().toUpperCase() == 'CASH';
 }
 
-String providerCashBookingRiskHint(Map<String, dynamic> booking) {
+String providerCashBookingSettlementHint(Map<String, dynamic> booking) {
   final payment = asMap(booking['payment']);
   final amount = payment?['amount'] ?? booking['totalAmount'];
   final amountText =

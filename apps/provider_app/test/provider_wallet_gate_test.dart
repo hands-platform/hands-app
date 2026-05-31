@@ -75,7 +75,7 @@ void main() {
         contains('Cash booking fees are settled.'));
   });
 
-  test('identifies cash bookings and explains settlement risk', () {
+  test('identifies cash bookings and explains settlement handling', () {
     final booking = {
       'payment': {
         'method': 'CASH',
@@ -84,8 +84,8 @@ void main() {
     };
 
     expect(providerBookingIsCash(booking), isTrue);
-    expect(providerCashBookingRiskHint(booking), contains('450.000 VND'));
-    expect(providerCashBookingRiskHint(booking), contains('wallet debt'));
+    expect(providerCashBookingSettlementHint(booking), contains('450.000 VND'));
+    expect(providerCashBookingSettlementHint(booking), contains('wallet debt'));
   });
 
   test('explains direct requests as first partner decisions', () {

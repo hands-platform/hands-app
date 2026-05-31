@@ -381,16 +381,16 @@ bool isProviderSubmittedDocumentUsableForKyc(Map<String, dynamic> document) {
 Map<String, dynamic> _preferredDocumentForSlot(
     List<Map<String, dynamic>> documents) {
   return documents.reduce((best, candidate) {
-    final bestScore = _documentSlotScore(best);
-    final candidateScore = _documentSlotScore(candidate);
-    if (candidateScore > bestScore) {
+    final bestPriority = _documentSlotPriority(best);
+    final candidatePriority = _documentSlotPriority(candidate);
+    if (candidatePriority > bestPriority) {
       return candidate;
     }
     return best;
   });
 }
 
-int _documentSlotScore(Map<String, dynamic> document) {
+int _documentSlotPriority(Map<String, dynamic> document) {
   switch (document['status']?.toString()) {
     case 'PENDING_REVIEW':
       return 4;
