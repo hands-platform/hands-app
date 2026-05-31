@@ -342,7 +342,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="">All</option>
               <option value="account-blocked">Account blocked</option>
               <option value="blocked">Blocked device</option>
-              <option value="suspicious">Flagged session</option>
+              <option value="suspicious">Session check</option>
               <option value="shared">Shared device</option>
               <option value="missing">No app device</option>
               <option value="clear">Clear</option>
@@ -370,7 +370,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="cash-debt">Cash fee debt</option>
               <option value="tax">Tax profile review</option>
               <option value="security">Device/session check</option>
-              <option value="reports">Reports/sanctions</option>
+              <option value="reports">Reports/controls</option>
               <option value="blocked">Account blocks</option>
               <option value="location">Location freshness</option>
               <option value="push">Push alert readiness</option>
@@ -1065,7 +1065,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <div className="setup-stage-list" style={{ marginTop: 12 }}>
               {dispatchForecast.supplyLanes.map((lane) => (
                 <div className="setup-stage-item" key={lane.city}>
-                  <span>{lane.ready ? 'LIVE' : 'WATCH'}</span>
+                  <span>{lane.ready ? 'LIVE' : 'CHECK'}</span>
                   <div>
                     <strong>{lane.city}</strong>
                     <p className="muted">
@@ -2128,7 +2128,7 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
       label: hasOpenControlItem ? 'Report follow-up' : providerSecurityLabel(securityState),
       tone: hasOpenControlItem || !['clear', 'missing'].includes(securityState) ? 'danger' : 'success',
       detail: hasOpenControlItem
-        ? 'There is an unresolved report or sanction item for this partner.'
+        ? 'There is an unresolved report or account-control item for this partner.'
         : providerSecurityLabel(securityState),
     },
   ];
@@ -2839,8 +2839,8 @@ function buildProviderCommandCenter(
       tone: accountBlocks > 0 || openControlItems > 0 ? 'danger' : deviceRisk > 0 ? 'warn' : 'ok',
       detail:
         accountBlocks > 0 || openControlItems > 0
-          ? 'Account blocks, reports, or active sanctions need operator attention.'
-          : 'No filtered partner has open reports, active sanctions, or device follow-up items.',
+          ? 'Account blocks, reports, or active account controls need operator attention.'
+          : 'No filtered partner has open reports, active account controls, or device follow-up items.',
       href: openControlItems > 0 ? '/partner-controls' : '/partners?review=security',
       metrics: [
         providerCommandMetric('blocked', accountBlocks),
@@ -3145,7 +3145,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Reports desk',
         value: reportReview.length.toString(),
-        detail: 'Partners with reports or sanctions that should be checked before dispatch.',
+        detail: 'Partners with reports or account controls that should be checked before dispatch.',
         href: '/partner-controls',
         tone: reportReview.length ? 'danger' : 'info',
       },
@@ -3969,11 +3969,11 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       detail: 'Blocked, shared, or flagged partner app devices need operator review.',
     },
     {
-      label: 'Reports and sanctions',
+      label: 'Reports and account controls',
       count: reportNeedsReview,
       href: '/partners?review=reports',
       detail:
-        'Open reports or active sanctions should be reviewed before dispatch and profile badge changes.',
+        'Open reports or active account controls should be reviewed before dispatch and profile badge changes.',
     },
     {
       label: 'Location freshness',
@@ -4113,7 +4113,7 @@ function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVI
     issues.push({ label: `${openReports} open report(s)`, severity: 'high' });
   }
   if (activeSanctions > 0) {
-    issues.push({ label: `${activeSanctions} active sanction(s)`, severity: 'high' });
+    issues.push({ label: `${activeSanctions} active control(s)`, severity: 'high' });
   }
 
   return issues;
@@ -4285,7 +4285,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Push readiness highlights partners whose devices cannot reliably receive booking alerts.';
   }
   if (kind === 'review' && value === 'reports') {
-    return 'Report review highlights partners with open reports or active sanctions.';
+    return 'Report review highlights partners with open reports or active account controls.';
   }
   if (kind === 'review' && value === 'public-media') {
     return 'Public media review highlights uploaded partner photos that are pending or rejected.';
@@ -4536,10 +4536,10 @@ function sharedDeviceIds(provider: AdminProvider) {
 function providerSecurityLabel(status: ProviderSecurityState) {
   if (status === 'account-blocked') return 'Account blocked';
   if (status === 'blocked') return 'Device blocked';
-  if (status === 'suspicious') return 'Flagged session';
+  if (status === 'suspicious') return 'Session check';
   if (status === 'shared') return 'Shared device';
   if (status === 'missing') return 'No app device';
-  return 'Security clear';
+  return 'Device clear';
 }
 
 function providerSecurityPillClass(status: ProviderSecurityState) {

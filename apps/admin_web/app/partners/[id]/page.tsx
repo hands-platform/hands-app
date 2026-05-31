@@ -1143,7 +1143,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <h2>Partner registration dossier</h2>
             <p className="muted">
               Structured view of the signup profile, public working profile, identity evidence, payout gate,
-              legal consent, and operational safety. Use this as the first review map before approving or
+              legal consent, and account activity. Use this as the first review map before approving or
               rejecting a partner.
             </p>
           </div>
@@ -1169,9 +1169,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Device and session security</h2>
+            <h2>Device and session activity</h2>
             <p className="muted">
-              Watch for shared devices, flagged sessions, blocked devices, and stale partner app activity.
+              Review shared devices, flagged sessions, blocked devices, and stale partner app activity.
             </p>
           </div>
           <span className={`pill ${securitySummary.risky ? 'pill-danger' : 'pill-success'}`}>
@@ -1246,7 +1246,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               <div className="setup-stage-list">
                 {provider.sessions?.slice(0, 6).map((session) => (
                   <div className="setup-stage-item" key={session.id}>
-                    <span>{session.suspicious ? 'WATCH' : 'OK'}</span>
+                    <span>{session.suspicious ? 'CHECK' : 'OK'}</span>
                     <div>
                       <strong>{maskDeviceId(session.deviceId)}</strong>
                       <p className="muted">
@@ -1338,7 +1338,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <div className="ops-task-card ops-task-pending" style={{ marginBottom: 16 }}>
           <div className="risk-watch-header">
             <div>
-              <h3>Manual sanction</h3>
+              <h3>Manual account control</h3>
               <p className="muted">
                 Use this for immediate operating controls when a report is not yet required.
               </p>
@@ -1363,7 +1363,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <form className="form-grid" action={createProviderSanction}>
             <input type="hidden" name="providerProfileId" value={provider.id} />
             <label>
-              Sanction type
+              Control type
               <select name="type" defaultValue="PAYOUT_HOLD">
                 <option value="WARNING">Warning</option>
                 <option value="PAYOUT_HOLD">Payout hold</option>
@@ -1386,7 +1386,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               />
             </label>
             <div className="actions full-span">
-              <button type="submit">Apply manual sanction</button>
+              <button type="submit">Apply account control</button>
               <Link className="text-link" href="/payouts">
                 Open payouts
               </Link>
@@ -1451,12 +1451,12 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         </select>
                         <input
                           name="reason"
-                          placeholder="Sanction reason"
+                          placeholder="Control reason"
                           required
                           minLength={12}
                           maxLength={500}
                         />
-                        <button type="submit">Apply sanction</button>
+                        <button type="submit">Apply control</button>
                       </form>
                     </div>
                     <small>{shortRiskId(report.id)}</small>
@@ -1468,7 +1468,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             )}
           </div>
           <div>
-            <h3>Recent sanctions</h3>
+            <h3>Recent account controls</h3>
             {(provider.sanctions ?? []).length ? (
               <div className="setup-stage-list">
                 {provider.sanctions?.map((sanction) => (
@@ -1489,7 +1489,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         <form action={liftProviderSanction} style={{ marginTop: 8 }}>
                           <input type="hidden" name="providerProfileId" value={provider.id} />
                           <input type="hidden" name="sanctionId" value={sanction.id} />
-                          <button type="submit">Lift sanction</button>
+                          <button type="submit">Lift control</button>
                         </form>
                       ) : null}
                     </div>
@@ -1498,7 +1498,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                 ))}
               </div>
             ) : (
-              <p className="muted">No active or historical sanction recorded yet.</p>
+              <p className="muted">No active or historical account control recorded yet.</p>
             )}
           </div>
         </div>
@@ -2937,7 +2937,7 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     {
       label: 'Verification and operations',
       value: count((record) => verificationTypes.has(record.type)).toString(),
-      helper: 'KYC, documents, bank, tax, agreements, reports, sanctions, media, and notes.',
+      helper: 'KYC, documents, bank, tax, agreements, reports, account controls, media, and notes.',
     },
   ];
 }
@@ -3061,7 +3061,7 @@ function buildPartnerMasterFacts(
     },
     {
       label: 'Admin records',
-      value: `${activeReports.length} open report(s) / ${activeSanctions.length} active sanction(s)`,
+      value: `${activeReports.length} open report(s) / ${activeSanctions.length} active control(s)`,
       helper: 'Factual records only; no person scoring is applied',
     },
   ];
@@ -3435,13 +3435,13 @@ function buildProviderBookingAcceptance(
       action: cashDebt > 0 ? 'Record partner deposit or admin offset before allowing acceptance.' : 'Clear',
     },
     {
-      label: 'Account and sanctions',
+      label: 'Account controls',
       ok: !hasAccountBlock && activeSanctions.length === 0,
       detail: hasAccountBlock
         ? `Account is blocked${provider.blockedReason ? `: ${provider.blockedReason}` : '.'}`
         : activeSanctions.length > 0
-          ? `${activeSanctions.length} active sanction(s) require account-control review.`
-          : 'No account block or active sanction is visible.',
+          ? `${activeSanctions.length} active account control(s) require review.`
+          : 'No account block or active account control is visible.',
       action: hasAccountBlock || activeSanctions.length > 0 ? 'Review reports desk' : 'Clear',
     },
     {
@@ -3532,7 +3532,7 @@ function buildPartnerAcceptanceRepairCommand(
   const customerImpact = bookingAcceptance.canAccept
     ? 'Can appear in customer booking flow and final partner choice.'
     : blockedGates.some((gate) =>
-          ['Wallet and cash debt', 'Account and sanctions', 'Identity and approval'].includes(gate.label),
+          ['Wallet and cash debt', 'Account controls', 'Identity and approval'].includes(gate.label),
         )
       ? 'Hide or avoid this partner for direct acceptance and backup shortlist until hard blockers are cleared.'
       : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
@@ -3601,7 +3601,7 @@ function partnerAcceptanceRepairStep(
       actionLabel: 'Open settlement',
       tone: 'blocked',
     },
-    'Account and sanctions': {
+    'Account controls': {
       owner: 'Account',
       href: `/partner-controls?q=${encodeURIComponent(provider.id)}`,
       actionLabel: 'Open reports',
@@ -3696,7 +3696,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
 ): PartnerAcceptanceUnblockStep[] {
   const gate = (label: string) => bookingAcceptance.gates.find((item) => item.label === label);
   const walletGate = gate('Wallet and cash debt');
-  const accountGate = gate('Account and sanctions');
+  const accountGate = gate('Account controls');
   const identityGate = gate('Identity and approval');
   const bankGate = gate('Bank account');
   const locationGate = gate('Location freshness');
@@ -3727,13 +3727,13 @@ function buildPartnerAcceptanceUnblockPlaybook(
       id: 'account-controls',
       step: '2',
       owner: 'Account',
-      title: 'Resolve account blocks and sanctions',
+      title: 'Resolve account controls',
       status: accountGate?.ok ? 'CLEAR' : 'CONTROL HOLD',
       detail: accountGate?.detail ?? 'Account gate was not evaluated.',
       bookingImpact: accountGate?.ok
         ? 'No account-level restriction is blocking work.'
-        : 'Partner must stay hidden from assignment until account or sanction review is resolved.',
-      payoutImpact: 'Active sanctions can hold payout until support closes the case.',
+        : 'Partner must stay hidden from assignment until account-control review is resolved.',
+      payoutImpact: 'Active account controls can hold payout until support closes the case.',
       action: accountGate?.ok ? 'Open partner report history' : 'Open reports',
       href: `/partner-controls?q=${encodeURIComponent(provider.id)}`,
       tone: accountGate?.ok ? 'done' : 'blocked',
@@ -3997,7 +3997,7 @@ function buildProviderOpsSummary(provider: ProviderDetail, dispatchPolicy = DEFA
             ? payoutBlockers(provider).join(' ')
             : 'Tax profile, tax address, and full payout gate stay deferred until first earning.',
       action: payoutHold
-        ? 'Lift the sanction only after finance or account-control follow-up is resolved.'
+        ? 'Lift the control only after finance or account-control follow-up is resolved.'
         : payoutReady
           ? 'Partner can request payout when earnings are available.'
           : hasFirstRevenue
@@ -4159,8 +4159,8 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       tone: blockedDevices.length ? 'blocked' : 'done',
     },
     {
-      title: 'Flagged sessions',
-      status: suspiciousSessions.length ? `${suspiciousSessions.length} WATCH` : 'CLEAR',
+      title: 'Session checks',
+      status: suspiciousSessions.length ? `${suspiciousSessions.length} CHECK` : 'CLEAR',
       detail: suspiciousSessions.length
         ? suspiciousSessions.map((session) => session.suspiciousReason ?? 'Flagged login').join(' ')
         : 'No flagged session record is currently saved.',
@@ -4521,7 +4521,7 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
     {
       label: 'Device and safety',
       ok: securityClear,
-      status: securityClear ? 'CLEAR' : 'WATCH',
+      status: securityClear ? 'CLEAR' : 'CHECK',
       detail: securityClear
         ? 'No account block, blocked partner device, or flagged session is active.'
         : 'A block, device issue, or flagged session needs admin review.',
@@ -4612,7 +4612,7 @@ function nextProviderAction(
       title: 'Next admin action',
       status: 'PAYOUT HOLD',
       detail: `Finance is locked by active payout hold: ${payoutHold.reason}`,
-      action: 'Review report notes and lift the sanction only when payout can safely resume.',
+      action: 'Review report notes and lift the control only when payout can safely resume.',
       tone: 'blocked',
     };
   }

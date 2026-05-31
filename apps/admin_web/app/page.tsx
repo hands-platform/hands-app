@@ -1243,7 +1243,7 @@ export default async function DashboardPage() {
             <div>
               <span>Account holds</span>
               <strong>{partnerSupply.blocked}</strong>
-              <small>Account or sanction blockers</small>
+              <small>Account-control blockers</small>
             </div>
           </div>
         </div>
@@ -2839,7 +2839,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       step: '2',
       owner: 'Trust',
       title: 'Resolve account controls',
-      detail: 'Blocked accounts and active sanctions stay above booking convenience.',
+      detail: 'Blocked accounts and active account controls stay above booking convenience.',
       metricLabel: 'Account blocks',
       metricValue: activeAccountControls.toString(),
       action: 'Open partner controls',
@@ -2967,15 +2967,15 @@ function buildPartnerOpsQueueItem(
     return {
       id: `${partner.id}-account-control`,
       name,
-      status: partner.blockedAt ? 'Account blocked' : 'Active sanction',
+      status: partner.blockedAt ? 'Account blocked' : 'Active control',
       detail: partner.blockedReason
         ? `Account control is active: ${partner.blockedReason}`
-        : 'Account control is active. Review reports, sanctions, and payout holds before dispatch.',
+        : 'Account control is active. Review reports, controls, and payout holds before dispatch.',
       action: 'Open account review',
       href: `/partner-controls?q=${encodeURIComponent(partner.id)}`,
       className: 'ops-task-blocked',
       priority: 105,
-      metrics: [partnerOpsMetric('sanctions', activeSanctions.length.toString(), 'danger'), ...metrics],
+      metrics: [partnerOpsMetric('controls', activeSanctions.length.toString(), 'danger'), ...metrics],
     };
   }
 
@@ -3444,7 +3444,7 @@ function buildDashboardCommandSignals(input: {
       title: 'Partner lane',
       status: `${providerReviews.length} REVIEW`,
       detail: providerReviews.length
-        ? 'Partner verification, reports, sanctions, or KYC needs admin attention.'
+        ? 'Partner verification, reports, account controls, or KYC needs admin attention.'
         : 'No partner review blocker in the current snapshot.',
       action: 'Open partners',
       href: '/partners',
@@ -3478,7 +3478,7 @@ function buildDashboardCommandSignals(input: {
           href: '/partner-controls?status=OPEN',
         },
         {
-          label: 'Active sanctions',
+          label: 'Active controls',
           value: activeProviderSanctions.length.toString(),
           tone: activeProviderSanctions.length ? 'danger' : 'ok',
           href: '/partner-controls?sanction=ACTIVE',
@@ -3597,7 +3597,7 @@ function buildDashboardCommandSignals(input: {
       title: 'Payout lane',
       status: payoutHolds.length ? `${payoutHolds.length} HELD` : `${payoutReviews.length} OPEN`,
       detail: payoutHolds.length
-        ? 'One or more payout batches are blocked by active partner sanctions.'
+        ? 'One or more payout batches are blocked by active partner account controls.'
         : payoutReviews.length
           ? 'Draft, failed, or processing payout batches are waiting for finance movement.'
           : `${money(input.earnings.availableNetAmount, input.earnings.currency)} available from earnings.`,
@@ -3875,7 +3875,7 @@ function buildOpsQueue(input: {
           : 'medium',
         owner: 'Partner Ops',
         priority: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity)) ? 89 : 64,
-        recommendedAction: 'Open the report case, contact support evidence, and decide sanction or closure.',
+        recommendedAction: 'Open the report case, contact support evidence, and decide control action or closure.',
       });
     }
     const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
@@ -3883,8 +3883,8 @@ function buildOpsQueue(input: {
       items.push({
         area: 'Partner',
         href: `/partners/${provider.id}`,
-        label: 'Partner active sanction',
-        detail: `${provider.displayName} has ${activeSanctions.length} active sanction(s).`,
+        label: 'Partner active account control',
+        detail: `${provider.displayName} has ${activeSanctions.length} active account control(s).`,
         severity: activeSanctions.some(
           (sanction) => sanction.type === 'PAYOUT_HOLD' || sanction.type === 'ACCOUNT_BLOCK',
         )
@@ -3897,7 +3897,7 @@ function buildOpsQueue(input: {
           ? 94
           : 67,
         recommendedAction:
-          'Confirm whether the sanction should continue before dispatch or payout decisions.',
+          'Confirm whether the account control should continue before dispatch or payout decisions.',
       });
     }
   }
@@ -4507,7 +4507,7 @@ function severityPriorityValue(severity: OpsQueueItem['severity']) {
 
 function opsQueueSeverityLabel(severity: OpsQueueItem['severity']) {
   if (severity === 'high') return 'SAME-SHIFT';
-  if (severity === 'medium') return 'WATCH';
+  if (severity === 'medium') return 'CHECK';
   return 'INFO';
 }
 
