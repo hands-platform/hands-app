@@ -149,9 +149,9 @@ Admin visibility:
 - `apps/admin_web/app/bookings/[id]/page.tsx`
 - `apps/admin_web/app/notifications/page.tsx`
 - `apps/admin_web/app/partners/page.tsx`
-- `apps/admin_web/app/partner-controls/page.tsx` and `apps/admin_web/app/partner-risk/page.tsx`
+- `apps/admin_web/app/partner-controls/page.tsx`
 
-Legacy `/providers` and `/provider-risk` pages redirect to these canonical partner routes so older links keep working.
+Legacy `/providers`, `/partner-risk`, and `/provider-risk` pages redirect to canonical partner routes so older links keep working. New admin work should link to `/partners` or `/partner-controls`.
 
 Partner mobile behavior:
 
