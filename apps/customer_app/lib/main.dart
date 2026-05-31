@@ -1060,7 +1060,7 @@ class ProviderDetailPage extends StatelessWidget {
                         children: const [
                           ServiceTag(label: 'Available soon'),
                           ServiceTag(label: 'Direct request'),
-                          ServiceTag(label: 'Backup matching'),
+                          ServiceTag(label: 'Marketplace matching'),
                         ],
                       ),
                       const SizedBox(height: 18),
@@ -1078,7 +1078,9 @@ class ProviderDetailPage extends StatelessWidget {
                                 Icon(Icons.verified_user_outlined,
                                     color: Color(0xFF5E8E4A)),
                                 SizedBox(width: 10),
-                                Expanded(child: Text('No tip, no travel fee')),
+                                Expanded(
+                                    child: Text(
+                                        'No required extra fee, no travel fee')),
                               ],
                             ),
                             SizedBox(height: 10),
@@ -1289,7 +1291,7 @@ class ServiceOptionGroupCard extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(
-              'Choose a time option. The selected partner gets the first response window, and backup matching can open if needed.',
+              'Choose a time option. The selected partner gets the first response window, and marketplace partner options can open if needed.',
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -1303,7 +1305,7 @@ class ServiceOptionGroupCard extends StatelessWidget {
                 DurationPill(label: customerServiceGroupDurationSummary(group)),
                 DurationPill(label: customerServiceGroupPriceRangeLabel(group)),
                 const DurationPill(label: 'First-pick request'),
-                const DurationPill(label: 'Backup matching'),
+                const DurationPill(label: 'Marketplace matching'),
               ],
             ),
             const SizedBox(height: 18),
@@ -1938,7 +1940,7 @@ class _BookingConfirmationPageState
                     runSpacing: 8,
                     children: const [
                       ServiceTag(label: 'Direct request'),
-                      ServiceTag(label: 'Backup matching if needed'),
+                      ServiceTag(label: 'Marketplace matching if needed'),
                       ServiceTag(label: 'Chat after service start'),
                     ],
                   ),
@@ -2496,7 +2498,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     });
 
     final eventMessages = <String, String>{
-      'provider.joined': 'A backup partner joined this request.',
+      'provider.joined': 'A marketplace partner joined this request.',
       'provider.accepted':
           'A partner accepted. Confirm this partner or choose another available option.',
       'provider.rejected':
@@ -2679,7 +2681,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     final waitingText = status == 'OPEN_MATCHING'
         ? (preferredProvider == null
             ? 'Waiting for nearby partners to respond...'
-            : 'Waiting for ${preferredProvider['displayName'] ?? 'your partner'} to confirm. Backup partners may join too.')
+            : 'Waiting for ${preferredProvider['displayName'] ?? 'your partner'} to confirm. Marketplace partners may join too.')
         : status == 'MATCHED'
             ? 'Partner accepted. Waiting for service start...'
             : status == 'IN_SERVICE'
@@ -2785,8 +2787,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                               BookingTimelineChip(
                                 icon: Icons.groups_rounded,
                                 label: fallbackCount == 0
-                                    ? 'No backup yet'
-                                    : '$fallbackCount backup ready',
+                                    ? 'No marketplace option yet'
+                                    : '$fallbackCount marketplace ready',
                               ),
                             ],
                           ),
@@ -2814,7 +2816,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                                   SizedBox(
                                     width: cardWidth,
                                     child: WaitingStatCard(
-                                      label: 'Backup partners',
+                                      label: 'Marketplace partners',
                                       value: fallbackCount.toString(),
                                     ),
                                   ),
@@ -2891,7 +2893,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                             const SizedBox(height: 16),
                           ],
                           if (alternativeParticipants.isNotEmpty) ...[
-                            Text('Backup partners',
+                            Text('Marketplace partners',
                                 style: Theme.of(context)
                                     .textTheme
                                     .titleLarge
@@ -2926,7 +2928,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                           ] else ...[
                             const EmptyPanel(
                                 text:
-                                    'Waiting for a partner response. Backup options can appear here if the first partner is slow to confirm.'),
+                                    'Waiting for a partner response. Marketplace options can appear here if the first partner is slow to confirm.'),
                           ],
                           const SizedBox(height: 10),
                           FilledButton.tonalIcon(
@@ -2995,7 +2997,7 @@ class PartnerSelectionCard extends StatelessWidget {
                       runSpacing: 8,
                       children: [
                         PartnerRoleTag(
-                          label: 'Backup ready',
+                          label: 'Marketplace ready',
                           backgroundColor: Color(0xFFF8ECD4),
                           foregroundColor: Color(0xFF8A5B12),
                         ),
@@ -3272,8 +3274,8 @@ class WaitingStagePanel extends StatelessWidget {
       ),
       WaitingStageItem(
         title: fallbackCount == 0
-            ? 'No backup yet'
-            : '$fallbackCount backup option(s) ready',
+            ? 'No marketplace option yet'
+            : '$fallbackCount marketplace option(s) ready',
         body: fallbackCount == 0
             ? backupStandbyDescription(matchingPolicy)
             : 'You can switch to another available partner below without restarting the booking.',
@@ -4930,14 +4932,14 @@ String formatCustomerScheduleMoment(dynamic value) {
 String customerBookingNextAction(Map<String, dynamic> booking) {
   return switch (booking['status']) {
     'OPEN_MATCHING' =>
-      'Waiting for the selected partner or backup partners to respond.',
+      'Waiting for the selected partner or marketplace partners to respond.',
     'MATCHED' =>
       'Partner confirmed. Chat opens when the partner starts the service.',
     'PROVIDER_ON_THE_WAY' =>
       'Track the partner location and keep your phone nearby.',
     'ARRIVED' => 'Partner arrived. Confirm details before service starts.',
     'IN_SERVICE' => 'Service is in progress. Use Chat if you need help.',
-    'COMPLETED' => 'Service complete. Review and tip when ready.',
+    'COMPLETED' => 'Service complete. Review when ready.',
     'CANCELLED' => 'Cancelled. Any payment hold should be released.',
     'REFUNDED' => 'Refund recorded. Check payment status if needed.',
     _ => 'Review this booking status before taking action.',
@@ -6024,9 +6026,9 @@ WaitingCustomerAction waitingCustomerAction({
 }) {
   if (status == 'OPEN_MATCHING' && fallbackCount > 0) {
     return const WaitingCustomerAction(
-      title: 'Backup options are ready',
+      title: 'Marketplace options are ready',
       body:
-          'Your first-pick partner is still being checked. You can keep waiting or switch to a backup partner below.',
+          'Your first-pick partner is still being checked. You can keep waiting or switch to a marketplace partner below.',
     );
   }
   if (status == 'OPEN_MATCHING') {
@@ -6047,7 +6049,7 @@ WaitingCustomerAction waitingCustomerAction({
     return const WaitingCustomerAction(
       title: 'Service is live',
       body:
-          'Continue in chat if you need help during the service. Review and tip become available after completion.',
+          'Continue in chat if you need help during the service. Review becomes available after completion.',
     );
   }
   return WaitingCustomerAction(
@@ -6096,23 +6098,23 @@ bool backupOpensImmediately(Map<String, dynamic> policy) {
 String backupWindowDescription(Map<String, dynamic> policy) {
   final radius = backupRadiusLabel(policy);
   if (backupOpensImmediately(policy)) {
-    return 'backup partners $radius can also join during this window';
+    return 'marketplace partners $radius can also join during this window';
   }
-  return 'backup partners $radius can join after this window if needed';
+  return 'marketplace partners $radius can join after this window if needed';
 }
 
 String backupStandbyDescription(Map<String, dynamic> policy) {
   final radius = backupRadiusLabel(policy);
   if (backupOpensImmediately(policy)) {
-    return 'Backup partners $radius can appear as soon as they offer support.';
+    return 'Marketplace partners $radius can appear as soon as they offer support.';
   }
-  return 'Backup partners $radius can appear after the first response window if the chosen partner is slow.';
+  return 'Marketplace partners $radius can appear after the first response window if the chosen partner is slow.';
 }
 
 String backupParticipationLabel(Map<String, dynamic> policy) {
   return backupOpensImmediately(policy)
-      ? 'backup options open'
-      : 'backup options on standby';
+      ? 'marketplace options open'
+      : 'marketplace options on standby';
 }
 
 String directRequestDetail(Map<String, dynamic> policy) {

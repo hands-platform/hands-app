@@ -124,7 +124,7 @@ void main() {
     );
 
     expect(providerMatchingWindowTagLabel(booking), '7 min first-pick');
-    expect(providerBackupRadiusTagLabel(booking), '5 km backup');
+    expect(providerBackupRadiusTagLabel(booking), '5 km marketplace');
     expect(guidance.detailMessage, contains('7 min'));
     expect(guidance.detailMessage, contains('5 km'));
   });
@@ -142,7 +142,7 @@ void main() {
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
   });
 
-  test('explains backup opportunities after preferred provider exists', () {
+  test('explains marketplace opportunities after preferred provider exists', () {
     final guidance = providerRequestGuidance(
       booking: {
         'status': 'OPEN_MATCHING',
@@ -153,8 +153,8 @@ void main() {
       walletBlocked: false,
     );
 
-    expect(guidance.modeLabel, 'Backup opportunity');
-    expect(guidance.roleLabel, 'Backup option');
+    expect(guidance.modeLabel, 'Marketplace opportunity');
+    expect(guidance.roleLabel, 'Marketplace option');
     expect(guidance.decisionLabel, 'Can join');
     expect(guidance.detailMessage, contains('Linh Wellness'));
     expect(guidance.infoMessage, contains('10 km'));

@@ -11,5 +11,5 @@ Initial screen hierarchy:
 - Booking confirmation
 - Open matching waiting screen
 - Chat and provider location tracking
-- Review and tip
+- Review after service completion
 

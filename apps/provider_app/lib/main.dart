@@ -1225,7 +1225,7 @@ class RequestQueueSummary extends StatelessWidget {
           children: [
             Expanded(
               child: RequestSummaryCard(
-                label: 'Backup',
+                label: 'Marketplace',
                 value: '$backupRequests standby',
                 tone: const Color(0xFFFBF0DE),
               ),
@@ -1671,7 +1671,7 @@ class OpenBookingCard extends StatelessWidget {
                   child: Text(
                     isPreferredRequest
                         ? 'Preferred'
-                        : (hasPreferredProvider ? 'Backup' : 'Open'),
+                        : (hasPreferredProvider ? 'Marketplace' : 'Open'),
                     style: Theme.of(context)
                         .textTheme
                         .labelLarge
@@ -1871,7 +1871,7 @@ class OpenBookingCard extends StatelessWidget {
                 onPressed: loading || walletBlocked ? null : onJoin,
                 icon: const Icon(Icons.add_circle_outline),
                 label: Text(hasPreferredProvider
-                    ? 'Offer backup support'
+                    ? 'Offer marketplace support'
                     : 'Join open matching'),
               )
             else ...[
@@ -1908,7 +1908,7 @@ class EarningsScreen extends ConsumerWidget {
           Text(
             auth == null
                 ? 'Login to view completed service earnings.'
-                : 'Track gross, tips, fees, and net payout.',
+                : 'Track gross, extra amounts, fees, and net payout.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -2047,8 +2047,8 @@ class EarningsScreen extends ConsumerWidget {
                                           .headlineSmall,
                                     ),
                                     const SizedBox(height: 8),
-                                    Text(
-                                        'Tips ${summary['tipAmount'] ?? 0} $currency'),
+                                      Text(
+                                        'Extra amount ${summary['tipAmount'] ?? 0} $currency'),
                                     Text(
                                         'Platform fee ${summary['platformFee'] ?? 0} $currency'),
                                     Text('Payout batches ${batches.length}'),
@@ -2069,7 +2069,7 @@ class EarningsScreen extends ConsumerWidget {
                                     subtitle: Text(
                                         'Booking ${earning['bookingId']} - ${earning['status']}'),
                                     trailing: Text(
-                                        '+${earning['tipAmount'] ?? 0} tip'),
+                                        '+${earning['tipAmount'] ?? 0} extra'),
                                   ),
                                 ),
                           ],
@@ -4885,7 +4885,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
   if (providerWalletBlockReason(summary) == null) {
     return const [
       'Cash booking fees are settled.',
-      'You can accept direct and backup requests.',
+      'You can accept direct and marketplace requests.',
       'Payout still needs tax, bank, and agreement checks.',
     ];
   }
@@ -4944,17 +4944,17 @@ ProviderRequestGuidance providerRequestGuidance({
   final modeLabel = isPreferredRequest
       ? 'Direct request'
       : hasPreferredProvider
-          ? 'Backup opportunity'
+          ? 'Marketplace opportunity'
           : 'Open shortlist';
   final priorityLabel = isPreferredRequest
       ? 'Reply first'
       : hasPreferredProvider
-          ? 'Backup option'
+          ? 'Marketplace option'
           : 'Open queue';
   final roleLabel = isPreferredRequest
       ? 'First partner'
       : hasPreferredProvider
-          ? 'Backup option'
+          ? 'Marketplace option'
           : 'Open candidate';
 
   if (actionBlockedByWallet) {
@@ -5012,7 +5012,7 @@ ProviderRequestGuidance providerRequestGuidance({
       contextMessage:
           'The customer picked your profile first and is waiting for your response.',
       detailMessage:
-          'You are the first partner this guest chose. Reply within $responseWindowLabel to protect the booking; backup partners inside $backupRadiusLabel can still volunteer while the customer waits.',
+          'You are the first partner this guest chose. Reply within $responseWindowLabel to protect the booking; marketplace partners inside $backupRadiusLabel can still volunteer while the customer waits.',
       infoMessage:
           'The customer already chose you. Accept or decline this request within $responseWindowLabel.',
     );
@@ -5026,7 +5026,7 @@ ProviderRequestGuidance providerRequestGuidance({
       decisionLabel: 'Visible now',
       nextAction: 'Stay visible and wait for the customer to choose you.',
       contextMessage: hasPreferredProvider
-          ? 'Another partner was chosen first. You are visible as a backup option.'
+          ? 'Another partner was chosen first. You are visible as a marketplace option.'
           : 'You joined this open request. The customer will pick the final partner.',
       detailMessage:
           'You are in the shortlist. Keep the app open and wait for customer selection.',
@@ -5044,11 +5044,11 @@ ProviderRequestGuidance providerRequestGuidance({
       priorityLabel: priorityLabel,
       roleLabel: roleLabel,
       decisionLabel: 'Can join',
-      nextAction: 'Offer backup support if you can cover this request.',
+      nextAction: 'Offer marketplace support if you can cover this request.',
       contextMessage:
-          'Another partner was chosen first. You can still join as an alternative option within the $backupRadiusLabel backup radius.',
+          'Another partner was chosen first. You can still join as an alternative option within the $backupRadiusLabel marketplace radius.',
       detailMessage:
-          'The guest is still waiting on $name. Join now to appear as a backup option.',
+          'The guest is still waiting on $name. Join now to appear as a marketplace option.',
       infoMessage:
           'Preferred partner: $name. Only partners inside $backupRadiusLabel can join this request.',
     );
@@ -5114,7 +5114,7 @@ String providerBackupRadiusText(Map<String, dynamic> booking) {
 }
 
 String providerBackupRadiusTagLabel(Map<String, dynamic> booking) {
-  return '${providerBackupRadiusText(booking)} backup';
+  return '${providerBackupRadiusText(booking)} marketplace';
 }
 
 bool providerBookingIsCash(Map<String, dynamic> booking) {

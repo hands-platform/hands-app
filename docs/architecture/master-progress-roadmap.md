@@ -123,6 +123,7 @@ Admin dashboard:
 - Partner detail now uses marketplace wording for secondary participation, radius checks, app reachability, and dispatch repair guidance, with legacy display strings masked at render time.
 - Backend booking notifications and partner join errors now use marketplace participation wording while keeping legacy event names and metadata keys for compatibility.
 - Partner and review admin screens now present review data as factual feedback/service-recovery records, not as partner or customer ranking.
+- Customer and partner mobile apps now use marketplace/extra-amount wording in visible booking, waiting, wallet, and earnings copy while keeping legacy internal matching keys for compatibility.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.

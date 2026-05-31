@@ -212,15 +212,15 @@ void main() {
         'Admin minimum');
   });
 
-  test('waiting customer action explains backup choices and confirmed bookings',
+  test('waiting customer action explains marketplace choices and confirmed bookings',
       () {
-    final backupAction = waitingCustomerAction(
+    final marketplaceAction = waitingCustomerAction(
       status: 'OPEN_MATCHING',
       fallbackCount: 1,
       hasChatRoom: false,
     );
-    expect(backupAction.title, 'Backup options are ready');
-    expect(backupAction.body, contains('switch to a backup partner'));
+    expect(marketplaceAction.title, 'Marketplace options are ready');
+    expect(marketplaceAction.body, contains('switch to a marketplace partner'));
 
     final waitingAction = waitingCustomerAction(
       status: 'OPEN_MATCHING',
