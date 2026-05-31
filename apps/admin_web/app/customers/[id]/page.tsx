@@ -259,8 +259,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer full record index</h2>
             <p className="muted">
-              Factual customer record map for operators. No scoring is calculated here; this page only shows
-              booking, work, payment, chat, address, notification, app session, and operator history.
+              Factual customer record map for operators. This page shows booking, work, payment, chat, address,
+              notification, app session, and operator history.
             </p>
           </div>
           <span className="pill pill-info">{customerActivityRecords.length} event(s)</span>
