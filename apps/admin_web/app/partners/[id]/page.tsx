@@ -272,6 +272,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     providerServicePricing,
     dispatchPolicy,
   );
+  const partnerOperatingLedger = buildPartnerOperatingLedger(
+    provider,
+    partnerBookingArchive,
+    primaryBank,
+    payoutOps,
+    bookingAcceptance,
+    providerServicePricing,
+  );
   const partnerOperatorCommandQueue = buildPartnerOperatorCommandQueue({
     provider,
     primaryBank,
@@ -509,6 +517,43 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <small>Sessions, devices, push, and location records.</small>
           </a>
         </div>
+      </div>
+
+      <div className="card" id="partner-operating-ledger" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner operating ledger</h2>
+            <p className="muted">
+              Compact factual ledger for identity, booking work, chat archive, service pricing, wallet,
+              payout, tax, location, device, and audit evidence.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerOperatingLedger.length} record areas</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>Evidence</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerOperatingLedger.map((row) => (
+              <tr key={row.area}>
+                <td>{row.area}</td>
+                <td>{row.status}</td>
+                <td>{row.evidence}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <div className="card" id="partner-operating-checklist" style={{ marginBottom: 16 }}>
@@ -2081,6 +2126,13 @@ type PartnerOperatingChecklistItem = {
   tone: ProviderOpsCard['tone'];
 };
 
+type PartnerOperatingLedgerRow = {
+  area: string;
+  status: string;
+  evidence: string;
+  href: string;
+};
+
 type PartnerAcceptanceRepairCommand = {
   status: string;
   tone: ProviderOpsCard['tone'];
@@ -3147,6 +3199,144 @@ function buildPartnerOperatingChecklist(
       nextAction: enabledPushCount > 0 ? 'Can receive alerts' : 'Register device token',
       href: `/partners/${provider.id}#app-activity`,
       tone: enabledPushCount > 0 ? 'done' : 'pending',
+    },
+  ];
+}
+
+function buildPartnerOperatingLedger(
+  provider: ProviderDetail,
+  bookingArchive: PartnerBookingArchiveRecord[],
+  primaryBank: NonNullable<ProviderDetail['bankAccounts']>[number] | null,
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>,
+  providerServicePricing: ReturnType<typeof buildProviderServicePricing>,
+): PartnerOperatingLedgerRow[] {
+  const completedBookings = bookingArchive.filter((record) => record.booking.status === 'COMPLETED').length;
+  const activeBookings = bookingArchive.filter((record) =>
+    ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(
+      record.booking.status ?? '',
+    ),
+  ).length;
+  const chatRooms = bookingArchive.filter((record) => record.booking.chatRoom).length;
+  const chatMessages = bookingArchive.reduce(
+    (sum, record) => sum + readPartnerChatMessages(record.booking).length,
+    0,
+  );
+  const missingKycDocs = missingApprovedRequiredKycDocuments(provider);
+  const verificationFileCount = provider.verification?.files?.length ?? 0;
+  const documentCount = provider.documents?.length ?? 0;
+  const cashDebt = cashFeeDebtAmount(provider);
+  const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
+  const sessionCount = provider.sessions?.length ?? 0;
+  const deviceCount = provider.devices?.length ?? 0;
+  const auditCount =
+    (provider.auditLogs?.length ?? 0) +
+    (provider.verificationLogs?.length ?? 0) +
+    (provider.reports?.length ?? 0) +
+    (provider.sanctions?.length ?? 0);
+
+  return [
+    {
+      area: 'Identity',
+      status: provider.legalName ? 'Profile linked' : 'Profile incomplete',
+      evidence: `${provider.legalName ?? 'No legal name'} / ${provider.user?.phone ?? 'No phone'} / ${
+        provider.city ?? 'No city'
+      }`,
+      href: `/partners/${provider.id}#partner-master-facts`,
+    },
+    {
+      area: 'KYC',
+      status:
+        provider.kyc?.status === 'APPROVED' && missingKycDocs.length === 0
+          ? 'KYC approved'
+          : 'KYC review needed',
+      evidence:
+        missingKycDocs.length > 0
+          ? `Missing: ${missingKycDocs.map(providerDocumentLabel).join(', ')}`
+          : `KYC ${provider.kyc?.status ?? 'DRAFT'} / profile ${provider.verification?.status ?? 'DRAFT'}`,
+      href: `/partners/${provider.id}#kyc`,
+    },
+    {
+      area: 'Documents',
+      status: verificationFileCount + documentCount ? `${verificationFileCount + documentCount} file(s)` : 'No files',
+      evidence: `${documentCount} typed document(s) / ${verificationFileCount} verification file(s)`,
+      href: `/partners/${provider.id}#documents`,
+    },
+    {
+      area: 'Bank',
+      status: primaryBank?.status ?? 'MISSING',
+      evidence: primaryBank
+        ? `${primaryBank.bankName} / ${primaryBank.accountHolderName} / ${
+            primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'
+          }`
+        : 'No bank account row',
+      href: `/partners/${provider.id}#bank`,
+    },
+    {
+      area: 'Tax',
+      status: provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'REQUIRED' : 'DEFERRED'),
+      evidence: provider.taxProfile
+        ? `${provider.taxProfile.legalName} / tax ****${provider.taxProfile.taxCodeLast4 ?? '----'}`
+        : providerHasFirstRevenueSignal(provider)
+          ? 'First earning exists; tax profile is required before payout.'
+          : 'Tax profile intentionally deferred until first earning.',
+      href: `/partners/${provider.id}#tax`,
+    },
+    {
+      area: 'Services',
+      status: `${providerServicePricing.readyCount}/${providerServicePricing.rows.length} bookable`,
+      evidence: 'Prices must match admin minimum, step policy, and payout rule lines.',
+      href: `/partners/${provider.id}#service-pricing`,
+    },
+    {
+      area: 'Bookings',
+      status: `${bookingArchive.length} total`,
+      evidence: `${activeBookings} active / ${completedBookings} completed / ${bookingAcceptance.primaryReason}`,
+      href: `/partners/${provider.id}#booking-chat-records`,
+    },
+    {
+      area: 'Chat',
+      status: `${chatRooms} room(s)`,
+      evidence: `${chatMessages} retained message(s). Admin keeps archive after mobile chat hides.`,
+      href: `/partners/${provider.id}#booking-chat-records`,
+    },
+    {
+      area: 'Wallet',
+      status: cashDebt > 0 ? 'Cash fee debt' : 'No cash fee block',
+      evidence:
+        cashDebt > 0
+          ? `${formatCurrency(cashDebt)} unpaid company fee from cash booking flow.`
+          : 'No negative cash-fee wallet state loaded.',
+      href: `/partners/${provider.id}#payout`,
+    },
+    {
+      area: 'Payout',
+      status: payoutOps.status,
+      evidence: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
+      href: `/partners/${provider.id}#payout`,
+    },
+    {
+      area: 'Location',
+      status: locationAgeLabel(provider.currentLocationUpdatedAt),
+      evidence:
+        provider.currentLat && provider.currentLng
+          ? `${provider.currentLat}, ${provider.currentLng}`
+          : 'No current location pin saved.',
+      href: `/partners/${provider.id}#location`,
+    },
+    {
+      area: 'App devices',
+      status: `${enabledPushCount} push-ready`,
+      evidence: `${sessionCount} session(s) / ${deviceCount} device(s)`,
+      href: `/partners/${provider.id}#app-activity`,
+    },
+    {
+      area: 'Admin trail',
+      status: `${auditCount} record(s)`,
+      evidence: `${provider.reports?.length ?? 0} report(s) / ${provider.sanctions?.length ?? 0} sanction row(s) / ${
+        provider.auditLogs?.length ?? 0
+      } audit row(s)`,
+      href: `/partners/${provider.id}#partner-operator-notes`,
     },
   ];
 }

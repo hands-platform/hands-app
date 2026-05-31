@@ -360,6 +360,7 @@ if (providerLinkMatch) {
       'Partner ops command center',
       'Partner master facts',
       'Partner full record index',
+      'Partner operating ledger',
       'Partner operating checklist',
       'Factual work-control checklist',
       'Booking and chat records',
