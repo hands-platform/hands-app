@@ -458,7 +458,7 @@ if (bookingLinkMatch) {
     'Chat lifecycle and retention',
     'Service pricing snapshot',
     'Open customer record',
-    'Preferred, final, and backup shortlist.',
+    'Preferred, final, and marketplace shortlist.',
     'Booking stage snapshot',
     'Applied operations policy',
     'Payment and refund',

@@ -211,7 +211,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       status: `${notificationTrace.rows.length} notification(s)`,
       evidence: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} partner alert(s) / ${
         notificationTrace.backupBatches.length
-      } backup batch(es)`,
+      } marketplace alert batch(es)`,
       href: '#alerts',
     },
     {
@@ -397,7 +397,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <a href="#participants">
             <span>Partners</span>
             <strong>{booking.participants?.length ?? 0}</strong>
-            <small>Preferred, final, and backup shortlist.</small>
+            <small>Preferred, final, and marketplace shortlist.</small>
           </a>
           <a href="#chat">
             <span>Chat archive</span>
@@ -412,7 +412,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <a href="#alerts">
             <span>Alerts</span>
             <strong>{notificationTrace.rows.length}</strong>
-            <small>{notificationTrace.backupBatches.length} backup batch(es).</small>
+            <small>{notificationTrace.backupBatches.length} marketplace alert batch(es).</small>
           </a>
           <a href="#booking-activity">
             <span>Activity timeline</span>
@@ -733,7 +733,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Customer wait and matching decision</h2>
             <p className="muted">
-              First-pick timer, backup partner participation, customer final choice, and chat handoff in one
+              First-pick timer, marketplace partner participation, customer final choice, and chat handoff in one
               operating view.
             </p>
           </div>
@@ -872,7 +872,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                     </p>
                   </div>
                   <Link className="text-link" href="/partners?review=backup-ready">
-                    Open backup queue
+                    Open marketplace queue
                   </Link>
                 </div>
               ) : null}
@@ -968,7 +968,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Booking alert trace</h2>
             <p className="muted">
-              Reservation-specific notification history for first-pick, backup partner visibility, retries,
+              Reservation-specific notification history for first-pick, marketplace partner visibility, retries,
               and disabled device checks.
             </p>
           </div>
@@ -1017,7 +1017,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         ) : notificationTrace.backupBatches.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No notification rows are tied to this booking yet. If a partner says they missed the request,
-            check whether the booking created `booking.requested` or `booking.backup_available` alerts.
+            check whether the booking created first-pick or marketplace availability alerts.
           </p>
         ) : null}
       </section>
@@ -1717,7 +1717,7 @@ function bookingOperatorCommandQueue({
       label: 'SUPPLY',
       title: 'Check nearby partner supply',
       detail:
-        'No partner has joined yet. Review backup candidates and notification delivery before widening operations policy.',
+        'No partner has joined yet. Review marketplace candidates and notification delivery before widening operations policy.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#backup-supply', label: 'Open supply' },
@@ -2476,8 +2476,10 @@ function bookingOperatingTimeline({
     addItem({
       id: `notification-${notification.id}`,
       type: 'ALERT',
-      title: notification.title,
-      detail: `${humanizeNotificationType(notification.type)} / ${compactActivityText(notification.body, 90)}`,
+      title: marketplaceDisplayText(notification.title),
+      detail: `${humanizeNotificationType(notification.type)} / ${marketplaceDisplayText(
+        compactActivityText(notification.body, 90),
+      )}`,
       at: notification.createdAt,
       status: 'Alert',
     });
@@ -2949,7 +2951,9 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       type: 'ALERT',
       at: notification.createdAt,
       title: humanizeNotificationType(notification.type),
-      detail: `${notification.title} / ${notification.deliveries?.[0]?.status ?? 'No delivery'} / ${
+      detail: `${marketplaceDisplayText(notification.title)} / ${
+        notification.deliveries?.[0]?.status ?? 'No delivery'
+      } / ${
         notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'
       }`,
       href: `/notifications?booking=${booking.id}`,
@@ -3299,7 +3303,7 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
       severity: 'medium',
       title: 'Preferred partner slow',
       detail: `${providerName(booking.preferredProvider)} has not responded after ${openedAge} minute(s).`,
-      action: 'Encourage backup supply or contact the partner.',
+      action: 'Encourage marketplace supply or contact the partner.',
     });
   }
 
@@ -4291,7 +4295,7 @@ function bookingBackupPartnerSupply(
                 ? 'Preferred partner'
                 : participantProviderIds.has(provider.id)
                   ? 'Shortlist partner'
-                  : 'Backup candidate';
+                  : 'Marketplace candidate';
 
           return {
             id: provider.id,
@@ -4354,12 +4358,12 @@ function bookingBackupPartnerSupply(
     decisionTone: hasCustomerPin ? (eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
     decisionTitle: hasCustomerPin
       ? eligibleCount
-        ? 'Backup matching has usable nearby supply'
+        ? 'Marketplace matching has usable nearby supply'
         : 'No evaluated partner can join under current policy'
       : 'Customer pin is required before partner radius can be checked',
     decisionDetail: hasCustomerPin
       ? eligibleCount
-        ? 'Operators can use the eligible partners as backup recovery candidates while the customer waits.'
+        ? 'Operators can use the eligible partners as marketplace candidates while the customer waits.'
         : 'Review radius, partner online status, location freshness, and verification before extending the waiting window.'
       : 'Ask the customer to confirm location or edit booking coordinates before dispatching partners.',
     metrics: [
@@ -4376,7 +4380,7 @@ function bookingBackupPartnerSupply(
       {
         label: 'Out of radius',
         value: outOfRadius.toString(),
-        helper: 'Too far from this booking pin for backup matching.',
+        helper: 'Too far from this booking pin for marketplace matching.',
       },
       {
         label: 'Location stale/missing',
@@ -4386,7 +4390,7 @@ function bookingBackupPartnerSupply(
       {
         label: 'Invite cap',
         value: invitationLimit.toString(),
-        helper: 'Nearest eligible backup partners opened for this request before notifications are created.',
+        helper: 'Nearest eligible marketplace partners opened for this request before notifications are created.',
       },
     ],
   };
@@ -4414,7 +4418,7 @@ function bookingBackupPartnerExcludedGroups(
     group(
       'Account blocked',
       '/partners?review=blocked',
-      'Partner account is blocked and should not receive direct or backup work.',
+      'Partner account is blocked and should not receive direct or marketplace work.',
       (blocker) => blocker === 'account blocked',
     ),
     group(
@@ -4466,10 +4470,10 @@ function bookingBackupCandidateCommand(input: {
     return {
       status: 'SUPPLY READY',
       tone: 'pill-success',
-      title: 'This booking has usable backup partner supply',
+      title: 'This booking has usable marketplace partner supply',
       detail: `${input.eligibleCount} partner(s) can be nudged or exposed to the customer shortlist under current policy.`,
       href: '/partners?review=backup-ready',
-      action: 'Open backup-ready',
+      action: 'Open marketplace-ready',
     };
   }
   if (input.nearbyExcluded > 0 || input.staleOrMissing > 0) {
@@ -4487,7 +4491,7 @@ function bookingBackupCandidateCommand(input: {
     return {
       status: 'NO 10KM SUPPLY',
       tone: 'pill-warn',
-      title: 'Partners are outside the configured backup radius',
+      title: 'Partners are outside the configured marketplace radius',
       detail:
         'Do not widen radius blindly. Check city supply, customer location accuracy, and operations policy first.',
       href: '/operations-policy#policy-matching-backup-provider-radius-meters',
@@ -4581,7 +4585,7 @@ function bookingCustomerWaitPanel(
     signalStatus = 'Missing pin';
     signalTone = 'pill-danger';
     headline = 'Distance-based partner matching cannot be trusted yet.';
-    detail = 'Confirm the customer address or selected pin before using backup participation decisions.';
+    detail = 'Confirm the customer address or selected pin before using marketplace participation decisions.';
   } else if (waitingForCustomerChoice) {
     signalStatus = 'Customer choice';
     signalTone = 'pill-warn';
@@ -4594,21 +4598,21 @@ function bookingCustomerWaitPanel(
     signalTone = 'pill-danger';
     headline = 'No fresh nearby partner can currently join under policy.';
     detail =
-      'Ask partners to go online/refresh location, or review backup radius and location freshness policy.';
+      'Ask partners to go online/refresh location, or review marketplace radius and location freshness policy.';
     nextActionHref = '/partners?review=backup-blocked';
     nextActionLabel = 'Open blocked partners';
   } else if (waitingForPartnerJoin && backupWindowOpen) {
     signalStatus = 'Nudge partners';
     signalTone = 'pill-warn';
-    headline = 'Customer is waiting and backup partners can join.';
+    headline = 'Customer is waiting and marketplace partners can join.';
     detail = `${backupSupply.eligibleCount} nearby partner(s) can be nudged into the shortlist.`;
     nextActionHref = '/partners?review=backup-ready';
-    nextActionLabel = 'Open backup-ready partners';
+    nextActionLabel = 'Open marketplace-ready partners';
   } else if (waitingForPartnerJoin) {
     signalStatus = 'First-pick wait';
     signalTone = 'pill-info';
     headline = 'Preferred partner still has the first response window.';
-    detail = `Monitor ${providerName(firstPick)} for up to ${responseWindowMinutes} minutes while backup supply stays visible to operators.`;
+    detail = `Monitor ${providerName(firstPick)} for up to ${responseWindowMinutes} minutes while marketplace supply stays visible to operators.`;
   } else if (selected && booking.chatRoom) {
     signalStatus = 'Chat ready';
     signalTone = 'pill-success';
@@ -4651,16 +4655,16 @@ function bookingCustomerWaitPanel(
       pillClass: selected ? 'pill-success' : waitingForCustomerChoice ? 'pill-warn' : 'pill-info',
     },
     {
-      title: 'Backup participation',
+      title: 'Marketplace participation',
       status: backupWindowOpen ? 'Open' : 'Held',
       detail: backupWindowOpen
-        ? `${backupSupply.eligibleCount} eligible backup partner(s) can join under current/saved policy.`
-        : 'Backup partners are held until first-pick delay, decline, or timeout.',
+        ? `${backupSupply.eligibleCount} eligible marketplace partner(s) can join under current/saved policy.`
+        : 'Marketplace partners are held until first-pick delay, decline, or timeout.',
       action: firstPickRejected
-        ? 'First-pick declined, so backup recovery should be active.'
+        ? 'First-pick declined, so marketplace recovery should be active.'
         : backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
-          ? 'Policy allows backup partners during the first-pick window.'
-          : 'Policy delays backup visibility while first-pick is deciding.',
+          ? 'Policy allows marketplace partners during the first-pick window.'
+          : 'Policy delays marketplace visibility while first-pick is deciding.',
       className: backupWindowOpen ? 'ops-task-done' : 'ops-task-pending',
       pillClass: backupWindowOpen ? 'pill-success' : 'pill-info',
     },
@@ -4702,7 +4706,7 @@ function bookingCustomerWaitPanel(
       detail: 'Partners who rejected this booking request.',
     },
     {
-      label: `${backupSupply.eligibleCount} backup ready`,
+      label: `${backupSupply.eligibleCount} marketplace ready`,
       tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn',
       detail: backupSupply.decisionDetail,
     },
@@ -4970,10 +4974,10 @@ function bookingOperationalPolicySnapshot(
       bookingPolicyDecisionCard({
         setting: backupOpenMode,
         key: 'matching.backup_open_mode',
-        label: 'Backup participation',
+        label: 'Marketplace participation',
         helper:
           String(backupOpenMode?.value) === 'AFTER_FIRST_PICK_DELAY'
-            ? 'Backup partners are hidden until the preferred partner window passes, but open immediately if that partner declines.'
+            ? 'Marketplace partners are hidden until the preferred partner window passes, but open immediately if that partner declines.'
             : 'Eligible nearby partners can join while the preferred partner is still deciding.',
         enforced: true,
       }),
@@ -5013,7 +5017,7 @@ function bookingOperationalPolicySnapshot(
         label: 'Partner alert route',
         helper:
           String(partnerAlertPolicy?.value) === 'ONESIGNAL_FOR_ALL_BOOKINGS'
-            ? 'Booking and backup alerts should create OneSignal delivery logs.'
+            ? 'Booking and marketplace alerts should create OneSignal delivery logs.'
             : 'Partner alerts are kept in the app inbox until production push is ready.',
         enforced: false,
       }),
@@ -5038,7 +5042,7 @@ function bookingOperationalPolicySnapshot(
               )}`,
       },
       {
-        label: 'Backup radius',
+        label: 'Marketplace radius',
         value:
           bookingPolicySnapshotNumberLabel(savedMatchingPolicy.backupProviderRadiusMeters, 'meters') ??
           bookingPolicyValueLabel(backupRadius),
@@ -5058,7 +5062,7 @@ function bookingOperationalPolicySnapshot(
         helper: bookingPolicySnapshotHelper(
           savedMatchingPolicy.backupProviderLocationMaxAgeMinutes,
           backupLocationFreshness,
-          'Backup partners with older locations cannot join.',
+          'Marketplace partners with older locations cannot join.',
         ),
       },
       {
@@ -5154,7 +5158,7 @@ function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminAuditLog
       : policyLogsAfterOpen.length > 0
         ? 'Matching uses the saved booking snapshot where available. Compare policy changes below before explaining behavior to customers or partners.'
         : hasSavedMatchingPolicy
-          ? 'The saved response window, radius, accept mode, backup mode, and travel buffer are preserved for this booking.'
+          ? 'The saved response window, radius, accept mode, marketplace mode, and travel buffer are preserved for this booking.'
           : 'Older or seeded bookings may not have a stored policy snapshot; operators should use the live policy panel above.';
 
   return {
@@ -5320,7 +5324,7 @@ function bookingNotificationTrace(booking: AdminBookingDetail, notifications: Ad
       {
         label: 'Partner alerts',
         value: `${partnerAlerts}`,
-        helper: 'First-pick, backup, and matched partner notices.',
+        helper: 'First-pick, marketplace, and matched partner notices.',
       },
       {
         label: 'Failed sends',
@@ -5338,16 +5342,16 @@ function bookingNotificationTrace(booking: AdminBookingDetail, notifications: Ad
         helper: disabledDevices ? 'Fresh device token is needed before re-enable.' : 'No disabled devices.',
       },
       {
-        label: 'Backup batches',
+        label: 'Marketplace alert batches',
         value: `${backupBatches.length}`,
         helper: backupBatches.length
           ? 'Stored invite batches on the booking record.'
-          : 'No backup invite batch recorded.',
+          : 'No marketplace invite batch recorded.',
       },
       {
-        label: 'Last backup invite',
+        label: 'Last marketplace invite',
         value: backupBatches[0]?.notifiedCountLabel ?? '0',
-        helper: backupBatches[0]?.detail ?? 'No partner was invited from a backup batch yet.',
+        helper: backupBatches[0]?.detail ?? 'No partner was invited from a marketplace batch yet.',
       },
     ],
   };
@@ -5396,13 +5400,13 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
 
       return {
         id: `${createdAt ?? 'batch'}-${stage}-${index}`,
-        signal: notifiedCount > 0 ? 'Backup invited' : 'No backup sent',
+        signal: notifiedCount > 0 ? 'Marketplace invited' : 'No marketplace sent',
         title: `${humanizeNotificationType(stage)} / ${notifiedCount} partner(s)`,
         notifiedCountLabel: `${notifiedCount}`,
         detail:
           notifiedCount > 0
-            ? `${notifiedCount} partner(s) were sent backup availability alerts.`
-            : 'The backup batch ran, but no eligible partner was available under the saved policy.',
+            ? `${notifiedCount} partner(s) were sent marketplace availability alerts.`
+            : 'The marketplace batch ran, but no eligible partner was available under the saved policy.',
         meta: [
           createdAt ? `created ${formatDate(createdAt)}` : null,
           websocketTargetCount !== null ? `websocket targets ${websocketTargetCount}` : null,
@@ -5458,16 +5462,16 @@ function bookingNotificationTraceRow(notification: AdminNotification) {
             ? 'Delivered'
             : 'Pending',
     signalClass: failed || disabled ? 'signal-warn' : sent ? 'signal-ok' : 'signal-info',
-    title: `${notification.title} / ${target}`,
-    detail: notification.body,
+    title: `${marketplaceDisplayText(notification.title)} / ${marketplaceDisplayText(target)}`,
+    detail: marketplaceDisplayText(notification.body),
     meta: [
       humanizeNotificationType(notification.type),
       `created ${formatDate(notification.createdAt)}`,
       providerProfileId ? `partner ${shortId(providerProfileId)}` : null,
       distance !== null ? `distance ${formatDistanceMeters(distance)}` : null,
-      radius !== null ? `backup radius ${formatDistanceMeters(radius)}` : null,
+      radius !== null ? `marketplace radius ${formatDistanceMeters(radius)}` : null,
       invitationLimit !== null ? `invite cap ${invitationLimit}` : null,
-      data?.backupOpenMode ? `backup mode ${String(data.backupOpenMode)}` : null,
+      data?.backupOpenMode ? `marketplace mode ${String(data.backupOpenMode)}` : null,
       data?.noShowPolicy ? `no-show policy ${String(data.noShowPolicy)}` : null,
       data?.reason ? `reason ${String(data.reason)}` : null,
     ]
@@ -5505,8 +5509,12 @@ function humanizeNotificationType(type: string) {
   return type
     .toLowerCase()
     .split(/[_\-.]/g)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => (part === 'backup' ? 'Marketplace' : part.charAt(0).toUpperCase() + part.slice(1)))
     .join(' ');
+}
+
+function marketplaceDisplayText(value: string) {
+  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
 }
 
 function formatDistanceMeters(value: number) {
