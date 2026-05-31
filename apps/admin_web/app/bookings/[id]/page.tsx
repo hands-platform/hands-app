@@ -2462,7 +2462,7 @@ function bookingOperatingTimeline({
       id: `review-${booking.review.id}`,
       type: 'REVIEW',
       title: 'Customer review submitted',
-      detail: `${booking.review.rating}/5 / tip ${money(booking.review.tipAmount, paymentCurrency)}.`,
+      detail: `${booking.review.rating}/5 / customer extra ${money(booking.review.tipAmount, paymentCurrency)}.`,
       at: booking.review.createdAt,
       status: 'Review',
     });

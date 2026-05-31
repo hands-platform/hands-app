@@ -33,8 +33,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           <h2>{summary.lowRating}</h2>
         </div>
         <div className="card">
-          <p>Tips attached</p>
-          <h2>{summary.tipped}</h2>
+          <p>Customer extra</p>
+          <h2>{summary.extraAmount}</h2>
         </div>
       </section>
 
@@ -136,7 +136,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
                   <div>{starRow(review.rating)}</div>
                   <div className="muted" style={{ marginTop: 6 }}>
                     {review.rating}/5
-                    {review.tipAmount > 0 ? ` - Tip ${review.tipAmount}` : ''}
+                    {review.tipAmount > 0 ? ` - Extra ${review.tipAmount}` : ''}
                   </div>
                 </td>
                 <td>
@@ -244,7 +244,7 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
   const reported = reviews.filter((review) => review.status === 'REPORTED');
   const lowRating = reviews.filter((review) => review.rating <= 2);
   const hidden = reviews.filter((review) => review.status === 'HIDDEN');
-  const tipped = reviews.filter((review) => review.tipAmount > 0);
+  const extraAmount = reviews.filter((review) => review.tipAmount > 0);
 
   return [
     {
@@ -276,13 +276,13 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
       reviews: hidden,
     },
     {
-      title: 'High-satisfaction signals',
-      detail: 'Tips attached to reviews identify partners and service types worth reinforcing.',
-      status: 'Tip attached',
-      operatorAction: 'Use these rows for partner coaching and quality examples.',
-      href: '/reviews?review=tipped',
-      tone: tipped.length > 0 ? 'info' : 'ok',
-      reviews: tipped,
+      title: 'Extra payment records',
+      detail: 'Customer extra amounts are retained as finance evidence without creating a separate reward program.',
+      status: 'Extra amount',
+      operatorAction: 'Use these rows only to reconcile money movement and customer feedback context.',
+      href: '/reviews?review=extra-amount',
+      tone: extraAmount.length > 0 ? 'info' : 'ok',
+      reviews: extraAmount,
     },
   ];
 }
@@ -317,7 +317,7 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   if (filter === 'published') {
     return review.status === 'PUBLISHED';
   }
-  if (filter === 'tipped') {
+  if (filter === 'tipped' || filter === 'extra-amount') {
     return review.tipAmount > 0;
   }
   return true;
@@ -330,7 +330,7 @@ function reviewFilterLinks() {
     { label: 'Low rating', href: '/reviews?review=low-rating', review: 'low-rating' },
     { label: 'Hidden', href: '/reviews?review=hidden', review: 'hidden' },
     { label: 'Published', href: '/reviews?review=published', review: 'published' },
-    { label: 'Tipped', href: '/reviews?review=tipped', review: 'tipped' },
+    { label: 'Extra amount', href: '/reviews?review=extra-amount', review: 'extra-amount' },
   ];
 }
 
@@ -347,8 +347,8 @@ function reviewFilterDescription(review: string) {
   if (review === 'published') {
     return 'reviews currently visible to customers.';
   }
-  if (review === 'tipped') {
-    return 'reviews with customer tips attached.';
+  if (review === 'tipped' || review === 'extra-amount') {
+    return 'reviews with a customer extra amount attached.';
   }
   return 'all review records.';
 }
@@ -366,7 +366,7 @@ function buildSummary(reviews: AdminReview[]) {
     flagged: reviews.filter((review) => review.status === 'REPORTED' || review.status === 'HIDDEN').length,
     published: reviews.filter((review) => review.status === 'PUBLISHED').length,
     lowRating: reviews.filter((review) => review.rating <= 2).length,
-    tipped: reviews.filter((review) => review.tipAmount > 0).length,
+    extraAmount: reviews.filter((review) => review.tipAmount > 0).length,
   };
 }
 
@@ -401,7 +401,7 @@ function providerReviewHint(review: AdminReview) {
     return 'Low-rating feedback may need service recovery follow-up';
   }
   if (review.tipAmount > 0) {
-    return 'Guest left a tip, which often signals a strong experience';
+    return 'Customer extra amount is attached for finance context';
   }
   return 'Use this review to track partner quality and consistency';
 }
@@ -451,7 +451,7 @@ function opsSignal(review: AdminReview) {
     return 'Low-rating follow-up';
   }
   if (review.tipAmount > 0) {
-    return 'High-satisfaction';
+    return 'Extra amount';
   }
   return 'Monitor';
 }
@@ -467,7 +467,7 @@ function opsHint(review: AdminReview) {
     return 'Low ratings deserve service recovery review before the pattern spreads.';
   }
   if (review.tipAmount > 0) {
-    return 'Tipped reviews can highlight partner strengths worth reinforcing.';
+    return 'Keep the extra amount visible for finance reconciliation, without treating it as a customer or partner score.';
   }
   return 'Routine feedback row for customer sentiment and partner quality tracking.';
 }

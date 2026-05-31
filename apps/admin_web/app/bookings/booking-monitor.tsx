@@ -2577,7 +2577,7 @@ function nextAction(booking: AdminBooking) {
     return 'Completed service needs closeout reconciliation for payment, earning, tax, and wallet records.';
   }
   if (booking.status === 'COMPLETED') {
-    return 'Review payment, tip, and follow-up review.';
+    return 'Review payment, customer feedback, and closeout records.';
   }
   return 'Normal operating state.';
 }

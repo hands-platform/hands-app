@@ -34,7 +34,7 @@ export default async function EarningsPage() {
     ['Gross', summary.grossAmount],
     ['Platform fee', summary.platformFee],
     ['Tax withheld', summary.withholdingAmount],
-    ['Tips', summary.tipAmount],
+    ['Customer extra', summary.tipAmount],
     ['Partner net', summary.netAmount],
     ['Pending net', summary.pendingNetAmount],
     ['Available net', summary.availableNetAmount],
@@ -437,7 +437,7 @@ export default async function EarningsPage() {
               <th>Booking</th>
               <th>Status</th>
               <th>Payout batch</th>
-              <th>Gross / Fee / Tax / Tip</th>
+              <th>Gross / Fee / Tax / Extra</th>
               <th>Net</th>
               <th>Action</th>
             </tr>
@@ -495,7 +495,7 @@ export default async function EarningsPage() {
                   <div className="muted">
                     {formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld
                   </div>
-                  <div className="muted">{formatMoney(earning.tipAmount, earning.currency)} tip</div>
+                  <div className="muted">{formatMoney(earning.tipAmount, earning.currency)} customer extra</div>
                   <div className="muted">{taxPolicyHint(earning)}</div>
                 </td>
                 <td>
