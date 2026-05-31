@@ -121,6 +121,7 @@ Admin dashboard:
 - Partner Controls now uses marketplace invitation/participation/matching wording for dispatch, KYC, device, wallet, document, and session operational lanes.
 - Partner list now uses marketplace wording for secondary participation and masks legacy secondary-participation strings in seeded partner, bank, and document display values without changing stored data.
 - Partner detail now uses marketplace wording for secondary participation, radius checks, app reachability, and dispatch repair guidance, with legacy display strings masked at render time.
+- Backend booking notifications and partner join errors now use marketplace participation wording while keeping legacy event names and metadata keys for compatibility.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.

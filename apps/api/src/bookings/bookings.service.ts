@@ -869,7 +869,7 @@ export class BookingsService {
       await this.notifications.create({
         userId: booking.customerProfile.userId,
         type: 'provider.accepted',
-        title: 'Backup partner is ready',
+        title: 'Marketplace partner is ready',
         body: `${provider.displayName} can take this booking. Select this partner if you want to switch.`,
         data: { bookingId, providerProfileId: provider.id },
       });
@@ -913,7 +913,7 @@ export class BookingsService {
         title: 'Nearby booking available',
         body: `A customer request within ${Math.round(
           input.backupProviderRadiusMeters / 1000,
-        )}km is open for backup participation.`,
+        )}km is open for marketplace participation.`,
         data: {
           bookingId: input.bookingId,
           providerProfileId: backupProvider.id,
@@ -1163,14 +1163,14 @@ export class BookingsService {
       return distanceMeters;
     }
     if (!this.isBackupWindowOpen(booking, policy)) {
-      throw new BadRequestException('Backup partners can join after the first-pick response window opens');
+      throw new BadRequestException('Marketplace partners can join after the first-pick response window opens');
     }
     if (distanceMeters === null) {
       throw new BadRequestException('Partner location is required before joining this booking');
     }
     if (!providerLocationFreshEnough(provider.currentLocationUpdatedAt, policy.backupProviderLocationMaxAgeMinutes)) {
       throw new BadRequestException(
-        `Partner location must be refreshed within ${policy.backupProviderLocationMaxAgeMinutes} minutes before joining backup bookings`,
+        `Partner location must be refreshed within ${policy.backupProviderLocationMaxAgeMinutes} minutes before joining marketplace bookings`,
       );
     }
     if (distanceMeters > policy.backupProviderRadiusMeters) {
