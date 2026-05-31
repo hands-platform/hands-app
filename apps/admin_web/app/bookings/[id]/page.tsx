@@ -82,6 +82,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingActivityCsvHref = buildBookingActivityCsvHref(booking, bookingActivityRecords);
   const chatLifecycle = bookingChatLifecycle(booking, messages.length);
   const handoffChecklist = bookingHandoffChecklist(booking, messages.length, latestLocation);
+  const closeoutReadiness = bookingCloseoutReadiness({
+    booking,
+    financeFlags,
+    latestLocation,
+    messageCount: messages.length,
+    notificationCount: notificationTrace.rows.length,
+  });
   const operatingSnapshot = bookingOperatingSnapshot({
     booking,
     addressLine,
@@ -396,6 +403,37 @@ export default async function BookingDetailPage({ params }: PageProps) {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="card" id="booking-closeout-readiness" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Closeout readiness</h2>
+            <p className="muted">
+              End-to-end readiness check for support, dispatch, finance, tax, wallet, location, and admin
+              evidence. This shows factual completeness only.
+            </p>
+          </div>
+          <span className={`pill ${closeoutReadiness.tone}`}>{closeoutReadiness.status}</span>
+        </div>
+        <p className="muted" style={{ marginTop: 8 }}>
+          {closeoutReadiness.helper}
+        </p>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {closeoutReadiness.items.map((item) => (
+            <div className="setup-stage-item" key={item.id}>
+              <span>{item.label}</span>
+              <div>
+                <strong>{item.status}</strong>
+                <p className="muted">{item.detail}</p>
+                <small>{item.owner}</small>
+              </div>
+              <a className="text-link" href={item.href}>
+                Open
+              </a>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card" id="operating-snapshot" style={{ marginBottom: 16 }}>
@@ -1804,6 +1842,169 @@ function bookingHandoffChecklist(
       href: '#finance',
     },
   ];
+}
+
+function bookingCloseoutReadiness({
+  booking,
+  financeFlags,
+  latestLocation,
+  messageCount,
+  notificationCount,
+}: {
+  booking: AdminBookingDetail;
+  financeFlags: AttentionFlag[];
+  latestLocation?: AdminLocationSnapshot;
+  messageCount: number;
+  notificationCount: number;
+}) {
+  const terminalStatus = ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(booking.status);
+  const activeStatus = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
+  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const hasAddress = Boolean(booking.addressSnapshot) || (booking.lat !== undefined && booking.lng !== undefined);
+  const hasFinanceCloseout =
+    booking.status !== 'COMPLETED' ||
+    Boolean(
+      booking.earning &&
+        (booking.earning.taxLogs?.length ?? booking.taxLogs?.length ?? 0) > 0 &&
+        (booking.earning.platformFeeLogs?.length ?? booking.platformFeeLogs?.length ?? 0) > 0 &&
+        (booking.earning.walletLedgerEntries?.length ?? booking.walletLedgerEntries?.length ?? 0) > 0,
+    );
+  const paymentNeedsRelease = ['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status);
+  const paymentReady =
+    !booking.payment ||
+    (booking.status === 'COMPLETED'
+      ? ['CAPTURED', 'PAID', 'SETTLED'].includes(booking.payment.status) || booking.payment.method === 'CASH'
+      : paymentNeedsRelease
+        ? ['RELEASED', 'REFUNDED', 'VOIDED', 'CANCELLED'].includes(booking.payment.status)
+        : true);
+  const cashDebtNeedsSettlement = bookingCashDebtNeedsSettlement(booking);
+  const partnerChoiceReady =
+    booking.status === 'CREATED' ||
+    booking.status === 'OPEN_MATCHING' ||
+    Boolean(booking.selectedProvider) ||
+    ['CANCELLED', 'EXPIRED'].includes(booking.status);
+  const chatReady = !activeStatus && !terminalStatus ? true : Boolean(booking.chatRoom);
+  const locationReady = !activeStatus || Boolean(latestLocation);
+  const auditReady = (booking.auditLogs?.length ?? 0) > 0 || (booking.opsTasks?.length ?? 0) > 0;
+
+  const items = [
+    {
+      id: 'customer-record',
+      label: 'Customer',
+      status: booking.customerProfile?.id && hasAddress ? 'Customer and address linked' : 'Customer/address needs review',
+      detail: `${booking.customerProfile?.user?.fullName ?? 'Customer'} / ${
+        booking.customerProfile?.user?.phone ?? 'No phone'
+      } / ${hasAddress ? bookingAddressSnapshotLabel(booking) : 'No service address snapshot'}`,
+      owner: 'Support',
+      href: '#customer',
+      ready: Boolean(booking.customerProfile?.id && hasAddress),
+    },
+    {
+      id: 'partner-choice',
+      label: 'Partner',
+      status: partnerChoiceReady ? 'Partner choice state explainable' : 'Final partner missing',
+      detail: finalPartner
+        ? `${providerName(finalPartner)} / ${booking.participants?.length ?? 0} participant(s)`
+        : 'Customer has not selected a final partner yet.',
+      owner: 'Dispatch',
+      href: '#participants',
+      ready: partnerChoiceReady,
+    },
+    {
+      id: 'chat-archive',
+      label: 'Chat',
+      status: chatReady ? 'Chat archive state valid' : 'Chat room missing',
+      detail: booking.chatRoom
+        ? `${messageCount} retained message(s). Admin archive remains after mobile chat is hidden.`
+        : 'Matched, active, or closed service records should keep the admin transcript.',
+      owner: 'Support',
+      href: '#chat',
+      ready: chatReady,
+    },
+    {
+      id: 'payment-state',
+      label: 'Payment',
+      status: paymentReady ? 'Payment path aligned' : 'Payment closeout pending',
+      detail: booking.payment
+        ? `${booking.payment.method} / ${booking.payment.status} / ${money(
+            booking.payment.amount,
+            booking.payment.currency,
+          )}`
+        : 'No payment record is linked.',
+      owner: 'Finance',
+      href: '#payment',
+      ready: paymentReady,
+    },
+    {
+      id: 'finance-ledger',
+      label: 'Finance',
+      status: hasFinanceCloseout && financeFlags.length === 0 ? 'Ledger complete' : 'Ledger needs review',
+      detail:
+        booking.status === 'COMPLETED'
+          ? `Earning ${booking.earning?.status ?? 'missing'} / ${financeFlags.length} finance check(s).`
+          : 'Finance ledger becomes mandatory after completion.',
+      owner: 'Finance',
+      href: '#finance',
+      ready: hasFinanceCloseout && financeFlags.length === 0,
+    },
+    {
+      id: 'cash-settlement',
+      label: 'Cash',
+      status: cashDebtNeedsSettlement ? 'Cash fee settlement required' : 'No cash fee block',
+      detail: cashDebtNeedsSettlement
+        ? 'Partner cash collection created company-fee debt; settle before future booking acceptance.'
+        : 'No negative cash-fee wallet block is active for this booking.',
+      owner: 'Finance',
+      href: '#finance',
+      ready: !cashDebtNeedsSettlement,
+    },
+    {
+      id: 'location-signal',
+      label: 'Location',
+      status: locationReady ? 'Location state valid' : 'Partner location missing',
+      detail: latestLocation
+        ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
+        : 'No partner service pin is saved for this active booking.',
+      owner: 'Dispatch',
+      href: '#location',
+      ready: locationReady,
+    },
+    {
+      id: 'alerts-audit',
+      label: 'Audit',
+      status: auditReady ? 'Operator trail available' : 'No operator trail yet',
+      detail: `${notificationCount} notification(s), ${booking.auditLogs?.length ?? 0} audit row(s), ${
+        booking.opsTasks?.length ?? 0
+      } structured task(s).`,
+      owner: 'Operations',
+      href: '#booking-activity',
+      ready: auditReady,
+    },
+  ];
+
+  const openItems = items.filter((item) => !item.ready);
+  const status =
+    openItems.length === 0
+      ? 'Ready'
+      : terminalStatus || booking.status === 'COMPLETED'
+        ? `${openItems.length} closeout item(s)`
+        : `${openItems.length} monitor item(s)`;
+  const tone =
+    openItems.length === 0
+      ? 'pill-success'
+      : openItems.some((item) => ['Payment', 'Finance', 'Cash'].includes(item.label))
+        ? 'pill-warn'
+        : 'pill-info';
+
+  return {
+    status,
+    tone,
+    helper:
+      openItems.length === 0
+        ? 'All factual records needed for this booking stage are aligned.'
+        : `${openItems.map((item) => item.label).join(', ')} should be checked before the next handoff or closeout.`,
+    items,
+  };
 }
 
 function bookingChatLifecycle(booking: AdminBookingDetail, messageCount: number) {

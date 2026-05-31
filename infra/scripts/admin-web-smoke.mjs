@@ -451,6 +451,7 @@ if (bookingLinkMatch) {
     'Booking handoff checklist',
     'Booking full record index',
     'Booking operating ledger',
+    'Closeout readiness',
     'Operating timeline',
     'Chat lifecycle and retention',
     'Open customer record',
