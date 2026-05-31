@@ -1215,7 +1215,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <ProviderIssuePills provider={provider} opsPolicy={opsPolicy} />
                   <p className="muted">{providerActionHint(provider, opsPolicy)}</p>
                   <PartnerBackupEligibilityCell provider={provider} opsPolicy={opsPolicy} />
-                  {hasOpenProviderRisk(provider) ? (
+                  {hasOpenPartnerControl(provider) ? (
                     <Link
                       className="text-link"
                       href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}
@@ -2058,7 +2058,7 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
   const hasBank = hasApprovedBankAccount(provider);
   const verificationApproved = provider.verification?.status === 'APPROVED';
   const authLinked = Boolean(provider.user?.supabaseUserId);
-  const riskOpen = hasOpenProviderRisk(provider);
+  const hasOpenControlItem = hasOpenPartnerControl(provider);
 
   return [
     {
@@ -2125,9 +2125,9 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
         : 'Partner can still operate in Nest auth, but Supabase migration is pending.',
     },
     {
-      label: riskOpen ? 'Report follow-up' : providerSecurityLabel(securityState),
-      tone: riskOpen || !['clear', 'missing'].includes(securityState) ? 'danger' : 'success',
-      detail: riskOpen
+      label: hasOpenControlItem ? 'Report follow-up' : providerSecurityLabel(securityState),
+      tone: hasOpenControlItem || !['clear', 'missing'].includes(securityState) ? 'danger' : 'success',
+      detail: hasOpenControlItem
         ? 'There is an unresolved report or sanction item for this partner.'
         : providerSecurityLabel(securityState),
     },
@@ -2778,7 +2778,7 @@ function buildProviderCommandCenter(
   const taxReview = providers.filter(providerTaxNeedsReview).length;
   const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const accountBlocks = providers.filter((provider) => Boolean(provider.blockedAt)).length;
-  const openRisk = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
+  const openControlItems = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
   const deviceRisk = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
@@ -2835,16 +2835,16 @@ function buildProviderCommandCenter(
     },
     {
       title: 'Reports and devices',
-      status: accountBlocks > 0 || openRisk > 0 || deviceRisk > 0 ? 'Investigate' : 'Clear',
-      tone: accountBlocks > 0 || openRisk > 0 ? 'danger' : deviceRisk > 0 ? 'warn' : 'ok',
+      status: accountBlocks > 0 || openControlItems > 0 || deviceRisk > 0 ? 'Investigate' : 'Clear',
+      tone: accountBlocks > 0 || openControlItems > 0 ? 'danger' : deviceRisk > 0 ? 'warn' : 'ok',
       detail:
-        accountBlocks > 0 || openRisk > 0
+        accountBlocks > 0 || openControlItems > 0
           ? 'Account blocks, reports, or active sanctions need operator attention.'
           : 'No filtered partner has open reports, active sanctions, or device follow-up items.',
-      href: openRisk > 0 ? '/partner-controls' : '/partners?review=security',
+      href: openControlItems > 0 ? '/partner-controls' : '/partners?review=security',
       metrics: [
         providerCommandMetric('blocked', accountBlocks),
-        providerCommandMetric('open reports', openRisk),
+        providerCommandMetric('open reports', openControlItems),
         providerCommandMetric('device checks', deviceRisk),
         providerCommandMetric(
           'shared device',
@@ -3083,7 +3083,7 @@ function buildPartnerDispatchHandoff(
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
   );
   const pushRepair = providers.filter((provider) => !hasHealthyPush(provider));
-  const riskReview = providers.filter((provider) => hasOpenProviderRisk(provider));
+  const reportReview = providers.filter((provider) => hasOpenPartnerControl(provider));
 
   return {
     headline:
@@ -3144,10 +3144,10 @@ function buildPartnerDispatchHandoff(
       },
       {
         title: 'Reports desk',
-        value: riskReview.length.toString(),
+        value: reportReview.length.toString(),
         detail: 'Partners with reports or sanctions that should be checked before dispatch.',
         href: '/partner-controls',
-        tone: riskReview.length ? 'danger' : 'info',
+        tone: reportReview.length ? 'danger' : 'info',
       },
     ],
   };
@@ -3779,7 +3779,7 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
   const publicMediaReview = providers.filter(providerPublicMediaNeedsReview).length;
   const payoutSetupReview = providers.filter(providerPayoutSetupNeedsReview).length;
   const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
-  const openRisk = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
+  const openControlItems = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
   const deviceRisk = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
@@ -3797,7 +3797,7 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
     ['Public media review', publicMediaReview.toString()],
     ['First earning setup', payoutSetupReview.toString()],
     ['Wallet debt', walletDebt.toString()],
-    ['Open reports', openRisk.toString()],
+    ['Open reports', openControlItems.toString()],
     ['Device checks', deviceRisk.toString()],
     ['Ready for dispatch', readyNow.toString()],
   ] as const;
@@ -3893,7 +3893,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
   const securityNeedsReview = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
-  const riskNeedsReview = providers.filter((provider) => hasOpenProviderRisk(provider)).length;
+  const reportNeedsReview = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
   const directReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length;
   const backupReady = providers.filter(
     (provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible,
@@ -3970,7 +3970,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
     },
     {
       label: 'Reports and sanctions',
-      count: riskNeedsReview,
+      count: reportNeedsReview,
       href: '/partners?review=reports',
       detail:
         'Open reports or active sanctions should be reviewed before dispatch and profile badge changes.',
@@ -4119,7 +4119,7 @@ function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVI
   return issues;
 }
 
-function hasOpenProviderRisk(provider: AdminProvider) {
+function hasOpenPartnerControl(provider: AdminProvider) {
   return (
     (provider.reports ?? []).some((report) => ['OPEN', 'INVESTIGATING'].includes(report.status)) ||
     (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')
@@ -4426,7 +4426,7 @@ function providerMatchesReviewQueue(
     return ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider));
   }
   if (review === 'reports') {
-    return hasOpenProviderRisk(provider);
+    return hasOpenPartnerControl(provider);
   }
   if (review === 'location') {
     return ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy));
