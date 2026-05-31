@@ -448,6 +448,7 @@ if (bookingLinkMatch) {
   const bookingBody = await fetchPage(bookingPath);
   const bookingMarkers = [
     'Operator command queue',
+    'Booking handoff checklist',
     'Booking full record index',
     'Operating timeline',
     'Chat lifecycle and retention',

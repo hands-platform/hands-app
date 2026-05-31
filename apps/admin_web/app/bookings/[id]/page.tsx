@@ -81,6 +81,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingActivitySummary = buildBookingActivitySummary(bookingActivityRecords);
   const bookingActivityCsvHref = buildBookingActivityCsvHref(booking, bookingActivityRecords);
   const chatLifecycle = bookingChatLifecycle(booking, messages.length);
+  const handoffChecklist = bookingHandoffChecklist(booking, messages.length, latestLocation);
   const operatingSnapshot = bookingOperatingSnapshot({
     booking,
     addressLine,
@@ -149,7 +150,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           value={providerLocationMetricValue(booking)}
           helper={providerLocationMetricHelper(booking)}
         />
-        <MetricCard label="Ops checks" value={riskSummary.label} helper={riskSummary.helper} />
+        <MetricCard label="Attention checks" value={riskSummary.label} helper={riskSummary.helper} />
       </section>
 
       <section className="card" id="operator-command-queue" style={{ marginBottom: 16 }}>
@@ -182,6 +183,37 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 <small>{command.owner}</small>
               </div>
               <OperatorCommandAction bookingId={booking.id} command={command} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" id="booking-handoff-checklist" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking handoff checklist</h2>
+            <p className="muted">
+              One-row-per-stage view of the customer app, partner app, admin archive, location, and finance
+              handoff. This is factual state tracking only.
+            </p>
+          </div>
+          <span className="pill pill-info">{handoffChecklist.length} stage(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {handoffChecklist.map((item) => (
+            <div className="setup-stage-item" key={item.id}>
+              <span>{item.label}</span>
+              <div>
+                <strong>{item.title}</strong>
+                <p className="muted">{item.detail}</p>
+              </div>
+              {item.href ? (
+                <Link className="text-link" href={item.href}>
+                  {item.status}
+                </Link>
+              ) : (
+                <small>{item.status}</small>
+              )}
             </div>
           ))}
         </div>
@@ -1578,6 +1610,75 @@ function bookingOperatorCommandQueue({
     labels,
     commands: commands.slice(0, 8),
   };
+}
+
+function bookingHandoffChecklist(
+  booking: AdminBookingDetail,
+  messageCount: number,
+  latestLocation?: AdminLocationSnapshot,
+) {
+  const participantCount = booking.participants?.length ?? 0;
+  const acceptedCount =
+    booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+      .length ?? 0;
+  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const paymentLabel = booking.payment
+    ? `${booking.payment.method} / ${booking.payment.status} / ${money(booking.payment.amount, booking.payment.currency)}`
+    : 'No payment record';
+  const cashDebtLabel = bookingCashDebtNeedsSettlement(booking)
+    ? 'Cash fee debt must be settled before the partner accepts more work.'
+    : 'No cash fee debt block on this booking.';
+  const chatDetail = booking.chatRoom
+    ? `${messageCount} retained message(s). Admin keeps the archive even if mobile hides chat after completion.`
+    : 'No chat room is linked yet. Matched or active bookings should create one.';
+  const locationDetail = latestLocation
+    ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
+    : 'No partner service location has been shared yet.';
+
+  return [
+    {
+      id: 'booking-request',
+      label: 'Request',
+      title: bookingServiceOptionLabel(booking),
+      detail: `${booking.status} / scheduled ${formatDate(booking.scheduledStartAt)} / ${bookingAddressSnapshotLabel(booking)}`,
+      status: 'Booking facts',
+      href: '#customer',
+    },
+    {
+      id: 'partner-response',
+      label: 'Partner',
+      title: finalPartner ? providerName(finalPartner) : 'Waiting for partner response',
+      detail: `${participantCount} partner(s) joined / ${acceptedCount} accepted. The customer remains the final decision maker.`,
+      status: 'Partner shortlist',
+      href: '#participants',
+    },
+    {
+      id: 'customer-choice',
+      label: 'Choice',
+      title: booking.selectedProvider ? 'Final partner selected' : 'Customer choice pending',
+      detail: booking.selectedProvider
+        ? `${providerName(booking.selectedProvider)} is recorded as the final partner.`
+        : 'Keep the customer waiting screen synced with accepted partner options.',
+      status: 'Customer screen',
+      href: '#audit',
+    },
+    {
+      id: 'chat-location',
+      label: 'Chat',
+      title: booking.chatRoom ? `Chat room ${shortId(booking.chatRoom.id)}` : 'Chat handoff pending',
+      detail: `${chatDetail} ${locationDetail}`,
+      status: 'Chat/location',
+      href: '#structured-ops-status',
+    },
+    {
+      id: 'finance-closeout',
+      label: 'Finance',
+      title: paymentLabel,
+      detail: `${cashDebtLabel} ${booking.earning ? `Earning ledger: ${money(booking.earning.netAmount, booking.earning.currency)}.` : 'No earning ledger yet.'}`,
+      status: 'Payment/wallet',
+      href: '#finance',
+    },
+  ];
 }
 
 function bookingChatLifecycle(booking: AdminBookingDetail, messageCount: number) {
