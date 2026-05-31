@@ -98,7 +98,7 @@ export default async function NotificationsPage({
             <div className="card">
               <span className="pill pill-info">Partner booking alerts</span>
               <h3 style={{ marginTop: 10 }}>{channelSummary.partnerAlertCount}</h3>
-              <p className="muted">Direct requests, backup participation alerts, matching, and payout setup.</p>
+              <p className="muted">Direct requests, marketplace participation alerts, matching, and payout setup.</p>
             </div>
             <div className="card">
               <span className="pill pill-success">In-app route</span>
@@ -234,9 +234,9 @@ export default async function NotificationsPage({
                   <div className="muted">{typeMeaning(notification.type)}</div>
                 </td>
                 <td>
-                  <div>{notification.title}</div>
+                  <div>{marketplaceDisplayText(notification.title)}</div>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    {notification.body}
+                    {marketplaceDisplayText(notification.body)}
                   </div>
                   {notificationDataHint(notification) ? (
                     <div className="muted" style={{ marginTop: 6 }}>
@@ -565,8 +565,12 @@ function humanizeType(type: string) {
   return type
     .toLowerCase()
     .split(/[_\-.]/g)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => (part === 'backup' ? 'Marketplace' : part.charAt(0).toUpperCase() + part.slice(1)))
     .join(' ');
+}
+
+function marketplaceDisplayText(value: string) {
+  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
 }
 
 function typeMeaning(type: string) {
@@ -602,10 +606,10 @@ function notificationDataHint(notification: AdminNotification) {
       parts.push(`distance ${formatMeters(data.distanceMeters)}`);
     }
     if (data?.backupProviderRadiusMeters !== undefined && data?.backupProviderRadiusMeters !== null) {
-      parts.push(`backup radius ${formatMeters(data.backupProviderRadiusMeters)}`);
+      parts.push(`marketplace radius ${formatMeters(data.backupProviderRadiusMeters)}`);
     }
     if (data?.backupOpenMode) {
-      parts.push(`backup mode ${String(data.backupOpenMode)}`);
+      parts.push(`marketplace mode ${String(data.backupOpenMode)}`);
     }
     if (parts.length > 0) {
       return parts.join(' / ');

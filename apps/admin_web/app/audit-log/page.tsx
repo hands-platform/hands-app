@@ -175,7 +175,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                 <td>{log.actor?.fullName ?? log.actor?.phone ?? 'System'}</td>
                 <td>
                   <div>{shortTarget(log.target)}</div>
-                  <div className="muted">{log.target}</div>
+                  <div className="muted">{operationalDisplayText(log.target)}</div>
                 </td>
                 <td>
                   <a className="pill pill-info" href={relatedBoardHref(log)}>
@@ -462,6 +462,7 @@ function humanizeAction(action: string) {
   return action
     .split('.')
     .map((part) => part.replace(/[-_]/g, ' '))
+    .map((part) => operationalDisplayText(part))
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' / ');
 }
@@ -472,9 +473,9 @@ function shortTarget(target: string) {
   }
   const [scope, id] = target.split(':');
   if (!id) {
-    return target;
+    return operationalDisplayText(target);
   }
-  return `${scope}:${id.slice(0, 8)}`;
+  return operationalDisplayText(`${scope}:${id.slice(0, 8)}`);
 }
 
 function metadataPreview(metadata: unknown) {
@@ -609,7 +610,12 @@ function policyAuditKeyLabel(key: string) {
   return key
     .split('.')
     .map((part) => part.replace(/_/g, ' '))
+    .map((part) => operationalDisplayText(part))
     .join(' / ');
+}
+
+function operationalDisplayText(value: string) {
+  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
 }
 
 function compactAuditValue(value: unknown) {
@@ -829,7 +835,7 @@ function opsDetail(action: string) {
     return 'Retry events are useful when push, SMS, or webhook delivery needed another pass.';
   }
   if (action.startsWith('operational_policy.')) {
-    return 'Operational policy edits can change matching timers, backup partner visibility, wallet gates, and alert routing.';
+    return 'Operational policy edits can change matching timers, marketplace partner visibility, wallet gates, and alert routing.';
   }
   if (isServicePricingAction(action)) {
     return 'Price policy changes affect customer price, partner payout, tax withholding, cash debt, and payout batches.';
