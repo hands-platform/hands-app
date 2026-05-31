@@ -222,7 +222,7 @@ const externalRegistrationPlan = [
     status: 'Account ready',
     statusClass: 'pill-success',
     detail:
-      'Development backup is now centered on hands-platform/hands-app. Keep develop as the active branch.',
+      'Development source control is now centered on hands-platform/hands-app. Keep develop as the active branch.',
     env: ['GITHUB_OWNER=hands-platform', 'GITHUB_REPO=hands-app'],
   },
   {

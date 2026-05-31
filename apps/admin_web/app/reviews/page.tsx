@@ -467,7 +467,7 @@ function opsHint(review: AdminReview) {
     return 'Low ratings deserve service recovery review before the pattern spreads.';
   }
   if (review.tipAmount > 0) {
-    return 'Keep the extra amount visible for finance reconciliation, without treating it as a customer or partner score.';
+    return 'Keep the extra amount visible for finance reconciliation, without turning it into a customer or partner rating.';
   }
   return 'Routine feedback row for customer sentiment and partner quality tracking.';
 }

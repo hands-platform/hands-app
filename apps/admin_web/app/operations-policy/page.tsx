@@ -2732,7 +2732,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
           },
         ],
         operatorAction:
-          'Review this booking before changing response-window, backup-radius, or marketplace-open policy.',
+          'Review this booking before changing response-window, marketplace-radius, or marketplace-open policy.',
       };
     });
 
