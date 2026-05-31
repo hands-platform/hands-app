@@ -85,6 +85,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messages,
     notifications: rawNotifications,
   });
+  const operatorCommandQueue = bookingOperatorCommandQueue({
+    booking,
+    riskFlags,
+    messages,
+    latestLocation,
+  });
 
   return (
     <>
@@ -133,6 +139,41 @@ export default async function BookingDetailPage({ params }: PageProps) {
           helper={providerLocationMetricHelper(booking)}
         />
         <MetricCard label="Ops checks" value={riskSummary.label} helper={riskSummary.helper} />
+      </section>
+
+      <section className="card" id="operator-command-queue" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Operator command queue</h2>
+            <p className="muted">
+              Practical same-shift actions for this booking. These are factual handling steps, not customer or
+              partner scoring.
+            </p>
+          </div>
+          <span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {operatorCommandQueue.labels.map((label) => (
+            <div key={label.label}>
+              <span>{label.label}</span>
+              <strong>{label.value}</strong>
+              <small>{label.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {operatorCommandQueue.commands.map((command) => (
+            <div className="setup-stage-item" key={command.id}>
+              <span>{command.label}</span>
+              <div>
+                <strong>{command.title}</strong>
+                <p className="muted">{command.detail}</p>
+                <small>{command.owner}</small>
+              </div>
+              <OperatorCommandAction bookingId={booking.id} command={command} />
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -238,7 +279,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="structured-ops-status" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Chat lifecycle and retention</h2>
@@ -415,7 +456,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="backup-supply" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Applied operations policy</h2>
@@ -834,7 +875,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card ops-note-panel" style={{ marginBottom: 16 }}>
+      <section className="card ops-note-panel" id="operator-notes" style={{ marginBottom: 16 }}>
         <div>
           <h2>Operator notes</h2>
           <p className="muted">
@@ -883,7 +924,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </form>
       </section>
 
-      <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+      <section className="card ops-command-center" id="completed-closeout" style={{ marginBottom: 16 }}>
         <div>
           <h2>Completed closeout</h2>
           <p className="muted">
@@ -906,7 +947,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+      <section className="card ops-command-center" id="matching-expiry" style={{ marginBottom: 16 }}>
         <div>
           <h2>Matching expiry handling</h2>
           <p className="muted">
@@ -931,7 +972,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      <section className="card ops-command-center" style={{ marginBottom: 16 }}>
+      <section className="card ops-command-center" id="no-show-handling" style={{ marginBottom: 16 }}>
         <div>
           <h2>No-show handling</h2>
           <p className="muted">
@@ -1244,6 +1285,44 @@ function OpsTaskAction({
   );
 }
 
+type OperatorCommand = {
+  id: string;
+  label: string;
+  title: string;
+  detail: string;
+  owner: string;
+  tone: 'pill-success' | 'pill-info' | 'pill-warn' | 'pill-danger' | 'pill-neutral';
+  action:
+    | { type: 'link'; href: string; label: string }
+    | { type: 'note'; preset: string; label: string }
+    | { type: 'task'; taskType: string; taskStatus: string; label: string };
+};
+
+function OperatorCommandAction({ bookingId, command }: { bookingId: string; command: OperatorCommand }) {
+  if (command.action.type === 'link') {
+    return <ActionLink href={command.action.href} label={command.action.label} />;
+  }
+
+  if (command.action.type === 'note') {
+    return (
+      <form action={addBookingOpsNote}>
+        <input type="hidden" name="bookingId" value={bookingId} />
+        <input type="hidden" name="preset" value={command.action.preset} />
+        <button type="submit">{command.action.label}</button>
+      </form>
+    );
+  }
+
+  return (
+    <OpsTaskAction
+      bookingId={bookingId}
+      type={command.action.taskType}
+      status={command.action.taskStatus}
+      label={command.action.label}
+    />
+  );
+}
+
 function ActionLink({ href, label }: { href: string; label: string }) {
   if (href.startsWith('/')) {
     return (
@@ -1258,6 +1337,221 @@ function ActionLink({ href, label }: { href: string; label: string }) {
       {label}
     </a>
   );
+}
+
+function bookingOperatorCommandQueue({
+  booking,
+  riskFlags,
+  messages,
+  latestLocation,
+}: {
+  booking: AdminBookingDetail;
+  riskFlags: RiskFlag[];
+  messages: AdminChatMessage[];
+  latestLocation?: AdminLocationSnapshot;
+}) {
+  const commands: OperatorCommand[] = [];
+  const add = (command: OperatorCommand) => commands.push(command);
+  const activeStatus = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
+  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const partnerLabel = finalPartner ? providerName(finalPartner) : 'No final partner';
+
+  if (booking.status === 'OPEN_MATCHING') {
+    add({
+      id: 'matching-watch',
+      label: 'MATCH',
+      title: 'Watch customer choice',
+      detail: `${booking.participants?.length ?? 0} partner(s) are in the shortlist. Customer still chooses the final partner.`,
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      action: { type: 'link', href: '#participants', label: 'Open shortlist' },
+    });
+  }
+
+  if (booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0) {
+    add({
+      id: 'partner-supply',
+      label: 'SUPPLY',
+      title: 'Check nearby partner supply',
+      detail: 'No partner has joined yet. Review backup candidates and notification delivery before widening operations policy.',
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      action: { type: 'link', href: '#backup-supply', label: 'Open supply' },
+    });
+  }
+
+  if (activeStatus && !booking.chatRoom) {
+    add({
+      id: 'chat-repair',
+      label: 'CHAT',
+      title: 'Repair chat handoff',
+      detail: 'A matched or active booking should have a retained chat room for customer support and admin review.',
+      owner: 'Support operator',
+      tone: 'pill-danger',
+      action: { type: 'link', href: '/bookings?view=chat-repair', label: 'Open queue' },
+    });
+  } else if (booking.chatRoom && activeStatus && messages.length === 0) {
+    add({
+      id: 'chat-first-contact',
+      label: 'CHAT',
+      title: 'Monitor first chat contact',
+      detail: 'Chat is ready but no message has been sent yet. Add a note if either side reports uncertainty.',
+      owner: 'Support operator',
+      tone: 'pill-info',
+      action: {
+        type: 'note',
+        label: 'Log watch',
+        preset: 'Chat is ready but quiet; support is monitoring first customer/partner contact.',
+      },
+    });
+  }
+
+  if (activeStatus && !latestLocation) {
+    add({
+      id: 'location-request',
+      label: 'LOC',
+      title: 'Ask partner to share location',
+      detail: `${partnerLabel} has not shared a saved current service pin for this active booking.`,
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      action: { type: 'task', taskType: 'LOCATION_CHECKED', taskStatus: 'BLOCKED', label: 'Flag location' },
+    });
+  } else if (latestLocation && latestProviderLocationFreshness(booking) !== 'recent') {
+    add({
+      id: 'location-stale',
+      label: 'LOC',
+      title: 'Refresh stale partner location',
+      detail: providerLocationMetricHelper(booking),
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      action: { type: 'task', taskType: 'LOCATION_CHECKED', taskStatus: 'PENDING', label: 'Reset check' },
+    });
+  }
+
+  if (booking.payment?.status === 'AUTHORIZED' && booking.status === 'COMPLETED') {
+    add({
+      id: 'capture-payment',
+      label: 'PAY',
+      title: 'Capture completed service payment',
+      detail: 'Service is completed but payment is still authorized. Review capture before payout closeout.',
+      owner: 'Payments operator',
+      tone: 'pill-warn',
+      action: { type: 'link', href: '#payment', label: 'Open payment' },
+    });
+  }
+
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    add({
+      id: 'cash-debt',
+      label: 'CASH',
+      title: 'Settle partner cash fee debt',
+      detail: 'Cash service fee debt blocks future partner acceptance until the company fee is settled.',
+      owner: 'Finance operator',
+      tone: 'pill-danger',
+      action: { type: 'link', href: '#finance', label: 'Open finance' },
+    });
+  }
+
+  if (canCloseoutCompletedBooking(booking)) {
+    add({
+      id: 'completed-closeout',
+      label: 'CLOSE',
+      title: 'Reconcile completed booking',
+      detail: 'Ensure capture, earning, tax, platform fee, and wallet ledger records exist before leaving the booking.',
+      owner: 'Finance operator',
+      tone: 'pill-warn',
+      action: { type: 'link', href: '#completed-closeout', label: 'Open closeout' },
+    });
+  }
+
+  if (canExpireBooking(booking.status)) {
+    add({
+      id: 'expire-matching',
+      label: 'TTL',
+      title: 'Expire if matching window is over',
+      detail: 'Use this only when the customer should stop waiting and payment hold needs release.',
+      owner: 'Dispatch operator',
+      tone: 'pill-info',
+      action: { type: 'link', href: '#matching-expiry', label: 'Open expiry' },
+    });
+  }
+
+  if (canMarkNoShow(booking.status)) {
+    add({
+      id: 'no-show-option',
+      label: 'NO-SHOW',
+      title: 'No-show action available',
+      detail: 'Use only after confirming the customer or partner did not proceed and communication is retained.',
+      owner: 'Support operator',
+      tone: 'pill-neutral',
+      action: { type: 'link', href: '#no-show-handling', label: 'Open action' },
+    });
+  }
+
+  const pendingTasks = bookingOpsTaskCards(booking).filter((task) => task.status !== 'DONE');
+  if (pendingTasks.length > 0) {
+    add({
+      id: 'ops-task-next',
+      label: 'TASK',
+      title: `Finish ${pendingTasks[0].label.toLowerCase()}`,
+      detail: pendingTasks[0].helper,
+      owner: 'Operations',
+      tone: pendingTasks[0].status === 'BLOCKED' ? 'pill-danger' : 'pill-info',
+      action: {
+        type: 'task',
+        taskType: pendingTasks[0].type,
+        taskStatus: pendingTasks[0].status === 'BLOCKED' ? 'PENDING' : 'DONE',
+        label: pendingTasks[0].status === 'BLOCKED' ? 'Reopen' : 'Mark done',
+      },
+    });
+  }
+
+  if (commands.length === 0) {
+    add({
+      id: 'normal-monitoring',
+      label: 'OK',
+      title: 'Normal monitoring',
+      detail: 'No immediate operator action is active. Keep the record visible until the next booking transition.',
+      owner: 'Operations',
+      tone: 'pill-success',
+      action: {
+        type: 'note',
+        label: 'Log check',
+        preset: 'Booking reviewed; no immediate operator action needed at this time.',
+      },
+    });
+  }
+
+  const urgentCount = commands.filter((command) => command.tone === 'pill-danger' || command.tone === 'pill-warn').length;
+  const labels = [
+    {
+      label: 'Active commands',
+      value: String(commands.length),
+      helper: urgentCount ? `${urgentCount} need same-shift attention.` : 'No urgent handling step.',
+    },
+    {
+      label: 'Partner',
+      value: partnerLabel,
+      helper: finalPartner ? 'Preferred/final partner context.' : 'No partner is selected yet.',
+    },
+    {
+      label: 'Chat',
+      value: booking.chatRoom ? 'Retained' : 'Missing',
+      helper: `${messages.length} message(s) in admin archive.`,
+    },
+    {
+      label: 'Attention flags',
+      value: String(riskFlags.length),
+      helper: 'Factual checks only; no customer or partner scoring.',
+    },
+  ];
+
+  return {
+    status: urgentCount ? `${urgentCount} action(s)` : 'Monitor',
+    tone: urgentCount ? 'pill-warn' : 'pill-success',
+    labels,
+    commands: commands.slice(0, 8),
+  };
 }
 
 function bookingChatLifecycle(booking: AdminBookingDetail, messageCount: number) {
