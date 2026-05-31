@@ -19,12 +19,14 @@ type BookingView =
   | 'customer-choice'
   | 'handoff-repair'
   | 'no-supply'
+  | 'address'
   | 'payment'
   | 'cash-debt'
   | 'closeout'
   | 'pricing'
   | 'location'
   | 'chat'
+  | 'chat-repair'
   | 'expired'
   | 'no-show'
   | 'all';
@@ -186,7 +188,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const paymentRisk = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
     const closeoutRisk = orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
     const pricingRisk = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
+    const addressRisk = orderedBookings.filter((booking) => bookingAddressNeedsOps(booking));
     const locationRisk = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
+    const chatRepair = orderedBookings.filter((booking) => bookingChatRepairNeedsOps(booking));
     const highRisk = orderedBookings.filter((booking) =>
       bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
     );
@@ -208,10 +212,12 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['No-show', noShow.length.toString()],
       ['Expired', expired.length.toString()],
       ['Policy snapshots', policySnapshots.length.toString()],
+      ['Address checks', addressRisk.length.toString()],
       ['Payment checks', paymentRisk.length.toString()],
       ['Closeout checks', closeoutRisk.length.toString()],
       ['Pricing checks', pricingRisk.length.toString()],
       ['Location checks', locationRisk.length.toString()],
+      ['Chat repair', chatRepair.length.toString()],
     ];
   }, [currentTimeMs, orderedBookings]);
 
@@ -245,66 +251,19 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   );
 
   const visibleBookings = useMemo(() => {
-    if (view === 'attention') {
-      return orderedBookings.filter((booking) =>
-        bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
-      );
-    }
-    if (view === 'matching') {
-      return orderedBookings.filter((booking) => bookingMatchingEscalationNeedsOps(booking, currentTimeMs));
-    }
-    if (view === 'first-pick') {
-      return orderedBookings.filter(
-        (booking) => bookingListStage(booking, currentTimeMs).key === 'first-pick',
-      );
-    }
-    if (view === 'backup') {
-      return orderedBookings.filter((booking) => bookingListStage(booking, currentTimeMs).key === 'backup');
-    }
-    if (view === 'customer-choice') {
-      return orderedBookings.filter(
-        (booking) => bookingListStage(booking, currentTimeMs).key === 'customer-choice',
-      );
-    }
-    if (view === 'handoff-repair') {
-      return orderedBookings.filter(
-        (booking) => bookingListStage(booking, currentTimeMs).key === 'handoff-repair',
-      );
-    }
-    if (view === 'no-supply') {
-      return orderedBookings.filter(
-        (booking) => booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0,
-      );
-    }
-    if (view === 'payment') {
-      return orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
-    }
-    if (view === 'cash-debt') {
-      return orderedBookings.filter((booking) => bookingCashDebtNeedsOps(booking));
-    }
-    if (view === 'closeout') {
-      return orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
-    }
-    if (view === 'pricing') {
-      return orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
-    }
-    if (view === 'location') {
-      return orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
-    }
-    if (view === 'chat') {
-      return orderedBookings.filter((booking) => Boolean(booking.chatRoom));
-    }
-    if (view === 'expired') {
-      return orderedBookings.filter((booking) => booking.status === 'EXPIRED');
-    }
-    if (view === 'no-show') {
-      return orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
-    }
-    if (view === 'all') {
-      return orderedBookings;
-    }
-    return orderedBookings.filter((booking) => activeStatuses.has(booking.status));
+    return orderedBookings.filter((booking) => bookingMatchesView(booking, view, currentTimeMs));
   }, [currentTimeMs, orderedBookings, view]);
+
+  const bookingViewCounts = useMemo(
+    () =>
+      new Map(
+        bookingViewOptions.map((option) => [
+          option.view,
+          orderedBookings.filter((booking) => bookingMatchesView(booking, option.view, currentTimeMs)).length,
+        ]),
+      ),
+    [currentTimeMs, orderedBookings],
+  );
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
 
   useEffect(() => {
@@ -653,8 +612,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               type="button"
               onClick={() => setView(option.view)}
               disabled={view === option.view}
+              title={option.description}
             >
-              {option.label}
+              {option.label} ({bookingViewCounts.get(option.view) ?? 0})
             </button>
           ))}
         </div>
@@ -931,6 +891,13 @@ const bookingViewOptions: Array<{
       'Use this when customers are waiting but no partner has joined. Call/notify nearby partners or review location/service pricing.',
   },
   {
+    view: 'address',
+    label: 'Address check',
+    description: 'bookings missing the immutable customer service address snapshot.',
+    operatorHint:
+      'Use this before dispatch. A confirmed address snapshot protects customer, partner, and admin records.',
+  },
+  {
     view: 'payment',
     label: 'Payment ops',
     description: 'bookings whose payment state can block closeout, refund, capture, or settlement.',
@@ -973,6 +940,13 @@ const bookingViewOptions: Array<{
       'Use this to inspect service handoff quality, quiet chats, and route/location expectations.',
   },
   {
+    view: 'chat-repair',
+    label: 'Chat repair',
+    description: 'matched or active bookings whose chat room is missing.',
+    operatorHint:
+      'Use this when a matched customer and partner cannot coordinate. Repair chat before arrival, service start, or completion.',
+  },
+  {
     view: 'expired',
     label: 'Expired',
     description: 'bookings closed by timeout and waiting for payment release or customer follow-up review.',
@@ -1004,7 +978,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
   const expiredMatching = open.filter(
     (booking) => booking.expiresAt && new Date(booking.expiresAt).getTime() < nowMs,
   );
-  const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
+  const matchedWithoutChat = bookings.filter((booking) => bookingChatRepairNeedsOps(booking));
   const paymentRisk = bookings.filter((booking) => bookingPaymentNeedsOps(booking));
   const noShow = bookings.filter((booking) => booking.status === 'NO_SHOW');
   const closeoutRisk = bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
@@ -1740,6 +1714,64 @@ function metric(label: string, value: number) {
   return { label, value: value.toString() };
 }
 
+function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: number) {
+  if (view === 'attention') {
+    return bookingRiskFlags(booking, nowMs).some((flag) => flag.severity === 'high');
+  }
+  if (view === 'matching') {
+    return bookingMatchingEscalationNeedsOps(booking, nowMs);
+  }
+  if (view === 'first-pick') {
+    return bookingListStage(booking, nowMs).key === 'first-pick';
+  }
+  if (view === 'backup') {
+    return bookingListStage(booking, nowMs).key === 'backup';
+  }
+  if (view === 'customer-choice') {
+    return bookingListStage(booking, nowMs).key === 'customer-choice';
+  }
+  if (view === 'handoff-repair') {
+    return bookingListStage(booking, nowMs).key === 'handoff-repair';
+  }
+  if (view === 'no-supply') {
+    return booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0;
+  }
+  if (view === 'address') {
+    return bookingAddressNeedsOps(booking);
+  }
+  if (view === 'payment') {
+    return bookingPaymentNeedsOps(booking);
+  }
+  if (view === 'cash-debt') {
+    return bookingCashDebtNeedsOps(booking);
+  }
+  if (view === 'closeout') {
+    return bookingCompletedCloseoutNeedsOps(booking);
+  }
+  if (view === 'pricing') {
+    return bookingPricingPolicyNeedsOps(booking);
+  }
+  if (view === 'location') {
+    return bookingLocationNeedsOps(booking, nowMs);
+  }
+  if (view === 'chat') {
+    return Boolean(booking.chatRoom);
+  }
+  if (view === 'chat-repair') {
+    return bookingChatRepairNeedsOps(booking);
+  }
+  if (view === 'expired') {
+    return booking.status === 'EXPIRED';
+  }
+  if (view === 'no-show') {
+    return booking.status === 'NO_SHOW';
+  }
+  if (view === 'all') {
+    return true;
+  }
+  return activeStatuses.has(booking.status);
+}
+
 function commandToneClass(tone: BookingCommandLane['tone']) {
   if (tone === 'danger') {
     return 'signal-warn';
@@ -1941,6 +1973,9 @@ function emptyBookingMessage(view: BookingView) {
   if (view === 'no-supply') {
     return 'No open matching booking is waiting without partner supply.';
   }
+  if (view === 'address') {
+    return 'No booking is missing an immutable address snapshot.';
+  }
   if (view === 'payment') {
     return 'No payment-check bookings match this queue. Capture, release, refund, cash, and partner refs are clear.';
   }
@@ -1958,6 +1993,9 @@ function emptyBookingMessage(view: BookingView) {
   }
   if (view === 'chat') {
     return 'No chat-live bookings match this queue. No active customer/partner conversation needs review.';
+  }
+  if (view === 'chat-repair') {
+    return 'No matched or active booking is missing chat right now.';
   }
   if (view === 'expired') {
     return 'No expired bookings need review. Timeout closeout and customer communication are clear.';
@@ -2212,6 +2250,17 @@ function bookingCashDebtNeedsOps(booking: AdminBooking) {
     Boolean(booking.earning) &&
     (booking.earning?.netAmount ?? 0) < 0 &&
     booking.earning?.status !== 'PAID'
+  );
+}
+
+function bookingAddressNeedsOps(booking: AdminBooking) {
+  return !booking.addressSnapshot;
+}
+
+function bookingChatRepairNeedsOps(booking: AdminBooking) {
+  return (
+    !booking.chatRoom &&
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
   );
 }
 

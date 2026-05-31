@@ -22,12 +22,14 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     view === 'customer-choice' ||
     view === 'handoff-repair' ||
     view === 'no-supply' ||
+    view === 'address' ||
     view === 'payment' ||
     view === 'cash-debt' ||
     view === 'closeout' ||
     view === 'pricing' ||
     view === 'location' ||
     view === 'chat' ||
+    view === 'chat-repair' ||
     view === 'expired' ||
     view === 'no-show' ||
     view === 'all'
