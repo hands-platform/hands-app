@@ -46,6 +46,7 @@ Checked commands:
 - `npm.cmd run build --workspace @massage-vn/admin-web`: PASS
 - `node infra/scripts/admin-web-smoke.mjs`: PASS, 52 admin pages plus dynamic detail checks. On the current dev server this can take about 130-170 seconds, so short shell timeouts may fail even when the app is healthy.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
+- `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 10 tests
 - `flutter analyze` in partner app: PASS
@@ -83,11 +84,13 @@ Admin dashboard:
 - Booking monitor with matching stages, first-pick, backup, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Customer list and customer detail with activity, booking history, chat history, wallet/payment context, addresses, app sessions, notes, exports.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
+- Customer and partner pages are intentionally factual: they show IDs, contact, joined/recent access dates, completed work, booking/payment/chat/activity records, and operator notes without customer or partner scoring.
 - Partner queue wording is checklist/order based, not score/ranking based. Operator ordering is for fixing factual blockers only.
 - Services page with service groups, duration options, minimum price, price step, payout policy, fee/tax visibility.
 - Tax policy page with versioned tax rules.
 - Operations policy page for matching and wallet gates.
 - Operations policy behavior is API-backed and smoke-tested for the first-pick response window, marketplace participation, customer final partner selection, and wallet settlement gates.
+- Operations policy analysis labels use outcome-check language such as "Check outcomes" and "On track" instead of risk/health labels for people or partners.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.
@@ -242,11 +245,12 @@ Goal: Apply final Figma style and multilingual UX after flows stop shifting.
 
 The next safest implementation order is:
 
-1. Tighten customer and partner detail pages around factual activity and chat history.
-2. Make booking detail the strongest cross-linking source of truth.
-3. Keep operations policy visible in admin and guarded by smoke/API tests whenever matching rules change.
-4. Add any missing backend tests for service pricing, payout/tax logs, and cash wallet debt.
-5. Then return to mobile E2E screens.
+1. Make booking detail the strongest cross-linking source of truth.
+   - It should show customer, selected/preferred partner, service duration/price snapshot, matching participants, chat archive, location, payment, wallet, tax, refund, cash settlement, and admin notes in one place.
+2. Keep operations policy visible in admin and guarded by smoke/API tests whenever matching rules change.
+3. Add any missing backend tests for service pricing, payout/tax logs, and cash wallet debt.
+4. Return to mobile E2E screens only after the booking detail and policy/finance records are easy to inspect from admin.
+5. Apply final design/localization after these operational flows stop shifting.
 
 ## Definition Of Done For Each Small Step
 
