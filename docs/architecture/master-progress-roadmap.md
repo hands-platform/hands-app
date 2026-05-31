@@ -111,6 +111,7 @@ Admin dashboard:
 - Operations policy page for matching and wallet gates.
 - Operations policy behavior is API-backed and smoke-tested for the first-pick response window, marketplace participation, customer final partner selection, and wallet settlement gates.
 - Operations policy analysis labels use outcome-check language such as "Check outcomes" and "On track" instead of risk/health labels for people or partners.
+- Operations policy page now displays secondary participation as marketplace/candidate-alert wording even when older policy records still contain legacy backup labels.
 - Operations Handoff now includes a shift handoff checklist for live matching, active services, chat continuity, cash settlement, closeout evidence, failed alerts, partner facts, customer context, and written operator notes.
 - Operations dashboard wording now presents the secondary participation lane as marketplace partner candidates instead of legacy backup terminology.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.

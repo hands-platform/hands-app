@@ -292,7 +292,7 @@ export default async function OperationsPolicyPage({
           <div style={{ overflowX: 'auto' }}>
             <h3>Location freshness sensitivity</h3>
             <p className="muted">
-              Shows how strict or loose freshness rules affect backup matching without real-time tracking.
+              Shows how strict or loose freshness rules affect marketplace matching without real-time tracking.
             </p>
             <table className="table service-trace">
               <thead>
@@ -414,7 +414,7 @@ export default async function OperationsPolicyPage({
                 <th>Policy cohort</th>
                 <th>Sample</th>
                 <th>Matched / completed</th>
-                <th>Backup supply</th>
+                <th>Marketplace supply</th>
                 <th>Check</th>
                 <th>Operator read</th>
               </tr>
@@ -423,7 +423,7 @@ export default async function OperationsPolicyPage({
               {policyEffectAnalysis.rows.map((row) => (
                 <tr key={row.key}>
                   <td>
-                    <strong>{row.policy}</strong>
+                    <strong>{displayOperationalWording(row.policy)}</strong>
                     <p className="muted">{row.value}</p>
                   </td>
                   <td>{row.sample}</td>
@@ -570,7 +570,7 @@ export default async function OperationsPolicyPage({
               <div>
                 <h3>Eligible partner preview</h3>
                 <p className="muted">
-                  Top nearby online partners inside the current backup radius. Stale locations are excluded
+                  Top nearby online partners inside the current marketplace radius. Stale locations are excluded
                   from the dispatch count.
                 </p>
               </div>
@@ -651,7 +651,7 @@ export default async function OperationsPolicyPage({
               {impactDashboard.snapshotRows.map((row) => (
                 <tr key={row.policy}>
                   <td>
-                    <strong>{row.policy}</strong>
+                    <strong>{displayOperationalWording(row.policy)}</strong>
                     <p className="muted">{row.scope}</p>
                   </td>
                   <td>{row.liveValue}</td>
@@ -728,7 +728,7 @@ export default async function OperationsPolicyPage({
                     <p className="muted">{new Date(row.createdAt).toLocaleString()}</p>
                   </td>
                   <td>
-                    <strong>{row.label}</strong>
+                    <strong>{displayOperationalWording(row.label)}</strong>
                     <p className="muted">{row.key}</p>
                   </td>
                   <td>{row.actorName}</td>
@@ -896,8 +896,8 @@ export default async function OperationsPolicyPage({
               <div className="booking-radar" style={{ marginTop: 12 }}>
                 {item.options.map((option) => (
                   <div className="insight-card" key={option.label}>
-                    <strong>{option.label}</strong>
-                    <p className="muted">{option.tradeoff}</p>
+                    <strong>{displayOperationalWording(option.label)}</strong>
+                    <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
                   </div>
                 ))}
               </div>
@@ -934,8 +934,8 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
       <input type="hidden" name="valueType" value={valueType} />
       <div className="risk-watch-header">
         <div>
-          <h3>{setting.label}</h3>
-          <p className="muted">{setting.description}</p>
+          <h3>{displayOperationalWording(setting.label)}</h3>
+          <p className="muted">{displayOperationalWording(setting.description)}</p>
         </div>
         <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
           {setting.enforced ? 'Enforced' : 'Planning'}
@@ -988,7 +988,7 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
             <select name="value" defaultValue={String(setting.value)}>
               {setting.options.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {displayOperationalWording(option.label)}
                 </option>
               ))}
             </select>
@@ -996,8 +996,8 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
           <div className="booking-radar" style={{ marginTop: 12 }}>
             {setting.options.map((option) => (
               <div key={option.value} className="insight-card">
-                <strong>{option.label}</strong>
-                <p className="muted">{option.tradeoff}</p>
+                <strong>{displayOperationalWording(option.label)}</strong>
+                <p className="muted">{displayOperationalWording(option.tradeoff)}</p>
               </div>
             ))}
           </div>
@@ -1025,7 +1025,7 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
           name="reason"
           minLength={12}
           required
-          placeholder="Example: Increase backup visibility because District 1 wait time is rising."
+          placeholder="Example: Increase marketplace visibility because District 1 wait time is rising."
         />
       </label>
       <button type="submit" style={{ marginTop: 12 }}>
@@ -1209,7 +1209,7 @@ function buildPolicySimulation(
         helper: `${eligiblePartners.length} usable partner(s), ${freshEligible.length} fresh location(s).`,
       },
       {
-        label: 'Backup invite cap',
+        label: 'Candidate alert cap',
         value: `${backupInvitationLimit} partner(s)`,
         helper: `${invitedPartners.length} partner(s) would be invited now after distance sorting.`,
       },
@@ -1281,7 +1281,7 @@ function buildPolicySimulation(
         status: immediateBackup ? 'Low anxiety' : 'Strict first-pick',
         title: 'Customer waiting experience',
         detail: immediateBackup
-          ? 'Customers can see backup interest during the first response window.'
+          ? 'Customers can see marketplace partner interest during the first response window.'
           : 'Customers may see an empty waiting screen until the first partner times out, unless that partner declines first.',
         operatorAction: immediateBackup
           ? 'Keep monitoring whether customers understand first-pick vs marketplace partner choice.'
@@ -1321,7 +1321,7 @@ function buildPolicyRecommendationReview(
     const posture = policyRecommendationPosture(setting, { openMatchingCount, activeBookingCount });
     return {
       key: setting.key,
-      label: setting.label,
+      label: displayOperationalWording(setting.label),
       status: aligned ? 'Recommended' : posture.status,
       detail: aligned
         ? `Current value matches the recommended baseline: ${policyDisplayValue(setting)}.`
@@ -1401,9 +1401,9 @@ function policyRecommendationPosture(
     return {
       status: narrower ? 'Narrow supply' : 'Wide supply',
       detail: narrower
-        ? 'Fewer partners can join backup matching, so customer alternatives may look empty.'
+        ? 'Fewer partners can join marketplace matching, so customer alternatives may look empty.'
         : 'More partners can join, but distance and arrival quality need closer monitoring.',
-      operatorAction: `${liveContext} Monitor ignored backup alerts and late arrivals by city.`,
+      operatorAction: `${liveContext} Monitor ignored marketplace alerts and late arrivals by city.`,
       alignedAction:
         'Radius is at the default operating range; keep reviewing city density before making it dynamic.',
       className: narrower ? 'ops-task-blocked' : 'ops-task-pending',
@@ -1419,8 +1419,8 @@ function policyRecommendationPosture(
     return {
       status: looser ? 'Allows older locations' : 'Stricter freshness',
       detail: looser
-        ? 'Backup alerts may reach partners whose last known location is no longer reliable.'
-        : 'Only recently refreshed partner locations are eligible for backup alerts and joins.',
+        ? 'Marketplace alerts may reach partners whose last known location is no longer reliable.'
+        : 'Only recently refreshed partner locations are eligible for marketplace alerts and joins.',
       operatorAction: `${liveContext} Check partner app location refresh failures before loosening this.`,
       alignedAction:
         'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',
@@ -1436,9 +1436,9 @@ function policyRecommendationPosture(
         value === 'AUTO_MATCH_ON_ACCEPT'
           ? 'Fast lock reduces friction but weakens the customer final-choice flow.'
           : 'Customer final-choice mode adds one step but better matches the HANDS target flow.',
-      operatorAction: 'Use customer-confirm mode before scaling backup partner shortlist UX.',
+      operatorAction: 'Use customer-confirm mode before scaling marketplace partner shortlist UX.',
       alignedAction:
-        'Customer final-choice posture is aligned with the intended direct + backup matching model.',
+        'Customer final-choice posture is aligned with the intended direct + marketplace matching model.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
       pillClass: value === recommended ? 'pill-success' : 'pill-warn',
     };
@@ -1446,14 +1446,14 @@ function policyRecommendationPosture(
 
   if (setting.key === 'matching.backup_open_mode') {
     return {
-      status: value === 'IMMEDIATE_WITHIN_WINDOW' ? 'Immediate backup' : 'Delayed backup',
+      status: value === 'IMMEDIATE_WITHIN_WINDOW' ? 'Immediate marketplace' : 'Delayed marketplace',
       detail:
         value === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'This reduces empty waiting screens and lets nearby partners show interest early.'
-          : 'This protects the first-pick partner window, but backup partners now open immediately when the first-pick partner declines.',
+          : 'This protects the first-pick partner window, but marketplace partners now open immediately when the first-pick partner declines.',
       operatorAction: `${liveContext} If delayed mode is kept, support should watch waiting-screen complaints.`,
       alignedAction:
-        'Immediate backup participation supports lower customer anxiety during the first window.',
+        'Immediate marketplace participation supports lower customer anxiety during the first window.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
       pillClass: value === recommended ? 'pill-success' : 'pill-warn',
     };
@@ -1918,7 +1918,7 @@ function buildMatchingStageImpactPreview(
       {
         label: 'Current no supply',
         value: baseline.noSupply.toString(),
-        helper: 'Open bookings that would show customer waiting without usable backup supply.',
+        helper: 'Open bookings that would show customer waiting without usable marketplace supply.',
       },
       {
         label: 'Stage 4 repair',
@@ -2015,7 +2015,7 @@ function matchingStageImpactRead(
     return 'Current live policy baseline. Compare other rows against this before saving a change.';
   }
   if (stats.noSupply > baseline.noSupply) {
-    return 'More bookings lose usable backup supply. Improve partner location/push readiness before choosing this.';
+    return 'More bookings lose usable marketplace supply. Improve partner location/push readiness before choosing this.';
   }
   if (stats.overdue > baseline.overdue) {
     return 'More first-pick windows become overdue. Customer wait anxiety and manual dispatch work may rise.';
@@ -2133,7 +2133,7 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Push gap',
       value: pushGaps.length.toString(),
-      helper: 'Partner may not receive first-pick or backup participation alerts.',
+      helper: 'Partner may not receive first-pick or marketplace participation alerts.',
     },
     {
       label: 'Account follow-up',
@@ -2304,7 +2304,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           'Saved at booking open. Existing countdowns and Redis matching TTL should not be recalculated after a policy edit.',
       },
       {
-        policy: 'Backup partner radius',
+        policy: 'Marketplace partner radius',
         scope: 'Partner eligibility',
         liveValue: policyDisplayByKey(settings, 'matching.backup_provider_radius_meters'),
         savedValue: summarizeSnapshotValues(
@@ -2316,7 +2316,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           'Controls which nearby partners can participate for each booking. New bookings copy the latest radius.',
       },
       {
-        policy: 'Backup location freshness',
+        policy: 'Marketplace location freshness',
         scope: 'Partner eligibility',
         liveValue: policyDisplayByKey(settings, 'matching.backup_provider_location_max_age_minutes'),
         savedValue: summarizeSnapshotValues(
@@ -2325,7 +2325,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           (value) => `${value} min`,
         ),
         operatorMeaning:
-          'Controls whether stale partner locations are excluded from backup alerts and join attempts.',
+          'Controls whether stale partner locations are excluded from marketplace alerts and join attempts.',
       },
       {
         policy: 'Partner accept mode',
@@ -2380,8 +2380,8 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         scope: 'Live matching',
         title: immediateBackup
-          ? 'Backup partners can join during the first window'
-          : 'Backup partners wait until the first window closes',
+          ? 'Marketplace partners can join during the first window'
+          : 'Marketplace partners wait until the first window closes',
         detail: immediateBackup
           ? 'Eligible partners can appear while the first-pick partner is still deciding.'
           : 'Marketplace visibility and join checks stay delayed until the first-pick response window passes.',
@@ -2407,7 +2407,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'Audit',
         title: 'Saved policy snapshots make old bookings explainable',
         detail:
-          'Bookings created after this change keep response window, backup radius, accept mode, backup-open mode, and travel buffer in metadata.',
+          'Bookings created after this change keep response window, marketplace radius, accept mode, marketplace-open mode, and travel buffer in metadata.',
         operatorAction:
           snapshotDrift.length > 0
             ? `${snapshotDrift.length} booking(s) differ from current policy; review booking detail before manual action.`
@@ -2455,7 +2455,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       globalMatchedRate,
     }),
     ...buildPolicyEffectRows({
-      policy: 'Backup invite cap',
+      policy: 'Candidate alert cap',
       settings,
       bookings: sampledBookings,
       settingKey: 'matching.backup_provider_invitation_limit',
@@ -2464,7 +2464,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       globalMatchedRate,
     }),
     ...buildPolicyEffectRows({
-      policy: 'Backup opening mode',
+      policy: 'Marketplace opening mode',
       settings,
       bookings: sampledBookings,
       settingKey: 'matching.backup_open_mode',
@@ -2505,9 +2505,9 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
         helper: `${globalStats.completedCount}/${globalStats.sampleCount} sampled booking(s) completed service.`,
       },
       {
-        label: 'Avg backup invites',
+        label: 'Avg candidate alerts',
         value: avgBackupInvites,
-        helper: 'Uses stored backupNotificationTraces from booking metadata, not just live partner supply.',
+        helper: 'Uses stored candidate-alert traces from booking metadata, not just live partner supply.',
       },
       {
         label: 'Cancelled / expired / no-show',
@@ -2521,23 +2521,23 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
         scope: 'Evidence',
         title: sampledBookings.length ? 'Policy snapshots are measurable' : 'Create more measured bookings',
         detail: sampledBookings.length
-          ? 'Each booking opened under a saved policy can now be compared against outcome, partner joins, and backup invite batches.'
+          ? 'Each booking opened under a saved policy can now be compared against outcome, partner joins, and candidate alert batches.'
           : 'The dashboard needs bookings with metadata.matchingPolicy before it can compare policy outcomes.',
         operatorAction: sampledBookings.length
-          ? 'Use these cohorts before changing response window, backup radius, invite cap, or accept mode.'
-          : 'Create a fresh booking after policy setup, then run through accept/reject/backup scenarios.',
+          ? 'Use these cohorts before changing response window, marketplace radius, invite cap, or accept mode.'
+          : 'Create a fresh booking after policy setup, then run through accept/reject/marketplace scenarios.',
         className: sampledBookings.length ? 'ops-task-done' : 'ops-task-pending',
         pillClass: sampledBookings.length ? 'pill-success' : 'pill-warn',
       },
       {
         scope: 'Current rule',
-        title: `Backup exposure: ${currentRadius}, cap ${currentInviteCap}`,
+        title: `Marketplace exposure: ${currentRadius}, cap ${currentInviteCap}`,
         detail:
-          'Backup partner exposure should balance speed, push cost, and customer choice clarity. A high cap can notify too many partners; a low cap can hide useful supply.',
+          'Marketplace partner exposure should balance speed, push cost, and customer choice clarity. A high cap can notify too many partners; a low cap can hide useful supply.',
         operatorAction:
           globalStats.backupInviteCount > 0
             ? `Current sample averages ${avgBackupInvites} per measured booking.`
-            : 'No backup invite batch was found in the measured sample yet.',
+            : 'No candidate alert batch was found in the measured sample yet.',
         className: 'ops-task-pending',
         pillClass: 'pill-info',
       },
@@ -2732,7 +2732,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
           },
         ],
         operatorAction:
-          'Review this booking before changing response-window, backup-radius, or backup-open policy.',
+          'Review this booking before changing response-window, backup-radius, or marketplace-open policy.',
       };
     });
 
@@ -2943,7 +2943,7 @@ function uniqueNumbers(values: number[]) {
 
 function radiusSensitivityRead(radius: number, currentRadius: number, eligibleCount: number) {
   if (eligibleCount === 0) {
-    return 'No usable backup supply at this radius. Operators should improve partner location/push readiness before relying on it.';
+    return 'No usable marketplace supply at this radius. Operators should improve partner location/push readiness before relying on it.';
   }
   if (radius < currentRadius) {
     return 'Tighter radius improves arrival quality but can create empty customer waiting screens in thin cities.';
@@ -3191,11 +3191,11 @@ function operationsOwnerDecisionBacklog() {
     },
     {
       owner: 'Supply',
-      title: 'Backup partner radius',
+      title: 'Marketplace partner radius',
       question:
         'Should HANDS keep one nationwide default radius, or vary radius by city density and service type?',
       signal:
-        'Review partner count within radius, average distance, late arrivals, and ignored backup alerts by city.',
+        'Review partner count within radius, average distance, late arrivals, and ignored marketplace alerts by city.',
       options: [
         {
           label: 'Single 10km default',
@@ -3358,8 +3358,8 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
     },
     {
       step: '3',
-      title: 'Backup partners can participate by policy',
-      detail: `Up to ${backupLimit} partners inside ${backupRadius} can see or join the backup lane according to "${backupOpenMode}".`,
+      title: 'Marketplace partners can participate by policy',
+      detail: `Up to ${backupLimit} partners inside ${backupRadius} can see or join the marketplace lane according to "${backupOpenMode}".`,
       className: 'timeline-active',
       tags: [
         { label: backupRadius, tone: 'pill-info' },
@@ -3413,9 +3413,9 @@ function formatSnapshotPolicyValue(
 ) {
   const setting = settings.find((item) => item.key === key);
   const stringValue = String(value);
-  return (
+  return displayOperationalWording(
     setting?.options?.find((option) => option.value === stringValue)?.label ??
-    formatPolicyValue(value, setting?.unit)
+      formatPolicyValue(value, setting?.unit),
   );
 }
 
@@ -3437,9 +3437,53 @@ function formatPolicyValue(value: unknown, unit?: string | null) {
 
 function policyDisplayValue(setting: AdminOperationalPolicySetting, recommended = false) {
   const value = String(recommended ? setting.recommendedValue : setting.value);
-  return (
-    setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit)
+  return displayOperationalWording(
+    setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit),
   );
+}
+
+function displayOperationalWording(value: string | null | undefined) {
+  if (!value) return '';
+  return value
+    .replaceAll('backupNotificationTraces', 'candidate alert traces')
+    .replaceAll('backup-radius', 'marketplace-radius')
+    .replaceAll('backup-open', 'marketplace-open')
+    .replaceAll('Backup partner', 'Marketplace partner')
+    .replaceAll('backup partner', 'marketplace partner')
+    .replaceAll('Backup participation', 'Marketplace participation')
+    .replaceAll('backup participation', 'marketplace participation')
+    .replaceAll('Backup visibility', 'Marketplace visibility')
+    .replaceAll('backup visibility', 'marketplace visibility')
+    .replaceAll('Backup notification', 'Marketplace notification')
+    .replaceAll('backup notification', 'marketplace notification')
+    .replaceAll('Backup invite', 'Candidate alert')
+    .replaceAll('backup invite', 'candidate alert')
+    .replaceAll('Backup request', 'Marketplace request')
+    .replaceAll('backup request', 'marketplace request')
+    .replaceAll('Backup shortlist', 'Marketplace shortlist')
+    .replaceAll('backup shortlist', 'marketplace shortlist')
+    .replaceAll('Backup lane', 'Marketplace lane')
+    .replaceAll('backup lane', 'marketplace lane')
+    .replaceAll('Backup join', 'Marketplace join')
+    .replaceAll('backup join', 'marketplace join')
+    .replaceAll('Open backups', 'Open marketplace')
+    .replaceAll('open backups', 'open marketplace')
+    .replaceAll('Immediate backup', 'Immediate marketplace')
+    .replaceAll('immediate backup', 'immediate marketplace')
+    .replaceAll('Delayed backup', 'Delayed marketplace')
+    .replaceAll('delayed backup', 'delayed marketplace')
+    .replaceAll('Delay backup', 'Delay marketplace')
+    .replaceAll('delay backup', 'delay marketplace')
+    .replaceAll('backup partners', 'marketplace partners')
+    .replaceAll('Backup partners', 'Marketplace partners')
+    .replaceAll('backup alerts', 'marketplace alerts')
+    .replaceAll('Backup alerts', 'Marketplace alerts')
+    .replaceAll('backup open mode', 'marketplace open mode')
+    .replaceAll('Backup open mode', 'Marketplace open mode')
+    .replaceAll('backup mode', 'marketplace mode')
+    .replaceAll('Backup mode', 'Marketplace mode')
+    .replaceAll('backup list', 'marketplace list')
+    .replaceAll('Backup list', 'Marketplace list');
 }
 
 type PolicySaveCheck = {
@@ -3478,13 +3522,13 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'matching.backup_provider_radius_meters': {
       area: 'Partner supply',
-      title: 'Controls who can see and join backup requests',
+      title: 'Controls who can see and join marketplace requests',
       detail:
-        'Partner open-booking lists, join validation, backup notifications, and customer shortlist visibility use this radius.',
+        'Partner open-booking lists, join validation, marketplace notifications, and customer shortlist visibility use this radius.',
       saveChecks: [
         {
           label: 'Stage impact preview',
-          detail: 'Preview how the selected radius changes backup supply and no-supply checks.',
+          detail: 'Preview how the selected radius changes marketplace supply and no-supply checks.',
           href: '/operations-policy#matching-stage-impact',
         },
         {
@@ -3496,17 +3540,17 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'matching.backup_provider_invitation_limit': {
       area: 'Partner supply',
-      title: 'Controls how many backup partners are exposed',
+      title: 'Controls how many marketplace partners are exposed',
       detail:
-        'Eligible backup partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.',
+        'Eligible marketplace partners are sorted by distance, then capped by this limit before notification jobs and customer-visible supply are created.',
       saveChecks: [
         {
-          label: 'Backup notification load',
+          label: 'Marketplace notification load',
           detail: 'Check delivery volume and failed partner alerts before raising invitation volume.',
           href: '/notifications',
         },
         {
-          label: 'Backup shortlist',
+          label: 'Marketplace shortlist',
           detail: 'Confirm the customer shortlist will stay readable when more partners can join.',
           href: '/bookings?view=backup',
         },
@@ -3549,19 +3593,19 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       ],
     },
     'matching.backup_open_mode': {
-      area: 'Backup flow',
+      area: 'Marketplace flow',
       title: 'Controls when other partners can participate',
       detail:
-        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks backup join until the first-pick response window passes, but opens immediately after first-pick decline.',
+        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks marketplace join until the first-pick response window passes, but opens immediately after first-pick decline.',
       saveChecks: [
         {
           label: 'Open matching timeline',
-          detail: 'Check whether delayed backup would increase waiting anxiety on current bookings.',
+          detail: 'Check whether delayed marketplace visibility would increase waiting anxiety on current bookings.',
           href: '/bookings?view=matching',
         },
         {
           label: 'Policy stage preview',
-          detail: 'Compare delayed and immediate backup impact before saving the mode.',
+          detail: 'Compare delayed and immediate marketplace impact before saving the mode.',
           href: '/operations-policy#matching-stage-impact',
         },
       ],
@@ -3778,17 +3822,17 @@ function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperat
       live: policyRawValue(settings, 'matching.provider_response_window_minutes'),
     },
     {
-      label: 'backup radius',
+      label: 'marketplace radius',
       saved: snapshot.backupProviderRadiusMeters,
       live: policyRawValue(settings, 'matching.backup_provider_radius_meters'),
     },
     {
-      label: 'backup location freshness',
+      label: 'marketplace location freshness',
       saved: snapshot.backupProviderLocationMaxAgeMinutes,
       live: policyRawValue(settings, 'matching.backup_provider_location_max_age_minutes'),
     },
     {
-      label: 'backup invitation limit',
+      label: 'marketplace invitation limit',
       saved: snapshot.backupProviderInvitationLimit,
       live: policyRawValue(settings, 'matching.backup_provider_invitation_limit'),
     },
@@ -3798,7 +3842,7 @@ function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperat
       live: policyRawValue(settings, 'matching.preferred_accept_mode'),
     },
     {
-      label: 'backup open mode',
+      label: 'marketplace open mode',
       saved: snapshot.backupOpenMode,
       live: policyRawValue(settings, 'matching.backup_open_mode'),
     },
