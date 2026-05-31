@@ -619,7 +619,7 @@ export default async function DashboardPage() {
             <div className="ops-task-note">
               <strong>No same-shift queue item is visible.</strong>
               <p className="muted">
-                Keep watching live matching, partner locations, cash debt, and notification delivery as demand
+                Keep monitoring live matching, partner locations, cash debt, and notification delivery as demand
                 changes.
               </p>
             </div>
@@ -1810,7 +1810,7 @@ function buildMatchingControlRoom(
       id: booking.id,
       title: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
       detail,
-      status: needsSameShiftDispatch ? 'Dispatch now' : 'Watch',
+      status: needsSameShiftDispatch ? 'Dispatch now' : 'Monitor',
       pillClass: needsSameShiftDispatch ? 'pill-danger' : 'pill-warn',
       eligibleCount: eligiblePartners.length,
       freshEligibleCount: freshEligible.length,
@@ -1895,7 +1895,7 @@ function buildMatchingControlRoom(
           : 'New bookings keep backup partners waiting until timeout, unless first-pick declines first.',
         operatorAction: immediateBackup
           ? 'This supports the current customer anxiety-reduction direction.'
-          : 'Use this only when first-pick partner response rate is strong enough, and watch decline recovery.',
+          : 'Use this only when first-pick partner response rate is strong enough, and monitor decline recovery.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
@@ -2220,7 +2220,7 @@ function matchingRowNextAction(input: {
   if (input.backupWindowOpen) {
     return `Nudge ${input.freshEligibleCount} eligible nearby partner(s) to join the customer shortlist.`;
   }
-  return `Watch first-pick response from ${input.firstPickName ?? 'the preferred partner'} while backup supply stays ready.`;
+  return `Monitor first-pick response from ${input.firstPickName ?? 'the preferred partner'} while backup supply stays ready.`;
 }
 
 function readPlainRecord(value: unknown): Record<string, unknown> | null {

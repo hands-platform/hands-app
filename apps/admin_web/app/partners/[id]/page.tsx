@@ -1171,7 +1171,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Device and session activity</h2>
             <p className="muted">
-              Review shared devices, flagged sessions, blocked devices, and stale partner app activity.
+              Review shared devices, session checks, blocked devices, and stale partner app activity.
             </p>
           </div>
           <span className={`pill ${securitySummary.risky ? 'pill-danger' : 'pill-success'}`}>
@@ -3333,7 +3333,7 @@ function buildPartnerOperatingLedger(
     {
       area: 'Admin trail',
       status: `${auditCount} record(s)`,
-      evidence: `${provider.reports?.length ?? 0} report(s) / ${provider.sanctions?.length ?? 0} sanction row(s) / ${
+      evidence: `${provider.reports?.length ?? 0} report(s) / ${provider.sanctions?.length ?? 0} control row(s) / ${
         provider.auditLogs?.length ?? 0
       } audit row(s)`,
       href: `/partners/${provider.id}#partner-operator-notes`,
@@ -4162,8 +4162,8 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       title: 'Session checks',
       status: suspiciousSessions.length ? `${suspiciousSessions.length} CHECK` : 'CLEAR',
       detail: suspiciousSessions.length
-        ? suspiciousSessions.map((session) => session.suspiciousReason ?? 'Flagged login').join(' ')
-        : 'No flagged session record is currently saved.',
+        ? suspiciousSessions.map((session) => session.suspiciousReason ?? 'Session check').join(' ')
+        : 'No session check record is currently saved.',
       action: suspiciousSessions.length
         ? 'Confirm identity and review recent app/device activity.'
         : 'No action.',
@@ -4519,12 +4519,12 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
             : 'Do not force payout/tax agreements during initial signup.',
     },
     {
-      label: 'Device and safety',
+      label: 'Device and session',
       ok: securityClear,
       status: securityClear ? 'CLEAR' : 'CHECK',
       detail: securityClear
-        ? 'No account block, blocked partner device, or flagged session is active.'
-        : 'A block, device issue, or flagged session needs admin review.',
+        ? 'No account block, blocked partner device, or session check is active.'
+        : 'A block, device issue, or session check needs admin review.',
       operatorAction: securityClear
         ? 'Continue normal monitoring.'
         : 'Review device/session section and reports desk before approval or payout.',

@@ -337,7 +337,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </select>
           </label>
           <label>
-            Security
+            Device/session
             <select name="security" defaultValue={filters.security}>
               <option value="">All</option>
               <option value="account-blocked">Account blocked</option>
@@ -1151,7 +1151,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <p className="muted">{item.action.operatorAction}</p>
               </div>
               <small>
-                {item.action.tone === 'done' ? 'OK' : item.action.tone === 'blocked' ? 'Fix' : 'Watch'}
+                {item.action.tone === 'done' ? 'OK' : item.action.tone === 'blocked' ? 'Fix' : 'Check'}
               </small>
             </div>
           ))}
@@ -2383,7 +2383,7 @@ function nextProviderListAction(
       detail:
         securityState === 'shared'
           ? 'A device appears on more than one partner profile.'
-          : 'Recent partner session has a flagged session record.',
+          : 'Recent partner session has a session check record.',
       operatorAction: 'Review device/session history before relying on this partner for dispatch.',
       tone: 'blocked',
       priority: 67,
@@ -2605,11 +2605,11 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
       ) : null}
       {blockedDevices.length ? <p className="muted">{blockedDevices.length} blocked device(s)</p> : null}
       {suspiciousSessions.length ? (
-        <p className="muted">{suspiciousSessions.length} flagged session(s)</p>
+        <p className="muted">{suspiciousSessions.length} session check(s)</p>
       ) : null}
       {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
       <Link className="text-link" href={`/partners/${provider.id}`}>
-        Review security
+        Review device/session
       </Link>
     </div>
   );
@@ -2683,7 +2683,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
   }
   const securityState = providerSecurityStatus(provider);
   if (securityState !== 'clear') {
-    return 'Partner has a device/session security item. Review it before dispatching customer bookings.';
+    return 'Partner has a device/session follow-up item. Review it before dispatching customer bookings.';
   }
   if (!provider.user?.supabaseUserId) {
     return 'Partner is operational in Nest auth. Supabase role sync will become available after Supabase OTP login links this phone.';
@@ -2935,7 +2935,7 @@ function buildPartnerShiftHandoff(
       ? {
           title: 'Review device or account controls before dispatch',
           scope: 'Control gate',
-          detail: `${securityRisk.length} partner(s) have blocked devices, flagged sessions, shared devices, or account block state.`,
+          detail: `${securityRisk.length} partner(s) have blocked devices, session checks, shared devices, or account block state.`,
           operatorAction: 'Open partner control history before relying on them for customer bookings.',
           href: '/partners?review=security',
           tone: 'danger' as const,
@@ -3012,11 +3012,11 @@ function buildPartnerShiftHandoff(
           ? 'Action needed'
           : tone === 'ok'
             ? 'Dispatch ready'
-            : 'Watch',
+            : 'Monitor',
     headline: topAction?.title ?? 'No urgent partner operation item',
     detail:
       topAction?.operatorAction ??
-      'The current filtered partner queue has no immediate blocker. Keep watching booking demand, location freshness, and cash debt.',
+      'The current filtered partner queue has no immediate blocker. Keep monitoring booking demand, location freshness, and cash debt.',
     primaryAction: {
       label: topAction ? 'Open partner work queue' : 'Open dispatch-ready partners',
       href: topAction?.href ?? '/partners?review=direct-ready',
@@ -3032,7 +3032,7 @@ function buildPartnerShiftHandoff(
       {
         label: 'Hard blocked',
         value: hardBlocked.length.toString(),
-        detail: 'Account, KYC, bank, wallet, security, or identity blockers.',
+        detail: 'Account, KYC, bank, wallet, device/session, or identity blockers.',
         href: '/partners?review=acceptance-blocked',
         tone: hardBlocked.length ? 'danger' : 'ok',
       },
@@ -3336,7 +3336,7 @@ function providerCommandToneLabel(tone: ProviderCommandLane['tone']) {
     return 'Immediate check';
   }
   if (tone === 'warn') {
-    return 'Watch';
+    return 'Monitor';
   }
   if (tone === 'info') {
     return 'Info';
@@ -3448,7 +3448,7 @@ function buildPartnerDispatchForecast(
       {
         label: 'Device/session review',
         count: securityRisk,
-        detail: 'Blocked, shared, flagged, or account-blocked partner devices/sessions.',
+        detail: 'Blocked, shared, checked, or account-blocked partner devices/sessions.',
         href: '/partners?review=security',
         tone: securityRisk > 0 ? 'danger' : 'ok',
       },
@@ -3502,7 +3502,7 @@ function buildPartnerAcceptanceBlockerBoard(
         count: accountOrSecurity.length,
         status: accountOrSecurity.length ? 'Do not dispatch' : 'Clear',
         detail:
-          'Blocked accounts, blocked devices, shared devices, or flagged sessions must stay out of matching.',
+          'Blocked accounts, blocked devices, shared devices, or session checks must stay out of matching.',
         operatorAction:
           'Resolve account controls in Partner Controls before overriding any booking decision.',
         href: '/partner-controls',
@@ -3966,7 +3966,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       label: 'Device/session review',
       count: securityNeedsReview,
       href: '/partners?review=security',
-      detail: 'Blocked, shared, or flagged partner app devices need operator review.',
+      detail: 'Blocked, shared, or checked partner app devices need operator review.',
     },
     {
       label: 'Reports and account controls',
@@ -4091,7 +4091,7 @@ function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVI
   if (securityState === 'blocked') {
     issues.push({ label: 'device blocked', severity: 'high' });
   } else if (securityState === 'suspicious') {
-    issues.push({ label: 'session flagged', severity: 'high' });
+    issues.push({ label: 'session check', severity: 'high' });
   } else if (securityState === 'shared') {
     issues.push({ label: 'shared device', severity: 'high' });
   } else if (securityState === 'missing') {
@@ -4225,7 +4225,7 @@ function buildProviderActiveFilters(filters: ProviderFilters) {
       ? {
           kind: 'security',
           value: filters.security,
-          label: `Security: ${filters.security}`,
+          label: `Device/session: ${filters.security}`,
           description: providerFilterDescription('security', filters.security),
         }
       : null,
@@ -4276,7 +4276,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Location freshness is narrowed so dispatch can check stale or missing partner pins.';
   }
   if (kind === 'security') {
-    return 'Security review is narrowed to device, session, or account control state.';
+    return 'Device/session review is narrowed to device, session, or account control state.';
   }
   if (kind === 'readiness') {
     return 'Readiness shows whether a partner can safely appear in customer discovery and dispatch.';
