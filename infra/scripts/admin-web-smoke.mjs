@@ -244,7 +244,7 @@ const pages = [
   { path: '/partners?review=backup-ready', markers: ['Partners', 'Marketplace ready'] },
   { path: '/partners?review=backup-blocked', markers: ['Partners', 'Marketplace blocked'] },
   { path: '/partners?review=reports', markers: ['Partners', 'Reports/sanctions'] },
-  { path: '/partners?review=risk', markers: ['Partners', 'Reports/sanctions'] },
+  { path: '/partners?review=reports', markers: ['Partners', 'Reports/sanctions'] },
   { path: '/partners?sort=last-work', markers: ['Partners', 'Sort: last completed work'] },
   {
     path: '/providers',

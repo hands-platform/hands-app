@@ -67,7 +67,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Matching',
     label: 'First-pick partner response window',
     description:
-      'Minutes the first-pick partner has to accept before the request should be treated as at-risk.',
+      'Minutes the first-pick partner has to accept before backup participation becomes more visible.',
     value: DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
     recommendedValue: DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
     unit: 'minutes',
@@ -189,7 +189,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,
         label: 'Allow one recovery booking',
         tradeoff:
-          'More partner-friendly by allowing one active recovery booking, but increases unpaid-fee risk.',
+          'More partner-friendly by allowing one active recovery booking, but leaves unpaid fees open longer.',
       },
     ],
     enforced: true,
