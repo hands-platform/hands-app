@@ -2441,7 +2441,9 @@ function bookingAddressSnapshotState(booking: AdminBooking) {
     const pin = coordinatePairLabel(snapshot.latitude, snapshot.longitude);
     return {
       label: snapshot.addressText ? 'Address locked' : 'Pin locked',
-      detail: snapshot.addressText ?? 'Customer confirmed this map pin without a text address.',
+      detail: snapshot.addressText
+        ? displayMarketplaceText(snapshot.addressText)
+        : 'Customer confirmed this map pin without a text address.',
       pin: pin ? `Pin ${pin}` : 'Pin saved without readable coordinates',
       tone: 'pill-success',
     };
@@ -2452,7 +2454,7 @@ function bookingAddressSnapshotState(booking: AdminBooking) {
     const pin = coordinatePairLabel(booking.lat, booking.lng);
     return {
       label: 'Legacy address',
-      detail: legacyAddress,
+      detail: displayMarketplaceText(legacyAddress),
       pin: pin ? `Pin ${pin}` : 'No locked pin snapshot',
       tone: 'pill-warn',
     };
@@ -2586,6 +2588,10 @@ function shortId(id: string) {
   return id.slice(0, 8);
 }
 
+function displayMarketplaceText(value: string) {
+  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
+}
+
 function bookingServiceOptionLabel(booking: AdminBooking) {
   const bookedService = booking.services?.[0];
   const service = bookedService?.service;
@@ -2594,7 +2600,7 @@ function bookingServiceOptionLabel(booking: AdminBooking) {
   }
 
   const duration = service.durationMin ? `${service.durationMin} min` : 'duration pending';
-  return `${service.name} / ${duration}`;
+  return `${displayMarketplaceText(service.name)} / ${duration}`;
 }
 
 function bookingServicePriceLabel(booking: AdminBooking) {

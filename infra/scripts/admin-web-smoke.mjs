@@ -185,7 +185,7 @@ const pages = [
       'Booking acceptance unblock board',
       'Acceptance unblock playbook',
       'Partner control command center',
-      'System control watchlist',
+      'System control checklist',
     ],
   },
   {
@@ -243,8 +243,7 @@ const pages = [
   { path: '/partners?review=direct-ready', markers: ['Partners', 'Direct request ready'] },
   { path: '/partners?review=backup-ready', markers: ['Partners', 'Marketplace ready'] },
   { path: '/partners?review=backup-blocked', markers: ['Partners', 'Marketplace blocked'] },
-  { path: '/partners?review=reports', markers: ['Partners', 'Reports/sanctions'] },
-  { path: '/partners?review=reports', markers: ['Partners', 'Reports/sanctions'] },
+  { path: '/partners?review=reports', markers: ['Partners', 'Reports/controls'] },
   { path: '/partners?sort=last-work', markers: ['Partners', 'Sort: last completed work'] },
   {
     path: '/providers',

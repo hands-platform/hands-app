@@ -853,8 +853,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             {filteredNotifications.slice(0, 20).map((notification) => (
               <tr key={notification.id}>
                 <td>
-                  <strong>{notification.title}</strong>
-                  <p className="muted">{notification.body}</p>
+                  <strong>{displayMarketplaceText(notification.title)}</strong>
+                  <p className="muted">{displayMarketplaceText(notification.body)}</p>
                 </td>
                 <td>{notification.type}</td>
                 <td>{formatDate(notification.createdAt)}</td>
@@ -1863,7 +1863,7 @@ function buildCustomerActivityRecords(
       id: notification.id,
       type: 'NOTICE',
       at: notification.createdAt,
-      title: notification.title,
+      title: displayMarketplaceText(notification.title),
       detail: `${notification.type} / ${notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'} / ${
         notification.deliveries?.[0]?.status ?? 'No delivery'
       }`,
@@ -1876,7 +1876,7 @@ function buildCustomerActivityRecords(
         type: 'NOTICE',
         at: delivery.attemptedAt,
         title: `${delivery.status} notification delivery`,
-        detail: `${delivery.provider} / ${notification.title}`,
+        detail: `${delivery.provider} / ${displayMarketplaceText(notification.title)}`,
         href: '/notifications',
       });
     }
@@ -2057,6 +2057,10 @@ function compactJson(value: unknown) {
 
 function compactText(value: string, maxLength: number) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
+
+function displayMarketplaceText(value?: string | null) {
+  return (value ?? '').replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
 }
 
 function dateMs(value?: string | null) {

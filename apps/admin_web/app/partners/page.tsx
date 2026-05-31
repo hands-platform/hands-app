@@ -4268,7 +4268,7 @@ function buildProviderActiveFilters(filters: ProviderFilters) {
       ? {
           kind: 'review',
           value: filters.review,
-          label: `Review: ${filters.review}`,
+          label: `Review: ${partnerReviewFilterLabel(filters.review)}`,
           description: providerFilterDescription('review', filters.review),
         }
       : null,
@@ -4378,6 +4378,28 @@ function partnerSortLabel(sort: string) {
   if (sort === 'wallet-debt') return 'wallet debt first';
   if (sort === 'name') return 'name';
   return 'checklist order';
+}
+
+function partnerReviewFilterLabel(review: string) {
+  const labels: Record<string, string> = {
+    kyc: 'KYC updates',
+    documents: 'Document review',
+    'public-media': 'Public media review',
+    bank: 'Bank payout review',
+    'payout-setup': 'First earning payout setup',
+    'cash-debt': 'Cash fee debt',
+    tax: 'Tax profile review',
+    security: 'Device/session check',
+    reports: 'Reports/controls',
+    blocked: 'Account blocks',
+    location: 'Location freshness',
+    push: 'Push alert readiness',
+    'acceptance-blocked': 'Booking acceptance blocked',
+    'direct-ready': 'Direct request ready',
+    'backup-ready': 'Marketplace ready',
+    'backup-blocked': 'Marketplace blocked',
+  };
+  return labels[review] ?? review;
 }
 
 function filterProviders(
