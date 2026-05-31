@@ -63,8 +63,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const addressPin = booking.addressSnapshot
     ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
     : coordinateLabel(booking.lat, booking.lng);
-  const riskFlags = bookingRiskFlags(booking);
-  const riskSummary = riskLevel(riskFlags);
+  const attentionFlags = bookingAttentionFlags(booking);
+  const attentionSummary = attentionLevel(attentionFlags);
   const liveSignals = liveServiceSignals(booking);
   const dispatchSteps = dispatchChecklist(booking);
   const opsTaskCards = bookingOpsTaskCards(booking);
@@ -99,7 +99,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   });
   const operatorCommandQueue = bookingOperatorCommandQueue({
     booking,
-    riskFlags,
+    attentionFlags,
     messages,
     latestLocation,
   });
@@ -150,7 +150,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           value={providerLocationMetricValue(booking)}
           helper={providerLocationMetricHelper(booking)}
         />
-        <MetricCard label="Attention checks" value={riskSummary.label} helper={riskSummary.helper} />
+        <MetricCard label="Attention checks" value={attentionSummary.label} helper={attentionSummary.helper} />
       </section>
 
       <section className="card" id="operator-command-queue" style={{ marginBottom: 16 }}>
@@ -820,12 +820,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <h2>Attention checks</h2>
             <p className="muted">Automatic operational checks for bookings that need operator attention.</p>
           </div>
-          <span className={`pill ${riskSummary.tone}`}>{riskSummary.label}</span>
+          <span className={`pill ${attentionSummary.tone}`}>{attentionSummary.label}</span>
         </div>
-        {riskFlags.length > 0 ? (
+        {attentionFlags.length > 0 ? (
           <div className="risk-list">
-            {riskFlags.map((flag) => (
-              <RiskItem flag={flag} key={`${flag.severity}-${flag.title}`} />
+            {attentionFlags.map((flag) => (
+              <AttentionItem flag={flag} key={`${flag.severity}-${flag.title}`} />
             ))}
           </div>
         ) : (
@@ -853,7 +853,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         {financeFlags.length > 0 ? (
           <div className="risk-list">
             {financeFlags.map((flag) => (
-              <RiskItem flag={flag} key={`${flag.severity}-${flag.title}`} />
+              <AttentionItem flag={flag} key={`${flag.severity}-${flag.title}`} />
             ))}
           </div>
         ) : (
@@ -1399,12 +1399,12 @@ function ActionLink({ href, label }: { href: string; label: string }) {
 
 function bookingOperatorCommandQueue({
   booking,
-  riskFlags,
+  attentionFlags,
   messages,
   latestLocation,
 }: {
   booking: AdminBookingDetail;
-  riskFlags: RiskFlag[];
+  attentionFlags: AttentionFlag[];
   messages: AdminChatMessage[];
   latestLocation?: AdminLocationSnapshot;
 }) {
@@ -1599,7 +1599,7 @@ function bookingOperatorCommandQueue({
     },
     {
       label: 'Attention flags',
-      value: String(riskFlags.length),
+      value: String(attentionFlags.length),
       helper: 'Factual checks only; no customer or partner scoring.',
     },
   ];
@@ -2070,7 +2070,7 @@ function bookingOperatingSnapshot({
     ? `${booking.addressSnapshot.source ?? 'booking_confirmation'} / ${formatDate(booking.addressSnapshot.createdAt)}`
     : 'Legacy booking address';
   const next = bookingOperatingNextAction(booking);
-  const checks = bookingRiskFlags(booking);
+  const checks = bookingAttentionFlags(booking);
   const tone = checks.some((check) => check.severity === 'high')
     ? 'pill-danger'
     : checks.length
@@ -2584,7 +2584,7 @@ function compactActivityText(value: string, maxLength: number) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
 
-type RiskFlag = {
+type AttentionFlag = {
   severity: 'high' | 'medium' | 'low';
   title: string;
   detail: string;
@@ -2601,11 +2601,11 @@ type DispatchStep = {
   actionLabel?: string;
 };
 
-function RiskItem({ flag }: { flag: RiskFlag }) {
+function AttentionItem({ flag }: { flag: AttentionFlag }) {
   return (
     <div className={`risk-item risk-${flag.severity}`}>
       <div>
-        <span className={`pill ${riskToneClass(flag.severity)}`}>{checkSeverityLabel(flag.severity)}</span>
+        <span className={`pill ${attentionToneClass(flag.severity)}`}>{checkSeverityLabel(flag.severity)}</span>
         <strong>{flag.title}</strong>
         <p className="muted">{flag.detail}</p>
       </div>
@@ -2651,7 +2651,7 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
 
 function opsBadges(booking: AdminBookingDetail) {
   const badges = [];
-  const flags = bookingRiskFlags(booking);
+  const flags = bookingAttentionFlags(booking);
   if (booking.status === 'NO_SHOW') {
     badges.push({ label: 'No-show', tone: 'pill-danger' });
   }
@@ -2700,8 +2700,8 @@ function opsBadges(booking: AdminBookingDetail) {
   return badges;
 }
 
-function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
-  const flags: RiskFlag[] = [];
+function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
+  const flags: AttentionFlag[] = [];
   const paymentStatus = booking.payment?.status;
   const status = booking.status;
   const participantCount = booking.participants?.length ?? 0;
@@ -2856,7 +2856,7 @@ function bookingRiskFlags(booking: AdminBookingDetail): RiskFlag[] {
   return flags;
 }
 
-function riskLevel(flags: RiskFlag[]) {
+function attentionLevel(flags: AttentionFlag[]) {
   if (flags.some((flag) => flag.severity === 'high')) {
     return { label: 'Action', helper: `${flags.length} check(s) need attention`, tone: 'pill-danger' };
   }
@@ -2869,7 +2869,7 @@ function riskLevel(flags: RiskFlag[]) {
   return { label: 'Clear', helper: 'No active attention checks', tone: 'pill-success' };
 }
 
-function checkSeverityLabel(severity: RiskFlag['severity']) {
+function checkSeverityLabel(severity: AttentionFlag['severity']) {
   if (severity === 'high') {
     return 'Action';
   }
@@ -2879,7 +2879,7 @@ function checkSeverityLabel(severity: RiskFlag['severity']) {
   return 'Note';
 }
 
-function riskToneClass(severity: RiskFlag['severity']) {
+function attentionToneClass(severity: AttentionFlag['severity']) {
   if (severity === 'high') {
     return 'pill-danger';
   }
@@ -2891,7 +2891,7 @@ function riskToneClass(severity: RiskFlag['severity']) {
 
 function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
   const steps: DispatchStep[] = [];
-  const flags = bookingRiskFlags(booking);
+  const flags = bookingAttentionFlags(booking);
   const provider = booking.selectedProvider ?? booking.preferredProvider;
   const providerPhone = provider?.user?.phone;
   const paymentHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : undefined;
@@ -3363,8 +3363,8 @@ function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinan
 function bookingFinanceFlags(
   booking: AdminBookingDetail,
   financeTrace: ReturnType<typeof bookingFinanceTrace>,
-): RiskFlag[] {
-  const flags: RiskFlag[] = [];
+): AttentionFlag[] {
+  const flags: AttentionFlag[] = [];
   const bookedService = booking.services?.[0];
   const customerPrice = financeTrace.customerPriceAmount;
   const paymentAmount = readNullableAmount(booking.payment?.amount);
