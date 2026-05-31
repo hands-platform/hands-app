@@ -50,6 +50,7 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/partner-controls,/operations-policy,/bookings,/chat-archive,/app-sessions,/setup node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted operating-core check also verifies dynamic customer, partner, provider-legacy, and booking detail pages.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
+- `ADMIN_WEB_SMOKE_PATHS=/customers,/partners node infra/scripts/admin-web-smoke.mjs`: PASS. This confirms customer and partner list/detail pages after closure metadata was added to the operator views.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 10 tests
 - `flutter analyze` in partner app: PASS
@@ -93,8 +94,11 @@ Admin dashboard:
 - Customer list and customer detail with activity, booking history, chat history, wallet/payment context, addresses, app sessions, notes, exports.
 - Customer list now separates closed booking evidence by customer/admin/partner closure role and no-show count when booking closure metadata exists.
 - Customer detail now includes a compact operating ledger for account, booking work, latest booking, last completed work, chat archive, wallet/payment, address, app access, devices, notifications, timeline, and operator notes.
+- Customer detail now shows booking closure time, closure actor, closure reason, and no-show evidence in booking history and activity records without assigning a customer score.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
+- Partner list now separates closed booking evidence by customer/admin/partner closure role and no-show count in the master list and CSV export.
 - Partner detail now includes a compact operating ledger for identity, KYC, documents, bank, tax, services, bookings, chat, wallet, payout, location, app devices, and admin trail evidence.
+- Partner detail now shows booking closure time, closure actor, closure reason, and closure activity rows inside the same booking/chat archive.
 - Customer and partner pages are intentionally factual: they show IDs, contact, joined/recent access dates, completed work, booking/payment/chat/activity records, and operator notes without customer or partner scoring.
 - Partner queue wording is checklist/order based, not score/ranking based. Operator ordering is for fixing factual blockers only.
 - Services page with service groups, duration options, minimum price, price step, payout policy, fee/tax visibility.
