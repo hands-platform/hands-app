@@ -2090,7 +2090,7 @@ function buildPartnerAcceptancePolicyImpact(
     (provider) => !partnerLocationFresh(provider, policy.backupLocationFreshnessMinutes),
   );
   const pushGaps = providers.filter((provider) => !partnerHasEnabledPush(provider));
-  const accountFollowUps = providers.filter((provider) => partnerAccountRisk(provider));
+  const accountFollowUps = providers.filter((provider) => partnerAccountNeedsFollowUp(provider));
   const softRecovery = providers.filter(
     (provider) =>
       !partnerCanAcceptUnderCurrentPolicy(provider, policy) && !partnerHardBlocked(provider, policy),
@@ -2163,7 +2163,7 @@ function partnerCanAcceptUnderCurrentPolicy(
 
 function partnerHardBlocked(provider: AdminProvider, policy: { hardWalletBlock: boolean }) {
   return (
-    partnerAccountRisk(provider) ||
+    partnerAccountNeedsFollowUp(provider) ||
     !partnerIdentityReady(provider) ||
     !partnerBankReady(provider) ||
     (policy.hardWalletBlock && partnerWalletBalance(provider) < 0)
@@ -2203,7 +2203,7 @@ function partnerHasEnabledPush(provider: AdminProvider) {
   return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
 }
 
-function partnerAccountRisk(provider: AdminProvider) {
+function partnerAccountNeedsFollowUp(provider: AdminProvider) {
   return (
     Boolean(provider.blockedAt) ||
     (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE') ||
