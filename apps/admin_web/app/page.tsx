@@ -310,6 +310,11 @@ export default async function DashboardPage() {
       'Customer app sessions seen within the active session window.',
     ],
     [
+      'Live matching customers',
+      appPresence.liveOpenMatchingCustomers.toString(),
+      'Customers currently in app while waiting for partner matching.',
+    ],
+    [
       'Partners in app',
       appPresence.liveAppPartners.toString(),
       'Partner app sessions seen within the active session window.',
@@ -1082,6 +1087,16 @@ export default async function DashboardPage() {
                 label="Live app customers"
                 value={appPresence.liveAppCustomers.toString()}
                 detail="Customer app sessions with an unexpired heartbeat."
+              />
+              <InfoRow
+                label="Live matching customers"
+                value={appPresence.liveOpenMatchingCustomers.toString()}
+                detail="Live customers attached to open matching reservations."
+              />
+              <InfoRow
+                label="Live active-booking customers"
+                value={appPresence.liveActiveBookingCustomers.toString()}
+                detail="Live customers attached to active reservations."
               />
               <InfoRow
                 label="Live app partners"
@@ -2354,7 +2369,7 @@ function buildDailyOperationsSnapshot(input: {
     {
       label: 'Active app customers',
       value: input.appPresence.liveAppCustomers.toString(),
-      helper: `${input.appPresence.activeBookingCustomers} customer(s) attached to active work`,
+      helper: `${input.appPresence.liveActiveBookingCustomers}/${input.appPresence.activeBookingCustomers} active-booking customer(s) live`,
       href: '/app-sessions?role=CUSTOMER',
       tone: input.appPresence.liveAppCustomers ? 'info' : 'warn',
     },
@@ -2638,12 +2653,26 @@ function buildAppPresence(users: AdminUser[], bookings: AdminBooking[], sessions
     (user) =>
       (user.pushDevices ?? []).length > 0 && !(user.pushDevices ?? []).some((device) => device.enabled),
   ).length;
-  const activeBookingCustomers = new Set(
+  const liveCustomerPhones = new Set(
+    customers
+      .filter((user) => liveCustomerUserIds.has(user.id))
+      .map((user) => user.phone)
+      .filter(Boolean),
+  );
+  const activeBookingCustomerPhones = new Set(
     bookings
       .filter((booking) => activeBookingStatuses.has(booking.status))
       .map((booking) => booking.customerProfile?.user?.phone)
-      .filter(Boolean),
-  ).size;
+      .filter(isNonEmptyString),
+  );
+  const openMatchingCustomerPhones = new Set(
+    bookings
+      .filter((booking) => booking.status === 'OPEN_MATCHING')
+      .map((booking) => booking.customerProfile?.user?.phone)
+      .filter(isNonEmptyString),
+  );
+  const liveActiveBookingCustomers = countSetIntersection(liveCustomerPhones, activeBookingCustomerPhones);
+  const liveOpenMatchingCustomers = countSetIntersection(liveCustomerPhones, openMatchingCustomerPhones);
 
   return {
     totalCustomers: customers.length,
@@ -2653,8 +2682,22 @@ function buildAppPresence(users: AdminUser[], bookings: AdminBooking[], sessions
     staleCustomerSessions,
     reachableCustomers,
     disabledPushCustomers,
-    activeBookingCustomers,
+    activeBookingCustomers: activeBookingCustomerPhones.size,
+    liveActiveBookingCustomers,
+    liveOpenMatchingCustomers,
   };
+}
+
+function countSetIntersection(left: Set<string>, right: Set<string>) {
+  let count = 0;
+  left.forEach((value) => {
+    if (right.has(value)) count += 1;
+  });
+  return count;
+}
+
+function isNonEmptyString(value: string | null | undefined): value is string {
+  return Boolean(value);
 }
 
 function buildPartnerSupplyInsights(
@@ -3987,7 +4030,7 @@ function buildShiftCommandBriefing(input: {
       {
         label: 'Customer presence',
         value: input.appPresence.liveAppCustomers.toString(),
-        helper: `${input.appPresence.activeBookingCustomers} active-booking customers`,
+        helper: `${input.appPresence.liveOpenMatchingCustomers} live in matching, ${input.appPresence.liveActiveBookingCustomers} live in active work`,
         tone: input.appPresence.liveAppCustomers ? 'info' : 'warn',
         href: '/app-sessions?role=CUSTOMER',
       },
