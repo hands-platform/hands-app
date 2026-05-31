@@ -18,7 +18,7 @@ export async function createProviderReport(formData: FormData) {
     { providerProfileId, category, summary, details, severity, source, bookingId },
     null,
   );
-  revalidateProviderRisk(providerProfileId);
+  revalidatePartnerControls(providerProfileId);
 }
 
 export async function updateProviderReport(formData: FormData) {
@@ -28,7 +28,7 @@ export async function updateProviderReport(formData: FormData) {
   const severity = readOptional(formData, 'severity');
   const resolutionNote = readOptional(formData, 'resolutionNote');
   await adminPatch(`/admin/partner-reports/${reportId}`, { status, severity, resolutionNote }, null);
-  revalidateProviderRisk(providerProfileId);
+  revalidatePartnerControls(providerProfileId);
 }
 
 export async function createProviderSanction(formData: FormData) {
@@ -42,14 +42,14 @@ export async function createProviderSanction(formData: FormData) {
     { type, reportId, expiresAt, reason },
     null,
   );
-  revalidateProviderRisk(providerProfileId);
+  revalidatePartnerControls(providerProfileId);
 }
 
 export async function liftProviderSanction(formData: FormData) {
   const sanctionId = readRequired(formData, 'sanctionId');
   const providerProfileId = readOptional(formData, 'providerProfileId');
   await adminPost(`/admin/partner-sanctions/${sanctionId}/lift`, {}, null);
-  revalidateProviderRisk(providerProfileId);
+  revalidatePartnerControls(providerProfileId);
 }
 
 function readRequired(formData: FormData, name: string) {
@@ -73,7 +73,7 @@ function readOptional(formData: FormData, name: string) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
-function revalidateProviderRisk(providerProfileId?: string | null) {
+function revalidatePartnerControls(providerProfileId?: string | null) {
   revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');

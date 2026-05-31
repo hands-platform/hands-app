@@ -35,7 +35,7 @@ type PartnerControlBoardItem = {
 };
 
 type PartnerControlBoard = {
-  metrics: RiskCommandMetric[];
+  metrics: PartnerControlCommandMetric[];
   items: PartnerControlBoardItem[];
 };
 
@@ -66,14 +66,14 @@ export default async function PartnerControlsPage({
   const controlPolicy = buildPartnerControlPolicy(operationalPolicies);
   const visibleReports = filterReports(reports, filters);
   const visibleSanctions = filterSanctions(sanctions, filters);
-  const activeFilters = buildRiskActiveFilters(filters);
+  const activeFilters = buildPartnerControlActiveFilters(filters);
   const providerOptions = providers.map((provider) => ({
     id: provider.id,
     label: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
   }));
   const summary = buildPartnerControlSummary(reports, sanctions, providers, controlPolicy);
   const providerWatchlist = buildPartnerControlWatchlist(providers, controlPolicy);
-  const commandCenter = buildRiskCommandCenter({
+  const commandCenter = buildPartnerControlCommandCenter({
     reports,
     sanctions,
     watchlist: providerWatchlist,
@@ -708,7 +708,7 @@ export default async function PartnerControlsPage({
             ))}
             {!visibleReports.length ? (
               <tr>
-                <td colSpan={5}>{emptyRiskMessage('report', activeFilters)}</td>
+                <td colSpan={5}>{emptyPartnerControlMessage('report', activeFilters)}</td>
               </tr>
             ) : null}
           </tbody>
@@ -790,7 +790,7 @@ export default async function PartnerControlsPage({
             ))}
             {!visibleSanctions.length ? (
               <tr>
-                <td colSpan={5}>{emptyRiskMessage('sanction', activeFilters)}</td>
+                <td colSpan={5}>{emptyPartnerControlMessage('sanction', activeFilters)}</td>
               </tr>
             ) : null}
           </tbody>
@@ -800,13 +800,13 @@ export default async function PartnerControlsPage({
   );
 }
 
-type RiskCommandCenterInput = {
+type PartnerControlCommandCenterInput = {
   reports: AdminProviderReport[];
   sanctions: AdminProviderSanction[];
   watchlist: PartnerControlWatchItem[];
 };
 
-type RiskCommandMetric = {
+type PartnerControlCommandMetric = {
   label: string;
   value: string;
   tone:
@@ -816,7 +816,7 @@ type RiskCommandMetric = {
     | 'ops-task-breakdown-danger';
 };
 
-type RiskNextAction = {
+type PartnerControlNextAction = {
   id: string;
   priority: number;
   status: string;
@@ -853,7 +853,7 @@ type BookingAcceptanceUnblockCard = {
   className: string;
   blockingCount: number;
   partnerSamples: string[];
-  metrics: RiskCommandMetric[];
+  metrics: PartnerControlCommandMetric[];
 };
 
 type AcceptanceUnblockPlaybookStep = {
@@ -984,7 +984,7 @@ function buildPartnerControlBoardItem(
   };
 }
 
-function buildRiskCommandCenter(input: RiskCommandCenterInput) {
+function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInput) {
   const openReports = input.reports.filter((report) => ['OPEN', 'INVESTIGATING'].includes(report.status));
   const urgentReports = openReports.filter((report) => ['CRITICAL', 'HIGH'].includes(report.severity));
   const overdueReports = openReports.filter((report) => reportAgeHours(report) >= reportSlaHours(report));
@@ -1072,7 +1072,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
   return {
     urgentCount: urgentReports.length + walletDebtItems.length + overdueReports.length,
     lanes,
-    nextActions: buildRiskNextActions({
+    nextActions: buildPartnerControlNextActions({
       openReports,
       activeSanctions,
       watchlist: input.watchlist,
@@ -1523,8 +1523,8 @@ function metric(
   label: string,
   value: string | number,
   tone: 'ok' | 'info' | 'warn' | 'danger',
-): RiskCommandMetric {
-  const toneClass: Record<'ok' | 'info' | 'warn' | 'danger', RiskCommandMetric['tone']> = {
+): PartnerControlCommandMetric {
+  const toneClass: Record<'ok' | 'info' | 'warn' | 'danger', PartnerControlCommandMetric['tone']> = {
     ok: 'ops-task-breakdown-ok',
     info: 'ops-task-breakdown-info',
     warn: 'ops-task-breakdown-warn',
@@ -1538,12 +1538,12 @@ function metric(
   };
 }
 
-function buildRiskNextActions(input: {
+function buildPartnerControlNextActions(input: {
   openReports: AdminProviderReport[];
   activeSanctions: AdminProviderSanction[];
   watchlist: PartnerControlWatchItem[];
 }) {
-  const actions: RiskNextAction[] = [];
+  const actions: PartnerControlNextAction[] = [];
 
   for (const report of input.openReports) {
     const ageHours = reportAgeHours(report);
@@ -1616,7 +1616,7 @@ function buildFilters(params: Record<string, string | string[] | undefined>) {
   };
 }
 
-function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
+function buildPartnerControlActiveFilters(filters: ReturnType<typeof buildFilters>) {
   return [
     filters.q
       ? {
@@ -1675,7 +1675,7 @@ function controlFilterDescription(kind: string, value: string) {
   return 'Control board is narrowed by the active filter.';
 }
 
-function emptyRiskMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
+function emptyPartnerControlMessage(kind: 'report' | 'sanction', activeFilters: Array<{ description: string }>) {
   const subject = kind === 'report' ? 'partner reports' : 'partner account controls';
   if (activeFilters.length === 0) {
     return `No ${subject} loaded yet.`;
@@ -1815,12 +1815,12 @@ function buildPartnerControlWatchItem(
     walletBalance,
     openReportCount,
     hasPayoutHold,
-    detail: providerRiskDetail({ walletBalance, openReportCount, sharedDeviceCount, signals }),
+    detail: partnerControlDetail({ walletBalance, openReportCount, sharedDeviceCount, signals }),
     nextStep: partnerControlNextStep({ walletBalance, hasPayoutHold, openReportCount, provider }, controlPolicy),
   };
 }
 
-function providerRiskDetail(input: {
+function partnerControlDetail(input: {
   walletBalance: number;
   openReportCount: number;
   sharedDeviceCount: number;
