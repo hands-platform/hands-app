@@ -926,7 +926,7 @@ const bookingViewOptions: Array<{
     label: 'Stage 1 first-pick',
     description: 'open bookings where the selected partner still has the first response window.',
     operatorHint:
-      'Use this to watch the 10-minute response window, push delivery, KYC, wallet gate, and partner decision timing.',
+      'Use this to monitor the 10-minute response window, push delivery, KYC, wallet gate, and partner decision timing.',
   },
   {
     view: 'backup',
@@ -1155,7 +1155,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
     },
     {
       title: 'Handoff quality',
-      status: locationRisk.length > 0 || quietChat.length > 0 ? 'Watch' : 'Healthy',
+      status: locationRisk.length > 0 || quietChat.length > 0 ? 'Monitor' : 'Healthy',
       tone: locationRisk.length > 0 ? 'warn' : quietChat.length > 0 ? 'info' : 'ok',
       detail:
         locationRisk.length > 0
@@ -1485,7 +1485,7 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
           ? 'Customer selected a preferred partner and the first response window is running.'
           : 'No direct first-pick request is currently waiting.',
       operatorAction:
-        'Watch the 10-minute response window, partner push delivery, and wallet/KYC gates before manually intervening.',
+        'Monitor the 10-minute response window, partner push delivery, and wallet/KYC gates before manually intervening.',
       href: firstPickExpired.length ? '/bookings?view=attention' : '/bookings?view=matching',
       metrics: [metric('waiting', firstPickWaiting.length), metric('expired', firstPickExpired.length)],
       bookings: firstPickExpired.length ? firstPickExpired : firstPickWaiting,
@@ -1599,7 +1599,7 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
       detail: bookingLocationNeedsOps(booking, nowMs)
         ? 'Chat is ready, but partner location needs review.'
         : 'Chat and service handoff are available.',
-      action: 'Watch location, arrival, service start, completion, and closeout.',
+      action: 'Track location, arrival, service start, completion, and closeout.',
       tone: bookingLocationNeedsOps(booking, nowMs) ? 'warn' : 'ok',
       href: `/bookings/${booking.id}#chat`,
     };
@@ -1640,7 +1640,7 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
         : 'Preferred partner is inside the first response window.',
       action: expired
         ? 'Escalate backup supply or close/extend the request intentionally.'
-        : 'Watch partner response, wallet gate, push delivery, and KYC status.',
+        : 'Monitor partner response, wallet gate, push delivery, and KYC status.',
       tone: expired ? 'danger' : 'warn',
       href: `/bookings/${booking.id}#participants`,
     };
@@ -1921,7 +1921,7 @@ function commandToneLabel(tone: BookingCommandLane['tone']) {
     return 'Immediate check';
   }
   if (tone === 'warn') {
-    return 'Watch';
+    return 'Monitor';
   }
   if (tone === 'info') {
     return 'Info';
@@ -2027,7 +2027,7 @@ function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: Book
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return 'Watch the first-pick partner response window and prepare fallback partner selection.';
+    return 'Monitor the first-pick partner response window and prepare fallback partner selection.';
   }
   if (booking.status === 'OPEN_MATCHING') {
     return 'Check nearby partner supply and notification delivery until the customer has options.';
@@ -2464,7 +2464,7 @@ function riskLevel(flags: BookingRiskFlag[]) {
     return { label: 'Action', helper: `${flags.length} check(s)`, tone: 'signal-warn' };
   }
   if (flags.some((flag) => flag.severity === 'medium')) {
-    return { label: 'Watch', helper: `${flags.length} check(s)`, tone: 'signal-info' };
+    return { label: 'Monitor', helper: `${flags.length} check(s)`, tone: 'signal-info' };
   }
   if (flags.some((flag) => flag.severity === 'low')) {
     return { label: 'Note', helper: `${flags.length} check(s)`, tone: 'signal-info' };
@@ -2512,7 +2512,7 @@ function nextAction(booking: AdminBooking) {
     return 'Wait for the first-pick partner, but monitor fallback partner supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    return 'Watch notifications and nearby partner supply.';
+    return 'Check notifications and nearby partner supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
     return 'Customer can keep waiting or switch to a backup partner.';
@@ -2527,7 +2527,7 @@ function nextAction(booking: AdminBooking) {
     return 'Monitor live location and arrival progress.';
   }
   if (booking.status === 'IN_SERVICE') {
-    return 'Watch completion and payment capture.';
+    return 'Track completion and payment capture.';
   }
   if (bookingCompletedCloseoutNeedsOps(booking)) {
     return 'Completed service needs closeout reconciliation for payment, earning, tax, and wallet records.';
