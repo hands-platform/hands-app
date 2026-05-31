@@ -75,18 +75,18 @@ const setupOrder = [
   },
   {
     id: 'supabase-auth',
-    title: 'Supabase Phone Auth with Vonage',
+    title: 'Supabase Phone Auth with SMS provider',
     phase: 'Deferred OTP migration',
     operatorAction:
-      'Keep AUTH_BACKEND=nest and SMS_PROVIDER=dev until Vonage credentials and real Supabase Phone Auth OTP are ready.',
-    exitCriteria: 'Vonage OTP delivery works and Supabase access tokens exchange into HANDS API tokens.',
+      'Keep AUTH_BACKEND=nest and SMS_PROVIDER=dev until a real SMS provider and Supabase Phone Auth OTP are ready.',
+    exitCriteria: 'SMS OTP delivery works and Supabase access tokens exchange into HANDS API tokens.',
     purpose:
       'Required before replacing local Nest/dev OTP with Supabase Phone Auth in customer and partner apps.',
     env: ['AUTH_BACKEND', 'SMS_PROVIDER', 'SMS_API_URL', 'SMS_API_KEY'],
     notes: [
       'This step is intentionally deferred so product development can continue without breaking login.',
       'Do not fill Supabase Phone Auth SMS fields with placeholder values.',
-      'Use Vonage for production SMS when the OTP E2E pass starts.',
+      'Use dev OTP locally, Twilio Verify for beta if needed, and Viettel/FPT SMS for production cost optimization.',
       'Partner role exchange must remain server-verified and must not trust a client-selected role.',
       'After this passes, mobile apps can switch AUTH_BACKEND from nest to supabase.',
     ],
@@ -120,9 +120,9 @@ const setupOrder = [
     title: 'Runtime operations policy',
     phase: 'Dispatch policy control',
     operatorAction:
-      'Review matching, backup partner radius, wallet gate, cancellation, no-show, and notification policy before live dispatch testing.',
+      'Review matching, Open Matching Marketplace, wallet settlement gate, cancellation, no-show, and notification policy before live dispatch testing.',
     exitCriteria:
-      'Operations Policy page shows the intended 10 minute first-pick window, 10km backup radius, customer final confirmation, and negative-wallet hard block.',
+      'Operations Policy page shows the intended first-pick window, marketplace participation, customer final selection, and wallet settlement gate.',
     purpose:
       'Required so operational rules can be changed from admin without hardcoding dispatch, tax, cancellation, or no-show behavior in the apps.',
     env: [
@@ -139,9 +139,9 @@ const setupOrder = [
     ],
     notes: [
       'Env values are seed/default hints; day-to-day changes should be made from /operations-policy so updates are audited.',
-      'MVP rule: selected first partner gets 10 minutes, other eligible partners within 10km can still join the shortlist.',
+      'MVP rule: selected first partner gets the configured response window, and marketplace participants can still join the shortlist.',
       'Customers always make the final partner selection; no automatic final matching.',
-      'Partners with negative wallet balance cannot accept new bookings until the cash fee debt is settled or offset.',
+      'Partners with negative wallet balance see settlement-required state; blocking applies at configured final acceptance or service-start gates.',
     ],
     commands: [
       'Open http://localhost:3101/operations-policy',
@@ -266,7 +266,7 @@ const externalRegistrationPlan = [
     status: 'Admin controlled',
     statusClass: 'pill-info',
     detail:
-      '10 minute first-pick response, 10km backup partner radius, customer final selection, and negative-wallet acceptance block are controlled from Operations Policy.',
+      'First-pick response, Open Matching Marketplace behavior, customer final selection, and wallet settlement acceptance gates are controlled from Operations Policy.',
     env: [
       'MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES',
       'MATCHING_BACKUP_PROVIDER_RADIUS_METERS',
@@ -274,15 +274,15 @@ const externalRegistrationPlan = [
     ],
   },
   {
-    id: 'vonage-phone',
+    id: 'sms-phone-provider',
     groupId: 'supabase-auth',
     title: 'Phone OTP provider',
-    provider: 'Vonage',
+    provider: 'Dev OTP / Twilio beta / Viettel or FPT production',
     owner: 'administration@hands.vn',
     status: 'Deferred',
     statusClass: 'pill-neutral',
     detail:
-      'Supabase Phone Auth remains deferred. Keep local/dev OTP until Vonage credentials and SMS delivery are tested.',
+      'Supabase Phone Auth remains deferred. Keep local/dev OTP until beta or production SMS delivery is tested.',
     env: ['SMS_PROVIDER', 'SMS_API_KEY', 'SMS_API_URL'],
   },
   {
@@ -344,21 +344,21 @@ const projectControlSequence = [
     title: 'Backend rule consistency',
     status: 'Next',
     detail:
-      'Align admin-configurable rules with booking acceptance, 10 minute response windows, 10km backup invitations, wallet gates, fees, and tax logs.',
+      'Align admin-configurable rules with booking acceptance, first-pick response windows, marketplace participant alerts, wallet gates, fees, and tax logs.',
   },
   {
     phase: 'Phase C',
     title: 'Mobile E2E hardening',
     status: 'After rules',
     detail:
-      'Run customer and partner flows through address selection, direct booking, backup matching, chat, location share, completion, and wallet effects.',
+      'Run customer and partner flows through address selection, direct booking, Open Matching Marketplace, chat, location share, completion, and wallet effects.',
   },
   {
     phase: 'Phase D',
     title: 'Production integrations',
     status: 'Deferred',
     detail:
-      'Connect Vonage, OneSignal, MoMo, VNPay, production storage/CDN, and Android release signing only after local E2E remains stable.',
+      'Connect production SMS, OneSignal, MoMo, VNPay, production storage/CDN, and Android release signing only after local E2E remains stable.',
   },
   {
     phase: 'Phase E',
@@ -585,7 +585,7 @@ export default async function SetupPage() {
           <h2>Migration runway</h2>
           <p className="muted">
             HANDS is moving from local MVP stability to Supabase-backed staging without breaking the mobile
-            booking flow. Current local auth remains Nest/dev OTP until Vonage Phone Auth is deliberately
+            booking flow. Current local auth remains Nest/dev OTP until production Phone Auth is deliberately
             tested.
           </p>
           <div className="setup-stage-list">

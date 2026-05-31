@@ -1,22 +1,38 @@
 # HANDS MVP Master Progress Roadmap
 
-Last checked: 2026-05-30
+Last checked: 2026-05-31
 
 This document is the single working map for HANDS MVP progress. It exists to keep backend, admin, mobile apps, external services, and product decisions from becoming fragmented.
 
+## Master Refactor Source
+
+The current source of truth is `C:\Users\laboy\Downloads\HANDS_CODEX_MASTER_REFACTOR_PROMPT.md`.
+
+Working summary:
+
+- HANDS is address-based, profile-first, and built around Open Matching Marketplace.
+- Supabase is infrastructure; NestJS remains the business authority.
+- Customer final partner selection is always the source of truth.
+- Distance affects sorting, alert preference, and operations filters; it must not be a hard discovery or participation boundary in MVP.
+- Booking confirmation and immutable booking address snapshots are mandatory.
+- Partner visibility and availability are separate.
+- Negative wallet balance is a settlement warning; hard blocking applies only at final acceptance/confirmation/service-start gates when policy requires it.
+- Use Partner in product/admin language while keeping Provider in existing DB/API internals until a planned migration.
+
 ## Product Direction
 
-HANDS is a Vietnam-wide on-demand massage and service partner platform.
+HANDS is a Vietnam-wide address-based partner-selection marketplace.
 
 Core principles:
 
 - Customer app, partner app, admin dashboard, and backend stay in one monorepo.
 - Admin UI uses factual operations language. Avoid scoring customers or partners as risky people.
 - Use "Partner" in admin/product language. Existing backend model names may still use `Provider` until a careful migration is planned.
-- Chat opens after booking match/service start and is available to customer and partner during the active service flow.
+- Chat opens after booking match and is available to customer and partner during the active service flow.
 - After service completion, mobile apps may hide the active chat, but admin keeps the full chat archive.
 - First-earning tax collection is preferred. Do not force full tax information at initial signup.
-- Cash booking platform fees can create negative partner wallet balance. Negative wallet blocks new booking acceptance until settlement.
+- Cash booking platform fees can create negative partner wallet balance. Negative wallet is a settlement warning and blocks only configured final acceptance/confirmation/service-start gates.
+- No customer/partner scoring, VIP, membership, or tip system in MVP.
 - Design polish and full multilingual UI come after backend/admin/mobile flow stability.
 
 ## Current Technical Status
@@ -71,7 +87,7 @@ Admin dashboard:
 - Services page with service groups, duration options, minimum price, price step, payout policy, fee/tax visibility.
 - Tax policy page with versioned tax rules.
 - Operations policy page for matching and wallet gates.
-- Operations policy behavior is API-backed and smoke-tested for 10 minute first-pick response, 10km backup notification/visibility, customer final partner selection, and negative-wallet booking blocks.
+- Operations policy behavior is API-backed and smoke-tested for the first-pick response window, marketplace participation, customer final partner selection, and wallet settlement gates.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.
@@ -89,7 +105,7 @@ Partner mobile app:
 
 - Flutter Clean Architecture structure exists.
 - Firebase removed.
-- Partner online/location update, direct request, backup request, wallet gate, service pricing, onboarding, KYC/bank/tax helpers, chat, earnings, verification scaffolds exist.
+- Partner online/location update, direct request, marketplace request, wallet gate, service pricing, onboarding, KYC/bank/tax helpers, chat, earnings, verification scaffolds exist.
 - Partner location heartbeat and wallet gate tests pass.
 
 Supabase and external setup:
@@ -104,7 +120,7 @@ Supabase and external setup:
 
 These are intentionally not blockers for local MVP development:
 
-- Vonage/Supabase Phone Auth production SMS.
+- Supabase Phone Auth production SMS provider.
 - OneSignal production push credentials.
 - MoMo merchant credentials.
 - VNPay merchant credentials.
@@ -122,6 +138,7 @@ The codebase is healthy, but the work can become fragmented in these areas:
 - External services are partly configured. Local development should not rely on production credentials.
 - Mobile UI has working flows, but design is intentionally temporary.
 - Policies for matching, cash fee debt, tax, payout, and service pricing must stay admin-configurable, not hardcoded in apps.
+- Old backup/radius wording is being removed incrementally. Internal variable/API names can remain until compatibility migrations are planned.
 
 ## Recommended Build Order From Here
 
@@ -142,7 +159,7 @@ Goal: Admin staff can understand and control the business without needing databa
    - Every booking should show service option, customer, selected/preferred partner, participants, matching timeline, chat archive, payment, wallet, tax, refund, location, admin notes.
 
 4. Operations policy controls
-   - Confirm admin can update matching window, 10km participation radius, wallet negative balance gate, no-response handling, backup participation window.
+   - Confirm admin can update the first-pick response window, Open Matching Marketplace behavior, partner alert preferences, wallet settlement gate, completion watch, cancellation/no-show review, and payout cycle.
 
 5. Setup page as operational checklist
    - Show external integration readiness and what is deferred.
@@ -153,14 +170,14 @@ Goal: Admin staff can understand and control the business without needing databa
 Goal: Mobile apps and admin use the same policy logic.
 
 1. Matching policy service
-   - Partner first-response window: 10 minutes.
-   - Backup participation radius: default 10km.
-   - Eligible nearby partners get notification/in-app request.
-   - Customer can select among available partners.
+   - Partner first-response window: configurable, currently 10 minutes.
+   - Open Matching Marketplace stays visible to eligible marketplace participants.
+   - Distance is used for ranking and alert preferences, not as a hard participation gate.
+   - Customer can select among available participants.
 
 2. Wallet/cash debt gate
    - Cash booking fee debt creates negative wallet.
-   - Negative wallet blocks partner booking acceptance.
+   - Negative wallet creates settlement-required state and blocks only configured final acceptance/confirmation/service-start gates.
    - Admin can see and settle fee debt.
 
 3. Service pricing engine
@@ -186,15 +203,15 @@ Goal: Customer and partner apps can run the whole local operational flow.
    - Open partner detail.
    - Choose service and duration.
    - Book now.
-   - Wait for preferred partner and backup partners.
-   - Select partner if backups join.
-   - Chat after match/service start.
+   - Wait for preferred partner and marketplace participants.
+   - Select the final partner.
+   - Chat after match.
 
 2. Partner
    - Go online and send current location.
    - Receive direct request.
-   - See open backup requests within policy radius.
-   - Join backup request.
+   - See open marketplace requests.
+   - Join marketplace request.
    - Accept direct or selected request.
    - Start service to unlock chat.
    - Complete service.
@@ -204,7 +221,7 @@ Goal: Customer and partner apps can run the whole local operational flow.
 
 Goal: Replace local/dev behavior with production services.
 
-1. Supabase Auth with Vonage phone OTP.
+1. Supabase Auth with production SMS provider after dev/Twilio beta validation.
 2. Supabase Storage or S3/R2 bucket policy.
 3. OneSignal push E2E.
 4. MoMo/VNPay sandbox payment E2E.
