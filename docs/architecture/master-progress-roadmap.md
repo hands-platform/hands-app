@@ -122,6 +122,7 @@ Admin dashboard:
 - Partner list now uses marketplace wording for secondary participation and masks legacy secondary-participation strings in seeded partner, bank, and document display values without changing stored data.
 - Partner detail now uses marketplace wording for secondary participation, radius checks, app reachability, and dispatch repair guidance, with legacy display strings masked at render time.
 - Backend booking notifications and partner join errors now use marketplace participation wording while keeping legacy event names and metadata keys for compatibility.
+- Partner and review admin screens now present review data as factual feedback/service-recovery records, not as partner or customer ranking.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.

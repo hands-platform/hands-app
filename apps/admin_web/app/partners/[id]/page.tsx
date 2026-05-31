@@ -1641,7 +1641,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <InfoLine label="Address" value={provider.residentialAddress} />
           <InfoLine label="Service city" value={provider.city} />
           <InfoLine label="Service area" value={formatJsonSummary(provider.serviceArea)} />
-          <InfoLine label="Rating" value={formatRating(provider)} />
+          <InfoLine label="Feedback records" value={formatFeedbackRecords(provider)} />
           <InfoLine label="Next available" value={formatDate(provider.nextAvailableAt)} />
           <InfoLine label="Profile badge reviewed at" value={formatDate(provider.trustedAt)} />
           <InfoLine label="User name" value={provider.user?.fullName} />
@@ -3051,9 +3051,9 @@ function buildPartnerMasterFacts(
       helper: `${completedBookings} completed / ${cancelledBookings} cancelled`,
     },
     {
-      label: 'Reviews',
-      value: `${Number(provider.ratingAvg ?? 0).toFixed(1)} avg`,
-      helper: `${provider.reviewCount ?? 0} review(s)`,
+      label: 'Feedback records',
+      value: `${provider.reviewCount ?? 0} review(s)`,
+      helper: `Feedback value ${Number(provider.ratingAvg ?? 0).toFixed(1)}/5`,
     },
     {
       label: 'Revenue',
@@ -5019,11 +5019,11 @@ function formatJsonList(value: unknown) {
   return items.length ? items.join(', ') : null;
 }
 
-function formatRating(provider: ProviderDetail) {
+function formatFeedbackRecords(provider: ProviderDetail) {
   const rating = provider.ratingAvg ?? 0;
   const numericRating = typeof rating === 'number' ? rating : Number(rating);
   const formattedRating = Number.isFinite(numericRating) ? numericRating.toFixed(1) : String(rating);
-  return `${formattedRating} (${provider.reviewCount ?? 0} reviews)`;
+  return `${provider.reviewCount ?? 0} review(s) / feedback value ${formattedRating}/5`;
 }
 
 function providerPublicMediaLabel(purpose?: string | null) {

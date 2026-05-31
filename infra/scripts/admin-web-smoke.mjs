@@ -158,7 +158,7 @@ const pages = [
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
-  { path: '/reviews', markers: ['Reviews And Reports', 'Review command board'] },
+  { path: '/reviews', markers: ['Reviews And Reports', 'Review command board', 'Service recovery feedback'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
@@ -221,7 +221,7 @@ const pages = [
       'Joined / recent access',
       'Location',
       'Bookings',
-      'Reviews',
+      'Feedback records',
       'Revenue',
       'Payout',
       'Account',
@@ -260,7 +260,7 @@ const pages = [
       'Joined / recent access',
       'Location',
       'Bookings',
-      'Reviews',
+      'Feedback records',
       'Revenue',
       'Payout',
       'Account',
@@ -354,6 +354,7 @@ function assertNoLegacyVisibleLanguage(path, body) {
   const visibleText = visibleTextFromHtml(body);
   const bannedPatterns = [
     { label: 'legacy backup wording', pattern: /\b[Bb]ackup\b/ },
+    { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
     { label: 'people scoring wording', pattern: /\b(score|scoring|VIP|tip|tips)\b/i },
   ];
   const violations = bannedPatterns

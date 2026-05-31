@@ -243,8 +243,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       admin_closed_count: master.adminClosedCount,
       partner_closed_count: master.partnerClosedCount,
       no_show_count: master.noShowCount,
-      review_average: master.reviewAverage,
-      review_count: master.reviewCount,
+      feedback_average_value: master.reviewAverage,
+      feedback_record_count: master.reviewCount,
       gross_revenue_vnd: master.grossRevenue,
       platform_fee_vnd: master.platformFee,
       pending_payout_vnd: master.pendingPayout,
@@ -279,8 +279,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     'admin_closed_count',
     'partner_closed_count',
     'no_show_count',
-    'review_average',
-    'review_count',
+    'feedback_average_value',
+    'feedback_record_count',
     'gross_revenue_vnd',
     'platform_fee_vnd',
     'pending_payout_vnd',
@@ -483,7 +483,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <h2>Partner master list</h2>
             <p className="muted">
               Compact admin list for ID, profile, contact, onboarding level, app status, location freshness,
-              booking volume, reviews, revenue, payout readiness, and account state.
+              booking volume, feedback records, revenue, payout readiness, and account state.
             </p>
           </div>
           <span className="pill pill-info">{partnerMasterRows.length} visible row(s)</span>
@@ -502,7 +502,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <th>Joined / recent access</th>
                 <th>Location</th>
                 <th>Bookings</th>
-                <th>Review history</th>
+                <th>Feedback records</th>
                 <th>Revenue</th>
                 <th>Payout</th>
                 <th>Account</th>
@@ -562,8 +562,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </p>
                   </td>
                   <td>
-                    <strong>{row.reviewAverage} avg</strong>
-                    <p className="muted">{row.reviewCount} review(s)</p>
+                    <strong>{row.reviewCount} review(s)</strong>
+                    <p className="muted">Feedback value {row.reviewAverage}/5</p>
                   </td>
                   <td>
                     <strong>{formatProviderMoney(row.grossRevenue)}</strong>

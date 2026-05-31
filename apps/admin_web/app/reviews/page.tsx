@@ -29,7 +29,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           <h2>{summary.published}</h2>
         </div>
         <div className="card">
-          <p>Low rating</p>
+          <p>Service recovery</p>
           <h2>{summary.lowRating}</h2>
         </div>
         <div className="card">
@@ -71,7 +71,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
                 <div className="stack">
                   {item.reviews.slice(0, 3).map((review) => (
                     <span className="muted" key={`${item.title}-${review.id}`}>
-                      {shortId(review.id)} / {reviewProviderLabel(review)} / {review.rating}/5
+                      {shortId(review.id)} / {reviewProviderLabel(review)} / {review.rating}/5 feedback
                     </span>
                   ))}
                 </div>
@@ -87,7 +87,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           <div>
             <h2>Review operation filters</h2>
             <p className="muted">
-              Moderation board for guest feedback, dispute signals, and partner quality monitoring.
+              Moderation board for guest feedback, dispute signals, and service recovery records.
             </p>
             {activeFilter?.review ? (
               <p className="muted">
@@ -208,7 +208,7 @@ function sortReviews(reviews: AdminReview[]) {
     if (signalDiff !== 0) {
       return signalDiff;
     }
-    return right.rating - left.rating;
+    return dateMs(right.createdAt) - dateMs(left.createdAt);
   });
 }
 
@@ -257,10 +257,10 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
       reviews: reported,
     },
     {
-      title: 'Low-rating recovery',
+      title: 'Service recovery feedback',
       detail:
-        'Low-rating feedback is a service recovery queue for refunds, partner support, or service mismatch.',
-      status: 'Rating <= 2',
+        'Feedback at 2 stars or below is a service recovery queue for refunds, partner support, or service mismatch.',
+      status: '2 stars or below',
       operatorAction: 'Check booking context, customer notes, and partner repetition.',
       href: '/reviews?review=low-rating',
       tone: lowRating.length > 0 ? 'warn' : 'ok',
@@ -327,7 +327,7 @@ function reviewFilterLinks() {
   return [
     { label: 'All reviews', href: '/reviews', review: '' },
     { label: 'Reported', href: '/reviews?review=reported', review: 'reported' },
-    { label: 'Low rating', href: '/reviews?review=low-rating', review: 'low-rating' },
+    { label: 'Service recovery', href: '/reviews?review=low-rating', review: 'low-rating' },
     { label: 'Hidden', href: '/reviews?review=hidden', review: 'hidden' },
     { label: 'Published', href: '/reviews?review=published', review: 'published' },
     { label: 'Extra amount', href: '/reviews?review=extra-amount', review: 'extra-amount' },
@@ -339,7 +339,7 @@ function reviewFilterDescription(review: string) {
     return 'reviews that need moderation follow-up.';
   }
   if (review === 'low-rating') {
-    return 'ratings that may need service recovery.';
+    return 'feedback at 2 stars or below that may need service recovery.';
   }
   if (review === 'hidden') {
     return 'reviews removed from public visibility but retained for evidence.';
@@ -372,7 +372,7 @@ function buildSummary(reviews: AdminReview[]) {
 
 function starRow(rating: number) {
   const fullStars = Math.max(0, Math.min(5, Math.round(rating)));
-  return `${fullStars}/5 rating`;
+  return `${fullStars}/5 feedback`;
 }
 
 function humanizeStatus(status: string) {
@@ -398,12 +398,12 @@ function statusMeaning(status: string) {
 
 function providerReviewHint(review: AdminReview) {
   if (review.rating <= 2) {
-    return 'Low-rating feedback may need service recovery follow-up';
+    return 'Service recovery feedback may need follow-up';
   }
   if (review.tipAmount > 0) {
     return 'Customer extra amount is attached for finance context';
   }
-  return 'Use this review to track partner quality and consistency';
+  return 'Use this review to track service feedback and booking context';
 }
 
 function reviewProviderLabel(review: AdminReview) {
@@ -448,7 +448,7 @@ function opsSignal(review: AdminReview) {
     return 'Already hidden';
   }
   if (review.rating <= 2) {
-    return 'Low-rating follow-up';
+    return 'Service recovery';
   }
   if (review.tipAmount > 0) {
     return 'Extra amount';
@@ -464,14 +464,19 @@ function opsHint(review: AdminReview) {
     return 'Hidden reviews should still be documented for support or partner coaching.';
   }
   if (review.rating <= 2) {
-    return 'Low ratings deserve service recovery review before the pattern spreads.';
+    return 'Feedback at 2 stars or below deserves service recovery review before similar issues repeat.';
   }
   if (review.tipAmount > 0) {
-    return 'Keep the extra amount visible for finance reconciliation, without turning it into a customer or partner rating.';
+    return 'Keep the extra amount visible for finance reconciliation, without turning it into a customer or partner ranking.';
   }
-  return 'Routine feedback row for customer sentiment and partner quality tracking.';
+  return 'Routine feedback row for customer sentiment and booking context.';
 }
 
 function shortId(value: string) {
   return value.slice(0, 8);
+}
+
+function dateMs(value?: string | null) {
+  const timestamp = value ? new Date(value).getTime() : 0;
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
