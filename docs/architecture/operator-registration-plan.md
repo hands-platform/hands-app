@@ -174,16 +174,16 @@ npm.cmd run external:check:maps
 
 Purpose:
 
-- Keep matching, backup participation, wallet gate, cancellation, no-show, and notification behavior configurable from Admin.
+- Keep matching, marketplace participation, wallet gate, cancellation, no-show, and notification behavior configurable from Admin.
 - Avoid hardcoding dispatch or settlement policy in mobile screens.
 
 Current recommended MVP policy:
 
 - Preferred partner response window: 10 minutes.
-- Backup partner radius: 10km.
-- Backup partner location freshness: 30 minutes.
-- Backup partner invite cap: 50.
-- Backup partners can appear immediately while the preferred partner is still deciding.
+- Marketplace partner radius: 10km.
+- Marketplace partner location freshness: 30 minutes.
+- Marketplace partner invite cap: 50.
+- Marketplace partners can appear immediately while the preferred partner is still deciding.
 - Customer makes the final partner selection.
 - Partners with negative wallet balance are blocked from accepting or joining bookings.
 

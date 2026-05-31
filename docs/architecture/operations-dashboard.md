@@ -30,7 +30,7 @@ The dashboard answers these shift questions:
 | Hourly demand | `Hourly booking demand` | Plan partner supply by time slot and identify peak-hour gaps. |
 | Regional demand | `Regional booking demand` | Compare demand by city/district and partner location freshness. |
 | Active app presence | `Customers in app`, `Partners in app`, `Active customers` | Distinguish live app demand/supply from stale users. |
-| Partner supply | `Online partners`, `Partner dispatch control` | Review direct-ready, backup-ready, blocked, or stale partners. |
+| Partner supply | `Online partners`, `Partner dispatch control` | Review direct-ready, marketplace-ready, blocked, or stale partners. |
 | Cash settlement pressure | `Cash debt` | Open Cash Settlements before negative-wallet partners accept more bookings. |
 | Finance pressure | `Payment holds`, `Available payout`, `Open payout batches` | Open Payments, Earnings, or Payouts to close money tasks. |
 | Notification follow-up | `Failed notifications` | Retry or inspect disabled devices before customers or partners miss critical state changes. |
@@ -42,7 +42,7 @@ The dashboard answers these shift questions:
 2. Open the primary recommended action.
 3. Use `Opening shift checklist` to clear waiting customers, partner supply, cash debt, payouts, notifications, and setup blockers.
 4. Review `Policy outcome pulse` when matching outcomes look slow or unstable.
-5. Use `Matching control room` for open matching rows, timer state, backup supply, saved policy snapshots, and partner location freshness.
+5. Use `Matching control room` for open matching rows, timer state, marketplace supply, saved policy snapshots, and partner location freshness.
 6. Use hourly and regional demand panels to decide whether to widen partner outreach, run incentives, or adjust staffing.
 7. Finish with `Action queue` and `Audit Log` so manual decisions remain traceable.
 
@@ -51,7 +51,7 @@ The dashboard answers these shift questions:
 The dashboard links to these deeper operating pages:
 
 - `/bookings` for live booking, matching, no-show, closeout, and customer final selection.
-- `/operations-policy` for response windows, backup radius, wallet gates, cancellation/no-show policy, and owner decision backlog.
+- `/operations-policy` for response windows, marketplace radius, wallet gates, cancellation/no-show policy, and owner decision backlog.
 - `/partners` for KYC, acceptance blockers, partner readiness, location freshness, device/push health, and payout/tax readiness.
 - `/partner-controls` for factual partner controls, account blocks, wallet debt, location freshness, device state, and unblock actions.
 - `/cash-settlements` for negative wallet debt created by cash bookings.
@@ -65,11 +65,11 @@ The dashboard links to these deeper operating pages:
 The dashboard intentionally mirrors the current MVP operations policy:
 
 - Preferred partner response window: 10 minutes.
-- Backup partner radius: 10km.
-- Backup partner location freshness: 30 minutes.
-- Backup partners can appear while the preferred partner is still deciding.
+- Marketplace partner radius: 10km.
+- Marketplace partner location freshness: 30 minutes.
+- Marketplace partners can appear while the preferred partner is still deciding.
 - Customer always selects the final partner.
-- A negative partner wallet blocks booking acceptance or backup joining.
+- A negative partner wallet blocks booking acceptance or marketplace joining when the configured gate requires it.
 
 These values should be changed through Admin `/operations-policy` or environment defaults, not hardcoded in mobile UI.
 

@@ -34,16 +34,16 @@ The partner Flutter app now includes:
 - Open booking loading from `GET /api/partner/bookings/open`
 - Join booking through `POST /api/partner/bookings/:id/join`
 - Accept/reject participation through `POST /api/partner/bookings/:id/accept` and `POST /api/partner/bookings/:id/reject`
-- Request screen state for online status, first-pick jobs, backup jobs, joined jobs, and customer-selection waiting state
+- Request screen state for online status, first-pick jobs, marketplace jobs, joined jobs, and customer-selection waiting state
 - Socket listeners for `booking.opened`, `booking.matched`, and `booking.expired`
 
 ## Realtime MVP Behavior
 
 - Partner sockets join a shared `providers:online` room after JWT authentication.
-- When a booking opens, the backend emits `booking.opened` to the booking room, the first-pick partner, and eligible backup partners.
+- When a booking opens, the backend emits `booking.opened` to the booking room, the first-pick partner, and eligible marketplace partners.
 - The first-pick partner response window is 10 minutes.
-- Backup partners can join only when their last stored location is within 10km of the booking location.
-- Eligible backup partners receive a `booking.backup_available` notification and see the request in `GET /api/partner/bookings/open`.
+- Marketplace partners can join only when their last stored location is within the configured radius of the booking location.
+- Eligible marketplace partners receive a marketplace availability notification and see the request in `GET /api/partner/bookings/open`.
 - Customer app refreshes the active booking when a partner joins or the booking status changes.
 - Partner app refreshes open jobs when a new booking opens or a matching job changes state.
 

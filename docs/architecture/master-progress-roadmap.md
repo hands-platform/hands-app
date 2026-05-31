@@ -26,13 +26,13 @@ HANDS is a Vietnam-wide address-based partner-selection marketplace.
 Core principles:
 
 - Customer app, partner app, admin dashboard, and backend stay in one monorepo.
-- Admin UI uses factual operations language. Avoid scoring customers or partners as risky people.
+- Admin UI uses factual operations language. Avoid ranking customers or partners as risky people.
 - Use "Partner" in admin/product language. Existing backend model names may still use `Provider` until a careful migration is planned.
 - Chat opens after booking match and is available to customer and partner during the active service flow.
 - After service completion, mobile apps may hide the active chat, but admin keeps the full chat archive.
 - First-earning tax collection is preferred. Do not force full tax information at initial signup.
 - Cash booking platform fees can create negative partner wallet balance. Negative wallet is a settlement warning and blocks only configured final acceptance/confirmation/service-start gates.
-- No customer/partner scoring, VIP, membership, or tip system in MVP.
+- No customer/partner rating, premium membership, or gratuity system in MVP.
 - Design polish and full multilingual UI come after backend/admin/mobile flow stability.
 
 ## Current Technical Status
@@ -52,7 +52,7 @@ Checked commands:
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
 - `ADMIN_WEB_SMOKE_PATHS=/customers,/partners node infra/scripts/admin-web-smoke.mjs`: PASS. This confirms customer and partner list/detail pages after closure metadata was added to the operator views.
 - `ADMIN_WEB_SMOKE_PATHS=/bookings node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/bookings` renders the monitor closure copy and a dynamic `/bookings/{id}` page renders with the new `Closure` metric and booking operating ledger.
-- `ADMIN_WEB_SMOKE_PATHS=/operations-handoff node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/operations-handoff` renders the shift handoff checklist without runtime errors or people-scoring wording.
+- `ADMIN_WEB_SMOKE_PATHS=/operations-handoff node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/operations-handoff` renders the shift handoff checklist without runtime errors or people-ranking wording.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 10 tests
 - `flutter analyze` in partner app: PASS
@@ -88,7 +88,7 @@ Backend:
 Admin dashboard:
 
 - Operations dashboard with booking counts, matching wait, completion/cancel/no-show indicators, hourly and regional demand, active app users.
-- Booking monitor with matching stages, first-pick, backup, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
+- Booking monitor with matching stages, first-pick, marketplace participants, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, payment, finance, tax, wallet, location, alerts, and audit evidence into the deeper factual sections.
 - Booking detail now includes closeout readiness checks and an exception register for customer/address, partner choice, chat archive, payment state, finance ledger, cash settlement, location, and audit evidence.
 - Booking detail now includes a service pricing snapshot for selected service duration, customer price, partner payout, HANDS fee, tax/withholding, and wallet impact.
@@ -98,34 +98,34 @@ Admin dashboard:
 - Customer list and customer detail with activity, booking history, chat history, wallet/payment context, addresses, app sessions, notes, exports.
 - Customer list now separates closed booking evidence by customer/admin/partner closure role and no-show count when booking closure metadata exists.
 - Customer detail now includes a compact operating ledger for account, booking work, latest booking, last completed work, chat archive, wallet/payment, address, app access, devices, notifications, timeline, and operator notes.
-- Customer detail now shows booking closure time, closure actor, closure reason, and no-show evidence in booking history and activity records without assigning a customer score.
+- Customer detail now shows booking closure time, closure actor, closure reason, and no-show evidence in booking history and activity records without assigning a customer ranking.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
 - Partner list now separates closed booking evidence by customer/admin/partner closure role and no-show count in the master list and CSV export.
 - Partner detail now includes a compact operating ledger for identity, KYC, documents, bank, tax, services, bookings, chat, wallet, payout, location, app devices, and admin trail evidence.
 - Partner detail now shows booking closure time, closure actor, closure reason, and closure activity rows inside the same booking/chat archive.
-- Customer and partner pages are intentionally factual: they show IDs, contact, joined/recent access dates, completed work, booking/payment/chat/activity records, and operator notes without customer or partner scoring.
-- Partner queue wording is checklist/order based, not score/ranking based. Operator ordering is for fixing factual blockers only.
-- Admin finance/review wording avoids presenting a tip program. Existing legacy `tipAmount` fields are shown as neutral customer extra/payment evidence until the backend model is migrated.
+- Customer and partner pages are intentionally factual: they show IDs, contact, joined/recent access dates, completed work, booking/payment/chat/activity records, and operator notes without customer or partner ranking.
+- Partner queue wording is checklist/order based, not rating/ranking based. Operator ordering is for fixing factual blockers only.
+- Admin finance/review wording avoids presenting a gratuity program. Existing legacy extra-payment fields are shown as neutral customer extra/payment evidence until the backend model is migrated.
 - Services page with service groups, duration options, minimum price, price step, payout policy, fee/tax visibility.
 - Tax policy page with versioned tax rules.
 - Operations policy page for matching and wallet gates.
 - Operations policy behavior is API-backed and smoke-tested for the first-pick response window, marketplace participation, customer final partner selection, and wallet settlement gates.
 - Operations policy analysis labels use outcome-check language such as "Check outcomes" and "On track" instead of risk/health labels for people or partners.
-- Operations policy page now displays secondary participation as marketplace/candidate-alert wording even when older policy records still contain legacy backup labels.
-- Operations policy, setup, and reviews pages now avoid visible legacy backup/scoring language in operator-facing copy while preserving internal compatibility keys.
+- Operations policy page now displays secondary participation as marketplace/candidate-alert wording even when older policy records still contain legacy secondary-participation labels.
+- Operations policy, setup, and reviews pages now avoid visible legacy secondary-participation/ranking language in operator-facing copy while preserving internal compatibility keys.
 - Operations Handoff now includes a shift handoff checklist for live matching, active services, chat continuity, cash settlement, closeout evidence, failed alerts, partner facts, customer context, and written operator notes.
-- Operations dashboard wording now presents the secondary participation lane as marketplace partner candidates instead of legacy backup terminology.
-- Booking monitor now presents the secondary participation lane as marketplace/candidate wording and keeps operator signals factual, with no visible backup or people-scoring language.
+- Operations dashboard wording now presents the secondary participation lane as marketplace partner candidates instead of legacy secondary-participation terminology.
+- Booking monitor now presents the secondary participation lane as marketplace/candidate wording and keeps operator signals factual, with no visible legacy secondary-participation or people-ranking language.
 - Booking detail now presents secondary partner participation as marketplace/candidate-alert wording, including saved legacy notification text at display time, while keeping old `backup_*` metadata keys internally for compatibility.
-- Notifications and audit-log pages now display legacy backup policy/action/alert text as marketplace terminology, including saved notification title/body and policy target labels.
+- Notifications and audit-log pages now display legacy secondary-participation policy/action/alert text as marketplace terminology, including saved notification title/body and policy target labels.
 - Partner Controls now uses marketplace invitation/participation/matching wording for dispatch, KYC, device, wallet, document, and session operational lanes.
-- Partner list now uses marketplace wording for secondary participation and masks legacy backup strings in seeded partner, bank, and document display values without changing stored data.
+- Partner list now uses marketplace wording for secondary participation and masks legacy secondary-participation strings in seeded partner, bank, and document display values without changing stored data.
 - Partner detail now uses marketplace wording for secondary participation, radius checks, app reachability, and dispatch repair guidance, with legacy display strings masked at render time.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.
 - Admin smoke tests now support targeted page checks through `ADMIN_WEB_SMOKE_PATHS`, while full smoke still verifies the full admin surface.
-- Admin smoke tests now strip rendered HTML to visible text and fail when legacy backup wording or people-scoring terms are exposed in operator-facing pages.
+- Admin smoke tests now strip rendered HTML to visible text and fail when legacy secondary-participation wording or people-ranking terms are exposed in operator-facing pages.
 
 Customer mobile app:
 
@@ -172,7 +172,7 @@ The codebase is healthy, but the work can become fragmented in these areas:
 - External services are partly configured. Local development should not rely on production credentials.
 - Mobile UI has working flows, but design is intentionally temporary.
 - Policies for matching, cash fee debt, tax, payout, and service pricing must stay admin-configurable, not hardcoded in apps.
-- Old backup/radius wording is being removed incrementally. Internal variable/API names can remain until compatibility migrations are planned.
+- Old secondary-participation/radius wording is being removed incrementally. Internal variable/API names can remain until compatibility migrations are planned.
 - Legacy `/partner-risk` and `/provider-risk` routes are compatibility redirects only. New work should link to `/partner-controls` or `/partners`.
 
 ## Recommended Build Order From Here
@@ -183,7 +183,7 @@ Goal: Admin staff can understand and control the business without needing databa
 
 1. Customer detail completeness
    - Ensure customer detail shows bookings, completed work count, last completed booking, payments/refunds, wallet, saved addresses, chat archive, app sessions, admin notes.
-   - Avoid customer scoring. Show factual activity only.
+   - Avoid customer ranking. Show factual activity only.
 
 2. Partner detail completeness
    - Keep partner list as the primary entry point.

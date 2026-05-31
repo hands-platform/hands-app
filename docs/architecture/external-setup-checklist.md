@@ -151,9 +151,9 @@ http://localhost:3101/operations-policy
 Current MVP policy:
 
 - selected first partner response window: `10` minutes
-- backup partner radius: `10km`
-- backup partner location freshness: `30` minutes
-- backup partners can appear while the first partner is still deciding
+- marketplace partner radius: `10km`
+- marketplace partner location freshness: `30` minutes
+- marketplace partners can appear while the first partner is still deciding
 - customer always selects the final partner
 - negative partner wallet blocks booking acceptance
 - cancellation and no-show decisions require admin review first

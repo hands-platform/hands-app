@@ -122,7 +122,7 @@ const registrationItems = [
     category: 'Operations policy',
     account: 'HANDS Admin policy controls',
     purpose:
-      'Runtime-tunable matching, backup participation, cancellation, no-show, notification, and wallet-gate policy.',
+      'Runtime-tunable matching, marketplace participation, cancellation, no-show, notification, and wallet-gate policy.',
     consolePath: 'HANDS Admin > Operations Policy',
     env: [
       envItem('MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES', '10', hasValue(env.MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES)),

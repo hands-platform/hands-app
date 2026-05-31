@@ -9,8 +9,8 @@ Customer booking starts from a selected partner profile. The selected partner is
 Default operating policy:
 
 - Preferred partner response window: 10 minutes.
-- Backup partner radius: 10km from the booking location.
-- Backup partners can join while the preferred partner is still deciding.
+- Marketplace partner radius: 10km from the booking location.
+- Marketplace partners can join while the preferred partner is still deciding.
 - Customers always choose the final partner.
 - No automatic final matching.
 - Service start unlocks the active chat workflow.
@@ -22,7 +22,7 @@ A partner can accept or join only when the operational gates pass:
 
 - Account is not blocked.
 - KYC/verification is approved enough for active work.
-- Location is available and inside the configured radius for backup matching.
+- Location is available and inside the configured radius for marketplace matching.
 - Partner is online or available soon.
 - Partner offers the requested service and duration.
 - Wallet is not negative unless an explicit recovery policy allows one active recovery booking.
@@ -37,7 +37,7 @@ Cash bookings are collected directly by the partner. HANDS records platform fee,
 When that wallet becomes negative:
 
 - The partner cannot accept new direct requests.
-- The partner cannot join open backup matching.
+- The partner cannot join open marketplace matching.
 - The partner app displays the localized settlement-block message from `apps/provider_app/lib/main.dart`.
 - Admin finance can settle the debt through cash settlement, earning, payout, payment, or booking detail workflows.
 - Settlement must keep a reference or admin audit note.
@@ -67,8 +67,8 @@ This lowers onboarding drop-off while keeping the finance system deterministic f
 
 Operators should use these screens together:
 
-- `/operations-policy`: change response window, backup radius, backup-open mode, preferred accept mode, wallet gate, no-show, cancellation, and push policies.
-- `/bookings?view=matching`: monitor live matching escalation, backup supply, customer final selection, and chat handoff.
+- `/operations-policy`: change response window, marketplace radius, marketplace-open mode, preferred accept mode, wallet gate, no-show, cancellation, and push policies.
+- `/bookings?view=matching`: monitor live matching escalation, marketplace supply, customer final selection, and chat handoff.
 - `/bookings/:id`: inspect one booking's policy snapshot, participants, alerts, finance trace, and audit trace.
 - `/partners`: review partner acceptance blockers across wallet, account, location, push, KYC, and payout gates.
 - `/partner-controls`: drill into unblock actions for debt, location, push, verification, tax, payout readiness, and saved report/sanction records.
@@ -77,12 +77,12 @@ Operators should use these screens together:
 
 ## Acceptance Unblock Playbook
 
-When a partner cannot accept a direct request or join backup matching, operators should resolve blockers in this order:
+When a partner cannot accept a direct request or join marketplace matching, operators should resolve blockers in this order:
 
 1. Clear negative wallet first.
    - Owner: Finance.
    - Why: cash bookings can create unpaid HANDS fee/tax debt.
-   - Booking impact: direct acceptance and backup joining stay blocked until the debt is settled, offset, or explicitly recovered.
+   - Booking impact: direct acceptance and marketplace joining stay blocked until the debt is settled, offset, or explicitly recovered.
    - Payout impact: finance should not release payout while the partner still owes HANDS settlement.
 
 2. Resolve account and sanction controls.
@@ -94,7 +94,7 @@ When a partner cannot accept a direct request or join backup matching, operators
 3. Approve identity and bank readiness.
    - Owner: KYC.
    - Why: CCCD/selfie evidence and approved bank data are the Level 2 work gate for paid bookings.
-   - Booking impact: paid booking acceptance and backup participation stay blocked until the evidence is approved.
+   - Booking impact: paid booking acceptance and marketplace participation stay blocked until the evidence is approved.
    - Payout impact: bank approval is required before payout; tax profile remains staged until first earning.
 
 4. Refresh stale partner location.
@@ -168,8 +168,8 @@ Smoke coverage:
 These should stay configurable instead of being hardcoded:
 
 - Preferred partner response window.
-- Backup partner radius.
-- Whether backup partners can appear immediately or only after a delay.
+- Marketplace partner radius.
+- Whether marketplace partners can appear immediately or only after a delay.
 - Whether preferred partner acceptance requires customer final confirmation.
 - Whether a negative-wallet partner can receive a controlled recovery booking.
 - No-show thresholds and penalties.

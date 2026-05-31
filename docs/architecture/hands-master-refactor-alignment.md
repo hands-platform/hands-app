@@ -32,8 +32,8 @@ Use Supabase for PostgreSQL, PostGIS, Auth, Storage, RLS, SQL/RPC where useful, 
 - No hard 10km participation gate.
 - No scheduled/calendar booking in MVP.
 - No store/station/branch model.
-- No VIP/membership/subscription/tip flow.
-- No customer or partner scoring/risk ranking.
+- No premium membership/subscription/gratuity flow.
+- No customer or partner rating/risk ranking.
 - No Firebase dependency.
 
 Distance can still drive sorting, alert preferences, and operations filters. It must not be treated as a hard visibility or participation boundary unless a future policy explicitly adds that as an operator choice.
@@ -42,7 +42,7 @@ Distance can still drive sorting, alert preferences, and operations filters. It 
 
 Use Partner in admin/product copy. Keep `Provider` in existing DB/API names until a dedicated migration.
 
-Admin is an Operations Command Center. It should show factual records, current status, dates, times, activity, blocked gates, and next actions. Avoid judging customers or partners with scores.
+Admin is an Operations Command Center. It should show factual records, current status, dates, times, activity, blocked gates, and next actions. Avoid judging customers or partners with numeric labels or rankings.
 
 ## Wallet And Settlement Gate
 
@@ -75,10 +75,10 @@ Authentication is not authorization. Role is not eligibility.
 
 ## Next Refactor Priorities
 
-1. Replace visible backup/radius-limited language with Open Matching Marketplace and marketplace participant language.
+1. Replace visible legacy secondary-participation/radius-limited language with Open Matching Marketplace and marketplace participant language.
 2. Add or verify `BookingAddressSnapshot` behavior and smoke coverage.
 3. Split visibility and availability language in admin and mobile.
 4. Update wallet gate copy and tests to warning plus final-acceptance gate.
 5. Replace per-booking payout assumptions with scheduled payout cycles.
 6. Keep support compensation as customer wallet credit first.
-7. Remove tip/VIP/membership references from active MVP docs and screens.
+7. Remove gratuity/premium-membership references from active MVP docs and screens.

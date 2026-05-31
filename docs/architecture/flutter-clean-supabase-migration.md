@@ -78,7 +78,7 @@ The guard blocks Firebase references, direct Supabase imports from screens/prese
    - Store selected customer locations and provider last-known locations in PostgreSQL/Supabase tables.
 
 4. Booking boundary
-   - Keep booking, direct request, provider accept, backup matching, and chat-unlock behavior in the API.
+   - Keep booking, direct request, provider accept, marketplace matching, and chat-unlock behavior in the API.
    - Move Flutter API calls into `BookingRepository`.
 
 5. Chat boundary
@@ -107,7 +107,7 @@ Recommended Supabase/PostgreSQL tables:
 | `provider_locations`          | Last-known provider location and freshness timestamp.              |
 | `customer_selected_locations` | Customer-confirmed booking locations.                              |
 | `bookings`                    | Direct booking and matching state.                                 |
-| `booking_participants`        | Preferred and backup provider participation.                       |
+| `booking_participants`        | Preferred and marketplace provider participation.                  |
 | `payments`                    | Cash, MoMo, VNPay, refund/capture state.                           |
 | `reviews`                     | Customer review and rating records.                                |
 | `chat_rooms`                  | Booking chat room.                                                 |

@@ -16,8 +16,8 @@ The MVP creates a partner earning record when the selected partner completes a b
 - `grossAmount`: captured payment amount, falling back to booking service totals.
 - `platformFee`: calculated from a service payout rule first, then from the active platform fee policy if no matching rule exists.
 - `withholdingAmount`: calculated from the active versioned tax policy.
-- `tipAmount`: review tip amount, applied after the customer submits a review.
-- `netAmount` for MoMo/VNPay: `grossAmount - platformFee - withholdingAmount + tipAmount`.
+- `tipAmount`: legacy extra-payment field retained only for finance reconciliation until the model is renamed.
+- `netAmount` for MoMo/VNPay: `grossAmount - platformFee - withholdingAmount + legacy extra payment`.
 - `netAmount` for cash: `-(platformFee + withholdingAmount)` because the partner already received the customer cash directly.
 - `availableAt`: 24 hours after completion for MVP payout review.
 
