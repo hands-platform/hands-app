@@ -41,7 +41,7 @@ const CUSTOMER_ACTIVITY_TYPE_OPTIONS = [
   { value: 'booking_work', label: 'Bookings and completed work', types: ['BOOKING', 'WORK'] },
   { value: 'chat', label: 'Chat archive', types: ['CHAT'] },
   { value: 'payment', label: 'Payments and refunds', types: ['PAYMENT', 'REFUND'] },
-  { value: 'address_app', label: 'Addresses, sessions, devices', types: ['ADDRESS', 'SESSION', 'DEVICE'] },
+  { value: 'address_app', label: 'Account, addresses, sessions, devices', types: ['ACCOUNT', 'ADDRESS', 'SESSION', 'DEVICE'] },
   {
     value: 'support',
     label: 'Notifications, reviews, staff records',

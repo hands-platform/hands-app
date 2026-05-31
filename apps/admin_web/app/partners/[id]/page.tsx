@@ -127,10 +127,14 @@ const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
 const PARTNER_ACTIVITY_TYPE_OPTIONS = [
   { value: 'all', label: 'All event types', types: [] },
   { value: 'booking_chat', label: 'Bookings and chat archive', types: ['BOOKING', 'CHAT'] },
-  { value: 'app_device', label: 'App sessions and devices', types: ['SESSION', 'DEVICE'] },
+  { value: 'app_device', label: 'Account, app sessions, and devices', types: ['ACCOUNT', 'SESSION', 'DEVICE'] },
   { value: 'location', label: 'Location snapshots', types: ['LOCATION'] },
   { value: 'finance', label: 'Earnings and payouts', types: ['EARNING', 'PAYOUT'] },
-  { value: 'verification', label: 'Verification and operation logs', types: ['VERIFY', 'OPS'] },
+  {
+    value: 'verification',
+    label: 'Verification, documents, and operation logs',
+    types: ['VERIFY', 'DOCUMENT', 'BANK', 'TAX', 'AGREEMENT', 'REPORT', 'SANCTION', 'PROFILE', 'OPS'],
+  },
 ] satisfies DetailActivityTypeOption[];
 
 type ProviderDetail = AdminProvider & {
@@ -2577,6 +2581,18 @@ function buildPartnerActivityRecords(
 ): PartnerActivityRecord[] {
   const records: PartnerActivityRecord[] = [];
 
+  if (provider.user?.createdAt) {
+    records.push({
+      id: provider.user.id ?? provider.id,
+      type: 'ACCOUNT',
+      at: provider.user.createdAt,
+      title: 'Partner user account created',
+      detail: `${provider.legalName ?? provider.displayName ?? 'Unnamed partner'} / ${
+        provider.user.phone ?? 'No phone'
+      }`,
+    });
+  }
+
   for (const bookingRecord of bookings) {
     records.push({
       id: bookingRecord.booking.id,
@@ -2600,6 +2616,104 @@ function buildPartnerActivityRecords(
         )}`,
       });
     }
+  }
+
+  if (provider.verification?.submittedAt) {
+    records.push({
+      id: `${provider.verification.id}-submitted`,
+      type: 'VERIFY',
+      at: provider.verification.submittedAt,
+      title: 'Provider verification submitted',
+      detail: `${provider.verification.status} / ${provider.verification.files?.length ?? 0} attached file(s)`,
+    });
+  }
+
+  if (provider.verification?.reviewedAt) {
+    records.push({
+      id: `${provider.verification.id}-reviewed`,
+      type: 'VERIFY',
+      at: provider.verification.reviewedAt,
+      title: `Provider verification ${provider.verification.status.toLowerCase()}`,
+      detail: provider.verification.rejectionReason ?? 'Admin review recorded.',
+    });
+  }
+
+  if (provider.kyc?.submittedAt) {
+    records.push({
+      id: `${provider.kyc.id}-submitted`,
+      type: 'VERIFY',
+      at: provider.kyc.submittedAt,
+      title: 'KYC evidence submitted',
+      detail: `${provider.kyc.status} / CCCD last four ${
+        provider.kyc.cccdNumberLast4 ? `****${provider.kyc.cccdNumberLast4}` : 'not stored'
+      }`,
+    });
+  }
+
+  if (provider.kyc?.reviewedAt) {
+    records.push({
+      id: `${provider.kyc.id}-reviewed`,
+      type: 'VERIFY',
+      at: provider.kyc.reviewedAt,
+      title: `KYC ${provider.kyc.status.toLowerCase()}`,
+      detail: provider.kyc.rejectionReason ?? 'KYC review recorded.',
+    });
+  }
+
+  for (const document of provider.documents ?? []) {
+    records.push({
+      id: document.id,
+      type: 'DOCUMENT',
+      at: document.reviewedAt ?? document.fileAsset?.uploadedAt ?? '',
+      title: `${providerDocumentLabel(document.type)} ${document.status.toLowerCase()}`,
+      detail: `${document.fileAsset?.uploadStatus ?? 'No upload status'}${
+        document.rejectionReason ? ` / ${document.rejectionReason}` : ''
+      }`,
+    });
+  }
+
+  for (const file of provider.user?.fileAssets ?? []) {
+    records.push({
+      id: file.id,
+      type: 'PROFILE',
+      at: file.reviewedAt ?? file.uploadedAt ?? file.createdAt ?? '',
+      title: `${providerPublicMediaLabel(file.purpose)} ${file.reviewStatus ?? file.uploadStatus ?? 'recorded'}`,
+      detail: `${file.visibility} / ${file.contentType}${file.reviewReason ? ` / ${file.reviewReason}` : ''}`,
+    });
+  }
+
+  for (const bankAccount of provider.bankAccounts ?? []) {
+    records.push({
+      id: bankAccount.id,
+      type: 'BANK',
+      at: bankAccount.reviewedAt ?? '',
+      title: `Bank account ${bankAccount.status.toLowerCase()}`,
+      detail: `${bankAccount.bankName} / ${bankAccount.accountHolderName} / ${
+        bankAccount.isPrimary ? 'primary' : 'secondary'
+      }${bankAccount.rejectionReason ? ` / ${bankAccount.rejectionReason}` : ''}`,
+    });
+  }
+
+  if (provider.taxProfile?.approvedAt) {
+    records.push({
+      id: provider.taxProfile.id,
+      type: 'TAX',
+      at: provider.taxProfile.approvedAt,
+      title: `Tax profile ${provider.taxProfile.status.toLowerCase()}`,
+      detail: `${provider.taxProfile.legalName} / tax code ${
+        provider.taxProfile.taxCodeLast4 ? `****${provider.taxProfile.taxCodeLast4}` : 'not stored'
+      }`,
+    });
+  }
+
+  for (const agreement of provider.agreements ?? []) {
+    records.push({
+      id: agreement.id,
+      type: 'AGREEMENT',
+      at: agreement.acceptedAt,
+      title: `${agreement.type} accepted`,
+      detail: `Version ${agreement.version}`,
+    });
   }
 
   for (const session of provider.sessions ?? []) {
@@ -2658,6 +2772,28 @@ function buildPartnerActivityRecords(
     });
   }
 
+  for (const report of provider.reports ?? []) {
+    records.push({
+      id: report.id,
+      type: 'REPORT',
+      at: report.createdAt,
+      title: `${report.status} report ${report.category}`,
+      detail: `${report.source} / ${report.summary}`,
+    });
+  }
+
+  for (const sanction of provider.sanctions ?? []) {
+    records.push({
+      id: sanction.id,
+      type: 'SANCTION',
+      at: sanction.createdAt ?? sanction.startsAt ?? '',
+      title: `${sanction.status} ${sanction.type}`,
+      detail: `${sanction.reason}${
+        sanction.liftedAt ? ` / lifted ${formatDate(sanction.liftedAt)}` : ''
+      }${sanction.expiresAt ? ` / expires ${formatDate(sanction.expiresAt)}` : ''}`,
+    });
+  }
+
   for (const log of provider.verificationLogs ?? []) {
     records.push({
       id: log.id,
@@ -2687,6 +2823,17 @@ function buildPartnerActivityRecords(
 
 function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
   const financeTypes = new Set(['EARNING', 'PAYOUT']);
+  const verificationTypes = new Set([
+    'VERIFY',
+    'DOCUMENT',
+    'BANK',
+    'TAX',
+    'AGREEMENT',
+    'REPORT',
+    'SANCTION',
+    'PROFILE',
+    'OPS',
+  ]);
   const count = (predicate: (record: PartnerActivityRecord) => boolean) => records.filter(predicate).length;
   const latestAt = records[0]?.at;
   const oldestAt = records[records.length - 1]?.at;
@@ -2709,8 +2856,8 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     },
     {
       label: 'App and device',
-      value: count((record) => ['SESSION', 'DEVICE'].includes(record.type)).toString(),
-      helper: 'Login sessions and device records.',
+      value: count((record) => ['ACCOUNT', 'SESSION', 'DEVICE'].includes(record.type)).toString(),
+      helper: 'Account creation, login sessions, and device records.',
     },
     {
       label: 'Location',
@@ -2718,9 +2865,14 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
       helper: 'Last known location snapshots.',
     },
     {
-      label: 'Finance and verification',
-      value: count((record) => financeTypes.has(record.type) || ['VERIFY', 'OPS'].includes(record.type)).toString(),
-      helper: 'Earnings, payout batches, verification changes, and operator notes.',
+      label: 'Finance',
+      value: count((record) => financeTypes.has(record.type)).toString(),
+      helper: 'Earnings and payout batches.',
+    },
+    {
+      label: 'Verification and operations',
+      value: count((record) => verificationTypes.has(record.type)).toString(),
+      helper: 'KYC, documents, bank, tax, agreements, reports, sanctions, media, and notes.',
     },
   ];
 }
