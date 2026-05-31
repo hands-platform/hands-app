@@ -131,6 +131,7 @@ type BookingListStage = {
 };
 
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
@@ -713,6 +714,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               const stage = bookingListStage(booking, currentTimeMs);
               const addressState = bookingAddressSnapshotState(booking);
               const chatState = bookingChatListState(booking);
+              const closureState = bookingClosureListSignal(booking);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -741,6 +743,12 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div style={{ marginTop: 8 }}>
                       <StatusBadge status={booking.status} />
                     </div>
+                    {closureState && (
+                      <div className="participant-list" style={{ marginTop: 8 }}>
+                        <span className={`pill ${closureState.tone}`}>{closureState.label}</span>
+                        <span className="muted">{closureState.detail}</span>
+                      </div>
+                    )}
                     <div className="muted">
                       {booking.expiresAt ? `Expires ${formatDate(booking.expiresAt)}` : 'No expiry set'}
                     </div>
@@ -879,6 +887,11 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="muted" style={{ marginTop: 8 }}>
                       {nextAction(booking)}
                     </div>
+                    {closureState && (
+                      <div className="muted" style={{ marginTop: 8 }}>
+                        Closure evidence: {closureState.detail}
+                      </div>
+                    )}
                   </td>
                 </tr>
               );
@@ -1562,12 +1575,43 @@ function bookingStageCounts(bookings: AdminBooking[], nowMs: number) {
   }, new Map<BookingListStageKey, number>());
 }
 
+function bookingClosureListSignal(booking: AdminBooking) {
+  if (booking.closedAt) {
+    const actor = booking.closedByRole ? booking.closedByRole.toLowerCase() : 'actor missing';
+    const reason = booking.closedReason ? humanizeClosureReason(booking.closedReason) : 'reason not saved';
+    const note = booking.closedNote ? ` / ${booking.closedNote}` : '';
+
+    return {
+      label: `Closed ${formatDate(booking.closedAt)}`,
+      detail: `${actor} closure / ${reason}${note}`,
+      tone: booking.status === 'NO_SHOW' ? 'pill-danger' : 'pill-info',
+    };
+  }
+
+  if (terminalBookingStatuses.has(booking.status)) {
+    return {
+      label: 'Terminal',
+      detail: 'Terminal booking has no explicit closure actor/reason saved yet.',
+      tone: booking.status === 'NO_SHOW' ? 'pill-danger' : 'pill-warn',
+    };
+  }
+
+  return null;
+}
+
+function humanizeClosureReason(reason: string) {
+  return reason
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
-  const terminalStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
   const fallbackCount = fallbackParticipants(booking).length;
   const acceptedCount = acceptedParticipants(booking).length;
 
-  if (terminalStatuses.has(booking.status)) {
+  if (terminalBookingStatuses.has(booking.status)) {
     return {
       key: 'closeout',
       label: 'Closeout',
