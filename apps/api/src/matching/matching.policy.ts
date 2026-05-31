@@ -67,7 +67,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Matching',
     label: 'First-pick partner response window',
     description:
-      'Minutes the first-pick partner has to accept before backup participation becomes more visible.',
+      'Minutes the first-pick partner has to accept before marketplace participation becomes more visible.',
     value: DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
     recommendedValue: DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
     unit: 'minutes',
@@ -78,7 +78,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY,
     category: 'Matching',
-    label: 'Backup partner radius',
+    label: 'Marketplace partner radius',
     description:
       'Maximum distance from the customer for nearby partners that can see and join an open request.',
     value: DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
@@ -91,9 +91,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY,
     category: 'Matching',
-    label: 'Backup partner location freshness',
+    label: 'Marketplace partner location freshness',
     description:
-      'Maximum age of a partner location before they are excluded from backup participation alerts.',
+      'Maximum age of a partner location before they are excluded from marketplace participation alerts.',
     value: DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
     recommendedValue: DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
     unit: 'minutes',
@@ -104,9 +104,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY,
     category: 'Matching',
-    label: 'Backup partner invitation limit',
+    label: 'Marketplace partner invitation limit',
     description:
-      'Maximum number of nearby eligible backup partners that can be exposed to the request and notified for participation.',
+      'Maximum number of nearby eligible marketplace partners that can be exposed to the request and notified for participation.',
     value: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
     recommendedValue: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
     unit: 'partners',
@@ -151,20 +151,20 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_BACKUP_OPEN_MODE_KEY,
     category: 'Decision',
-    label: 'When backup partners can join',
+    label: 'When marketplace partners can join',
     description:
-      'Choose whether nearby backup partners can join during the first-pick response window, or only after the timer passes. If the first-pick partner declines, backup partners open immediately.',
+      'Choose whether nearby marketplace partners can join during the first-pick response window, or only after the timer passes. If the first-pick partner declines, marketplace partners open immediately.',
     value: BACKUP_OPEN_IMMEDIATE,
     recommendedValue: BACKUP_OPEN_IMMEDIATE,
     options: [
       {
         value: BACKUP_OPEN_IMMEDIATE,
-        label: 'Open backups immediately',
+        label: 'Open marketplace immediately',
         tradeoff: 'Reduces customer waiting anxiety and creates visible alternatives.',
       },
       {
         value: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
-        label: 'Delay backup visibility',
+        label: 'Delay marketplace visibility',
         tradeoff:
           'Less partner noise while the first-pick partner is deciding, with immediate recovery if that partner declines.',
       },
@@ -241,7 +241,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     key: NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY,
     category: 'Decision',
     label: 'Partner alert channel',
-    description: 'Choose how partners should receive urgent booking and backup participation alerts.',
+    description: 'Choose how partners should receive urgent booking and marketplace participation alerts.',
     value: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
     recommendedValue: PARTNER_ALERT_IN_APP_WITH_PUSH_LATER,
     options: [
