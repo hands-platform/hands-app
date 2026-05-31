@@ -185,7 +185,7 @@ export default async function OperationsPolicyPage({
           <div>
             <h2>Booking acceptance control matrix</h2>
             <p className="muted">
-              Current owner choices for the direct booking window, 10km backup participation, partner push
+              Current owner choices for the direct booking window, marketplace participation, partner push
               reach, and negative wallet blocking. This is the screen operators should check before changing
               the mobile flow.
             </p>
@@ -259,7 +259,7 @@ export default async function OperationsPolicyPage({
         </div>
         <div className="detail-grid" style={{ marginTop: 14 }}>
           <div style={{ overflowX: 'auto' }}>
-            <h3>Backup radius sensitivity</h3>
+            <h3>Marketplace supply sensitivity</h3>
             <p className="muted">
               Reference point: {supplySensitivity.referenceLabel}. Hard blockers include identity, bank,
               cash-debt, and account controls.
@@ -348,7 +348,7 @@ export default async function OperationsPolicyPage({
                 <th>Scenario</th>
                 <th>Value</th>
                 <th>Stage 1 first-pick</th>
-                <th>Stage 2 backup</th>
+                <th>Stage 2 marketplace</th>
                 <th>Stage 3 choice</th>
                 <th>Stage 4 repair</th>
                 <th>No supply</th>
@@ -378,7 +378,7 @@ export default async function OperationsPolicyPage({
         <div className="ops-task-note" style={{ marginTop: 14 }}>
           <strong>How to use this preview</strong>
           <p className="muted">
-            If a candidate value increases Stage 2 backup count without increasing stale/no-supply checks, it
+            If a candidate value increases Stage 2 marketplace count without increasing stale/no-supply checks, it
             may reduce customer waiting anxiety. If it increases overdue or no-supply count, improve partner
             location freshness, push delivery, or city supply before changing policy.
           </p>
@@ -497,7 +497,7 @@ export default async function OperationsPolicyPage({
           <div>
             <h2>Live matching policy</h2>
             <p className="muted">
-              These settings are enforced by booking creation, backup partner discovery, and partner join
+              These settings are enforced by booking creation, marketplace partner discovery, and partner join
               eligibility. Existing open bookings keep their stored expiry time, while new bookings use the
               latest policy.
             </p>
@@ -807,11 +807,11 @@ export default async function OperationsPolicyPage({
           <DecisionHint
             title="First-pick partner acceptance"
             recommendation="For the stable product, customer final confirmation is stronger."
-            detail="MVP can keep auto-match for speed, but the long-term flow should let the customer pick from the first-pick partner plus backup partners."
+            detail="MVP can keep auto-match for speed, but the long-term flow should let the customer pick from the first-pick partner plus marketplace partners."
           />
           <DecisionHint
-            title="Backup participation"
-            recommendation="Keep immediate backup visibility inside the configured backup radius."
+            title="Marketplace participation"
+            recommendation="Keep immediate marketplace visibility during the partner response window."
             detail="It reduces waiting anxiety, gives the customer alternatives, and fits the reference flow you described."
           />
           <DecisionHint
@@ -1204,7 +1204,7 @@ function buildPolicySimulation(
         })}.`,
       },
       {
-        label: 'Backup radius',
+        label: 'Marketplace policy',
         value: formatDistance(backupRadiusMeters),
         helper: `${eligiblePartners.length} usable partner(s), ${freshEligible.length} fresh location(s).`,
       },
@@ -1228,7 +1228,7 @@ function buildPolicySimulation(
         step: '1',
         title: 'Customer creates direct request',
         detail:
-          'The selected partner receives the first-pick request. Backup partners are evaluated from current policy and location data.',
+          'The selected partner receives the first-pick request. Marketplace partners are evaluated from current policy and location data.',
         className: 'timeline-done',
         tags: [
           {
@@ -1240,10 +1240,10 @@ function buildPolicySimulation(
       },
       {
         step: '2',
-        title: immediateBackup ? 'Backup list opens immediately' : 'Backup list waits unless declined',
+        title: immediateBackup ? 'Marketplace list opens immediately' : 'Marketplace list waits unless declined',
         detail: immediateBackup
-          ? `${invitedPartners.length}/${eligiblePartners.length} partner(s) inside ${formatDistance(backupRadiusMeters)} can see or join while the first partner decides.`
-          : `Backup partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick partner declines.`,
+          ? `${invitedPartners.length}/${eligiblePartners.length} partner(s) can see or join while the first partner decides under current policy.`
+          : `Marketplace partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick partner declines.`,
         className: immediateBackup ? 'timeline-active' : 'timeline-warn',
         tags: [
           { label: policyDisplayByKey(settings, 'matching.backup_open_mode'), tone: 'pill-info' },
@@ -1284,7 +1284,7 @@ function buildPolicySimulation(
           ? 'Customers can see backup interest during the first response window.'
           : 'Customers may see an empty waiting screen until the first partner times out, unless that partner declines first.',
         operatorAction: immediateBackup
-          ? 'Keep monitoring whether customers understand first-pick vs backup partner choice.'
+          ? 'Keep monitoring whether customers understand first-pick vs marketplace partner choice.'
           : 'Use only if first-pick response rate is high enough to avoid empty waiting.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
@@ -1521,20 +1521,20 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       blocking: !baselineTimer,
     },
     {
-      title: 'Backup partner pool',
-      status: baselineRadius ? '10km default' : 'Custom radius',
-      detail: `Backup participation currently uses ${formatDistance(backupRadiusMeters)} from the customer location.`,
+      title: 'Marketplace partner pool',
+      status: baselineRadius ? 'Default policy' : 'Custom policy',
+      detail: `Marketplace participation currently uses ${formatDistance(backupRadiusMeters)} as an operating alert/ranking policy.`,
       operatorAction: baselineRadius
-        ? 'This matches the requested 10km operating rule for nearby backup participation.'
-        : 'Review city supply, arrival time, and ignored backup alerts before changing radius.',
+        ? 'This matches the current operating baseline for partner participation alerts.'
+        : 'Review city supply, arrival time, and ignored marketplace alerts before changing policy.',
       className: baselineRadius ? 'ops-task-done' : 'ops-task-pending',
       pillClass: baselineRadius ? 'pill-success' : 'pill-warn',
       blocking: !baselineRadius,
     },
     {
-      title: 'Backup location freshness',
+      title: 'Marketplace location freshness',
       status: baselineLocationFreshness ? '30m default' : 'Custom freshness',
-      detail: `Backup partners must refresh location within ${backupLocationFreshnessMinutes} minute(s) before alerts or joins.`,
+      detail: `Marketplace partner location freshness is checked at ${backupLocationFreshnessMinutes} minute(s) for operator trust.`,
       operatorAction: baselineLocationFreshness
         ? 'This matches the partner app rule that refreshes location every 10 minutes while open.'
         : 'If this is loosened, monitor stale-location joins and partner no-response rates.',
@@ -1543,13 +1543,13 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       blocking: !baselineLocationFreshness,
     },
     {
-      title: 'Backup visibility timing',
-      status: immediateBackup ? 'Visible during wait' : 'Delayed backup',
+      title: 'Marketplace visibility timing',
+      status: immediateBackup ? 'Visible during wait' : 'Delayed marketplace',
       detail: immediateBackup
         ? 'Nearby partners can participate while the first-pick partner is still deciding.'
-        : 'Backup partners wait until the timer passes, except when the first-pick partner declines.',
+        : 'Marketplace partners wait until the timer passes, except when the first-pick partner declines.',
       operatorAction: immediateBackup
-        ? 'This best matches the customer waiting screen where available backup partners appear early.'
+        ? 'This best matches the customer waiting screen where available marketplace partners appear early.'
         : 'Use delayed mode only if partner noise is worse than customer waiting anxiety.',
       className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
       pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
@@ -1562,7 +1562,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
         ? 'Even after partner acceptance, the customer keeps the final partner selection step.'
         : 'The first accepted partner can lock the booking without final customer choice.',
       operatorAction: customerFinalChoice
-        ? 'This is the safer long-term rule for a marketplace with backup partner choices.'
+        ? 'This is the safer long-term rule for a marketplace with customer partner choice.'
         : 'Only use auto-lock if HANDS intentionally prioritizes speed over customer choice.',
       className: customerFinalChoice ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: customerFinalChoice ? 'pill-success' : 'pill-danger',
@@ -1572,7 +1572,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       title: 'Partner alert delivery',
       status: pushReady ? 'Push enabled' : 'In-app first',
       detail: pushReady
-        ? 'Partner booking and backup participation alerts are ready to route through OneSignal.'
+        ? 'Partner booking and marketplace participation alerts are ready to route through OneSignal.'
         : 'Booking notifications are recorded in-app until OneSignal production setup is fully ready.',
       operatorAction: pushReady
         ? 'Watch delivery failures and disabled devices on the Notifications board.'
@@ -1609,17 +1609,17 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
         helper: 'Partner accepts or the request needs operator attention.',
       },
       {
-        label: 'Backup radius',
+        label: 'Marketplace policy',
         value: formatDistance(backupRadiusMeters),
         helper: 'Nearby partners who can participate.',
       },
       {
         label: 'Location freshness',
         value: `${backupLocationFreshnessMinutes} min`,
-        helper: 'Backup alerts exclude older partner locations.',
+        helper: 'Marketplace alerts flag older partner locations.',
       },
       {
-        label: 'Backup timing',
+        label: 'Marketplace timing',
         value: immediateBackup ? 'Immediate' : 'Delayed',
         helper: 'Visibility during first-pick wait.',
       },
@@ -1775,17 +1775,17 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
         'Verify with a new booking, then open the booking detail timeline and matching policy snapshot.',
     },
     {
-      scope: 'Backup join',
-      title: `${formatDistance(backupRadiusMeters)} backup radius`,
+      scope: 'Marketplace join',
+      title: `${formatDistance(backupRadiusMeters)} marketplace alert policy`,
       detail:
-        'Backup partners are filtered by customer distance before they can see, join, or receive backup availability alerts.',
+        'Marketplace partners are prioritized by customer distance before alerts and operator review.',
       verify: 'Verify from Operations Policy simulator and Partner Controls location freshness signals.',
     },
     {
       scope: 'Location gate',
       title: `${backupLocationFreshnessMinutes} minute location freshness`,
       detail:
-        'Partners with stale or missing last location are excluded from backup participation and shown as dispatch checks.',
+        'Partners with stale or missing last location are flagged before marketplace participation and shown as dispatch checks.',
       verify:
         'Verify by opening App Sessions and Partner Controls after a partner app sends or misses a location heartbeat.',
     },
@@ -1801,12 +1801,12 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
         'Verify by creating a direct booking, accepting in the partner app, then checking the customer waiting screen.',
     },
     {
-      scope: 'Backup timing',
+      scope: 'Marketplace timing',
       title:
         backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
-          ? 'Backup partners can join during the wait'
-          : 'Backup partners wait until timer or decline',
-      detail: 'This controls whether backup partners can participate during the first-pick response window.',
+          ? 'Marketplace partners can join during the wait'
+          : 'Marketplace partners wait until timer or decline',
+      detail: 'This controls whether marketplace partners can participate during the first-pick response window.',
       verify: 'Verify from partner app open request list while a direct booking is still waiting.',
     },
     {
@@ -1878,7 +1878,7 @@ function buildMatchingStageImpactPreview(
         hardWalletBlock,
       });
       return matchingStageImpactRow(
-        'Backup radius',
+        'Marketplace policy',
         formatDistance(value),
         stats,
         baseline,
@@ -1911,9 +1911,9 @@ function buildMatchingStageImpactPreview(
         helper: 'Bookings currently waiting inside Stage 1, Stage 2, or Stage 3.',
       },
       {
-        label: 'Current Stage 2 backup',
+        label: 'Current Stage 2 marketplace',
         value: baseline.stage2.toString(),
-        helper: 'Open bookings with usable backup partner supply under the current policy.',
+        helper: 'Open bookings with usable marketplace partner supply under the current policy.',
       },
       {
         label: 'Current no supply',
@@ -2021,7 +2021,7 @@ function matchingStageImpactRead(
     return 'More first-pick windows become overdue. Customer wait anxiety and manual dispatch work may rise.';
   }
   if (stats.stage2 > baseline.stage2 && stats.noSupply <= baseline.noSupply) {
-    return 'More bookings can expose backup partner supply without increasing empty waiting screens.';
+    return 'More bookings can expose marketplace partner supply without increasing empty waiting screens.';
   }
   if (stats.noSupply < baseline.noSupply) {
     return 'Fewer bookings look supply-starved, but confirm distance quality and stale pins before widening.';
@@ -2340,8 +2340,8 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           'Explains whether an accepted first-pick partner locks automatically or still waits for customer confirmation.',
       },
       {
-        policy: 'Backup opening mode',
-        scope: 'Backup visibility',
+        policy: 'Marketplace opening mode',
+        scope: 'Marketplace visibility',
         liveValue: policyDisplayByKey(settings, 'matching.backup_open_mode'),
         savedValue: summarizeSnapshotValues(
           bookings,
@@ -2349,7 +2349,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           (value) => formatSnapshotPolicyValue(settings, 'matching.backup_open_mode', value),
         ),
         operatorMeaning:
-          'Explains whether backup partners were allowed to join during the first-pick response window.',
+          'Explains whether marketplace partners were allowed to join during the first-pick response window.',
       },
       {
         policy: 'Travel buffer',
@@ -2383,8 +2383,8 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           ? 'Backup partners can join during the first window'
           : 'Backup partners wait until the first window closes',
         detail: immediateBackup
-          ? 'Eligible partners inside the radius can appear while the first-pick partner is still deciding.'
-          : 'Backup visibility and join checks stay delayed until the first-pick response window passes.',
+          ? 'Eligible partners can appear while the first-pick partner is still deciding.'
+          : 'Marketplace visibility and join checks stay delayed until the first-pick response window passes.',
         operatorAction: customerConfirm
           ? 'Customer confirmation mode is active, so accepted partners still require customer final choice.'
           : 'Auto-match mode is active, so accepted first-pick partners can lock faster.',
@@ -2446,7 +2446,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       globalMatchedRate,
     }),
     ...buildPolicyEffectRows({
-      policy: 'Backup radius',
+      policy: 'Marketplace policy',
       settings,
       bookings: sampledBookings,
       settingKey: 'matching.backup_provider_radius_meters',
@@ -2779,7 +2779,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     {
       key: 'open-matching',
       title: 'Open matching watchlist',
-      helper: 'Bookings currently waiting for first-pick and backup partner decisions.',
+      helper: 'Bookings currently waiting for first-pick and marketplace partner decisions.',
       className: openMatchingRows.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: openMatchingRows.length ? 'pill-warn' : 'pill-success',
       emptyText: 'No open matching booking needs policy review right now.',
@@ -3079,9 +3079,9 @@ function buildOwnerDecisionPressure(
       pillClass: waitingFirstPick.length ? 'pill-warn' : 'pill-success',
     },
     {
-      title: 'Backup radius and supply',
+      title: 'Marketplace policy and supply',
       status: currentUsableSupply > 0 ? 'Supply visible' : 'Supply thin',
-      detail: `${currentUsableSupply} usable partner(s) are inside the current policy sample. ${backupInterest.length} open booking(s) already show backup interest.`,
+      detail: `${currentUsableSupply} usable partner(s) are inside the current policy sample. ${backupInterest.length} open booking(s) already show marketplace interest.`,
       operatorAction:
         currentUsableSupply > 0
           ? 'Use the sensitivity table before changing the 10km radius.'
@@ -3104,7 +3104,7 @@ function buildOwnerDecisionPressure(
     {
       title: 'Wallet and hard blockers',
       status: acceptanceBlocked ? 'Gate active' : 'Clear',
-      detail: `${acceptanceBlocked} partner blocker signal(s) affect booking acceptance or 10km backup participation.`,
+      detail: `${acceptanceBlocked} partner blocker signal(s) affect booking acceptance or marketplace participation.`,
       operatorAction: acceptanceBlocked
         ? 'Keep negative-wallet and identity gates strict until finance and partner controls clear the queue.'
         : 'No current sample pressure to relax booking acceptance gates.',
@@ -3166,7 +3166,7 @@ function operationsOwnerDecisionBacklog() {
       owner: 'Dispatch',
       title: 'First-pick partner timer',
       question:
-        'Should the first-pick partner keep the full response window, or should backup partners become more prominent earlier?',
+        'Should the first-pick partner keep the full response window, or should marketplace partners become more prominent earlier?',
       signal:
         'Review open matching wait time, first-pick response rate, and customer cancellation before changing the timer.',
       options: [
@@ -3178,7 +3178,7 @@ function operationsOwnerDecisionBacklog() {
         {
           label: 'Escalate earlier',
           tradeoff:
-            'Shows backup partners sooner and reduces waiting anxiety, but the first-pick partner has less exclusive time.',
+            'Shows marketplace partners sooner and reduces waiting anxiety, but the first-pick partner has less exclusive time.',
         },
       ],
       recommendation:
@@ -3209,9 +3209,9 @@ function operationsOwnerDecisionBacklog() {
         },
       ],
       recommendation:
-        'Start with a single 10km radius, then add city/service overrides after Ho Chi Minh City data is stable.',
+        'Start with one marketplace policy baseline, then add city/service overrides after Ho Chi Minh City data is stable.',
       decisionTrigger:
-        'Revisit when backup alerts are ignored often, or accepted backup partners are repeatedly too far away.',
+        'Revisit when marketplace alerts are ignored often, or accepted marketplace partners are repeatedly too far away.',
       href: '/operations-policy#policy-matching-backup-provider-radius-meters',
       className: 'ops-task-pending',
       pillClass: 'pill-info',
@@ -3488,8 +3488,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
           href: '/operations-policy#matching-stage-impact',
         },
         {
-          label: '10km backup ready',
-          detail: 'Review partners that can actually receive and join backup requests.',
+          label: 'Marketplace ready',
+          detail: 'Review partners that can actually receive and join marketplace requests.',
           href: '/partners?review=backup-ready',
         },
       ],

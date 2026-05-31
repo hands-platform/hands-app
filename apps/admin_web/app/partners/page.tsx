@@ -376,8 +376,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="push">Push alert readiness</option>
               <option value="acceptance-blocked">Booking acceptance blocked</option>
               <option value="direct-ready">Direct request ready</option>
-              <option value="backup-ready">10km backup ready</option>
-              <option value="backup-blocked">10km backup blocked</option>
+              <option value="backup-ready">Marketplace ready</option>
+              <option value="backup-blocked">Marketplace blocked</option>
             </select>
           </label>
           <label>
@@ -911,8 +911,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner acceptance blocker board</h2>
             <p className="muted">
-              Shows why partners cannot accept direct bookings or join 10km backup matching before operators
-              try to dispatch them. Backup matching eligibility is checked with the same booking-readiness
+              Shows why partners cannot accept direct bookings or join marketplace matching before operators
+              try to dispatch them. Marketplace participation eligibility is checked with the same booking-readiness
               gates shown below.
             </p>
           </div>
@@ -2177,7 +2177,7 @@ function PartnerBackupEligibilityCell({
     <div className="card" style={{ marginTop: 10, padding: 12 }}>
       <div className="risk-watch-header">
         <div>
-          <strong>Backup matching eligibility</strong>
+          <strong>Marketplace participation eligibility</strong>
           <p className="muted">{eligibility.detail}</p>
         </div>
         <span className={`pill ${eligibility.eligible ? 'pill-success' : 'pill-warn'}`}>
@@ -2981,7 +2981,7 @@ function buildPartnerShiftHandoff(
       ? {
           title: 'Keep ready partners warm for live requests',
           scope: 'Dispatch supply',
-          detail: `${acceptReady.length} partner(s) can accept direct bookings now; ${backupReady.length} are also backup-ready.`,
+          detail: `${acceptReady.length} partner(s) can accept direct bookings now; ${backupReady.length} are also marketplace-ready.`,
           operatorAction: 'Use these partners first when matching demand spikes or customer wait time rises.',
           href: '/partners?review=direct-ready',
           tone: 'ok' as const,
@@ -3025,7 +3025,7 @@ function buildPartnerShiftHandoff(
       {
         label: 'Can accept now',
         value: acceptReady.length.toString(),
-        detail: `${backupReady.length} backup-ready within current policy gates.`,
+        detail: `${backupReady.length} marketplace-ready within current policy gates.`,
         href: '/partners?review=direct-ready',
         tone: acceptReady.length ? 'ok' : 'warn',
       },
@@ -3108,9 +3108,9 @@ function buildPartnerDispatchHandoff(
         tone: directReady.length ? 'ok' : 'warn',
       },
       {
-        title: '10km backup ready',
+        title: 'Marketplace ready',
         value: backupReady.length.toString(),
-        detail: 'Partners eligible to receive backup alerts and join the customer shortlist.',
+        detail: 'Partners eligible to receive marketplace alerts and join the customer shortlist.',
         href: '/partners?review=backup-ready',
         tone: backupReady.length ? 'ok' : 'warn',
       },
@@ -3841,9 +3841,9 @@ function buildPartnerFilterSummary(
       href: '/partners?review=direct-ready',
     },
     {
-      label: '10km backup ready',
+      label: 'Marketplace ready',
       value: backupReady.toString(),
-      detail: `Can join fallback matching inside ${formatDistanceMeters(opsPolicy.backupRadiusMeters)}`,
+      detail: 'Can join open marketplace matching under current operating policy',
       href: '/partners?review=backup-ready',
     },
     {
@@ -3994,17 +3994,15 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       detail: 'Partners who can receive and accept a preferred direct booking right now.',
     },
     {
-      label: '10km backup ready',
+      label: 'Marketplace ready',
       count: backupReady,
       href: '/partners?review=backup-ready',
-      detail: `Partners who can receive backup alerts and join customer shortlists inside the ${formatDistanceMeters(
-        opsPolicy.backupRadiusMeters,
-      )} matching radius.`,
+      detail: 'Partners who can receive marketplace alerts and join customer shortlists under current policy.',
     },
   ];
 
   const totalOpen = items
-    .filter((item) => !['Direct request ready', '10km backup ready'].includes(item.label))
+    .filter((item) => !['Direct request ready', 'Marketplace ready'].includes(item.label))
     .reduce((sum, item) => sum + item.count, 0);
 
   return { items, totalOpen };
@@ -4305,10 +4303,10 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Direct request ready highlights partners who can accept a preferred customer request immediately.';
   }
   if (kind === 'review' && value === 'backup-ready') {
-    return '10km backup ready highlights partners who can receive backup alerts and join customer shortlists.';
+    return 'Marketplace ready highlights partners who can receive availability alerts and join customer shortlists.';
   }
   if (kind === 'review' && value === 'backup-blocked') {
-    return '10km backup blocked highlights partners excluded from backup matching until blockers are resolved.';
+    return 'Marketplace blocked highlights partners excluded from open matching until blockers are resolved.';
   }
   if (kind === 'review') {
     return 'Review queue focuses the table on one operational approval lane.';

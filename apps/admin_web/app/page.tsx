@@ -382,7 +382,7 @@ export default async function DashboardPage() {
       href: '/bookings',
       primary: 'Live booking monitor',
       helper:
-        'Matching wait, first-pick response, 10km backup participation, customer choice, chat, and closeout flow.',
+        'Matching wait, first-pick response, marketplace participation, customer choice, chat, and closeout flow.',
       links: [
         ['All bookings', '/bookings'],
         ['Matching', '/bookings?view=matching'],

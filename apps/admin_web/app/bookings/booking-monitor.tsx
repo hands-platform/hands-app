@@ -197,7 +197,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Matched', matched.length.toString()],
       ['Attention queue', highRisk.length.toString()],
       ['Stage 1 first-pick', (stageCounts.get('first-pick') ?? 0).toString()],
-      ['Stage 2 backup', (stageCounts.get('backup') ?? 0).toString()],
+      ['Stage 2 marketplace', (stageCounts.get('backup') ?? 0).toString()],
       ['Stage 3 customer choice', (stageCounts.get('customer-choice') ?? 0).toString()],
       ['Stage 4 handoff repair', (stageCounts.get('handoff-repair') ?? 0).toString()],
       ['No partners yet', noParticipants.length.toString()],
@@ -448,7 +448,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
         <div style={{ marginTop: 16 }}>
           <h3>Matching flow timeline</h3>
           <p className="muted">
-            Stage view for direct partner requests, 10km backup participation, customer final choice, and
+            Stage view for direct partner requests, marketplace participation, customer final choice, and
             chat/location handoff.
           </p>
           <div className="ops-task-grid" style={{ marginTop: 12 }}>
@@ -862,9 +862,9 @@ const bookingViewOptions: Array<{
   {
     view: 'matching',
     label: 'Matching ops',
-    description: 'direct first-pick, backup partner, final customer selection, and chat handoff work.',
+    description: 'direct first-pick, marketplace participant, final customer selection, and chat handoff work.',
     operatorHint:
-      'Use this during live dispatch to manage the 10-minute partner response window and backup partner escalation.',
+      'Use this during live dispatch to manage the 10-minute partner response window and marketplace participant escalation.',
   },
   {
     view: 'first-pick',
@@ -875,10 +875,10 @@ const bookingViewOptions: Array<{
   },
   {
     view: 'backup',
-    label: 'Stage 2 backup',
-    description: 'open bookings where backup partners can join or need a dispatch nudge.',
+    label: 'Stage 2 marketplace',
+    description: 'open bookings where marketplace partners can join or need a dispatch nudge.',
     operatorHint:
-      'Use this to manage the 10km backup partner pool, stale location checks, and backup alert delivery.',
+      'Use this to manage the marketplace participant pool, stale location checks, and availability alert delivery.',
   },
   {
     view: 'customer-choice',
@@ -1266,27 +1266,27 @@ function buildMatchingEscalationBoard(
       tone: expiredWindow.length > 0 ? 'danger' : firstPickWaiting.length ? 'warn' : 'ok',
       detail:
         firstPickWaiting.length > 0
-          ? 'Preferred partners have the first chance before the customer switches to backup supply.'
+          ? 'Preferred partners have the first chance before the customer reviews marketplace supply.'
           : 'No preferred partner is currently blocking a direct request.',
       operatorAction:
-        'If the timer is near expiry, prepare backup partner reminders and keep the customer waiting screen honest.',
+        'If the timer is near expiry, prepare marketplace participant reminders and keep the customer waiting screen honest.',
       href: expiredWindow.length > 0 ? '/bookings?view=attention' : '/bookings?view=matching',
       bookings: firstPickWaiting,
       metrics: [metric('waiting', firstPickWaiting.length), metric('expired', expiredWindow.length)],
     },
     {
-      title: 'Backup partner supply',
+      title: 'Marketplace participant supply',
       status: noBackupSupply.length > 0 ? 'Needs supply' : backupReady.length ? 'Ready' : 'Clear',
       tone: noBackupSupply.length > 0 ? 'warn' : backupReady.length ? 'info' : 'ok',
       detail:
         noBackupSupply.length > 0
-          ? 'Some open requests have no backup partner visible to the customer yet.'
-          : 'Backup partners are already visible for open requests that need options.',
+          ? 'Some open requests have no marketplace participant visible to the customer yet.'
+          : 'Marketplace participants are already visible for open requests that need options.',
       operatorAction:
-        'Check partner radius, location freshness, push delivery, wallet debt, and online state before extending wait time.',
+        'Check partner availability, location freshness, push delivery, wallet debt, and online state before extending wait time.',
       href: noBackupSupply.length > 0 ? '/bookings?view=no-supply' : '/bookings?view=matching',
       bookings: noBackupSupply.length > 0 ? noBackupSupply : backupReady,
-      metrics: [metric('no backup', noBackupSupply.length), metric('backup ready', backupReady.length)],
+      metrics: [metric('no marketplace', noBackupSupply.length), metric('marketplace ready', backupReady.length)],
     },
     {
       title: 'Customer final selection',
@@ -1302,7 +1302,7 @@ function buildMatchingEscalationBoard(
       bookings: customerFinalSelection,
       metrics: [
         metric('accepted options', customerFinalSelection.length),
-        metric('backup options', backupReady.length),
+        metric('marketplace options', backupReady.length),
       ],
     },
     {
@@ -1339,7 +1339,7 @@ function buildBookingDispatchPartnerShortcuts(
     {
       title: 'Partner handoff',
       value: 'Open',
-      detail: 'Full partner command view with direct, backup, KYC, wallet, location, and alert lanes.',
+      detail: 'Full partner command view with direct, marketplace, KYC, wallet, location, and alert lanes.',
       href: '/partners',
       tone: openMatching.length ? 'info' : 'ok',
     },
@@ -1423,18 +1423,18 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
     },
     {
       stage: 'Stage 2',
-      title: '10km backup participation',
-      status: noSupply.length ? 'Supply gap' : backupVisible.length ? 'Backup visible' : 'Clear',
+      title: 'Marketplace participation',
+      status: noSupply.length ? 'Supply gap' : backupVisible.length ? 'Marketplace visible' : 'Clear',
       tone: noSupply.length ? 'warn' : backupVisible.length ? 'info' : 'ok',
       detail:
         noSupply.length > 0
-          ? 'Some open bookings have no backup partner for the customer to choose.'
-          : 'Backup partners are visible or no backup lane is currently needed.',
+          ? 'Some open bookings have no marketplace partner for the customer to choose.'
+          : 'Marketplace partners are visible or no participation lane is currently needed.',
       operatorAction:
-        'Use backup-ready partners, location freshness, alert delivery, and radius policy before widening operations rules.',
+        'Use marketplace-ready partners, location freshness, alert delivery, and operating policy before widening rules.',
       href: noSupply.length ? '/partners?review=backup-ready' : '/bookings?view=matching',
       metrics: [
-        metric('no backup', noSupply.length),
+        metric('no marketplace', noSupply.length),
         metric('visible', backupVisible.length),
         metric('alerted', backupAlerted.length),
       ],
@@ -1550,12 +1550,12 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
   if (booking.status === 'OPEN_MATCHING' && fallbackCount > 0) {
     return {
       key: 'backup',
-      label: 'Stage 2 backup',
-      detail: `${fallbackCount} backup partner(s) are visible while matching stays open.`,
+      label: 'Stage 2 marketplace',
+      detail: `${fallbackCount} marketplace partner(s) are visible while matching stays open.`,
       action:
         bookingBackupAlertTraceSummary(booking).totalNotified > 0
-          ? 'Monitor backup alert delivery and customer shortlist quality.'
-          : 'Nudge eligible 10km partners or check backup alert creation.',
+          ? 'Monitor marketplace alert delivery and customer shortlist quality.'
+          : 'Nudge eligible partners or check marketplace alert creation.',
       tone: 'info',
       href: `/bookings/${booking.id}#participants`,
     };
@@ -1664,10 +1664,10 @@ function buildMatchingEscalationRows(
       ) {
         return {
           booking,
-          title: 'First-pick pending with backup ready',
-          detail: 'Backup partners are visible while the preferred partner still has first chance.',
+          title: 'First-pick pending with marketplace ready',
+          detail: 'Marketplace partners are visible while the preferred partner still has first chance.',
           operatorAction:
-            'Let the timer run or guide the customer to select a backup partner when wait time is becoming visible.',
+            'Let the timer run or guide the customer to select a marketplace partner when wait time is becoming visible.',
           tone: 'info',
           tags: [...baseTags, selectionPathLabel(booking)],
         };
@@ -1895,13 +1895,13 @@ function emptyBookingMessage(view: BookingView) {
     return 'No attention-queue bookings match this queue. Expired matching, missing chat, and payment closeout are clear.';
   }
   if (view === 'matching') {
-    return 'No matching escalation bookings match this queue. First-pick, backup supply, customer selection, and chat handoff are clear.';
+    return 'No matching escalation bookings match this queue. First-pick, marketplace supply, customer selection, and chat handoff are clear.';
   }
   if (view === 'first-pick') {
     return 'No Stage 1 first-pick bookings are waiting. The direct partner response window is clear.';
   }
   if (view === 'backup') {
-    return 'No Stage 2 backup bookings need partner participation review right now.';
+    return 'No Stage 2 marketplace bookings need partner participation review right now.';
   }
   if (view === 'customer-choice') {
     return 'No Stage 3 customer choice bookings are waiting. Accepted partners are not blocked on customer selection.';

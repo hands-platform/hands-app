@@ -2917,7 +2917,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
       detail: walletGate?.detail ?? 'Wallet gate was not evaluated.',
       bookingImpact: walletGate?.ok
         ? 'Partner can pass the cash-debt booking gate.'
-        : 'Blocks direct acceptance and 10km backup participation until debt is settled or offset.',
+        : 'Blocks configured acceptance gates until debt is settled or offset.',
       payoutImpact: 'Finance should not release payout while HANDS fee/tax debt is still open.',
       action: walletGate?.ok ? 'Open cash settlement history' : 'Settle cash debt',
       href: '/cash-settlements',

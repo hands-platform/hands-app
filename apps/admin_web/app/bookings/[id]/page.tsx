@@ -263,7 +263,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Booking stage snapshot</h2>
             <p className="muted">
-              Single operating readout for the first-pick timer, 10km backup participation, customer choice,
+              Single operating readout for the first-pick timer, marketplace participation, customer choice,
               chat handoff, and closeout.
             </p>
           </div>
@@ -475,9 +475,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Backup partner supply for this booking</h2>
+            <h2>Marketplace partner supply for this booking</h2>
             <p className="muted">
-              Booking-pin view of who can join as a backup partner, and exactly why others are excluded.
+              Booking-pin view of who can join as a marketplace partner, and exactly why others are excluded.
             </p>
           </div>
           <span className={`pill ${backupSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>
@@ -2452,7 +2452,7 @@ function providerDecisionLabel(booking: AdminBookingDetail) {
     return preferredParticipant.status;
   }
   if ((booking.participants?.length ?? 0) > 0) {
-    return `${booking.participants?.length ?? 0} backup ready`;
+    return `${booking.participants?.length ?? 0} marketplace ready`;
   }
   return 'Waiting';
 }
@@ -3259,13 +3259,13 @@ function bookingStageSnapshot(
     actionHref = `/bookings/${booking.id}#participants`;
     actionLabel = 'Review shortlist';
   } else if (status === 'OPEN_MATCHING' && backupSupply.eligibleCount > 0) {
-    stage = 'Stage 2 - Backup participation';
+    stage = 'Stage 2 - Marketplace participation';
     pillClass = 'pill-warn';
     noteClassName = 'ops-task-pending';
-    headline = 'The 10km backup partner window has usable supply.';
-    detail = `${backupSupply.eligibleCount} nearby partner(s) can join or be nudged while the customer waits.`;
+    headline = 'The marketplace partner window has usable supply.';
+    detail = `${backupSupply.eligibleCount} partner(s) can join or be nudged while the customer waits.`;
     actionHref = '/partners?review=backup-ready';
-    actionLabel = 'Open backup partners';
+    actionLabel = 'Open marketplace partners';
   } else if (status === 'OPEN_MATCHING') {
     stage = 'Stage 1 - First-pick response';
     pillClass = customerPinReady ? 'pill-info' : 'pill-danger';
@@ -3275,7 +3275,7 @@ function bookingStageSnapshot(
       : 'Customer pin is missing, so radius matching is not reliable.';
     detail = customerPinReady
       ? customerWaitPanel.detail
-      : 'Confirm the customer service location before using distance, backup, or dispatch decisions.';
+      : 'Confirm the customer service location before using distance, marketplace, or dispatch decisions.';
     actionHref = customerPinReady
       ? `/bookings/${booking.id}#participants`
       : `/bookings/${booking.id}#customer`;
@@ -3306,7 +3306,7 @@ function bookingStageSnapshot(
       {
         label: 'Shortlist',
         value: `${acceptedParticipants.length} accepted`,
-        helper: `${rejectedParticipants.length} rejected, ${backupSupply.eligibleCount} backup eligible.`,
+        helper: `${rejectedParticipants.length} rejected, ${backupSupply.eligibleCount} marketplace eligible.`,
       },
       {
         label: 'Handoff',
@@ -3323,7 +3323,7 @@ function bookingStageSnapshot(
         tone: customerPinReady ? 'pill-success' : 'pill-danger',
       },
       {
-        label: `${backupSupply.eligibleCount} in 10km policy`,
+        label: `${backupSupply.eligibleCount} in marketplace policy`,
         tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn',
       },
       { label: chatReady ? 'Chat ready' : 'Chat pending', tone: chatReady ? 'pill-success' : 'pill-info' },
