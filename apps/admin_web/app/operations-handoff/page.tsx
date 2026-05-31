@@ -64,6 +64,16 @@ export default async function OperationsHandoffPage() {
   const failedNotifications = notifications.filter((notification) =>
     (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
   );
+  const immediateActions = buildImmediateActionQueue({
+    bookings,
+    matchingBookings,
+    inServiceBookings,
+    failedNotifications,
+    cashSummary,
+    partnerSignals,
+    operatorNotes,
+    financeRows,
+  });
 
   return (
     <>
@@ -82,6 +92,33 @@ export default async function OperationsHandoffPage() {
         <MetricCard label="Partner app online" value={presence.partnerLive} helper={`${presence.partnerRecent} partner session(s) seen recently`} href="/app-sessions?role=PROVIDER&state=live" />
         <MetricCard label="Chat rooms" value={chatSignals.roomCount} helper={`${chatSignals.recentMessageCount} recent message(s) visible to admin`} href="/chat-archive" />
         <MetricCard label="Failed notifications" value={failedNotifications.length} helper="Push/SMS/app delivery rows needing retry or device check" href="/notifications?review=failed" />
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="toolbar">
+          <div>
+            <h2>Immediate action queue</h2>
+            <p className="muted">
+              Ordered by operational state only: live booking stage, chat availability, cash settlement,
+              notification delivery, and written handoff notes.
+            </p>
+          </div>
+          <span className="pill pill-info">{immediateActions.length} action lane(s)</span>
+        </div>
+        <div className="ops-task-grid">
+          {immediateActions.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={item.id}>
+              <span className={item.className}>{item.owner}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <div className="participant-list">
+                <span className="pill">{item.countLabel}</span>
+                <span className={item.statusClass}>{item.status}</span>
+              </div>
+              <small>{item.nextAction}</small>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="detail-grid" style={{ marginBottom: 16 }}>
@@ -310,6 +347,143 @@ export default async function OperationsHandoffPage() {
       </section>
     </>
   );
+}
+
+function buildImmediateActionQueue(input: {
+  bookings: AdminBooking[];
+  matchingBookings: AdminBooking[];
+  inServiceBookings: AdminBooking[];
+  failedNotifications: AdminNotification[];
+  cashSummary: AdminCashSettlementSummary;
+  partnerSignals: ReturnType<typeof buildPartnerSignals>;
+  operatorNotes: ReturnType<typeof buildOperatorNotes>;
+  financeRows: ReturnType<typeof buildFinanceRows>;
+}) {
+  const chatMissing = input.bookings.filter(
+    (booking) =>
+      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
+      !booking.chatRoom?.id,
+  );
+  const closeoutRows = input.bookings.filter(
+    (booking) =>
+      booking.status === 'COMPLETED' &&
+      (!booking.payment || !booking.earning || !booking.chatRoom?.id),
+  );
+  const recentNotes = input.operatorNotes.filter((note) => recentlyChanged(note.createdAt, 240));
+
+  const rows = [
+    {
+      id: 'matching-live-window',
+      owner: 'Dispatch',
+      title: 'Open matching windows',
+      detail:
+        'Customers are waiting while first-pick and nearby partner participation windows are still open.',
+      href: '/bookings?view=matching',
+      count: input.matchingBookings.length,
+      countLabel: `${input.matchingBookings.length} booking(s)`,
+      status: input.matchingBookings.length ? 'Watch now' : 'Clear',
+      nextAction: 'Open the matching board and check partner response, participant list, and customer choice.',
+      className: input.matchingBookings.length ? 'signal signal-warn' : 'signal signal-ok',
+      statusClass: input.matchingBookings.length ? 'pill pill-warn' : 'pill pill-success',
+    },
+    {
+      id: 'chat-creation',
+      owner: 'Support',
+      title: 'Matched booking chat',
+      detail: 'A matched or in-service booking should have an admin-retained chat room.',
+      href: '/bookings?view=chat-repair',
+      count: chatMissing.length,
+      countLabel: `${chatMissing.length} missing chat`,
+      status: chatMissing.length ? 'Repair' : 'Ready',
+      nextAction: 'Open chat repair queue if any matched booking has no chat room.',
+      className: chatMissing.length ? 'signal signal-danger' : 'signal signal-ok',
+      statusClass: chatMissing.length ? 'pill pill-danger' : 'pill pill-success',
+    },
+    {
+      id: 'in-service-watch',
+      owner: 'Dispatch',
+      title: 'Services in progress',
+      detail: 'Partner and customer are inside the work window; chat remains active until completion.',
+      href: '/bookings?view=closeout',
+      count: input.inServiceBookings.length,
+      countLabel: `${input.inServiceBookings.length} in service`,
+      status: input.inServiceBookings.length ? 'Monitor' : 'Clear',
+      nextAction: 'Watch completion and prepare payment, wallet, and chat archive closeout.',
+      className: input.inServiceBookings.length ? 'signal signal-info' : 'signal signal-ok',
+      statusClass: input.inServiceBookings.length ? 'pill pill-info' : 'pill pill-success',
+    },
+    {
+      id: 'cash-fee-debt',
+      owner: 'Finance',
+      title: 'Cash fee wallet gate',
+      detail: 'Partners with negative wallet from cash bookings cannot accept more work until settlement.',
+      href: '/cash-settlements',
+      count: input.cashSummary.providerCount,
+      countLabel: `${input.cashSummary.providerCount} partner(s)`,
+      status: input.cashSummary.providerCount ? 'Collect/offset' : 'Clear',
+      nextAction: 'Open cash settlements and record deposit or offset before future acceptance.',
+      className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
+      statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
+    },
+    {
+      id: 'notification-delivery',
+      owner: 'Alerts',
+      title: 'Notification delivery failures',
+      detail: 'Failed delivery rows can hide booking requests, partner updates, or customer status changes.',
+      href: '/notifications?review=failed',
+      count: input.failedNotifications.length,
+      countLabel: `${input.failedNotifications.length} failed`,
+      status: input.failedNotifications.length ? 'Retry/check' : 'Clear',
+      nextAction: 'Retry delivery or inspect disabled push devices before relying on app alerts.',
+      className: input.failedNotifications.length ? 'signal signal-warn' : 'signal signal-ok',
+      statusClass: input.failedNotifications.length ? 'pill pill-warn' : 'pill pill-success',
+    },
+    {
+      id: 'partner-admin-facts',
+      owner: 'Partner Ops',
+      title: 'Partner factual follow-up',
+      detail: 'Partner list groups KYC, bank, wallet, location, app session, and acceptance gate facts.',
+      href: '/partners',
+      count: input.partnerSignals.attentionCount,
+      countLabel: `${input.partnerSignals.attentionCount} partner fact(s)`,
+      status: input.partnerSignals.attentionCount ? 'Review' : 'Clear',
+      nextAction: 'Open partner list and continue from the relevant factual filter.',
+      className: input.partnerSignals.attentionCount ? 'signal signal-warn' : 'signal signal-ok',
+      statusClass: input.partnerSignals.attentionCount ? 'pill pill-warn' : 'pill pill-success',
+    },
+    {
+      id: 'completed-closeout',
+      owner: 'Finance',
+      title: 'Completed closeout evidence',
+      detail: 'Completed bookings should have payment, earning, wallet/tax evidence, and retained chat.',
+      href: '/bookings?view=closeout',
+      count: closeoutRows.length,
+      countLabel: `${closeoutRows.length} booking(s)`,
+      status: closeoutRows.length ? 'Check' : 'Ready',
+      nextAction: 'Open closeout queue and compare payment, earning, tax, wallet, and chat rows.',
+      className: closeoutRows.length ? 'signal signal-warn' : 'signal signal-ok',
+      statusClass: closeoutRows.length ? 'pill pill-warn' : 'pill pill-success',
+    },
+    {
+      id: 'recent-operator-notes',
+      owner: 'Handoff',
+      title: 'Recent written notes',
+      detail: 'New customer, partner, or booking notes should be read before taking over the shift.',
+      href: '/audit-log',
+      count: recentNotes.length,
+      countLabel: `${recentNotes.length} recent note(s)`,
+      status: recentNotes.length ? 'Read' : 'None',
+      nextAction: 'Open the latest operator notes and continue from the related detail page.',
+      className: recentNotes.length ? 'signal signal-info' : 'signal signal-ok',
+      statusClass: recentNotes.length ? 'pill pill-info' : 'pill pill-success',
+    },
+  ];
+
+  return rows.sort((a, b) => {
+    const classWeight = (item: (typeof rows)[number]) =>
+      item.statusClass.includes('danger') ? 4 : item.statusClass.includes('warn') ? 3 : item.statusClass.includes('info') ? 2 : 1;
+    return classWeight(b) - classWeight(a) || b.count - a.count;
+  });
 }
 
 function MetricCard({

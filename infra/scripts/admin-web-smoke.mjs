@@ -133,6 +133,7 @@ const pages = [
     path: '/operations-handoff',
     markers: [
       'Operations Handoff',
+      'Immediate action queue',
       'Shift brief',
       'Latest operator notes',
       'Booking handoff queue',
