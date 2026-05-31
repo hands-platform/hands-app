@@ -1825,7 +1825,7 @@ function buildMatchingControlRoom(
       nextAction,
     };
   });
-  const atRiskRows = openRows.filter((row) => row.expired || row.freshEligibleCount === 0);
+  const attentionRows = openRows.filter((row) => row.expired || row.freshEligibleCount === 0);
   const averageEligible =
     openRows.length > 0
       ? (openRows.reduce((sum, row) => sum + row.eligibleCount, 0) / openRows.length).toFixed(1)
@@ -1840,13 +1840,13 @@ function buildMatchingControlRoom(
 
   return {
     openRows,
-    healthLabel: atRiskRows.length ? `${atRiskRows.length} attention` : 'Stable',
-    healthPillClass: atRiskRows.length ? 'pill-danger' : 'pill-success',
+    healthLabel: attentionRows.length ? `${attentionRows.length} attention` : 'Stable',
+    healthPillClass: attentionRows.length ? 'pill-danger' : 'pill-success',
     metrics: [
       {
         label: 'Open matching',
         value: String(openMatching.length),
-        helper: `${atRiskRows.length} booking(s) need dispatch review now.`,
+        helper: `${attentionRows.length} booking(s) need dispatch review now.`,
       },
       {
         label: 'Inside first window',
@@ -1898,16 +1898,16 @@ function buildMatchingControlRoom(
     ],
     checks: [
       {
-        status: atRiskRows.length ? 'Action needed' : 'Clear',
+        status: attentionRows.length ? 'Action needed' : 'Clear',
         title: 'Timer and supply check',
-        detail: atRiskRows.length
-          ? `${atRiskRows.length} open matching booking(s) are expired or have no fresh eligible nearby partner.`
+        detail: attentionRows.length
+          ? `${attentionRows.length} open matching booking(s) are expired or have no fresh eligible nearby partner.`
           : 'Open matching bookings have usable partner supply in the current sample.',
-        operatorAction: atRiskRows.length
+        operatorAction: attentionRows.length
           ? 'Open the affected bookings, contact partners, or widen/refresh supply before customer wait grows.'
           : 'Keep monitoring response speed and participant depth.',
-        className: atRiskRows.length ? 'ops-task-blocked' : 'ops-task-done',
-        pillClass: atRiskRows.length ? 'pill-danger' : 'pill-success',
+        className: attentionRows.length ? 'ops-task-blocked' : 'ops-task-done',
+        pillClass: attentionRows.length ? 'pill-danger' : 'pill-success',
       },
       {
         status: immediateBackup ? 'Visible early' : 'Delayed',
@@ -4108,7 +4108,7 @@ function buildOperatorStartChecklist(input: {
   activePayoutBatches: AdminPayoutBatch[];
   externalReadiness: AdminExternalReadiness;
 }): OperatorStartChecklistItem[] {
-  const openMatchingRisk = input.matchingControl.openRows.filter(
+  const openMatchingFollowUp = input.matchingControl.openRows.filter(
     (row) => row.expired || row.freshEligibleCount === 0,
   ).length;
   const highQueueCount = input.queue.filter((item) => item.severity === 'high').length;
@@ -4127,14 +4127,14 @@ function buildOperatorStartChecklist(input: {
   return [
     {
       title: 'Protect waiting customers',
-      status: openMatchingRisk || input.bookingOps.noShowSignal ? 'Dispatch first' : 'Clear',
-      detail: openMatchingRisk
-        ? `${openMatchingRisk} open matching booking(s) have expired timers or no fresh 10km partner supply.`
+      status: openMatchingFollowUp || input.bookingOps.noShowSignal ? 'Dispatch first' : 'Clear',
+      detail: openMatchingFollowUp
+        ? `${openMatchingFollowUp} open matching booking(s) have expired timers or no fresh partner supply.`
         : `${input.bookingOps.openMatching} matching wait, ${input.bookingOps.noShowSignal} no-show signal.`,
       action: 'Open matching queue',
-      href: openMatchingRisk ? '/bookings?view=matching' : '/bookings',
-      className: openMatchingRisk ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: openMatchingRisk ? 'pill-danger' : 'pill-success',
+      href: openMatchingFollowUp ? '/bookings?view=matching' : '/bookings',
+      className: openMatchingFollowUp ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: openMatchingFollowUp ? 'pill-danger' : 'pill-success',
     },
     {
       title: 'Confirm partner supply',

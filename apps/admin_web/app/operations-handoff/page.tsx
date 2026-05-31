@@ -936,10 +936,14 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
               : 'Continue normal operational watch.',
         className: hasCashDebt ? 'pill pill-danger' : hasKycPending || hasBankPending ? 'pill pill-warn' : 'pill pill-success',
         attention: hasCashDebt || hasKycPending || hasBankPending || !hasFreshLocation,
-        sortScore: (hasCashDebt ? 5 : 0) + (hasKycPending ? 3 : 0) + (hasBankPending ? 2 : 0) + (!hasFreshLocation ? 1 : 0),
+        sortPriority:
+          (hasCashDebt ? 5 : 0) +
+          (hasKycPending ? 3 : 0) +
+          (hasBankPending ? 2 : 0) +
+          (!hasFreshLocation ? 1 : 0),
       };
     })
-    .sort((a, b) => b.sortScore - a.sortScore);
+    .sort((a, b) => b.sortPriority - a.sortPriority);
   return { rows, attentionCount: rows.filter((row) => row.attention).length };
 }
 

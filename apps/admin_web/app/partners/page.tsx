@@ -2779,7 +2779,7 @@ function buildProviderCommandCenter(
   const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const accountBlocks = providers.filter((provider) => Boolean(provider.blockedAt)).length;
   const openControlItems = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
-  const deviceRisk = providers.filter((provider) =>
+  const deviceFollowUp = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const supabasePending = providers.filter((provider) => !provider.user?.supabaseUserId).length;
@@ -2835,8 +2835,8 @@ function buildProviderCommandCenter(
     },
     {
       title: 'Reports and devices',
-      status: accountBlocks > 0 || openControlItems > 0 || deviceRisk > 0 ? 'Investigate' : 'Clear',
-      tone: accountBlocks > 0 || openControlItems > 0 ? 'danger' : deviceRisk > 0 ? 'warn' : 'ok',
+      status: accountBlocks > 0 || openControlItems > 0 || deviceFollowUp > 0 ? 'Investigate' : 'Clear',
+      tone: accountBlocks > 0 || openControlItems > 0 ? 'danger' : deviceFollowUp > 0 ? 'warn' : 'ok',
       detail:
         accountBlocks > 0 || openControlItems > 0
           ? 'Account blocks, reports, or active account controls need operator attention.'
@@ -2845,7 +2845,7 @@ function buildProviderCommandCenter(
       metrics: [
         providerCommandMetric('blocked', accountBlocks),
         providerCommandMetric('open reports', openControlItems),
-        providerCommandMetric('device checks', deviceRisk),
+        providerCommandMetric('device checks', deviceFollowUp),
         providerCommandMetric(
           'shared device',
           providers.filter((provider) => providerSecurityStatus(provider) === 'shared').length,
@@ -2877,7 +2877,7 @@ function buildPartnerShiftHandoff(
   );
   const pushMissing = providers.filter((provider) => !hasHealthyPush(provider));
   const payoutSetup = providers.filter(providerPayoutSetupNeedsReview);
-  const securityRisk = providers.filter((provider) =>
+  const accountControlFollowUp = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   );
   const publicMedia = providers.filter(providerPublicMediaNeedsReview);
@@ -2931,15 +2931,15 @@ function buildPartnerShiftHandoff(
           samples: partnerSampleNames(payoutSetup),
         }
       : null,
-    securityRisk.length
+    accountControlFollowUp.length
       ? {
           title: 'Review device or account controls before dispatch',
           scope: 'Control gate',
-          detail: `${securityRisk.length} partner(s) have blocked devices, session checks, shared devices, or account block state.`,
+          detail: `${accountControlFollowUp.length} partner(s) have blocked devices, session checks, shared devices, or account block state.`,
           operatorAction: 'Open partner control history before relying on them for customer bookings.',
           href: '/partners?review=security',
           tone: 'danger' as const,
-          samples: partnerSampleNames(securityRisk),
+          samples: partnerSampleNames(accountControlFollowUp),
         }
       : null,
     locationRefresh.length
@@ -2995,7 +2995,7 @@ function buildPartnerShiftHandoff(
     actions.find((item) => item.tone === 'warn') ??
     actions[0];
   const tone =
-    cashDebt.length || securityRisk.length
+    cashDebt.length || accountControlFollowUp.length
       ? 'danger'
       : hardBlocked.length || readyKyc.length || payoutSetup.length
         ? 'warn'
@@ -3356,7 +3356,7 @@ function buildPartnerDispatchForecast(
   ).length;
   const pushMissing = providers.filter((provider) => !hasHealthyPush(provider)).length;
   const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
-  const securityRisk = providers.filter((provider) =>
+  const deviceSessionFollowUp = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const hardBlocked = providers.filter((provider) => partnerHasHardAcceptanceBlocker(provider)).length;
@@ -3447,10 +3447,10 @@ function buildPartnerDispatchForecast(
       },
       {
         label: 'Device/session review',
-        count: securityRisk,
+        count: deviceSessionFollowUp,
         detail: 'Blocked, shared, checked, or account-blocked partner devices/sessions.',
         href: '/partners?review=security',
-        tone: securityRisk > 0 ? 'danger' : 'ok',
+        tone: deviceSessionFollowUp > 0 ? 'danger' : 'ok',
       },
     ],
     supplyLanes: buildPartnerSupplyLanes(providers, opsPolicy),
@@ -3780,7 +3780,7 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
   const payoutSetupReview = providers.filter(providerPayoutSetupNeedsReview).length;
   const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const openControlItems = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
-  const deviceRisk = providers.filter((provider) =>
+  const deviceFollowUp = providers.filter((provider) =>
     ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const readyNow = providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length;
@@ -3798,7 +3798,7 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
     ['First earning setup', payoutSetupReview.toString()],
     ['Wallet debt', walletDebt.toString()],
     ['Open reports', openControlItems.toString()],
-    ['Device checks', deviceRisk.toString()],
+    ['Device checks', deviceFollowUp.toString()],
     ['Ready for dispatch', readyNow.toString()],
   ] as const;
 }
