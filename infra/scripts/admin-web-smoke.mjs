@@ -454,6 +454,7 @@ if (bookingLinkMatch) {
     'Closeout readiness',
     'Operating timeline',
     'Chat lifecycle and retention',
+    'Service pricing snapshot',
     'Open customer record',
     'Open partner record',
     'Booking stage snapshot',

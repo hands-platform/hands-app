@@ -86,6 +86,7 @@ Admin dashboard:
 - Booking monitor with matching stages, first-pick, backup, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, payment, finance, tax, wallet, location, alerts, and audit evidence into the deeper factual sections.
 - Booking detail now includes closeout readiness checks for customer/address, partner choice, chat archive, payment state, finance ledger, cash settlement, location, and audit evidence.
+- Booking detail now includes a service pricing snapshot for selected service duration, customer price, partner payout, HANDS fee, tax/withholding, and wallet impact.
 - Customer list and customer detail with activity, booking history, chat history, wallet/payment context, addresses, app sessions, notes, exports.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
 - Customer and partner pages are intentionally factual: they show IDs, contact, joined/recent access dates, completed work, booking/payment/chat/activity records, and operator notes without customer or partner scoring.

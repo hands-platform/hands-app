@@ -71,6 +71,46 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
+  const servicePricingSnapshotRows = [
+    {
+      label: 'Service option',
+      value: financeTrace.serviceOption,
+      helper: 'Booked service name, duration option, and quantity snapshot.',
+    },
+    {
+      label: 'Customer price',
+      value: financeTrace.customerPrice,
+      helper: `Admin minimum ${financeTrace.adminMinimum}; partner price must follow the configured step.`,
+    },
+    {
+      label: 'Payout rule',
+      value: financeTrace.payoutRuleStatus,
+      helper: financeTrace.payoutRuleLine,
+    },
+    {
+      label: 'Partner payout',
+      value: financeTrace.providerPayout,
+      helper: financeTrace.providerNet,
+    },
+    {
+      label: 'HANDS fee',
+      value: financeTrace.platformFee,
+      helper: `${financeTrace.feeCosts}; net ${financeTrace.netHandsFee}`,
+    },
+    {
+      label: 'Tax and withholding',
+      value: financeTrace.withholding,
+      helper: `Company fee after tax: ${financeTrace.companyFeeAfterTax}`,
+    },
+    {
+      label: 'Wallet impact',
+      value: financeTrace.walletLedger,
+      helper:
+        financeTrace.paymentMethod === 'CASH'
+          ? 'Cash bookings can create partner fee debt until settled.'
+          : 'Non-cash bookings should create a payout credit after completion.',
+    },
+  ];
   const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
   const backupSupply = bookingBackupPartnerSupply(booking, providers, operationalPolicies);
   const customerWaitPanel = bookingCustomerWaitPanel(booking, backupSupply, operationalPolicies);
@@ -1024,6 +1064,30 @@ export default async function BookingDetailPage({ params }: PageProps) {
             Customer charge, payout rule, earning, and wallet impact are aligned for this booking.
           </p>
         )}
+      </section>
+
+      <section className="card" id="service-pricing-snapshot" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Service pricing snapshot</h2>
+            <p className="muted">
+              Booking-level price evidence for the selected service duration, partner payout, platform fee,
+              tax, and wallet impact.
+            </p>
+          </div>
+          <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
+            {financeFlags.length ? `${financeFlags.length} pricing check(s)` : 'Pricing aligned'}
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {servicePricingSnapshotRows.map((row) => (
+            <div key={row.label}>
+              <span>{row.label}</span>
+              <strong>{row.value}</strong>
+              <small>{row.helper}</small>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
