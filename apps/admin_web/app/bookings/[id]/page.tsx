@@ -299,8 +299,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Operator command queue</h2>
             <p className="muted">
-              Practical same-shift actions for this booking. These are factual handling steps, not customer or
-              partner scoring.
+              Practical same-shift actions for this booking. These are factual handling steps for operators.
             </p>
           </div>
           <span className={`pill ${operatorCommandQueue.tone}`}>{operatorCommandQueue.status}</span>
@@ -1695,7 +1694,7 @@ function bookingOperatorCommandQueue({
     add({
       id: 'matching-watch',
       label: 'MATCH',
-      title: 'Watch customer choice',
+      title: 'Monitor customer choice',
       detail: `${booking.participants?.length ?? 0} partner(s) are in the shortlist. Customer still chooses the final partner.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
@@ -1885,7 +1884,7 @@ function bookingOperatorCommandQueue({
     {
       label: 'Attention flags',
       value: String(attentionFlags.length),
-      helper: 'Factual checks only; no customer or partner scoring.',
+      helper: 'Factual handling checks only.',
     },
   ];
 
@@ -2600,7 +2599,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
   if (booking.status === 'OPEN_MATCHING') {
     return {
       title: booking.participants?.length
-        ? 'Watch customer final selection'
+        ? 'Monitor customer final selection'
         : 'Monitor partner participation',
       detail: booking.participants?.length
         ? 'Accepted partners should be visible to the customer so the customer can choose the final partner.'
@@ -3052,7 +3051,7 @@ type AttentionFlag = {
 };
 
 type DispatchStep = {
-  priority: 'Now' | 'Watch' | 'Done';
+  priority: 'Now' | 'Monitor' | 'Done';
   title: string;
   detail: string;
   owner: string;
@@ -3103,7 +3102,7 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
     return 'Monitor partner response speed and fallback supply. Customer is still waiting.';
   }
   if (booking.status === 'MATCHED') {
-    return 'Partner is selected. Watch chat readiness, location sharing, and arrival progression.';
+    return 'Partner is selected. Monitor chat readiness, location sharing, and arrival progression.';
   }
   if (booking.chatRoom && booking.status === 'IN_SERVICE') {
     return 'Service is live. Keep chat and location visible until completion.';
@@ -3249,7 +3248,7 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
       severity: 'medium',
       title: 'No partner supply',
       detail: 'No partner has joined the request yet.',
-      action: 'Watch nearby online partners and consider operational outreach.',
+      action: 'Check nearby online partners and consider operational outreach.',
     });
   }
 
@@ -3323,7 +3322,7 @@ function attentionLevel(flags: AttentionFlag[]) {
     return { label: 'Action', helper: `${flags.length} check(s) need attention`, tone: 'pill-danger' };
   }
   if (flags.some((flag) => flag.severity === 'medium')) {
-    return { label: 'Watch', helper: `${flags.length} check(s) to watch`, tone: 'pill-warn' };
+    return { label: 'Monitor', helper: `${flags.length} check(s) to monitor`, tone: 'pill-warn' };
   }
   if (flags.some((flag) => flag.severity === 'low')) {
     return { label: 'Note', helper: `${flags.length} note check(s)`, tone: 'pill-info' };
@@ -3336,7 +3335,7 @@ function checkSeverityLabel(severity: AttentionFlag['severity']) {
     return 'Action';
   }
   if (severity === 'medium') {
-    return 'Watch';
+    return 'Monitor';
   }
   return 'Note';
 }
@@ -3405,8 +3404,8 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
 
   if (booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0) {
     steps.push({
-      priority: 'Watch',
-      title: 'Supply watch',
+      priority: 'Monitor',
+      title: 'Supply monitor',
       detail: 'No partner has joined yet. Keep partner availability and notification delivery visible.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
@@ -3443,7 +3442,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     latestProviderLocationFreshness(booking) !== 'recent'
   ) {
     steps.push({
-      priority: 'Watch',
+      priority: 'Monitor',
       title: 'Refresh stale location',
       detail: `${providerLocationMetricHelper(booking)}. Ask the partner to share current location again if the customer asks.`,
       owner: 'Dispatch operator',
@@ -3459,7 +3458,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
   ) {
     steps.push({
-      priority: 'Watch',
+      priority: 'Monitor',
       title: 'First chat contact',
       detail: 'Chat is ready but quiet. Monitor for first contact if the customer reports uncertainty.',
       owner: 'Customer support',
@@ -3491,7 +3490,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
 
   if (booking.payment) {
     steps.push({
-      priority: isTerminalPayment(booking.payment.status) ? 'Done' : 'Watch',
+      priority: isTerminalPayment(booking.payment.status) ? 'Done' : 'Monitor',
       title: 'Payment state',
       detail: paymentHint(booking),
       owner: 'Payments operator',
@@ -3680,7 +3679,7 @@ function bookingStatusHint(status: string) {
     return 'Partner response or customer selection is still pending.';
   }
   if (status === 'MATCHED') {
-    return 'Partner is selected; watch chat and movement.';
+    return 'Partner is selected; monitor chat and movement.';
   }
   if (status === 'IN_SERVICE') {
     return 'Service is in progress.';
@@ -4549,7 +4548,7 @@ function bookingCustomerWaitPanel(
     signalStatus = 'First-pick wait';
     signalTone = 'pill-info';
     headline = 'Preferred partner still has the first response window.';
-    detail = `Watch ${providerName(firstPick)} for up to ${responseWindowMinutes} minutes while backup supply stays visible to operators.`;
+    detail = `Monitor ${providerName(firstPick)} for up to ${responseWindowMinutes} minutes while backup supply stays visible to operators.`;
   } else if (selected && booking.chatRoom) {
     signalStatus = 'Chat ready';
     signalTone = 'pill-success';
@@ -4753,7 +4752,7 @@ function bookingStageSnapshot(
     actionHref = customerPinReady
       ? `/bookings/${booking.id}#participants`
       : `/bookings/${booking.id}#customer`;
-    actionLabel = customerPinReady ? 'Watch first-pick' : 'Fix customer pin';
+    actionLabel = customerPinReady ? 'Monitor first-pick' : 'Fix customer pin';
   }
 
   return {
