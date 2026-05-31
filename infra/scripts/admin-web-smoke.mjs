@@ -134,6 +134,7 @@ const pages = [
     markers: [
       'Operations Handoff',
       'Immediate action queue',
+      'Unified activity stream',
       'Shift brief',
       'Latest operator notes',
       'Booking handoff queue',

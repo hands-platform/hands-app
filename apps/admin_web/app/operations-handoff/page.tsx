@@ -3,6 +3,7 @@ import {
   AdminAppSession,
   AdminAuditLog,
   AdminBooking,
+  AdminBookingDetail,
   AdminCashSettlementSummary,
   AdminCustomer,
   AdminEarning,
@@ -39,7 +40,7 @@ function emptyCashSettlementSummary(): AdminCashSettlementSummary {
 }
 
 export default async function OperationsHandoffPage() {
-  const [bookings, customers, partners, earnings, notifications, sessions, auditLogs, cashSummary] =
+  const [bookings, customers, partners, earnings, notifications, sessions, auditLogs, cashSummary, chatArchive] =
     await Promise.all([
       adminGet<AdminBooking[]>('/admin/bookings', []),
       adminGet<AdminCustomer[]>('/admin/customers', []),
@@ -49,6 +50,7 @@ export default async function OperationsHandoffPage() {
       adminGet<AdminAppSession[]>('/admin/app-sessions', []),
       adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
       adminGet<AdminCashSettlementSummary>('/admin/cash-settlement-summary', emptyCashSettlementSummary()),
+      adminGet<AdminBookingDetail[]>('/admin/chat-archive', []),
     ]);
 
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
@@ -72,6 +74,13 @@ export default async function OperationsHandoffPage() {
     cashSummary,
     partnerSignals,
     operatorNotes,
+    financeRows,
+  });
+  const activityStream = buildUnifiedActivityStream({
+    bookings,
+    chatArchive,
+    auditLogs,
+    notifications,
     financeRows,
   });
 
@@ -172,6 +181,65 @@ export default async function OperationsHandoffPage() {
             {operatorNotes.length === 0 ? <p className="muted">No operator note has been written yet.</p> : null}
           </div>
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="toolbar">
+          <div>
+            <h2>Unified activity stream</h2>
+            <p className="muted">
+              Recent booking movement, chat archive messages, operator notes, notification failures, and
+              finance rows in one chronological trail.
+            </p>
+          </div>
+          <div className="actions">
+            <Link className="text-link" href="/audit-log">
+              Audit trail
+            </Link>
+            <Link className="text-link" href="/chat-archive">
+              Chat archive
+            </Link>
+          </div>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Area</th>
+              <th>Record</th>
+              <th>Summary</th>
+              <th>Continue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activityStream.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  <div>{relativeTime(item.createdAt)}</div>
+                  <small className="muted">{new Date(item.createdAt).toLocaleString()}</small>
+                </td>
+                <td>
+                  <span className={item.className}>{item.area}</span>
+                </td>
+                <td>
+                  <div>{item.record}</div>
+                  <small className="muted">{item.source}</small>
+                </td>
+                <td>{item.summary}</td>
+                <td>
+                  <Link className="text-link" href={item.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+            {activityStream.length === 0 ? (
+              <tr>
+                <td colSpan={5}>No recent activity stream rows.</td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -486,6 +554,118 @@ function buildImmediateActionQueue(input: {
   });
 }
 
+function buildUnifiedActivityStream(input: {
+  bookings: AdminBooking[];
+  chatArchive: AdminBookingDetail[];
+  auditLogs: AdminAuditLog[];
+  notifications: AdminNotification[];
+  financeRows: ReturnType<typeof buildFinanceRows>;
+}) {
+  const bookingRows = input.bookings.slice(0, 25).map((booking) => ({
+    id: `booking-${booking.id}`,
+    area: 'Booking',
+    source: booking.status,
+    record: shortId(booking.id),
+    summary: bookingActivitySummary(booking),
+    href: `/bookings/${booking.id}`,
+    className: bookingStatusClass(booking.status),
+    createdAt: booking.updatedAt ?? booking.createdAt ?? new Date(0).toISOString(),
+  }));
+
+  const chatRows = input.chatArchive.flatMap((booking) =>
+    ((booking.chatRoom as { messages?: Array<{ id: string; body: string; createdAt: string; sender?: { fullName?: string | null; phone?: string | null; roles?: string[] } }> } | null)?.messages ?? [])
+      .slice(-5)
+      .map((message) => ({
+        id: `chat-${message.id}`,
+        area: 'Chat',
+        source: message.sender?.roles?.includes('PROVIDER') ? 'Partner message' : 'Customer/admin message',
+        record: `Room ${shortId(booking.chatRoom?.id)}`,
+        summary: `${message.sender?.fullName ?? message.sender?.phone ?? 'User'}: ${trimText(message.body, 110)}`,
+        href: `/bookings/${booking.id}`,
+        className: 'pill pill-info',
+        createdAt: message.createdAt,
+      })),
+  );
+
+  const auditRows = input.auditLogs.slice(0, 30).map((log) => ({
+    id: `audit-${log.id}`,
+    area: 'Ops note',
+    source: log.actor?.fullName ?? log.actor?.phone ?? 'System',
+    record: shortTarget(log.target),
+    summary: auditActivitySummary(log),
+    href: relatedHref(log),
+    className: log.action.endsWith('.ops_note.add') ? 'pill pill-info' : 'pill',
+    createdAt: log.createdAt,
+  }));
+
+  const notificationRows = input.notifications
+    .filter((notification) => (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'))
+    .slice(0, 20)
+    .map((notification) => ({
+      id: `notification-${notification.id}`,
+      area: 'Notification',
+      source: notification.type,
+      record: shortId(notification.id),
+      summary: `${notification.title}: ${trimText(notification.body, 100)}`,
+      href: '/notifications?review=failed',
+      className: 'pill pill-warn',
+      createdAt: notification.createdAt,
+    }));
+
+  const financeRows = input.financeRows.slice(0, 20).map((row) => ({
+    id: `finance-${row.id}`,
+    area: 'Finance',
+    source: row.status,
+    record: shortId(row.bookingId),
+    summary: `${row.partnerName} / wallet effect ${formatMoney(row.netAmount, row.currency)} / fee ${formatMoney(
+      row.platformFee,
+      row.currency,
+    )}`,
+    href: row.netAmount < 0 ? '/cash-settlements' : `/bookings/${row.bookingId}`,
+    className: row.statusClass,
+    createdAt: row.createdAt ?? new Date(0).toISOString(),
+  }));
+
+  return [...bookingRows, ...chatRows, ...auditRows, ...notificationRows, ...financeRows]
+    .filter((item) => dateValue(item.createdAt) > 0)
+    .sort((a, b) => dateValue(b.createdAt) - dateValue(a.createdAt))
+    .slice(0, 40);
+}
+
+function bookingActivitySummary(booking: AdminBooking) {
+  const customer = booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
+  const partner =
+    booking.selectedProvider?.displayName ??
+    booking.preferredProvider?.displayName ??
+    participantNames(booking).join(', ') ??
+    'No partner yet';
+  const payment = booking.payment
+    ? `${booking.payment.method} ${booking.payment.status} ${formatMoney(booking.payment.amount, booking.payment.currency ?? 'VND')}`
+    : 'No payment row';
+  return `${customer} / ${partner} / ${payment}`;
+}
+
+function auditActivitySummary(log: AdminAuditLog) {
+  const metadata = asRecord(log.metadata);
+  const note =
+    stringValue(metadata.note) ??
+    stringValue(metadata.preset) ??
+    stringValue(metadata.reason) ??
+    stringValue(metadata.status);
+  return note ? trimText(note, 140) : humanizeAction(log.action);
+}
+
+function shortTarget(target?: string | null) {
+  if (!target) return '-';
+  const [kind, id] = target.split(':');
+  return id ? `${kind}:${shortId(id)}` : shortId(target);
+}
+
+function trimText(value: string, maxLength: number) {
+  if (value.length <= maxLength) return value;
+  return `${value.slice(0, Math.max(0, maxLength - 1)).trim()}...`;
+}
+
 function MetricCard({
   label,
   value,
@@ -646,6 +826,7 @@ function buildFinanceRows(earnings: AdminEarning[]) {
       netAmount: earning.netAmount,
       currency: earning.currency,
       status: earning.status,
+      createdAt: earning.createdAt,
       statusClass: earning.netAmount < 0 ? 'pill pill-danger' : earning.status === 'AVAILABLE' ? 'pill pill-info' : 'pill pill-warn',
     }));
 }
