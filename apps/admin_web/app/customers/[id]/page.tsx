@@ -220,9 +220,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer operator command queue</h2>
             <p className="muted">
-              Next factual actions for the customer desk. This queue does not rank or score customers; it
-              only points operators to live bookings, chat archives, payment rows, saved locations, devices,
-              and staff notes that may need follow-up.
+              Next factual actions for the customer desk. This queue only points operators to live bookings,
+              chat archives, payment rows, saved locations, devices, and staff notes that may need follow-up.
             </p>
           </div>
           <span className={`pill ${customerSupportPillClass(customerOperatorCommandQueue.tone)}`}>
@@ -306,7 +305,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <h2>Customer operating ledger</h2>
             <p className="muted">
               Compact factual ledger for account, booking work, chat archive, payment, wallet, address,
-              app device, notification, and operator history. No customer score is calculated here.
+              app device, notification, and operator history. This ledger is factual history only.
             </p>
           </div>
           <span className="pill pill-info">{customerOperatingLedger.length} record areas</span>
@@ -659,6 +658,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   <strong>
                     {booking.chatRoom ? `${booking.chatRoom.messages?.length ?? 0} messages` : 'No room'}
                   </strong>
+                  <p className="muted">{bookingChatArchiveLabel(booking)}</p>
                 </td>
                 <td>
                   <Link className="text-link" href={`/bookings/${booking.id}`}>
@@ -1104,7 +1104,7 @@ function buildCustomerOperatorCommandQueue({
       label: 'Refund record',
       title: 'Refund or release history exists',
       detail:
-        'Open the refund desk before answering customer payment questions. Refund records are factual history, not a customer rating.',
+        'Open the refund desk before answering customer payment questions. Refund records are factual history only.',
       owner: 'Payments',
       tone: 'info',
       action: { type: 'link', href: '/refunds', label: 'Open refunds' },
@@ -1319,7 +1319,7 @@ function buildCustomerAccountFacts(
     {
       label: 'Frequently used service',
       value: frequentService ?? 'Not enough bookings',
-      helper: 'Calculated from loaded booking history, not a customer score',
+      helper: 'Calculated from loaded booking history only',
     },
     {
       label: 'Preferred partner',
@@ -1515,7 +1515,7 @@ function buildCustomerActivityPlan(
     headline: activityFacts.length > 0 ? activityFacts.join(' / ') : 'No customer booking activity yet.',
     detail:
       activityFacts.length > 0
-        ? 'Use this panel to leave factual notes for the next operator. No customer ranking is calculated here.'
+        ? 'Use this panel to leave factual notes for the next operator.'
         : 'When this customer books, the profile, booking, payment, chat archive, and address records will appear here.',
     primaryHref,
     primaryAction,
@@ -1960,6 +1960,20 @@ function bookingStatusOperatorHint(booking: AdminBookingDetail) {
   if (booking.status === 'NO_SHOW') return 'No-show record';
   if (['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(booking.status)) return 'Closed booking record';
   return 'Historical row';
+}
+
+function bookingChatArchiveLabel(booking: AdminBookingDetail) {
+  if (booking.chatRoom) {
+    if (booking.status === 'COMPLETED') return 'Archived for admin after completion';
+    if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+      return 'Live customer-partner room';
+    }
+    return 'Chat room retained';
+  }
+  if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status)) {
+    return 'Follow up: matched bookings should have chat';
+  }
+  return 'No match chat yet';
 }
 
 function bookingStatusPillClass(status: string) {
