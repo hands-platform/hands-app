@@ -82,6 +82,10 @@ type PartnerDetailBooking = {
   scheduledEndAt?: string;
   createdAt?: string;
   address?: unknown;
+  closedAt?: string | null;
+  closedByRole?: string | null;
+  closedReason?: string | null;
+  closedNote?: string | null;
   customerProfile?: {
     user?: { phone?: string | null; fullName?: string | null } | null;
   } | null;
@@ -120,6 +124,7 @@ const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_rad
 const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
+const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10_000,
@@ -704,6 +709,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     {' / '}
                     participants {record.booking.participants?.length ?? 0}
                   </p>
+                  {isClosedPartnerBooking(record.booking) ? (
+                    <p className="muted">
+                      Closed {formatDate(record.booking.closedAt)} / {bookingClosureLabel(record.booking)}
+                    </p>
+                  ) : null}
                   <p className="muted">
                     Chat {record.booking.chatRoom?.id ?? 'not created'} / messages{' '}
                     {record.booking.chatRoom?.messages?.length ?? 0}
@@ -2666,8 +2676,17 @@ function buildPartnerActivityRecords(
       title: `${bookingRecord.relation} booking ${shortRiskId(bookingRecord.booking.id)}`,
       detail: `${bookingServiceLabel(bookingRecord.booking)} / ${bookingRecord.booking.status ?? 'UNKNOWN'} / customer ${partnerBookingCustomer(
         bookingRecord.booking,
-      )}`,
+      )}${isClosedPartnerBooking(bookingRecord.booking) ? ` / ${bookingClosureLabel(bookingRecord.booking)}` : ''}`,
     });
+    if (isClosedPartnerBooking(bookingRecord.booking) && bookingRecord.booking.closedAt) {
+      records.push({
+        id: `${bookingRecord.booking.id}-closure`,
+        type: 'BOOKING',
+        at: bookingRecord.booking.closedAt,
+        title: `Booking closed ${shortRiskId(bookingRecord.booking.id)}`,
+        detail: bookingClosureLabel(bookingRecord.booking),
+      });
+    }
     if (bookingRecord.booking.chatRoom?.messages?.[0]) {
       const message = bookingRecord.booking.chatRoom.messages[0];
       records.push({
@@ -3388,6 +3407,24 @@ function partnerBookingCustomer(booking: PartnerDetailBooking) {
   return (
     booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Unknown customer'
   );
+}
+
+function isClosedPartnerBooking(booking: PartnerDetailBooking) {
+  return CLOSED_BOOKING_STATUSES.includes(booking.status ?? '');
+}
+
+function bookingClosureLabel(booking: PartnerDetailBooking) {
+  const actor =
+    booking.closedByRole === 'CUSTOMER'
+      ? 'customer'
+      : booking.closedByRole === 'PROVIDER'
+        ? 'partner'
+        : booking.closedByRole === 'ADMIN'
+          ? 'admin'
+          : 'system';
+  const reason = booking.closedReason ? booking.closedReason.replace(/_/g, ' ') : 'no reason saved';
+  const note = booking.closedNote ? ` / ${trimText(booking.closedNote, 90)}` : '';
+  return `${actor} closure / ${reason}${note}`;
 }
 
 function trimText(value: string, maxLength: number) {
