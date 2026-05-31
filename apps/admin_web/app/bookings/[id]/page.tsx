@@ -156,7 +156,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       area: 'Partner',
       status: finalProvider?.id ? 'Linked' : 'Not selected',
-      evidence: finalProvider ? providerName(finalProvider) : `${booking.participants?.length ?? 0} shortlist participant(s)`,
+      evidence: finalProvider
+        ? providerName(finalProvider)
+        : `${booking.participants?.length ?? 0} shortlist participant(s)`,
       href: '#handoff',
     },
     {
@@ -285,7 +287,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
           value={providerLocationMetricValue(booking)}
           helper={providerLocationMetricHelper(booking)}
         />
-        <MetricCard label="Attention checks" value={attentionSummary.label} helper={attentionSummary.helper} />
+        <MetricCard
+          label="Attention checks"
+          value={attentionSummary.label}
+          helper={attentionSummary.helper}
+        />
       </section>
 
       <section className="card" id="operator-command-queue" style={{ marginBottom: 16 }}>
@@ -474,6 +480,50 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className="risk-watch-header">
+            <div>
+              <strong>Closeout exception register</strong>
+              <p className="muted">
+                Only unresolved factual items appear here, so the operator can clear the booking without
+                hunting through every section.
+              </p>
+            </div>
+            <span className={`pill ${closeoutReadiness.openItems.length > 0 ? 'pill-warn' : 'pill-success'}`}>
+              {closeoutReadiness.openItems.length > 0
+                ? `${closeoutReadiness.openItems.length} open`
+                : 'No exceptions'}
+            </span>
+          </div>
+          {closeoutReadiness.openItems.length > 0 ? (
+            <div className="setup-stage-list" style={{ marginTop: 12 }}>
+              {closeoutReadiness.openItems.map((item) => (
+                <div className="setup-stage-item" key={`exception-${item.id}`}>
+                  <span>{item.owner}</span>
+                  <div>
+                    <strong>
+                      {item.label}: {item.status}
+                    </strong>
+                    <p className="muted">{item.detail}</p>
+                    <small>
+                      {booking.status === 'COMPLETED'
+                        ? 'Clear before completed closeout.'
+                        : 'Clear before the next handoff.'}
+                    </small>
+                  </div>
+                  <a className="text-link" href={item.href}>
+                    Resolve
+                  </a>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="muted" style={{ marginTop: 10 }}>
+              Customer, partner, chat, payment, finance, cash, location, and audit records are aligned for the
+              current booking stage.
+            </p>
+          )}
+        </div>
       </section>
 
       <section className="card" id="operating-snapshot" style={{ marginBottom: 16 }}>
@@ -481,8 +531,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Booking operating snapshot</h2>
             <p className="muted">
-              Same-shift control view for the confirmed address, customer choice, partner participation,
-              chat, payment, wallet, and next operator action.
+              Same-shift control view for the confirmed address, customer choice, partner participation, chat,
+              payment, wallet, and next operator action.
             </p>
           </div>
           <span className={`pill ${operatingSnapshot.tone}`}>{operatingSnapshot.status}</span>
@@ -1658,7 +1708,8 @@ function bookingOperatorCommandQueue({
       id: 'partner-supply',
       label: 'SUPPLY',
       title: 'Check nearby partner supply',
-      detail: 'No partner has joined yet. Review backup candidates and notification delivery before widening operations policy.',
+      detail:
+        'No partner has joined yet. Review backup candidates and notification delivery before widening operations policy.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#backup-supply', label: 'Open supply' },
@@ -1670,7 +1721,8 @@ function bookingOperatorCommandQueue({
       id: 'chat-repair',
       label: 'CHAT',
       title: 'Repair chat handoff',
-      detail: 'A matched or active booking should have a retained chat room for customer support and admin review.',
+      detail:
+        'A matched or active booking should have a retained chat room for customer support and admin review.',
       owner: 'Support operator',
       tone: 'pill-danger',
       action: { type: 'link', href: '/bookings?view=chat-repair', label: 'Open queue' },
@@ -1680,7 +1732,8 @@ function bookingOperatorCommandQueue({
       id: 'chat-first-contact',
       label: 'CHAT',
       title: 'Monitor first chat contact',
-      detail: 'Chat is ready but no message has been sent yet. Add a note if either side reports uncertainty.',
+      detail:
+        'Chat is ready but no message has been sent yet. Add a note if either side reports uncertainty.',
       owner: 'Support operator',
       tone: 'pill-info',
       action: {
@@ -1742,7 +1795,8 @@ function bookingOperatorCommandQueue({
       id: 'completed-closeout',
       label: 'CLOSE',
       title: 'Reconcile completed booking',
-      detail: 'Ensure capture, earning, tax, platform fee, and wallet ledger records exist before leaving the booking.',
+      detail:
+        'Ensure capture, earning, tax, platform fee, and wallet ledger records exist before leaving the booking.',
       owner: 'Finance operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#completed-closeout', label: 'Open closeout' },
@@ -1766,7 +1820,8 @@ function bookingOperatorCommandQueue({
       id: 'no-show-option',
       label: 'NO-SHOW',
       title: 'No-show action available',
-      detail: 'Use only after confirming the customer or partner did not proceed and communication is retained.',
+      detail:
+        'Use only after confirming the customer or partner did not proceed and communication is retained.',
       owner: 'Support operator',
       tone: 'pill-neutral',
       action: { type: 'link', href: '#no-show-handling', label: 'Open action' },
@@ -1796,7 +1851,8 @@ function bookingOperatorCommandQueue({
       id: 'normal-monitoring',
       label: 'OK',
       title: 'Normal monitoring',
-      detail: 'No immediate operator action is active. Keep the record visible until the next booking transition.',
+      detail:
+        'No immediate operator action is active. Keep the record visible until the next booking transition.',
       owner: 'Operations',
       tone: 'pill-success',
       action: {
@@ -1807,7 +1863,9 @@ function bookingOperatorCommandQueue({
     });
   }
 
-  const urgentCount = commands.filter((command) => command.tone === 'pill-danger' || command.tone === 'pill-warn').length;
+  const urgentCount = commands.filter(
+    (command) => command.tone === 'pill-danger' || command.tone === 'pill-warn',
+  ).length;
   const labels = [
     {
       label: 'Active commands',
@@ -1921,17 +1979,20 @@ function bookingCloseoutReadiness({
   messageCount: number;
   notificationCount: number;
 }) {
-  const terminalStatus = ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(booking.status);
+  const terminalStatus = ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(
+    booking.status,
+  );
   const activeStatus = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
   const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
-  const hasAddress = Boolean(booking.addressSnapshot) || (booking.lat !== undefined && booking.lng !== undefined);
+  const hasAddress =
+    Boolean(booking.addressSnapshot) || (booking.lat !== undefined && booking.lng !== undefined);
   const hasFinanceCloseout =
     booking.status !== 'COMPLETED' ||
     Boolean(
       booking.earning &&
-        (booking.earning.taxLogs?.length ?? booking.taxLogs?.length ?? 0) > 0 &&
-        (booking.earning.platformFeeLogs?.length ?? booking.platformFeeLogs?.length ?? 0) > 0 &&
-        (booking.earning.walletLedgerEntries?.length ?? booking.walletLedgerEntries?.length ?? 0) > 0,
+      (booking.earning.taxLogs?.length ?? booking.taxLogs?.length ?? 0) > 0 &&
+      (booking.earning.platformFeeLogs?.length ?? booking.platformFeeLogs?.length ?? 0) > 0 &&
+      (booking.earning.walletLedgerEntries?.length ?? booking.walletLedgerEntries?.length ?? 0) > 0,
     );
   const paymentNeedsRelease = ['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status);
   const paymentReady =
@@ -1955,7 +2016,10 @@ function bookingCloseoutReadiness({
     {
       id: 'customer-record',
       label: 'Customer',
-      status: booking.customerProfile?.id && hasAddress ? 'Customer and address linked' : 'Customer/address needs review',
+      status:
+        booking.customerProfile?.id && hasAddress
+          ? 'Customer and address linked'
+          : 'Customer/address needs review',
       detail: `${booking.customerProfile?.user?.fullName ?? 'Customer'} / ${
         booking.customerProfile?.user?.phone ?? 'No phone'
       } / ${hasAddress ? bookingAddressSnapshotLabel(booking) : 'No service address snapshot'}`,
@@ -2068,6 +2132,7 @@ function bookingCloseoutReadiness({
         ? 'All factual records needed for this booking stage are aligned.'
         : `${openItems.map((item) => item.label).join(', ')} should be checked before the next handoff or closeout.`,
     items,
+    openItems,
   };
 }
 
@@ -2526,14 +2591,17 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
   if (bookingCashDebtNeedsSettlement(booking)) {
     return {
       title: 'Settle cash fee debt',
-      detail: 'Partner collected cash. Confirm company fee deposit or admin offset before unlocking future accepted work.',
+      detail:
+        'Partner collected cash. Confirm company fee deposit or admin offset before unlocking future accepted work.',
       href: '#finance',
       hrefLabel: 'Open finance',
     };
   }
   if (booking.status === 'OPEN_MATCHING') {
     return {
-      title: booking.participants?.length ? 'Watch customer final selection' : 'Monitor partner participation',
+      title: booking.participants?.length
+        ? 'Watch customer final selection'
+        : 'Monitor partner participation',
       detail: booking.participants?.length
         ? 'Accepted partners should be visible to the customer so the customer can choose the final partner.'
         : 'Keep the first-pick window and marketplace participation visible until a partner joins or the booking expires.',
@@ -2717,7 +2785,9 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
         at: participant.respondedAt,
         title: `${providerName(participant.providerProfile)} responded`,
         detail: `${participant.status} / customer can select from accepted partners.`,
-        href: participant.providerProfile?.id ? `/partners/${participant.providerProfile.id}` : '#participants',
+        href: participant.providerProfile?.id
+          ? `/partners/${participant.providerProfile.id}`
+          : '#participants',
       });
     }
   }
@@ -2995,7 +3065,9 @@ function AttentionItem({ flag }: { flag: AttentionFlag }) {
   return (
     <div className={`risk-item risk-${flag.severity}`}>
       <div>
-        <span className={`pill ${attentionToneClass(flag.severity)}`}>{checkSeverityLabel(flag.severity)}</span>
+        <span className={`pill ${attentionToneClass(flag.severity)}`}>
+          {checkSeverityLabel(flag.severity)}
+        </span>
         <strong>{flag.title}</strong>
         <p className="muted">{flag.detail}</p>
       </div>
@@ -5579,7 +5651,8 @@ function addressLabel(address: unknown) {
   }
   if (address && typeof address === 'object') {
     const record = address as Record<string, unknown>;
-    const knownText = record.addressText ?? record.address_text ?? record.address ?? record.label ?? record.name;
+    const knownText =
+      record.addressText ?? record.address_text ?? record.address ?? record.label ?? record.name;
     if (typeof knownText === 'string' && knownText.trim()) {
       return knownText.trim();
     }
