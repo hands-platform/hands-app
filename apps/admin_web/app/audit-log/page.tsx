@@ -857,5 +857,5 @@ function auditToneLabel(tone: AuditCommandTone) {
   if (tone === 'ok') {
     return 'Clear';
   }
-  return 'Watch';
+  return 'Monitor';
 }

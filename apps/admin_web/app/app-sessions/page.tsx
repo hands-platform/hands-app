@@ -163,7 +163,7 @@ export default async function AppSessionsPage({
           <div>
             <h2>Session check queue</h2>
             <p className="muted">
-              Watch old app versions, stale sessions, missing push readiness, and duplicate device usage.
+              Check old app versions, stale sessions, missing push readiness, and duplicate device usage.
             </p>
           </div>
           <span className={`pill ${checkRows.length ? 'pill-warn' : 'pill-success'}`}>
@@ -385,7 +385,7 @@ function buildSessionCommandCards(
       status: liveCustomers.length ? 'ACTIVE' : 'QUIET',
       detail: `${recentCustomers.length} customer session(s) were seen recently but are not live now.`,
       action: liveCustomers.length
-        ? 'Watch matching wait and payment holds'
+        ? 'Check matching wait and payment holds'
         : 'Monitor campaign and support channels',
       tone: liveCustomers.length ? 'ops-task-pending' : 'ops-task-done',
     },

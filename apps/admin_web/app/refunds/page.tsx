@@ -366,7 +366,7 @@ function refundToneLabel(tone: RefundCommandTone) {
   if (tone === 'ok') {
     return 'Clear';
   }
-  return 'Watch';
+  return 'Monitor';
 }
 
 function shortId(value: string) {

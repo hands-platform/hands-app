@@ -488,7 +488,7 @@ function buildImmediateActionQueue(input: {
       href: '/bookings?view=matching',
       count: input.matchingBookings.length,
       countLabel: `${input.matchingBookings.length} booking(s)`,
-      status: input.matchingBookings.length ? 'Watch now' : 'Clear',
+      status: input.matchingBookings.length ? 'Monitor now' : 'Clear',
       nextAction: 'Open the matching board and check partner response, participant list, and customer choice.',
       className: input.matchingBookings.length ? 'signal signal-warn' : 'signal signal-ok',
       statusClass: input.matchingBookings.length ? 'pill pill-warn' : 'pill pill-success',
@@ -515,7 +515,7 @@ function buildImmediateActionQueue(input: {
       count: input.inServiceBookings.length,
       countLabel: `${input.inServiceBookings.length} in service`,
       status: input.inServiceBookings.length ? 'Monitor' : 'Clear',
-      nextAction: 'Watch completion and prepare payment, wallet, and chat archive closeout.',
+      nextAction: 'Track completion and prepare payment, wallet, and chat archive closeout.',
       className: input.inServiceBookings.length ? 'signal signal-info' : 'signal signal-ok',
       statusClass: input.inServiceBookings.length ? 'pill pill-info' : 'pill pill-success',
     },
@@ -950,7 +950,7 @@ function participantNames(booking: AdminBooking) {
 }
 
 function bookingNextAction(booking: AdminBooking) {
-  if (booking.status === 'OPEN_MATCHING') return 'Watch partner response window and customer shortlist.';
+  if (booking.status === 'OPEN_MATCHING') return 'Monitor partner response window and customer shortlist.';
   if (booking.status === 'MATCHED') return 'Confirm partner starts service when ready; chat should be available.';
   if (booking.status === 'IN_SERVICE') return 'Keep chat visible until partner completion.';
   if (booking.status === 'COMPLETED') return 'Check payment, earning, tax, wallet, and chat archive closeout.';

@@ -386,5 +386,5 @@ function campaignToneLabel(tone: CampaignCommandTone) {
   if (tone === 'ok') {
     return 'Clear';
   }
-  return 'Watch';
+  return 'Monitor';
 }

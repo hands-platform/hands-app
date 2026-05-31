@@ -1403,7 +1403,7 @@ function policyRecommendationPosture(
       detail: narrower
         ? 'Fewer partners can join backup matching, so customer alternatives may look empty.'
         : 'More partners can join, but distance and arrival quality need closer monitoring.',
-      operatorAction: `${liveContext} Watch ignored backup alerts and late arrivals by city.`,
+      operatorAction: `${liveContext} Monitor ignored backup alerts and late arrivals by city.`,
       alignedAction:
         'Radius is at the default operating range; keep reviewing city density before making it dynamic.',
       className: narrower ? 'ops-task-blocked' : 'ops-task-pending',
@@ -1421,7 +1421,7 @@ function policyRecommendationPosture(
       detail: looser
         ? 'Backup alerts may reach partners whose last known location is no longer reliable.'
         : 'Only recently refreshed partner locations are eligible for backup alerts and joins.',
-      operatorAction: `${liveContext} Watch partner app location refresh failures before loosening this.`,
+      operatorAction: `${liveContext} Check partner app location refresh failures before loosening this.`,
       alignedAction:
         'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',
       className: looser ? 'ops-task-pending' : 'ops-task-done',
@@ -1575,7 +1575,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
         ? 'Partner booking and marketplace participation alerts are ready to route through OneSignal.'
         : 'Booking notifications are recorded in-app until OneSignal production setup is fully ready.',
       operatorAction: pushReady
-        ? 'Watch delivery failures and disabled devices on the Notifications board.'
+        ? 'Monitor delivery failures and disabled devices on the Notifications board.'
         : 'Keep this until OneSignal and production SMS credentials/monitoring are complete.',
       className: pushReady ? 'ops-task-done' : 'ops-task-pending',
       pillClass: pushReady ? 'pill-success' : 'pill-info',
@@ -3067,7 +3067,7 @@ function buildOwnerDecisionPressure(
   const cards = [
     {
       title: 'First-pick response window',
-      status: waitingFirstPick.length ? 'Watch now' : 'Stable',
+      status: waitingFirstPick.length ? 'Monitor now' : 'Stable',
       detail: waitingFirstPick.length
         ? `${waitingFirstPick.length} open matching booking(s) are waiting on a first-pick partner. ${acceptedButNotFinal.length} already have accepted participants awaiting final customer choice.`
         : 'No open booking is currently waiting on the first-pick response window.',

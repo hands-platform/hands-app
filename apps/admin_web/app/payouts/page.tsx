@@ -1148,7 +1148,7 @@ function opsHint(batch: AdminPayoutBatch) {
     case 'DRAFT':
       return 'Check included earnings, confirm the partner, and release only if totals look right.';
     case 'PROCESSING':
-      return 'Watch for banking confirmation before marking the batch complete.';
+      return 'Check banking confirmation before marking the batch complete.';
     case 'PAID':
       return batch.transferRef
         ? 'Payment already landed. Keep this for reconciliation and support follow-up.'

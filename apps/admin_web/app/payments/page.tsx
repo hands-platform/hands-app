@@ -370,7 +370,7 @@ function paymentOpsSignal(payment: AdminPayment) {
   if (payment.status === 'CAPTURED' || payment.status === 'RELEASED') {
     return <span className="signal signal-ok">Settled</span>;
   }
-  return <span className="signal signal-info">Watch payment</span>;
+  return <span className="signal signal-info">Monitor payment</span>;
 }
 
 function paymentOpsHint(payment: AdminPayment) {

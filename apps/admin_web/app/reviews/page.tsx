@@ -427,7 +427,7 @@ function reviewToneLabel(tone: ReviewCommandTone) {
   if (tone === 'ok') {
     return 'Clear';
   }
-  return 'Watch';
+  return 'Monitor';
 }
 
 function signalClass(review: AdminReview) {
