@@ -667,12 +667,12 @@ export function BookingMonitor({ bookings, initialView }: Props) {
         <table className="table">
           <thead>
             <tr>
-              <th>Booking</th>
-              <th>Stage / Flow</th>
-              <th>Customer</th>
-              <th>Partners</th>
-              <th>Payment</th>
-              <th>Checks</th>
+              <th>Booking / stage</th>
+              <th>Address / customer</th>
+              <th>Customer choice</th>
+              <th>Partner supply</th>
+              <th>Chat / location</th>
+              <th>Payment / wallet</th>
               <th>Ops signal</th>
             </tr>
           </thead>
@@ -685,6 +685,8 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               const pricingPolicy = bookingPricingPolicySignal(booking);
               const matchingPolicy = bookingMatchingPolicySnapshot(booking);
               const stage = bookingListStage(booking, currentTimeMs);
+              const addressState = bookingAddressSnapshotState(booking);
+              const chatState = bookingChatListState(booking);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -701,11 +703,11 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     )}
                     <div className="muted">{formatDate(booking.scheduledStartAt)}</div>
                     <div className="muted">{recencyLabel(booking, nowMs)}</div>
-                  </td>
-                  <td>
-                    <Link className={`pill ${stagePillClass(stage.tone)}`} href={stage.href}>
-                      {stage.label}
-                    </Link>
+                    <div style={{ marginTop: 8 }}>
+                      <Link className={`pill ${stagePillClass(stage.tone)}`} href={stage.href}>
+                        {stage.label}
+                      </Link>
+                    </div>
                     <div className="muted" style={{ marginTop: 8 }}>
                       {stage.detail}
                     </div>
@@ -713,17 +715,36 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div style={{ marginTop: 8 }}>
                       <StatusBadge status={booking.status} />
                     </div>
-                    <div className="muted">Chat {booking.chatRoom ? 'ready' : 'not ready'}</div>
                     <div className="muted">
                       {booking.expiresAt ? `Expires ${formatDate(booking.expiresAt)}` : 'No expiry set'}
                     </div>
                     <div className="muted">{matchingPolicySummaryLabel(matchingPolicy)}</div>
-                    <div className="muted">{customerVisibleStateLabel(booking)}</div>
-                    <div className="muted">{bookingBackupAlertTraceLabel(booking, currentTimeMs)}</div>
                   </td>
                   <td>
-                    {booking.customerProfile?.user?.fullName ?? 'Customer'}
+                    <span className={`pill ${addressState.tone}`}>{addressState.label}</span>
+                    <div className="muted" style={{ marginTop: 8 }}>
+                      {addressState.detail}
+                    </div>
+                    <div className="muted">{addressState.pin}</div>
+                    <div style={{ marginTop: 10 }}>
+                      <strong>{booking.customerProfile?.user?.fullName ?? 'Customer'}</strong>
+                    </div>
                     <div className="muted">{booking.customerProfile?.user?.phone ?? 'No phone'}</div>
+                  </td>
+                  <td>
+                    <span className={`pill ${selectionToneClass(booking)}`}>{selectionLabel(booking)}</span>
+                    <div className="muted" style={{ marginTop: 8 }}>
+                      {customerVisibleStateLabel(booking)}
+                    </div>
+                    <div className="muted">{selectionPathLabel(booking)}</div>
+                    {booking.selectedProvider ? (
+                      <div className="muted">
+                        Final partner: {booking.selectedProvider.displayName ?? 'Partner'}
+                      </div>
+                    ) : (
+                      <div className="muted">Final partner: waiting for customer choice</div>
+                    )}
+                    <div className="muted">{bookingBackupAlertTraceLabel(booking, currentTimeMs)}</div>
                   </td>
                   <td>
                     <strong>{booking.participants?.length ?? 0} joined</strong>
@@ -733,16 +754,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                         ? `First-pick phone ${booking.preferredProvider.user.phone}`
                         : 'First-pick partner not set'}
                     </div>
-                    <div className="muted">{selectionPathLabel(booking)}</div>
-                    <div className="muted">{bookingLocationSignalLabel(booking, currentTimeMs)}</div>
                     <div className="participant-list" style={{ marginTop: 8 }}>
-                      <span className={`pill ${selectionToneClass(booking)}`}>{selectionLabel(booking)}</span>
-                      {booking.chatRoom && <span className="pill pill-success">Chat ready</span>}
                       <span className={`pill ${matchingPolicy ? 'pill-info' : 'pill-warn'}`}>
                         {matchingPolicy ? 'Saved policy' : 'Live fallback'}
-                      </span>
-                      <span className={`pill ${bookingLocationToneClass(booking, currentTimeMs)}`}>
-                        {bookingLocationPillLabel(booking, currentTimeMs)}
                       </span>
                       <span className={`pill ${bookingBackupAlertTraceTone(booking)}`}>
                         {bookingBackupAlertTracePill(booking)}
@@ -777,6 +791,18 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     )}
                   </td>
                   <td>
+                    <span className={`pill ${chatState.tone}`}>{chatState.label}</span>
+                    <div className="muted" style={{ marginTop: 8 }}>
+                      {chatState.detail}
+                    </div>
+                    <div className="muted">{bookingLocationSignalLabel(booking, currentTimeMs)}</div>
+                    <div className="participant-list" style={{ marginTop: 8 }}>
+                      <span className={`pill ${bookingLocationToneClass(booking, currentTimeMs)}`}>
+                        {bookingLocationPillLabel(booking, currentTimeMs)}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
                     {booking.payment?.status ?? 'NONE'}
                     <div className="muted">
                       {booking.payment
@@ -799,7 +825,12 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                       </div>
                     )}
                     {bookingCashDebtNeedsOps(booking) && (
-                      <div className="muted" style={{ marginTop: 8 }}>
+                      <div style={{ marginTop: 8 }}>
+                        <span className="pill pill-warn">Partner wallet debt</span>
+                      </div>
+                    )}
+                    {bookingCashDebtNeedsOps(booking) && (
+                      <div className="muted" style={{ marginTop: 6 }}>
                         Cash fee debt{' '}
                         {money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}
                       </div>
@@ -818,9 +849,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                       {risk.helper}
                     </div>
                     {flags.length > 0 && <div className="muted">{flags[0].title}</div>}
-                  </td>
-                  <td>
-                    <div>{opsSignal(booking)}</div>
+                    <div style={{ marginTop: 8 }}>{opsSignal(booking)}</div>
                     <div className="muted" style={{ marginTop: 8 }}>
                       {nextAction(booking)}
                     </div>
@@ -2196,6 +2225,74 @@ function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
   return providerLocationFreshness(booking, nowMs) !== 'recent';
 }
 
+function bookingAddressSnapshotState(booking: AdminBooking) {
+  const snapshot = booking.addressSnapshot;
+  if (snapshot) {
+    const pin = coordinatePairLabel(snapshot.latitude, snapshot.longitude);
+    return {
+      label: snapshot.addressText ? 'Address locked' : 'Pin locked',
+      detail: snapshot.addressText ?? 'Customer confirmed this map pin without a text address.',
+      pin: pin ? `Pin ${pin}` : 'Pin saved without readable coordinates',
+      tone: 'pill-success',
+    };
+  }
+
+  const legacyAddress = readAddressText(booking.address);
+  if (legacyAddress) {
+    const pin = coordinatePairLabel(booking.lat, booking.lng);
+    return {
+      label: 'Legacy address',
+      detail: legacyAddress,
+      pin: pin ? `Pin ${pin}` : 'No locked pin snapshot',
+      tone: 'pill-warn',
+    };
+  }
+
+  return {
+    label: 'Address missing',
+    detail: 'No immutable booking address snapshot is attached.',
+    pin: 'Ask customer support to confirm the service address before dispatch.',
+    tone: 'pill-danger',
+  };
+}
+
+function bookingChatListState(booking: AdminBooking) {
+  const messageCount = booking.chatRoom?.messages?.length ?? 0;
+  if (booking.chatRoom) {
+    return {
+      label: 'Chat ready',
+      detail: `${messageCount} message(s) retained for admin review.`,
+      tone: 'pill-success',
+    };
+  }
+
+  if (
+    booking.status === 'MATCHED' ||
+    booking.status === 'PROVIDER_ON_THE_WAY' ||
+    booking.status === 'IN_SERVICE'
+  ) {
+    return {
+      label: 'Chat missing',
+      detail: 'Customer and partner are matched, but no chat room is linked yet.',
+      tone: 'pill-danger',
+    };
+  }
+
+  if (booking.status === 'COMPLETED') {
+    return {
+      label: 'Chat archived',
+      detail: 'Service is completed. Admin should retain any linked chat history.',
+      tone: 'pill-info',
+    };
+  }
+
+  return {
+    label: 'Chat pending',
+    detail: 'Chat opens after the customer locks a final partner.',
+    tone: 'pill-neutral',
+  };
+}
+
 function riskLevel(flags: BookingRiskFlag[]) {
   if (flags.some((flag) => flag.severity === 'high')) {
     return { label: 'Action', helper: `${flags.length} check(s)`, tone: 'signal-warn' };
@@ -2486,6 +2583,46 @@ function relativeTimeLabel(value: string, nowMs: number) {
 
 function money(amount: number, currency = 'VND') {
   return `${amount.toLocaleString()} ${currency}`;
+}
+
+function coordinatePairLabel(lat: unknown, lng: unknown) {
+  const parsedLat = coordinatePart(lat);
+  const parsedLng = coordinatePart(lng);
+  if (!parsedLat || !parsedLng) {
+    return null;
+  }
+  return `${parsedLat}, ${parsedLng}`;
+}
+
+function coordinatePart(value: unknown) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount.toFixed(4) : null;
+}
+
+function readAddressText(value: unknown) {
+  if (typeof value === 'string') {
+    return value.trim() || null;
+  }
+  if (!value || typeof value !== 'object') {
+    return null;
+  }
+
+  const record = value as Record<string, unknown>;
+  const candidates = [
+    record.addressText,
+    record.fullAddress,
+    record.formattedAddress,
+    record.line1,
+    record.street,
+  ];
+  return (
+    candidates
+      .find(
+        (candidate): candidate is string =>
+          typeof candidate === 'string' && candidate.trim().length > 0,
+      )
+      ?.trim() ?? null
+  );
 }
 
 function readAmount(value: unknown) {
