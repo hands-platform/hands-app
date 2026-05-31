@@ -1,4 +1,9 @@
 const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101';
+const requestedSmokeArgs = process.argv
+  .slice(2)
+  .flatMap((value) => value.split(','))
+  .map((path) => path.trim())
+  .filter(Boolean);
 
 const pages = [
   {
@@ -278,7 +283,7 @@ const pages = [
   { path: '/tax-policy', markers: ['Tax policy', 'Policy health'] },
 ];
 
-const requestedSmokePaths = (process.env.ADMIN_WEB_SMOKE_PATHS ?? '')
+const requestedSmokePaths = ((process.env.ADMIN_WEB_SMOKE_PATHS ?? '') || requestedSmokeArgs.join(','))
   .split(',')
   .map((path) => path.trim())
   .filter(Boolean);
