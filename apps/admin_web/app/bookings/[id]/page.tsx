@@ -10,6 +10,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../../lib/admin-api';
+import { buildCsvDataHref } from '../../../lib/csv-export';
 import {
   addBookingOpsNote,
   captureBookingPayment,
@@ -25,6 +26,15 @@ import {
 
 type PageProps = {
   params: Promise<{ id: string }>;
+};
+
+type BookingActivityRecord = {
+  id: string;
+  type: string;
+  at: string;
+  title: string;
+  detail: string;
+  href?: string;
 };
 
 const STALE_LOCATION_MINUTES = 30;
@@ -69,6 +79,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const operationsTrace = bookingOperationsTrace(booking, booking.auditLogs ?? []);
   const bookingActivityRecords = buildBookingActivityRecords(booking, rawNotifications);
   const bookingActivitySummary = buildBookingActivitySummary(bookingActivityRecords);
+  const bookingActivityCsvHref = buildBookingActivityCsvHref(booking, bookingActivityRecords);
   const chatLifecycle = bookingChatLifecycle(booking, messages.length);
   const operatingSnapshot = bookingOperatingSnapshot({
     booking,
@@ -185,7 +196,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
               matching, chat, payment, fee, tax, wallet, alerts, location, and audit history.
             </p>
           </div>
-          <span className="pill pill-info">{bookingActivityRecords.length} event(s)</span>
+          <div className="actions">
+            <a
+              className="text-link"
+              download={`hands-booking-${shortId(booking.id)}-activity.csv`}
+              href={bookingActivityCsvHref}
+            >
+              Export activity CSV
+            </a>
+            <span className="pill pill-info">{bookingActivityRecords.length} event(s)</span>
+          </div>
         </div>
         <div className="service-trace-summary" style={{ marginTop: 12 }}>
           <a href="#customer">
@@ -1242,7 +1262,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
                 <span>{record.type}</span>
                 <div>
-                  <strong>{record.title}</strong>
+                  {record.href ? (
+                    <Link className="text-link" href={record.href}>
+                      <strong>{record.title}</strong>
+                    </Link>
+                  ) : (
+                    <strong>{record.title}</strong>
+                  )}
                   <p className="muted">{record.detail}</p>
                 </div>
                 <small>{formatDate(record.at)}</small>
@@ -2147,7 +2173,7 @@ function CashDebtSettlementForm({ booking }: { booking: AdminBookingDetail }) {
 }
 
 function buildBookingActivityRecords(booking: AdminBookingDetail, notifications: AdminNotification[]) {
-  const records: Array<{ id: string; type: string; at: string; title: string; detail: string }> = [];
+  const records: BookingActivityRecord[] = [];
 
   records.push({
     id: `${booking.id}-created`,
@@ -2157,6 +2183,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
     detail: `${bookingServiceOptionLabel(booking)} / customer ${
       booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer'
     } / ${addressLabel(booking.address)}`,
+    href: '#customer',
   });
 
   if (booking.openedAt) {
@@ -2166,6 +2193,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: booking.openedAt,
       title: 'Matching opened',
       detail: `Preferred partner ${providerName(booking.preferredProvider)} / expires ${formatDate(booking.expiresAt)}`,
+      href: '#alerts',
     });
   }
 
@@ -2176,6 +2204,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: booking.scheduledStartAt,
       title: 'Scheduled service time',
       detail: `${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`,
+      href: '#service',
     });
   }
 
@@ -2188,6 +2217,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
         participant.providerStatusAtJoin ?? 'status unknown'
       }`,
+      href: participant.providerProfile?.id ? `/partners/${participant.providerProfile.id}` : '#participants',
     });
     if (participant.respondedAt) {
       records.push({
@@ -2196,6 +2226,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
         at: participant.respondedAt,
         title: `${providerName(participant.providerProfile)} responded`,
         detail: `${participant.status} / customer can select from accepted partners.`,
+        href: participant.providerProfile?.id ? `/partners/${participant.providerProfile.id}` : '#participants',
       });
     }
   }
@@ -2207,6 +2238,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: booking.updatedAt ?? booking.openedAt ?? booking.createdAt ?? '',
       title: 'Final partner selected',
       detail: `${providerName(booking.selectedProvider)} / chat ${booking.chatRoom ? 'created' : 'not created yet'}`,
+      href: booking.selectedProvider.id ? `/partners/${booking.selectedProvider.id}` : '#participants',
     });
   }
 
@@ -2217,6 +2249,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: booking.chatRoom.messages?.[0]?.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
       title: `Chat room ${shortId(booking.chatRoom.id)} available`,
       detail: `${booking.chatRoom.messages?.length ?? 0} message(s) archived for admin.`,
+      href: '#chat',
     });
   }
 
@@ -2227,6 +2260,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: message.createdAt,
       title: `Message from ${message.sender?.fullName ?? message.sender?.phone ?? message.sender?.roles?.join(', ') ?? 'Unknown sender'}`,
       detail: compactActivityText(message.body, 110),
+      href: '#chat',
     });
   }
 
@@ -2239,6 +2273,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       detail: `${money(booking.payment.amount, booking.payment.currency)} / ref ${
         booking.payment.providerRef ?? 'no gateway ref'
       }`,
+      href: booking.payment.id ? `/payments#payment-${booking.payment.id}` : '#payment',
     });
   }
 
@@ -2251,6 +2286,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: refund.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
       title: `${refund.status} refund`,
       detail: `${money(Number(refund.amount ?? 0), booking.payment?.currency ?? 'VND')}${reason ? ` / ${reason}` : ''}`,
+      href: `/refunds#refund-${refund.id}`,
     });
   }
 
@@ -2264,6 +2300,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
         booking.earning.platformFee,
         booking.earning.currency,
       )} / net ${money(booking.earning.netAmount, booking.earning.currency)}`,
+      href: '/earnings',
     });
   }
 
@@ -2274,6 +2311,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: log.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
       title: 'Platform fee calculated',
       detail: `${money(log.platformFeeAmount, log.currency)} from ${money(log.grossAmount, log.currency)}`,
+      href: '/earnings',
     });
   }
 
@@ -2284,6 +2322,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: log.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
       title: 'Withholding tax calculated',
       detail: `${money(log.withholdingAmount, log.currency)} from taxable ${money(log.taxableAmount, log.currency)}`,
+      href: '/tax-policy',
     });
   }
 
@@ -2297,6 +2336,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: entry.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
       title: `${entry.type} wallet ledger`,
       detail: `${money(entry.amount, entry.currency)} / ${entry.notes ?? entry.reference ?? entry.sourceKey}`,
+      href: '/earnings',
     });
   }
 
@@ -2307,6 +2347,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: snapshot.recordedAt,
       title: 'Partner location snapshot',
       detail: coordinateLabel(snapshot.lat, snapshot.lng),
+      href: '#location',
     });
   }
 
@@ -2319,6 +2360,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       detail: `${notification.title} / ${notification.deliveries?.[0]?.status ?? 'No delivery'} / ${
         notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'
       }`,
+      href: `/notifications?booking=${booking.id}`,
     });
   }
 
@@ -2329,6 +2371,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: task.updatedAt,
       title: `${task.status} ${task.type}`,
       detail: `${task.note ?? 'No note'} / actor ${task.actor?.fullName ?? task.actor?.phone ?? 'System'}`,
+      href: '#structured-ops-status',
     });
   }
 
@@ -2339,6 +2382,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: booking.review.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
       title: `Customer review ${booking.review.rating}/5`,
       detail: booking.review.comment ? compactActivityText(booking.review.comment, 110) : 'No comment',
+      href: '/reviews',
     });
   }
 
@@ -2349,15 +2393,47 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       at: log.createdAt,
       title: humanizeAuditAction(log.action),
       detail: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${auditMetadataSummary(log.metadata) || log.target}`,
+      href: `/audit-log?q=${encodeURIComponent(booking.id)}`,
     });
   }
 
-  const unique = new Map<string, { id: string; type: string; at: string; title: string; detail: string }>();
+  const unique = new Map<string, BookingActivityRecord>();
   for (const record of records.filter((item) => Boolean(item.at))) {
     unique.set(`${record.type}:${record.id}:${record.at}`, record);
   }
 
   return [...unique.values()].sort((left, right) => safeTime(right.at) - safeTime(left.at));
+}
+
+function buildBookingActivityCsvHref(booking: AdminBookingDetail, records: BookingActivityRecord[]) {
+  return buildCsvDataHref(
+    records.map((record) => ({
+      booking_id: booking.id,
+      booking_status: booking.status,
+      customer_phone: booking.customerProfile?.user?.phone ?? '',
+      preferred_partner: providerName(booking.preferredProvider),
+      final_partner: providerName(booking.selectedProvider ?? booking.preferredProvider),
+      type: record.type,
+      date: record.at,
+      title: record.title,
+      detail: record.detail,
+      href: record.href ?? '',
+      record_id: record.id,
+    })),
+    [
+      'booking_id',
+      'booking_status',
+      'customer_phone',
+      'preferred_partner',
+      'final_partner',
+      'type',
+      'date',
+      'title',
+      'detail',
+      'href',
+      'record_id',
+    ],
+  );
 }
 
 function buildBookingActivitySummary(records: ReturnType<typeof buildBookingActivityRecords>) {
