@@ -453,7 +453,7 @@ if (bookingLinkMatch) {
     'Operating timeline',
     'Chat lifecycle and retention',
     'Open customer record',
-    'Partner record link',
+    'Open partner record',
     'Booking stage snapshot',
     'Applied operations policy',
     'Payment and refund',

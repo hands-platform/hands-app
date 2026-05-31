@@ -119,6 +119,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </p>
         </div>
         <div className="actions">
+          {booking.customerProfile?.id && (
+            <Link className="text-link" href={`/customers/${booking.customerProfile.id}`}>
+              Open customer
+            </Link>
+          )}
+          {finalProvider?.id && (
+            <Link className="text-link" href={`/partners/${finalProvider.id}`}>
+              Open partner
+            </Link>
+          )}
+          {booking.chatRoom?.id && (
+            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
+              Open chat archive
+            </Link>
+          )}
           {booking.payment?.id && (
             <Link className="text-link" href={`/payments#payment-${booking.payment.id}`}>
               Open payment
