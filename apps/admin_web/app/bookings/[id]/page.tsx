@@ -70,6 +70,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingActivityRecords = buildBookingActivityRecords(booking, rawNotifications);
   const bookingActivitySummary = buildBookingActivitySummary(bookingActivityRecords);
   const chatLifecycle = bookingChatLifecycle(booking, messages.length);
+  const operatingSnapshot = bookingOperatingSnapshot({
+    booking,
+    addressLine,
+    addressPin,
+    messageCount: messages.length,
+    notificationCount: notificationTrace.rows.length,
+  });
 
   return (
     <>
@@ -117,7 +124,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           value={providerLocationMetricValue(booking)}
           helper={providerLocationMetricHelper(booking)}
         />
-        <MetricCard label="Checks" value={riskSummary.label} helper={riskSummary.helper} />
+        <MetricCard label="Ops checks" value={riskSummary.label} helper={riskSummary.helper} />
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -162,6 +169,39 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <strong>{bookingActivityRecords.length}</strong>
             <small>Date-ordered operational history.</small>
           </a>
+        </div>
+      </section>
+
+      <section className="card" id="operating-snapshot" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operating snapshot</h2>
+            <p className="muted">
+              Same-shift control view for the confirmed address, customer choice, partner participation,
+              chat, payment, wallet, and next operator action.
+            </p>
+          </div>
+          <span className={`pill ${operatingSnapshot.tone}`}>{operatingSnapshot.status}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {operatingSnapshot.facts.map((fact) => (
+            <div key={fact.label}>
+              <span>{fact.label}</span>
+              <strong>{fact.value}</strong>
+              <small>{fact.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className={`ops-task-note ${operatingSnapshot.noteClassName}`} style={{ marginTop: 14 }}>
+          <div className="ops-row">
+            <div>
+              <strong>{operatingSnapshot.nextAction}</strong>
+              <p className="muted">{operatingSnapshot.nextDetail}</p>
+            </div>
+            <Link className="text-link" href={operatingSnapshot.href}>
+              {operatingSnapshot.hrefLabel}
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -1229,6 +1269,162 @@ function bookingChatLifecycle(booking: AdminBookingDetail, messageCount: number)
     adminState: 'Live archive',
     adminDetail: `${messageCount} message(s) visible now and retained after closeout.`,
     roomLabel,
+  };
+}
+
+function bookingOperatingSnapshot({
+  booking,
+  addressLine,
+  addressPin,
+  messageCount,
+  notificationCount,
+}: {
+  booking: AdminBookingDetail;
+  addressLine: string;
+  addressPin: string;
+  messageCount: number;
+  notificationCount: number;
+}) {
+  const participants = booking.participants ?? [];
+  const acceptedParticipants = participants.filter((participant) =>
+    ['ACCEPTED', 'SELECTED'].includes(participant.status),
+  );
+  const preferredState = preferredParticipantState(booking);
+  const paymentLabel = booking.payment
+    ? `${booking.payment.method} / ${booking.payment.status}`
+    : 'No payment';
+  const walletLabel = bookingCashDebtNeedsSettlement(booking)
+    ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
+    : booking.earning
+      ? `Ledger ${money(booking.earning.netAmount, booking.earning.currency)}`
+      : 'No earning yet';
+  const finalPartnerLabel = booking.selectedProvider
+    ? providerName(booking.selectedProvider)
+    : booking.status === 'MATCHED'
+      ? providerName(booking.preferredProvider)
+      : 'Customer selection pending';
+  const addressSource = booking.addressSnapshot
+    ? `${booking.addressSnapshot.source ?? 'booking_confirmation'} / ${formatDate(booking.addressSnapshot.createdAt)}`
+    : 'Legacy booking address';
+  const next = bookingOperatingNextAction(booking);
+  const checks = bookingRiskFlags(booking);
+  const tone = checks.some((check) => check.severity === 'high')
+    ? 'pill-danger'
+    : checks.length
+      ? 'pill-warn'
+      : booking.status === 'COMPLETED'
+        ? 'pill-success'
+        : 'pill-info';
+
+  return {
+    status: booking.status,
+    tone,
+    noteClassName: checks.some((check) => check.severity === 'high')
+      ? 'ops-task-danger'
+      : checks.length
+        ? 'ops-task-warning'
+        : 'ops-task-info',
+    nextAction: next.title,
+    nextDetail: next.detail,
+    href: next.href,
+    hrefLabel: next.hrefLabel,
+    facts: [
+      {
+        label: 'Confirmed address',
+        value: compactActivityText(addressLine, 42),
+        helper: `${addressPin} / ${addressSource}`,
+      },
+      {
+        label: 'Customer final choice',
+        value: compactActivityText(finalPartnerLabel, 34),
+        helper: booking.selectedProvider
+          ? 'Customer-selected final partner is recorded.'
+          : 'Customer choice remains the source of truth.',
+      },
+      {
+        label: 'Preferred partner',
+        value: compactActivityText(providerName(booking.preferredProvider), 34),
+        helper: preferredState
+          ? `${preferredState.status} / ${distanceLabel(preferredState.distanceMeters)}`
+          : booking.preferredProvider
+            ? 'Waiting for first partner response.'
+            : 'No first-pick partner on this booking.',
+      },
+      {
+        label: 'Marketplace supply',
+        value: `${participants.length} joined / ${acceptedParticipants.length} accepted`,
+        helper: 'Partners can participate while the customer waits.',
+      },
+      {
+        label: 'Chat and alerts',
+        value: booking.chatRoom ? `${messageCount} message(s)` : 'Chat not ready',
+        helper: `${notificationCount} notification record(s) linked to this booking.`,
+      },
+      {
+        label: 'Payment and wallet',
+        value: paymentLabel,
+        helper: walletLabel,
+      },
+    ],
+  };
+}
+
+function bookingOperatingNextAction(booking: AdminBookingDetail) {
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    return {
+      title: 'Settle cash fee debt',
+      detail: 'Partner collected cash. Confirm company fee deposit or admin offset before unlocking future accepted work.',
+      href: '#finance',
+      hrefLabel: 'Open finance',
+    };
+  }
+  if (booking.status === 'OPEN_MATCHING') {
+    return {
+      title: booking.participants?.length ? 'Watch customer final selection' : 'Monitor partner participation',
+      detail: booking.participants?.length
+        ? 'Accepted partners should be visible to the customer so the customer can choose the final partner.'
+        : 'Keep the first-pick window and marketplace participation visible until a partner joins or the booking expires.',
+      href: '#alerts',
+      hrefLabel: 'Open matching',
+    };
+  }
+  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+    return {
+      title: 'Create or recover chat room',
+      detail: 'A matched booking must have chat before partner handoff and service coordination.',
+      href: '#chat',
+      hrefLabel: 'Open chat',
+    };
+  }
+  if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+    return {
+      title: 'Track handoff and service progress',
+      detail: 'Confirm chat, partner location signal, arrival state, and service lifecycle events.',
+      href: '#location',
+      hrefLabel: 'Open location',
+    };
+  }
+  if (booking.status === 'COMPLETED') {
+    return {
+      title: 'Reconcile completed booking',
+      detail: 'Confirm payment capture, wallet ledger, tax/fee logs, review state, and closeout notes.',
+      href: '#finance',
+      hrefLabel: 'Open finance',
+    };
+  }
+  if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status)) {
+    return {
+      title: 'Close customer and finance loop',
+      detail: 'Confirm refund/release, customer communication, partner communication, and audit note.',
+      href: '#payment',
+      hrefLabel: 'Open payment',
+    };
+  }
+  return {
+    title: 'Continue normal monitoring',
+    detail: 'No immediate operator action is required beyond timeline and communication review.',
+    href: '#booking-activity',
+    hrefLabel: 'Open timeline',
   };
 }
 

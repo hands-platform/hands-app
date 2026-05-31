@@ -382,6 +382,21 @@ a {
   padding: 8px 10px;
 }
 
+.ops-task-info {
+  background: #eff6ff;
+  border-color: rgba(37, 99, 235, 0.22);
+}
+
+.ops-task-warning {
+  background: #fffbeb;
+  border-color: rgba(217, 119, 6, 0.3);
+}
+
+.ops-task-danger {
+  background: #fff7f7;
+  border-color: #fecaca;
+}
+
 .ops-task-actions {
   display: flex;
   flex-wrap: wrap;
