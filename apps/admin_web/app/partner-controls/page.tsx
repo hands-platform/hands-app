@@ -113,7 +113,8 @@ export default async function PartnerControlsPage({
           </span>
           <Link className="text-link" href="/operations-policy">
             {controlPolicy.responseWindowMinutes}m first-pick / {formatDistance(controlPolicy.backupRadiusMeters)}{' '}
-            backup /{controlPolicy.invitationLimit} invite cap / location {controlPolicy.locationFreshnessMinutes}m
+            marketplace radius / {controlPolicy.invitationLimit} invite cap / location{' '}
+            {controlPolicy.locationFreshnessMinutes}m
           </Link>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 12 }}>
@@ -1298,12 +1299,12 @@ function buildBookingAcceptanceUnblockBoard(
       detail: locationItems.length
         ? `Distance ordering, ${formatDistance(
             controlPolicy.backupRadiusMeters,
-          )} backup invitations, the ${controlPolicy.invitationLimit}-partner invite cap, and customer expectations depend on fresh partner location.`
+          )} marketplace invitations, the ${controlPolicy.invitationLimit}-partner invite cap, and customer expectations depend on fresh partner location.`
         : 'Online partner locations are fresh enough for dispatch decisions.',
       operatorScript:
         'Ask the partner to reopen the app and refresh GPS before taking dispatch-sensitive bookings.',
       customerImpact:
-        'Distance sorting and backup invitations can be inaccurate when the last location is stale.',
+        'Distance sorting and marketplace invitations can be inaccurate when the last location is stale.',
       action: locationItems.length ? 'Open partner profiles' : 'Review location policy',
       href: locationItems.length ? '/partners' : '/operations-policy',
       className: locationItems.length ? 'ops-task-pending' : 'ops-task-done',
@@ -1324,7 +1325,7 @@ function buildBookingAcceptanceUnblockBoard(
       title: 'KYC and bank readiness',
       status: verificationItems.length ? 'BOOKING BLOCK' : 'READY',
       detail: verificationItems.length
-        ? 'Identity or bank gaps block paid booking acceptance and backup participation until cleared.'
+        ? 'Identity or bank gaps block paid booking acceptance and marketplace participation until cleared.'
         : 'KYC and bank approval gaps are not blocking listed partners.',
       operatorScript:
         'Review CCCD/CMND, selfie, and bank evidence; reject with a specific reupload reason if anything is unclear.',
@@ -1346,12 +1347,12 @@ function buildBookingAcceptanceUnblockBoard(
       title: 'Push/contact readiness',
       status: deviceItems.length ? 'CONTACT CHECK' : 'READY',
       detail: deviceItems.length
-        ? 'Partners without an enabled device can miss backup invitations and direct booking alerts.'
+        ? 'Partners without an enabled device can miss marketplace invitations and direct booking alerts.'
         : 'Partner device readiness does not show a broad notification follow-up.',
       operatorScript:
         'Confirm the partner has a current app session and enabled device before relying on push alerts.',
       customerImpact:
-        'Backup supply may look available but fail to respond if the partner cannot receive alerts.',
+        'Marketplace supply may look available but fail to respond if the partner cannot receive alerts.',
       action: deviceItems.length ? 'Open app sessions' : 'Review sessions',
       href: '/app-sessions',
       className: deviceItems.length ? 'ops-task-pending' : 'ops-task-done',
@@ -1404,7 +1405,7 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'Negative wallet is the strongest booking gate because cash bookings create unpaid HANDS fee debt.',
       bookingImpact:
-        'Blocks direct acceptance and backup matching until deposit, admin offset, or earning offset is recorded.',
+        'Blocks direct acceptance and marketplace matching until deposit, admin offset, or earning offset is recorded.',
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:
@@ -1441,7 +1442,7 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'KYC, required CCCD/selfie documents, and bank approval are the Level 2 work gate for paid bookings.',
       bookingImpact:
-        'Blocks paid booking acceptance and backup participation until the evidence is approved.',
+        'Blocks paid booking acceptance and marketplace participation until the evidence is approved.',
       payoutImpact: 'Bank approval is required before payout; tax remains staged until first earning.',
       customerImpact: 'Keeps customer confidence high while avoiding excessive signup friction.',
       action: card('verification-readiness')?.action ?? 'Open acceptance-blocked partners',
@@ -1478,7 +1479,7 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'In-app alerts are active now and OS push is deferred, so recent app sessions and enabled devices matter.',
       bookingImpact:
-        'Does not always hard-block acceptance, but weakens response rate and backup participation.',
+        'Does not always hard-block acceptance, but weakens response rate and marketplace participation.',
       payoutImpact: 'No direct payout impact.',
       customerImpact: 'Reduces missed partner requests during the 10 minute response window.',
       action: card('device-contact')?.action ?? 'Open app sessions',
