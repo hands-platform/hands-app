@@ -332,6 +332,7 @@ if (providerLinkMatch) {
     const providerBody = await fetchPage(providerPath);
     const providerMarkers = [
       'Partner operator command queue',
+      'Partner operator notes',
       'Partner ops command center',
       'Partner master facts',
       'Partner full record index',

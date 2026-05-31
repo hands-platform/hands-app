@@ -74,6 +74,15 @@ export class AdminController {
     return this.admin.getProviderDetail(providerProfileId);
   }
 
+  @Post(['providers/:id/ops-note', 'partners/:id/ops-note'])
+  addProviderOpsNote(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') providerProfileId: string,
+    @Body() body: { note?: string; preset?: string },
+  ) {
+    return this.admin.addProviderOpsNote(user.id, providerProfileId, body);
+  }
+
   @Post('push-devices/:id/enable')
   enablePushDevice(@CurrentUser() user: AuthenticatedUser, @Param('id') pushDeviceId: string) {
     return this.admin.enablePushDevice(user.id, pushDeviceId);

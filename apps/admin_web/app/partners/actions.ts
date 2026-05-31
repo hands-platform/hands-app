@@ -40,6 +40,18 @@ export async function syncSupabaseProviderRole(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function addProviderOpsNote(formData: FormData) {
+  const providerId = readRequiredFormString(formData, 'providerId');
+  const note = readOptionalFormString(formData, 'note');
+  const preset = readOptionalFormString(formData, 'preset');
+  if (!note && !preset) {
+    throw new Error('Partner operation note is required');
+  }
+  await adminPost(`/admin/partners/${providerId}/ops-note`, { note, preset }, null);
+  revalidateProviderPaths(providerId);
+  revalidatePath('/audit-log');
+}
+
 export async function enablePushDevice(formData: FormData) {
   const pushDeviceId = String(formData.get('pushDeviceId'));
   await adminPost(`/admin/push-devices/${pushDeviceId}/enable`, {}, null);
@@ -148,6 +160,11 @@ function readRequiredFormString(formData: FormData, name: string) {
     throw new Error(`${name} is required`);
   }
   return value.trim();
+}
+
+function readOptionalFormString(formData: FormData, name: string) {
+  const value = formData.get(name);
+  return typeof value === 'string' && value.trim() ? value.trim().replace(/\s+/g, ' ').slice(0, 1000) : null;
 }
 
 function readReviewReason(formData: FormData) {

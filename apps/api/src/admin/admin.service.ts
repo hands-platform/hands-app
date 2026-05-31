@@ -523,7 +523,61 @@ export class AdminService {
         })
       : [];
 
-    return { ...provider, sharedDeviceMatches };
+    const auditLogs = await this.prisma.adminAuditLog.findMany({
+      where: {
+        OR: [
+          { target: `provider:${providerProfileId}` },
+          { metadata: { path: ['providerProfileId'], equals: providerProfileId } },
+          { metadata: { path: ['partnerProfileId'], equals: providerProfileId } },
+          { metadata: { path: ['providerId'], equals: providerProfileId } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 75,
+      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+    });
+
+    return { ...provider, sharedDeviceMatches, auditLogs };
+  }
+
+  async addProviderOpsNote(
+    actorId: string,
+    providerProfileId: string,
+    input: { note?: string; preset?: string },
+  ) {
+    const note = normalizeNullable(input.note);
+    const preset = normalizeNullable(input.preset);
+    const content = note ?? preset;
+    if (!content) {
+      throw new BadRequestException('Partner operation note is required');
+    }
+
+    const provider = await this.prisma.providerProfile.findUnique({
+      where: { id: providerProfileId },
+      select: {
+        id: true,
+        userId: true,
+        displayName: true,
+        legalName: true,
+        status: true,
+        user: { select: { phone: true, fullName: true } },
+      },
+    });
+    if (!provider) {
+      throw new NotFoundException('Partner not found');
+    }
+
+    const auditLog = await this.writeAudit(actorId, 'provider.ops_note.add', `provider:${providerProfileId}`, {
+      providerProfileId,
+      providerUserId: provider.userId,
+      providerPhone: provider.user.phone,
+      providerName: provider.displayName ?? provider.legalName ?? provider.user.fullName,
+      status: provider.status,
+      note: content,
+      preset,
+    });
+
+    return { ok: true, auditLog };
   }
 
   private providerBookingInclude() {

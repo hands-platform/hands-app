@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
+  AdminAuditLog,
   AdminOperationalPolicySetting,
   AdminProvider,
   adminGet,
@@ -26,6 +27,7 @@ import {
   approveProviderKyc,
   approveProviderTaxProfile,
   approvePublicProviderMedia,
+  addProviderOpsNote,
   blockProviderAccount,
   blockProviderDevice,
   rejectProvider,
@@ -128,7 +130,7 @@ const PARTNER_ACTIVITY_TYPE_OPTIONS = [
   { value: 'app_device', label: 'App sessions and devices', types: ['SESSION', 'DEVICE'] },
   { value: 'location', label: 'Location snapshots', types: ['LOCATION'] },
   { value: 'finance', label: 'Earnings and payouts', types: ['EARNING', 'PAYOUT'] },
-  { value: 'verification', label: 'Verification changes', types: ['VERIFY'] },
+  { value: 'verification', label: 'Verification and operation logs', types: ['VERIFY', 'OPS'] },
 ] satisfies DetailActivityTypeOption[];
 
 type ProviderDetail = AdminProvider & {
@@ -179,6 +181,7 @@ type ProviderDetail = AdminProvider & {
     createdAt: string;
     actor?: { phone?: string | null; fullName?: string | null } | null;
   }>;
+  auditLogs?: AdminAuditLog[];
   preferredBookings?: PartnerDetailBooking[];
   selectedBookings?: PartnerDetailBooking[];
   participants?: Array<{
@@ -273,6 +276,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     dispatchPolicy,
     canApproveKyc,
   });
+  const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
   const filteredActivityCsvHref = buildCsvDataHref(
     filteredPartnerActivityRecords.map((record) => ({
       type: record.type,
@@ -388,6 +392,60 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="card ops-note-panel" id="partner-operator-notes" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner operator notes</h2>
+            <p className="muted">
+              Manual handoff notes for partner operations. Use this for factual contact, onboarding,
+              settlement, service setup, and dispatch context that should appear in the audit log.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerOpsNotes.length} note(s)</span>
+        </div>
+        <div className="ops-note-history">
+          {partnerOpsNotes.length ? (
+            partnerOpsNotes.slice(0, 6).map((log) => (
+              <div className="ops-note-entry" key={log.id}>
+                <strong>{formatDate(log.createdAt)}</strong>
+                <p>{auditLogNoteText(log)}</p>
+                <small className="muted">
+                  {log.actor?.fullName ?? log.actor?.phone ?? 'System'} / {log.target}
+                </small>
+              </div>
+            ))
+          ) : (
+            <p className="muted">No manual partner operation notes have been saved yet.</p>
+          )}
+        </div>
+        <form action={addProviderOpsNote} className="ops-note-form">
+          <input type="hidden" name="providerId" value={provider.id} />
+          <label>
+            Quick note preset
+            <select name="preset" defaultValue="">
+              <option value="">Manual note only</option>
+              <option value="Partner contacted; waiting for reply.">Partner contacted; waiting for reply.</option>
+              <option value="Partner app session and push reachability checked.">
+                Partner app session and push reachability checked.
+              </option>
+              <option value="Partner location refresh requested.">Partner location refresh requested.</option>
+              <option value="Partner service pricing reviewed.">Partner service pricing reviewed.</option>
+              <option value="Partner cash settlement or payout context reviewed.">
+                Partner cash settlement or payout context reviewed.
+              </option>
+              <option value="Partner onboarding document follow-up requested.">
+                Partner onboarding document follow-up requested.
+              </option>
+            </select>
+          </label>
+          <textarea
+            name="note"
+            placeholder="Example: Partner confirmed they will refresh location before accepting new requests."
+          />
+          <button type="submit">Save partner operation note</button>
+        </form>
       </div>
 
       <div className="card" id="partner-master-facts" style={{ marginBottom: 16 }}>
@@ -2612,6 +2670,16 @@ function buildPartnerActivityRecords(
     });
   }
 
+  for (const log of provider.auditLogs ?? []) {
+    records.push({
+      id: log.id,
+      type: 'OPS',
+      at: log.createdAt,
+      title: log.action,
+      detail: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${auditLogNoteText(log)}`,
+    });
+  }
+
   return records
     .filter((record) => Number.isFinite(dateValue(record.at)))
     .sort((left, right) => dateValue(right.at) - dateValue(left.at));
@@ -2651,8 +2719,8 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     },
     {
       label: 'Finance and verification',
-      value: count((record) => financeTypes.has(record.type) || record.type === 'VERIFY').toString(),
-      helper: 'Earnings, payout batches, and verification changes.',
+      value: count((record) => financeTypes.has(record.type) || ['VERIFY', 'OPS'].includes(record.type)).toString(),
+      helper: 'Earnings, payout batches, verification changes, and operator notes.',
     },
   ];
 }
@@ -2970,6 +3038,15 @@ function partnerBookingCustomer(booking: PartnerDetailBooking) {
 function trimText(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
+}
+
+function auditLogNoteText(log: AdminAuditLog) {
+  const metadata = log.metadata && typeof log.metadata === 'object' ? (log.metadata as Record<string, unknown>) : {};
+  const note = metadata.note ?? metadata.preset ?? metadata.reason ?? metadata.summary ?? metadata.status;
+  if (typeof note === 'string' && note.trim()) {
+    return trimText(note.trim(), 140);
+  }
+  return trimText(JSON.stringify(log.metadata ?? { action: log.action }), 140);
 }
 
 function dateValue(value?: string | null) {

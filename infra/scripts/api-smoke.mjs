@@ -2555,6 +2555,27 @@ if (
     `Admin partner payload is missing approved public media: ${JSON.stringify(adminPartner)}`,
   );
 }
+const partnerOpsNote = `Automated partner handoff note ${Date.now()}`;
+await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/ops-note`, adminAuth.accessToken, {
+  note: partnerOpsNote,
+  preset: 'Partner app session and push reachability checked.',
+});
+const adminPartnerDetail = await getJson(
+  `/admin/partners/${providerAuth.user.providerProfile.id}`,
+  adminAuth.accessToken,
+);
+if (
+  !adminPartnerDetail?.auditLogs?.some(
+    (log) => log.action === 'provider.ops_note.add' && log.metadata?.note === partnerOpsNote,
+  )
+) {
+  throw new Error(
+    `Admin partner detail is missing partner operation note audit log: ${JSON.stringify({
+      partnerOpsNote,
+      auditLogs: adminPartnerDetail?.auditLogs?.slice(0, 5),
+    })}`,
+  );
+}
 const adminBackupPartner = adminPartners.find(
   (item) => item.id === backupProviderAuth.user.providerProfile.id,
 );
