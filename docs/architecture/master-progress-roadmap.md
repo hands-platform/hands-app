@@ -118,6 +118,7 @@ Admin dashboard:
 - Booking detail now presents secondary partner participation as marketplace/candidate-alert wording, including saved legacy notification text at display time, while keeping old `backup_*` metadata keys internally for compatibility.
 - Notifications and audit-log pages now display legacy backup policy/action/alert text as marketplace terminology, including saved notification title/body and policy target labels.
 - Partner Controls now uses marketplace invitation/participation/matching wording for dispatch, KYC, device, wallet, document, and session operational lanes.
+- Partner list now uses marketplace wording for secondary participation and masks legacy backup strings in seeded partner, bank, and document display values without changing stored data.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.

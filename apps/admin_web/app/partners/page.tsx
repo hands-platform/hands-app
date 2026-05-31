@@ -1406,7 +1406,7 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
         <span className={`pill ${providerTaxPillClass(provider)}`}>Tax {taxStatus}</span>
       </div>
       <p className="muted" style={{ marginBottom: 8 }}>
-        {provider.legalName ? `Legal: ${provider.legalName}` : 'Legal name not saved'}
+        {provider.legalName ? `Legal: ${marketplaceDisplayText(provider.legalName)}` : 'Legal name not saved'}
         {provider.kyc?.cccdNumberLast4 ? ` / CCCD ****${provider.kyc.cccdNumberLast4}` : ''}
       </p>
       <div className="participant-list" style={{ marginBottom: 8 }}>
@@ -1428,8 +1428,8 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
       </p>
       {primaryBank ? (
         <p className="muted" style={{ marginBottom: 8 }}>
-          {primaryBank.bankName} / {primaryBank.accountNumberMasked ?? 'no account'} /{' '}
-          {primaryBank.accountHolderName}
+          {marketplaceDisplayText(primaryBank.bankName)} / {primaryBank.accountNumberMasked ?? 'no account'} /{' '}
+          {marketplaceDisplayText(primaryBank.accountHolderName)}
         </p>
       ) : null}
       {provider.taxProfile ? (
@@ -1461,7 +1461,7 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
                   : ''}
               </p>
               <p className="muted" style={{ marginBottom: 6 }}>
-                {document.fileAsset?.key ?? 'No file key'}
+                {marketplaceDisplayText(document.fileAsset?.key ?? 'No file key')}
                 {document.fileAsset?.id ? (
                   <>
                     {' / '}
@@ -1877,8 +1877,8 @@ function buildPartnerOperationRow(
     acceptanceLabel: canAccept ? 'Can accept bookings' : 'Acceptance on hold',
     acceptanceDetail: canAccept
       ? backupEligibility.eligible
-        ? `Ready for direct requests and ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} backup matching.`
-        : 'Ready for direct requests. Backup participation depends on booking location and policy.'
+        ? `Ready for direct requests and ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} marketplace matching.`
+        : 'Ready for direct requests. Marketplace participation depends on booking location and policy.'
       : partnerAcceptBlockerSummary(provider, opsPolicy),
     acceptanceTone: canAccept ? 'ok' : 'warn',
     completedWorkCount,
@@ -1902,7 +1902,7 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     provider,
     initials: partnerInitials(displayName),
     displayName,
-    legalName: provider.legalName ?? provider.user?.fullName ?? 'Legal name not saved',
+    legalName: marketplaceDisplayText(provider.legalName ?? provider.user?.fullName ?? 'Legal name not saved'),
     phone: provider.user?.phone ?? 'No phone',
     gender: provider.gender ?? 'Not saved',
     status: provider.status,
@@ -2092,12 +2092,12 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
         : partnerAcceptBlockerSummary(provider, opsPolicy),
     },
     {
-      label: backupEligibility.eligible ? 'Backup ready' : 'Backup blocked',
+      label: backupEligibility.eligible ? 'Marketplace ready' : 'Marketplace blocked',
       tone: backupEligibility.eligible ? 'success' : 'warn',
       detail: backupEligibility.eligible
-        ? `Can join backup matching within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)}.`
+        ? `Can join marketplace matching within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)}.`
         : backupEligibility.blockers.map((blocker) => blocker.label).join(', ') ||
-          'Backup matching is blocked by policy.',
+          'Marketplace matching is blocked by policy.',
     },
     {
       label: walletBalance < 0 ? 'Cash debt' : 'Wallet clear',
@@ -2565,8 +2565,12 @@ function providerListActionPillClass(tone: ProviderListAction['tone']) {
   return 'pill-warn';
 }
 
+function marketplaceDisplayText(value: string) {
+  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
+}
+
 function providerDisplayName(provider: AdminProvider) {
-  return provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id;
+  return marketplaceDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id);
 }
 
 function ProviderLocationCell({
@@ -2689,7 +2693,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
     )}. New booking acceptance stays blocked until finance settles the cash fee debt.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
-    return 'Partner is approved but not currently online for direct or backup requests.';
+    return 'Partner is approved but not currently online for direct or marketplace requests.';
   }
   const locationState = providerLocationStatus(provider, opsPolicy);
   if (locationState === 'missing') {
@@ -2760,15 +2764,15 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
     eligible,
     blockers,
     detail: eligible
-      ? `Can receive backup alerts and join eligible bookings within ${formatDistanceMeters(
+      ? `Can receive marketplace alerts and join eligible bookings within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )} during the ${opsPolicy.responseWindowMinutes}m first-pick window.`
-      : `Not ready for backup matching until blockers are resolved. Distance is still checked per booking within ${formatDistanceMeters(
+      : `Not ready for marketplace matching until blockers are resolved. Distance is still checked per booking within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )}.`,
     operatorAction: eligible
       ? 'For a live booking, confirm the booking address is inside radius before asking this partner to join.'
-      : 'Fix the listed blockers before relying on this partner for backup participation or customer shortlist recovery.',
+      : 'Fix the listed blockers before relying on this partner for marketplace participation or customer shortlist recovery.',
   };
 }
 
@@ -3111,7 +3115,7 @@ function buildPartnerDispatchHandoff(
   return {
     headline:
       'When Bookings shows matching pressure, jump from here to the exact partner lane that can unblock dispatch.',
-    detail: `Current policy: first partner response window ${opsPolicy.responseWindowMinutes}m, backup radius ${formatDistanceMeters(
+    detail: `Current policy: first partner response window ${opsPolicy.responseWindowMinutes}m, marketplace radius ${formatDistanceMeters(
       opsPolicy.backupRadiusMeters,
     )}, fresh location within ${opsPolicy.staleLocationMinutes}m.`,
     policyLabel: 'Edit dispatch policy',
@@ -3119,7 +3123,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Matching queue',
         value: 'Open',
-        detail: 'Live bookings waiting for preferred response, backup supply, or customer selection.',
+        detail: 'Live bookings waiting for preferred response, marketplace supply, or customer selection.',
         href: '/bookings?view=matching',
         tone: 'info',
       },
@@ -3161,7 +3165,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Push repair',
         value: pushRepair.length.toString(),
-        detail: 'Partners who may miss direct or backup request alerts.',
+        detail: 'Partners who may miss direct or marketplace request alerts.',
         href: '/partners?review=push',
         tone: pushRepair.length ? 'warn' : 'ok',
       },
@@ -3443,7 +3447,7 @@ function buildPartnerDispatchForecast(
       {
         label: 'Push alerts missing',
         count: pushMissing,
-        detail: 'Direct booking and backup matching alerts may not reach these partners.',
+        detail: 'Direct booking and marketplace matching alerts may not reach these partners.',
         href: '/partners?review=push',
         tone: pushMissing > 0 ? 'warn' : 'ok',
       },
@@ -3536,7 +3540,7 @@ function buildPartnerAcceptanceBlockerBoard(
         title: 'Location freshness',
         count: locationHold.length,
         status: locationHold.length ? 'Needs app open' : 'Fresh',
-        detail: `Backup matching uses the last location. Partners older than ${opsPolicy.staleLocationMinutes} minutes need an app-open refresh before 10km dispatch.`,
+        detail: `Marketplace matching uses the last location. Partners older than ${opsPolicy.staleLocationMinutes} minutes need an app-open refresh before 10km dispatch.`,
         operatorAction:
           'Ask partners to open the app so location refreshes before they receive or join requests.',
         href: '/partners?review=location',
@@ -3547,7 +3551,7 @@ function buildPartnerAcceptanceBlockerBoard(
         title: 'Push alert reachability',
         count: pushHold.length,
         status: pushHold.length ? 'Alert gap' : 'Ready',
-        detail: 'Partners without enabled push devices may miss first-pick and backup participation prompts.',
+        detail: 'Partners without enabled push devices may miss first-pick and marketplace participation prompts.',
         operatorAction:
           'Use in-app refresh, token registration, or contact fallback before relying on them for demand.',
         href: '/partners?review=push',
@@ -3644,7 +3648,7 @@ function buildPartnerKycReviewBoard(providers: AdminProvider[]): PartnerKycRevie
         title: 'Keep missing KYC out of paid dispatch',
         count: missingKyc.length,
         detail:
-          'Minimal signup is allowed, but partners without KYC cannot accept paid requests or backup matching.',
+          'Minimal signup is allowed, but partners without KYC cannot accept paid requests or marketplace matching.',
         operatorAction:
           'Let onboarding stay light, then prompt KYC before the partner becomes activity-ready.',
         href: '/partners?review=acceptance-blocked',
@@ -4008,7 +4012,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       label: 'Push alert readiness',
       count: pushNeedsReview,
       href: '/partners?review=push',
-      detail: 'Partners without enabled push devices may miss direct requests and backup matching alerts.',
+      detail: 'Partners without enabled push devices may miss direct requests and marketplace matching alerts.',
     },
     {
       label: 'Direct request ready',
@@ -4320,7 +4324,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Cash fee debt highlights partners blocked from accepting bookings because HANDS commission was not settled.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
-    return 'Booking acceptance blocked highlights partners who cannot currently accept preferred or backup matching work.';
+    return 'Booking acceptance blocked highlights partners who cannot currently accept preferred or marketplace matching work.';
   }
   if (kind === 'review' && value === 'direct-ready') {
     return 'Direct request ready highlights partners who can accept a preferred customer request immediately.';
