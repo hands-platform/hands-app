@@ -35,6 +35,10 @@ const steps = [
     command: ['infra/scripts/check-mobile-firebase.mjs'],
   },
   {
+    name: 'api policy coverage guard',
+    command: ['infra/scripts/check-api-policy-coverage.mjs'],
+  },
+  {
     name: 'flutter architecture guard',
     command: ['infra/scripts/check-flutter-architecture.mjs'],
   },

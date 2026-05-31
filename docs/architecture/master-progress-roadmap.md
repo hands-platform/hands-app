@@ -40,6 +40,7 @@ Core principles:
 Checked commands:
 
 - `npm.cmd run setup:doctor`: PASS
+- `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
 - `npm.cmd run security:secrets`: PASS
 - `npm.cmd run typecheck`: PASS
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
@@ -70,6 +71,7 @@ Repository and environment:
 - Docker local services: PostgreSQL, Redis, MinIO
 - Local commands: `local:start`, `local:stop`, `local:status`, `verify:local`
 - Secret scan guard exists and currently passes.
+- API policy coverage guard exists and is wired into `setup:doctor` and `verify:local`.
 
 Backend:
 
@@ -190,6 +192,7 @@ Goal: Mobile apps and admin use the same policy logic.
    - Partner can set equal or higher price.
    - Admin sets payout rule per service duration/price.
    - Finance views show customer price, partner payout, platform fee, VAT/withholding/other costs, net company fee.
+   - Regression guard: `npm.cmd run api:policy-coverage` must keep passing before service pricing or payout refactors are merged.
 
 4. Tax and payout engine
    - Tax rules versioned by effective date.
