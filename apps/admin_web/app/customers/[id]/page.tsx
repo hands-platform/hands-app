@@ -119,11 +119,12 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       date: formatDate(record.at),
       title: record.title,
       detail: record.detail,
+      href: record.href ?? '',
       record_id: record.id,
       customer_id: customer.id,
       customer_phone: customer.user?.phone ?? '',
     })),
-    ['type', 'date', 'title', 'detail', 'record_id', 'customer_id', 'customer_phone'],
+    ['type', 'date', 'title', 'detail', 'href', 'record_id', 'customer_id', 'customer_phone'],
   );
 
   return (
@@ -709,7 +710,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
                 <span>{record.type}</span>
                 <div>
-                  <strong>{record.title}</strong>
+                  {record.href ? (
+                    <Link className="text-link" href={record.href}>
+                      <strong>{record.title}</strong>
+                    </Link>
+                  ) : (
+                    <strong>{record.title}</strong>
+                  )}
                   <p className="muted">{record.detail}</p>
                 </div>
                 <small>{formatDate(record.at)}</small>
@@ -864,6 +871,14 @@ type CustomerOperatorCommand = {
 };
 
 type CustomerPushDevice = NonNullable<NonNullable<AdminCustomerDetail['user']>['pushDevices']>[number];
+type CustomerActivityRecord = {
+  id: string;
+  type: string;
+  at: string;
+  title: string;
+  detail: string;
+  href?: string;
+};
 
 function CustomerOperatorCommandAction({
   customerId,
@@ -1435,7 +1450,7 @@ function buildCustomerActivityRecords(
   bookings: AdminBookingDetail[],
   addresses: Array<{ key: string; label: string; value: string }>,
 ) {
-  const records: Array<{ id: string; type: string; at: string; title: string; detail: string }> = [];
+  const records: CustomerActivityRecord[] = [];
 
   if (customer.user?.createdAt) {
     records.push({
@@ -1456,6 +1471,7 @@ function buildCustomerActivityRecords(
       detail: `${bookingServiceLabel(booking)} / partner ${
         booking.selectedProvider?.displayName ?? booking.preferredProvider?.displayName ?? 'not selected'
       } / scheduled ${formatDate(booking.scheduledStartAt)}`,
+      href: `/bookings/${booking.id}`,
     });
 
     if (booking.status === 'COMPLETED') {
@@ -1465,6 +1481,7 @@ function buildCustomerActivityRecords(
         at: booking.updatedAt ?? booking.scheduledEndAt ?? booking.scheduledStartAt ?? '',
         title: `Completed work ${shortId(booking.id)}`,
         detail: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
+        href: `/bookings/${booking.id}`,
       });
     }
 
@@ -1475,6 +1492,62 @@ function buildCustomerActivityRecords(
         at: booking.updatedAt ?? booking.createdAt ?? '',
         title: `${booking.payment.status} payment`,
         detail: `${booking.payment.method} / ${formatMoney(Number(booking.payment.amount ?? 0), booking.payment.currency ?? 'VND')}`,
+        href: '/payments',
+      });
+    }
+
+    if (booking.earning) {
+      records.push({
+        id: booking.earning.id,
+        type: 'PAYMENT',
+        at: booking.earning.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+        title: `${booking.earning.status} partner earning`,
+        detail: `Gross ${formatMoney(Number(booking.earning.grossAmount ?? 0))} / platform fee ${formatMoney(
+          Number(booking.earning.platformFee ?? 0),
+        )} / net ${formatMoney(Number(booking.earning.netAmount ?? 0))}`,
+        href: '/earnings',
+      });
+
+    }
+
+    for (const ledger of booking.walletLedgerEntries ?? []) {
+      records.push({
+        id: ledger.id,
+        type: 'PAYMENT',
+        at: ledger.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+        title: `${ledger.type} wallet ledger`,
+        detail: `${formatMoney(Number(ledger.amount ?? 0), ledger.currency ?? 'VND')} / ${
+          ledger.notes ?? ledger.reference ?? ledger.sourceKey
+        }`,
+        href: '/earnings',
+      });
+    }
+
+    for (const feeLog of booking.platformFeeLogs ?? []) {
+      records.push({
+        id: feeLog.id,
+        type: 'PAYMENT',
+        at: feeLog.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+        title: 'Platform fee log',
+        detail: `${formatMoney(Number(feeLog.platformFeeAmount ?? 0), feeLog.currency ?? 'VND')} / gross ${formatMoney(
+          Number(feeLog.grossAmount ?? 0),
+          feeLog.currency ?? 'VND',
+        )}`,
+        href: '/earnings',
+      });
+    }
+
+    for (const taxLog of booking.taxLogs ?? []) {
+      records.push({
+        id: taxLog.id,
+        type: 'PAYMENT',
+        at: taxLog.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
+        title: 'Tax withholding log',
+        detail: `${formatMoney(Number(taxLog.withholdingAmount ?? 0), taxLog.currency ?? 'VND')} / taxable ${formatMoney(
+          Number(taxLog.taxableAmount ?? 0),
+          taxLog.currency ?? 'VND',
+        )}`,
+        href: '/tax-policy',
       });
     }
 
@@ -1487,6 +1560,20 @@ function buildCustomerActivityRecords(
         at: refund.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
         title: `${refund.status} refund`,
         detail: `${formatMoney(Number(refund.amount ?? 0))}${reason ? ` / ${reason}` : ''}`,
+        href: '/refunds',
+      });
+    }
+
+    for (const participant of booking.participants ?? []) {
+      records.push({
+        id: participant.id,
+        type: 'BOOKING',
+        at: participant.respondedAt ?? participant.joinedAt ?? booking.createdAt ?? '',
+        title: `${participant.status} partner participant`,
+        detail: `${participant.providerProfile?.displayName ?? participant.providerProfile?.user?.fullName ?? 'Partner'} / ${
+          participant.distanceMeters != null ? `${participant.distanceMeters}m` : 'distance not stored'
+        }`,
+        href: `/bookings/${booking.id}`,
       });
     }
 
@@ -1500,6 +1587,7 @@ function buildCustomerActivityRecords(
           message.body,
           96,
         )}`,
+        href: `/bookings/${booking.id}#chat`,
       });
     }
 
@@ -1510,6 +1598,7 @@ function buildCustomerActivityRecords(
         at: task.updatedAt,
         title: `${task.status} ${task.type}`,
         detail: `${task.note ?? 'No note'} / actor ${task.actor?.fullName ?? task.actor?.phone ?? 'System'}`,
+        href: `/bookings/${booking.id}`,
       });
     }
   }
@@ -1521,6 +1610,7 @@ function buildCustomerActivityRecords(
       at: location.createdAt,
       title: 'Customer selected service location',
       detail: `${location.addressText} / ${location.latitude}, ${location.longitude}`,
+      href: '#addresses',
     });
   }
 
@@ -1531,6 +1621,7 @@ function buildCustomerActivityRecords(
       at: customer.user?.updatedAt ?? customer.user?.createdAt ?? '',
       title: address.label,
       detail: address.value,
+      href: '#addresses',
     });
   }
 
@@ -1541,6 +1632,7 @@ function buildCustomerActivityRecords(
       at: session.lastSeenAt,
       title: `${session.active ? 'Active' : 'Inactive'} customer app session`,
       detail: `${session.platform ?? 'Unknown platform'} / ${session.appVersion ?? 'No app version'} / device ${session.deviceId}`,
+      href: '#customer-info',
     });
   }
 
@@ -1551,7 +1643,19 @@ function buildCustomerActivityRecords(
       at: device.updatedAt ?? device.createdAt ?? '',
       title: `${device.enabled ? 'Enabled' : 'Disabled'} push device`,
       detail: `${device.platform} / ${device.deliveries?.[0]?.status ?? 'No delivery attempt'}`,
+      href: '#customer-info',
     });
+
+    for (const delivery of device.deliveries ?? []) {
+      records.push({
+        id: delivery.id,
+        type: 'DEVICE',
+        at: delivery.attemptedAt,
+        title: `${delivery.status} push delivery`,
+        detail: `${delivery.provider} / device ${device.platform}`,
+        href: '/notifications',
+      });
+    }
   }
 
   for (const notification of customer.user?.notifications ?? []) {
@@ -1563,7 +1667,19 @@ function buildCustomerActivityRecords(
       detail: `${notification.type} / ${notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'} / ${
         notification.deliveries?.[0]?.status ?? 'No delivery'
       }`,
+      href: '/notifications',
     });
+
+    for (const delivery of notification.deliveries ?? []) {
+      records.push({
+        id: delivery.id ?? `${notification.id}-${delivery.provider}-${delivery.attemptedAt}`,
+        type: 'NOTICE',
+        at: delivery.attemptedAt,
+        title: `${delivery.status} notification delivery`,
+        detail: `${delivery.provider} / ${notification.title}`,
+        href: '/notifications',
+      });
+    }
   }
 
   for (const review of customer.reviews ?? []) {
@@ -1573,6 +1689,7 @@ function buildCustomerActivityRecords(
       at: review.createdAt ?? '',
       title: `Review left for ${review.providerProfile?.displayName ?? 'partner'}`,
       detail: `${review.rating} star / ${reviewBookingServiceLabel(review.booking)}`,
+      href: '/reviews',
     });
   }
 
@@ -1583,6 +1700,7 @@ function buildCustomerActivityRecords(
       at: log.createdAt,
       title: log.action,
       detail: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${compactJson(log.metadata)}`,
+      href: '/audit-log',
     });
   }
 
