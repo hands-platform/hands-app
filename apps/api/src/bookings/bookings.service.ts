@@ -352,6 +352,7 @@ export class BookingsService {
       where: { id },
       include: {
         services: { include: { service: true } },
+        addressSnapshot: true,
         preferredProvider: true,
         participants: { include: { providerProfile: true } },
         payment: true,
@@ -368,6 +369,7 @@ export class BookingsService {
       where: { id, customerProfileId: customer.id },
       include: {
         services: { include: { service: true } },
+        addressSnapshot: true,
         preferredProvider: true,
         participants: { include: { providerProfile: true } },
         payment: true,
@@ -384,6 +386,7 @@ export class BookingsService {
       where: { customerProfileId: customer.id },
       include: {
         services: { include: { service: true } },
+        addressSnapshot: true,
         preferredProvider: true,
         participants: { include: { providerProfile: true } },
         selectedProvider: true,

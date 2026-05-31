@@ -24,6 +24,20 @@ const requiredCoverage = [
     ],
   },
   {
+    area: 'booking address snapshot',
+    markers: [
+      'Customer booking detail should expose immutable address snapshot',
+      'Admin booking detail should expose immutable address snapshot',
+    ],
+  },
+  {
+    area: 'customer final partner selection',
+    markers: [
+      '/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider',
+      'Customer final confirmation did not match preferred accepted partner',
+    ],
+  },
+  {
     area: 'tax policy and withholding',
     markers: [
       'Tax policy version list did not return an array',

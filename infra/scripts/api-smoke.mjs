@@ -1313,6 +1313,17 @@ assertBookingPricing('Open matching base-price', bookingDetail, {
   paymentAmount: service.basePrice,
 });
 assertBookingMatchingWindow('Open matching base-price', bookingDetail, 10);
+if (
+  bookingDetail.addressSnapshot?.addressText !== 'District 1, Ho Chi Minh City' ||
+  Number(bookingDetail.addressSnapshot?.latitude) !== 10.7769 ||
+  Number(bookingDetail.addressSnapshot?.longitude) !== 106.7009
+) {
+  throw new Error(
+    `Customer booking detail should expose immutable address snapshot: ${JSON.stringify(
+      bookingDetail.addressSnapshot,
+    )}`,
+  );
+}
 const partnerAliasOpenBookings = await getJson('/partner/bookings/open', providerAuth.accessToken);
 if (!partnerAliasOpenBookings.some((item) => item.id === booking.id)) {
   throw new Error(`Partner alias /partner/bookings/open did not include an open booking.`);
@@ -1354,6 +1365,17 @@ if (
   );
 }
 const hybridAdminBooking = await getJson(`/admin/bookings/${hybridBooking.id}`, adminAuth.accessToken);
+if (
+  hybridAdminBooking.addressSnapshot?.addressText !== 'Hybrid fallback smoke flow' ||
+  Number(hybridAdminBooking.addressSnapshot?.latitude) !== 10.7783 ||
+  Number(hybridAdminBooking.addressSnapshot?.longitude) !== 106.6994
+) {
+  throw new Error(
+    `Admin booking detail should expose immutable address snapshot: ${JSON.stringify(
+      hybridAdminBooking.addressSnapshot,
+    )}`,
+  );
+}
 const hybridBackupNotificationTraces = Array.isArray(
   hybridAdminBooking.metadata?.backupNotificationTraces,
 )
