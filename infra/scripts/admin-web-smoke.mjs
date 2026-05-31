@@ -377,6 +377,7 @@ if (customerLinkMatch) {
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
     'Customer detail',
+    'Customer operator command queue',
     'Customer full record index',
     'Customer activity action panel',
     'Customer information',

@@ -1,6 +1,13 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { AdminBookingDetail, AdminChatMessage, AdminCustomerDetail, adminGet } from '../../../lib/admin-api';
+import {
+  AdminAppSession,
+  AdminBookingDetail,
+  AdminChatMessage,
+  AdminCustomerDetail,
+  AdminNotification,
+  adminGet,
+} from '../../../lib/admin-api';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -96,6 +103,16 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     isWithinDetailDateFilter(log.createdAt, dateFilters),
   );
   const accountFacts = buildCustomerAccountFacts(customer, bookings, addresses);
+  const customerOperatorCommandQueue = buildCustomerOperatorCommandQueue({
+    customer,
+    bookings,
+    wallet,
+    bookingStats,
+    addresses,
+    latestSession,
+    pushDevices,
+    notifications,
+  });
   const filteredActivityCsvHref = buildCsvDataHref(
     filteredCustomerActivityRecords.map((record) => ({
       type: record.type,
@@ -184,6 +201,46 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           value={latestSession ? 'Seen' : 'None'}
           helper={latestSession ? formatDate(latestSession.lastSeenAt) : 'No app session recorded'}
         />
+      </section>
+
+      <section className="card" id="customer-operator-command-queue" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer operator command queue</h2>
+            <p className="muted">
+              Next factual actions for the customer desk. This queue does not rank or score customers; it
+              only points operators to live bookings, chat archives, payment rows, saved locations, devices,
+              and staff notes that may need follow-up.
+            </p>
+          </div>
+          <span className={`pill ${customerSupportPillClass(customerOperatorCommandQueue.tone)}`}>
+            {customerOperatorCommandQueue.status}
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {customerOperatorCommandQueue.metrics.map((metric) => (
+            <div key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.detail}</small>
+            </div>
+          ))}
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 14 }}>
+          {customerOperatorCommandQueue.commands.map((command) => (
+            <div className={`ops-task-note ops-task-${command.tone}`} key={command.id}>
+              <div className="ops-row">
+                <div>
+                  <span className={`pill ${customerSupportPillClass(command.tone)}`}>{command.label}</span>
+                  <h3>{command.title}</h3>
+                  <p className="muted">{command.detail}</p>
+                  <small className="muted">Owner: {command.owner}</small>
+                </div>
+                <CustomerOperatorCommandAction command={command} customerId={customer.id} />
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -792,6 +849,47 @@ function MetricCard({ label, value, helper }: { label: string; value: string; he
   );
 }
 
+type CustomerOperatorTone = 'success' | 'info' | 'warn' | 'danger';
+
+type CustomerOperatorCommand = {
+  id: string;
+  label: string;
+  title: string;
+  detail: string;
+  owner: string;
+  tone: CustomerOperatorTone;
+  action:
+    | { type: 'link'; href: string; label: string }
+    | { type: 'note'; preset: string; label: string; bookingId?: string };
+};
+
+type CustomerPushDevice = NonNullable<NonNullable<AdminCustomerDetail['user']>['pushDevices']>[number];
+
+function CustomerOperatorCommandAction({
+  customerId,
+  command,
+}: {
+  customerId: string;
+  command: CustomerOperatorCommand;
+}) {
+  if (command.action.type === 'link') {
+    return (
+      <Link className="text-link" href={command.action.href}>
+        {command.action.label}
+      </Link>
+    );
+  }
+
+  return (
+    <form action={addCustomerOpsNote} className="compact-form">
+      <input type="hidden" name="customerId" value={customerId} />
+      <input type="hidden" name="preset" value={command.action.preset} />
+      <input type="hidden" name="bookingId" value={command.action.bookingId ?? ''} />
+      <button type="submit">{command.action.label}</button>
+    </form>
+  );
+}
+
 function buildBookingStats(bookings: AdminBookingDetail[]) {
   return {
     active: bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length,
@@ -823,6 +921,246 @@ function buildCustomerWallet(bookings: AdminBookingDetail[]) {
       cashBookingAmount: 0,
     },
   );
+}
+
+function buildCustomerOperatorCommandQueue({
+  customer,
+  bookings,
+  wallet,
+  bookingStats,
+  addresses,
+  latestSession,
+  pushDevices,
+  notifications,
+}: {
+  customer: AdminCustomerDetail;
+  bookings: AdminBookingDetail[];
+  wallet: ReturnType<typeof buildCustomerWallet>;
+  bookingStats: ReturnType<typeof buildBookingStats>;
+  addresses: Array<{ key: string; label: string; value: string }>;
+  latestSession?: AdminAppSession;
+  pushDevices: CustomerPushDevice[];
+  notifications: AdminNotification[];
+}) {
+  const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status));
+  const activeBooking = activeBookings[0];
+  const matchedWithoutChat = activeBookings.filter(
+    (booking) =>
+      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status) &&
+      !booking.chatRoom,
+  );
+  const quietChatBooking = activeBookings.find(
+    (booking) => booking.chatRoom && readChatMessages(booking).length === 0,
+  );
+  const paymentIssueBooking = bookings.find(
+    (booking) =>
+      booking.payment &&
+      !['AUTHORIZED', 'CAPTURED', 'REFUNDED', 'RELEASED'].includes(booking.payment.status),
+  );
+  const refundBooking = bookings.find(
+    (booking) => (booking.payment?.refunds?.length ?? 0) > 0 || (booking.refunds?.length ?? 0) > 0,
+  );
+  const enabledPushDevices = pushDevices?.filter((device) => device.enabled) ?? [];
+  const unreadNotifications = notifications?.filter((notification) => !notification.readAt) ?? [];
+  const lastSeenMs = latestSession ? dateMs(latestSession.lastSeenAt) : 0;
+  const staleSession =
+    !latestSession || Date.now() - lastSeenMs > 1000 * 60 * 60 * 24 * 7;
+  const missingAddress = addresses.length === 0;
+  const commands: CustomerOperatorCommand[] = [];
+
+  if (activeBooking) {
+    commands.push({
+      id: `active-${activeBooking.id}`,
+      label: 'Live booking',
+      title: 'Open the current customer booking',
+      detail: `${activeBooking.status} / ${bookingServiceLabel(
+        activeBooking,
+      )}. Check partner, payment, location, and chat records from the booking detail page.`,
+      owner: 'Dispatch / Customer desk',
+      tone: 'info',
+      action: { type: 'link', href: `/bookings/${activeBooking.id}`, label: 'Open booking' },
+    });
+  }
+
+  if (matchedWithoutChat.length > 0) {
+    const booking = matchedWithoutChat[0];
+    commands.push({
+      id: `chat-missing-${booking.id}`,
+      label: 'Chat required',
+      title: 'Matched booking has no chat room row',
+      detail:
+        'Matching should create a customer-partner chat. Open the booking and verify chat creation before service continues.',
+      owner: 'Realtime / Support',
+      tone: 'warn',
+      action: { type: 'link', href: `/bookings/${booking.id}#chat`, label: 'Inspect chat' },
+    });
+  }
+
+  if (quietChatBooking) {
+    commands.push({
+      id: `chat-quiet-${quietChatBooking.id}`,
+      label: 'Chat quiet',
+      title: 'Chat exists but no messages are archived yet',
+      detail:
+        'The room is open. Leave a factual note if staff confirms the customer and partner are communicating outside chat.',
+      owner: 'Customer desk',
+      tone: 'info',
+      action: {
+        type: 'note',
+        label: 'Add chat note',
+        bookingId: quietChatBooking.id,
+        preset: 'Chat room exists but no messages are archived yet; operator should verify customer contact if needed.',
+      },
+    });
+  }
+
+  if (paymentIssueBooking) {
+    commands.push({
+      id: `payment-${paymentIssueBooking.id}`,
+      label: 'Payment row',
+      title: 'Review the latest non-captured payment status',
+      detail: `${paymentIssueBooking.payment?.status ?? 'Unknown'} / ${
+        paymentIssueBooking.payment?.method ?? 'No method'
+      } / ${formatMoney(Number(paymentIssueBooking.payment?.amount ?? 0))}`,
+      owner: 'Payments',
+      tone: 'warn',
+      action: { type: 'link', href: `/payments?customer=${customer.id}`, label: 'Open payments' },
+    });
+  }
+
+  if (refundBooking) {
+    commands.push({
+      id: `refund-${refundBooking.id}`,
+      label: 'Refund record',
+      title: 'Refund or release history exists',
+      detail:
+        'Open the refund desk before answering customer payment questions. Refund records are factual history, not a customer rating.',
+      owner: 'Payments',
+      tone: 'info',
+      action: { type: 'link', href: '/refunds', label: 'Open refunds' },
+    });
+  }
+
+  if (missingAddress) {
+    commands.push({
+      id: 'address-missing',
+      label: 'Address',
+      title: 'No saved service address is loaded',
+      detail:
+        'Ask the customer to confirm a map pin or saved address before dispatch so partner distance and service location stay clear.',
+      owner: 'Customer desk',
+      tone: 'warn',
+      action: {
+        type: 'note',
+        label: 'Add address note',
+        preset: 'Customer has no saved service address loaded; ask customer to confirm the service location before dispatch.',
+      },
+    });
+  }
+
+  if (enabledPushDevices.length === 0) {
+    commands.push({
+      id: 'push-unreachable',
+      label: 'App reachability',
+      title: 'No enabled customer push device',
+      detail:
+        'Use phone or in-app session records for contact until the customer registers an enabled push device.',
+      owner: 'Customer desk',
+      tone: 'warn',
+      action: { type: 'link', href: `/notifications?user=${customer.userId}`, label: 'Open notices' },
+    });
+  }
+
+  if (staleSession) {
+    commands.push({
+      id: 'session-stale',
+      label: 'App session',
+      title: latestSession ? 'Customer app session is older than 7 days' : 'No customer app session recorded',
+      detail: latestSession
+        ? `Last seen ${formatDate(latestSession.lastSeenAt)} on ${
+            latestSession.platform ?? 'unknown platform'
+          }.`
+        : 'No mobile session row is loaded for this customer.',
+      owner: 'Customer desk',
+      tone: 'info',
+      action: {
+        type: 'note',
+        label: 'Add session note',
+        preset: latestSession
+          ? 'Customer app session is older than 7 days; verify contact path if support is needed.'
+          : 'No customer app session is loaded; verify contact path if support is needed.',
+      },
+    });
+  }
+
+  if (unreadNotifications.length > 0) {
+    commands.push({
+      id: 'unread-notifications',
+      label: 'Notifications',
+      title: `${unreadNotifications.length} unread notification row(s)`,
+      detail:
+        'Review recent notifications and delivery rows before sending duplicate customer communication.',
+      owner: 'Customer desk',
+      tone: 'info',
+      action: { type: 'link', href: `/notifications?user=${customer.userId}`, label: 'Open notifications' },
+    });
+  }
+
+  if (commands.length === 0) {
+    commands.push({
+      id: 'steady-state',
+      label: 'Steady state',
+      title: 'No immediate customer desk action detected',
+      detail:
+        'Booking, payment, chat, address, app session, and notification records are loaded for normal monitoring.',
+      owner: 'Customer desk',
+      tone: 'success',
+      action: {
+        type: 'note',
+        label: 'Add monitoring note',
+        preset: 'Customer record reviewed; no immediate customer desk action detected.',
+      },
+    });
+  }
+
+  const blocking = commands.some((command) => command.tone === 'danger' || command.tone === 'warn');
+  return {
+    status: blocking ? 'Follow-up queued' : activeBooking ? 'Live monitoring' : 'Record ready',
+    tone: blocking ? ('warn' as const) : activeBooking ? ('info' as const) : ('success' as const),
+    metrics: [
+      {
+        label: 'Live bookings',
+        value: activeBookings.length.toString(),
+        detail: activeBooking ? `${shortId(activeBooking.id)} / ${activeBooking.status}` : 'No active booking',
+      },
+      {
+        label: 'Completed work',
+        value: bookingStats.completed.toString(),
+        detail: 'Finished service records only',
+      },
+      {
+        label: 'Captured spend',
+        value: formatMoney(wallet.capturedSpend),
+        detail: `${formatMoney(wallet.pendingPaymentAmount)} pending or authorized`,
+      },
+      {
+        label: 'Chat archive',
+        value: bookings.filter((booking) => booking.chatRoom).length.toString(),
+        detail: `${bookings.reduce((sum, booking) => sum + readChatMessages(booking).length, 0)} message(s) retained`,
+      },
+      {
+        label: 'Saved locations',
+        value: addresses.length.toString(),
+        detail: missingAddress ? 'No saved address loaded' : addresses[0]?.value ?? 'Address loaded',
+      },
+      {
+        label: 'App reachability',
+        value: enabledPushDevices.length ? 'Push enabled' : 'Phone/manual',
+        detail: latestSession ? `Last seen ${formatDate(latestSession.lastSeenAt)}` : 'No app session',
+      },
+    ],
+    commands: commands.slice(0, 8),
+  };
 }
 
 function buildCustomerAccountFacts(
