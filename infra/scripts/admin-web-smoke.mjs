@@ -129,6 +129,18 @@ const pages = [
       'Change reason',
     ],
   },
+  {
+    path: '/operations-handoff',
+    markers: [
+      'Operations Handoff',
+      'Shift brief',
+      'Latest operator notes',
+      'Booking handoff queue',
+      'Customer handoff',
+      'Partner handoff',
+      'Finance and chat closeout',
+    ],
+  },
   { path: '/cash-settlements', markers: ['Cash Settlements', 'Settlement command queue'] },
   { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },

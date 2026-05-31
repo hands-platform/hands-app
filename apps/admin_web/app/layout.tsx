@@ -7,6 +7,7 @@ const navSections = [
     label: 'Command',
     links: [
       ['/', 'Operations Dashboard'],
+      ['/operations-handoff', 'Operations Handoff'],
       ['/bookings', 'Booking Monitor'],
       ['/operations-policy', 'Operations Policy'],
     ],
