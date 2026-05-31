@@ -35,6 +35,10 @@ const steps = [
     command: ['infra/scripts/check-mobile-firebase.mjs'],
   },
   {
+    name: 'mobile visible copy guard',
+    command: ['infra/scripts/check-mobile-visible-copy.mjs'],
+  },
+  {
     name: 'api policy coverage guard',
     command: ['infra/scripts/check-api-policy-coverage.mjs'],
   },
