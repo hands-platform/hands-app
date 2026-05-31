@@ -1,6 +1,6 @@
 # HANDS MVP Master Progress Roadmap
 
-Last checked: 2026-05-31
+Last checked: 2026-06-01
 
 This document is the single working map for HANDS MVP progress. It exists to keep backend, admin, mobile apps, external services, and product decisions from becoming fragmented.
 
@@ -46,6 +46,7 @@ Checked commands:
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
 - `npm.cmd run build --workspace @massage-vn/admin-web`: PASS
 - `node infra/scripts/admin-web-smoke.mjs`: PASS, 52 admin pages plus dynamic detail checks. On the current dev server this can take about 130-170 seconds, so short shell timeouts may fail even when the app is healthy.
+- `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/partner-controls,/operations-policy,/bookings,/chat-archive,/app-sessions,/setup node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted operating-core check also verifies dynamic customer, partner, provider-legacy, and booking detail pages.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
 - `flutter analyze` in customer app: PASS
@@ -87,6 +88,7 @@ Admin dashboard:
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, payment, finance, tax, wallet, location, alerts, and audit evidence into the deeper factual sections.
 - Booking detail now includes closeout readiness checks and an exception register for customer/address, partner choice, chat archive, payment state, finance ledger, cash settlement, location, and audit evidence.
 - Booking detail now includes a service pricing snapshot for selected service duration, customer price, partner payout, HANDS fee, tax/withholding, and wallet impact.
+- Booking detail exposes immutable customer address snapshots to customer and admin reads, and API smoke verifies this so later location refactors do not overwrite booking history.
 - Customer list and customer detail with activity, booking history, chat history, wallet/payment context, addresses, app sessions, notes, exports.
 - Customer detail now includes a compact operating ledger for account, booking work, latest booking, last completed work, chat archive, wallet/payment, address, app access, devices, notifications, timeline, and operator notes.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
@@ -149,6 +151,7 @@ The codebase is healthy, but the work can become fragmented in these areas:
 - Mobile UI has working flows, but design is intentionally temporary.
 - Policies for matching, cash fee debt, tax, payout, and service pricing must stay admin-configurable, not hardcoded in apps.
 - Old backup/radius wording is being removed incrementally. Internal variable/API names can remain until compatibility migrations are planned.
+- Legacy `/partner-risk` and `/provider-risk` routes are compatibility redirects only. New work should link to `/partner-controls` or `/partners`.
 
 ## Recommended Build Order From Here
 
