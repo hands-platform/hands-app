@@ -114,6 +114,7 @@ Admin dashboard:
 - Operations policy page now displays secondary participation as marketplace/candidate-alert wording even when older policy records still contain legacy backup labels.
 - Operations Handoff now includes a shift handoff checklist for live matching, active services, chat continuity, cash settlement, closeout evidence, failed alerts, partner facts, customer context, and written operator notes.
 - Operations dashboard wording now presents the secondary participation lane as marketplace partner candidates instead of legacy backup terminology.
+- Booking monitor now presents the secondary participation lane as marketplace/candidate wording and keeps operator signals factual, with no visible backup or people-scoring language.
 - Chat Archive page with filters, search, sender filter, date filter, CSV export, booking/customer/partner handoff links.
 - CSV exports for customer/partner/account/chat operational records.
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.

@@ -211,7 +211,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['No partners yet', noParticipants.length.toString()],
       ['First-pick pending', preferredPending.length.toString()],
       ['Fallback options', waitingSelection.length.toString()],
-      ['Backup selected', backupChosen.length.toString()],
+      ['Marketplace selected', backupChosen.length.toString()],
       ['Chat live', chatLive.length.toString()],
       ['No-show', noShow.length.toString()],
       ['Expired', expired.length.toString()],
@@ -390,7 +390,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
           <div>
             <h2>Matching escalation board</h2>
             <p className="muted">
-              Direct first-pick partner flow, 10-minute response window, backup partner participation, and
+              Direct first-pick partner flow, 10-minute response window, marketplace partner participation, and
               customer final selection in one operating board.
             </p>
           </div>
@@ -508,7 +508,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
             <div className="card">
               <h3>No matching escalation right now</h3>
               <p className="muted">
-                Open matching, backup participation, customer final selection, and chat handoff are clear.
+                Open matching, marketplace participation, customer final selection, and chat handoff are clear.
               </p>
             </div>
           )}
@@ -813,14 +813,14 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                         .slice(0, 4)
                         .map((participant) => (
                           <span className="pill" key={participant.id}>
-                            Backup: {participant.providerProfile?.displayName ?? 'Partner'} (
+                            Marketplace: {participant.providerProfile?.displayName ?? 'Partner'} (
                             {participant.status})
                           </span>
                         ))}
                     </div>
                     {fallbackParticipants(booking).length > 4 && (
                       <div className="muted" style={{ marginTop: 6 }}>
-                        +{fallbackParticipants(booking).length - 4} more backup partner(s)
+                        +{fallbackParticipants(booking).length - 4} more marketplace partner(s)
                       </div>
                     )}
                   </td>
@@ -1173,11 +1173,11 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
       detail:
         locationRisk.length > 0
           ? 'Live service state has missing or stale last-known partner location.'
-          : 'Chat, backup selection, and location handoff look normal.',
+          : 'Chat, marketplace selection, and location handoff look normal.',
       href: locationRisk.length > 0 ? '/bookings?view=location' : '/bookings?view=chat',
       metrics: [
         metric('location', locationRisk.length),
-        metric('backup chosen', backupSelected.length),
+        metric('marketplace chosen', backupSelected.length),
         metric('chat live', bookings.filter((booking) => Boolean(booking.chatRoom)).length),
         metric('quiet chat', quietChat.length),
       ],
@@ -1463,7 +1463,7 @@ function buildBookingDispatchPartnerShortcuts(
     {
       title: 'Policy controls',
       value: 'Edit',
-      detail: 'Tune response window, backup radius, invitation limits, and stale location rules.',
+      detail: 'Tune response window, marketplace radius, invitation limits, and stale location rules.',
       href: '/operations-policy',
       tone: 'info',
     },
@@ -1680,10 +1680,10 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
       key: 'first-pick',
       label: 'Stage 1 first-pick',
       detail: expired
-        ? 'The first response window is overdue and no usable backup partner is visible.'
+        ? 'The first response window is overdue and no usable marketplace partner is visible.'
         : 'Preferred partner is inside the first response window.',
       action: expired
-        ? 'Escalate backup supply or close/extend the request intentionally.'
+        ? 'Escalate marketplace supply or close/extend the request intentionally.'
         : 'Monitor partner response, wallet gate, push delivery, and KYC status.',
       tone: expired ? 'danger' : 'warn',
       href: `/bookings/${booking.id}#participants`,
@@ -1726,7 +1726,7 @@ function buildMatchingEscalationRows(
       const fallbackCount = fallbackParticipants(booking).length;
       const acceptedCount = acceptedParticipants(booking).length;
       const windowLabel = bookingMatchingWindowLabel(booking, nowMs);
-      const baseTags = [booking.status, windowLabel, `${fallbackCount} backup`, `${acceptedCount} accepted`];
+      const baseTags = [booking.status, windowLabel, `${fallbackCount} marketplace`, `${acceptedCount} accepted`];
 
       if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
         return {
@@ -1760,8 +1760,8 @@ function buildMatchingEscalationRows(
       ) {
         return {
           booking,
-          title: 'First-pick pending with no backup',
-          detail: 'The preferred partner is still deciding and no backup partner has joined.',
+          title: 'First-pick pending with no marketplace option',
+          detail: 'The preferred partner is still deciding and no marketplace partner has joined.',
           operatorAction:
             'Check push delivery and eligible partners within the configured radius before the customer loses patience.',
           tone: 'warn',
@@ -2218,7 +2218,7 @@ function opsSignal(booking: AdminBooking) {
     return <span className="signal signal-info">Fallback options ready</span>;
   }
   if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
-    return <span className="signal signal-info">Backup partner selected</span>;
+    return <span className="signal signal-info">Marketplace partner selected</span>;
   }
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
     return <span className="signal signal-warn">Chat missing</span>;
@@ -2559,7 +2559,7 @@ function nextAction(booking: AdminBooking) {
     return 'Check notifications and nearby partner supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
-    return 'Customer can keep waiting or switch to a backup partner.';
+    return 'Customer can keep waiting or switch to a marketplace partner.';
   }
   if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
     return 'Customer switched away from the first-pick partner. Confirm chat, route, and partner handoff.';
@@ -2647,10 +2647,10 @@ function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | nu
     : 'invite cap ?';
   const backupMode =
     snapshot.backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
-      ? 'backup immediate'
+      ? 'marketplace immediate'
       : snapshot.backupOpenMode === 'DELAYED_UNTIL_FIRST_WINDOW_END'
-        ? 'backup delayed'
-        : 'backup ?';
+        ? 'marketplace delayed'
+        : 'marketplace ?';
   const acceptMode =
     snapshot.preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
       ? 'customer final'
@@ -2698,7 +2698,7 @@ function customerVisibleStateLabel(booking: AdminBooking) {
     isPreferredAwaitingDecision(booking)
   ) {
     return fallbackCount > 0
-      ? `Customer screen: first-pick wait plus ${fallbackCount} backup option(s)`
+      ? `Customer screen: first-pick wait plus ${fallbackCount} marketplace option(s)`
       : 'Customer screen: first-pick waiting only';
   }
   if (booking.status === 'OPEN_MATCHING') {
@@ -2712,25 +2712,25 @@ function customerVisibleStateLabel(booking: AdminBooking) {
 function bookingBackupAlertTraceLabel(booking: AdminBooking, nowMs: number) {
   const summary = bookingBackupAlertTraceSummary(booking, nowMs);
   if (!summary.batchCount) {
-    return 'Backup alerts: no batch recorded';
+    return 'Marketplace alerts: no batch recorded';
   }
   if (summary.totalNotified > 0) {
-    return `Backup alerts: ${summary.totalNotified} notified / ${summary.batchCount} batch(es)${
+    return `Marketplace alerts: ${summary.totalNotified} notified / ${summary.batchCount} batch(es)${
       summary.lastAge ? ` / last ${summary.lastAge}` : ''
     }`;
   }
-  return `Backup alerts: ${summary.batchCount} batch(es), no eligible partner notified`;
+  return `Marketplace alerts: ${summary.batchCount} batch(es), no eligible partner notified`;
 }
 
 function bookingBackupAlertTracePill(booking: AdminBooking) {
   const summary = bookingBackupAlertTraceSummary(booking);
   if (!summary.batchCount) {
-    return 'No backup trace';
+    return 'No marketplace trace';
   }
   if (summary.totalNotified > 0) {
-    return `${summary.totalNotified} backup alert(s)`;
+    return `${summary.totalNotified} marketplace alert(s)`;
   }
-  return 'Backup trace empty';
+  return 'Marketplace trace empty';
 }
 
 function bookingBackupAlertTraceTone(booking: AdminBooking) {
@@ -3009,7 +3009,7 @@ function selectionLabel(booking: AdminBooking) {
   }
 
   if (isBackupSelected(booking)) {
-    return 'Backup partner selected';
+    return 'Marketplace partner selected';
   }
 
   if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
@@ -3035,17 +3035,17 @@ function selectionPathLabel(booking: AdminBooking) {
   const fallbackCount = fallbackParticipants(booking).length;
 
   if (!booking.preferredProvider) {
-    return fallbackCount > 0 ? 'Open pool request with backup supply' : 'Open pool request';
+    return fallbackCount > 0 ? 'Open pool request with marketplace supply' : 'Open pool request';
   }
 
   if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
     return fallbackCount > 0
-      ? 'Direct request first, with backup partners already waiting'
+      ? 'Direct request first, with marketplace partners already waiting'
       : 'Direct request first, waiting on the first-pick partner';
   }
 
   if (isBackupSelected(booking)) {
-    return 'Direct request escalated to backup, then the guest chose a backup partner';
+    return 'Direct request escalated to marketplace participation, then the guest chose a marketplace partner';
   }
 
   if (booking.status === 'MATCHED') {
@@ -3053,7 +3053,7 @@ function selectionPathLabel(booking: AdminBooking) {
   }
 
   if (fallbackCount > 0) {
-    return 'Backup partners are available while the first-pick partner stays in the flow';
+    return 'Marketplace partners are available while the first-pick partner stays in the flow';
   }
 
   return 'Direct request remains the active path';
