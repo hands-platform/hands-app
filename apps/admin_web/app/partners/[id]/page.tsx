@@ -2623,7 +2623,7 @@ function buildPartnerActivityRecords(
       id: `${provider.verification.id}-submitted`,
       type: 'VERIFY',
       at: provider.verification.submittedAt,
-      title: 'Provider verification submitted',
+      title: 'Partner verification submitted',
       detail: `${provider.verification.status} / ${provider.verification.files?.length ?? 0} attached file(s)`,
     });
   }
@@ -2633,7 +2633,7 @@ function buildPartnerActivityRecords(
       id: `${provider.verification.id}-reviewed`,
       type: 'VERIFY',
       at: provider.verification.reviewedAt,
-      title: `Provider verification ${provider.verification.status.toLowerCase()}`,
+      title: `Partner verification ${provider.verification.status.toLowerCase()}`,
       detail: provider.verification.rejectionReason ?? 'Admin review recorded.',
     });
   }
