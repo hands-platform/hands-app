@@ -45,7 +45,6 @@ export async function settleCashDebt(formData: FormData) {
   revalidatePath('/payments');
   revalidatePath('/earnings');
   revalidatePath('/bookings');
-  revalidatePath('/partner-risk');
   revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');
@@ -56,7 +55,6 @@ function revalidatePaymentOperationPaths() {
   revalidatePath('/refunds');
   revalidatePath('/earnings');
   revalidatePath('/bookings');
-  revalidatePath('/partner-risk');
   revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');

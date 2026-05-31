@@ -7,7 +7,6 @@ export async function retryNotification(formData: FormData) {
   const notificationId = readRequiredFormString(formData, 'notificationId');
   await adminPost(`/admin/notifications/${notificationId}/retry`, {}, null);
   revalidatePath('/notifications');
-  revalidatePath('/partner-risk');
   revalidatePath('/partner-controls');
   revalidatePath('/partners');
   revalidatePath('/audit-log');
@@ -18,7 +17,6 @@ export async function enablePushDevice(formData: FormData) {
   await adminPost(`/admin/push-devices/${pushDeviceId}/enable`, {}, null);
   revalidatePath('/notifications');
   revalidatePath('/partners');
-  revalidatePath('/partner-risk');
   revalidatePath('/partner-controls');
   revalidatePath('/audit-log');
 }
