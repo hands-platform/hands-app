@@ -406,69 +406,69 @@ if (
   );
 }
 
-const providerRiskReport = await postJson('/admin/partner-reports', adminAuth.accessToken, {
+const partnerControlReport = await postJson('/admin/partner-reports', adminAuth.accessToken, {
   providerProfileId: providerAuth.user.providerProfile.id,
-  category: 'smoke-risk',
-  summary: 'Smoke provider risk report',
-  details: 'Created by the smoke test to verify provider risk report operations.',
+  category: 'smoke-partner-report',
+  summary: 'Smoke partner control report',
+  details: 'Created by the smoke test to verify partner report operations.',
   severity: 'HIGH',
   source: 'ADMIN',
 });
-if (providerRiskReport.status !== 'OPEN' || providerRiskReport.severity !== 'HIGH') {
-  throw new Error(`Provider risk report was not created correctly: ${JSON.stringify(providerRiskReport)}`);
+if (partnerControlReport.status !== 'OPEN' || partnerControlReport.severity !== 'HIGH') {
+  throw new Error(`Partner report was not created correctly: ${JSON.stringify(partnerControlReport)}`);
 }
-const providerRiskSanction = await postJson(
+const partnerControlSanction = await postJson(
   `/admin/partners/${providerAuth.user.providerProfile.id}/sanctions`,
   adminAuth.accessToken,
   {
-    reportId: providerRiskReport.id,
+    reportId: partnerControlReport.id,
     type: 'WARNING',
-    reason: 'Smoke warning sanction for provider risk flow',
+    reason: 'Smoke warning sanction for partner control flow',
   },
 );
-if (providerRiskSanction.status !== 'ACTIVE' || providerRiskSanction.type !== 'WARNING') {
+if (partnerControlSanction.status !== 'ACTIVE' || partnerControlSanction.type !== 'WARNING') {
   throw new Error(
-    `Provider risk sanction was not created correctly: ${JSON.stringify(providerRiskSanction)}`,
+    `Partner sanction was not created correctly: ${JSON.stringify(partnerControlSanction)}`,
   );
 }
-const liftedProviderRiskSanction = await postJson(
-  `/admin/partner-sanctions/${providerRiskSanction.id}/lift`,
+const liftedPartnerControlSanction = await postJson(
+  `/admin/partner-sanctions/${partnerControlSanction.id}/lift`,
   adminAuth.accessToken,
 );
-if (liftedProviderRiskSanction.status !== 'LIFTED') {
+if (liftedPartnerControlSanction.status !== 'LIFTED') {
   throw new Error(
-    `Provider risk sanction was not lifted correctly: ${JSON.stringify(liftedProviderRiskSanction)}`,
+    `Partner sanction was not lifted correctly: ${JSON.stringify(liftedPartnerControlSanction)}`,
   );
 }
-const resolvedProviderRiskReport = await patchJson(
-  `/admin/partner-reports/${providerRiskReport.id}`,
+const resolvedPartnerControlReport = await patchJson(
+  `/admin/partner-reports/${partnerControlReport.id}`,
   adminAuth.accessToken,
   {
     status: 'RESOLVED',
     severity: 'MEDIUM',
-    resolutionNote: 'Smoke risk report resolved',
+    resolutionNote: 'Smoke partner report resolved',
   },
 );
-if (resolvedProviderRiskReport.status !== 'RESOLVED' || resolvedProviderRiskReport.severity !== 'MEDIUM') {
+if (resolvedPartnerControlReport.status !== 'RESOLVED' || resolvedPartnerControlReport.severity !== 'MEDIUM') {
   throw new Error(
-    `Provider risk report was not updated correctly: ${JSON.stringify(resolvedProviderRiskReport)}`,
+    `Partner report was not updated correctly: ${JSON.stringify(resolvedPartnerControlReport)}`,
   );
 }
-const partnerRiskReports = await getJson('/admin/partner-reports', adminAuth.accessToken);
-if (!partnerRiskReports.some((report) => report.id === resolvedProviderRiskReport.id)) {
+const partnerControlReports = await getJson('/admin/partner-reports', adminAuth.accessToken);
+if (!partnerControlReports.some((report) => report.id === resolvedPartnerControlReport.id)) {
   throw new Error(
-    `Partner risk report alias did not expose the provider report: ${JSON.stringify({
-      resolvedProviderRiskReport,
-      partnerRiskReports: partnerRiskReports.slice(0, 5),
+    `Partner report endpoint did not expose the resolved report: ${JSON.stringify({
+      resolvedPartnerControlReport,
+      partnerControlReports: partnerControlReports.slice(0, 5),
     })}`,
   );
 }
-const partnerRiskSanctions = await getJson('/admin/partner-sanctions', adminAuth.accessToken);
-if (!partnerRiskSanctions.some((sanction) => sanction.id === liftedProviderRiskSanction.id)) {
+const partnerControlSanctions = await getJson('/admin/partner-sanctions', adminAuth.accessToken);
+if (!partnerControlSanctions.some((sanction) => sanction.id === liftedPartnerControlSanction.id)) {
   throw new Error(
-    `Partner sanction alias did not expose the provider sanction: ${JSON.stringify({
-      liftedProviderRiskSanction,
-      partnerRiskSanctions: partnerRiskSanctions.slice(0, 5),
+    `Partner sanction endpoint did not expose the lifted sanction: ${JSON.stringify({
+      liftedPartnerControlSanction,
+      partnerControlSanctions: partnerControlSanctions.slice(0, 5),
     })}`,
   );
 }
