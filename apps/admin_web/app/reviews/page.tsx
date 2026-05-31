@@ -30,7 +30,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
         </div>
         <div className="card">
           <p>Service recovery</p>
-          <h2>{summary.lowRating}</h2>
+          <h2>{summary.serviceRecovery}</h2>
         </div>
         <div className="card">
           <p>Customer extra</p>
@@ -242,7 +242,7 @@ type ReviewCommandItem = {
 
 function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
   const reported = reviews.filter((review) => review.status === 'REPORTED');
-  const lowRating = reviews.filter((review) => review.rating <= 2);
+  const serviceRecovery = reviews.filter((review) => review.rating <= 2);
   const hidden = reviews.filter((review) => review.status === 'HIDDEN');
   const extraAmount = reviews.filter((review) => review.tipAmount > 0);
 
@@ -262,9 +262,9 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
         'Feedback at 2 stars or below is a service recovery queue for refunds, partner support, or service mismatch.',
       status: '2 stars or below',
       operatorAction: 'Check booking context, customer notes, and partner repetition.',
-      href: '/reviews?review=low-rating',
-      tone: lowRating.length > 0 ? 'warn' : 'ok',
-      reviews: lowRating,
+      href: '/reviews?review=service-recovery',
+      tone: serviceRecovery.length > 0 ? 'warn' : 'ok',
+      reviews: serviceRecovery,
     },
     {
       title: 'Hidden evidence',
@@ -289,7 +289,7 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
 
 function buildReviewFilters(params: Record<string, string | string[] | undefined>) {
   return {
-    review: readParam(params.review),
+    review: normalizeReviewFilter(readParam(params.review)),
   };
 }
 
@@ -308,7 +308,7 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   if (filter === 'reported') {
     return review.status === 'REPORTED';
   }
-  if (filter === 'low-rating') {
+  if (filter === 'service-recovery') {
     return review.rating <= 2;
   }
   if (filter === 'hidden') {
@@ -327,7 +327,7 @@ function reviewFilterLinks() {
   return [
     { label: 'All reviews', href: '/reviews', review: '' },
     { label: 'Reported', href: '/reviews?review=reported', review: 'reported' },
-    { label: 'Service recovery', href: '/reviews?review=low-rating', review: 'low-rating' },
+    { label: 'Service recovery', href: '/reviews?review=service-recovery', review: 'service-recovery' },
     { label: 'Hidden', href: '/reviews?review=hidden', review: 'hidden' },
     { label: 'Published', href: '/reviews?review=published', review: 'published' },
     { label: 'Extra amount', href: '/reviews?review=extra-amount', review: 'extra-amount' },
@@ -338,7 +338,7 @@ function reviewFilterDescription(review: string) {
   if (review === 'reported') {
     return 'reviews that need moderation follow-up.';
   }
-  if (review === 'low-rating') {
+  if (review === 'service-recovery') {
     return 'feedback at 2 stars or below that may need service recovery.';
   }
   if (review === 'hidden') {
@@ -365,7 +365,7 @@ function buildSummary(reviews: AdminReview[]) {
     total: reviews.length,
     flagged: reviews.filter((review) => review.status === 'REPORTED' || review.status === 'HIDDEN').length,
     published: reviews.filter((review) => review.status === 'PUBLISHED').length,
-    lowRating: reviews.filter((review) => review.rating <= 2).length,
+    serviceRecovery: reviews.filter((review) => review.rating <= 2).length,
     extraAmount: reviews.filter((review) => review.tipAmount > 0).length,
   };
 }
@@ -479,4 +479,8 @@ function shortId(value: string) {
 function dateMs(value?: string | null) {
   const timestamp = value ? new Date(value).getTime() : 0;
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function normalizeReviewFilter(value: string) {
+  return value === 'low-rating' ? 'service-recovery' : value;
 }
