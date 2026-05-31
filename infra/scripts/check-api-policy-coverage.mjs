@@ -38,6 +38,14 @@ const requiredCoverage = [
     ],
   },
   {
+    area: 'admin chat retention after completion',
+    markers: [
+      'Completed booking did not retain admin chat archive',
+      'Admin chat archive did not retain completed booking messages',
+      "'/admin/chat-archive'",
+    ],
+  },
+  {
     area: 'tax policy and withholding',
     markers: [
       'Tax policy version list did not return an array',

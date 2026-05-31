@@ -2229,6 +2229,33 @@ const chatMessage = await postJson(`/chat/rooms/${chatRoomId}/messages`, custome
 
 await postJson(`/provider/bookings/${booking.id}/complete`, providerAuth.accessToken);
 
+const completedAdminChatDetail = await getJson(`/admin/bookings/${booking.id}`, adminAuth.accessToken);
+if (
+  completedAdminChatDetail?.status !== 'COMPLETED' ||
+  completedAdminChatDetail?.chatRoom?.id !== chatRoomId ||
+  !completedAdminChatDetail?.chatRoom?.messages?.some((message) => message.id === chatMessage.id)
+) {
+  throw new Error(
+    `Completed booking did not retain admin chat archive: ${JSON.stringify(completedAdminChatDetail)}`,
+  );
+}
+
+const completedChatArchive = await getJson('/admin/chat-archive', adminAuth.accessToken);
+if (
+  !completedChatArchive.some(
+    (item) =>
+      item.id === booking.id &&
+      item.chatRoom?.id === chatRoomId &&
+      item.chatRoom?.messages?.some((message) => message.id === chatMessage.id),
+  )
+) {
+  throw new Error(
+    `Admin chat archive did not retain completed booking messages: ${JSON.stringify(
+      completedChatArchive.slice(0, 5),
+    )}`,
+  );
+}
+
 const review = await postJson('/customer/reviews', customerAuth.accessToken, {
   bookingId: booking.id,
   rating: 5,
