@@ -3,4 +3,4 @@ export {
   createProviderSanction,
   liftProviderSanction,
   updateProviderReport,
-} from '../partner-risk/actions';
+} from '../partner-controls/actions';

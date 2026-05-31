@@ -45,7 +45,7 @@ import {
   createProviderSanction,
   liftProviderSanction,
   updateProviderReport,
-} from '../../partner-risk/actions';
+} from '../../partner-controls/actions';
 
 type PageProps = {
   params: Promise<{ id: string }>;
