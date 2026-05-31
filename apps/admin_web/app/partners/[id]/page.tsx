@@ -317,9 +317,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               Back to partners
             </Link>
           </p>
-          <h1>{provider.displayName || provider.user?.fullName || provider.user?.phone}</h1>
+          <h1>{marketplaceDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id)}</h1>
           <p className="muted">
-            {provider.legalName ?? 'Legal name missing'} / {provider.user?.phone ?? 'No phone'} /{' '}
+            {marketplaceDisplayText(provider.legalName ?? 'Legal name missing')} / {provider.user?.phone ?? 'No phone'} /{' '}
             {provider.city ?? 'No city'}
           </p>
         </div>
@@ -870,10 +870,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             First response window: {dispatchPolicy.responseWindowMinutes}m
           </span>
           <span className="pill pill-info">
-            Backup radius: {formatDistance(dispatchPolicy.backupRadiusMeters)}
+            Marketplace radius: {formatDistance(dispatchPolicy.backupRadiusMeters)}
           </span>
           <span className="pill pill-info">
-            Backup location: {dispatchPolicy.locationFreshnessMinutes}m fresh
+            Marketplace location: {dispatchPolicy.locationFreshnessMinutes}m fresh
           </span>
           <Link className="text-link" href="/operations-policy">
             Edit matching policy
@@ -1799,7 +1799,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                       Open private file
                     </a>
                   ) : (
-                    (document.fileAsset?.key ?? 'No file key')
+                    marketplaceDisplayText(document.fileAsset?.key ?? 'No file key')
                   )}
                 </p>
                 <div className="actions">
@@ -1856,10 +1856,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                 <p className="muted">
                   {file.url ? (
                     <a className="text-link" href={file.url} target="_blank" rel="noreferrer">
-                      {file.key}
+                      {marketplaceDisplayText(file.key)}
                     </a>
                   ) : (
-                    file.key
+                    marketplaceDisplayText(file.key)
                   )}
                 </p>
                 <div className="actions">
@@ -2038,9 +2038,13 @@ function StatusCard({ label, value }: { label: string; value: string }) {
 function InfoLine({ label, value }: { label: string; value?: string | null }) {
   return (
     <p className="muted">
-      <strong>{label}:</strong> {value && value.trim() ? value : 'Missing'}
+      <strong>{label}:</strong> {value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}
     </p>
   );
+}
+
+function marketplaceDisplayText(value: string) {
+  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
 }
 
 type ProviderServicePricingRow = {
@@ -2277,7 +2281,7 @@ function PartnerDetailReadinessSnapshot({
         <div>
           <h2>Partner readiness snapshot</h2>
           <p className="muted">
-            Fast operating badges for dispatch, backup matching, cash settlement, KYC, payout, and service
+            Fast operating badges for dispatch, marketplace matching, cash settlement, KYC, payout, and service
             readiness.
           </p>
         </div>
@@ -2298,7 +2302,7 @@ function PartnerDetailReadinessSnapshot({
         </div>
         <small>
           {bookingAcceptance.canAccept
-            ? `Backup radius ${formatDistance(dispatchPolicy.backupRadiusMeters)}`
+            ? `Marketplace radius ${formatDistance(dispatchPolicy.backupRadiusMeters)}`
             : 'Resolve gate'}
         </small>
       </div>
@@ -2473,7 +2477,9 @@ function buildPartnerOperatorCommandQueue({
       id: 'bank-review',
       label: 'BANK',
       title: 'Bank account needs approval',
-      detail: `${primaryBank.bankName ?? 'Bank'} / ${primaryBank.accountHolderName ?? 'holder missing'} / ${primaryBank.status}.`,
+      detail: `${marketplaceDisplayText(primaryBank.bankName ?? 'Bank')} / ${marketplaceDisplayText(
+        primaryBank.accountHolderName ?? 'holder missing',
+      )} / ${primaryBank.status}.`,
       owner: 'Finance',
       tone: 'pending',
       action: { type: 'approve-bank', bankAccountId: primaryBank.id, label: 'Approve bank' },
@@ -2662,7 +2668,7 @@ function buildPartnerActivityRecords(
       type: 'ACCOUNT',
       at: provider.user.createdAt,
       title: 'Partner user account created',
-      detail: `${provider.legalName ?? provider.displayName ?? 'Unnamed partner'} / ${
+      detail: `${marketplaceDisplayText(provider.legalName ?? provider.displayName ?? 'Unnamed partner')} / ${
         provider.user.phone ?? 'No phone'
       }`,
     });
@@ -2772,7 +2778,7 @@ function buildPartnerActivityRecords(
       type: 'BANK',
       at: bankAccount.reviewedAt ?? '',
       title: `Bank account ${bankAccount.status.toLowerCase()}`,
-      detail: `${bankAccount.bankName} / ${bankAccount.accountHolderName} / ${
+      detail: `${marketplaceDisplayText(bankAccount.bankName)} / ${marketplaceDisplayText(bankAccount.accountHolderName)} / ${
         bankAccount.isPrimary ? 'primary' : 'secondary'
       }${bankAccount.rejectionReason ? ` / ${bankAccount.rejectionReason}` : ''}`,
     });
@@ -2784,7 +2790,7 @@ function buildPartnerActivityRecords(
       type: 'TAX',
       at: provider.taxProfile.approvedAt,
       title: `Tax profile ${provider.taxProfile.status.toLowerCase()}`,
-      detail: `${provider.taxProfile.legalName} / tax code ${
+      detail: `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax code ${
         provider.taxProfile.taxCodeLast4 ? `****${provider.taxProfile.taxCodeLast4}` : 'not stored'
       }`,
     });
@@ -2991,10 +2997,10 @@ function buildPartnerMasterFacts(
     },
     {
       label: 'Real / activity name',
-      value: `${provider.legalName ?? 'Legal name missing'} / ${
+      value: `${marketplaceDisplayText(provider.legalName ?? 'Legal name missing')} / ${
         provider.activityNickname ?? provider.displayName ?? 'No activity name'
       }`,
-      helper: `Display name: ${provider.displayName ?? 'Not saved'}`,
+      helper: `Display name: ${marketplaceDisplayText(provider.displayName ?? 'Not saved')}`,
     },
     {
       label: 'Phone / email',
@@ -3071,7 +3077,9 @@ function buildPartnerMasterFacts(
     {
       label: 'Bank account',
       value: primaryBank?.status ?? 'MISSING',
-      helper: primaryBank ? `${primaryBank.bankName} / ${primaryBank.accountHolderName}` : 'No bank row',
+      helper: primaryBank
+        ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)}`
+        : 'No bank row',
     },
     {
       label: 'Account state',
@@ -3159,7 +3167,7 @@ function buildPartnerOperatingChecklist(
       area: 'Bank',
       status: primaryBank?.status === 'APPROVED' ? 'Bank approved' : 'Bank setup needed',
       detail: primaryBank
-        ? `${primaryBank.bankName} / ${primaryBank.accountHolderName} / ${primaryBank.status}`
+        ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)} / ${primaryBank.status}`
         : 'No primary bank account is saved.',
       nextAction: primaryBank?.status === 'APPROVED' ? 'Ready for payout' : 'Review bank account',
       href: `/partners/${provider.id}#bank`,
@@ -3206,7 +3214,7 @@ function buildPartnerOperatingChecklist(
       status: locationFresh ? 'Location fresh' : 'Location refresh needed',
       detail: `Last location is ${locationAgeLabel(
         provider.currentLocationUpdatedAt,
-      )}; backup matching policy allows ${dispatchPolicy.locationFreshnessMinutes}m.`,
+      )}; marketplace matching policy allows ${dispatchPolicy.locationFreshnessMinutes}m.`,
       nextAction: locationFresh ? 'Ready for distance checks' : 'Ask app reopen/location update',
       href: `/partners/${provider.id}#location`,
       tone: locationFresh ? 'done' : 'pending',
@@ -3258,7 +3266,7 @@ function buildPartnerOperatingLedger(
     {
       area: 'Identity',
       status: provider.legalName ? 'Profile linked' : 'Profile incomplete',
-      evidence: `${provider.legalName ?? 'No legal name'} / ${provider.user?.phone ?? 'No phone'} / ${
+      evidence: `${marketplaceDisplayText(provider.legalName ?? 'No legal name')} / ${provider.user?.phone ?? 'No phone'} / ${
         provider.city ?? 'No city'
       }`,
       href: `/partners/${provider.id}#partner-master-facts`,
@@ -3285,7 +3293,7 @@ function buildPartnerOperatingLedger(
       area: 'Bank',
       status: primaryBank?.status ?? 'MISSING',
       evidence: primaryBank
-        ? `${primaryBank.bankName} / ${primaryBank.accountHolderName} / ${
+        ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)} / ${
             primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'
           }`
         : 'No bank account row',
@@ -3295,7 +3303,7 @@ function buildPartnerOperatingLedger(
       area: 'Tax',
       status: provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'REQUIRED' : 'DEFERRED'),
       evidence: provider.taxProfile
-        ? `${provider.taxProfile.legalName} / tax ****${provider.taxProfile.taxCodeLast4 ?? '----'}`
+        ? `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax ****${provider.taxProfile.taxCodeLast4 ?? '----'}`
         : providerHasFirstRevenueSignal(provider)
           ? 'First earning exists; tax profile is required before payout.'
           : 'Tax profile intentionally deferred until first earning.',
@@ -3509,7 +3517,7 @@ function buildProviderBookingAcceptance(
       ok: hasApprovedBankAccount(provider),
       detail:
         primaryBank?.status === 'APPROVED'
-          ? `Approved bank is available: ${primaryBank.bankName}.`
+          ? `Approved bank is available: ${marketplaceDisplayText(primaryBank.bankName)}.`
           : `Bank account is ${primaryBank?.status ?? 'missing'}.`,
       action: hasApprovedBankAccount(provider) ? 'Clear' : 'Approve bank',
     },
@@ -3571,14 +3579,14 @@ function buildPartnerAcceptanceRepairCommand(
     : blockedGates.some((gate) =>
           ['Wallet and cash debt', 'Account controls', 'Identity and approval'].includes(gate.label),
         )
-      ? 'Hide or avoid this partner for direct acceptance and backup shortlist until hard blockers are cleared.'
+      ? 'Hide or avoid this partner for direct acceptance and marketplace shortlist until hard blockers are cleared.'
       : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
   const operatorDecision = bookingAcceptance.canAccept
     ? 'No manual repair required. Monitor service quality and response speed.'
     : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
   const fallbackRouting = bookingAcceptance.canAccept
-    ? `Eligible for first-pick and backup participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
-    : 'Route urgent demand to direct-ready or backup-ready partners while this repair queue is open.';
+    ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
+    : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
 
   const steps = blockedGates.map((gate) => partnerAcceptanceRepairStep(provider, gate));
   if (!steps.length) {
@@ -3801,8 +3809,8 @@ function buildPartnerAcceptanceUnblockPlaybook(
       status: locationGate?.ok ? 'FRESH' : 'STALE',
       detail: locationGate?.detail ?? 'Location gate was not evaluated.',
       bookingImpact: locationGate?.ok
-        ? 'Partner location is usable for distance sorting and backup radius checks.'
-        : 'Partner may be excluded from nearby backup matching or show unreliable distance.',
+        ? 'Partner location is usable for distance sorting and marketplace radius checks.'
+        : 'Partner may be excluded from nearby marketplace matching or show unreliable distance.',
       payoutImpact: 'No direct payout impact, but location history can support dispute review.',
       action: locationGate?.ok ? 'Open location history' : 'Ask partner to open app',
       href: `/partners/${provider.id}#location`,
@@ -3818,7 +3826,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
       detail: reachableGate?.detail ?? 'Reachability gate was not evaluated.',
       bookingImpact: reachableGate?.ok
         ? 'Partner should receive direct booking alerts during the response window.'
-        : 'Partner may miss the 10 minute first-pick window or backup invite.',
+        : 'Partner may miss the 10 minute first-pick window or marketplace invite.',
       payoutImpact: 'No direct payout impact.',
       action: reachableGate?.ok ? 'Open app sessions' : 'Check devices and sessions',
       href: `/app-sessions?role=PROVIDER&q=${encodeURIComponent(provider.user?.phone ?? provider.id)}`,
@@ -3886,11 +3894,11 @@ function buildPartnerDetailOpsBadges(
       detail: bookingAcceptance.primaryReason,
     },
     {
-      label: bookingAcceptance.canAccept ? 'Backup candidate' : 'Backup not ready',
+      label: bookingAcceptance.canAccept ? 'Marketplace candidate' : 'Marketplace not ready',
       tone: bookingAcceptance.canAccept ? 'done' : 'pending',
       detail: bookingAcceptance.canAccept
         ? `Can be considered inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
-        : 'Backup matching uses the same control gates, plus booking-distance filtering.',
+        : 'Marketplace matching uses the same control gates, plus booking-distance filtering.',
     },
     {
       label: cashDebt > 0 ? 'Cash debt' : 'Wallet clear',
@@ -3976,12 +3984,12 @@ function buildProviderOpsSummary(provider: ProviderDetail, dispatchPolicy = DEFA
         : provider.verification?.status !== 'APPROVED'
           ? 'Partner verification is not approved yet.'
           : provider.status !== 'ONLINE_AVAILABLE'
-            ? 'Partner is approved but not online for direct booking or backup matching.'
+            ? 'Partner is approved but not online for direct booking or marketplace matching.'
             : !hasRecentLocation
               ? `Last location is ${locationAgeLabel(provider.currentLocationUpdatedAt)}.`
               : !hasEnabledPush
                 ? 'No enabled push device is registered for request alerts.'
-                : 'Partner can receive customer direct requests and backup matching alerts.',
+                : 'Partner can receive customer direct requests and marketplace matching alerts.',
       action: !accountClear
         ? 'Unblock only after the account-level issue is resolved.'
         : provider.verification?.status !== 'APPROVED'
@@ -4278,7 +4286,7 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
             verificationReady,
           }).join(' '),
       operatorAction: level2Ready
-        ? 'Partner can receive direct booking and backup matching work.'
+        ? 'Partner can receive direct booking and marketplace matching work.'
         : 'Clear these items before relying on the partner for customer requests.',
       ready: level2Ready,
       blocked: !level2Ready,
@@ -4392,7 +4400,7 @@ function buildProviderResubmissionPlan(provider: ProviderDetail) {
   for (const bankAccount of provider.bankAccounts ?? []) {
     if (bankAccount.status !== 'REJECTED') continue;
     items.push({
-      target: `${bankAccount.bankName} bank account`,
+      target: `${marketplaceDisplayText(bankAccount.bankName)} bank account`,
       status: 'REJECTED',
       reason: bankAccount.rejectionReason ?? 'No bank rejection reason was saved.',
       providerInstruction:
@@ -4808,7 +4816,9 @@ function buildReviewChecklist(provider: ProviderDetail, dispatchPolicy = DEFAULT
       ok: hasApprovedBankAccount(provider),
       status: bankAccountStatusLabel(provider),
       detail: primaryBank
-        ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'}`
+        ? `${marketplaceDisplayText(primaryBank.bankName)} / ${
+            primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'
+          }`
         : 'Partner has not submitted a payout account.',
     },
     {
@@ -4881,7 +4891,7 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
       status: document?.status ?? 'MISSING',
       uploadedAt: document?.fileAsset?.uploadedAt,
       rejectionReason: document?.rejectionReason,
-      fileLabel: document?.fileAsset?.contentType ?? document?.fileAsset?.key ?? 'No file uploaded',
+      fileLabel: marketplaceDisplayText(document?.fileAsset?.contentType ?? document?.fileAsset?.key ?? 'No file uploaded'),
     };
   });
   const missingDocuments = rows.filter((row) => row.status !== 'APPROVED').map((row) => row.type);
@@ -4916,7 +4926,7 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
         label: 'Legal name present',
         ok: legalNameReady,
         detail: legalNameReady
-          ? `Legal name: ${provider.legalName}.`
+          ? `Legal name: ${marketplaceDisplayText(provider.legalName ?? 'Legal name missing')}.`
           : 'Ask the partner to complete the legal name used for CCCD and payout checks.',
       },
       {
