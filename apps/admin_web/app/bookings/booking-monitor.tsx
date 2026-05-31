@@ -155,6 +155,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   const [hasMounted, setHasMounted] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [view, setView] = useState<BookingView>(initialView);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState('all');
   const currentTimeMs = nowMs ?? 0;
 
   const orderedBookings = useMemo(
@@ -250,9 +253,27 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     [currentTimeMs, orderedBookings],
   );
 
-  const visibleBookings = useMemo(() => {
+  const baseVisibleBookings = useMemo(() => {
     return orderedBookings.filter((booking) => bookingMatchesView(booking, view, currentTimeMs));
   }, [currentTimeMs, orderedBookings, view]);
+
+  const visibleBookings = useMemo(() => {
+    return baseVisibleBookings.filter(
+      (booking) =>
+        bookingMatchesSearch(booking, searchQuery) &&
+        bookingMatchesStatusFilter(booking, statusFilter) &&
+        bookingMatchesPaymentFilter(booking, paymentFilter),
+    );
+  }, [baseVisibleBookings, paymentFilter, searchQuery, statusFilter]);
+
+  const statusFilterOptions = useMemo(
+    () => uniqueSortedOptions(orderedBookings.map((booking) => booking.status)),
+    [orderedBookings],
+  );
+  const paymentFilterOptions = useMemo(
+    () => uniqueSortedOptions(orderedBookings.map((booking) => booking.payment?.method ?? 'NO_PAYMENT')),
+    [orderedBookings],
+  );
 
   const bookingViewCounts = useMemo(
     () =>
@@ -602,8 +623,53 @@ export function BookingMonitor({ bookings, initialView }: Props) {
             </p>
           </div>
           <span className={`pill ${view === 'all' ? 'pill-success' : 'pill-warn'}`}>
-            Showing {visibleBookings.length} of {orderedBookings.length}
+            Showing {visibleBookings.length} of {baseVisibleBookings.length}
           </span>
+        </div>
+        <div className="ops-filter-grid" style={{ marginBottom: 14 }}>
+          <label>
+            Search booking/customer/partner
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Booking ID, phone, partner, customer, service"
+            />
+          </label>
+          <label>
+            Booking status
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="all">All statuses</option>
+              {statusFilterOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Payment method
+            <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)}>
+              <option value="all">All methods</option>
+              {paymentFilterOptions.map((method) => (
+                <option key={method} value={method}>
+                  {method}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="actions" style={{ alignSelf: 'end' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('all');
+                setPaymentFilter('all');
+              }}
+            >
+              Clear list filters
+            </button>
+          </div>
         </div>
         <div className="participant-list">
           {bookingViewOptions.map((option) => (
@@ -1770,6 +1836,57 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
     return true;
   }
   return activeStatuses.has(booking.status);
+}
+
+function bookingMatchesSearch(booking: AdminBooking, query: string) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return true;
+  }
+
+  return bookingSearchHaystack(booking).includes(normalized);
+}
+
+function bookingMatchesStatusFilter(booking: AdminBooking, statusFilter: string) {
+  return statusFilter === 'all' || booking.status === statusFilter;
+}
+
+function bookingMatchesPaymentFilter(booking: AdminBooking, paymentFilter: string) {
+  return paymentFilter === 'all' || (booking.payment?.method ?? 'NO_PAYMENT') === paymentFilter;
+}
+
+function bookingSearchHaystack(booking: AdminBooking) {
+  return [
+    booking.id,
+    booking.status,
+    bookingServiceOptionLabel(booking),
+    booking.customerProfile?.user?.fullName,
+    booking.customerProfile?.user?.phone,
+    booking.preferredProvider?.displayName,
+    booking.preferredProvider?.user?.fullName,
+    booking.preferredProvider?.user?.phone,
+    booking.selectedProvider?.displayName,
+    booking.selectedProvider?.user?.fullName,
+    booking.selectedProvider?.user?.phone,
+    booking.payment?.method,
+    booking.payment?.status,
+    booking.payment?.providerRef,
+    ...(booking.participants ?? []).flatMap((participant) => [
+      participant.providerProfile?.displayName,
+      participant.providerProfile?.user?.fullName,
+      participant.providerProfile?.user?.phone,
+      participant.status,
+    ]),
+  ]
+    .filter((value): value is string => typeof value === 'string' && value.length > 0)
+    .join(' ')
+    .toLowerCase();
+}
+
+function uniqueSortedOptions(values: Array<string | null | undefined>) {
+  return [...new Set(values.filter((value): value is string => Boolean(value)))].sort((left, right) =>
+    left.localeCompare(right),
+  );
 }
 
 function commandToneClass(tone: BookingCommandLane['tone']) {
