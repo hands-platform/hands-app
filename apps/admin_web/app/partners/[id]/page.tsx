@@ -76,6 +76,7 @@ type PartnerKycEvidence = {
 };
 type PartnerDetailBooking = {
   id: string;
+  customerProfileId?: string;
   status?: string;
   scheduledStartAt?: string;
   scheduledEndAt?: string;
@@ -692,9 +693,21 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     </div>
                   )}
                 </div>
-                <Link className="text-link" href={`/bookings/${record.booking.id}`}>
-                  Open booking
-                </Link>
+                <div className="participant-list">
+                  <Link className="text-link" href={`/bookings/${record.booking.id}`}>
+                    Open booking
+                  </Link>
+                  {record.booking.customerProfileId ? (
+                    <Link className="text-link" href={`/customers/${record.booking.customerProfileId}`}>
+                      Open customer
+                    </Link>
+                  ) : null}
+                  {record.booking.chatRoom?.id ? (
+                    <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(record.booking.id)}`}>
+                      Open chat archive
+                    </Link>
+                  ) : null}
+                </div>
               </div>
             ))
           ) : (
