@@ -61,6 +61,10 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       in_app_now: row.isLive,
       chat_room_count: row.chatRooms,
       payment_issue_count: row.paymentIssues,
+      frequent_service: row.commonService,
+      frequent_area: row.commonArea,
+      repeated_partner: row.commonPartner,
+      last_completed_partner: row.lastCompletedPartner,
       admin_memo_count: row.memoCount,
       latest_memo: row.latestMemoTitle,
       latest_memo_detail: row.latestMemoDetail,
@@ -86,6 +90,10 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       'in_app_now',
       'chat_room_count',
       'payment_issue_count',
+      'frequent_service',
+      'frequent_area',
+      'repeated_partner',
+      'last_completed_partner',
       'admin_memo_count',
       'latest_memo',
       'latest_memo_detail',
@@ -419,6 +427,8 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
                 <th>Last work</th>
                 <th>Bookings</th>
                 <th>Completed</th>
+                <th>Frequent service / area</th>
+                <th>Repeated partner</th>
                 <th>Cancelled</th>
                 <th>Total paid</th>
                 <th>Ops trail</th>
@@ -461,7 +471,15 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
                   </td>
                   <td>
                     <strong>{row.completedBookings}</strong>
-                    <p className="muted">Actual finished work</p>
+                    <p className="muted">{row.lastCompletedPartner}</p>
+                  </td>
+                  <td>
+                    <strong>{row.commonService}</strong>
+                    <p className="muted">{row.commonArea}</p>
+                  </td>
+                  <td>
+                    <strong>{row.commonPartner}</strong>
+                    <p className="muted">Repeated selected or preferred partner</p>
                   </td>
                   <td>
                     <strong>{row.cancelledBookings}</strong>
@@ -491,7 +509,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
               ))}
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={14}>
+                  <td colSpan={16}>
                     <strong>No customers found</strong>
                     <p className="muted">Change the filters or clear search to view customer records.</p>
                   </td>
@@ -583,9 +601,17 @@ function filterCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], filters
   return rows.filter((row) => {
     if (
       query &&
-      ![row.name, row.phone, row.email, row.id, row.latestMemoTitle, row.latestMemoDetail].some((value) =>
-        value.toLowerCase().includes(query),
-      )
+      ![
+        row.name,
+        row.phone,
+        row.email,
+        row.id,
+        row.commonService,
+        row.commonArea,
+        row.commonPartner,
+        row.latestMemoTitle,
+        row.latestMemoDetail,
+      ].some((value) => value.toLowerCase().includes(query))
     ) {
       return false;
     }
@@ -716,6 +742,13 @@ function buildCustomerRow(customer: AdminCustomer) {
     lastCompletedBooking?.updatedAt ??
     lastCompletedBooking?.scheduledStartAt ??
     lastCompletedBooking?.createdAt;
+  const commonService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
+  const commonArea = mostCommonLabel(
+    bookings
+      .map((booking) => bookingAddressLabel(booking))
+      .filter((label) => label !== 'No address'),
+  );
+  const commonPartner = mostCommonLabel(bookings.map((booking) => bookingPartnerLabel(booking)));
   const lastSeenAt = customer.user?.appSessions?.[0]?.lastSeenAt;
   const isLive = Boolean(lastSeenAt && Date.now() - dateMs(lastSeenAt) <= 30 * 60_000);
   const pushReachable = Boolean(customer.user?.pushDevices?.some((device) => device.enabled));
@@ -751,6 +784,12 @@ function buildCustomerRow(customer: AdminCustomer) {
     lastCompletedLabel: lastCompletedBooking
       ? bookingServiceLabel(lastCompletedBooking)
       : 'No finished service record',
+    lastCompletedPartner: lastCompletedBooking
+      ? bookingPartnerLabel(lastCompletedBooking)
+      : 'No completed partner',
+    commonService: commonService ?? 'Not enough bookings',
+    commonArea: commonArea ?? 'No repeated area',
+    commonPartner: commonPartner ?? 'Not enough bookings',
     lastSeenAt,
     isLive,
     pushReachable,
@@ -845,6 +884,48 @@ function bookingServiceLabel(booking: NonNullable<AdminCustomer['bookings']>[num
   const first = booking.services?.[0];
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
+}
+
+function bookingPartnerLabel(booking: NonNullable<AdminCustomer['bookings']>[number]) {
+  return (
+    booking.selectedProvider?.displayName ??
+    booking.preferredProvider?.displayName ??
+    booking.selectedProvider?.user?.fullName ??
+    booking.preferredProvider?.user?.fullName ??
+    booking.selectedProvider?.user?.phone ??
+    booking.preferredProvider?.user?.phone ??
+    'No partner'
+  );
+}
+
+function bookingAddressLabel(booking: NonNullable<AdminCustomer['bookings']>[number]) {
+  return (
+    booking.addressSnapshot?.addressText ??
+    stringifyAddress(booking.addressSnapshot?.address) ??
+    stringifyAddress(booking.address) ??
+    'No address'
+  );
+}
+
+function mostCommonLabel(values: string[]) {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    if (!value || value === 'No service' || value === 'No address' || value === 'No partner') continue;
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return [...counts.entries()].sort((left, right) => right[1] - left[1])[0]?.[0] ?? null;
+}
+
+function stringifyAddress(value: unknown) {
+  if (!value) return null;
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    const objectValue = value as Record<string, unknown>;
+    const knownText = objectValue.addressText ?? objectValue.address ?? objectValue.label ?? objectValue.name;
+    if (typeof knownText === 'string') return knownText;
+    return compactText(JSON.stringify(value), 96);
+  }
+  return String(value);
 }
 
 function readAddressCount(value: unknown) {
