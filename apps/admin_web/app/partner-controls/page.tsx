@@ -14,7 +14,7 @@ import {
 } from './actions';
 
 type PartnerControlsSearchParams = Promise<Record<string, string | string[] | undefined>>;
-type PartnerRiskPolicy = {
+type PartnerControlPolicy = {
   responseWindowMinutes: number;
   backupRadiusMeters: number;
   invitationLimit: number;
@@ -44,7 +44,7 @@ const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_rad
 const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
 const MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY = 'matching.backup_provider_invitation_limit';
-const DEFAULT_PARTNER_RISK_POLICY: PartnerRiskPolicy = {
+const DEFAULT_PARTNER_CONTROL_POLICY: PartnerControlPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10000,
   invitationLimit: 50,
@@ -63,7 +63,7 @@ export default async function PartnerControlsPage({
     adminGet<AdminProviderSanction[]>('/admin/partner-sanctions', []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
-  const riskPolicy = buildPartnerRiskPolicy(operationalPolicies);
+  const controlPolicy = buildPartnerControlPolicy(operationalPolicies);
   const visibleReports = filterReports(reports, filters);
   const visibleSanctions = filterSanctions(sanctions, filters);
   const activeFilters = buildRiskActiveFilters(filters);
@@ -71,15 +71,15 @@ export default async function PartnerControlsPage({
     id: provider.id,
     label: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
   }));
-  const summary = buildRiskSummary(reports, sanctions, providers, riskPolicy);
-  const providerWatchlist = buildProviderRiskWatchlist(providers, riskPolicy);
+  const summary = buildPartnerControlSummary(reports, sanctions, providers, controlPolicy);
+  const providerWatchlist = buildPartnerControlWatchlist(providers, controlPolicy);
   const commandCenter = buildRiskCommandCenter({
     reports,
     sanctions,
     watchlist: providerWatchlist,
   });
   const operatingBlocks = buildPartnerOperatingBlocks(providerWatchlist);
-  const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist, riskPolicy);
+  const acceptanceUnblockBoard = buildBookingAcceptanceUnblockBoard(providerWatchlist, controlPolicy);
   const acceptanceUnblockPlaybook = buildAcceptanceUnblockPlaybook(acceptanceUnblockBoard);
   const partnerControlBoard = buildPartnerControlBoard(providers, providerWatchlist);
 
@@ -112,8 +112,8 @@ export default async function PartnerControlsPage({
             {commandCenter.urgentCount ? `${commandCenter.urgentCount} time-sensitive` : 'No time-sensitive lane'}
           </span>
           <Link className="text-link" href="/operations-policy">
-            {riskPolicy.responseWindowMinutes}m first-pick / {formatDistance(riskPolicy.backupRadiusMeters)}{' '}
-            backup /{riskPolicy.invitationLimit} invite cap / location {riskPolicy.locationFreshnessMinutes}m
+            {controlPolicy.responseWindowMinutes}m first-pick / {formatDistance(controlPolicy.backupRadiusMeters)}{' '}
+            backup /{controlPolicy.invitationLimit} invite cap / location {controlPolicy.locationFreshnessMinutes}m
           </Link>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 12 }}>
@@ -803,7 +803,7 @@ export default async function PartnerControlsPage({
 type RiskCommandCenterInput = {
   reports: AdminProviderReport[];
   sanctions: AdminProviderSanction[];
-  watchlist: ProviderRiskWatchItem[];
+  watchlist: PartnerControlWatchItem[];
 };
 
 type RiskCommandMetric = {
@@ -875,7 +875,7 @@ type AcceptanceUnblockPlaybookStep = {
 
 function buildPartnerControlBoard(
   providers: AdminProvider[],
-  watchlist: ProviderRiskWatchItem[],
+  watchlist: PartnerControlWatchItem[],
 ): PartnerControlBoard {
   const watchByProvider = new Map(watchlist.map((item) => [item.provider.id, item]));
   const items = providers
@@ -910,7 +910,7 @@ function buildPartnerControlBoard(
 
 function buildPartnerControlBoardItem(
   provider: AdminProvider,
-  watchItem: ProviderRiskWatchItem | undefined,
+  watchItem: PartnerControlWatchItem | undefined,
 ): PartnerControlBoardItem | null {
   const walletBalance = providerUnsettledWalletBalance(provider);
   const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
@@ -1080,7 +1080,7 @@ function buildRiskCommandCenter(input: RiskCommandCenterInput) {
   };
 }
 
-function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
+function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
   const blocks: PartnerOperatingBlock[] = [];
 
   for (const item of watchlist) {
@@ -1229,8 +1229,8 @@ function buildPartnerOperatingBlocks(watchlist: ProviderRiskWatchItem[]) {
 }
 
 function buildBookingAcceptanceUnblockBoard(
-  watchlist: ProviderRiskWatchItem[],
-  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
+  watchlist: PartnerControlWatchItem[],
+  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
 ): BookingAcceptanceUnblockCard[] {
   const cashDebtItems = watchlist.filter((item) => item.walletBalance < 0);
   const accountBlockedItems = watchlist.filter(
@@ -1297,8 +1297,8 @@ function buildBookingAcceptanceUnblockBoard(
       status: locationItems.length ? 'DISPATCH HOLD' : 'READY',
       detail: locationItems.length
         ? `Distance ranking, ${formatDistance(
-            riskPolicy.backupRadiusMeters,
-          )} backup invitations, the ${riskPolicy.invitationLimit}-partner invite cap, and customer expectations depend on fresh partner location.`
+            controlPolicy.backupRadiusMeters,
+          )} backup invitations, the ${controlPolicy.invitationLimit}-partner invite cap, and customer expectations depend on fresh partner location.`
         : 'Online partner locations are fresh enough for dispatch decisions.',
       operatorScript:
         'Ask the partner to reopen the app and refresh GPS before taking dispatch-sensitive bookings.',
@@ -1314,7 +1314,7 @@ function buildBookingAcceptanceUnblockBoard(
         metric('Acceptance', 'Policy gate', locationItems.length ? 'warn' : 'ok'),
         metric(
           'Invite pool',
-          `${formatDistance(riskPolicy.backupRadiusMeters)} / ${riskPolicy.invitationLimit}`,
+          `${formatDistance(controlPolicy.backupRadiusMeters)} / ${controlPolicy.invitationLimit}`,
           'info',
         ),
       ],
@@ -1507,7 +1507,7 @@ function buildAcceptanceUnblockPlaybook(
   ];
 }
 
-function partnerSamples(items: ProviderRiskWatchItem[], limit = 3) {
+function partnerSamples(items: PartnerControlWatchItem[], limit = 3) {
   return items.slice(0, limit).map((item) => adminProviderName(item.provider));
 }
 
@@ -1541,7 +1541,7 @@ function metric(
 function buildRiskNextActions(input: {
   openReports: AdminProviderReport[];
   activeSanctions: AdminProviderSanction[];
-  watchlist: ProviderRiskWatchItem[];
+  watchlist: PartnerControlWatchItem[];
 }) {
   const actions: RiskNextAction[] = [];
 
@@ -1631,7 +1631,7 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
           kind: 'status',
           value: filters.status,
           label: `Report: ${filters.status}`,
-          description: riskFilterDescription('status', filters.status),
+          description: controlFilterDescription('status', filters.status),
         }
       : null,
     filters.severity
@@ -1639,7 +1639,7 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
           kind: 'severity',
           value: filters.severity,
           label: `Report level: ${filters.severity === 'HIGH_PLUS' ? 'CRITICAL + HIGH' : filters.severity}`,
-          description: riskFilterDescription('severity', filters.severity),
+          description: controlFilterDescription('severity', filters.severity),
         }
       : null,
     filters.sanction
@@ -1647,13 +1647,13 @@ function buildRiskActiveFilters(filters: ReturnType<typeof buildFilters>) {
           kind: 'sanction',
           value: filters.sanction,
           label: `Sanction: ${filters.sanction}`,
-          description: riskFilterDescription('sanction', filters.sanction),
+          description: controlFilterDescription('sanction', filters.sanction),
         }
       : null,
   ].filter(Boolean) as Array<{ kind: string; value: string; label: string; description: string }>;
 }
 
-function riskFilterDescription(kind: string, value: string) {
+function controlFilterDescription(kind: string, value: string) {
   if (kind === 'status' && value === 'OPEN') {
     return 'Open reports need triage before partner badge or payout decisions.';
   }
@@ -1707,13 +1707,13 @@ function filterSanctions(sanctions: AdminProviderSanction[], filters: ReturnType
   });
 }
 
-function buildRiskSummary(
+function buildPartnerControlSummary(
   reports: AdminProviderReport[],
   sanctions: AdminProviderSanction[],
   providers: AdminProvider[],
-  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
+  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
 ) {
-  const watchlist = buildProviderRiskWatchlist(providers, riskPolicy);
+  const watchlist = buildPartnerControlWatchlist(providers, controlPolicy);
   return [
     [
       'Open reports',
@@ -1728,7 +1728,7 @@ function buildRiskSummary(
     ['Wallet debt', watchlist.filter((item) => item.walletBalance < 0).length.toString()],
     [
       'Location gaps',
-      providers.filter((provider) => Boolean(providerLocationSignal(provider, riskPolicy))).length.toString(),
+      providers.filter((provider) => Boolean(providerLocationSignal(provider, controlPolicy))).length.toString(),
     ],
     [
       'Shared devices',
@@ -1743,7 +1743,7 @@ function buildRiskSummary(
   ] as const;
 }
 
-type ProviderRiskWatchItem = {
+type PartnerControlWatchItem = {
   provider: AdminProvider;
   severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
   signals: Array<{ kind: string; label: string }>;
@@ -1754,22 +1754,22 @@ type ProviderRiskWatchItem = {
   nextStep: string;
 };
 
-function buildProviderRiskWatchlist(
+function buildPartnerControlWatchlist(
   providers: AdminProvider[],
-  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
-): ProviderRiskWatchItem[] {
+  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
+): PartnerControlWatchItem[] {
   const deviceUsage = buildDeviceUsage(providers);
   return providers
-    .map((provider) => buildProviderRiskWatchItem(provider, deviceUsage, riskPolicy))
-    .filter((item): item is ProviderRiskWatchItem => Boolean(item))
+    .map((provider) => buildPartnerControlWatchItem(provider, deviceUsage, controlPolicy))
+    .filter((item): item is PartnerControlWatchItem => Boolean(item))
     .sort((left, right) => watchSeverityRank(right.severity) - watchSeverityRank(left.severity));
 }
 
-function buildProviderRiskWatchItem(
+function buildPartnerControlWatchItem(
   provider: AdminProvider,
   deviceUsage: Map<string, Set<string>>,
-  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
-): ProviderRiskWatchItem | null {
+  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
+): PartnerControlWatchItem | null {
   const walletBalance = providerUnsettledWalletBalance(provider);
   const openReportCount = (provider.reports ?? []).filter((report) =>
     ['OPEN', 'INVESTIGATING'].includes(report.status),
@@ -1777,14 +1777,14 @@ function buildProviderRiskWatchItem(
   const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
   const hasPayoutHold = activeSanctions.some((sanction) => sanction.type === 'PAYOUT_HOLD');
   const sharedDeviceCount = providerSharedDeviceCount(provider, deviceUsage);
-  const signals: ProviderRiskWatchItem['signals'] = [];
+  const signals: PartnerControlWatchItem['signals'] = [];
 
   if (provider.blockedAt) signals.push({ kind: 'BLOCK', label: 'Account blocked' });
   if (walletBalance < 0) signals.push({ kind: 'WALLET', label: 'Negative wallet' });
   if (hasPayoutHold) signals.push({ kind: 'PAYOUT', label: 'Payout hold' });
   if (openReportCount > 0) signals.push({ kind: 'REPORT', label: `${openReportCount} open report(s)` });
   if (sharedDeviceCount > 0) signals.push({ kind: 'DEVICE', label: `${sharedDeviceCount} shared device(s)` });
-  const locationSignal = providerLocationSignal(provider, riskPolicy);
+  const locationSignal = providerLocationSignal(provider, controlPolicy);
   if (locationSignal) {
     signals.push({ kind: 'LOCATION', label: locationSignal });
   }
@@ -1816,7 +1816,7 @@ function buildProviderRiskWatchItem(
     openReportCount,
     hasPayoutHold,
     detail: providerRiskDetail({ walletBalance, openReportCount, sharedDeviceCount, signals }),
-    nextStep: providerRiskNextStep({ walletBalance, hasPayoutHold, openReportCount, provider }, riskPolicy),
+    nextStep: partnerControlNextStep({ walletBalance, hasPayoutHold, openReportCount, provider }, controlPolicy),
   };
 }
 
@@ -1844,14 +1844,14 @@ function providerRiskDetail(input: {
   return 'Partner has onboarding or compliance gaps that need staff follow-up.';
 }
 
-function providerRiskNextStep(
+function partnerControlNextStep(
   input: {
     walletBalance: number;
     hasPayoutHold: boolean;
     openReportCount: number;
     provider: AdminProvider;
   },
-  riskPolicy = DEFAULT_PARTNER_RISK_POLICY,
+  controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY,
 ) {
   if (input.walletBalance < 0) {
     return `Confirm partner deposit or admin offset using ${cashDebtSettlementReference(input.provider.id)}.`;
@@ -1862,13 +1862,13 @@ function providerRiskNextStep(
   if (input.openReportCount > 0) {
     return 'Update report status with resolution note or apply a sanction if needed.';
   }
-  if (providerLocationSignal(input.provider, riskPolicy)) {
+  if (providerLocationSignal(input.provider, controlPolicy)) {
     return 'Ask the partner to reopen the app and refresh their current location before accepting bookings.';
   }
   return 'Complete missing verification data before enabling higher badge or payout features.';
 }
 
-function providerLocationSignal(provider: AdminProvider, riskPolicy = DEFAULT_PARTNER_RISK_POLICY) {
+function providerLocationSignal(provider: AdminProvider, controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY) {
   if (!provider.status.startsWith('ONLINE')) {
     return null;
   }
@@ -1888,25 +1888,25 @@ function providerLocationSignal(provider: AdminProvider, riskPolicy = DEFAULT_PA
   if (!Number.isFinite(updatedAt)) {
     return 'Location timestamp invalid';
   }
-  return Date.now() - updatedAt > riskPolicy.locationFreshnessMinutes * 60_000
-    ? `Location older than ${riskPolicy.locationFreshnessMinutes}m`
+  return Date.now() - updatedAt > controlPolicy.locationFreshnessMinutes * 60_000
+    ? `Location older than ${controlPolicy.locationFreshnessMinutes}m`
     : null;
 }
 
-function buildPartnerRiskPolicy(settings: AdminOperationalPolicySetting[]): PartnerRiskPolicy {
+function buildPartnerControlPolicy(settings: AdminOperationalPolicySetting[]): PartnerControlPolicy {
   return {
     responseWindowMinutes:
       readPolicyNumber(settings, MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY) ??
-      DEFAULT_PARTNER_RISK_POLICY.responseWindowMinutes,
+      DEFAULT_PARTNER_CONTROL_POLICY.responseWindowMinutes,
     backupRadiusMeters:
       readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY) ??
-      DEFAULT_PARTNER_RISK_POLICY.backupRadiusMeters,
+      DEFAULT_PARTNER_CONTROL_POLICY.backupRadiusMeters,
     invitationLimit:
       readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY) ??
-      DEFAULT_PARTNER_RISK_POLICY.invitationLimit,
+      DEFAULT_PARTNER_CONTROL_POLICY.invitationLimit,
     locationFreshnessMinutes:
       readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
-      DEFAULT_PARTNER_RISK_POLICY.locationFreshnessMinutes,
+      DEFAULT_PARTNER_CONTROL_POLICY.locationFreshnessMinutes,
   };
 }
 
@@ -1954,11 +1954,11 @@ function adminProviderName(provider: AdminProvider) {
   return provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id;
 }
 
-function watchSeverityRank(severity: ProviderRiskWatchItem['severity']) {
+function watchSeverityRank(severity: PartnerControlWatchItem['severity']) {
   return { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 }[severity] ?? 0;
 }
 
-function watchSeverityPill(severity: ProviderRiskWatchItem['severity']) {
+function watchSeverityPill(severity: PartnerControlWatchItem['severity']) {
   if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
   if (severity === 'MEDIUM') return 'pill-warn';
   return 'pill-neutral';
