@@ -37,6 +37,7 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
     String serviceId, {
     String? providerId,
     String? couponCode,
+    String? selectedLocationId,
     required String customerName,
     required String customerPhone,
     required String addressLine,
@@ -46,6 +47,7 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
     final result = await _api.postJson('/customer/bookings', {
       'serviceId': serviceId,
       if (providerId != null) 'providerId': providerId,
+      if (selectedLocationId != null) 'selectedLocationId': selectedLocationId,
       if (couponCode != null && couponCode.trim().isNotEmpty)
         'couponCode': couponCode.trim().toUpperCase(),
       'scheduledStartAt':

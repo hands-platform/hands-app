@@ -411,6 +411,18 @@ export type AdminBooking = {
   expiresAt?: string | null;
   metadata?: unknown;
   address?: unknown;
+  addressSnapshot?: {
+    id: string;
+    bookingId: string;
+    customerProfileId: string;
+    selectedLocationId?: string | null;
+    address?: unknown;
+    addressText?: string | null;
+    latitude: string | number;
+    longitude: string | number;
+    source?: string;
+    createdAt?: string;
+  } | null;
   lat?: string | number;
   lng?: string | number;
   preferredProvider?: {

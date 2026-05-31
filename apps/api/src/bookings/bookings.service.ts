@@ -67,6 +67,7 @@ export class BookingsService {
       address: Prisma.InputJsonValue;
       lat: number;
       lng: number;
+      selectedLocationId?: string;
       notes?: string;
       paymentMethod: PaymentMethod;
     },
@@ -123,6 +124,14 @@ export class BookingsService {
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
     const scheduledStartAt = new Date(input.scheduledStartAt);
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + service.durationMin * 60_000);
+    const selectedLocation = input.selectedLocationId
+      ? await this.prisma.customerSelectedLocation.findFirst({
+          where: { id: input.selectedLocationId, customerProfileId: customer.id },
+        })
+      : null;
+    if (input.selectedLocationId && !selectedLocation) {
+      throw new BadRequestException('Selected customer location was not found');
+    }
     const matchingPolicy = await this.matching.getPolicy();
     const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
     const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
@@ -145,6 +154,16 @@ export class BookingsService {
         address: input.address,
         lat: input.lat,
         lng: input.lng,
+        addressSnapshot: {
+          create: {
+            customerProfileId: customer.id,
+            selectedLocationId: selectedLocation?.id,
+            address: input.address,
+            addressText: bookingAddressText(input.address),
+            latitude: input.lat,
+            longitude: input.lng,
+          },
+        },
         notes: input.notes,
         travelBufferMin: matchingPolicy.travelBufferMinutes,
         earlyAcceptMin: matchingPolicy.providerResponseWindowMinutes,
@@ -1509,6 +1528,28 @@ function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingServic
     backupOpenMode: policy.backupOpenMode,
     travelBufferMinutes: policy.travelBufferMinutes,
   };
+}
+
+function bookingAddressText(address: Prisma.InputJsonValue) {
+  if (address && typeof address === 'object' && !Array.isArray(address)) {
+    const record = address as Record<string, unknown>;
+    const knownText =
+      record.addressText ??
+      record.address_text ??
+      record.line1 ??
+      record.addressLine ??
+      record.address ??
+      record.label ??
+      record.text ??
+      record.name;
+    if (typeof knownText === 'string' && knownText.trim()) {
+      return knownText.trim();
+    }
+  }
+  if (typeof address === 'string' && address.trim()) {
+    return address.trim();
+  }
+  return null;
 }
 
 function readPlainRecord(value: unknown): Record<string, unknown> | undefined {

@@ -100,6 +100,7 @@ export class AdminService {
           take: 25,
           include: {
             services: { include: { service: true } },
+            addressSnapshot: true,
             payment: { include: { refunds: true } },
             refunds: true,
             review: true,
@@ -168,6 +169,7 @@ export class AdminService {
           take: 100,
           include: {
             services: { include: { service: true } },
+            addressSnapshot: true,
             payment: { include: { refunds: true } },
             refunds: true,
             review: true,
@@ -532,6 +534,7 @@ export class AdminService {
         },
       },
       services: { include: { service: true } },
+      addressSnapshot: true,
       participants: true,
       chatRoom: {
         include: {
@@ -1059,6 +1062,7 @@ export class AdminService {
         selectedProvider: { include: { user: true } },
         participants: { include: { providerProfile: { include: { user: true } } } },
         services: { include: { service: true } },
+        addressSnapshot: true,
         payment: true,
         earning: {
           include: {
@@ -1141,6 +1145,7 @@ export class AdminService {
         payment: { include: { refunds: true } },
         refunds: true,
         review: true,
+        addressSnapshot: true,
         earning: {
           include: {
             platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },

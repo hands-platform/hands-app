@@ -23,16 +23,17 @@ class CustomerDiscoveryRepositoryImpl implements CustomerDiscoveryRepository {
   }
 
   @override
-  Future<void> saveSelectedLocation({
+  Future<Map<String, dynamic>?> saveSelectedLocation({
     required double lat,
     required double lng,
     required String addressText,
   }) async {
-    await _api.postJson('/customer/locations/selected', {
+    final result = await _api.postJson('/customer/locations/selected', {
       'lat': lat,
       'lng': lng,
       'addressText': addressText,
     });
+    return result is Map<String, dynamic> ? result : null;
   }
 
   @override

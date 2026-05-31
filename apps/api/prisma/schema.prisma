@@ -286,6 +286,7 @@ model CustomerProfile {
   user              User                       @relation(fields: [userId], references: [id])
   addresses         Json?
   bookings          Booking[]
+  bookingSnapshots  BookingAddressSnapshot[]
   reviews           Review[]
   selectedLocations CustomerSelectedLocation[]
 }
@@ -540,6 +541,7 @@ model CustomerSelectedLocation {
   addressText       String
   createdAt         DateTime        @default(now())
   customerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id])
+  bookingSnapshots  BookingAddressSnapshot[]
 
   @@index([customerProfileId, createdAt])
 }
@@ -638,6 +640,26 @@ model Booking {
   opsTasks            BookingOpsTask[]
   providerReports     ProviderReport[]
   walletLedgerEntries ProviderWalletLedgerEntry[]
+  addressSnapshot     BookingAddressSnapshot?
+}
+
+model BookingAddressSnapshot {
+  id                 String                    @id @default(cuid())
+  bookingId          String                    @unique
+  customerProfileId  String
+  selectedLocationId String?
+  address            Json
+  addressText        String?
+  latitude           Decimal                   @db.Decimal(10, 7)
+  longitude          Decimal                   @db.Decimal(10, 7)
+  source             String                    @default("booking_confirmation")
+  createdAt          DateTime                  @default(now())
+  booking            Booking                   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerProfile    CustomerProfile           @relation(fields: [customerProfileId], references: [id])
+  selectedLocation   CustomerSelectedLocation? @relation(fields: [selectedLocationId], references: [id], onDelete: SetNull)
+
+  @@index([customerProfileId, createdAt])
+  @@index([selectedLocationId])
 }
 
 model BookingOpsTask {

@@ -55,12 +55,12 @@ class CustomerRepository {
     return _discoveryRepository.nearbyProviders(lat: lat, lng: lng);
   }
 
-  Future<void> saveSelectedLocation({
+  Future<Map<String, dynamic>?> saveSelectedLocation({
     required double lat,
     required double lng,
     required String addressText,
   }) async {
-    await _discoveryRepository.saveSelectedLocation(
+    return _discoveryRepository.saveSelectedLocation(
       lat: lat,
       lng: lng,
       addressText: addressText,
@@ -91,6 +91,7 @@ class CustomerRepository {
     String serviceId, {
     String? providerId,
     String? couponCode,
+    String? selectedLocationId,
     required String customerName,
     required String customerPhone,
     required String addressLine,
@@ -101,6 +102,7 @@ class CustomerRepository {
       serviceId,
       providerId: providerId,
       couponCode: couponCode,
+      selectedLocationId: selectedLocationId,
       customerName: customerName,
       customerPhone: customerPhone,
       addressLine: addressLine,

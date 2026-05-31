@@ -11,6 +11,7 @@ abstract class CustomerBookingRepository {
     String serviceId, {
     String? providerId,
     String? couponCode,
+    String? selectedLocationId,
     required String customerName,
     required String customerPhone,
     required String addressLine,

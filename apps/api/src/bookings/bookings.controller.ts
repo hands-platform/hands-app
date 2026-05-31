@@ -25,6 +25,7 @@ export class BookingsController {
       address: Prisma.InputJsonValue;
       lat: number;
       lng: number;
+      selectedLocationId?: string;
       notes?: string;
       paymentMethod: PaymentMethod;
     },

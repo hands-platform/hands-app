@@ -271,11 +271,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     try {
-      await ref.read(customerRepositoryProvider).saveSelectedLocation(
-            lat: selected.latitude,
-            lng: selected.longitude,
-            addressText: selected.addressText,
-          );
+      final savedLocation =
+          await ref.read(customerRepositoryProvider).saveSelectedLocation(
+                lat: selected.latitude,
+                lng: selected.longitude,
+                addressText: selected.addressText,
+              );
+      final savedId = savedLocation?['id'] as String?;
+      if (savedId != null) {
+        ref.read(selectedCustomerLocationProvider.notifier).state =
+            selected.copyWith(id: savedId);
+      }
     } catch (_) {
       // Location selection should still work locally if the optional save call fails.
     }
@@ -323,6 +329,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ref.read(customerRepositoryProvider).createBooking(
                             service['id'] as String,
                             providerId: detail['id'] as String,
+                            selectedLocationId:
+                                ref.read(selectedCustomerLocationProvider)?.id,
                             customerName: customerName,
                             customerPhone: customerPhone,
                             addressLine: addressLine,
@@ -1806,15 +1814,18 @@ class _BookingConfirmationPageState
       error = null;
     });
     try {
-      await ref.read(customerRepositoryProvider).saveSelectedLocation(
-            lat: lat,
-            lng: lng,
-            addressText: addressController.text.trim(),
-          );
+      final savedLocation =
+          await ref.read(customerRepositoryProvider).saveSelectedLocation(
+                lat: lat,
+                lng: lng,
+                addressText: addressController.text.trim(),
+              );
+      final selectedLocationId = savedLocation?['id'] as String?;
       final booking = await ref.read(customerRepositoryProvider).createBooking(
             widget.selectedService['id'] as String,
             providerId: widget.providerDetail['id'] as String?,
             couponCode: appliedCouponCode,
+            selectedLocationId: selectedLocationId,
             customerName: nameController.text.trim(),
             customerPhone: phoneController.text.trim(),
             addressLine: addressController.text.trim(),
@@ -3608,14 +3619,30 @@ class LocationStatusChip extends StatelessWidget {
 
 class SelectedCustomerLocation {
   const SelectedCustomerLocation({
+    this.id,
     required this.latitude,
     required this.longitude,
     required this.addressText,
   });
 
+  final String? id;
   final double latitude;
   final double longitude;
   final String addressText;
+
+  SelectedCustomerLocation copyWith({
+    String? id,
+    double? latitude,
+    double? longitude,
+    String? addressText,
+  }) {
+    return SelectedCustomerLocation(
+      id: id ?? this.id,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      addressText: addressText ?? this.addressText,
+    );
+  }
 }
 
 class LocationSelectionPage extends ConsumerStatefulWidget {
@@ -4356,11 +4383,17 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
     });
 
     try {
-      await ref.read(customerRepositoryProvider).saveSelectedLocation(
-            lat: selected.latitude,
-            lng: selected.longitude,
-            addressText: selected.addressText,
-          );
+      final savedLocation =
+          await ref.read(customerRepositoryProvider).saveSelectedLocation(
+                lat: selected.latitude,
+                lng: selected.longitude,
+                addressText: selected.addressText,
+              );
+      final savedId = savedLocation?['id'] as String?;
+      if (savedId != null) {
+        ref.read(selectedCustomerLocationProvider.notifier).state =
+            selected.copyWith(id: savedId);
+      }
     } catch (_) {
       // Keep the map selection active even if the optional location save fails.
     }
@@ -4434,6 +4467,8 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
                       ref.read(customerRepositoryProvider).createBooking(
                             service['id'] as String,
                             providerId: detail['id'] as String,
+                            selectedLocationId:
+                                ref.read(selectedCustomerLocationProvider)?.id,
                             customerName: customerName,
                             customerPhone: customerPhone,
                             addressLine: addressLine,
@@ -4874,7 +4909,8 @@ bool isCustomerAppChatVisible(Map<String, dynamic>? booking) {
   if (booking == null) {
     return false;
   }
-  return asMap(booking['chatRoom']) != null && !isCustomerClosedBooking(booking);
+  return asMap(booking['chatRoom']) != null &&
+      !isCustomerClosedBooking(booking);
 }
 
 String formatCustomerScheduleMoment(dynamic value) {
@@ -5032,10 +5068,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           'The service is already in progress. Reload chat to join the live room.',
         'COMPLETED' =>
           'Service is complete. Chat is archived for admin records and no longer shown in the app.',
-        'CANCELLED' || 'EXPIRED' || 'REFUNDED' =>
+        'CANCELLED' ||
+        'EXPIRED' ||
+        'REFUNDED' =>
           'This booking is closed. Chat is archived for admin records.',
-        _ =>
-          'No service chat yet. The partner has to start the service first.',
+        _ => 'No service chat yet. The partner has to start the service first.',
       };
       setState(() => statusMessage = nextMessage);
       return;

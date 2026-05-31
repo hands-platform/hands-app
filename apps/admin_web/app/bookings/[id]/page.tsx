@@ -49,7 +49,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
   );
   const finalProvider = booking.selectedProvider ?? booking.preferredProvider;
   const latestLocation = latestProviderLocation(booking);
-  const addressLine = addressLabel(booking.address);
+  const addressLine = bookingAddressSnapshotLabel(booking);
+  const addressPin = booking.addressSnapshot
+    ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
+    : coordinateLabel(booking.lat, booking.lng);
   const riskFlags = bookingRiskFlags(booking);
   const riskSummary = riskLevel(riskFlags);
   const liveSignals = liveServiceSignals(booking);
@@ -925,7 +928,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Name" value={booking.customerProfile?.user?.fullName ?? 'Customer'} />
           <InfoRow label="Phone" value={booking.customerProfile?.user?.phone ?? 'No phone'} />
           <InfoRow label="Address" value={addressLine} />
-          <InfoRow label="Pin" value={coordinateLabel(booking.lat, booking.lng)} />
+          <InfoRow label="Pin" value={addressPin} />
           <InfoRow
             label="Scheduled"
             value={`${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`}
@@ -4175,10 +4178,28 @@ function addressLabel(address: unknown) {
   if (typeof address === 'string') {
     return address;
   }
+  if (address && typeof address === 'object') {
+    const record = address as Record<string, unknown>;
+    const knownText = record.addressText ?? record.address_text ?? record.address ?? record.label ?? record.name;
+    if (typeof knownText === 'string' && knownText.trim()) {
+      return knownText.trim();
+    }
+  }
   if (address && typeof address === 'object' && 'line1' in address) {
     return String((address as { line1?: unknown }).line1 ?? 'Address pending');
   }
   return 'Address pending';
+}
+
+function bookingAddressSnapshotLabel(booking: AdminBookingDetail) {
+  const snapshotText = booking.addressSnapshot?.addressText?.trim();
+  if (snapshotText) {
+    return snapshotText;
+  }
+  if (booking.addressSnapshot?.address) {
+    return addressLabel(booking.addressSnapshot.address);
+  }
+  return addressLabel(booking.address);
 }
 
 function coordinateLabel(lat?: string | number | null, lng?: string | number | null) {

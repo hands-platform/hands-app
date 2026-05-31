@@ -6,7 +6,7 @@ abstract class CustomerDiscoveryRepository {
     required double lng,
   });
 
-  Future<void> saveSelectedLocation({
+  Future<Map<String, dynamic>?> saveSelectedLocation({
     required double lat,
     required double lng,
     required String addressText,
