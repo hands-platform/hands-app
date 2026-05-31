@@ -39,6 +39,7 @@ type BookingActivityRecord = {
 
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
+const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
@@ -71,6 +72,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
+  const closureSummary = bookingClosureSummary(booking);
   const servicePricingSnapshotRows = [
     {
       label: 'Service option',
@@ -218,6 +220,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
       evidence: `${booking.auditLogs?.length ?? 0} audit row(s) / ${booking.opsTasks?.length ?? 0} task row(s)`,
       href: '#booking-activity',
     },
+    {
+      area: 'Closure',
+      status: closureSummary.status,
+      evidence: closureSummary.detail,
+      href: '#booking-activity',
+    },
   ];
   const operatorCommandQueue = bookingOperatorCommandQueue({
     booking,
@@ -271,6 +279,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <section className="grid" style={{ marginBottom: 16 }}>
         <MetricCard label="Status" value={booking.status} helper={bookingStatusHint(booking.status)} />
+        <MetricCard label="Closure" value={closureSummary.status} helper={closureSummary.detail} />
         <MetricCard label="Payment" value={booking.payment?.status ?? 'NONE'} helper={paymentHint(booking)} />
         <MetricCard
           label="Partners"
@@ -2260,6 +2269,17 @@ function bookingOperatingTimeline({
     });
   }
 
+  if (booking.closedAt) {
+    addItem({
+      id: `closed-${booking.id}`,
+      type: 'CLOSE',
+      title: 'Booking closure recorded',
+      detail: bookingClosureSummary(booking).detail,
+      at: booking.closedAt,
+      status: booking.closedReason ?? booking.closedByRole ?? 'Closed',
+    });
+  }
+
   for (const participant of booking.participants ?? []) {
     const partnerName = providerName(participant.providerProfile);
     addItem({
@@ -2766,6 +2786,18 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
     });
   }
 
+  if (booking.closedAt) {
+    const closure = bookingClosureSummary(booking);
+    records.push({
+      id: `${booking.id}-closed`,
+      type: 'CLOSURE',
+      at: booking.closedAt,
+      title: `Booking closure: ${closure.status}`,
+      detail: closure.detail,
+      href: '#booking-activity',
+    });
+  }
+
   for (const participant of booking.participants ?? []) {
     records.push({
       id: `${participant.id}-joined`,
@@ -3041,6 +3073,34 @@ function buildBookingActivitySummary(records: ReturnType<typeof buildBookingActi
 
 function compactActivityText(value: string, maxLength: number) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
+
+function bookingClosureSummary(booking: AdminBookingDetail) {
+  if (!booking.closedAt) {
+    return {
+      status: TERMINAL_BOOKING_STATUSES.has(booking.status) ? 'Terminal without closure stamp' : 'Open',
+      detail: TERMINAL_BOOKING_STATUSES.has(booking.status)
+        ? 'This booking is terminal but has no explicit closure actor/reason saved.'
+        : 'No closure has been recorded yet.',
+    };
+  }
+
+  const actor = booking.closedByRole ? `${booking.closedByRole.toLowerCase()} closure` : 'closure actor missing';
+  const reason = booking.closedReason ? humanizeClosureReason(booking.closedReason) : 'reason not saved';
+  const note = booking.closedNote ? ` / ${booking.closedNote}` : '';
+
+  return {
+    status: formatDate(booking.closedAt),
+    detail: `${actor} / ${reason}${note}`,
+  };
+}
+
+function humanizeClosureReason(reason: string) {
+  return reason
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
 }
 
 type AttentionFlag = {
