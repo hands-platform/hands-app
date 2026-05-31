@@ -41,6 +41,7 @@ Checked commands:
 
 - `npm.cmd run setup:doctor`: PASS
 - `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
+- `API_BASE_URL=http://localhost:3100/api SOCKET_BASE_URL=http://localhost:3100 node infra/scripts/api-smoke.mjs`: PASS. This now verifies customer cancellation, admin no-show, and admin expiry closure metadata.
 - `npm.cmd run security:secrets`: PASS
 - `npm.cmd run typecheck`: PASS
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
@@ -90,6 +91,7 @@ Admin dashboard:
 - Booking detail now includes a service pricing snapshot for selected service duration, customer price, partner payout, HANDS fee, tax/withholding, and wallet impact.
 - Booking detail exposes immutable customer address snapshots to customer and admin reads, and API smoke verifies this so later location refactors do not overwrite booking history.
 - Customer list and customer detail with activity, booking history, chat history, wallet/payment context, addresses, app sessions, notes, exports.
+- Customer list now separates closed booking evidence by customer/admin/partner closure role and no-show count when booking closure metadata exists.
 - Customer detail now includes a compact operating ledger for account, booking work, latest booking, last completed work, chat archive, wallet/payment, address, app access, devices, notifications, timeline, and operator notes.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
 - Partner detail now includes a compact operating ledger for identity, KYC, documents, bank, tax, services, bookings, chat, wallet, payout, location, app devices, and admin trail evidence.

@@ -14,6 +14,7 @@ import {
   ProviderKycStatus,
   ProviderTaxProfileStatus,
   ProviderStatus,
+  Role,
   VerificationStatus,
 } from '@prisma/client';
 import { EarningsService } from '../earnings/earnings.service';
@@ -452,6 +453,12 @@ export class BookingsService {
       data: {
         status: BookingStatus.CANCELLED,
         expiresAt: new Date(),
+        closedAt: new Date(),
+        closedByRole: Role.CUSTOMER,
+        closedReason: 'customer_cancelled',
+        closedNote: holdPaymentForCancellationFeeReview
+          ? 'Customer cancelled after partner commitment; payment hold kept for admin fee review.'
+          : 'Customer cancelled before completion.',
         notes: nextNotes,
         ...(holdPaymentForCancellationFeeReview
           ? {

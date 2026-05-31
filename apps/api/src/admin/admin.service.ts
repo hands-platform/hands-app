@@ -18,6 +18,7 @@ import {
   ProviderSanctionType,
   ProviderStatus,
   ReviewStatus,
+  Role,
   VerificationStatus,
 } from '@prisma/client';
 import { SupabaseAdminService } from '../auth/supabase-admin.service';
@@ -1313,6 +1314,10 @@ export class AdminService {
       where: { id: bookingId },
       data: {
         status: BookingStatus.NO_SHOW,
+        closedAt: new Date(),
+        closedByRole: Role.ADMIN,
+        closedReason: 'admin_no_show',
+        closedNote: paymentReviewNote,
         notes,
         opsTasks: {
           upsert: {
@@ -1420,6 +1425,10 @@ export class AdminService {
         data: {
           status: BookingStatus.EXPIRED,
           expiresAt: new Date(),
+          closedAt: new Date(),
+          closedByRole: Role.ADMIN,
+          closedReason: 'admin_expired',
+          closedNote: reason ?? 'Matching expired; customer communication should be confirmed.',
           notes,
           opsTasks: {
             upsert: {

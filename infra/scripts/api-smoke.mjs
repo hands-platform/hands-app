@@ -1690,6 +1690,13 @@ const cancelledMomoBooking = await postJson(
 if (cancelledMomoBooking.status !== 'CANCELLED' || cancelledMomoBooking.payment?.status !== 'RELEASED') {
   throw new Error(`Cancelled booking did not release payment hold: ${JSON.stringify(cancelledMomoBooking)}`);
 }
+if (
+  cancelledMomoBooking.closedByRole !== 'CUSTOMER' ||
+  cancelledMomoBooking.closedReason !== 'customer_cancelled' ||
+  !cancelledMomoBooking.closedAt
+) {
+  throw new Error(`Cancelled booking did not record customer closure metadata: ${JSON.stringify(cancelledMomoBooking)}`);
+}
 const cancelledPaymentSync = await postJson(
   `/admin/payments/${cancelledMomoBooking.payment.id}/sync`,
   adminAuth.accessToken,
@@ -1755,6 +1762,15 @@ try {
       )}`,
     );
   }
+  if (
+    cancelledAfterMatch.closedByRole !== 'CUSTOMER' ||
+    cancelledAfterMatch.closedReason !== 'customer_cancelled' ||
+    !cancelledAfterMatch.closedNote?.includes('payment hold')
+  ) {
+    throw new Error(
+      `After-match cancellation did not keep review closure metadata: ${JSON.stringify(cancelledAfterMatch)}`,
+    );
+  }
   const cancellationReviewTask = await getJson(
     `/admin/bookings/${afterMatchCancellationBooking.id}`,
     adminAuth.accessToken,
@@ -1793,6 +1809,13 @@ const markedNoShowBooking = await postJson(
 if (markedNoShowBooking.status !== 'NO_SHOW') {
   throw new Error(`Admin no-show action did not update status: ${JSON.stringify(markedNoShowBooking)}`);
 }
+if (
+  markedNoShowBooking.closedByRole !== 'ADMIN' ||
+  markedNoShowBooking.closedReason !== 'admin_no_show' ||
+  !markedNoShowBooking.closedAt
+) {
+  throw new Error(`Admin no-show action did not record closure metadata: ${JSON.stringify(markedNoShowBooking)}`);
+}
 const noShowCustomerNotifications = await getJson('/notifications', customerAuth.accessToken);
 if (
   !noShowCustomerNotifications.some(
@@ -1829,6 +1852,13 @@ if (expiredByAdminBooking.status !== 'EXPIRED' || expiredByAdminBooking.payment?
   throw new Error(
     `Admin expiry action did not expire booking and release payment: ${JSON.stringify(expiredByAdminBooking)}`,
   );
+}
+if (
+  expiredByAdminBooking.closedByRole !== 'ADMIN' ||
+  expiredByAdminBooking.closedReason !== 'admin_expired' ||
+  !expiredByAdminBooking.closedNote?.includes('Smoke test manual expiry')
+) {
+  throw new Error(`Admin expiry action did not record closure metadata: ${JSON.stringify(expiredByAdminBooking)}`);
 }
 
 await postJson(`/provider/bookings/${booking.id}/join`, providerAuth.accessToken);
@@ -2519,17 +2549,26 @@ if (adminCancelledBooking?.status !== 'CANCELLED' || adminCancelledBooking?.paym
     `Admin booking monitor did not expose cancellation release state: ${JSON.stringify(adminCancelledBooking)}`,
   );
 }
+if (adminCancelledBooking?.closedByRole !== 'CUSTOMER' || adminCancelledBooking?.closedReason !== 'customer_cancelled') {
+  throw new Error(`Admin booking monitor did not expose customer cancellation metadata: ${JSON.stringify(adminCancelledBooking)}`);
+}
 const adminNoShowBooking = adminBookings.find((item) => item.id === noShowBooking.id);
 if (adminNoShowBooking?.status !== 'NO_SHOW') {
   throw new Error(
     `Admin booking monitor did not expose no-show state: ${JSON.stringify(adminNoShowBooking)}`,
   );
 }
+if (adminNoShowBooking?.closedByRole !== 'ADMIN' || adminNoShowBooking?.closedReason !== 'admin_no_show') {
+  throw new Error(`Admin booking monitor did not expose no-show closure metadata: ${JSON.stringify(adminNoShowBooking)}`);
+}
 const adminExpiredBooking = adminBookings.find((item) => item.id === manuallyExpiredBooking.id);
 if (adminExpiredBooking?.status !== 'EXPIRED' || adminExpiredBooking?.payment?.status !== 'RELEASED') {
   throw new Error(
     `Admin booking monitor did not expose manual expiry release state: ${JSON.stringify(adminExpiredBooking)}`,
   );
+}
+if (adminExpiredBooking?.closedByRole !== 'ADMIN' || adminExpiredBooking?.closedReason !== 'admin_expired') {
+  throw new Error(`Admin booking monitor did not expose expiry closure metadata: ${JSON.stringify(adminExpiredBooking)}`);
 }
 const adminUsers = await getJson('/admin/users', adminAuth.accessToken);
 const adminCustomerUser = adminUsers.find((item) => item.id === customerAuth.user.id);

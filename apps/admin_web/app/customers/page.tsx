@@ -10,7 +10,7 @@ const ACTIVE_STATUSES = [
   'ARRIVED',
   'IN_SERVICE',
 ];
-const CANCELLED_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED'];
+const CLOSED_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 
 type CustomersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type CustomerFilters = {
@@ -53,6 +53,10 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       active_booking_count: row.activeBookings,
       completed_work_count: row.completedBookings,
       closed_booking_count: row.cancelledBookings,
+      customer_closed_count: row.customerClosedBookings,
+      admin_closed_count: row.adminClosedBookings,
+      partner_closed_count: row.partnerClosedBookings,
+      no_show_count: row.noShowBookings,
       captured_spend_vnd: row.capturedSpend,
       refund_amount_vnd: row.refundAmount,
       payment_count: row.paymentCount,
@@ -82,6 +86,10 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       'active_booking_count',
       'completed_work_count',
       'closed_booking_count',
+      'customer_closed_count',
+      'admin_closed_count',
+      'partner_closed_count',
+      'no_show_count',
       'captured_spend_vnd',
       'refund_amount_vnd',
       'payment_count',
@@ -429,7 +437,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
                 <th>Completed</th>
                 <th>Frequent service / area</th>
                 <th>Repeated partner</th>
-                <th>Cancelled</th>
+                <th>Closed / no-show</th>
                 <th>Total paid</th>
                 <th>Ops trail</th>
                 <th>Memo</th>
@@ -483,7 +491,11 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
                   </td>
                   <td>
                     <strong>{row.cancelledBookings}</strong>
-                    <p className="muted">Cancelled / expired / refunded</p>
+                    <p className="muted">
+                      Customer {row.customerClosedBookings} / admin {row.adminClosedBookings} / partner{' '}
+                      {row.partnerClosedBookings}
+                    </p>
+                    <p className="muted">{row.noShowBookings} no-show</p>
                   </td>
                   <td>
                     <strong>{formatMoney(row.capturedSpend)}</strong>
@@ -717,7 +729,12 @@ function buildCustomerRow(customer: AdminCustomer) {
     );
   }, 0);
   const activeBookings = bookings.filter((booking) => ACTIVE_STATUSES.includes(booking.status)).length;
-  const cancelledBookings = bookings.filter((booking) => CANCELLED_STATUSES.includes(booking.status)).length;
+  const closedBookings = bookings.filter((booking) => CLOSED_STATUSES.includes(booking.status));
+  const cancelledBookings = closedBookings.length;
+  const customerClosedBookings = closedBookings.filter((booking) => booking.closedByRole === 'CUSTOMER').length;
+  const adminClosedBookings = closedBookings.filter((booking) => booking.closedByRole === 'ADMIN').length;
+  const partnerClosedBookings = closedBookings.filter((booking) => booking.closedByRole === 'PROVIDER').length;
+  const noShowBookings = bookings.filter((booking) => booking.status === 'NO_SHOW').length;
   const completedBookings = bookings.filter((booking) => booking.status === 'COMPLETED').length;
   const paymentIssues = payments.filter(
     (payment) => payment && !['AUTHORIZED', 'CAPTURED'].includes(payment.status),
@@ -775,6 +792,10 @@ function buildCustomerRow(customer: AdminCustomer) {
     activeBookings,
     completedBookings,
     cancelledBookings,
+    customerClosedBookings,
+    adminClosedBookings,
+    partnerClosedBookings,
+    noShowBookings,
     paymentCount: payments.length,
     refundAmount,
     capturedSpend,

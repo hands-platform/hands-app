@@ -622,6 +622,10 @@ model Booking {
   earlyAcceptMin      Int                         @default(20)
   openedAt            DateTime?
   expiresAt           DateTime?
+  closedAt            DateTime?
+  closedByRole        Role?
+  closedReason        String?
+  closedNote          String?
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
   customerProfile     CustomerProfile             @relation(fields: [customerProfileId], references: [id])
@@ -641,6 +645,9 @@ model Booking {
   providerReports     ProviderReport[]
   walletLedgerEntries ProviderWalletLedgerEntry[]
   addressSnapshot     BookingAddressSnapshot?
+
+  @@index([status, closedAt])
+  @@index([closedByRole, closedAt])
 }
 
 model BookingAddressSnapshot {

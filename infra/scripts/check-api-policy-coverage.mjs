@@ -46,6 +46,15 @@ const requiredCoverage = [
     ],
   },
   {
+    area: 'booking closure metadata',
+    markers: [
+      'Cancelled booking did not record customer closure metadata',
+      'Admin no-show action did not record closure metadata',
+      'Admin expiry action did not record closure metadata',
+      'Admin booking monitor did not expose customer cancellation metadata',
+    ],
+  },
+  {
     area: 'tax policy and withholding',
     markers: [
       'Tax policy version list did not return an array',

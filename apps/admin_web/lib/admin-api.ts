@@ -409,6 +409,10 @@ export type AdminBooking = {
   scheduledStartAt?: string;
   scheduledEndAt?: string;
   expiresAt?: string | null;
+  closedAt?: string | null;
+  closedByRole?: string | null;
+  closedReason?: string | null;
+  closedNote?: string | null;
   metadata?: unknown;
   address?: unknown;
   addressSnapshot?: {
