@@ -170,7 +170,7 @@ const pages = [
       'Booking acceptance unblock board',
       'Acceptance unblock playbook',
       'Partner control command center',
-      'System control watchlist',
+      'System control checklist',
     ],
   },
   {
