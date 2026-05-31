@@ -1830,6 +1830,13 @@ function buildMatchingControlRoom(
     openRows.length > 0
       ? (openRows.reduce((sum, row) => sum + row.eligibleCount, 0) / openRows.length).toFixed(1)
       : '0';
+  const insideFirstPickWindow = openMatching.filter((booking) =>
+    bookingInsideResponseWindow(booking, responseWindowMinutes),
+  ).length;
+  const pastFirstPickWindow = openMatching.length - insideFirstPickWindow;
+  const customerChoiceReady = openMatching.filter(
+    (booking) => (booking.participants ?? []).some((participant) => participant.status === 'ACCEPTED'),
+  ).length;
 
   return {
     openRows,
@@ -1840,6 +1847,21 @@ function buildMatchingControlRoom(
         label: 'Open matching',
         value: String(openMatching.length),
         helper: `${atRiskRows.length} booking(s) need dispatch review now.`,
+      },
+      {
+        label: 'Inside first window',
+        value: String(insideFirstPickWindow),
+        helper: `Open bookings still inside the first-pick response window using the live ${responseWindowMinutes}m policy.`,
+      },
+      {
+        label: 'Past first-pick',
+        value: String(pastFirstPickWindow),
+        helper: 'Open bookings past the first-pick response window and ready for backup handling.',
+      },
+      {
+        label: 'Customer can choose',
+        value: String(customerChoiceReady),
+        helper: 'Open bookings with accepted partners visible in the customer shortlist.',
       },
       {
         label: 'Policy timer',
@@ -2191,6 +2213,14 @@ function dashboardBookingPolicySnapshot(
     backupOpenMode: readOptionalString(policy.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
   };
+}
+
+function bookingInsideResponseWindow(booking: AdminBooking, responseWindowMinutes: number) {
+  const createdAtMs = Date.parse(booking.createdAt ?? '');
+  if (!Number.isFinite(createdAtMs)) {
+    return false;
+  }
+  return Date.now() - createdAtMs <= responseWindowMinutes * 60 * 1000;
 }
 
 function matchingRowNextAction(input: {
