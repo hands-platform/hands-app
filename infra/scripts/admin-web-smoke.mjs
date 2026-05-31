@@ -136,6 +136,7 @@ const pages = [
       'Immediate action queue',
       'Unified activity stream',
       'Shift brief',
+      'Save handoff note',
       'Latest operator notes',
       'Booking handoff queue',
       'Customer handoff',

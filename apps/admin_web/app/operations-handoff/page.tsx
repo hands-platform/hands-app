@@ -11,6 +11,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
+import { addOperationsHandoffNote } from './actions';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -162,12 +163,50 @@ export default async function OperationsHandoffPage() {
           <div className="toolbar">
             <div>
               <h2>Latest operator notes</h2>
-              <p className="muted">Customer, partner, and booking notes written by admins.</p>
+              <p className="muted">Shift, customer, partner, and booking notes written by admins.</p>
             </div>
             <Link className="text-link" href="/audit-log">
               Open audit log
             </Link>
           </div>
+          <form action={addOperationsHandoffNote} className="ops-note-form" style={{ marginBottom: 14 }}>
+            <div className="form-grid compact-form">
+              <label>
+                Owner lane
+                <select name="owner" defaultValue="Shift handoff">
+                  <option value="Shift handoff">Shift handoff</option>
+                  <option value="Dispatch">Dispatch</option>
+                  <option value="Support">Support</option>
+                  <option value="Partner Ops">Partner Ops</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Alerts">Alerts</option>
+                </select>
+              </label>
+              <label>
+                Preset
+                <select name="preset" defaultValue="">
+                  <option value="">No preset</option>
+                  <option value="Next operator should review live matching, chat, and cash settlement lanes first.">
+                    Review live matching, chat, and cash settlement first.
+                  </option>
+                  <option value="Customer support handoff: recent customer contacts and chat archives reviewed.">
+                    Customer support handoff reviewed.
+                  </option>
+                  <option value="Partner operations handoff: KYC, wallet, location, and app session facts reviewed.">
+                    Partner operations handoff reviewed.
+                  </option>
+                  <option value="Finance handoff: cash debt, payout evidence, and completed closeout rows reviewed.">
+                    Finance handoff reviewed.
+                  </option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Shift note
+              <textarea name="note" placeholder="Write the factual shift handoff note for the next operator." />
+            </label>
+            <button type="submit">Save handoff note</button>
+          </form>
           <div className="stack">
             {operatorNotes.slice(0, 8).map((note) => (
               <Link className="ops-signal-card" href={note.href} key={note.id}>
@@ -727,10 +766,12 @@ function buildBookingHandoffQueue(bookings: AdminBooking[]) {
 
 function buildOperatorNotes(logs: AdminAuditLog[]) {
   return logs
-    .filter((log) => log.action.endsWith('.ops_note.add'))
+    .filter((log) => log.action.endsWith('.ops_note.add') || log.action === 'operations.handoff_note.add')
     .map((log) => {
       const metadata = asRecord(log.metadata);
-      const area = log.action.startsWith('booking')
+      const area = log.action === 'operations.handoff_note.add'
+        ? 'Shift'
+        : log.action.startsWith('booking')
         ? 'Booking'
         : log.action.startsWith('customer')
           ? 'Customer'
@@ -937,6 +978,7 @@ function relatedHref(log: AdminAuditLog) {
   if (log.target.startsWith('booking:')) return `/bookings/${log.target.slice('booking:'.length)}`;
   if (log.target.startsWith('customer:')) return `/customers/${log.target.slice('customer:'.length)}`;
   if (log.target.startsWith('provider:')) return `/partners/${log.target.slice('provider:'.length)}`;
+  if (log.target === 'operations:handoff') return '/operations-handoff';
   return '/audit-log';
 }
 

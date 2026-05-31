@@ -609,6 +609,14 @@ export class AdminController {
     return this.admin.listAuditLogs();
   }
 
+  @Post('operations-handoff/note')
+  addOperationsHandoffNote(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { note?: string; preset?: string; owner?: string },
+  ) {
+    return this.admin.addOperationsHandoffNote(user.id, body);
+  }
+
   @Get('operational-policy')
   operationalPolicy() {
     return this.admin.listOperationalPolicySettings();

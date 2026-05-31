@@ -2576,6 +2576,25 @@ if (
     })}`,
   );
 }
+const shiftHandoffNote = `Automated shift handoff note ${Date.now()}`;
+await postJson('/admin/operations-handoff/note', adminAuth.accessToken, {
+  owner: 'Dispatch',
+  note: shiftHandoffNote,
+  preset: 'Next operator should review live matching, chat, and cash settlement lanes first.',
+});
+const auditLogsAfterHandoff = await getJson('/admin/audit-logs', adminAuth.accessToken);
+if (
+  !auditLogsAfterHandoff?.some(
+    (log) => log.action === 'operations.handoff_note.add' && log.metadata?.note === shiftHandoffNote,
+  )
+) {
+  throw new Error(
+    `Admin audit log is missing operations handoff note: ${JSON.stringify({
+      shiftHandoffNote,
+      auditLogs: auditLogsAfterHandoff?.slice(0, 5),
+    })}`,
+  );
+}
 const adminBackupPartner = adminPartners.find(
   (item) => item.id === backupProviderAuth.user.providerProfile.id,
 );

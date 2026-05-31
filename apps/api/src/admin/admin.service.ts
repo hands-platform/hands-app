@@ -2247,6 +2247,24 @@ export class AdminService {
     });
   }
 
+  async addOperationsHandoffNote(actorId: string, input: { note?: string; preset?: string; owner?: string }) {
+    const note = normalizeNullable(input.note);
+    const preset = normalizeNullable(input.preset);
+    const owner = normalizeNullable(input.owner) ?? 'Shift handoff';
+    const content = note ?? preset;
+    if (!content) {
+      throw new BadRequestException('Operations handoff note is required');
+    }
+
+    const auditLog = await this.writeAudit(actorId, 'operations.handoff_note.add', 'operations:handoff', {
+      owner,
+      note: content,
+      preset,
+    });
+
+    return { ok: true, auditLog };
+  }
+
   async listOperationalPolicySettings() {
     const savedSettings = await this.prisma.operationalPolicySetting.findMany({
       include: { updatedBy: { select: { id: true, phone: true, fullName: true } } },
