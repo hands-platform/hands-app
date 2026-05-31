@@ -264,6 +264,15 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     providerServicePricing,
     dispatchPolicy,
   );
+  const partnerOperatorCommandQueue = buildPartnerOperatorCommandQueue({
+    provider,
+    primaryBank,
+    payoutOps,
+    bookingAcceptance,
+    providerServicePricing,
+    dispatchPolicy,
+    canApproveKyc,
+  });
   const filteredActivityCsvHref = buildCsvDataHref(
     filteredPartnerActivityRecords.map((record) => ({
       type: record.type,
@@ -342,6 +351,43 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
         <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
+      </div>
+
+      <div className="card" id="partner-operator-command-queue" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner operator command queue</h2>
+            <p className="muted">
+              Same-shift partner operations queue for onboarding, booking acceptance, payout, location, app
+              reachability, and service setup. This is factual handling only, not partner scoring.
+            </p>
+          </div>
+          <span className={`pill ${pillClass(partnerOperatorCommandQueue.tone)}`}>
+            {partnerOperatorCommandQueue.status}
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {partnerOperatorCommandQueue.metrics.map((metric) => (
+            <div key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+              <small>{metric.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          {partnerOperatorCommandQueue.commands.map((command) => (
+            <div className="setup-stage-item" key={command.id}>
+              <span>{command.label}</span>
+              <div>
+                <strong>{command.title}</strong>
+                <p className="muted">{command.detail}</p>
+                <span className={`pill ${pillClass(command.tone)}`}>{command.owner}</span>
+              </div>
+              <PartnerOperatorCommandAction providerId={provider.id} command={command} />
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card" id="partner-master-facts" style={{ marginBottom: 16 }}>
@@ -1989,6 +2035,91 @@ type PartnerActivityRecord = {
   title: string;
   detail: string;
 };
+type PartnerOperatorCommand = {
+  id: string;
+  label: string;
+  title: string;
+  detail: string;
+  owner: string;
+  tone: ProviderOpsCard['tone'];
+  action:
+    | { type: 'link'; href: string; label: string }
+    | { type: 'approve-profile'; label: string }
+    | { type: 'sync-role'; label: string }
+    | { type: 'unblock-account'; label: string }
+    | { type: 'approve-kyc'; label: string }
+    | { type: 'approve-bank'; bankAccountId: string; label: string }
+    | { type: 'approve-tax'; label: string };
+};
+
+function PartnerOperatorCommandAction({
+  providerId,
+  command,
+}: {
+  providerId: string;
+  command: PartnerOperatorCommand;
+}) {
+  if (command.action.type === 'link') {
+    return (
+      <Link className="text-link" href={command.action.href}>
+        {command.action.label}
+      </Link>
+    );
+  }
+
+  if (command.action.type === 'approve-profile') {
+    return (
+      <form action={approveProvider}>
+        <input type="hidden" name="providerId" value={providerId} />
+        <button type="submit">{command.action.label}</button>
+      </form>
+    );
+  }
+
+  if (command.action.type === 'sync-role') {
+    return (
+      <form action={syncSupabaseProviderRole}>
+        <input type="hidden" name="providerId" value={providerId} />
+        <button type="submit">{command.action.label}</button>
+      </form>
+    );
+  }
+
+  if (command.action.type === 'unblock-account') {
+    return (
+      <form action={unblockProviderAccount}>
+        <input type="hidden" name="providerId" value={providerId} />
+        <button type="submit">{command.action.label}</button>
+      </form>
+    );
+  }
+
+  if (command.action.type === 'approve-kyc') {
+    return (
+      <form action={approveProviderKyc}>
+        <input type="hidden" name="providerId" value={providerId} />
+        <button type="submit">{command.action.label}</button>
+      </form>
+    );
+  }
+
+  if (command.action.type === 'approve-bank') {
+    return (
+      <form action={approveProviderBankAccount}>
+        <input type="hidden" name="providerId" value={providerId} />
+        <input type="hidden" name="bankAccountId" value={command.action.bankAccountId} />
+        <button type="submit">{command.action.label}</button>
+      </form>
+    );
+  }
+
+  return (
+    <form action={approveProviderTaxProfile}>
+      <input type="hidden" name="providerId" value={providerId} />
+      <button type="submit">{command.action.label}</button>
+    </form>
+  );
+}
 
 function PartnerDetailReadinessSnapshot({
   provider,
@@ -2111,6 +2242,242 @@ function PartnerAcceptanceRepairCommandPanel({
       </div>
     </div>
   );
+}
+
+function buildPartnerOperatorCommandQueue({
+  provider,
+  primaryBank,
+  payoutOps,
+  bookingAcceptance,
+  providerServicePricing,
+  dispatchPolicy,
+  canApproveKyc,
+}: {
+  provider: ProviderDetail;
+  primaryBank: ReturnType<typeof primaryBankAccount>;
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>;
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>;
+  providerServicePricing: ReturnType<typeof buildProviderServicePricing>;
+  dispatchPolicy: PartnerDispatchPolicy;
+  canApproveKyc: boolean;
+}) {
+  const commands: PartnerOperatorCommand[] = [];
+  const missingDocuments = missingApprovedRequiredKycDocuments(provider);
+  const cashDebt = cashFeeDebtAmount(provider);
+  const hasFirstRevenue = providerHasFirstRevenueSignal(provider);
+  const pushDeviceCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
+  const locationAge = locationAgeMinutes(provider.currentLocationUpdatedAt);
+  const locationFresh = locationAge <= dispatchPolicy.locationFreshnessMinutes;
+  const profileApproved = provider.verification?.status === 'APPROVED';
+  const kycApproved = provider.kyc?.status === 'APPROVED';
+
+  const add = (command: PartnerOperatorCommand) => commands.push(command);
+
+  if (provider.blockedAt) {
+    add({
+      id: 'account-block',
+      label: 'ACCOUNT',
+      title: 'Account is blocked',
+      detail: provider.blockedReason ?? 'Partner account is on hold. Review before restoring app access.',
+      owner: 'Account control',
+      tone: 'blocked',
+      action: { type: 'unblock-account', label: 'Unblock' },
+    });
+  }
+
+  if (cashDebt > 0) {
+    add({
+      id: 'cash-fee-debt',
+      label: 'CASH',
+      title: 'Cash fee debt blocks booking acceptance',
+      detail: `${formatCurrency(cashDebt)} must be settled before this partner can accept more bookings.`,
+      owner: 'Finance',
+      tone: 'blocked',
+      action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },
+    });
+  }
+
+  if (canApproveKyc && !kycApproved) {
+    add({
+      id: 'kyc-approve',
+      label: 'KYC',
+      title: 'KYC evidence is ready for approval',
+      detail: 'Required CCCD front/back and selfie evidence are approved. Operator can approve KYC.',
+      owner: 'Verification',
+      tone: 'pending',
+      action: { type: 'approve-kyc', label: 'Approve KYC' },
+    });
+  } else if (missingDocuments.length > 0) {
+    add({
+      id: 'kyc-documents',
+      label: 'KYC',
+      title: 'KYC documents need review',
+      detail: `Missing or not approved: ${missingDocuments.join(', ')}.`,
+      owner: 'Verification',
+      tone: 'pending',
+      action: { type: 'link', href: '#documents', label: 'Open docs' },
+    });
+  }
+
+  if (kycApproved && !profileApproved) {
+    add({
+      id: 'profile-approve',
+      label: 'PROFILE',
+      title: 'Public partner profile can be approved',
+      detail: 'KYC is approved. Review profile, photos, service area, and public-facing text before approval.',
+      owner: 'Verification',
+      tone: 'pending',
+      action: { type: 'approve-profile', label: 'Approve profile' },
+    });
+  }
+
+  if (primaryBank && primaryBank.status !== 'APPROVED') {
+    add({
+      id: 'bank-review',
+      label: 'BANK',
+      title: 'Bank account needs approval',
+      detail: `${primaryBank.bankName ?? 'Bank'} / ${primaryBank.accountHolderName ?? 'holder missing'} / ${primaryBank.status}.`,
+      owner: 'Finance',
+      tone: 'pending',
+      action: { type: 'approve-bank', bankAccountId: primaryBank.id, label: 'Approve bank' },
+    });
+  } else if (!primaryBank) {
+    add({
+      id: 'bank-missing',
+      label: 'BANK',
+      title: 'Bank account is missing',
+      detail: 'Partner can start onboarding lightly, but payout needs an approved account later.',
+      owner: 'Finance',
+      tone: hasFirstRevenue ? 'blocked' : 'pending',
+      action: { type: 'link', href: '#bank', label: 'Open bank' },
+    });
+  }
+
+  if (hasFirstRevenue && provider.taxProfile?.status === 'PENDING') {
+    add({
+      id: 'tax-approve',
+      label: 'TAX',
+      title: 'Tax profile ready after first earning',
+      detail: 'Partner has revenue and tax profile is pending. Approve only after checking MST/address/identity match.',
+      owner: 'Finance',
+      tone: 'pending',
+      action: { type: 'approve-tax', label: 'Approve tax' },
+    });
+  } else if (hasFirstRevenue && provider.taxProfile?.status !== 'APPROVED') {
+    add({
+      id: 'tax-needed',
+      label: 'TAX',
+      title: 'Tax profile required before payout',
+      detail: `Tax status is ${provider.taxProfile?.status ?? 'MISSING'}. Keep dispatch logic separate from payout gating.`,
+      owner: 'Finance',
+      tone: 'blocked',
+      action: { type: 'link', href: '#tax', label: 'Open tax' },
+    });
+  }
+
+  if (providerServicePricing.readyCount === 0) {
+    add({
+      id: 'service-pricing',
+      label: 'SERVICE',
+      title: 'No bookable service option',
+      detail: 'Partner needs at least one service duration priced at or above the admin minimum before customers can book.',
+      owner: 'Catalog',
+      tone: 'blocked',
+      action: { type: 'link', href: '#service-pricing', label: 'Open services' },
+    });
+  }
+
+  if (!locationFresh) {
+    add({
+      id: 'location-refresh',
+      label: 'LOC',
+      title: 'Location refresh needed',
+      detail: `Last location is ${provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : 'missing'}. Booking discovery uses last saved location only.`,
+      owner: 'Dispatch',
+      tone: bookingAcceptance.canAccept ? 'pending' : 'blocked',
+      action: { type: 'link', href: '#location', label: 'Open location' },
+    });
+  }
+
+  if (pushDeviceCount === 0) {
+    add({
+      id: 'push-device',
+      label: 'APP',
+      title: 'No reachable app device',
+      detail: 'Partner should sign in on the real app so request alerts can be delivered.',
+      owner: 'Support',
+      tone: 'pending',
+      action: { type: 'link', href: '#app-activity', label: 'Open app activity' },
+    });
+  }
+
+  if (!bookingAcceptance.canAccept && commands.every((command) => command.id !== 'cash-fee-debt')) {
+    add({
+      id: 'acceptance-gate',
+      label: 'ACCEPT',
+      title: 'Booking acceptance is on hold',
+      detail: bookingAcceptance.primaryReason,
+      owner: 'Dispatch',
+      tone: 'blocked',
+      action: { type: 'link', href: '#partner-operating-checklist', label: 'Open gates' },
+    });
+  }
+
+  if (payoutOps.tone !== 'done' && commands.every((command) => !command.id.startsWith('tax-'))) {
+    add({
+      id: 'payout-gate',
+      label: 'PAYOUT',
+      title: `Payout ${payoutOps.status.toLowerCase()}`,
+      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout setup is not fully clear.',
+      owner: 'Finance',
+      tone: payoutOps.tone,
+      action: { type: 'link', href: '#payout', label: 'Open payout' },
+    });
+  }
+
+  if (commands.length === 0) {
+    add({
+      id: 'normal-monitoring',
+      label: 'OK',
+      title: 'Normal partner monitoring',
+      detail: 'No immediate operator action is visible. Continue monitoring bookings, app activity, and payout records.',
+      owner: 'Operations',
+      tone: 'done',
+      action: { type: 'link', href: '#booking-chat-records', label: 'Open records' },
+    });
+  }
+
+  const urgentCount = commands.filter((command) => command.tone === 'blocked').length;
+  const pendingCount = commands.filter((command) => command.tone === 'pending').length;
+  const queueTone: ProviderOpsCard['tone'] = urgentCount ? 'blocked' : pendingCount ? 'pending' : 'done';
+
+  return {
+    status: urgentCount ? `${urgentCount} blocker(s)` : pendingCount ? `${pendingCount} check(s)` : 'Clear',
+    tone: queueTone,
+    metrics: [
+      {
+        label: 'Booking acceptance',
+        value: bookingAcceptance.canAccept ? 'Ready' : 'Hold',
+        helper: bookingAcceptance.primaryReason,
+      },
+      {
+        label: 'Cash fee debt',
+        value: formatCurrency(cashDebt),
+        helper: cashDebt > 0 ? 'Blocks future acceptance.' : 'No cash fee debt.',
+      },
+      {
+        label: 'First revenue',
+        value: hasFirstRevenue ? 'Yes' : 'No',
+        helper: hasFirstRevenue ? 'Tax/payout gates apply.' : 'Keep onboarding light.',
+      },
+      {
+        label: 'App reachability',
+        value: `${pushDeviceCount} device(s)`,
+        helper: locationFresh ? 'Location fresh enough.' : 'Location refresh needed.',
+      },
+    ],
+    commands: commands.slice(0, 10),
+  };
 }
 
 function buildPartnerBookingArchive(provider: ProviderDetail): PartnerBookingArchiveRecord[] {
