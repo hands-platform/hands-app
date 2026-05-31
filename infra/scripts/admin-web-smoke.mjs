@@ -450,6 +450,7 @@ if (bookingLinkMatch) {
     'Operator command queue',
     'Booking handoff checklist',
     'Booking full record index',
+    'Booking operating ledger',
     'Operating timeline',
     'Chat lifecycle and retention',
     'Open customer record',

@@ -97,6 +97,79 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messages,
     notifications: rawNotifications,
   });
+  const operatingLedger = [
+    {
+      area: 'Customer',
+      status: booking.customerProfile?.id ? 'Linked' : 'Missing profile',
+      evidence: `${booking.customerProfile?.user?.fullName ?? 'Customer'} / ${
+        booking.customerProfile?.user?.phone ?? 'No phone'
+      }`,
+      href: '#customer',
+    },
+    {
+      area: 'Partner',
+      status: finalProvider?.id ? 'Linked' : 'Not selected',
+      evidence: finalProvider ? providerName(finalProvider) : `${booking.participants?.length ?? 0} shortlist participant(s)`,
+      href: '#handoff',
+    },
+    {
+      area: 'Chat',
+      status: booking.chatRoom ? 'Archived' : 'Missing',
+      evidence: booking.chatRoom
+        ? `Room ${shortId(booking.chatRoom.id)} / ${messages.length} message(s)`
+        : 'Matched bookings should create a retained chat room.',
+      href: '#chat',
+    },
+    {
+      area: 'Payment',
+      status: booking.payment?.status ?? 'NONE',
+      evidence: `${booking.payment?.method ?? 'No method'} / ${money(
+        booking.payment?.amount,
+        booking.payment?.currency,
+      )}`,
+      href: '#payment',
+    },
+    {
+      area: 'Finance',
+      status: financeFlags.length ? `${financeFlags.length} check(s)` : 'Trace ready',
+      evidence: `${financeTrace.providerPayout} partner payout / ${financeTrace.platformFee} platform fee`,
+      href: '#finance',
+    },
+    {
+      area: 'Tax',
+      status: (booking.taxLogs?.length ?? booking.earning?.taxLogs?.length ?? 0) ? 'Logged' : 'Not logged',
+      evidence: financeTrace.withholding,
+      href: '#finance',
+    },
+    {
+      area: 'Wallet',
+      status: bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'No cash debt block',
+      evidence: financeTrace.walletLedger,
+      href: '#finance',
+    },
+    {
+      area: 'Location',
+      status: latestLocation ? 'Partner pin saved' : 'No partner pin',
+      evidence: latestLocation
+        ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
+        : addressPin,
+      href: '#location',
+    },
+    {
+      area: 'Alerts',
+      status: `${notificationTrace.rows.length} notification(s)`,
+      evidence: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} partner alert(s) / ${
+        notificationTrace.backupBatches.length
+      } backup batch(es)`,
+      href: '#alerts',
+    },
+    {
+      area: 'Audit',
+      status: `${bookingActivityRecords.length} event(s)`,
+      evidence: `${booking.auditLogs?.length ?? 0} audit row(s) / ${booking.opsTasks?.length ?? 0} task row(s)`,
+      href: '#booking-activity',
+    },
+  ];
   const operatorCommandQueue = bookingOperatorCommandQueue({
     booking,
     attentionFlags,
@@ -286,6 +359,43 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <small>Date-ordered operational history.</small>
           </a>
         </div>
+      </section>
+
+      <section className="card" id="booking-operating-ledger" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operating ledger</h2>
+            <p className="muted">
+              Compact operator ledger for the full booking record. Every row links to the deeper factual
+              section below.
+            </p>
+          </div>
+          <span className="pill pill-info">{operatingLedger.length} record areas</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Area</th>
+              <th>Status</th>
+              <th>Evidence</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {operatingLedger.map((row) => (
+              <tr key={row.area}>
+                <td>{row.area}</td>
+                <td>{row.status}</td>
+                <td>{row.evidence}</td>
+                <td>
+                  <a className="text-link" href={row.href}>
+                    Open
+                  </a>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" id="operating-snapshot" style={{ marginBottom: 16 }}>
