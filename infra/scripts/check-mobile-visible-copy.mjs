@@ -22,7 +22,7 @@ const bannedPatterns = [
   },
   {
     label: 'partner hierarchy wording',
-    pattern: /\b(trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
+    pattern: /\b(trusted|trust review|trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
   },
   {
     label: 'legacy provider display wording',

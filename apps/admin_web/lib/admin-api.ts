@@ -384,7 +384,7 @@ const PROVIDER_DOCUMENT_REVIEW_HINTS: Record<string, string> = {
   CCCD_BACK: 'Check corners, expiry details, and glare.',
   SELFIE: 'Face should match the submitted ID document.',
   PROFILE_PHOTO: 'Public profile photo candidate after approval.',
-  WORK_PHOTO: 'Optional evidence for experience or trust review.',
+  WORK_PHOTO: 'Optional evidence for experience or profile review.',
   BANK_QR: 'Optional payout QR evidence, not a replacement for bank approval.',
 };
 

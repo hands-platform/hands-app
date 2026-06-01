@@ -239,7 +239,7 @@ String providerDocumentTypeDescription(String type) {
     case 'PROFILE_PHOTO':
       return 'Public profile photo used after admin review.';
     case 'WORK_PHOTO':
-      return 'Optional work or service evidence for trust review.';
+      return 'Optional work or service evidence for profile review.';
     case 'BANK_QR':
       return 'Optional VietQR or banking QR image for payout review.';
     default:

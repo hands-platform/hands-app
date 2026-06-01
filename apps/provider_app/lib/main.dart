@@ -4746,7 +4746,7 @@ String _compactLevel(String value) {
       .replaceAll('_SIGNUP', ' signup')
       .replaceAll('_ACTIVE', ' active')
       .replaceAll('_PAYOUT_ENABLED', ' payout')
-      .replaceAll('_TRUSTED', ' trusted');
+      .replaceAll('_TRUSTED', ' reviewed');
 }
 
 String guessImageContentTypeFromName(String name) {
