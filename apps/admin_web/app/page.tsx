@@ -477,6 +477,35 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       'Prioritized items generated from booking, payment, partner, and notification state.',
     ],
   ];
+  const coreOperatingCounterLabels = [
+    'Total bookings',
+    'Open matching',
+    'Active bookings',
+    'Completed bookings',
+    'Cancelled bookings',
+    'No-show signal',
+    'Customers in app',
+    'Live matching customers',
+    'Partners in app',
+    'Online partners',
+    'Payment holds',
+    'Cash debt',
+  ];
+  const coreOperatingCounters = coreOperatingCounterLabels
+    .map((counterLabel) => {
+      const counter = metrics.find(([label]) => label === counterLabel);
+
+      if (!counter) {
+        return null;
+      }
+
+      return {
+        label: counter[0],
+        value: counter[1],
+        helper: counter[2],
+      };
+    })
+    .filter((counter): counter is { label: string; value: string; helper: string } => Boolean(counter));
   const adminMenuMap = [
     {
       label: 'Customer Management',
@@ -586,6 +615,44 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </Link>
           <Link className="text-link" href="/audit-log">
             Audit log
+          </Link>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Core operating counters</h2>
+            <p className="muted">
+              Booking volume, matching wait, completed and cancelled work, live app presence, partner
+              supply, payment holds, and cash debt in one operator scan.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings">
+            Open booking monitor
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {coreOperatingCounters.map((counter) => (
+            <div key={counter.label}>
+              <span>{counter.label}</span>
+              <strong>{counter.value}</strong>
+              <small>{counter.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="actions" style={{ marginTop: 12 }}>
+          <Link className="text-link" href="/bookings?view=matching">
+            Matching wait
+          </Link>
+          <Link className="text-link" href="/bookings?view=no-show">
+            No-show evidence
+          </Link>
+          <Link className="text-link" href="/app-sessions?role=CUSTOMER&state=live">
+            Live customers
+          </Link>
+          <Link className="text-link" href="/cash-settlements">
+            Cash settlement gate
           </Link>
         </div>
       </section>

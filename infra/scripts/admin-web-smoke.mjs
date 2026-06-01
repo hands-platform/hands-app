@@ -12,6 +12,7 @@ const pages = [
       'HANDS Admin',
       'Dashboard date range',
       'Operations command board',
+      'Core operating counters',
       'Daily operations snapshot',
       'Live operations radar',
       'Evidence drilldown',
