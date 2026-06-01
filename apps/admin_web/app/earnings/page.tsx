@@ -466,8 +466,8 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
           <div>
             <h2>Recent earnings ledger</h2>
             <p className="muted">
-              Raw earning rows remain visible for booking traceability, tax audit, and direct finance
-              correction.
+              Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash
+              fee settlement correction.
             </p>
           </div>
         </div>
@@ -548,11 +548,9 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                       <input
                         aria-label="Settlement reference"
                         name="settlementRef"
-                        placeholder={isCashDebt(earning) ? 'Deposit ref or offset memo' : 'Transfer ref'}
+                        placeholder="Deposit ref or offset memo"
                       />
-                      <button type="submit">
-                        {isCashDebt(earning) ? 'Mark fee settled' : 'Direct mark paid'}
-                      </button>
+                      <button type="submit">Mark fee settled</button>
                     </form>
                   )}
                   {canCreatePayout(earning) && (
@@ -1302,7 +1300,7 @@ function netCompanyFeeHint(earning: AdminEarning) {
 }
 
 function canDirectlyPay(earning: AdminEarning) {
-  return earning.status !== 'PAID' && earning.status !== 'CANCELLED' && !earning.payoutBatchId;
+  return isCashDebt(earning);
 }
 
 function canCreatePayout(earning: AdminEarning) {

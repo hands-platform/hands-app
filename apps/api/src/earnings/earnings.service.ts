@@ -326,6 +326,9 @@ export class EarningsService {
     }
     const settlementRef = cleanOptionalText(input.settlementRef);
     const settlementNotes = cleanOptionalText(input.settlementNotes);
+    if (earning.netAmount >= 0) {
+      throw new BadRequestException('Positive partner earnings must be paid through payout batches');
+    }
     if (earning.netAmount < 0 && !settlementRef) {
       throw new BadRequestException('Settlement reference is required for cash fee debt settlement');
     }

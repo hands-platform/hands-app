@@ -116,6 +116,14 @@ const requiredCoverage = [
     markers: ['First provider earning should notify payout tax setup requirements'],
   },
   {
+    area: 'payout batch release authority',
+    markers: [
+      'Positive partner earnings must be paid through payout batches',
+      'Draft payout batch should not mark earnings paid',
+      'Payout paid status requires transfer reference',
+    ],
+  },
+  {
     area: 'cash booking wallet debt',
     markers: [
       'Cash booking did not create a negative provider wallet',

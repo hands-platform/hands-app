@@ -2353,6 +2353,14 @@ if (
     `Completed earning did not record platform fee policy log: ${JSON.stringify(adminCompletedEarning)}`,
   );
 }
+await expectRequestFailure(
+  'Positive partner earnings must be paid through payout batches',
+  () =>
+    postJson(`/admin/earnings/${adminCompletedEarning.id}/mark-paid`, adminAuth.accessToken, {
+      settlementRef: `DIRECT-PAYOUT-BLOCKED-${Date.now()}`,
+    }),
+  400,
+);
 if (adminCompletedEarning.platformFeeLogs[0].ruleSnapshot?.source !== 'SERVICE_PAYOUT_RULE') {
   throw new Error(
     `Completed earning should prefer the service payout matrix: ${JSON.stringify(
