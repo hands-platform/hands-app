@@ -2939,7 +2939,7 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     {
       label: 'Range',
       value: latestAt ? formatDate(latestAt) : 'None',
-      helper: oldestAt ? `Oldest loaded: ${formatDate(oldestAt)}` : 'No partner activity loaded.',
+      helper: oldestAt ? `Oldest loaded: ${formatDate(oldestAt)}` : 'No partner records loaded.',
     },
     {
       label: 'Bookings',
