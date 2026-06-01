@@ -50,7 +50,7 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
   Widget build(BuildContext context) {
     final screens = const [
       RequestsScreen(),
-      ProviderScheduleScreen(),
+      PartnerJobsScreen(),
       EarningsScreen(),
       ChatScreen(),
       ProfileScreen(),
@@ -772,16 +772,14 @@ class ProviderStatusPanel extends StatelessWidget {
   }
 }
 
-class ProviderScheduleScreen extends ConsumerStatefulWidget {
-  const ProviderScheduleScreen({super.key});
+class PartnerJobsScreen extends ConsumerStatefulWidget {
+  const PartnerJobsScreen({super.key});
 
   @override
-  ConsumerState<ProviderScheduleScreen> createState() =>
-      _ProviderScheduleScreenState();
+  ConsumerState<PartnerJobsScreen> createState() => _PartnerJobsScreenState();
 }
 
-class _ProviderScheduleScreenState
-    extends ConsumerState<ProviderScheduleScreen> {
+class _PartnerJobsScreenState extends ConsumerState<PartnerJobsScreen> {
   List<dynamic> bookings = [];
   bool loading = false;
   String? error;
@@ -797,7 +795,7 @@ class _ProviderScheduleScreenState
       if (ref.read(authControllerProvider) == null) {
         await ref.read(authControllerProvider.notifier).signInDemoProvider();
       }
-      await loadSchedule(showLoading: false);
+      await loadJobs(showLoading: false);
     } catch (exception) {
       setState(() => error = '$exception');
     } finally {
@@ -807,7 +805,7 @@ class _ProviderScheduleScreenState
     }
   }
 
-  Future<void> loadSchedule({bool showLoading = true}) async {
+  Future<void> loadJobs({bool showLoading = true}) async {
     if (showLoading) {
       setState(() {
         loading = true;
@@ -858,7 +856,7 @@ class _ProviderScheduleScreenState
           const SizedBox(height: 16),
           FilledButton.icon(
             onPressed:
-                loading ? null : (auth == null ? signInAndLoad : loadSchedule),
+                loading ? null : (auth == null ? signInAndLoad : loadJobs),
             icon: const Icon(Icons.work_history_outlined),
             label: Text(auth == null ? 'Demo partner login' : 'Refresh jobs'),
           ),
@@ -875,7 +873,7 @@ class _ProviderScheduleScreenState
             ErrorCard(text: error!),
           ],
           const SizedBox(height: 16),
-          ProviderScheduleSummary(
+          PartnerJobsSummary(
               active: activeCount,
               completed: completedCount,
               closed: closedCount),
@@ -886,15 +884,15 @@ class _ProviderScheduleScreenState
             const InfoCard(
                 text: 'No assigned, joined, or completed bookings yet.')
           else
-            for (final booking in items) ProviderScheduleCard(booking: booking),
+            for (final booking in items) PartnerJobsCard(booking: booking),
         ],
       ),
     );
   }
 }
 
-class ProviderScheduleSummary extends StatelessWidget {
-  const ProviderScheduleSummary({
+class PartnerJobsSummary extends StatelessWidget {
+  const PartnerJobsSummary({
     super.key,
     required this.active,
     required this.completed,
@@ -937,8 +935,8 @@ class ProviderScheduleSummary extends StatelessWidget {
   }
 }
 
-class ProviderScheduleCard extends StatelessWidget {
-  const ProviderScheduleCard({super.key, required this.booking});
+class PartnerJobsCard extends StatelessWidget {
+  const PartnerJobsCard({super.key, required this.booking});
 
   final Map<String, dynamic> booking;
 
@@ -990,7 +988,7 @@ class ProviderScheduleCard extends StatelessWidget {
             Text(address?['line1']?.toString() ?? 'Guest address pending'),
             const SizedBox(height: 6),
             Text(
-              providerScheduleNextAction(booking),
+              partnerJobNextAction(booking),
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
@@ -1035,7 +1033,7 @@ bool isProviderAppChatVisible(Map<String, dynamic>? booking) {
       !isProviderClosedBooking(booking);
 }
 
-String providerScheduleNextAction(Map<String, dynamic> booking) {
+String partnerJobNextAction(Map<String, dynamic> booking) {
   return switch (booking['status']) {
     'OPEN_MATCHING' => 'Waiting for the guest to confirm a partner.',
     'MATCHED' => 'Prepare to start the service and unlock chat.',

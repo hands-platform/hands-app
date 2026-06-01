@@ -189,7 +189,7 @@ void main() {
 
     expect(isProviderAppChatVisible(liveBooking), isTrue);
     expect(isProviderAppChatVisible(completedBooking), isFalse);
-    expect(providerScheduleNextAction(completedBooking),
+    expect(partnerJobNextAction(completedBooking),
         'Service complete. Check earnings and payout status.');
   });
 
