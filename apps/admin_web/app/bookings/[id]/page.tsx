@@ -443,6 +443,33 @@ export default async function BookingDetailPage({ params }: PageProps) {
         />
       </section>
 
+      <section className="card" id="booking-recent-operations-timeline" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking recent operations timeline</h2>
+            <p className="muted">
+              Latest factual booking steps before an operator decides: address, first-pick wait, 10km
+              partner participation, customer final choice, chat, location, payment, cash debt, and closeout.
+            </p>
+          </div>
+          <Link className="text-link" href="#operating-timeline">
+            Open full operating timeline
+          </Link>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {operatingTimeline.slice(0, 8).map((item) => (
+            <div className="setup-stage-item" key={`recent-${item.id}`}>
+              <span>{item.type}</span>
+              <div>
+                <strong>{item.title}</strong>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.at ? formatDate(item.at) : item.status}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="card" id="booking-priority-briefing" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
