@@ -19,6 +19,7 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     view === 'matching' ||
     view === 'first-pick' ||
     view === 'backup' ||
+    view === 'marketplace' ||
     view === 'customer-choice' ||
     view === 'handoff-repair' ||
     view === 'no-supply' ||
@@ -34,7 +35,7 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     view === 'no-show' ||
     view === 'all'
   ) {
-    return view;
+    return view === 'backup' ? 'marketplace' : view;
   }
   if (status === 'EXPIRED') {
     return 'expired';

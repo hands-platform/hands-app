@@ -15,7 +15,7 @@ type BookingView =
   | 'attention'
   | 'matching'
   | 'first-pick'
-  | 'backup'
+  | 'marketplace'
   | 'customer-choice'
   | 'handoff-repair'
   | 'no-supply'
@@ -115,7 +115,7 @@ type BookingDispatchPartnerShortcut = {
 type BookingListStageKey =
   | 'intake'
   | 'first-pick'
-  | 'backup'
+  | 'marketplace'
   | 'customer-choice'
   | 'handoff'
   | 'handoff-repair'
@@ -180,7 +180,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const matched = orderedBookings.filter((booking) => booking.status === 'MATCHED');
     const active = orderedBookings.filter((booking) => activeStatuses.has(booking.status));
     const noParticipants = open.filter((booking) => (booking.participants?.length ?? 0) === 0);
-    const waitingSelection = open.filter((booking) => fallbackParticipants(booking).length > 0);
+    const waitingSelection = open.filter((booking) => marketplaceParticipants(booking).length > 0);
     const preferredPending = open.filter(
       (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
     );
@@ -189,23 +189,23 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const noShow = orderedBookings.filter((booking) => booking.status === 'NO_SHOW');
     const expired = orderedBookings.filter((booking) => booking.status === 'EXPIRED');
     const policySnapshots = orderedBookings.filter((booking) => bookingMatchingPolicySnapshot(booking));
-    const paymentRisk = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
-    const closeoutRisk = orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
-    const pricingRisk = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
-    const addressRisk = orderedBookings.filter((booking) => bookingAddressNeedsOps(booking));
-    const locationRisk = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
+    const paymentChecks = orderedBookings.filter((booking) => bookingPaymentNeedsOps(booking));
+    const closeoutChecks = orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
+    const pricingChecks = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
+    const addressChecks = orderedBookings.filter((booking) => bookingAddressNeedsOps(booking));
+    const locationChecks = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
     const chatRepair = orderedBookings.filter((booking) => bookingChatRepairNeedsOps(booking));
-    const highRisk = orderedBookings.filter((booking) =>
-      bookingRiskFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
+    const actionChecks = orderedBookings.filter((booking) =>
+      bookingCheckFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
     );
     const stageCounts = bookingStageCounts(orderedBookings, currentTimeMs);
     return [
       ['Active bookings', active.length.toString()],
       ['Open matching', open.length.toString()],
       ['Matched', matched.length.toString()],
-      ['Attention queue', highRisk.length.toString()],
+      ['Follow-up queue', actionChecks.length.toString()],
       ['Stage 1 first-pick', (stageCounts.get('first-pick') ?? 0).toString()],
-      ['Stage 2 marketplace', (stageCounts.get('backup') ?? 0).toString()],
+      ['Stage 2 marketplace', (stageCounts.get('marketplace') ?? 0).toString()],
       ['Stage 3 customer choice', (stageCounts.get('customer-choice') ?? 0).toString()],
       ['Stage 4 handoff repair', (stageCounts.get('handoff-repair') ?? 0).toString()],
       ['No partners yet', noParticipants.length.toString()],
@@ -216,11 +216,11 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['No-show', noShow.length.toString()],
       ['Expired', expired.length.toString()],
       ['Policy snapshots', policySnapshots.length.toString()],
-      ['Address checks', addressRisk.length.toString()],
-      ['Payment checks', paymentRisk.length.toString()],
-      ['Closeout checks', closeoutRisk.length.toString()],
-      ['Pricing checks', pricingRisk.length.toString()],
-      ['Location checks', locationRisk.length.toString()],
+      ['Address checks', addressChecks.length.toString()],
+      ['Payment checks', paymentChecks.length.toString()],
+      ['Closeout checks', closeoutChecks.length.toString()],
+      ['Pricing checks', pricingChecks.length.toString()],
+      ['Location checks', locationChecks.length.toString()],
       ['Chat repair', chatRepair.length.toString()],
     ];
   }, [currentTimeMs, orderedBookings]);
@@ -700,13 +700,13 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               <th>Partner supply</th>
               <th>Chat / location</th>
               <th>Payment / wallet</th>
-              <th>Ops signal</th>
+              <th>Ops check</th>
             </tr>
           </thead>
           <tbody>
             {visibleBookings.map((booking) => {
-              const flags = bookingRiskFlags(booking, currentTimeMs);
-              const risk = riskLevel(flags);
+              const flags = bookingCheckFlags(booking, currentTimeMs);
+              const checkSignal = checkLevel(flags);
               const servicePriceLabel = bookingServicePriceLabel(booking);
               const servicePayoutLabel = bookingServicePayoutRuleLabel(booking);
               const pricingPolicy = bookingPricingPolicySignal(booking);
@@ -809,7 +809,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                             Final: {booking.selectedProvider.displayName ?? 'Partner'}
                           </span>
                         )}
-                      {fallbackParticipants(booking)
+                      {marketplaceParticipants(booking)
                         .slice(0, 4)
                         .map((participant) => (
                           <span className="pill" key={participant.id}>
@@ -818,9 +818,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                           </span>
                         ))}
                     </div>
-                    {fallbackParticipants(booking).length > 4 && (
+                    {marketplaceParticipants(booking).length > 4 && (
                       <div className="muted" style={{ marginTop: 6 }}>
-                        +{fallbackParticipants(booking).length - 4} more marketplace partner(s)
+                        +{marketplaceParticipants(booking).length - 4} more marketplace partner(s)
                       </div>
                     )}
                   </td>
@@ -878,9 +878,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     )}
                   </td>
                   <td>
-                    <span className={`signal ${risk.tone}`}>{risk.label}</span>
+                    <span className={`signal ${checkSignal.tone}`}>{checkSignal.label}</span>
                     <div className="muted" style={{ marginTop: 8 }}>
-                      {risk.helper}
+                      {checkSignal.helper}
                     </div>
                     {flags.length > 0 && <div className="muted">{flags[0].title}</div>}
                     <div style={{ marginTop: 8 }}>{opsSignal(booking)}</div>
@@ -923,7 +923,7 @@ const bookingViewOptions: Array<{
   },
   {
     view: 'attention',
-    label: 'Attention queue',
+    label: 'Follow-up queue',
     description: 'bookings with expired matching, unresolved payment, or missing chat after matching.',
     operatorHint: 'Use this as the first dispatch checklist view when the dashboard shows attention needed.',
   },
@@ -942,7 +942,7 @@ const bookingViewOptions: Array<{
       'Use this to monitor the 10-minute response window, push delivery, KYC, wallet gate, and partner decision timing.',
   },
   {
-    view: 'backup',
+    view: 'marketplace',
     label: 'Stage 2 marketplace',
     description: 'open bookings where marketplace partners can join or need a dispatch nudge.',
     operatorHint:
@@ -1058,12 +1058,12 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
     (booking) => booking.expiresAt && new Date(booking.expiresAt).getTime() < nowMs,
   );
   const matchedWithoutChat = bookings.filter((booking) => bookingChatRepairNeedsOps(booking));
-  const paymentRisk = bookings.filter((booking) => bookingPaymentNeedsOps(booking));
+  const paymentChecks = bookings.filter((booking) => bookingPaymentNeedsOps(booking));
   const noShow = bookings.filter((booking) => booking.status === 'NO_SHOW');
-  const closeoutRisk = bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
-  const pricingRisk = bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
+  const closeoutChecks = bookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
+  const pricingChecks = bookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
   const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
-  const locationRisk = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
+  const locationChecks = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
   const backupSelected = bookings.filter((booking) => isBackupSelected(booking));
   const quietChat = bookings.filter(
     (booking) =>
@@ -1100,7 +1100,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
       tone:
         expiredMatching.length > 0 || matchedWithoutChat.length > 0
           ? 'danger'
-          : locationRisk.length > 0
+          : locationChecks.length > 0
             ? 'warn'
             : 'ok',
       detail:
@@ -1114,38 +1114,38 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
       metrics: [
         metric('expired', expiredMatching.length),
         metric('no chat', matchedWithoutChat.length),
-        metric('location checks', locationRisk.length),
+        metric('location checks', locationChecks.length),
         metric('quiet chat', quietChat.length),
       ],
     },
     {
       title: 'Payment closeout',
       status:
-        paymentRisk.length > 0 || closeoutRisk.length > 0 || noShow.length > 0 || pricingRisk.length > 0
+        paymentChecks.length > 0 || closeoutChecks.length > 0 || noShow.length > 0 || pricingChecks.length > 0
           ? 'Review'
           : 'Ready',
       tone:
-        closeoutRisk.length > 0
+        closeoutChecks.length > 0
           ? 'danger'
-          : paymentRisk.length > 0
+          : paymentChecks.length > 0
             ? 'danger'
             : noShow.length > 0
               ? 'warn'
-              : pricingRisk.length > 0
+              : pricingChecks.length > 0
                 ? 'warn'
                 : 'ok',
       detail:
-        closeoutRisk.length > 0
+        closeoutChecks.length > 0
           ? 'Completed bookings are missing earning, tax, platform fee, or wallet closeout records.'
-          : paymentRisk.length > 0
+          : paymentChecks.length > 0
             ? 'Some bookings need capture, release, refund, cash debt, or missing reference review.'
             : noShow.length > 0
               ? 'No-show bookings need a clear payment and customer communication outcome.'
               : 'Payment and service pricing policy signals are aligned.',
       href:
-        closeoutRisk.length > 0
+        closeoutChecks.length > 0
           ? '/bookings?view=closeout'
-          : paymentRisk.length > 0
+          : paymentChecks.length > 0
             ? cashDebt.length > 0
               ? '/bookings?view=cash-debt'
               : '/bookings?view=payment'
@@ -1153,10 +1153,10 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
               ? '/bookings?view=no-show'
               : '/bookings?view=pricing',
       metrics: [
-        metric('payment', paymentRisk.length),
-        metric('closeout', closeoutRisk.length),
+        metric('payment', paymentChecks.length),
+        metric('closeout', closeoutChecks.length),
         metric('no-show', noShow.length),
-        metric('pricing', pricingRisk.length),
+        metric('pricing', pricingChecks.length),
         metric('cash debt', cashDebt.length),
         metric(
           'missing refs',
@@ -1168,15 +1168,15 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
     },
     {
       title: 'Handoff quality',
-      status: locationRisk.length > 0 || quietChat.length > 0 ? 'Monitor' : 'Healthy',
-      tone: locationRisk.length > 0 ? 'warn' : quietChat.length > 0 ? 'info' : 'ok',
+      status: locationChecks.length > 0 || quietChat.length > 0 ? 'Monitor' : 'Healthy',
+      tone: locationChecks.length > 0 ? 'warn' : quietChat.length > 0 ? 'info' : 'ok',
       detail:
-        locationRisk.length > 0
+        locationChecks.length > 0
           ? 'Live service state has missing or stale last-known partner location.'
           : 'Chat, marketplace selection, and location handoff look normal.',
-      href: locationRisk.length > 0 ? '/bookings?view=location' : '/bookings?view=chat',
+      href: locationChecks.length > 0 ? '/bookings?view=location' : '/bookings?view=chat',
       metrics: [
-        metric('location', locationRisk.length),
+        metric('location', locationChecks.length),
         metric('marketplace chosen', backupSelected.length),
         metric('chat live', bookings.filter((booking) => Boolean(booking.chatRoom)).length),
         metric('quiet chat', quietChat.length),
@@ -1188,8 +1188,8 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
 function buildBookingNextActions(bookings: AdminBooking[], nowMs: number): BookingNextAction[] {
   return bookings
     .map<BookingNextAction | null>((booking) => {
-      const flags = bookingRiskFlags(booking, nowMs);
-      const highestFlag = flags.sort((left, right) => riskFlagWeight(right) - riskFlagWeight(left))[0];
+      const flags = bookingCheckFlags(booking, nowMs);
+      const highestFlag = flags.sort((left, right) => checkFlagWeight(right) - checkFlagWeight(left))[0];
 
       if (highestFlag) {
         return {
@@ -1335,8 +1335,8 @@ function buildMatchingEscalationBoard(
   const firstPickWaiting = open.filter(
     (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
   );
-  const noBackupSupply = open.filter((booking) => fallbackParticipants(booking).length === 0);
-  const backupReady = open.filter((booking) => fallbackParticipants(booking).length > 0);
+  const noMarketplaceSupply = open.filter((booking) => marketplaceParticipants(booking).length === 0);
+  const marketplaceReady = open.filter((booking) => marketplaceParticipants(booking).length > 0);
   const customerFinalSelection = open.filter((booking) => bookingHasAcceptedPartner(booking));
   const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
   const chatReady = bookings.filter((booking) => Boolean(booking.chatRoom));
@@ -1358,17 +1358,17 @@ function buildMatchingEscalationBoard(
     },
     {
       title: 'Marketplace participant supply',
-      status: noBackupSupply.length > 0 ? 'Needs supply' : backupReady.length ? 'Ready' : 'Clear',
-      tone: noBackupSupply.length > 0 ? 'warn' : backupReady.length ? 'info' : 'ok',
+      status: noMarketplaceSupply.length > 0 ? 'Needs supply' : marketplaceReady.length ? 'Ready' : 'Clear',
+      tone: noMarketplaceSupply.length > 0 ? 'warn' : marketplaceReady.length ? 'info' : 'ok',
       detail:
-        noBackupSupply.length > 0
+        noMarketplaceSupply.length > 0
           ? 'Some open requests have no marketplace participant visible to the customer yet.'
           : 'Marketplace participants are already visible for open requests that need options.',
       operatorAction:
         'Check partner availability, location freshness, push delivery, wallet debt, and online state before extending wait time.',
-      href: noBackupSupply.length > 0 ? '/bookings?view=no-supply' : '/bookings?view=matching',
-      bookings: noBackupSupply.length > 0 ? noBackupSupply : backupReady,
-      metrics: [metric('no marketplace', noBackupSupply.length), metric('marketplace ready', backupReady.length)],
+      href: noMarketplaceSupply.length > 0 ? '/bookings?view=no-supply' : '/bookings?view=matching',
+      bookings: noMarketplaceSupply.length > 0 ? noMarketplaceSupply : marketplaceReady,
+      metrics: [metric('no marketplace', noMarketplaceSupply.length), metric('marketplace ready', marketplaceReady.length)],
     },
     {
       title: 'Customer final selection',
@@ -1384,7 +1384,7 @@ function buildMatchingEscalationBoard(
       bookings: customerFinalSelection,
       metrics: [
         metric('accepted options', customerFinalSelection.length),
-        metric('marketplace options', backupReady.length),
+        metric('marketplace options', marketplaceReady.length),
       ],
     },
     {
@@ -1415,7 +1415,7 @@ function buildBookingDispatchPartnerShortcuts(
   );
   const customerSelection = openMatching.filter((booking) => bookingHasAcceptedPartner(booking));
   const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
-  const locationRisk = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
+  const locationChecks = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
 
   return [
     {
@@ -1436,7 +1436,7 @@ function buildBookingDispatchPartnerShortcuts(
       title: 'Marketplace-ready',
       value: noPartnerSupply.length.toString(),
       detail: 'Use when open matching has no marketplace supply or customer options.',
-      href: '/partners?review=backup-ready',
+      href: '/partners?review=marketplace-ready',
       tone: noPartnerSupply.length ? 'warn' : 'ok',
     },
     {
@@ -1455,10 +1455,10 @@ function buildBookingDispatchPartnerShortcuts(
     },
     {
       title: 'Location refresh',
-      value: locationRisk.length.toString(),
+      value: locationChecks.length.toString(),
       detail: 'Live booking location checks should send operators to partner location freshness review.',
       href: '/partners?review=location',
-      tone: locationRisk.length ? 'warn' : 'ok',
+      tone: locationChecks.length ? 'warn' : 'ok',
     },
     {
       title: 'Policy controls',
@@ -1476,8 +1476,8 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
     (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
   );
   const firstPickExpired = firstPickWaiting.filter((booking) => bookingMatchingWindowExpired(booking, nowMs));
-  const noSupply = open.filter((booking) => fallbackParticipants(booking).length === 0);
-  const backupVisible = open.filter((booking) => fallbackParticipants(booking).length > 0);
+  const noSupply = open.filter((booking) => marketplaceParticipants(booking).length === 0);
+  const marketplaceVisible = open.filter((booking) => marketplaceParticipants(booking).length > 0);
   const backupAlerted = open.filter((booking) => bookingBackupAlertTraceSummary(booking).totalNotified > 0);
   const customerChoice = open.filter((booking) => bookingHasAcceptedPartner(booking));
   const matched = bookings.filter((booking) => booking.status === 'MATCHED');
@@ -1485,7 +1485,7 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
   const liveHandoff = bookings.filter((booking) =>
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
   );
-  const locationRisk = liveHandoff.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
+  const locationChecks = liveHandoff.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
 
   return [
     {
@@ -1506,21 +1506,21 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
     {
       stage: 'Stage 2',
       title: 'Marketplace participation',
-      status: noSupply.length ? 'Supply gap' : backupVisible.length ? 'Marketplace visible' : 'Clear',
-      tone: noSupply.length ? 'warn' : backupVisible.length ? 'info' : 'ok',
+      status: noSupply.length ? 'Supply gap' : marketplaceVisible.length ? 'Marketplace visible' : 'Clear',
+      tone: noSupply.length ? 'warn' : marketplaceVisible.length ? 'info' : 'ok',
       detail:
         noSupply.length > 0
           ? 'Some open bookings have no marketplace partner for the customer to choose.'
           : 'Marketplace partners are visible or no participation lane is currently needed.',
       operatorAction:
         'Use marketplace-ready partners, location freshness, alert delivery, and operating policy before widening rules.',
-      href: noSupply.length ? '/partners?review=backup-ready' : '/bookings?view=matching',
+      href: noSupply.length ? '/partners?review=marketplace-ready' : '/bookings?view=matching',
       metrics: [
         metric('no marketplace', noSupply.length),
-        metric('visible', backupVisible.length),
+        metric('visible', marketplaceVisible.length),
         metric('alerted', backupAlerted.length),
       ],
-      bookings: noSupply.length ? noSupply : backupVisible,
+      bookings: noSupply.length ? noSupply : marketplaceVisible,
     },
     {
       stage: 'Stage 3',
@@ -1540,10 +1540,10 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
     {
       stage: 'Stage 4',
       title: 'Chat and location handoff',
-      status: matchedWithoutChat.length ? 'Repair chat' : locationRisk.length ? 'Location check' : 'Ready',
+      status: matchedWithoutChat.length ? 'Repair chat' : locationChecks.length ? 'Location check' : 'Ready',
       tone: matchedWithoutChat.length
         ? 'danger'
-        : locationRisk.length
+        : locationChecks.length
           ? 'warn'
           : liveHandoff.length
             ? 'info'
@@ -1551,7 +1551,7 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
       detail:
         matchedWithoutChat.length > 0
           ? 'A final partner is selected, but the chat room is missing.'
-          : locationRisk.length > 0
+          : locationChecks.length > 0
             ? 'A live booking has stale or missing partner location.'
             : 'Matched and live bookings have no visible chat/location handoff blocker.',
       operatorAction:
@@ -1559,10 +1559,10 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
       href: matchedWithoutChat.length ? '/bookings?view=attention' : '/bookings?view=location',
       metrics: [
         metric('chat repair', matchedWithoutChat.length),
-        metric('location checks', locationRisk.length),
+        metric('location checks', locationChecks.length),
         metric('live handoff', liveHandoff.length),
       ],
-      bookings: matchedWithoutChat.length ? matchedWithoutChat : locationRisk,
+      bookings: matchedWithoutChat.length ? matchedWithoutChat : locationChecks,
     },
   ];
 }
@@ -1608,7 +1608,7 @@ function humanizeClosureReason(reason: string) {
 }
 
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
-  const fallbackCount = fallbackParticipants(booking).length;
+  const marketplaceCount = marketplaceParticipants(booking).length;
   const acceptedCount = acceptedParticipants(booking).length;
 
   if (terminalBookingStatuses.has(booking.status)) {
@@ -1660,11 +1660,11 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
     };
   }
 
-  if (booking.status === 'OPEN_MATCHING' && fallbackCount > 0) {
+  if (booking.status === 'OPEN_MATCHING' && marketplaceCount > 0) {
     return {
-      key: 'backup',
+      key: 'marketplace',
       label: 'Stage 2 marketplace',
-      detail: `${fallbackCount} marketplace partner(s) are visible while matching stays open.`,
+      detail: `${marketplaceCount} marketplace partner(s) are visible while matching stays open.`,
       action:
         bookingBackupAlertTraceSummary(booking).totalNotified > 0
           ? 'Monitor marketplace alert delivery and customer shortlist quality.'
@@ -1723,10 +1723,10 @@ function buildMatchingEscalationRows(
         return null;
       }
 
-      const fallbackCount = fallbackParticipants(booking).length;
+      const marketplaceCount = marketplaceParticipants(booking).length;
       const acceptedCount = acceptedParticipants(booking).length;
       const windowLabel = bookingMatchingWindowLabel(booking, nowMs);
-      const baseTags = [booking.status, windowLabel, `${fallbackCount} marketplace`, `${acceptedCount} accepted`];
+      const baseTags = [booking.status, windowLabel, `${marketplaceCount} marketplace`, `${acceptedCount} accepted`];
 
       if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
         return {
@@ -1756,7 +1756,7 @@ function buildMatchingEscalationRows(
         booking.status === 'OPEN_MATCHING' &&
         booking.preferredProvider &&
         isPreferredAwaitingDecision(booking) &&
-        fallbackCount === 0
+        marketplaceCount === 0
       ) {
         return {
           booking,
@@ -1773,7 +1773,7 @@ function buildMatchingEscalationRows(
         booking.status === 'OPEN_MATCHING' &&
         booking.preferredProvider &&
         isPreferredAwaitingDecision(booking) &&
-        fallbackCount > 0
+        marketplaceCount > 0
       ) {
         return {
           booking,
@@ -1786,7 +1786,7 @@ function buildMatchingEscalationRows(
         };
       }
 
-      if (booking.status === 'OPEN_MATCHING' && fallbackCount === 0) {
+      if (booking.status === 'OPEN_MATCHING' && marketplaceCount === 0) {
         return {
           booking,
           title: 'Open request has no partner supply',
@@ -1826,7 +1826,7 @@ function metric(label: string, value: number) {
 
 function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: number) {
   if (view === 'attention') {
-    return bookingRiskFlags(booking, nowMs).some((flag) => flag.severity === 'high');
+    return bookingCheckFlags(booking, nowMs).some((flag) => flag.severity === 'high');
   }
   if (view === 'matching') {
     return bookingMatchingEscalationNeedsOps(booking, nowMs);
@@ -1834,8 +1834,8 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
   if (view === 'first-pick') {
     return bookingListStage(booking, nowMs).key === 'first-pick';
   }
-  if (view === 'backup') {
-    return bookingListStage(booking, nowMs).key === 'backup';
+  if (view === 'marketplace') {
+    return bookingListStage(booking, nowMs).key === 'marketplace';
   }
   if (view === 'customer-choice') {
     return bookingListStage(booking, nowMs).key === 'customer-choice';
@@ -1986,7 +1986,7 @@ function commandToneWeight(tone: BookingCommandLane['tone']) {
   return 1;
 }
 
-function riskFlagWeight(flag: BookingRiskFlag) {
+function checkFlagWeight(flag: BookingCheckFlag) {
   if (flag.severity === 'high') {
     return 3;
   }
@@ -1999,7 +1999,7 @@ function riskFlagWeight(flag: BookingRiskFlag) {
 function bookingActionPriority(
   booking: AdminBooking,
   nowMs: number,
-  flag?: BookingRiskFlag,
+  flag?: BookingCheckFlag,
 ): BookingNextAction['priority'] {
   if (flag?.severity === 'high') {
     return 'P0';
@@ -2026,7 +2026,7 @@ function bookingActionPriority(
   return 'P3';
 }
 
-function bookingActionOwner(booking: AdminBooking, flag?: BookingRiskFlag): BookingNextAction['owner'] {
+function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): BookingNextAction['owner'] {
   if (
     flag?.title.toLowerCase().includes('payment') ||
     flag?.title.toLowerCase().includes('closeout') ||
@@ -2050,7 +2050,7 @@ function bookingActionOwner(booking: AdminBooking, flag?: BookingRiskFlag): Book
   return 'Dispatch';
 }
 
-function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingRiskFlag) {
+function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
   if (bookingCashDebtNeedsOps(booking)) {
     return 'Confirm partner wallet debt, request company fee settlement, and block further acceptance until paid.';
   }
@@ -2122,7 +2122,7 @@ function emptyBookingMessage(view: BookingView) {
   if (view === 'first-pick') {
     return 'No Stage 1 first-pick bookings are waiting. The direct partner response window is clear.';
   }
-  if (view === 'backup') {
+  if (view === 'marketplace') {
     return 'No Stage 2 marketplace bookings need partner participation review right now.';
   }
   if (view === 'customer-choice') {
@@ -2176,7 +2176,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 function opsSignal(booking: AdminBooking) {
-  const participantCount = fallbackParticipants(booking).length;
+  const participantCount = marketplaceParticipants(booking).length;
   if (booking.status === 'NO_SHOW') {
     return booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status) ? (
       <span className="signal signal-warn">No-show, check payment</span>
@@ -2226,13 +2226,13 @@ function opsSignal(booking: AdminBooking) {
   return <span className="signal signal-ok">Normal</span>;
 }
 
-type BookingRiskFlag = {
+type BookingCheckFlag = {
   severity: 'high' | 'medium' | 'low';
   title: string;
 };
 
-function bookingRiskFlags(booking: AdminBooking, nowMs: number): BookingRiskFlag[] {
-  const flags: BookingRiskFlag[] = [];
+function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFlag[] {
+  const flags: BookingCheckFlag[] = [];
   const paymentStatus = booking.payment?.status;
   const participantCount = booking.participants?.length ?? 0;
   const expired = nowMs > 0 && booking.expiresAt ? new Date(booking.expiresAt).getTime() < nowMs : false;
@@ -2505,7 +2505,7 @@ function bookingChatListState(booking: AdminBooking) {
   };
 }
 
-function riskLevel(flags: BookingRiskFlag[]) {
+function checkLevel(flags: BookingCheckFlag[]) {
   if (flags.some((flag) => flag.severity === 'high')) {
     return { label: 'Action', helper: `${flags.length} check(s)`, tone: 'signal-warn' };
   }
@@ -2528,7 +2528,7 @@ function hasProviderLocation(booking: AdminBooking) {
 }
 
 function nextAction(booking: AdminBooking) {
-  const participantCount = fallbackParticipants(booking).length;
+  const participantCount = marketplaceParticipants(booking).length;
   if (booking.status === 'NO_SHOW') {
     return booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)
       ? 'No-show is marked. Decide payment release, refund, or fee handling before closing.'
@@ -2685,7 +2685,7 @@ function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPo
 
 function customerVisibleStateLabel(booking: AdminBooking) {
   const acceptedCount = acceptedParticipants(booking).length;
-  const fallbackCount = fallbackParticipants(booking).length;
+  const marketplaceCount = marketplaceParticipants(booking).length;
 
   if (['CANCELLED', 'EXPIRED', 'REFUNDED', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
     return `Customer screen: closed as ${booking.status}`;
@@ -2703,13 +2703,13 @@ function customerVisibleStateLabel(booking: AdminBooking) {
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return fallbackCount > 0
-      ? `Customer screen: first-pick wait plus ${fallbackCount} marketplace option(s)`
+    return marketplaceCount > 0
+      ? `Customer screen: first-pick wait plus ${marketplaceCount} marketplace option(s)`
       : 'Customer screen: first-pick waiting only';
   }
   if (booking.status === 'OPEN_MATCHING') {
-    return fallbackCount > 0
-      ? `Customer screen: ${fallbackCount} partner option(s) waiting`
+    return marketplaceCount > 0
+      ? `Customer screen: ${marketplaceCount} partner option(s) waiting`
       : 'Customer screen: waiting for partners';
   }
   return `Customer screen: ${booking.status.toLowerCase().replaceAll('_', ' ')}`;
@@ -2928,7 +2928,7 @@ function bookingProviderLabel(booking: AdminBooking) {
   const provider =
     booking.selectedProvider?.displayName ??
     booking.preferredProvider?.displayName ??
-    fallbackParticipants(booking)[0]?.providerProfile?.displayName;
+    marketplaceParticipants(booking)[0]?.providerProfile?.displayName;
   return provider ? `Partner ${provider}` : 'Partner pending';
 }
 
@@ -2952,7 +2952,7 @@ function isBackupSelected(booking: AdminBooking) {
   );
 }
 
-function fallbackParticipants(booking: AdminBooking) {
+function marketplaceParticipants(booking: AdminBooking) {
   const preferredId = booking.preferredProvider?.id;
   return (booking.participants ?? []).filter(
     (participant) =>
@@ -3038,14 +3038,14 @@ function selectionLabel(booking: AdminBooking) {
 }
 
 function selectionPathLabel(booking: AdminBooking) {
-  const fallbackCount = fallbackParticipants(booking).length;
+  const marketplaceCount = marketplaceParticipants(booking).length;
 
   if (!booking.preferredProvider) {
-    return fallbackCount > 0 ? 'Open pool request with marketplace supply' : 'Open pool request';
+    return marketplaceCount > 0 ? 'Open pool request with marketplace supply' : 'Open pool request';
   }
 
   if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
-    return fallbackCount > 0
+    return marketplaceCount > 0
       ? 'Direct request first, with marketplace partners already waiting'
       : 'Direct request first, waiting on the first-pick partner';
   }
@@ -3058,7 +3058,7 @@ function selectionPathLabel(booking: AdminBooking) {
     return 'Direct request confirmed by the first-pick partner';
   }
 
-  if (fallbackCount > 0) {
+  if (marketplaceCount > 0) {
     return 'Marketplace partners are available while the first-pick partner stays in the flow';
   }
 
