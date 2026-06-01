@@ -48,7 +48,7 @@ Checked commands:
 - `npm.cmd run typecheck`: PASS
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
 - `npm.cmd run build --workspace @massage-vn/admin-web`: PASS
-- `node infra/scripts/admin-web-smoke.mjs`: PASS, 63 admin page checks plus dynamic customer, partner, legacy provider, and booking detail checks. On the current dev server this can take about 180-230 seconds, so short shell timeouts may fail even when the app is healthy.
+- `node infra/scripts/admin-web-smoke.mjs`: PASS, 64 admin page checks plus dynamic customer, partner, legacy provider, and booking detail checks. On the current dev server this can take about 180-230 seconds, so short shell timeouts may fail even when the app is healthy.
 - `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/partner-controls,/operations-policy,/bookings,/chat-archive,/app-sessions,/setup node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted operating-core check also verifies dynamic customer, partner, provider-legacy, and booking detail pages.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
@@ -58,6 +58,8 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/bookings node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted booking check now guards the dynamic booking detail operating ledger, including service/pricing and refund evidence rows.
 - `ADMIN_WEB_SMOKE_PATHS=/bookings node infra/scripts/admin-web-smoke.mjs`: PASS. Booking detail now also guards the customer-wide and partner-wide chat archive shortcuts.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-handoff node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/operations-handoff` renders the shift handoff checklist without runtime errors or people-ranking wording.
+- `ADMIN_WEB_SMOKE_PATHS=/partners,/customers,/bookings,/chat-archive,/operations-policy,/reviews node infra/scripts/admin-web-smoke.mjs`: PASS. Booking supply names are sanitized at display time so seeded or imported legacy partner names do not expose old `Provider` wording to operators.
+- `/operations-handoff` activity stream now sanitizes booking summaries, chat snippets, audit action labels, finance rows, partner signals, and participant names before rendering. Full admin smoke confirms no visible legacy `Provider`, people-ranking, scoring, penalty, VIP, or gratuity wording across the guarded admin surface.
 - `ADMIN_WEB_SMOKE_PATHS=/notifications?review=failed node infra/scripts/admin-web-smoke.mjs`: PASS. Failed notification review links are now covered by smoke tests.
 - `ADMIN_WEB_SMOKE_PATHS=/partners?sort=booking-count,/partners?sort=gross-revenue,/partners?sort=pending-payout,/partners?sort=available-payout node infra/scripts/admin-web-smoke.mjs`: PASS. Partner operations sorting by booking count, gross revenue, pending payout, and available payout is now guarded.
 - `ADMIN_WEB_SMOKE_PATHS=/customers?sort=booking-count,/customers?sort=completed-count,/customers?sort=captured-spend,/customers?sort=last-seen node infra/scripts/admin-web-smoke.mjs`: PASS. Customer operations sorting by booking volume, completed work, captured spend, and app access is now guarded.
