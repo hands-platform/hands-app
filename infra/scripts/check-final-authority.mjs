@@ -67,7 +67,7 @@ function checkNoContradictoryOperationsDocs() {
   const reviews = read('docs/architecture/reviews.md');
   requireMarkers('docs/architecture/reviews.md', reviews, [
     'should not use customer or partner feedback as a people-ranking, risk-scoring, or automatic dispatch system',
-    'must not drive automatic penalties, badges, rankings, or dispatch priority',
+    'must not drive automatic closeout decisions, badges, rankings, or dispatch priority',
   ]);
 }
 

@@ -24,4 +24,4 @@ Admin can update feedback status:
 - `HIDDEN`
 - `REPORTED`
 
-Moderation writes an `AdminAuditLog` entry. If legacy aggregate review fields are recalculated for compatibility, they must remain informational and must not drive automatic penalties, badges, rankings, or dispatch priority.
+Moderation writes an `AdminAuditLog` entry. If legacy aggregate review fields are recalculated for compatibility, they must remain informational and must not drive automatic closeout decisions, badges, rankings, or dispatch priority.

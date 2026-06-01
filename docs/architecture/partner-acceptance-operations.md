@@ -133,7 +133,7 @@ Current MVP behavior:
 - The booking detail page shows no-show notification count in the booking alert trace.
 - `/notifications?review=no-show` shows all customer and partner no-show communication rows.
 
-Keep penalties manual until arrival evidence, location proof, chat history, and dispute outcomes are reliable enough for automation. If the policy later changes to evidence-based automation, the no-show policy snapshot must still be saved on each alert and audit row.
+Keep every no-show outcome as an admin closeout decision in the MVP. Operators should use arrival evidence, location proof, chat history, and dispute context to decide payment release, refund, capture, fee, or manual wallet adjustment. If the policy later changes to evidence-assisted automation, the no-show policy snapshot must still be saved on each alert and audit row.
 
 ## Implementation Pointers
 
@@ -173,7 +173,7 @@ These should stay configurable instead of being hardcoded:
 - Whether marketplace partners can appear immediately or only after a delay.
 - Whether preferred partner acceptance requires customer final confirmation.
 - Whether a negative-wallet partner can receive a controlled recovery booking.
-- No-show thresholds and penalties.
+- No-show review thresholds and settlement decision options.
 - Cash settlement deadline.
 - Notification retry and fallback contact rules.
 - Tax policy version, service-specific tax rules, and amount-band rules.
