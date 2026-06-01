@@ -61,9 +61,10 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/partners?sort=booking-count,/partners?sort=gross-revenue,/partners?sort=pending-payout,/partners?sort=available-payout node infra/scripts/admin-web-smoke.mjs`: PASS. Partner operations sorting by booking count, gross revenue, pending payout, and available payout is now guarded.
 - `ADMIN_WEB_SMOKE_PATHS=/customers?sort=booking-count,/customers?sort=completed-count,/customers?sort=captured-spend,/customers?sort=last-seen node infra/scripts/admin-web-smoke.mjs`: PASS. Customer operations sorting by booking volume, completed work, captured spend, and app access is now guarded.
 - `flutter analyze` in customer app: PASS
-- `flutter test` in customer app: PASS, 10 tests
+- `flutter test` in customer app: PASS, 11 tests
 - `flutter analyze` in partner app: PASS
-- `flutter test` in partner app: PASS, 58 tests
+- `flutter test` in partner app: PASS, 59 tests
+- Customer and partner mobile tests now explicitly guard the chat visibility rule: active service chats are shown in the apps, while completed/closed booking chats are hidden from mobile and retained for admin archives.
 - `npm.cmd run external:check:maps`: PASS
 - `npm.cmd run supabase:schema:check`: PASS, 38 required tables
 - `npm.cmd run mobile:architecture:check`: PASS
