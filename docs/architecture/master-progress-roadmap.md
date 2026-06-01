@@ -68,6 +68,7 @@ Checked commands:
 - `npm.cmd run external:check:maps`: PASS
 - `npm.cmd run supabase:schema:check`: PASS, 38 required tables
 - `npm.cmd run mobile:architecture:check`: PASS
+- `npm.cmd run mobile:visible-copy`: PASS. This guards customer/partner app visible copy against gratuity, VIP, and people-scoring wording.
 
 Known environment note:
 

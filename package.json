@@ -27,6 +27,7 @@
     "supabase:schema:check": "node infra/scripts/check-supabase-schema.mjs",
     "supabase:sql:pack": "node infra/scripts/prepare-supabase-sql-pack.mjs",
     "mobile:architecture:check": "node infra/scripts/check-flutter-architecture.mjs",
+    "mobile:visible-copy": "node infra/scripts/check-mobile-visible-copy.mjs",
     "auth:supabase-smoke": "node infra/scripts/supabase-auth-smoke.mjs",
     "admin:web-smoke": "node infra/scripts/admin-web-smoke.mjs",
     "local:start": "powershell -ExecutionPolicy Bypass -File infra/scripts/start-hands-local.ps1",
