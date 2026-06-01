@@ -470,8 +470,8 @@ export default async function PartnerControlsPage({
           <div>
             <h2>System control checklist</h2>
             <p className="muted">
-              Automatic partner signals from wallet debt, account controls, onboarding gaps, devices, and recent
-              report history.
+              Factual partner follow-ups from wallet debt, account controls, onboarding gaps, devices, and
+              recent report history.
             </p>
           </div>
           <span className="pill pill-info">{providerWatchlist.length} partner(s)</span>
@@ -540,7 +540,7 @@ export default async function PartnerControlsPage({
             ))}
             {!providerWatchlist.length ? (
               <tr>
-                <td colSpan={4}>No automatic partner control signals are active.</td>
+                <td colSpan={4}>No partner control follow-ups are active.</td>
               </tr>
             ) : null}
           </tbody>
@@ -1668,7 +1668,7 @@ function controlFilterDescription(kind: string, value: string) {
     if (value === 'HIGH_PLUS') {
       return 'Urgent and major reports are prioritized together for safety review.';
     }
-    return `${value.toLowerCase()} severity reports are prioritized for safety review.`;
+    return `${value.toLowerCase()} level reports are prioritized for operator review.`;
   }
   if (kind === 'sanction' && value === 'ACTIVE') {
     return 'Active account controls restrict work or payout and should be lifted only with a clear audit trail.';
