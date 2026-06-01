@@ -185,6 +185,7 @@ const pages = [
     path: '/operations-handoff',
     markers: [
       'Operations Handoff',
+      'Handoff date range',
       'Immediate action queue',
       'Unified activity stream',
       'Shift brief',
@@ -195,6 +196,10 @@ const pages = [
       'Partner handoff',
       'Finance and chat closeout',
     ],
+  },
+  {
+    path: '/operations-handoff?range=7d',
+    markers: ['Operations Handoff', 'Handoff date range', 'Last 7 days', 'Unified activity stream'],
   },
   {
     path: '/cash-settlements',

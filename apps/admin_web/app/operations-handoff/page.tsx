@@ -11,6 +11,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
+import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { addOperationsHandoffNote } from './actions';
 
 const activeBookingStatuses = new Set([
@@ -20,6 +21,10 @@ const activeBookingStatuses = new Set([
   'ARRIVED',
   'IN_SERVICE',
 ]);
+type OperationsHandoffSearchParams = Promise<Record<string, string | string[] | undefined>>;
+type OperationsHandoffFilters = {
+  range: ReturnType<typeof normalizeDateRange>;
+};
 
 function emptyCashSettlementSummary(): AdminCashSettlementSummary {
   return {
@@ -40,7 +45,20 @@ function emptyCashSettlementSummary(): AdminCashSettlementSummary {
   };
 }
 
-export default async function OperationsHandoffPage() {
+function buildOperationsHandoffFilters(
+  params: Record<string, string | string[] | undefined>,
+): OperationsHandoffFilters {
+  return {
+    range: normalizeDateRange(readSearchParam(params.range)),
+  };
+}
+
+export default async function OperationsHandoffPage({
+  searchParams,
+}: {
+  searchParams?: OperationsHandoffSearchParams;
+}) {
+  const filters = buildOperationsHandoffFilters(searchParams ? await searchParams : {});
   const [bookings, customers, partners, earnings, notifications, sessions, auditLogs, cashSummary, chatArchive] =
     await Promise.all([
       adminGet<AdminBooking[]>('/admin/bookings', []),
@@ -58,7 +76,8 @@ export default async function OperationsHandoffPage() {
   const matchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const inServiceBookings = bookings.filter((booking) => booking.status === 'IN_SERVICE');
   const bookingQueue = buildBookingHandoffQueue(bookings);
-  const operatorNotes = buildOperatorNotes(auditLogs);
+  const rangeAuditLogs = auditLogs.filter((log) => isInDateRange(log.createdAt, filters.range));
+  const operatorNotes = buildOperatorNotes(rangeAuditLogs);
   const chatSignals = buildChatSignals(bookings);
   const financeRows = buildFinanceRows(earnings);
   const presence = buildPresence(sessions);
@@ -77,13 +96,16 @@ export default async function OperationsHandoffPage() {
     operatorNotes,
     financeRows,
   });
-  const activityStream = buildUnifiedActivityStream({
-    bookings,
-    chatArchive,
-    auditLogs,
-    notifications,
-    financeRows,
-  });
+  const activityStream = filterActivityStreamByRange(
+    buildUnifiedActivityStream({
+      bookings,
+      chatArchive,
+      auditLogs,
+      notifications,
+      financeRows,
+    }),
+    filters.range,
+  );
   const handoffChecklist = buildHandoffReadinessChecklist({
     bookings,
     matchingBookings,
@@ -103,6 +125,31 @@ export default async function OperationsHandoffPage() {
         One shift handoff board for factual customer, partner, booking, chat, wallet, and app activity. Use
         this before changing operators so open work keeps context.
       </p>
+
+      <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
+        <div className="toolbar">
+          <div>
+            <h2>Handoff date range</h2>
+            <p className="muted">
+              Live booking counters stay current. Operator notes and the unified activity stream are filtered
+              by the selected record window.
+            </p>
+          </div>
+          <span className="pill pill-info">{dateRangeLabel(filters.range)}</span>
+        </div>
+        <div className="actions">
+          {[
+            ['All dates', '/operations-handoff'],
+            ['Today', '/operations-handoff?range=today'],
+            ['Last 7 days', '/operations-handoff?range=7d'],
+            ['Last 30 days', '/operations-handoff?range=30d'],
+          ].map(([label, href]) => (
+            <Link className="text-link" href={href} key={href}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
         <MetricCard label="Active bookings" value={activeBookings.length} helper="Matching, on the way, arrived, or in service" href="/bookings?view=attention" />
@@ -870,6 +917,13 @@ function buildUnifiedActivityStream(input: {
     .filter((item) => dateValue(item.createdAt) > 0)
     .sort((a, b) => dateValue(b.createdAt) - dateValue(a.createdAt))
     .slice(0, 40);
+}
+
+function filterActivityStreamByRange(
+  rows: ReturnType<typeof buildUnifiedActivityStream>,
+  range: OperationsHandoffFilters['range'],
+) {
+  return rows.filter((row) => isInDateRange(row.createdAt, range));
 }
 
 function bookingActivitySummary(booking: AdminBooking) {
