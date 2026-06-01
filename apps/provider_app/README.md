@@ -1,6 +1,6 @@
-# Provider App
+# Partner App
 
-Flutter + Riverpod app for providers.
+Flutter + Riverpod app for partners.
 
 Initial screen hierarchy:
 

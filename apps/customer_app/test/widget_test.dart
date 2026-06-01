@@ -10,7 +10,7 @@ void main() {
     expect(find.text('Partners'), findsWidgets);
   });
 
-  test('customer service price prefers provider and booking prices', () {
+  test('customer service price prefers partner and booking prices', () {
     final providerService = customerBookableService({
       'id': 'provider-service-1',
       'price': 600000,

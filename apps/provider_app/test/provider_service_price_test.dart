@@ -44,7 +44,7 @@ void main() {
     expect(service.canActivateAtCurrentPrice, isTrue);
   });
 
-  test('marks current provider price as blocked when below admin minimum', () {
+  test('marks current partner price as blocked when below admin minimum', () {
     final service = ProviderServicePrice(
       id: 'svc-swedish-60',
       name: 'Swedish Massage',
@@ -74,7 +74,7 @@ void main() {
     expect(service.recommendedCustomerPrice, 500000);
   });
 
-  test('validates provider price against minimum, step, and payout rule', () {
+  test('validates partner price against minimum, step, and payout rule', () {
     const service = ProviderServicePrice(
       id: 'svc-aroma-60',
       name: 'Aroma Massage',

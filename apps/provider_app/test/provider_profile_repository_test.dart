@@ -12,7 +12,7 @@ import 'package:provider_app/src/features/provider_profile/data/datasources/prov
 import 'package:provider_app/src/features/provider_profile/data/repositories/provider_profile_repository_impl.dart';
 
 void main() {
-  test('rolls provider offline when goOnline cannot save a location',
+  test('rolls partner offline when goOnline cannot save a location',
       () async {
     final requests = <String>[];
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -106,7 +106,7 @@ void main() {
     await server.close(force: true);
   });
 
-  test('does not go online when admin blocked this provider account', () async {
+  test('does not go online when admin blocked this partner account', () async {
     final requests = <String>[];
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
 

@@ -6,10 +6,10 @@ Initial screen hierarchy:
 
 - Launch and permissions
 - Service selection
-- Nearby providers
-- Provider detail
+- Nearby partners
+- Partner detail
 - Booking confirmation
 - Open matching waiting screen
-- Chat and provider location tracking
+- Chat and partner location tracking
 - Review after service completion
 

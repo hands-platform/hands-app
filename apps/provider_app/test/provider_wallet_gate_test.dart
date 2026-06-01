@@ -142,7 +142,7 @@ void main() {
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
   });
 
-  test('explains marketplace opportunities after preferred provider exists', () {
+  test('explains marketplace opportunities after preferred partner exists', () {
     final guidance = providerRequestGuidance(
       booking: {
         'status': 'OPEN_MATCHING',
@@ -176,7 +176,7 @@ void main() {
     expect(guidance.infoMessage, 'Service started. Chat is ready.');
   });
 
-  test('provider app hides service chat after booking is closed', () {
+  test('partner app hides service chat after booking is closed', () {
     final liveBooking = {
       'status': 'IN_SERVICE',
       'chatRoom': {'id': 'room-live'},
@@ -192,7 +192,7 @@ void main() {
         'Service complete. Check earnings and payout status.');
   });
 
-  test('formats provider booking service option labels consistently', () {
+  test('formats partner booking service option labels consistently', () {
     final service = {
       'name': 'Foot Massage',
       'durationMin': 90,
@@ -210,7 +210,7 @@ void main() {
     );
   });
 
-  test('keeps provider booking service labels safe for missing values', () {
+  test('keeps partner booking service labels safe for missing values', () {
     expect(providerServiceOptionLabel(null), 'Massage booking');
     expect(providerServiceOptionPriceLabel(null), 'Massage booking');
     expect(providerServiceDurationLabel(null), '- min');

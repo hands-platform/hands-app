@@ -24,8 +24,19 @@ const bannedPatterns = [
     label: 'partner hierarchy wording',
     pattern: /\b(trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
   },
+  {
+    label: 'legacy provider display wording',
+    pattern: /\bproviders?\b/i,
+  },
 ];
-const ignoredTechnicalLiterals = new Set(['suspicious', 'suspiciousReason']);
+const ignoredTechnicalLiterals = new Set([
+  'PROVIDER',
+  'provider',
+  'provider account is blocked',
+  'suspicious',
+  'suspiciousReason',
+  'QR banking provider / VietQR',
+]);
 
 const violations = [];
 
@@ -67,7 +78,7 @@ function recordViolations(file, value, line) {
   if (!normalized) {
     return;
   }
-  if (ignoredTechnicalLiterals.has(normalized)) {
+  if (ignoredTechnicalLiterals.has(normalized) || isTechnicalLiteral(normalized)) {
     return;
   }
   for (const rule of bannedPatterns) {
@@ -107,6 +118,16 @@ function lineNumberAt(source, index) {
     }
   }
   return line;
+}
+
+function isTechnicalLiteral(value) {
+  if (value.includes('${provider')) {
+    return true;
+  }
+  if (value.includes('/') || value.includes('.') || value.includes('_')) {
+    return true;
+  }
+  return /^[a-z0-9-]+$/.test(value);
 }
 
 function listFiles(dir, extension) {

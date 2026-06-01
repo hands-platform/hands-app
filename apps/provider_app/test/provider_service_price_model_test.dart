@@ -5,7 +5,7 @@ import 'package:provider_app/src/features/provider_services/data/repositories/pr
 import 'package:provider_app/src/features/provider_services/domain/entities/provider_service_price.dart';
 
 void main() {
-  test('parses payout rule fee details for provider service pricing', () {
+  test('parses payout rule fee details for partner service pricing', () {
     final service = ProviderServicePriceModel.fromJson({
       'id': 'svc-foot-60',
       'name': 'Foot Massage',
@@ -131,7 +131,7 @@ void main() {
     expect(service.payoutOptions.single.platformFee, 140000);
   });
 
-  test('list services flattens grouped provider service catalog response',
+  test('list services flattens grouped partner service catalog response',
       () async {
     final api = _FakeApiClient(
       getResponse: [
@@ -179,7 +179,7 @@ void main() {
     expect(services.first.serviceGroupKey, 'foot_massage');
   });
 
-  test('groups provider service prices by service name and duration options',
+  test('groups partner service prices by service name and duration options',
       () {
     final groups = groupProviderServicePrices([
       const ProviderServicePrice(

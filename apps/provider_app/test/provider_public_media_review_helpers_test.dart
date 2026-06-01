@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider_app/main.dart';
 
 void main() {
-  test('recognizes reviewable public provider media', () {
+  test('recognizes reviewable public partner media', () {
     expect(
       providerPublicMediaIsReviewable({
         'purpose': 'PROFILE_IMAGE',
@@ -29,7 +29,7 @@ void main() {
     );
   });
 
-  test('labels provider public media review states', () {
+  test('labels partner public media review states', () {
     expect(providerPublicMediaReviewStatus({}), 'PENDING_REVIEW');
     expect(
       providerPublicMediaReviewStatus({'reviewStatus': 'APPROVED'}),

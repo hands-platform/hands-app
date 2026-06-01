@@ -4,14 +4,14 @@ import 'package:provider_app/main.dart';
 import 'package:provider_app/src/core/api_client.dart';
 
 void main() {
-  testWidgets('renders provider requests screen', (tester) async {
+  testWidgets('renders partner requests screen', (tester) async {
     await tester.pumpWidget(const ProviderScope(child: ProviderApp()));
 
     expect(find.text('Direct booking requests'), findsOneWidget);
     expect(find.text('Demo partner login'), findsOneWidget);
   });
 
-  test('provider service option labels tolerate numeric strings', () {
+  test('partner service option labels tolerate numeric strings', () {
     final service = {
       'name': 'Foot Massage',
       'durationMin': '90',
@@ -25,7 +25,7 @@ void main() {
         'Foot Massage / 90 min / 700.000 VND');
   });
 
-  test('provider wallet settlement labels tolerate numeric strings', () {
+  test('partner wallet settlement labels tolerate numeric strings', () {
     final summary = {
       'walletBalance': '-120000',
       'walletDebtAmount': '120000',
@@ -40,12 +40,12 @@ void main() {
         'Settle 120.000 VND for unpaid HANDS fees.');
   });
 
-  test('provider booking gate errors are converted to readable action blocks',
+  test('partner booking gate errors are converted to readable action blocks',
       () {
     final walletMessage = providerAppErrorMessage(ApiException(400, {
       'message': {
         'code': 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
-        'message': 'Provider has unpaid HANDS cash-service fees',
+        'message': 'Partner has unpaid HANDS cash-service fees',
       },
       'error': 'Bad Request',
       'statusCode': 400,

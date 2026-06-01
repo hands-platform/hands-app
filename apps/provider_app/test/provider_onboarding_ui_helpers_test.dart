@@ -180,7 +180,7 @@ void main() {
     );
   });
 
-  test('builds provider level roadmap milestones', () {
+  test('builds partner level roadmap milestones', () {
     final milestones = providerLevelMilestonesFromSnapshot({
       'level': 'LEVEL_2_ACTIVE',
       'nextRequiredActions': <String>[],
@@ -234,7 +234,7 @@ void main() {
     );
   });
 
-  test('labels provider onboarding history actions', () {
+  test('labels partner onboarding history actions', () {
     expect(providerLogActionLabel('basic_profile.update'),
         'Basic profile updated');
     expect(providerLogActionLabel('bank_account.submit'),
@@ -243,7 +243,7 @@ void main() {
         'Unknown Custom Action');
   });
 
-  test('describes provider verification document slots', () {
+  test('describes partner verification document slots', () {
     expect(providerDocumentTypeLabel('CCCD_FRONT'), 'CCCD front side');
     expect(providerDocumentTypeStep('CCCD_BACK'), 'Step 2');
     expect(
