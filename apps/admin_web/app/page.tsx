@@ -295,7 +295,7 @@ export default async function DashboardPage() {
     ],
     [
       'Closeout checks',
-      bookingOps.completedCloseoutRisk.toString(),
+      bookingOps.completedCloseoutChecks.toString(),
       'Completed bookings missing capture, earning, tax, fee, or wallet ledger records.',
     ],
     [
@@ -935,12 +935,12 @@ export default async function DashboardPage() {
             </div>
             <div>
               <span>Payment release check</span>
-              <strong>{bookingDeepDive.releaseRisk}</strong>
+              <strong>{bookingDeepDive.releaseChecks}</strong>
               <small>Cancelled/expired/no-show not released</small>
             </div>
             <div>
               <span>Completion capture check</span>
-              <strong>{bookingDeepDive.captureRisk}</strong>
+              <strong>{bookingDeepDive.captureChecks}</strong>
               <small>Completed service still authorized</small>
             </div>
             <div>
@@ -1000,7 +1000,7 @@ export default async function DashboardPage() {
                         pending
                       </p>
                     </div>
-                    <span className={`pill ${item.riskCount ? 'pill-warn' : 'pill-info'}`}>
+                    <span className={`pill ${item.checkCount ? 'pill-warn' : 'pill-info'}`}>
                       {item.count} payment(s)
                     </span>
                   </div>
@@ -1065,7 +1065,7 @@ export default async function DashboardPage() {
             </div>
             <div>
               <span>Closeout checks</span>
-              <strong>{bookingOps.completedCloseoutRisk}</strong>
+              <strong>{bookingOps.completedCloseoutChecks}</strong>
               <small>Finance records</small>
             </div>
           </div>
@@ -2433,10 +2433,10 @@ function buildDailyOperationsSnapshot(input: {
     },
     {
       label: 'Closeout checks',
-      value: input.bookingOps.completedCloseoutRisk.toString(),
+      value: input.bookingOps.completedCloseoutChecks.toString(),
       helper: 'Completed work missing finance records',
       href: '/bookings?view=closeout',
-      tone: input.bookingOps.completedCloseoutRisk ? 'danger' : 'ok',
+      tone: input.bookingOps.completedCloseoutChecks ? 'danger' : 'ok',
     },
   ];
 }
@@ -2482,7 +2482,7 @@ function formatDistance(meters: number) {
 function buildBookingOpsInsights(bookings: AdminBooking[]) {
   const expired = bookings.filter((booking) => booking.status === 'EXPIRED');
   const noShowFormal = bookings.filter((booking) => booking.status === 'NO_SHOW');
-  const completedCloseoutRisk = bookings.filter(completedCloseoutNeedsOps);
+  const completedCloseoutChecks = bookings.filter(completedCloseoutNeedsOps);
 
   return {
     total: bookings.length,
@@ -2494,7 +2494,7 @@ function buildBookingOpsInsights(bookings: AdminBooking[]) {
     refunded: bookings.filter((booking) => booking.status === 'REFUNDED').length,
     noShowFormal: noShowFormal.length,
     noShowSignal: bookings.filter(isNoShowSignal).length,
-    completedCloseoutRisk: completedCloseoutRisk.length,
+    completedCloseoutChecks: completedCloseoutChecks.length,
   };
 }
 
@@ -2532,11 +2532,11 @@ function buildBookingOperationsDeepDive(bookings: AdminBooking[], payments: Admi
       (booking.chatRoom?.messages?.length ?? 0) === 0 &&
       ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
   ).length;
-  const releaseRisk = bookings.filter(
+  const releaseChecks = bookings.filter(
     (booking) =>
       ['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status) && unresolvedReleasePayment(booking),
   ).length;
-  const captureRisk = payments.filter(
+  const captureChecks = payments.filter(
     (payment) => payment.status === 'AUTHORIZED' && payment.booking?.status === 'COMPLETED',
   ).length;
   const manualCloseout = bookings.filter(
@@ -2551,8 +2551,8 @@ function buildBookingOperationsDeepDive(bookings: AdminBooking[], payments: Admi
     matchedWithoutChat,
     customerFinalSelection,
     quietActiveChats,
-    releaseRisk,
-    captureRisk,
+    releaseChecks,
+    captureChecks,
     averageParticipants: activeOrMatching.length
       ? (participantCount / activeOrMatching.length).toFixed(1)
       : '0.0',
@@ -2620,7 +2620,7 @@ function buildPaymentMethodMix(payments: AdminPayment[]) {
       captured: number;
       released: number;
       refunded: number;
-      riskCount: number;
+      checkCount: number;
     }
   >();
 
@@ -2636,7 +2636,7 @@ function buildPaymentMethodMix(payments: AdminPayment[]) {
       captured: 0,
       released: 0,
       refunded: 0,
-      riskCount: 0,
+      checkCount: 0,
     };
     bucket.count += 1;
     bucket.amount += payment.amount ?? 0;
@@ -2650,7 +2650,7 @@ function buildPaymentMethodMix(payments: AdminPayment[]) {
       (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(payment.booking?.status ?? '') &&
         !['RELEASED', 'REFUNDED'].includes(payment.status))
     ) {
-      bucket.riskCount += 1;
+      bucket.checkCount += 1;
     }
     buckets.set(method, bucket);
   }
@@ -3340,9 +3340,9 @@ function buildDashboardCommandSignals(input: {
   );
   const formalExpired = input.bookings.filter((booking) => booking.status === 'EXPIRED');
   const formalNoShow = input.bookings.filter((booking) => booking.status === 'NO_SHOW');
-  const expiredPaymentRisk = formalExpired.filter((booking) => unresolvedReleasePayment(booking));
-  const noShowPaymentRisk = formalNoShow.filter((booking) => unresolvedReleasePayment(booking));
-  const completedCloseoutRisk = input.bookings.filter(completedCloseoutNeedsOps);
+  const expiredPaymentChecks = formalExpired.filter((booking) => unresolvedReleasePayment(booking));
+  const noShowPaymentChecks = formalNoShow.filter((booking) => unresolvedReleasePayment(booking));
+  const completedCloseoutChecks = input.bookings.filter(completedCloseoutNeedsOps);
   const submittedVerification = input.providers.filter(
     (provider) => provider.verification?.status === 'SUBMITTED',
   );
@@ -3375,9 +3375,9 @@ function buildDashboardCommandSignals(input: {
   const cashDebtAmount = input.cashSettlementSummary.totalDebtAmount;
   const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
   const paymentReviews =
-    completedCloseoutRisk.length +
-    expiredPaymentRisk.length +
-    noShowPaymentRisk.length +
+    completedCloseoutChecks.length +
+    expiredPaymentChecks.length +
+    noShowPaymentChecks.length +
     missingGatewayRef.length +
     cashPending.length +
     openRefunds.length;
@@ -3522,13 +3522,13 @@ function buildDashboardCommandSignals(input: {
         ? 'Payment holds, missing refs, cash collection, completed closeout, expired/no-show release, or refunds need review.'
         : 'Payment and refund queues are quiet.',
       action: 'Open payments',
-      href: completedCloseoutRisk.length
+      href: completedCloseoutChecks.length
         ? '/bookings?view=closeout'
         : cashPending.length
           ? '/payments?review=cash'
           : '/payments',
       priority:
-        completedCloseoutRisk.length || expiredPaymentRisk.length || noShowPaymentRisk.length
+        completedCloseoutChecks.length || expiredPaymentChecks.length || noShowPaymentChecks.length
           ? 100
           : completedAuthorized.length
             ? 95
@@ -3538,7 +3538,7 @@ function buildDashboardCommandSignals(input: {
                 ? 80
                 : 20,
       severity:
-        completedCloseoutRisk.length || expiredPaymentRisk.length || noShowPaymentRisk.length
+        completedCloseoutChecks.length || expiredPaymentChecks.length || noShowPaymentChecks.length
           ? 'high'
           : paymentReviews
             ? 'medium'
@@ -3548,8 +3548,8 @@ function buildDashboardCommandSignals(input: {
       breakdown: [
         {
           label: 'Closeout checks',
-          value: completedCloseoutRisk.length.toString(),
-          tone: completedCloseoutRisk.length ? 'danger' : 'ok',
+          value: completedCloseoutChecks.length.toString(),
+          tone: completedCloseoutChecks.length ? 'danger' : 'ok',
           href: '/bookings?view=closeout',
         },
         {
@@ -3566,8 +3566,8 @@ function buildDashboardCommandSignals(input: {
         },
         {
           label: 'Release checks',
-          value: (expiredPaymentRisk.length + noShowPaymentRisk.length).toString(),
-          tone: expiredPaymentRisk.length + noShowPaymentRisk.length ? 'danger' : 'ok',
+          value: (expiredPaymentChecks.length + noShowPaymentChecks.length).toString(),
+          tone: expiredPaymentChecks.length + noShowPaymentChecks.length ? 'danger' : 'ok',
           href: '/bookings?view=payment',
         },
         {
@@ -4150,7 +4150,7 @@ function buildOperatorStartChecklist(input: {
       status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
       detail: cashDebtPartners
         ? `${cashDebtPartners} partner(s) have cash fee or tax debt that can block new booking acceptance.`
-        : `${highQueueCount} checklist item(s), ${input.bookingOps.completedCloseoutRisk} closeout check(s).`,
+        : `${highQueueCount} checklist item(s), ${input.bookingOps.completedCloseoutChecks} closeout check(s).`,
       action: cashDebtPartners ? 'Open cash settlements' : 'Open checklist queue',
       href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',
       className: cashDebtPartners || highQueueCount ? 'ops-task-blocked' : 'ops-task-done',
