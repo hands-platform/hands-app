@@ -154,6 +154,7 @@ Admin dashboard:
 - Admin smoke tests now fail if average feedback wording appears in operator-facing admin pages.
 - Admin smoke tests now fail if operator-facing pages expose star-judgment wording such as "stars or below" or "star /"; reviews remain factual service feedback records.
 - Admin smoke tests now fail if operator-facing pages expose judgmental account wording such as account misuse, fraud, abuse controls, suspicious session, or trusted-partner labels. Account/device handling should stay factual and review-based.
+- Admin smoke tests now fail if operator-facing pages expose partner hierarchy wording such as trust badge, partner badge, profile badge, or promoted-into labels. Optional partner checks should be described as profile review or account review.
 - Admin smoke tests now fail if partner-facing admin pages expose visible legacy `Provider` display wording. DB/API/internal type names can remain `Provider`, but rendered operator copy should say `Partner`.
 - Admin smoke tests now guard the booking detail `Service feedback` marker so booking records keep factual feedback language in the source-of-truth view.
 - Admin smoke tests now guard finance and work-volume partner sort URLs so operator list ordering remains available after admin refactors.

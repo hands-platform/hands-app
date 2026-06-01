@@ -615,7 +615,7 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Reports</h2>
             <p className="muted">
-              Open and investigating reports should be cleared before partner badge or payout changes.
+              Open and investigating reports should be cleared before profile review or payout changes.
             </p>
           </div>
           <span className="pill pill-info">{visibleReports.length} shown</span>
@@ -673,7 +673,7 @@ export default async function PartnerControlsPage({
                       <option value="WARNING">Warning</option>
                       <option value="PAYOUT_HOLD">Payout hold</option>
                       <option value="ACCOUNT_BLOCK">Account block</option>
-                      <option value="TRUST_BADGE_REMOVAL">Trust badge removal</option>
+                      <option value="TRUST_BADGE_REMOVAL">Profile review hold</option>
                     </select>
                     <input
                       name="reason"
@@ -1002,7 +1002,7 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       title: 'Safety triage',
       status: urgentReports.length ? 'URGENT' : 'CLEAR',
       detail: urgentReports.length
-        ? 'Urgent or major reports need evidence review and a decision before partner badge changes.'
+        ? 'Urgent or major reports need evidence review and a decision before profile review changes.'
         : 'No urgent or major partner report is currently open.',
       href: urgentReports.length ? '/partner-controls?severity=HIGH_PLUS' : '/partner-controls?status=OPEN',
       action: urgentReports.length ? 'Open urgent + major lane' : 'Review open reports',
@@ -1146,7 +1146,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         severity: `${item.openReportCount} report(s)`,
         tone: item.severity === 'CRITICAL' || item.severity === 'HIGH' ? 'pill-danger' : 'pill-warn',
         title: `${partner} has open reports`,
-        reason: 'Open reports can affect partner badge, payout release, and future dispatch decisions.',
+        reason: 'Open reports can affect profile review, payout release, and future dispatch decisions.',
         operatorAction:
           'Move the report to investigating, resolve with notes, dismiss with evidence, or apply an account control.',
         href: `/partner-controls?q=${encodeURIComponent(item.provider.id)}`,
@@ -1656,7 +1656,7 @@ function buildPartnerControlActiveFilters(filters: ReturnType<typeof buildFilter
 
 function controlFilterDescription(kind: string, value: string) {
   if (kind === 'status' && value === 'OPEN') {
-    return 'Open reports need triage before partner badge or payout decisions.';
+    return 'Open reports need triage before profile review or payout decisions.';
   }
   if (kind === 'status' && value === 'INVESTIGATING') {
     return 'Investigating reports need evidence, customer notes, or staff follow-up.';
@@ -1831,7 +1831,7 @@ function partnerControlDetail(input: {
     return 'Partner cannot safely accept more cash/direct work until company fee debt is settled.';
   }
   if (input.openReportCount > 0) {
-    return 'Open report history needs operator review before badge, payout, or account changes.';
+    return 'Open report history needs operator review before profile review, payout, or account changes.';
   }
   if (input.sharedDeviceCount > 0) {
     return 'Device overlap can indicate duplicate accounts or account sharing.';
@@ -1866,7 +1866,7 @@ function partnerControlNextStep(
   if (providerLocationSignal(input.provider, controlPolicy)) {
     return 'Ask the partner to reopen the app and refresh their current location before accepting bookings.';
   }
-  return 'Complete missing verification data before enabling higher badge or payout features.';
+  return 'Complete missing verification data before enabling additional profile review or payout features.';
 }
 
 function providerLocationSignal(provider: AdminProvider, controlPolicy = DEFAULT_PARTNER_CONTROL_POLICY) {

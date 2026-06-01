@@ -3245,7 +3245,7 @@ function partnerDailyActionLane(status: string) {
     'TAX ADDRESS': 'Tax payout',
     TERMS: 'Legal consent',
     DEVICE: 'Device control',
-    SECURITY: 'Trust review',
+    SECURITY: 'Account review',
     LOCATION: 'Dispatch readiness',
     PUSH: 'Alert readiness',
     SUPABASE: 'Auth migration',
@@ -4011,7 +4011,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       count: reportNeedsReview,
       href: '/partners?review=reports',
       detail:
-        'Open reports or active account controls should be reviewed before dispatch and profile badge changes.',
+        'Open reports or active account controls should be reviewed before dispatch and profile review changes.',
     },
     {
       label: 'Location freshness',

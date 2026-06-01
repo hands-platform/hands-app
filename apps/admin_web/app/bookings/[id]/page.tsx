@@ -5054,7 +5054,7 @@ function bookingBackupPartnerExcludedGroups(
     group(
       'Location stale or missing',
       '/partners?review=location',
-      'Partner location should be refreshed before marketplace decisions are trusted.',
+      'Partner location should be refreshed before marketplace decisions are confirmed.',
       (blocker) => blocker.startsWith('location') || blocker === 'no current coordinates',
     ),
     group(
@@ -5079,7 +5079,7 @@ function bookingBackupCandidateCommand(input: {
       tone: 'pill-danger',
       title: 'Customer location must be confirmed first',
       detail:
-        'Distance, marketplace eligibility, and partner exclusion reasons cannot be trusted without a booking pin.',
+        'Distance, marketplace eligibility, and partner exclusion reasons cannot be confirmed without a booking pin.',
       href: '/bookings',
       action: 'Open bookings',
     };
@@ -5202,7 +5202,7 @@ function bookingCustomerWaitPanel(
   } else if (!customerPinReady && booking.status === 'OPEN_MATCHING') {
     signalStatus = 'Missing pin';
     signalTone = 'pill-danger';
-    headline = 'Distance-based partner matching cannot be trusted yet.';
+    headline = 'Distance-based partner matching cannot be confirmed yet.';
     detail = 'Confirm the customer address or selected pin before using marketplace participation decisions.';
   } else if (waitingForCustomerChoice) {
     signalStatus = 'Customer choice';

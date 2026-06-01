@@ -1534,7 +1534,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     {
       title: 'Marketplace location freshness',
       status: baselineLocationFreshness ? '30m default' : 'Custom freshness',
-      detail: `Marketplace partner location freshness is checked at ${backupLocationFreshnessMinutes} minute(s) for operator trust.`,
+      detail: `Marketplace partner location freshness is checked at ${backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
       operatorAction: baselineLocationFreshness
         ? 'This matches the partner app rule that refreshes location every 10 minutes while open.'
         : 'If this is loosened, monitor stale-location joins and partner no-response rates.',
@@ -2128,7 +2128,7 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Location block',
       value: locationBlocked.length.toString(),
-      helper: `Missing or older than ${policy.backupLocationFreshnessMinutes} minute(s), so marketplace matching should not trust it.`,
+      helper: `Missing or older than ${policy.backupLocationFreshnessMinutes} minute(s), so marketplace matching should request a fresh location.`,
     },
     {
       label: 'Push gap',
@@ -2964,7 +2964,7 @@ function freshnessSensitivityRead(
     return 'No usable partner remains under this freshness rule. Ask partners to reopen the app or loosen only with caution.';
   }
   if (freshness < currentFreshness) {
-    return 'Stricter freshness improves trust in distance, but may hide partners who update every 10 minutes imperfectly.';
+    return 'Stricter freshness improves distance confidence, but may hide partners who update every 10 minutes imperfectly.';
   }
   if (freshness > currentFreshness) {
     return 'Looser freshness exposes more supply, but stale pins can create bad arrival expectations.';
@@ -3254,11 +3254,11 @@ function operationsOwnerDecisionBacklog() {
         {
           label: 'Admin review',
           tradeoff:
-            'Protects early customer trust and lets support learn real patterns, but increases manual workload.',
+            'Protects early customer confidence and lets support learn real patterns, but increases manual workload.',
         },
         {
           label: 'Auto fee',
-          tradeoff: 'Faster and more consistent, but mistakes can quickly damage customer and partner trust.',
+          tradeoff: 'Faster and more consistent, but mistakes can quickly damage customer and partner confidence.',
         },
       ],
       recommendation:
@@ -3270,7 +3270,7 @@ function operationsOwnerDecisionBacklog() {
       pillClass: 'pill-warn',
     },
     {
-      owner: 'Trust',
+      owner: 'Account ops',
       title: 'No-show evidence',
       question:
         'What evidence should be required before no-show closeout or customer fee decisions are reviewed?',

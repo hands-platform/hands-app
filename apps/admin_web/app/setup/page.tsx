@@ -87,7 +87,7 @@ const setupOrder = [
       'This step is intentionally deferred so product development can continue without breaking login.',
       'Do not fill Supabase Phone Auth SMS fields with placeholder values.',
       'Use dev OTP locally, Twilio Verify for beta if needed, and Viettel/FPT SMS for production cost optimization.',
-      'Partner role exchange must remain server-verified and must not trust a client-selected role.',
+      'Partner role exchange must remain server-verified and must not accept a client-selected role.',
       'After this passes, mobile apps can switch AUTH_BACKEND from nest to supabase.',
     ],
     commands: [
@@ -793,7 +793,7 @@ function buildExternalBacklog(readiness: AdminExternalReadiness, readinessUnavai
         groupTitle: 'API runtime',
         name: 'API readiness endpoint',
         reason:
-          'Start the HANDS API or Docker services, then refresh this page before trusting setup status.',
+          'Start the HANDS API or Docker services, then refresh this page before using setup status.',
       },
     ];
   }
@@ -876,7 +876,7 @@ function buildCurrentStageStatus(readiness: AdminExternalReadiness, readinessUna
       ok: false,
       blockers: 1,
       label: 'API unavailable',
-      helper: 'Start local API/Docker services before trusting setup status.',
+      helper: 'Start local API/Docker services before using setup status.',
     };
   }
 

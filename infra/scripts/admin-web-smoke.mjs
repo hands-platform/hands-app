@@ -403,6 +403,10 @@ function assertNoLegacyVisibleLanguage(path, body) {
       label: 'judgmental account wording',
       pattern: /\b(account misuse|fraud|abuse controls|suspicious session|trusted partner)\b/i,
     },
+    {
+      label: 'partner hierarchy wording',
+      pattern: /\b(trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
+    },
   ];
   const violations = bannedPatterns
     .map((rule) => ({ ...rule, match: visibleText.match(rule.pattern) }))

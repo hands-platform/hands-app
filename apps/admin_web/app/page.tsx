@@ -70,7 +70,7 @@ type PartnerOpsQueueItem = {
 type DashboardAcceptanceUnblockStep = {
   id: string;
   step: string;
-  owner: 'Finance' | 'Trust' | 'KYC' | 'Dispatch' | 'Ops';
+  owner: 'Finance' | 'Account ops' | 'KYC' | 'Dispatch' | 'Ops';
   title: string;
   detail: string;
   metricLabel: string;
@@ -1301,7 +1301,7 @@ export default async function DashboardPage() {
             <div>
               <h2>Partner readiness funnel</h2>
               <p className="muted">
-                Funnel view for signup, KYC, banking, first revenue tax readiness, and trust badge.
+                Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile review.
               </p>
             </div>
             <Link className="text-link" href="/partner-controls">
@@ -1336,9 +1336,9 @@ export default async function DashboardPage() {
                 detail="First-revenue partners with approved tax profile."
               />
               <InfoRow
-                label="Trusted badge"
+                label="Profile review"
                 value={partnerSupply.trusted.toString()}
-                detail="Partners promoted into the trusted operating level."
+                detail="Partners with optional profile review recorded."
               />
             </tbody>
           </table>
@@ -3019,7 +3019,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
     dashboardAcceptanceStep({
       id: 'dashboard-acceptance-account-control',
       step: '2',
-      owner: 'Trust',
+      owner: 'Account ops',
       title: 'Resolve account controls',
       detail: 'Blocked accounts and active account controls stay above booking convenience.',
       metricLabel: 'Account blocks',
@@ -3867,7 +3867,7 @@ function buildDashboardCommandSignals(input: {
             ? `${partialExternal.length} PARTIAL`
             : 'READY',
       detail: readinessUnavailable
-        ? 'The external readiness endpoint is unavailable, so setup state cannot be trusted yet.'
+        ? 'The external readiness endpoint is unavailable, so setup state cannot be used yet.'
         : externalNeedsSetup
           ? 'External credentials or service registrations are still pending before real production-like E2E.'
           : 'External readiness checks are green for the current environment.',

@@ -1378,7 +1378,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                 <option value="WARNING">Warning</option>
                 <option value="PAYOUT_HOLD">Payout hold</option>
                 <option value="ACCOUNT_BLOCK">Account block</option>
-                <option value="TRUST_BADGE_REMOVAL">Profile badge removal</option>
+                <option value="TRUST_BADGE_REMOVAL">Profile review hold</option>
               </select>
             </label>
             <label>
@@ -1457,7 +1457,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                           <option value="WARNING">Warning</option>
                           <option value="PAYOUT_HOLD">Payout hold</option>
                           <option value="ACCOUNT_BLOCK">Account block</option>
-                          <option value="TRUST_BADGE_REMOVAL">Profile badge removal</option>
+                          <option value="TRUST_BADGE_REMOVAL">Profile review hold</option>
                         </select>
                         <input
                           name="reason"
@@ -1519,7 +1519,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner level path</h2>
             <p className="muted">
-              Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and Level 4 profile badge
+              Operator view of Level 1 signup, Level 2 activity, Level 3 payout, and optional profile review
               gates.
             </p>
           </div>
@@ -1643,7 +1643,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <InfoLine label="Service area" value={formatJsonSummary(provider.serviceArea)} />
           <InfoLine label="Feedback records" value={`${provider.reviewCount ?? 0} review(s) saved`} />
           <InfoLine label="Next available" value={formatDate(provider.nextAvailableAt)} />
-          <InfoLine label="Profile badge reviewed at" value={formatDate(provider.trustedAt)} />
+          <InfoLine label="Profile review completed at" value={formatDate(provider.trustedAt)} />
           <InfoLine label="User name" value={provider.user?.fullName} />
           <InfoLine label="Supabase user" value={provider.user?.supabaseUserId} />
           <p className="muted">
@@ -2285,7 +2285,7 @@ function PartnerDetailReadinessSnapshot({
         <div>
           <h2>Partner readiness snapshot</h2>
           <p className="muted">
-            Fast operating badges for dispatch, marketplace matching, cash settlement, KYC, payout, and service
+            Fast operating signals for dispatch, marketplace matching, cash settlement, KYC, payout, and service
             readiness.
           </p>
         </div>
@@ -4314,18 +4314,18 @@ function buildProviderLevelPlan(provider: ProviderDetail) {
       blocked: hasCompletedService && !level3Ready,
     },
     {
-      level: 'LEVEL 4 - Profile badge',
-      status: trustedReady ? 'BADGE READY' : level3Ready ? 'OPTIONAL' : 'LOCKED',
+      level: 'LEVEL 4 - Optional profile review',
+      status: trustedReady ? 'REVIEWED' : level3Ready ? 'OPTIONAL' : 'LOCKED',
       detail: trustedReady
-        ? 'Partner has the profile badge level.'
+        ? 'Partner has an optional profile review record.'
         : level3Ready
-          ? 'Partner is eligible for manual profile badge review after records are complete.'
-          : 'Profile badge should wait until payout-level compliance and service records are complete.',
+          ? 'Partner is eligible for manual profile review after records are complete.'
+          : 'Profile review should wait until payout-level compliance and service records are complete.',
       operatorAction: trustedReady
-        ? 'Monitor reviews and reports.'
+        ? 'Keep records current.'
         : level3Ready
-          ? 'Review experience evidence, service photos, reports, and customer reviews.'
-          : 'No profile badge action yet.',
+          ? 'Review service evidence, service photos, reports, and customer feedback records.'
+          : 'No profile review action yet.',
       ready: trustedReady,
       blocked: false,
     },
