@@ -25,7 +25,7 @@ export class OtpDeliveryService {
     const senderId = this.config.get<string>('SMS_SENDER_ID') ?? 'MassageVN';
 
     if (!url || !apiKey) {
-      throw new ServiceUnavailableException('SMS provider is not configured');
+      throw new ServiceUnavailableException('SMS service is not configured');
     }
 
     const response = await fetch(url, {
@@ -43,8 +43,8 @@ export class OtpDeliveryService {
 
     if (!response.ok) {
       const body = await response.text().catch(() => '');
-      this.logger.warn(`SMS provider failed with ${response.status}: ${body.slice(0, 200)}`);
-      throw new ServiceUnavailableException('SMS provider failed to send OTP');
+      this.logger.warn(`SMS service failed with ${response.status}: ${body.slice(0, 200)}`);
+      throw new ServiceUnavailableException('SMS service failed to send OTP');
     }
 
     return { provider: 'http', status: 'DELIVERED' };

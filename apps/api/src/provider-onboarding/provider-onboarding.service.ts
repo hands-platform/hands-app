@@ -783,7 +783,7 @@ export class ProviderOnboardingService {
 
   private async requireProvider(userId?: string) {
     if (!userId) {
-      throw new BadRequestException('Authenticated provider is required');
+      throw new BadRequestException('Authenticated partner is required');
     }
     const provider = await this.prisma.providerProfile.findUnique({
       where: { userId },

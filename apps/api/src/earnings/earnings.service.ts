@@ -712,7 +712,7 @@ export class EarningsService {
         notes:
           paymentMethod === PaymentMethod.CASH
             ? 'Cash booking created HANDS fee/tax wallet debt'
-            : 'Completed booking created provider wallet credit',
+            : 'Completed booking created partner wallet credit',
         metadata: this.earningLedgerMetadata(earning, paymentMethod),
       },
     });
