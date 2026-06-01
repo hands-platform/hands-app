@@ -818,7 +818,9 @@ function buildUnifiedActivityStream(input: {
         area: 'Chat',
         source: message.sender?.roles?.includes('PROVIDER') ? 'Partner message' : 'Customer/admin message',
         record: `Room ${shortId(booking.chatRoom?.id)}`,
-        summary: `${message.sender?.fullName ?? message.sender?.phone ?? 'User'}: ${trimText(message.body, 110)}`,
+        summary: operatorDisplayText(
+          `${message.sender?.fullName ?? message.sender?.phone ?? 'User'}: ${trimText(message.body, 110)}`,
+        ),
         href: `/bookings/${booking.id}`,
         className: 'pill pill-info',
         createdAt: message.createdAt,
@@ -828,7 +830,7 @@ function buildUnifiedActivityStream(input: {
   const auditRows = input.auditLogs.slice(0, 30).map((log) => ({
     id: `audit-${log.id}`,
     area: 'Ops note',
-    source: log.actor?.fullName ?? log.actor?.phone ?? 'System',
+    source: operatorDisplayText(log.actor?.fullName ?? log.actor?.phone ?? 'System'),
     record: shortTarget(log.target),
     summary: auditActivitySummary(log),
     href: relatedHref(log),
@@ -844,7 +846,7 @@ function buildUnifiedActivityStream(input: {
       area: 'Notification',
       source: notification.type,
       record: shortId(notification.id),
-      summary: `${notification.title}: ${trimText(notification.body, 100)}`,
+      summary: operatorDisplayText(`${notification.title}: ${trimText(notification.body, 100)}`),
       href: '/notifications?review=failed',
       className: 'pill pill-warn',
       createdAt: notification.createdAt,
@@ -880,7 +882,7 @@ function bookingActivitySummary(booking: AdminBooking) {
   const payment = booking.payment
     ? `${booking.payment.method} ${booking.payment.status} ${formatMoney(booking.payment.amount, booking.payment.currency ?? 'VND')}`
     : 'No payment row';
-  return `${customer} / ${partner} / ${payment}`;
+  return operatorDisplayText(`${customer} / ${partner} / ${payment}`);
 }
 
 function auditActivitySummary(log: AdminAuditLog) {
@@ -890,7 +892,7 @@ function auditActivitySummary(log: AdminAuditLog) {
     stringValue(metadata.preset) ??
     stringValue(metadata.reason) ??
     stringValue(metadata.status);
-  return note ? trimText(note, 140) : humanizeAction(log.action);
+  return operatorDisplayText(note ? trimText(note, 140) : humanizeAction(log.action));
 }
 
 function shortTarget(target?: string | null) {
@@ -942,7 +944,7 @@ function buildBookingHandoffQueue(bookings: AdminBooking[]) {
         updatedAt: booking.updatedAt,
         customerName: booking.customerProfile?.user?.fullName ?? 'Customer',
         customerPhone: booking.customerProfile?.user?.phone ?? '-',
-        partnerName,
+        partnerName: operatorDisplayText(partnerName),
         partnerDetail: selectedPartner
           ? 'Selected partner'
           : preferredPartner
@@ -978,7 +980,7 @@ function buildOperatorNotes(logs: AdminAuditLog[]) {
       return {
         id: log.id,
         area,
-        note: stringValue(metadata.note) ?? stringValue(metadata.preset) ?? humanizeAction(log.action),
+        note: operatorDisplayText(stringValue(metadata.note) ?? stringValue(metadata.preset) ?? humanizeAction(log.action)),
         href: relatedHref(log),
         actor: log.actor?.fullName ?? log.actor?.phone ?? 'System',
         createdAt: log.createdAt,
@@ -1059,7 +1061,9 @@ function buildFinanceRows(earnings: AdminEarning[]) {
       id: earning.id,
       providerId: earning.providerProfileId,
       bookingId: earning.bookingId,
-      partnerName: earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Partner',
+      partnerName: operatorDisplayText(
+        earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Partner',
+      ),
       grossAmount: earning.grossAmount,
       platformFee: earning.platformFee,
       withholdingAmount: earning.withholdingAmount,
@@ -1123,7 +1127,7 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
               : 'Location stale';
       return {
         id: partner.id,
-        name: partner.displayName ?? partner.legalName ?? partner.user?.fullName ?? 'Partner',
+        name: operatorDisplayText(partner.displayName ?? partner.legalName ?? partner.user?.fullName ?? 'Partner'),
         status,
         detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
         action: hasCashDebt
@@ -1148,7 +1152,9 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
 
 function participantNames(booking: AdminBooking) {
   return (booking.participants ?? [])
-    .map((participant) => participant.providerProfile?.displayName ?? participant.providerProfile?.user?.fullName)
+    .map((participant) =>
+      operatorDisplayText(participant.providerProfile?.displayName ?? participant.providerProfile?.user?.fullName),
+    )
     .filter(Boolean) as string[];
 }
 
@@ -1195,6 +1201,13 @@ function stringValue(value: unknown) {
 
 function humanizeAction(action: string) {
   return action.replace(/[._]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function operatorDisplayText(value?: string | null) {
+  return (value ?? '')
+    .replace(/\bPROVIDER\(S\)\b/g, 'PARTNER(S)')
+    .replace(/\bProvider\b/g, 'Partner')
+    .replace(/\bprovider\b/g, 'partner');
 }
 
 function shortId(id?: string | null) {
