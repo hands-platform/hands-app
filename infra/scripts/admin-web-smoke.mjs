@@ -359,6 +359,7 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'legacy backup wording', pattern: /\b[Bb]ackup\b/ },
     { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
     { label: 'people scoring wording', pattern: /\b(score|scoring|VIP|tip|tips)\b/i },
+    { label: 'partner average feedback wording', pattern: /\bFeedback value\b/i },
   ];
   const violations = bannedPatterns
     .map((rule) => ({ ...rule, match: visibleText.match(rule.pattern) }))
