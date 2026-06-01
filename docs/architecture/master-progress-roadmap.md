@@ -108,6 +108,8 @@ Admin dashboard:
 - Partner list now separates closed booking evidence by customer/admin/partner closure role and no-show count in the master list and CSV export.
 - Partner detail now includes a compact operating ledger for identity, KYC, documents, bank, tax, services, bookings, chat, wallet, payout, location, app devices, and admin trail evidence.
 - Partner detail now shows booking closure time, closure actor, closure reason, and closure activity rows inside the same booking/chat archive.
+- Partner list now supports operations sorting by booking count, completed work count, gross revenue, pending payout, available payout, last work, app activity, location freshness, wallet debt, and checklist order.
+- Partner list and detail show feedback as factual review record counts instead of average feedback values, so partners are not ranked or scored in operator views.
 - Customer and partner pages are intentionally factual: they show IDs, contact, joined/recent access dates, completed work, booking/payment/chat/activity records, and operator notes without customer or partner ranking.
 - Partner queue wording is checklist/order based, not rating/ranking based. Operator ordering is for fixing factual blockers only.
 - Admin finance/review wording avoids presenting a gratuity program. Existing legacy extra-payment fields are shown as neutral customer extra/payment evidence until the backend model is migrated.
@@ -135,6 +137,7 @@ Admin dashboard:
 - Admin smoke tests now support targeted page checks through `ADMIN_WEB_SMOKE_PATHS`, while full smoke still verifies the full admin surface.
 - Admin smoke tests now strip rendered HTML to visible text and fail when legacy secondary-participation wording or people-ranking terms are exposed in operator-facing pages.
 - Admin smoke tests now guard the dashboard operator order, failed-notification review page, and customer retained chat archive visibility.
+- Admin smoke tests now fail if average feedback wording appears in operator-facing admin pages.
 
 Customer mobile app:
 
