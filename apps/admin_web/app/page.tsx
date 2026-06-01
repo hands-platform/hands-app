@@ -154,6 +154,18 @@ type ShiftOperatingRouteItem = {
   tone: 'ok' | 'info' | 'warn' | 'danger';
 };
 
+type LiveOperationsRadarItem = {
+  lane: string;
+  title: string;
+  value: string;
+  status: string;
+  detail: string;
+  href: string;
+  owner: 'Dispatch' | 'Finance' | 'Partner Ops' | 'Support' | 'Setup';
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  checks: string[];
+};
+
 type DashboardPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 type DashboardFilters = {
@@ -325,6 +337,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const shiftOperatingRoute = buildShiftOperatingRoute({
     queue,
     bookingOps: liveBookingOps,
+    matchingControl,
+    appPresence,
+    partnerSupply,
+    cashSettlementSummary,
+    failedNotifications,
+    activePayoutBatches,
+    externalReadiness,
+  });
+  const liveOperationsRadar = buildLiveOperationsRadar({
+    bookingOps: liveBookingOps,
+    bookingDeepDive: liveBookingDeepDive,
     matchingControl,
     appPresence,
     partnerSupply,
@@ -584,6 +607,45 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <strong>{rangeEarningRows.length}</strong>
             <small>Earning rows created in the selected window.</small>
           </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Live operations radar</h2>
+            <p className="muted">
+              Current-shift radar for customer wait, first-pick, 10km marketplace, final partner
+              choice, chat handoff, partner supply, cash fee gates, payout batches, and setup readiness.
+            </p>
+          </div>
+          <Link className="text-link" href={liveOperationsRadar[0]?.href ?? '/bookings'}>
+            Open first lane
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {liveOperationsRadar.map((item) => (
+            <Link
+              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
+              href={item.href}
+              key={item.lane}
+            >
+              <small>
+                {item.owner} / {item.lane}
+              </small>
+              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.status}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                <span className="pill pill-neutral">{item.value}</span>
+                {item.checks.slice(0, 3).map((check) => (
+                  <span className="pill pill-info" key={check}>
+                    {check}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -2867,6 +2929,181 @@ function buildShiftOperatingRoute(input: {
   ];
 }
 
+function buildLiveOperationsRadar(input: {
+  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
+  bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
+  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
+  appPresence: ReturnType<typeof buildAppPresence>;
+  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  cashSettlementSummary: AdminCashSettlementSummary;
+  failedNotifications: AdminNotification[];
+  activePayoutBatches: AdminPayoutBatch[];
+  externalReadiness: AdminExternalReadiness;
+}): LiveOperationsRadarItem[] {
+  const openMatchingFollowUp = input.matchingControl.openRows.filter(
+    (row) => row.expired || row.freshEligibleCount === 0,
+  ).length;
+  const firstPickRows = input.matchingControl.openRows.filter((row) =>
+    row.backupState.toLowerCase().includes('first-pick'),
+  ).length;
+  const marketplaceRows = input.matchingControl.openRows.filter((row) =>
+    row.backupState.toLowerCase().includes('marketplace'),
+  ).length;
+  const noFreshSupplyRows = input.matchingControl.openRows.filter((row) => row.freshEligibleCount === 0).length;
+  const customerChoiceRows = input.matchingControl.openRows.filter((row) =>
+    row.customerState.toLowerCase().includes('choose'),
+  ).length;
+  const chatHandoffRows = input.bookingDeepDive.matchedWithoutChat + input.bookingDeepDive.quietActiveChats;
+  const currentStageSetupBlocked =
+    input.externalReadiness.currentStageOk === false &&
+    (input.externalReadiness.blockingCategories ?? []).length > 0;
+
+  return [
+    {
+      lane: 'Customer wait lane',
+      owner: 'Dispatch',
+      title: 'Watch active customer wait first',
+      value: `${input.bookingOps.openMatching} open`,
+      status: openMatchingFollowUp ? 'Action' : input.bookingOps.openMatching ? 'Live' : 'Clear',
+      detail: openMatchingFollowUp
+        ? `${openMatchingFollowUp} matching row(s) have expired timers or no fresh nearby partner.`
+        : `${input.appPresence.liveOpenMatchingCustomers} customer(s) are in app while matching is open.`,
+      href: openMatchingFollowUp ? '/bookings?view=attention' : '/bookings?view=matching',
+      tone: openMatchingFollowUp ? 'danger' : input.bookingOps.openMatching ? 'warn' : 'ok',
+      checks: [
+        `${input.appPresence.liveOpenMatchingCustomers} live matching customer(s)`,
+        `${input.bookingDeepDive.openWithoutParticipants} without partner`,
+        `${input.bookingDeepDive.expiredOpenMatching} expired window(s)`,
+      ],
+    },
+    {
+      lane: 'First-pick and 10km market',
+      owner: 'Dispatch',
+      title: 'Confirm preferred partner and marketplace supply',
+      value: `${firstPickRows} first / ${marketplaceRows} market`,
+      status: noFreshSupplyRows ? 'Supply gap' : firstPickRows + marketplaceRows ? 'Monitoring' : 'Clear',
+      detail:
+        firstPickRows + marketplaceRows > 0
+          ? 'Preferred partner has the first window while 10km marketplace candidates stay visible for customer choice.'
+          : 'No active first-pick or marketplace lane is visible in the current booking sample.',
+      href: noFreshSupplyRows ? '/bookings?view=no-supply' : firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
+      tone: noFreshSupplyRows ? 'danger' : firstPickRows + marketplaceRows ? 'info' : 'ok',
+      checks: [
+        `${noFreshSupplyRows} no fresh supply`,
+        `${input.matchingControl.metrics.find((item) => item.label === 'Candidate radius')?.value ?? '10 km'} radius`,
+        `${input.matchingControl.metrics.find((item) => item.label === 'Candidate invite cap')?.value ?? 'cap'} invite cap`,
+      ],
+    },
+    {
+      lane: 'Customer final choice lane',
+      owner: 'Support',
+      title: 'Keep final partner choice with the customer',
+      value: `${customerChoiceRows} ready`,
+      status: customerChoiceRows ? 'Choose' : 'Waiting',
+      detail:
+        customerChoiceRows > 0
+          ? 'Accepted partners are visible; customer must pick the final partner before the job is locked.'
+          : 'No customer final-choice handoff is waiting in the open matching sample.',
+      href: customerChoiceRows ? '/bookings?view=customer-choice' : '/bookings',
+      tone: customerChoiceRows ? 'info' : 'ok',
+      checks: [
+        `${input.bookingDeepDive.customerFinalSelection} selection wait`,
+        'No auto assignment',
+        'No customer direct cancel after match',
+      ],
+    },
+    {
+      lane: 'Chat handoff lane',
+      owner: 'Support',
+      title: 'Verify matched bookings have retained chat',
+      value: `${chatHandoffRows} check`,
+      status: chatHandoffRows ? 'Review' : 'Clear',
+      detail:
+        chatHandoffRows > 0
+          ? 'Matched bookings must have chat available for mobile during work and archived for admin after completion.'
+          : 'No missing or quiet active chat row is visible in the loaded booking set.',
+      href: chatHandoffRows ? '/bookings?view=chat-repair' : '/chat-archive',
+      tone: chatHandoffRows ? 'warn' : 'ok',
+      checks: [
+        `${input.bookingDeepDive.matchedWithoutChat} missing room`,
+        `${input.bookingDeepDive.quietActiveChats} quiet room`,
+        'Admin archive retained',
+      ],
+    },
+    {
+      lane: 'Cash settlement lane',
+      owner: 'Finance',
+      title: 'Separate visibility from final acceptance gates',
+      value: `${input.cashSettlementSummary.providerCount} partner(s)`,
+      status: input.cashSettlementSummary.providerCount ? 'Gate' : 'Clear',
+      detail:
+        input.cashSettlementSummary.providerCount > 0
+          ? 'Negative wallet partners can see and join intent, but final acceptance waits for cash fee settlement.'
+          : 'No cash fee debt is currently blocking final acceptance or customer selection.',
+      href: '/cash-settlements',
+      tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
+      checks: [
+        money(input.cashSettlementSummary.totalDebtAmount, 'VND'),
+        `${input.cashSettlementSummary.rowCount} debt row(s)`,
+        'Weekly/monthly/admin batch payout',
+      ],
+    },
+    {
+      lane: 'Partner supply lane',
+      owner: 'Partner Ops',
+      title: 'Check online partners and last-location freshness',
+      value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online} online`,
+      status: input.partnerSupply.onlineAvailable ? 'Available' : 'Low supply',
+      detail:
+        input.partnerSupply.onlineAvailable > 0
+          ? `${input.partnerSupply.staleLocation} partner location pin(s) are older than the freshness window.`
+          : 'No online available partner is visible; check app sessions, location update, and onboarding readiness.',
+      href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
+      tone: input.partnerSupply.onlineAvailable ? (input.partnerSupply.staleLocation ? 'warn' : 'ok') : 'warn',
+      checks: [
+        `${input.partnerSupply.liveSessions} app session(s)`,
+        `${input.partnerSupply.noLocation} missing pin`,
+        `${input.partnerSupply.pendingVerification} KYC waiting`,
+      ],
+    },
+    {
+      lane: 'Alert and payout lane',
+      owner: input.failedNotifications.length ? 'Support' : 'Finance',
+      title: 'Close failed delivery and payout batch loops',
+      value: `${input.failedNotifications.length} alert / ${input.activePayoutBatches.length} payout`,
+      status: input.failedNotifications.length ? 'Retry' : input.activePayoutBatches.length ? 'Batch' : 'Clear',
+      detail:
+        input.failedNotifications.length > 0
+          ? 'Failed notification rows should be retried or marked so operators know whether push actually arrived.'
+          : 'Notification delivery is clear; payout batches remain visible by weekly, monthly, or admin-selected run.',
+      href: input.failedNotifications.length ? '/notifications?review=failed' : '/payouts',
+      tone: input.failedNotifications.length ? 'warn' : input.activePayoutBatches.length ? 'info' : 'ok',
+      checks: [
+        `${input.activePayoutBatches.length} active payout batch(es)`,
+        'Deferred push provider tracked',
+        'Finance audit retained',
+      ],
+    },
+    {
+      lane: 'Setup readiness lane',
+      owner: 'Setup',
+      title: 'Keep deferred integrations visible',
+      value: currentStageSetupBlocked ? 'blocked' : 'ready',
+      status: currentStageSetupBlocked ? 'Setup' : 'Ready',
+      detail: currentStageSetupBlocked
+        ? 'Current-stage external readiness has blocking categories. Keep production providers tracked without hiding the issue.'
+        : 'Current-stage setup is usable; deferred SMS, push, payment, and map providers remain tracked for launch.',
+      href: '/setup',
+      tone: currentStageSetupBlocked ? 'danger' : 'ok',
+      checks: [
+        `${input.externalReadiness.checks?.length ?? 0} check(s)`,
+        `${input.externalReadiness.blockingCategories?.length ?? 0} blocking group(s)`,
+        'NestJS owns business authority',
+      ],
+    },
+  ];
+}
+
 function isBangkokToday(value?: string | null) {
   if (!value) return false;
   const timestamp = Date.parse(value);
@@ -3795,7 +4032,6 @@ function buildDashboardCommandSignals(input: {
   const cashPending = input.payments.filter(
     (payment) => payment.method === 'CASH' && payment.status === 'PENDING',
   );
-  const cashDebtRows = openCashDebtEarnings(input.earningRows);
   const cashDebtRowCount = input.cashSettlementSummary.rowCount;
   const cashDebtProviderCount = input.cashSettlementSummary.providerCount;
   const cashDebtAmount = input.cashSettlementSummary.totalDebtAmount;
@@ -4679,10 +4915,6 @@ function isOpenCashDebtEarning(earning: AdminEarning) {
     earning.status !== 'CANCELLED' &&
     earning.payoutBatchId == null
   );
-}
-
-function sumCashDebt(earnings: AdminEarning[]) {
-  return earnings.reduce((sum, earning) => sum + Math.abs(earning.netAmount), 0);
 }
 
 function bookingFlags(booking: AdminBooking) {

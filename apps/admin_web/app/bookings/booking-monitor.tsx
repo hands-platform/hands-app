@@ -298,13 +298,15 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
 
   useEffect(() => {
-    const mountedAt = new Date();
-    setHasMounted(true);
-    setLastRefreshLabel(formatClockTime(mountedAt));
-    setNowMs(mountedAt.getTime());
+    const mountTimer = window.setTimeout(() => {
+      const mountedAt = new Date();
+      setHasMounted(true);
+      setLastRefreshLabel(formatClockTime(mountedAt));
+      setNowMs(mountedAt.getTime());
+    }, 0);
 
     if (!autoRefresh) {
-      return;
+      return () => window.clearTimeout(mountTimer);
     }
 
     const timer = window.setInterval(() => {
@@ -316,7 +318,10 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       });
     }, 10000);
 
-    return () => window.clearInterval(timer);
+    return () => {
+      window.clearTimeout(mountTimer);
+      window.clearInterval(timer);
+    };
   }, [autoRefresh, router]);
 
   return (

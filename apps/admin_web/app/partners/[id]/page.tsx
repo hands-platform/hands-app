@@ -965,7 +965,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner final-gate unblock playbook</h2>
             <p className="muted">
-              Operator order for restoring this partner's final booking gates. Finance and account-control
+              Operator order for restoring this partner&apos;s final booking gates. Finance and account-control
               blockers stay first; tax stays deferred until first earning and then blocks payout, not initial
               dispatch.
             </p>

@@ -789,7 +789,7 @@ export default async function OperationsPolicyPage({
             <h2>Operator decisions</h2>
             <p className="muted">
               These are the flow choices HANDS should decide before the mobile screens are redesigned. Saving
-              them creates an audit trail; items marked "planning" are not enforced until that flow is built.
+              them creates an audit trail; items marked &quot;planning&quot; are not enforced until that flow is built.
             </p>
           </div>
           <span className="pill pill-warn">Needs owner choice</span>

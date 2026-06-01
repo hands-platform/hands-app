@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { AdminEarning, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { markPayoutFailed, markPayoutPaid, markPayoutProcessing, updatePayoutTransferRef } from './actions';
@@ -91,9 +93,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               partner payout, HANDS fee, withholding, and cash debt.
             </p>
           </div>
-          <a className="text-link" href="/bookings">
+          <Link className="text-link" href="/bookings">
             Trace bookings
-          </a>
+          </Link>
         </div>
         <div className="service-trace-summary">
           {moneyFlowCards.map((card) => (
@@ -845,9 +847,7 @@ function buildPayoutReleaseQueue(batches: AdminPayoutBatch[]): PayoutReleaseQueu
     .slice(0, 6);
 }
 
-function batchServiceEvidence(batch: AdminPayoutBatch[]): PayoutServiceEvidenceItem[];
-function batchServiceEvidence(batch: AdminPayoutBatch): PayoutServiceEvidenceItem[];
-function batchServiceEvidence(batch: AdminPayoutBatch | AdminPayoutBatch[]) {
+function batchServiceEvidence(batch: AdminPayoutBatch | AdminPayoutBatch[]): PayoutServiceEvidenceItem[] {
   return buildPayoutServiceEvidence(Array.isArray(batch) ? batch : [batch]);
 }
 

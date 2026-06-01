@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 import { AdminAuditLog, AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
 import {
   bulkUpsertPayoutRules,
@@ -151,9 +153,9 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
           </div>
         </div>
         <div className="actions" style={{ marginTop: 12 }}>
-          <a className="text-link" href="/bookings?view=pricing">
+          <Link className="text-link" href="/bookings?view=pricing">
             Open pricing-check bookings
-          </a>
+          </Link>
           <a className="text-link" href="/audit-log?bucket=Service%2FPricing">
             Review service pricing audit
           </a>
