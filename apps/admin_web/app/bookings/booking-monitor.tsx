@@ -1346,7 +1346,7 @@ function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtecti
       tone: cashDebt.length ? 'danger' : 'ok',
       detail:
         cashDebt.length > 0
-          ? 'Cash bookings created negative wallet balances that block partner booking acceptance.'
+          ? 'Cash bookings created negative wallet balances that require settlement before final acceptance or customer final selection.'
           : 'No cash booking currently creates an unpaid HANDS fee debt blocker.',
       operatorAction: 'Collect partner fee deposit or settle from available earnings before new acceptance.',
       href: '/bookings?view=cash-debt',
@@ -2643,7 +2643,7 @@ function nextAction(booking: AdminBooking) {
     return 'Refund is recorded. Check the refund board and customer communication.';
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner can accept more bookings.';
+    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner completes final acceptance or customer final selection.';
   }
   if (
     booking.status === 'OPEN_MATCHING' &&

@@ -191,8 +191,8 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           <div>
             <h2>Cash debt handoff</h2>
             <p className="muted">
-              Negative wallet balances are factual settlement rows. Partners cannot accept more bookings until
-              the company fee or approved offset is recorded.
+              Negative wallet balances are factual settlement rows. Partners can stay visible, but final
+              acceptance waits until the company fee or approved offset is recorded.
             </p>
           </div>
           <Link className="text-link" href="/cash-settlements">
@@ -200,7 +200,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           </Link>
         </div>
         <div className="detail-grid" style={{ marginTop: 16 }}>
-          <InfoTile label="Blocked partners" value={(cashSummary?.providerCount ?? 0).toString()} />
+          <InfoTile label="Final-gate partners" value={(cashSummary?.providerCount ?? 0).toString()} />
           <InfoTile label="Open cash rows" value={(cashSummary?.rowCount ?? 0).toString()} />
           <InfoTile label="Wallet debt" value={formatMoney(reconciliation.cashDebtAmount, currency)} />
           <InfoTile

@@ -26,8 +26,9 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       <h1>Cash Settlements</h1>
       <p className="muted">
         Finance queue for cash bookings where the partner collected customer cash and still owes HANDS
-        platform fee or withholding. A negative wallet blocks new booking acceptance until this debt is
-        settled with a bank reference or approved offset.
+        platform fee or withholding. A negative wallet is a settlement-required state and gates configured
+        final acceptance or customer selection until this debt is settled with a bank reference or approved
+        offset.
       </p>
 
       <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>

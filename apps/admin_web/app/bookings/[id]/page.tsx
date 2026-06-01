@@ -3825,7 +3825,7 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
     return 'Service is complete. Capture the authorized payment or refund if there was a dispute.';
   }
   if (bookingCashDebtNeedsSettlement(booking)) {
-    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner can accept more bookings.';
+    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner completes final acceptance or customer final selection.';
   }
   if (booking.payment?.status === 'AUTHORIZED') {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';
@@ -4545,7 +4545,7 @@ function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinan
   const walletHelper =
     financeTrace.paymentMethod === 'CASH'
       ? financeTrace.walletTotalAmount < 0
-        ? 'Cash fee debt blocks new booking acceptance.'
+        ? 'Cash fee debt blocks final acceptance or customer selection.'
         : 'Cash settlement ledger is not negative.'
       : 'Non-cash booking should create payout credit after completion.';
 
@@ -4645,7 +4645,7 @@ function bookingFinanceFlags(
       detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} owes ${money(
         Math.abs(booking.earning?.netAmount ?? financeTrace.walletTotalAmount),
         financeTrace.currency,
-      )} before accepting more bookings.`,
+      )} before final acceptance or customer selection.`,
       action: 'Collect the HANDS fee deposit or offset it in an admin settlement.',
     });
   }
@@ -5799,7 +5799,7 @@ function bookingOperationalPolicySnapshot(
         label: 'Wallet debt gate',
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
-            ? 'Negative wallet partners can hold one active recovery booking before being blocked again.'
+            ? 'Negative wallet partners can hold one active recovery booking while the next final acceptance still requires settlement review.'
             : 'Negative wallet partners can show intent, but final acceptance or customer selection is blocked.',
         enforced: false,
       }),

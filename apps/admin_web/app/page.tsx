@@ -398,7 +398,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Cash debt',
       money(cashDebtAmount, earnings.currency),
-      `${cashSettlementSummary.providerCount} partner(s), ${cashSettlementSummary.rowCount} debt row(s) blocking booking acceptance.`,
+      `${cashSettlementSummary.providerCount} partner(s), ${cashSettlementSummary.rowCount} debt row(s) gating final acceptance.`,
     ],
     [
       'Open payout batches',
@@ -1363,9 +1363,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <small>Last pin older than 30m</small>
             </div>
             <div>
-              <span>Cash debt blocked</span>
+              <span>Cash debt gate</span>
               <strong>{partnerSupply.cashDebtPartners}</strong>
-              <small>Must settle before accepting</small>
+              <small>Must settle before final acceptance</small>
             </div>
             <div>
               <span>Verification queue</span>
@@ -3118,7 +3118,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       step: '1',
       owner: 'Finance',
       title: 'Clear cash fee debt',
-      detail: 'Negative wallet partners are blocked only at configured acceptance gates.',
+      detail: 'Negative wallet partners are blocked only at configured final acceptance or service-start gates.',
       metricLabel: 'Debt partners',
       metricValue: input.cashSettlementSummary.providerCount.toString(),
       action: 'Open cash settlements',
@@ -4118,11 +4118,11 @@ function buildOpsQueue(input: {
       area: 'Finance',
       href: '/cash-settlements',
       label: 'Partner cash fee debt open',
-      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before accepting more bookings.`,
+      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before final acceptance or customer selection.`,
       severity: 'high',
       owner: 'Finance',
       priority: 98,
-      recommendedAction: 'Collect the company fee deposit or offset it before this partner accepts bookings.',
+      recommendedAction: 'Collect the company fee deposit or offset it before this partner completes final acceptance.',
     });
   }
 

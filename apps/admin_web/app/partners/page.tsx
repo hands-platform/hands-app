@@ -930,7 +930,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner acceptance blocker board</h2>
             <p className="muted">
-              Shows why partners cannot accept direct bookings or join marketplace matching before operators
+              Shows why partners cannot complete final acceptance before operators
               try to dispatch them. Marketplace participation eligibility is checked with the same booking-readiness
               gates shown below.
             </p>
@@ -2112,8 +2112,8 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
       tone: walletBalance < 0 ? 'danger' : 'success',
       detail:
         walletBalance < 0
-          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before accepting new bookings.`
-          : 'No negative wallet balance is blocking booking acceptance.',
+          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before final acceptance or customer selection.`
+          : 'No negative wallet balance is gating final acceptance.',
     },
     {
       label:
@@ -3078,7 +3078,7 @@ function buildPartnerShiftHandoff(
       {
         label: 'Cash debt',
         value: cashDebt.length.toString(),
-        detail: 'Negative wallet blocks new booking acceptance.',
+        detail: 'Negative wallet gates final acceptance or customer selection.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
       },
@@ -3163,7 +3163,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Cash fee debt',
         value: cashDebt.length.toString(),
-        detail: 'Negative wallet partners cannot accept bookings until company commission is settled.',
+        detail: 'Negative wallet partners can stay visible, but final acceptance waits until company fee settlement.',
         href: '/cash-settlements',
         tone: cashDebt.length ? 'danger' : 'ok',
       },
@@ -3530,7 +3530,7 @@ function buildPartnerAcceptanceBlockerBoard(
         count: cashDebt.length,
         status: cashDebt.length ? 'Blocks accept' : 'Clear',
         detail:
-          'Negative wallet from cash bookings blocks booking acceptance until HANDS fee settlement is posted.',
+          'Negative wallet from cash bookings gates final acceptance until HANDS fee settlement is posted.',
         operatorAction: 'Open the cash debt queue and confirm settlement before allowing more booking work.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
@@ -3888,7 +3888,7 @@ function buildPartnerFilterSummary(
     {
       label: 'Wallet settlement',
       value: walletDebt.toString(),
-      detail: 'Negative wallet balance blocks new booking acceptance',
+      detail: 'Negative wallet balance gates final acceptance or customer selection',
       href: '/partners?review=cash-debt',
     },
     {
@@ -3993,7 +3993,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       count: cashDebtNeedsReview,
       href: '/partners?review=cash-debt',
       detail:
-        'Partners with negative wallet balance cannot accept bookings until HANDS fee settlement is confirmed.',
+        'Partners with negative wallet balance can stay visible, but final acceptance waits until HANDS fee settlement is confirmed.',
     },
     {
       label: 'Tax profile review',

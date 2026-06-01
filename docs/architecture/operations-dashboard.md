@@ -31,7 +31,7 @@ The dashboard answers these shift questions:
 | Regional demand | `Regional booking demand` | Compare demand by city/district and partner location freshness. |
 | Active app presence | `Customers in app`, `Partners in app`, `Active customers` | Distinguish live app demand/supply from stale users. |
 | Partner supply | `Online partners`, `Partner dispatch control` | Review direct-ready, marketplace-ready, blocked, or stale partners. |
-| Cash settlement pressure | `Cash debt` | Open Cash Settlements before negative-wallet partners accept more bookings. |
+| Cash settlement pressure | `Cash debt` | Open Cash Settlements before negative-wallet partners complete final acceptance or customer selection. |
 | Finance pressure | `Payment holds`, `Available payout`, `Open payout batches` | Open Payments, Earnings, or Payouts to close money tasks. |
 | Notification follow-up | `Failed notifications` | Retry or inspect disabled devices before customers or partners miss critical state changes. |
 | Checklist next work | `Action queue`, `Shift command briefing`, `Opening shift checklist` | Follow the first recommended action instead of scanning pages manually. |

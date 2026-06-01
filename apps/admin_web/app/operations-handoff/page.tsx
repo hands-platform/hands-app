@@ -769,7 +769,7 @@ function buildImmediateActionQueue(input: {
       id: 'cash-fee-debt',
       owner: 'Finance',
       title: 'Cash fee wallet gate',
-      detail: 'Partners with negative wallet from cash bookings cannot accept more work until settlement.',
+      detail: 'Partners with negative wallet from cash bookings can stay visible, but final acceptance waits for settlement.',
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,

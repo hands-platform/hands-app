@@ -79,6 +79,13 @@ function checkNoContradictoryNegativeWalletWording() {
     'blocked from joining bookings',
     'blocked from joining open matching',
     'cannot join open marketplace matching',
+    'blocks new booking acceptance',
+    'blocks booking acceptance',
+    'blocking booking acceptance',
+    'cannot accept bookings until',
+    'cannot accept more work until',
+    'before accepting more bookings',
+    'before accepting another booking',
   ];
 
   for (const file of [

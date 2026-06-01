@@ -94,7 +94,7 @@ For cash bookings, the partner receives cash directly from the customer. HANDS r
 
 If the partner wallet is negative:
 
-- The partner cannot accept new bookings.
+- The partner can stay visible and show marketplace intent, but final acceptance or customer selection waits for settlement.
 - Admin finance can mark the cash fee as settled from Earnings, Payments, or Booking Detail after deposit or offset.
 - The settlement action requires a deposit reference or offset reference on the earning row.
 - The Partner app Earnings screen shows the debt amount and settlement instruction
@@ -102,9 +102,9 @@ If the partner wallet is negative:
 - The Partner app warns before accepting cash requests that direct customer cash can create
   wallet debt after completion.
 
-The partner-facing booking block copy currently follows the API message:
+The partner-facing final-acceptance block copy currently follows the API message:
 
-`수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
+`Outstanding HANDS fee settlement must be completed before final acceptance or customer selection.`
 
 Vietnamese localization should replace this fallback after the final UI language pass, but the API smoke test keeps the current message stable so the booking guard cannot silently drift.
 

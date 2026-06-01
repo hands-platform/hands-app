@@ -855,7 +855,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <span>Cash debt</span>
             <strong>{formatCurrency(bookingAcceptance.cashDebt)}</strong>
-            <small>Negative wallet blocks booking</small>
+            <small>Negative wallet gates final acceptance</small>
           </div>
           <div>
             <span>Location</span>
@@ -2348,7 +2348,7 @@ function PartnerAcceptanceRepairCommandPanel({
         <div>
           <h2>Booking acceptance repair command</h2>
           <p className="muted">
-            Exact operator diagnosis for why this partner can or cannot accept direct requests and marketplace
+            Exact operator diagnosis for final acceptance, customer selection, marketplace visibility, and
             participation.
           </p>
         </div>
@@ -2449,8 +2449,8 @@ function buildPartnerOperatorCommandQueue({
     add({
       id: 'cash-fee-debt',
       label: 'CASH',
-      title: 'Cash fee debt blocks booking acceptance',
-      detail: `${formatCurrency(cashDebt)} must be settled before this partner can accept more bookings.`,
+      title: 'Cash fee debt gates final acceptance',
+      detail: `${formatCurrency(cashDebt)} must be settled before this partner completes final acceptance or customer selection.`,
       owner: 'Finance',
       tone: 'blocked',
       action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },

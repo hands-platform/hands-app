@@ -186,7 +186,7 @@ export default async function OperationsPolicyPage({
             <h2>Booking acceptance control matrix</h2>
             <p className="muted">
               Current owner choices for the direct booking window, marketplace participation, partner push
-              reach, and negative wallet blocking. This is the screen operators should check before changing
+              reach, and the negative wallet final-acceptance gate. This is the screen operators should check before changing
               the mobile flow.
             </p>
           </div>
@@ -1585,7 +1585,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       title: 'Negative wallet gate',
       status: hardWalletBlock ? 'Hard block' : 'Recovery booking',
       detail: hardWalletBlock
-        ? 'Partners with unpaid cash-service fee debt cannot accept new work.'
+        ? 'Partners with unpaid cash-service fee debt can stay visible, but final acceptance waits for settlement.'
         : 'Partners with debt may receive one recovery booking, increasing collection follow-up.',
       operatorAction: hardWalletBlock
         ? 'This protects HANDS cash-fee collection during early operations.'
@@ -1813,10 +1813,10 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       scope: 'Wallet gate',
       title:
         walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Negative wallet blocks acceptance'
+          ? 'Negative wallet gates final acceptance'
           : 'Recovery booking mode is enabled',
       detail:
-        'Cash-service company fee debt is enforced before partner accept/join actions and before payout release.',
+        'Cash-service company fee debt is enforced before final acceptance, customer final selection, service start, and payout release.',
       verify:
         'Verify from Cash Settlements, Partner Controls, and a blocked accept attempt in the partner app.',
     },
@@ -2112,7 +2112,7 @@ function buildPartnerAcceptancePolicyImpact(
       label: 'Cash debt block',
       value: walletBlocked.length.toString(),
       helper: policy.hardWalletBlock
-        ? 'Negative wallet blocks booking acceptance.'
+        ? 'Negative wallet gates final acceptance or customer selection.'
         : 'Negative wallet is visible but not a hard block under recovery mode.',
     },
     {

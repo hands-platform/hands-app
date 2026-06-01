@@ -1020,7 +1020,7 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       title: 'Finance block',
       status: walletDebtItems.length ? 'BLOCKED' : 'CLEAR',
       detail: walletDebtItems.length
-        ? 'Negative wallet partners must settle cash fee debt before accepting more bookings.'
+        ? 'Negative wallet partners must settle cash fee debt before final acceptance or customer selection.'
         : 'No partner wallet is currently blocked by cash fee debt.',
       href: walletDebtItems.length ? '/cash-settlements' : '/earnings',
       action: walletDebtItems.length ? 'Open cash settlements' : 'Review earnings',
@@ -1097,7 +1097,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         impact: 'ACCEPTANCE BLOCK',
         severity: 'Wallet debt',
         tone: 'pill-danger',
-        title: `${partner} cannot accept new paid work`,
+        title: `${partner} cannot complete final acceptance`,
         reason: `${formatMoney(Math.abs(item.walletBalance))} cash/company fee debt is still open.`,
         operatorAction: `Confirm partner deposit, admin offset, or finance adjustment using ${cashDebtSettlementReference(item.provider.id)}.`,
         href: '/cash-settlements',
@@ -1253,7 +1253,7 @@ function buildBookingAcceptanceUnblockBoard(
       title: 'Cash fee debt blocks acceptance',
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
-        ? 'Partners with negative wallet balance can stay visible and join marketplace intent, but cannot complete final acceptance until HANDS fee debt is settled.'
+        ? 'Partners with negative wallet balance can stay visible and show marketplace intent, but cannot complete final acceptance until HANDS fee debt is settled.'
         : 'No partner is currently blocked by cash-service fee debt.',
       operatorScript:
         'Tell the partner their unpaid HANDS fee must be deposited or offset before booking acceptance unlocks.',
@@ -1406,7 +1406,7 @@ function buildAcceptanceUnblockPlaybook(
       status: card('wallet-debt')?.status ?? 'UNKNOWN',
       pillClass: card('wallet-debt')?.blockingCount ? 'pill-danger' : 'pill-success',
       detail:
-        'Negative wallet is the strongest booking gate because cash bookings create unpaid HANDS fee debt.',
+        'Negative wallet is the strongest final-acceptance gate because cash bookings create unpaid HANDS fee debt.',
       bookingImpact:
         'Blocks direct acceptance and marketplace matching until deposit, admin offset, or earning offset is recorded.',
       payoutImpact:
