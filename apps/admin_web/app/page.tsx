@@ -420,6 +420,7 @@ export default async function DashboardPage() {
       helper:
         'Cash fee debt, platform fees, withholding, refunds, payout batches, and partner settlement readiness.',
       links: [
+        ['Closeout', '/finance-closeout'],
         ['Payments', '/payments'],
         ['Earnings', '/earnings'],
         ['Cash settlements', '/cash-settlements'],
