@@ -451,6 +451,7 @@ if (customerLinkMatch) {
     'Saved addresses',
     'Booking and cancellation history',
     'Chat history',
+    'Admin archive for every matched booking',
     'Customer chronological activity',
     'Bookings and work',
     'Support trail',
