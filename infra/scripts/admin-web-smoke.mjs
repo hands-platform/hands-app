@@ -233,7 +233,11 @@ const pages = [
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
   { path: '/notifications?review=failed', markers: ['Notifications', 'Failed sends', 'Delivery operations queue'] },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
-  { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
+  { path: '/payouts', markers: ['Partner Payouts', 'Payout date range', 'Payout command queue'] },
+  {
+    path: '/payouts?range=7d',
+    markers: ['Partner Payouts', 'Payout date range', 'Last 7 days', 'Payout command queue'],
+  },
   {
     path: '/partner-controls',
     markers: [
