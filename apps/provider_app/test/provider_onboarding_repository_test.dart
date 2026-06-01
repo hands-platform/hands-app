@@ -57,10 +57,10 @@ void main() {
     await repository.updateBasicProfile({'displayName': 'Linh Wellness'});
     await repository.createBankAccount(
       bankName: 'Vietcombank',
-      accountHolderName: 'Demo Provider',
+      accountHolderName: 'Demo Partner',
     );
     await repository.upsertTaxProfile(
-      legalName: 'Demo Provider',
+      legalName: 'Demo Partner',
       registeredAddress: 'District 1, Ho Chi Minh City',
     );
     await repository.acceptAgreement(type: 'TERMS', version: '2026-05');

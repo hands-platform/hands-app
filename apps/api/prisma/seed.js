@@ -178,12 +178,12 @@ async function main() {
     update: {},
     create: {
       phone: '+84900000002',
-      fullName: 'Demo Provider',
+      fullName: 'Demo Partner',
       roles: [Role.PROVIDER],
       providerProfile: {
         create: {
           displayName: 'Linh Wellness',
-          bio: 'Verified provider available for home massage in Ho Chi Minh City.',
+          bio: 'Verified partner available for home massage in Ho Chi Minh City.',
           experienceYears: 4,
           specialties: ['Foot massage', 'Swedish massage', 'Deep tissue'],
           languages: ['vi', 'en'],
@@ -209,7 +209,7 @@ async function main() {
       where: { id: provider.providerProfile.id },
       data: {
         displayName: 'Linh Wellness',
-        bio: 'Verified provider available for home massage in Ho Chi Minh City.',
+        bio: 'Verified partner available for home massage in Ho Chi Minh City.',
         experienceYears: 4,
         specialties: ['Foot massage', 'Swedish massage', 'Deep tissue'],
         languages: ['vi', 'en'],
@@ -294,7 +294,7 @@ async function main() {
           bankName: 'Vietcombank',
           accountNumberMasked: '****0002',
           accountNumberLast4: '0002',
-          accountHolderName: 'Demo Provider',
+          accountHolderName: 'Demo Partner',
           status: ProviderBankAccountStatus.APPROVED,
           reviewedAt: new Date(),
           rejectionReason: null,
@@ -308,7 +308,7 @@ async function main() {
           bankName: 'Vietcombank',
           accountNumberMasked: '****0002',
           accountNumberLast4: '0002',
-          accountHolderName: 'Demo Provider',
+          accountHolderName: 'Demo Partner',
           status: ProviderBankAccountStatus.APPROVED,
           isPrimary: true,
           reviewedAt: new Date(),

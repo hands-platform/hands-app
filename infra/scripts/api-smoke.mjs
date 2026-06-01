@@ -904,10 +904,10 @@ if (
   );
 }
 await patchJson('/provider/onboarding/basic-profile', providerAuth.accessToken, {
-  legalName: 'Smoke Provider',
+  legalName: 'Smoke Partner',
   dateOfBirth: '1995-01-01',
-  displayName: 'Smoke Provider',
-  bio: 'Provider onboarding smoke profile.',
+  displayName: 'Smoke Partner',
+  bio: 'Partner onboarding smoke profile.',
   experienceYears: 5,
   specialties: ['Foot massage', 'Swedish massage'],
   languages: ['vi', 'en'],
@@ -1084,7 +1084,7 @@ await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/kyc/appr
 const onboardingBankAccount = await postJson('/provider/onboarding/bank-accounts', providerAuth.accessToken, {
   bankName: 'Vietcombank',
   accountNumber: '000012345678',
-  accountHolderName: 'Smoke Provider',
+  accountHolderName: 'Smoke Partner',
 });
 await postJson(
   `/admin/partner-bank-accounts/${onboardingBankAccount.bankAccount.id}/approve`,
@@ -1092,7 +1092,7 @@ await postJson(
 );
 await postJson('/provider/onboarding/tax-profile', providerAuth.accessToken, {
   taxCode: '0000000000',
-  legalName: 'Smoke Provider',
+  legalName: 'Smoke Partner',
   registeredAddress: 'District 1, Ho Chi Minh City, Vietnam',
 });
 await postJson(
