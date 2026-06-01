@@ -6,7 +6,7 @@ This document is the single working map for HANDS MVP progress. It exists to kee
 
 ## Master Refactor Source
 
-The current source of truth is `C:\Users\laboy\Downloads\HANDS_CODEX_MASTER_REFACTOR_PROMPT.md`.
+The archived master refactor prompt is now kept under the HANDS workspace at `C:\dev\massage-vn-workspace\references\HANDS_CODEX_MASTER_REFACTOR_PROMPT.md`.
 
 Working summary:
 
@@ -40,7 +40,7 @@ Core principles:
 Checked commands:
 
 - `npm.cmd run setup:doctor`: PASS
-- `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
+- `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, matching policy marketplace windows, 10km radius/join guards, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
 - API policy coverage now explicitly guards admin price-step enforcement, service base-price step enforcement, payout-above-customer-price rejection, and partner price minimum/step rejection markers.
 - API smoke now verifies that a completed direct booking using a partner custom service price selects the matching service payout matrix row, including gross amount, partner payout, platform fee, VAT, other cost, net company fee before withholding, and rule ID.
 - `API_BASE_URL=http://localhost:3100/api SOCKET_BASE_URL=http://localhost:3100 node infra/scripts/api-smoke.mjs`: PASS. This verifies booking creation, matching, direct/custom service price payout rules, chat retention, cancellation, no-show, expiry closure metadata, cash wallet debt, payout/tax setup, notification retry, storage, locations, and admin traceability.
@@ -60,6 +60,7 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/operations-handoff node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/operations-handoff` renders the shift handoff checklist without runtime errors or people-ranking wording.
 - `ADMIN_WEB_SMOKE_PATHS=/partners,/customers,/bookings,/chat-archive,/operations-policy,/reviews node infra/scripts/admin-web-smoke.mjs`: PASS. Booking supply names are sanitized at display time so seeded or imported legacy partner names do not expose old `Provider` wording to operators.
 - `/operations-handoff` activity stream now sanitizes booking summaries, chat snippets, audit action labels, finance rows, partner signals, and participant names before rendering. Full admin smoke confirms no visible legacy `Provider`, people-ranking, scoring, penalty, VIP, or gratuity wording across the guarded admin surface.
+- `ADMIN_WEB_SMOKE_PATHS=/,/operations-policy,/setup,/partners,/customers,/bookings node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirms dashboard, operations policy, and setup visible text no longer expose external-service `Provider` wording, people-risk wording, or people-scoring wording.
 - `ADMIN_WEB_SMOKE_PATHS=/notifications?review=failed node infra/scripts/admin-web-smoke.mjs`: PASS. Failed notification review links are now covered by smoke tests.
 - `ADMIN_WEB_SMOKE_PATHS=/partners?sort=booking-count,/partners?sort=gross-revenue,/partners?sort=pending-payout,/partners?sort=available-payout node infra/scripts/admin-web-smoke.mjs`: PASS. Partner operations sorting by booking count, gross revenue, pending payout, and available payout is now guarded.
 - `ADMIN_WEB_SMOKE_PATHS=/customers?sort=booking-count,/customers?sort=completed-count,/customers?sort=captured-spend,/customers?sort=last-seen node infra/scripts/admin-web-smoke.mjs`: PASS. Customer operations sorting by booking volume, completed work, captured spend, and app access is now guarded.
