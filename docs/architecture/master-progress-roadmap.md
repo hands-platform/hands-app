@@ -51,8 +51,10 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
 - `ADMIN_WEB_SMOKE_PATHS=/customers,/partners node infra/scripts/admin-web-smoke.mjs`: PASS. This confirms customer and partner list/detail pages after closure metadata was added to the operator views.
+- `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/bookings,/chat-archive,/partner-controls node infra/scripts/admin-web-smoke.mjs`: PASS. This focused operating-core check verifies dashboard, customer, partner, booking, chat archive, partner controls, and dynamic customer/partner/booking details after the latest admin continuity changes.
 - `ADMIN_WEB_SMOKE_PATHS=/bookings node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/bookings` renders the monitor closure copy and a dynamic `/bookings/{id}` page renders with the new `Closure` metric and booking operating ledger.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-handoff node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/operations-handoff` renders the shift handoff checklist without runtime errors or people-ranking wording.
+- `ADMIN_WEB_SMOKE_PATHS=/notifications?review=failed node infra/scripts/admin-web-smoke.mjs`: PASS. Failed notification review links are now covered by smoke tests.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 10 tests
 - `flutter analyze` in partner app: PASS
@@ -88,6 +90,7 @@ Backend:
 Admin dashboard:
 
 - Operations dashboard with booking counts, matching wait, completion/cancel/no-show indicators, hourly and regional demand, active app users.
+- Operations dashboard now includes a "Today operator order" control strip for live customer wait, partner response, customer choice and chat handoff, cash fee settlement, finance closeout, notification delivery, and operator queue sweep.
 - Booking monitor with matching stages, first-pick, marketplace participants, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, payment, finance, tax, wallet, location, alerts, and audit evidence into the deeper factual sections.
 - Booking detail now includes a first-screen priority briefing for the operator's next action, customer/partner state, chat archive, location, payment, finance checks, and closeout handoff.
@@ -100,6 +103,7 @@ Admin dashboard:
 - Customer list now separates closed booking evidence by customer/admin/partner closure role and no-show count when booking closure metadata exists.
 - Customer detail now includes a compact operating ledger for account, booking work, latest booking, last completed work, chat archive, wallet/payment, address, app access, devices, notifications, timeline, and operator notes.
 - Customer detail now shows booking closure time, closure actor, closure reason, and no-show evidence in booking history and activity records without assigning a customer ranking.
+- Customer detail now renders all filtered chat rooms for the customer, not only the first page subset, and smoke tests guard the "Admin archive for every matched booking" marker.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
 - Partner list now separates closed booking evidence by customer/admin/partner closure role and no-show count in the master list and CSV export.
 - Partner detail now includes a compact operating ledger for identity, KYC, documents, bank, tax, services, bookings, chat, wallet, payout, location, app devices, and admin trail evidence.
@@ -130,6 +134,7 @@ Admin dashboard:
 - Setup page now shows the master progress control sequence, verified baseline, external registration handoff, and deferred integration status.
 - Admin smoke tests now support targeted page checks through `ADMIN_WEB_SMOKE_PATHS`, while full smoke still verifies the full admin surface.
 - Admin smoke tests now strip rendered HTML to visible text and fail when legacy secondary-participation wording or people-ranking terms are exposed in operator-facing pages.
+- Admin smoke tests now guard the dashboard operator order, failed-notification review page, and customer retained chat archive visibility.
 
 Customer mobile app:
 
