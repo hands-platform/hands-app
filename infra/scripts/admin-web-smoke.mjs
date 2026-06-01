@@ -319,7 +319,24 @@ const pages = [
   },
   { path: '/providers', markers: ['Partners', 'Partner operations list', 'Partner master list'] },
   { path: '/providers?review=cash-debt', markers: ['Partners', 'Cash fee debt'] },
-  { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
+  {
+    path: '/services',
+    markers: [
+      'Service catalog',
+      'Duration pricing matrix',
+      'Customer booking exposure guard',
+      'Pricing health',
+      'Booking readiness queue',
+      'Service payout ledger',
+      'Partner payout',
+      'VAT',
+      'Withholding',
+      'Actual company commission',
+      'Create service with duration options',
+      '60, 90, and 120 minute options',
+      'Price step',
+    ],
+  },
   {
     path: '/setup',
     markers: [
