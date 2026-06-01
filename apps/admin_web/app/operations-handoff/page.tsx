@@ -1185,7 +1185,7 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
         status,
         detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
         action: hasCashDebt
-          ? 'Open cash settlement before more booking acceptance.'
+          ? 'Open cash settlement before final acceptance or customer selection.'
           : hasKycPending
             ? 'Open partner documents for review.'
             : hasBankPending

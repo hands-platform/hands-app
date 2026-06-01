@@ -144,6 +144,16 @@ type TodayCommandOrderItem = {
   tone: 'ok' | 'info' | 'warn' | 'danger';
 };
 
+type ShiftOperatingRouteItem = {
+  lane: string;
+  title: string;
+  value: string;
+  checkpoint: string;
+  href: string;
+  owner: 'Dispatch' | 'Finance' | 'Partner Ops' | 'Support' | 'Setup';
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+};
+
 type DashboardPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 type DashboardFilters = {
@@ -312,6 +322,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     failedNotifications,
     activePayoutBatches,
   });
+  const shiftOperatingRoute = buildShiftOperatingRoute({
+    queue,
+    bookingOps: liveBookingOps,
+    matchingControl,
+    appPresence,
+    partnerSupply,
+    cashSettlementSummary,
+    failedNotifications,
+    activePayoutBatches,
+    externalReadiness,
+  });
 
   const metrics = [
     [
@@ -430,7 +451,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       href: '/partners',
       primary: 'Partner list and partner detail',
       helper:
-        'KYC, service setup, booking acceptance, app activity, location freshness, tax, payout, and account controls.',
+        'KYC, service setup, final acceptance gates, app activity, location freshness, tax, payout, and account controls.',
       links: [
         ['Partners', '/partners'],
         ['Partner controls', '/partner-controls'],
@@ -626,6 +647,38 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <h3>{item.title}</h3>
               <p>{item.detail}</p>
               <span className="ops-task-card-action">Open</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Shift operating route</h2>
+            <p className="muted">
+              Click-through route for the control room. It keeps live booking work, customer final choice,
+              partner supply, chat archive, and finance final gates in the same operating order.
+            </p>
+          </div>
+          <Link className="text-link" href={shiftOperatingRoute[0]?.href ?? '/bookings'}>
+            Open route start
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {shiftOperatingRoute.map((item, index) => (
+            <Link
+              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
+              href={item.href}
+              key={item.lane}
+            >
+              <small>
+                Route {index + 1} / {item.owner}
+              </small>
+              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.value}</span>
+              <h3>{item.title}</h3>
+              <p>{item.checkpoint}</p>
+              <span className="ops-task-card-action">{item.lane}</span>
             </Link>
           ))}
         </div>
@@ -1435,7 +1488,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Partner dispatch control</h2>
             <p className="muted">
-              Partner checklist queue for booking acceptance blockers, location readiness, first-revenue
+              Partner checklist queue for final-gate blockers, location readiness, first-revenue
               payout requirements, and app contactability.
             </p>
           </div>
@@ -1477,7 +1530,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <span>Blocked now</span>
             <strong>{partnerOpsQueue.blockedNow}</strong>
-            <small>Cannot safely accept work</small>
+            <small>Final gate or account control held</small>
           </div>
           <div>
             <span>Needs payout setup</span>
@@ -1502,7 +1555,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Acceptance unblock quick order</h2>
             <p className="muted">
-              First-screen sequence for restoring partner booking acceptance. Tax setup stays as a
+              First-screen sequence for clearing partner final-gate holds. Tax setup stays as a
               post-first-earning payout gate, not an initial booking gate.
             </p>
           </div>
@@ -2661,7 +2714,7 @@ function buildTodayCommandOrder(input: {
         ? `${money(
             input.cashSettlementSummary.totalDebtAmount,
             input.cashSettlementSummary.currency,
-          )} in open cash fee debt can block booking acceptance until settled.`
+          )} in open cash fee debt can gate final acceptance or customer selection until settled.`
         : 'No negative wallet cash fee block is loaded in the current snapshot.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
@@ -2698,6 +2751,118 @@ function buildTodayCommandOrder(input: {
           : 'No high-priority checklist item remains after the main operating lanes.',
       href: input.queue[0]?.href ?? '/',
       tone: highQueueCount ? 'danger' : 'ok',
+    },
+  ];
+}
+
+function buildShiftOperatingRoute(input: {
+  queue: OpsQueueItem[];
+  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
+  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
+  appPresence: ReturnType<typeof buildAppPresence>;
+  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  cashSettlementSummary: AdminCashSettlementSummary;
+  failedNotifications: AdminNotification[];
+  activePayoutBatches: AdminPayoutBatch[];
+  externalReadiness: AdminExternalReadiness;
+}): ShiftOperatingRouteItem[] {
+  const firstPickRows = input.matchingControl.openRows.filter((row) =>
+    row.backupState.toLowerCase().includes('first-pick'),
+  ).length;
+  const marketplaceRows = input.matchingControl.openRows.filter((row) =>
+    row.backupState.toLowerCase().includes('marketplace'),
+  ).length;
+  const customerChoiceRows = input.matchingControl.openRows.filter((row) =>
+    row.customerState.toLowerCase().includes('choose'),
+  ).length;
+  const chatHandoffRows = input.queue.filter((item) => item.href.includes('view=chat')).length;
+  const currentStageSetupBlocked =
+    input.externalReadiness.currentStageOk === false &&
+    (input.externalReadiness.blockingCategories ?? []).length > 0;
+
+  return [
+    {
+      lane: 'Live booking route',
+      owner: 'Dispatch',
+      title: 'Start with active customer wait',
+      value: `${input.bookingOps.openMatching} open`,
+      checkpoint:
+        input.bookingOps.openMatching > 0
+          ? 'Open Matching rows should be checked before finance or setup work.'
+          : 'No open matching wait is visible; keep the booking board as the first operating screen.',
+      href: '/bookings?view=matching',
+      tone: input.bookingOps.openMatching ? 'warn' : 'ok',
+    },
+    {
+      lane: 'Matching policy route',
+      owner: 'Dispatch',
+      title: 'Check first-pick and marketplace supply',
+      value: `${firstPickRows + marketplaceRows} row(s)`,
+      checkpoint:
+        firstPickRows + marketplaceRows > 0
+          ? 'Confirm preferred partner response, 10km marketplace supply, and customer shortlist readiness.'
+          : 'No first-pick or marketplace row needs active intervention in this snapshot.',
+      href: firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
+      tone: firstPickRows + marketplaceRows ? 'info' : 'ok',
+    },
+    {
+      lane: 'Customer support route',
+      owner: 'Support',
+      title: 'Confirm customer final choice and chat archive',
+      value: `${customerChoiceRows} choice`,
+      checkpoint:
+        customerChoiceRows > 0
+          ? 'Customer always chooses the final partner; after match, chat must exist and stay archived for admin.'
+          : 'No customer choice handoff is waiting. Review quiet or missing chat rows next.',
+      href: customerChoiceRows ? '/bookings?view=customer-choice' : '/bookings?view=chat',
+      tone: customerChoiceRows || chatHandoffRows ? 'info' : 'ok',
+    },
+    {
+      lane: 'Finance final-gate route',
+      owner: 'Finance',
+      title: 'Clear cash fee debt before final gates',
+      value: `${input.cashSettlementSummary.providerCount} partner(s)`,
+      checkpoint:
+        input.cashSettlementSummary.providerCount > 0
+          ? 'Negative wallet partners can stay visible, but final acceptance or customer selection waits for settlement.'
+          : 'No cash fee debt is gating final acceptance or customer selection.',
+      href: '/cash-settlements',
+      tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
+    },
+    {
+      lane: 'Partner supply route',
+      owner: 'Partner Ops',
+      title: 'Refresh partner readiness and last location',
+      value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online}`,
+      checkpoint:
+        input.partnerSupply.onlineAvailable > 0
+          ? `${input.partnerSupply.staleLocation} stale location pin(s); use partner list for factual status checks.`
+          : 'No online available partner is visible; check app sessions, location freshness, and onboarding readiness.',
+      href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
+      tone: input.partnerSupply.onlineAvailable ? (input.partnerSupply.staleLocation ? 'warn' : 'ok') : 'warn',
+    },
+    {
+      lane: 'Alert and payout route',
+      owner: input.failedNotifications.length ? 'Support' : 'Finance',
+      title: 'Finish notifications and payout batches',
+      value: `${input.failedNotifications.length} alert / ${input.activePayoutBatches.length} payout`,
+      checkpoint:
+        input.failedNotifications.length > 0
+          ? 'Retry failed deliveries or mark stale devices so staff do not assume push reached the customer or partner.'
+          : 'Notification delivery is clear; review payout batches by weekly, monthly, or admin-selected cycle.',
+      href: input.failedNotifications.length ? '/notifications?review=failed' : '/payouts',
+      tone: input.failedNotifications.length ? 'warn' : input.activePayoutBatches.length ? 'info' : 'ok',
+    },
+    {
+      lane: 'Setup route',
+      owner: 'Setup',
+      title: 'Track deferred external integrations',
+      value: currentStageSetupBlocked ? 'blocked' : 'ready',
+      checkpoint: currentStageSetupBlocked
+        ? 'Current-stage setup has blocking categories. Deferred SMS, push, and payment providers stay visible in Setup.'
+        : 'Current-stage setup is usable; deferred production providers remain tracked for launch preparation.',
+      href: '/setup',
+      tone: currentStageSetupBlocked ? 'danger' : 'ok',
     },
   ];
 }
@@ -3245,7 +3410,7 @@ function buildPartnerOpsQueueItem(
       name,
       status: 'Cash debt block',
       detail:
-        'Partner wallet is negative from cash fee/tax debt. Booking acceptance should stay blocked until finance records a deposit or offset.',
+        'Partner wallet is negative from cash fee/tax debt. Final acceptance or customer selection waits until finance records a deposit or offset.',
       action: 'Open partner finance',
       href,
       className: 'ops-task-blocked',
@@ -3843,8 +4008,8 @@ function buildDashboardCommandSignals(input: {
       title: 'Cash settlement lane',
       status: cashDebtRowCount ? `${cashDebtRowCount} DEBT` : 'CLEAR',
       detail: cashDebtRowCount
-        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} partner cash fee/tax debt across ${cashDebtProviderCount} partner(s) must be collected or offset before new booking acceptance.`
-        : 'No open cash fee debt is blocking partner wallets.',
+        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} partner cash fee/tax debt across ${cashDebtProviderCount} partner(s) must be collected or offset before final acceptance or customer selection.`
+        : 'No open cash fee debt is gating final acceptance or customer selection.',
       action: 'Open cash settlements',
       href: '/cash-settlements',
       priority: cashDebtRowCount ? 94 : 12,
@@ -4411,7 +4576,7 @@ function buildOperatorStartChecklist(input: {
       title: 'Clear acceptance blockers',
       status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
       detail: cashDebtPartners
-        ? `${cashDebtPartners} partner(s) have cash fee or tax debt that can block new booking acceptance.`
+        ? `${cashDebtPartners} partner(s) have cash fee or tax debt gating final acceptance or customer selection.`
         : `${highQueueCount} checklist item(s), ${input.bookingOps.completedCloseoutChecks} closeout check(s).`,
       action: cashDebtPartners ? 'Open cash settlements' : 'Open checklist queue',
       href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',

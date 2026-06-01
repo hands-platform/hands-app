@@ -403,7 +403,7 @@ function buildHandoffRows(reconciliation: ReturnType<typeof buildReconciliation>
       label: 'Cash wallet debt',
       count: reconciliation.cashPending.length,
       amount: formatMoney(reconciliation.cashDebtAmount, reconciliation.currency),
-      nextAction: 'Collect partner deposit or approve documented offset before reopening booking acceptance.',
+      nextAction: 'Collect partner deposit or approve documented offset before final acceptance or customer selection.',
       href: '/cash-settlements',
     },
     {

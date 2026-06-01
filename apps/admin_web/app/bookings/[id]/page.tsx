@@ -2235,7 +2235,7 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       status: cashDebt ? 'Available' : 'Locked',
       tone: cashDebt ? 'pill-danger' : 'pill-neutral',
       evidence: cashDebt
-        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} blocks partner acceptance.`
+        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} gates final acceptance or customer selection.`
         : booking.payment?.method === 'CASH'
           ? 'Cash booking has no active negative wallet block.'
           : `${booking.payment?.method ?? 'No method'} booking.`,
@@ -4545,7 +4545,7 @@ function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinan
   const walletHelper =
     financeTrace.paymentMethod === 'CASH'
       ? financeTrace.walletTotalAmount < 0
-        ? 'Cash fee debt blocks final acceptance or customer selection.'
+        ? 'Cash fee debt gates final acceptance or customer selection.'
         : 'Cash settlement ledger is not negative.'
       : 'Non-cash booking should create payout credit after completion.';
 

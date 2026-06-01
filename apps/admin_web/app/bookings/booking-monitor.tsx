@@ -1015,7 +1015,7 @@ const bookingViewOptions: Array<{
   {
     view: 'cash-debt',
     label: 'Cash debt',
-    description: 'cash bookings that created partner fee/tax debt and can block future acceptance.',
+    description: 'cash bookings that created partner fee/tax debt and can gate final acceptance.',
     operatorHint:
       'Use this with Cash Settlements to confirm deposit or admin offset before the partner accepts more bookings.',
   },
@@ -1481,7 +1481,7 @@ function buildBookingDispatchPartnerShortcuts(
     {
       title: 'Cash fee debt',
       value: cashDebt.length.toString(),
-      detail: 'Cash bookings can create negative partner wallets that block future acceptance.',
+      detail: 'Cash bookings can create negative partner wallets that gate final acceptance.',
       href: '/cash-settlements',
       tone: cashDebt.length ? 'danger' : 'ok',
     },
@@ -2089,7 +2089,7 @@ function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): Boo
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Confirm partner wallet debt, request company fee settlement, and block further acceptance until paid.';
+    return 'Confirm partner wallet debt and request company fee settlement before final acceptance or customer selection.';
   }
   if (bookingCompletedCloseoutNeedsOps(booking)) {
     return 'Run closeout reconciliation so payment, earning, tax, fee, and wallet records match.';
@@ -2302,7 +2302,7 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
     flags.push({ severity: 'high', title: 'No-show payment unresolved' });
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    flags.push({ severity: 'high', title: 'Cash fee debt blocks partner acceptance' });
+    flags.push({ severity: 'high', title: 'Cash fee debt gates final acceptance' });
   }
   const pricingPolicy = bookingPricingPolicySignal(booking);
   if (pricingPolicy.status === 'blocked') {
@@ -2578,7 +2578,7 @@ function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingLi
     {
       label: cashDebtNeedsOps ? 'Cash debt' : 'Cash clear',
       detail: cashDebtNeedsOps
-        ? 'Partner cash fee debt must be settled before more booking acceptance.'
+        ? 'Partner cash fee debt must be settled before final acceptance or customer selection.'
         : 'No partner cash fee debt is visible for this booking.',
       tone: cashDebtNeedsOps ? 'pill-danger' : 'pill-success',
       href: '/bookings?view=cash-debt',

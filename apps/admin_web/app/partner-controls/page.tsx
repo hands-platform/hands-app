@@ -1250,13 +1250,13 @@ function buildBookingAcceptanceUnblockBoard(
   return [
     {
       id: 'wallet-debt',
-      title: 'Cash fee debt blocks acceptance',
+      title: 'Cash fee debt gates final acceptance',
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
         ? 'Partners with negative wallet balance can stay visible and show marketplace intent, but cannot complete final acceptance until HANDS fee debt is settled.'
         : 'No partner is currently blocked by cash-service fee debt.',
       operatorScript:
-        'Tell the partner their unpaid HANDS fee must be deposited or offset before booking acceptance unlocks.',
+        'Tell the partner their unpaid HANDS fee must be deposited or offset before final acceptance or customer selection unlocks.',
       customerImpact:
         'Customer requests are protected from partners who still owe settlement from previous cash bookings.',
       action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
@@ -1328,7 +1328,7 @@ function buildBookingAcceptanceUnblockBoard(
       title: 'KYC and bank readiness',
       status: verificationItems.length ? 'BOOKING BLOCK' : 'READY',
       detail: verificationItems.length
-        ? 'Identity or bank gaps block paid booking acceptance and marketplace participation until cleared.'
+        ? 'Identity or bank gaps hold paid work eligibility and marketplace participation until cleared.'
         : 'KYC and bank approval gaps are not blocking listed partners.',
       operatorScript:
         'Review CCCD/CMND, selfie, and bank evidence; reject with a specific reupload reason if anything is unclear.',
@@ -1579,7 +1579,7 @@ function buildPartnerControlNextActions(input: {
       priority: 95 + Math.min(20, Math.abs(item.walletBalance) / 100000),
       status: 'WALLET',
       title: `${adminProviderName(item.provider)} cash fee debt`,
-      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before new booking acceptance.`,
+      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before final acceptance or customer selection.`,
       operatorAction: `Use ${cashDebtSettlementReference(item.provider.id)} and confirm finance settlement.`,
       href: '/cash-settlements',
       tags: [

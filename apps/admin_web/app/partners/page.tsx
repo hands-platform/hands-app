@@ -382,7 +382,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="blocked">Account blocks</option>
               <option value="location">Location freshness</option>
               <option value="push">Push alert readiness</option>
-              <option value="acceptance-blocked">Booking acceptance blocked</option>
+              <option value="acceptance-blocked">Final gate held</option>
               <option value="direct-ready">Direct request ready</option>
               <option value="marketplace-ready">Marketplace ready</option>
               <option value="marketplace-blocked">Marketplace blocked</option>
@@ -678,7 +678,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     <strong>{formatProviderMoney(row.walletBalance)}</strong>
                     <p className="muted">
                       {row.walletBalance < 0
-                        ? 'Company fee settlement is required before new booking acceptance.'
+                        ? 'Company fee settlement is required before final acceptance or customer selection.'
                         : 'No negative wallet balance.'}
                     </p>
                     <p className="muted">
@@ -2184,7 +2184,7 @@ function partnerAcceptBlockerSummary(provider: AdminProvider, opsPolicy: Provide
   if (!['clear', 'missing'].includes(securityState))
     blockers.push(providerSecurityLabel(securityState).toLowerCase());
 
-  return blockers.length ? `Blocked by: ${blockers.join(', ')}.` : 'Booking acceptance is blocked by policy.';
+  return blockers.length ? `Held by: ${blockers.join(', ')}.` : 'Final gate is held by policy.';
 }
 
 function partnerOpsBadgePillClass(tone: PartnerOpsBadge['tone']) {
@@ -2928,7 +2928,7 @@ function buildPartnerShiftHandoff(
           scope: 'Finance gate',
           detail: `${cashDebt.length} partner(s) have negative wallet balance from cash-service fee or tax debt.`,
           operatorAction:
-            'Collect company fee deposit, record evidence, or offset from available earnings before allowing acceptance.',
+            'Collect company fee deposit, record evidence, or offset from available earnings before final acceptance or customer selection.',
           href: '/partners?review=cash-debt',
           tone: 'danger' as const,
           samples: partnerSampleNames(cashDebt),
@@ -3276,7 +3276,7 @@ function partnerDailyActionAgeSignal(provider: AdminProvider, action: ProviderLi
     return providerReviewedAgeLabel(provider.bankAccounts?.[0]?.reviewedAt);
   }
   if (action.status === 'CASH DEBT') {
-    return 'Blocks acceptance now.';
+    return 'Final gate is held now.';
   }
   if (action.status === 'PUSH') {
     return latestPushAgeLabel(provider);
@@ -3943,7 +3943,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
 
   const items = [
     {
-      label: 'Booking acceptance blocked',
+      label: 'Final gate held',
       count: acceptanceBlocked,
       href: '/partners?review=acceptance-blocked',
       detail:
@@ -4351,7 +4351,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Cash fee debt highlights partners blocked from accepting bookings because HANDS commission was not settled.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
-    return 'Booking acceptance blocked highlights partners who cannot currently accept preferred or marketplace matching work.';
+    return 'Final gate held highlights partners who can remain visible but cannot complete final acceptance or customer selection yet.';
   }
   if (kind === 'review' && value === 'direct-ready') {
     return 'Direct request ready highlights partners who can accept a preferred customer request immediately.';
@@ -4437,7 +4437,7 @@ function partnerReviewFilterLabel(review: string) {
     blocked: 'Account blocks',
     location: 'Location freshness',
     push: 'Push alert readiness',
-    'acceptance-blocked': 'Booking acceptance blocked',
+    'acceptance-blocked': 'Final gate held',
     'direct-ready': 'Direct request ready',
     'marketplace-ready': 'Marketplace ready',
     'marketplace-blocked': 'Marketplace blocked',

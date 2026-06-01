@@ -442,7 +442,7 @@ function buildCommandCards(
         summary.currency,
       )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
       action: summary.providerCount
-        ? 'Collect partner deposit or approve admin offset before reopening booking acceptance.'
+        ? 'Collect partner deposit or approve admin offset before final acceptance or customer selection.'
         : 'No wallet is currently blocked by cash fee debt.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',

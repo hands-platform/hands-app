@@ -3146,7 +3146,7 @@ function buildPartnerOperatingChecklist(
     },
     {
       area: 'Booking',
-      status: bookingAcceptance.canAccept ? 'Can accept bookings' : 'Booking acceptance on hold',
+      status: bookingAcceptance.canAccept ? 'Final gate clear' : 'Final gate on hold',
       detail: bookingAcceptance.primaryReason,
       nextAction: bookingAcceptance.canAccept ? 'Ready for requests' : 'Resolve booking gate',
       href: `/partners/${provider.id}#booking-chat-records`,
@@ -3158,7 +3158,7 @@ function buildPartnerOperatingChecklist(
       detail:
         cashDebt > 0
           ? `Partner wallet has ${formatCurrency(cashDebt)} unpaid HANDS commission from cash bookings.`
-          : 'No unpaid cash commission is blocking new booking acceptance.',
+          : 'No unpaid cash commission is gating final acceptance.',
       nextAction: cashDebt > 0 ? 'Collect or offset debt' : 'No cash action',
       href: '/cash-settlements',
       tone: cashDebt > 0 ? 'blocked' : 'done',
@@ -3496,7 +3496,7 @@ function buildProviderBookingAcceptance(
         cashDebt > 0
           ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash fee/tax settlement.`
           : 'No open negative wallet debt is visible.',
-      action: cashDebt > 0 ? 'Record partner deposit or admin offset before allowing acceptance.' : 'Clear',
+      action: cashDebt > 0 ? 'Record partner deposit or admin offset before final acceptance or customer selection.' : 'Clear',
     },
     {
       label: 'Account controls',
@@ -3730,7 +3730,7 @@ function partnerAppBlockMessage(
     return 'Partner can accept booking requests.';
   }
   if (bookingAcceptance.cashDebt > 0) {
-    return 'Cannot accept bookings until unpaid HANDS commission is settled.';
+    return 'Final acceptance or customer selection waits until unpaid HANDS commission is settled.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
     return 'Account requires admin review before accepting bookings.';
@@ -3780,7 +3780,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
       detail: walletGate?.detail ?? 'Wallet gate was not evaluated.',
       bookingImpact: walletGate?.ok
         ? 'Partner can pass the cash-debt booking gate.'
-        : 'Blocks configured acceptance gates until debt is settled or offset.',
+        : 'Configured final gates wait until debt is settled or offset.',
       payoutImpact: 'Finance should not release payout while HANDS fee/tax debt is still open.',
       action: walletGate?.ok ? 'Open cash settlement history' : 'Settle cash debt',
       href: '/cash-settlements',
@@ -3925,7 +3925,7 @@ function buildPartnerDetailOpsBadges(
       detail:
         cashDebt > 0
           ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash settlement.`
-          : 'No cash-settlement debt is blocking acceptance.',
+          : 'No cash-settlement debt is gating final acceptance.',
     },
     {
       label: identityGate?.ok ? 'KYC and docs ok' : 'KYC/doc review',
