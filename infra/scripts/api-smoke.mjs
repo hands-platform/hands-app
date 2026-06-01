@@ -2407,6 +2407,98 @@ if (
     })}`,
   );
 }
+
+const directCustomPriceBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  providerId: providerAuth.user.providerProfile.id,
+  scheduledStartAt: new Date(Date.now() + 75 * 60_000).toISOString(),
+  address: { line1: 'Custom price payout smoke flow' },
+  lat: 10.7769,
+  lng: 106.7009,
+  paymentMethod: 'MOMO',
+});
+const directCustomPriceBookingDetail = await getJson(
+  `/customer/bookings/${directCustomPriceBooking.id}`,
+  customerAuth.accessToken,
+);
+assertBookingPricing('Completed custom-price direct booking', directCustomPriceBookingDetail, {
+  customerPrice: higherCustomerPrice,
+  paymentAmount: higherCustomerPrice,
+});
+const acceptedDirectCustomPrice = await postJson(
+  `/provider/bookings/${directCustomPriceBooking.id}/accept`,
+  providerAuth.accessToken,
+);
+const matchedDirectCustomPrice =
+  acceptedDirectCustomPrice.status === 'MATCHED'
+    ? acceptedDirectCustomPrice
+    : await postJson(`/customer/bookings/${directCustomPriceBooking.id}/select-provider`, customerAuth.accessToken, {
+        providerId: providerAuth.user.providerProfile.id,
+      });
+if (matchedDirectCustomPrice.status !== 'MATCHED') {
+  throw new Error(
+    `Custom-price direct booking did not match the selected partner: ${JSON.stringify(matchedDirectCustomPrice)}`,
+  );
+}
+await postJson(`/provider/bookings/${directCustomPriceBooking.id}/complete`, providerAuth.accessToken);
+const customPriceCloseout = await postJson(
+  `/admin/bookings/${directCustomPriceBooking.id}/closeout`,
+  adminAuth.accessToken,
+  {
+    note: 'Smoke test custom price payout closeout',
+  },
+);
+if (customPriceCloseout.status !== 'COMPLETED' || customPriceCloseout.payment?.status !== 'CAPTURED') {
+  throw new Error(`Custom-price booking closeout failed: ${JSON.stringify(customPriceCloseout)}`);
+}
+const adminCustomPriceEarning = (await getJson('/admin/earnings', adminAuth.accessToken)).find(
+  (earning) => earning.bookingId === directCustomPriceBooking.id,
+);
+const expectedHigherPlatformFee = higherCustomerPrice - higherPricePayoutRule.providerPayoutAmount;
+const expectedHigherVatAmount = Math.round((expectedHigherPlatformFee * higherPricePayoutRule.vatBps) / 10_000);
+const expectedHigherOtherCostAmount = higherPricePayoutRule.otherCostAmount;
+const expectedHigherNetCompanyFeeBeforeWithholding =
+  expectedHigherPlatformFee - expectedHigherVatAmount - expectedHigherOtherCostAmount;
+const customPricePlatformFeeLog = adminCustomPriceEarning?.platformFeeLogs?.[0];
+const customPricePayoutSnapshot = customPricePlatformFeeLog?.ruleSnapshot ?? {};
+const customPricePayoutLines = Array.isArray(customPricePayoutSnapshot.lines)
+  ? customPricePayoutSnapshot.lines
+  : [];
+const customPricePayoutLine = customPricePayoutLines.find(
+  (line) => line.serviceId === service.id && line.customerPrice === higherCustomerPrice,
+);
+if (
+  !adminCustomPriceEarning ||
+  adminCustomPriceEarning.grossAmount !== higherCustomerPrice ||
+  adminCustomPriceEarning.platformFee !== expectedHigherPlatformFee ||
+  customPricePlatformFeeLog?.platformFeeAmount !== expectedHigherPlatformFee ||
+  customPricePayoutSnapshot.source !== 'SERVICE_PAYOUT_RULE' ||
+  customPricePayoutSnapshot.providerPayoutAmount !== higherPricePayoutRule.providerPayoutAmount ||
+  customPricePayoutSnapshot.vatAmount !== expectedHigherVatAmount ||
+  customPricePayoutSnapshot.otherCostAmount !== expectedHigherOtherCostAmount ||
+  customPricePayoutSnapshot.netCompanyFeeBeforeWithholding !== expectedHigherNetCompanyFeeBeforeWithholding ||
+  !customPricePayoutLine ||
+  customPricePayoutLine.customerAmount !== higherCustomerPrice ||
+  customPricePayoutLine.providerPayoutAmount !== higherPricePayoutRule.providerPayoutAmount ||
+  customPricePayoutLine.platformFeeAmount !== expectedHigherPlatformFee ||
+  customPricePayoutLine.vatAmount !== expectedHigherVatAmount ||
+  customPricePayoutLine.otherCostAmount !== expectedHigherOtherCostAmount ||
+  customPricePayoutLine.ruleId !== higherPricePayoutRule.id
+) {
+  throw new Error(
+    `Custom-price completed earning did not use the matching service payout row: ${JSON.stringify({
+      adminCustomPriceEarning,
+      customPricePayoutLine,
+      customPricePayoutLines,
+      higherPricePayoutRule,
+      expectedHigherPlatformFee,
+      expectedHigherVatAmount,
+      expectedHigherOtherCostAmount,
+      expectedHigherNetCompanyFeeBeforeWithholding,
+    })}`,
+  );
+}
+
 if (providerEarningsSummary.walletBlocked === true || providerEarningsSummary.walletBalance <= 0) {
   throw new Error(
     `Online payment earning should keep provider wallet positive: ${JSON.stringify(providerEarningsSummary)}`,
@@ -2761,6 +2853,10 @@ console.log({
   ok: true,
   bookingId: booking.id,
   hybridBookingId: hybridBooking.id,
+  directCustomPriceBookingId: directCustomPriceBooking.id,
+  directCustomPriceGrossAmount: adminCustomPriceEarning.grossAmount,
+  directCustomPricePlatformFee: adminCustomPriceEarning.platformFee,
+  directCustomPricePayoutRuleMatched: true,
   chatRoomId,
   hybridChatRoomId: hybridMatched.booking.chatRoom.id,
   customerBookingCount: customerBookings.length,
