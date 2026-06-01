@@ -16,36 +16,36 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
       <section className="grid" style={{ marginBottom: 16 }}>
         <div className="card">
           <p>Authorized</p>
-          <h2>{allPayments.filter((payment) => payment.status === 'AUTHORIZED').length}</h2>
+          <h2>{payments.filter((payment) => payment.status === 'AUTHORIZED').length}</h2>
         </div>
         <div className="card">
           <p>Pending cash</p>
           <h2>
             {
-              allPayments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING')
+              payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING')
                 .length
             }
           </h2>
         </div>
         <div className="card">
           <p>Cash debt</p>
-          <h2>{allPayments.filter(paymentCashDebtNeedsSettlement).length}</h2>
+          <h2>{payments.filter(paymentCashDebtNeedsSettlement).length}</h2>
         </div>
         <div className="card">
           <p>Captured</p>
-          <h2>{allPayments.filter((payment) => payment.status === 'CAPTURED').length}</h2>
+          <h2>{payments.filter((payment) => payment.status === 'CAPTURED').length}</h2>
         </div>
         <div className="card">
           <p>Refunded</p>
-          <h2>{allPayments.filter((payment) => payment.status === 'REFUNDED').length}</h2>
+          <h2>{payments.filter((payment) => payment.status === 'REFUNDED').length}</h2>
         </div>
         <div className="card">
           <p>Needs action</p>
-          <h2>{allPayments.filter((payment) => paymentOpsState(payment) !== 'settled').length}</h2>
+          <h2>{payments.filter((payment) => paymentOpsState(payment) !== 'settled').length}</h2>
         </div>
         <div className="card">
           <p>Linked refunds</p>
-          <h2>{allPayments.reduce((total, payment) => total + (payment.refunds?.length ?? 0), 0)}</h2>
+          <h2>{payments.reduce((total, payment) => total + (payment.refunds?.length ?? 0), 0)}</h2>
         </div>
       </section>
       <section className="card" style={{ marginBottom: 16 }}>
@@ -54,6 +54,10 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
             <h2>Payment operation filters</h2>
             <p className="muted">
               Jump straight from the dashboard lane into the payment subset that needs operator review.
+            </p>
+            <p className="muted">
+              Payment date range: {rangeLabel(filters.range)}. Until the payment table stores its own
+              timestamp, this uses the linked booking record date.
             </p>
             {activeFilter?.review ? (
               <p className="muted">
@@ -66,16 +70,27 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
             Showing {payments.length} of {allPayments.length}
           </span>
         </div>
+        <div className="participant-list" style={{ marginBottom: 12 }}>
+          {paymentRangeLinks(filters.review).map((item) => (
+            <Link
+              className={`pill ${filters.range === item.range ? 'pill-info' : 'pill-neutral'}`}
+              href={item.href}
+              key={item.label}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
         <div className="participant-list">
-          {filters.review ? (
+          {filters.review || filters.range !== 'all' ? (
             <Link className="pill pill-success" href="/payments">
-              Clear filter
+              Clear filters
             </Link>
           ) : null}
           {paymentFilterLinks().map((item) => (
             <Link
               className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
-              href={item.href}
+              href={withPaymentRange(item.href, filters.range)}
               key={item.label}
             >
               {item.label}
@@ -112,6 +127,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
                 <td>
                   {shortId(payment.bookingId)}
                   <div className="muted">{payment.booking?.status ?? 'UNKNOWN'}</div>
+                  <div className="muted">{paymentRecordDateLabel(payment)}</div>
                   <div className="muted">
                     {payment.booking?.customerProfile?.user?.phone ?? 'No customer phone'}
                   </div>
@@ -212,6 +228,7 @@ function sortPayments(payments: AdminPayment[]) {
 function buildPaymentFilters(params: Record<string, string | string[] | undefined>) {
   return {
     review: readParam(params.review),
+    range: normalizeRange(readParam(params.range)),
   };
 }
 
@@ -220,11 +237,11 @@ function readParam(value: string | string[] | undefined) {
 }
 
 function filterPayments(payments: AdminPayment[], filters: ReturnType<typeof buildPaymentFilters>) {
-  if (!filters.review) {
-    return payments;
-  }
-
-  return payments.filter((payment) => paymentMatchesReview(payment, filters.review));
+  return payments.filter(
+    (payment) =>
+      isInRecordRange(paymentRecordDate(payment), filters.range) &&
+      (!filters.review || paymentMatchesReview(payment, filters.review)),
+  );
 }
 
 function paymentMatchesReview(payment: AdminPayment, review: string) {
@@ -263,6 +280,88 @@ function paymentFilterLinks() {
     { label: 'Needs action', href: '/payments?review=needs-action', review: 'needs-action' },
     { label: 'Refunded', href: '/payments?review=refunded', review: 'refunded' },
   ];
+}
+
+type PaymentRange = 'all' | 'today' | '7d' | '30d';
+
+function normalizeRange(value: string): PaymentRange {
+  if (value === 'today' || value === '7d' || value === '30d') {
+    return value;
+  }
+  return 'all';
+}
+
+function paymentRangeLinks(review: string) {
+  return [
+    { label: 'All dates', href: withPaymentReview('/payments', review), range: 'all' as const },
+    { label: 'Today', href: withPaymentReview('/payments?range=today', review), range: 'today' as const },
+    { label: 'Last 7 days', href: withPaymentReview('/payments?range=7d', review), range: '7d' as const },
+    { label: 'Last 30 days', href: withPaymentReview('/payments?range=30d', review), range: '30d' as const },
+  ];
+}
+
+function withPaymentRange(href: string, range: PaymentRange) {
+  if (range === 'all') {
+    return href;
+  }
+  const separator = href.includes('?') ? '&' : '?';
+  return `${href}${separator}range=${range}`;
+}
+
+function withPaymentReview(href: string, review: string) {
+  if (!review) {
+    return href;
+  }
+  const separator = href.includes('?') ? '&' : '?';
+  return `${href}${separator}review=${review}`;
+}
+
+function rangeLabel(range: PaymentRange) {
+  if (range === 'today') {
+    return 'Today';
+  }
+  if (range === '7d') {
+    return 'Last 7 days';
+  }
+  if (range === '30d') {
+    return 'Last 30 days';
+  }
+  return 'All dates';
+}
+
+function paymentRecordDate(payment: AdminPayment) {
+  return payment.booking?.createdAt ?? null;
+}
+
+function paymentRecordDateLabel(payment: AdminPayment) {
+  const value = paymentRecordDate(payment);
+  return value ? `Record date ${new Date(value).toLocaleString()}` : 'No payment record date';
+}
+
+function isInRecordRange(value: string | undefined | null, range: PaymentRange) {
+  const start = rangeStart(range);
+  if (!start) {
+    return true;
+  }
+  if (!value) {
+    return false;
+  }
+  const recordTime = Date.parse(value);
+  return Number.isFinite(recordTime) && recordTime >= start.getTime();
+}
+
+function rangeStart(range: PaymentRange) {
+  const now = new Date();
+  if (range === 'today') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (range === '7d') {
+    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  }
+  if (range === '30d') {
+    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+  return null;
 }
 
 function paymentFilterDescription(review: string) {

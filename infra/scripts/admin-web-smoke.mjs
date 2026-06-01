@@ -225,7 +225,11 @@ const pages = [
     path: '/earnings?range=7d',
     markers: ['Partner Earnings', 'Earnings date range', 'Last 7 days', 'Money flow command center'],
   },
-  { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
+  { path: '/payments', markers: ['Payments', 'Payment operation filters', 'Payment date range'] },
+  {
+    path: '/payments?range=7d',
+    markers: ['Payments', 'Payment operation filters', 'Payment date range', 'Last 7 days'],
+  },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
   { path: '/refunds?range=7d', markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'] },
   { path: '/reviews', markers: ['Feedback And Reports', 'Feedback command board', 'Service recovery feedback'] },

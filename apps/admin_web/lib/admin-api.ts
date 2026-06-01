@@ -542,6 +542,7 @@ export type AdminPayment = {
   providerRef?: string | null;
   rawMeta?: unknown;
   booking?: {
+    createdAt?: string;
     status?: string;
     customerProfile?: { user?: { phone?: string; fullName?: string | null } };
     selectedProvider?: { displayName?: string | null };
