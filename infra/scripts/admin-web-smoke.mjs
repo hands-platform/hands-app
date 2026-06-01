@@ -249,6 +249,10 @@ const pages = [
   { path: '/partners?review=marketplace-blocked', markers: ['Partners', 'Marketplace blocked'] },
   { path: '/partners?review=reports', markers: ['Partners', 'Reports/controls'] },
   { path: '/partners?sort=last-work', markers: ['Partners', 'Sort: last completed work'] },
+  { path: '/partners?sort=booking-count', markers: ['Partners', 'Sort: booking count'] },
+  { path: '/partners?sort=gross-revenue', markers: ['Partners', 'Sort: gross revenue'] },
+  { path: '/partners?sort=pending-payout', markers: ['Partners', 'Sort: pending payout'] },
+  { path: '/partners?sort=available-payout', markers: ['Partners', 'Sort: available payout'] },
   {
     path: '/providers',
     markers: [
