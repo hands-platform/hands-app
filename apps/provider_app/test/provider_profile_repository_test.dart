@@ -149,11 +149,80 @@ void main() {
 
     await server.close(force: true);
   });
+
+  test('goes online when shared device only requires a session check',
+      () async {
+    final requests = <String>[];
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+
+    unawaited(
+      server.forEach((request) async {
+        requests.add('${request.method} ${request.uri.path}');
+        request.response.headers.contentType = ContentType.json;
+
+        if (request.method == 'POST' &&
+            request.uri.path == '/partner/device-session') {
+          request.response.write(jsonEncode({
+            'ok': true,
+            'blocked': false,
+            'sharedDeviceProfileCount': 1,
+            'session': {
+              'suspicious': true,
+              'suspiciousReason':
+                  'Device is already linked to 1 other partner profile(s).',
+            },
+          }));
+        } else {
+          request.response.write(jsonEncode({'ok': true}));
+        }
+
+        await request.response.close();
+      }),
+    );
+
+    final repository = ProviderProfileRepositoryImpl(
+      api: ApiClient(
+        baseUrl: 'http://${server.address.host}:${server.port}',
+        tokenRefreshMode: TokenRefreshMode.disabled,
+      ),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3100'),
+      locationDataSource: _VietnamLocationDataSource(),
+      deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
+    );
+
+    await repository.goOnline();
+
+    expect(requests, [
+      'POST /partner/device-session',
+      'POST /partner/online',
+      'POST /partner/location',
+    ]);
+
+    await server.close(force: true);
+  });
 }
 
 class _NoLocationDataSource extends ProviderDeviceLocationDataSource {
   @override
   Future<Position?> currentPosition() async => null;
+}
+
+class _VietnamLocationDataSource extends ProviderDeviceLocationDataSource {
+  @override
+  Future<Position?> currentPosition() async {
+    return Position(
+      latitude: 10.7769,
+      longitude: 106.7009,
+      timestamp: DateTime.utc(2026),
+      accuracy: 5,
+      altitude: 0,
+      altitudeAccuracy: 0,
+      heading: 0,
+      headingAccuracy: 0,
+      speed: 0,
+      speedAccuracy: 0,
+    );
+  }
 }
 
 class _FakeDeviceIdentityDataSource extends ProviderDeviceIdentityDataSource {
