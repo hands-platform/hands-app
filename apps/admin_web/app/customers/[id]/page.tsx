@@ -101,6 +101,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       isWithinDetailActivityType(record.type, activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS),
   );
   const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
+  const customerDailyActivityDigest = buildCustomerDailyActivityDigest(filteredCustomerActivityRecords);
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
   );
@@ -303,6 +304,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <span>Activity timeline</span>
             <strong>{customerActivityRecords.length}</strong>
             <small>Date-ordered app and operations events.</small>
+          </a>
+          <a href="#customer-daily-digest">
+            <span>Daily digest</span>
+            <strong>{customerDailyActivityDigest.length}</strong>
+            <small>Date-grouped customer activity.</small>
           </a>
         </div>
       </section>
@@ -808,6 +814,57 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
+      <section className="card" id="customer-daily-digest" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer daily activity digest</h2>
+            <p className="muted">
+              Date-grouped factual activity for quick operator review. Use this before opening the full
+              chronological timeline.
+            </p>
+          </div>
+          <span className="pill pill-info">{customerDailyActivityDigest.length} day(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {customerDailyActivityDigest.length > 0 ? (
+            customerDailyActivityDigest.map((day) => (
+              <div className="setup-stage-item" key={day.key}>
+                <span>{day.label}</span>
+                <div>
+                  <strong>{day.total} event(s)</strong>
+                  <p className="muted">
+                    {day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}
+                  </p>
+                  <div className="setup-stage-list" style={{ marginTop: 10 }}>
+                    {day.highlights.map((record) => (
+                      <div className="service-matrix-cell" key={`${record.type}-${record.id}-${record.at}`}>
+                        <strong>{record.title}</strong>
+                        <small>
+                          {record.type} / {formatDate(record.at)}
+                        </small>
+                        <p className="muted" style={{ margin: 0 }}>
+                          {record.detail}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <small>{day.latestAt ? formatDate(day.latestAt) : 'No date'}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No daily activity matched this filter</strong>
+                <p className="muted">Clear the date filter or choose a wider range.</p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
+        </div>
+      </section>
+
       <section className="grid" style={{ marginBottom: 16 }}>
         <section className="card">
           <h2>Push devices</h2>
@@ -949,6 +1006,14 @@ type CustomerActivityRecord = {
   title: string;
   detail: string;
   href?: string;
+};
+type CustomerDailyActivityDigest = {
+  key: string;
+  label: string;
+  total: number;
+  latestAt?: string;
+  typeCounts: Array<{ type: string; count: number }>;
+  highlights: CustomerActivityRecord[];
 };
 
 type CustomerOperatingLedgerRow = {
@@ -1960,6 +2025,60 @@ function buildCustomerActivitySummary(
       helper: 'Notifications, reviews, staff notes, and audit records.',
     },
   ];
+}
+
+function buildCustomerDailyActivityDigest(records: CustomerActivityRecord[]): CustomerDailyActivityDigest[] {
+  const grouped = new Map<string, CustomerActivityRecord[]>();
+
+  for (const record of records) {
+    const key = activityDateKey(record.at);
+    if (!key) continue;
+    grouped.set(key, [...(grouped.get(key) ?? []), record]);
+  }
+
+  return [...grouped.entries()]
+    .sort(([left], [right]) => right.localeCompare(left))
+    .slice(0, 14)
+    .map(([key, dayRecords]) => {
+      const typeCounts = [...countActivityTypes(dayRecords).entries()]
+        .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+        .map(([type, count]) => ({ type, count }));
+      const sortedRecords = [...dayRecords].sort((left, right) => dateMs(right.at) - dateMs(left.at));
+
+      return {
+        key,
+        label: formatActivityDateLabel(key),
+        total: dayRecords.length,
+        latestAt: sortedRecords[0]?.at,
+        typeCounts,
+        highlights: sortedRecords.slice(0, 4),
+      };
+    });
+}
+
+function countActivityTypes(records: Array<{ type: string }>) {
+  const counts = new Map<string, number>();
+  for (const record of records) {
+    counts.set(record.type, (counts.get(record.type) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function activityDateKey(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+}
+
+function formatActivityDateLabel(key: string) {
+  const date = new Date(`${key}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return key;
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  }).format(date);
 }
 
 function bookingTotal(booking: AdminBookingDetail) {

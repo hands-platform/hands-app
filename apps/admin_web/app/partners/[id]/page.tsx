@@ -262,6 +262,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       isWithinDetailActivityType(record.type, activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
   );
   const partnerActivitySummary = buildPartnerActivitySummary(filteredPartnerActivityRecords);
+  const partnerDailyActivityDigest = buildPartnerDailyActivityDigest(filteredPartnerActivityRecords);
   const partnerMasterFacts = buildPartnerMasterFacts(
     provider,
     partnerBookingArchive,
@@ -523,6 +524,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <span>App activity</span>
             <strong>{(provider.sessions ?? []).length + (provider.devices ?? []).length}</strong>
             <small>Sessions, devices, push, and location records.</small>
+          </a>
+          <a href="#partner-daily-digest">
+            <span>Daily digest</span>
+            <strong>{partnerDailyActivityDigest.length}</strong>
+            <small>Date-grouped partner operations records.</small>
           </a>
         </div>
       </div>
@@ -822,6 +828,57 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   Clear the date filter or choose a wider range to review app, location, payout, and
                   verification records.
                 </p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card" id="partner-daily-digest" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner daily activity digest</h2>
+            <p className="muted">
+              Date-grouped factual partner operations records for same-shift review before reading the full
+              event timeline.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerDailyActivityDigest.length} day(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 16 }}>
+          {partnerDailyActivityDigest.length ? (
+            partnerDailyActivityDigest.map((day) => (
+              <div className="setup-stage-item" key={day.key}>
+                <span>{day.label}</span>
+                <div>
+                  <strong>{day.total} event(s)</strong>
+                  <p className="muted">
+                    {day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}
+                  </p>
+                  <div className="setup-stage-list" style={{ marginTop: 10 }}>
+                    {day.highlights.map((record) => (
+                      <div className="service-matrix-cell" key={`${record.type}-${record.id}-${record.at}`}>
+                        <strong>{record.title}</strong>
+                        <small>
+                          {record.type} / {formatDate(record.at)}
+                        </small>
+                        <p className="muted" style={{ margin: 0 }}>
+                          {record.detail}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <small>{day.latestAt ? formatDate(day.latestAt) : 'No date'}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No partner daily activity matched this filter</strong>
+                <p className="muted">Clear the date filter or choose a wider range.</p>
               </div>
               <small>0</small>
             </div>
@@ -2195,6 +2252,14 @@ type PartnerActivityRecord = {
   title: string;
   detail: string;
 };
+type PartnerDailyActivityDigest = {
+  key: string;
+  label: string;
+  total: number;
+  latestAt?: string;
+  typeCounts: Array<{ type: string; count: number }>;
+  highlights: PartnerActivityRecord[];
+};
 type PartnerOperatorCommand = {
   id: string;
   label: string;
@@ -2984,6 +3049,60 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
       helper: 'KYC, documents, bank, tax, agreements, reports, account controls, media, and notes.',
     },
   ];
+}
+
+function buildPartnerDailyActivityDigest(records: PartnerActivityRecord[]): PartnerDailyActivityDigest[] {
+  const grouped = new Map<string, PartnerActivityRecord[]>();
+
+  for (const record of records) {
+    const key = partnerActivityDateKey(record.at);
+    if (!key) continue;
+    grouped.set(key, [...(grouped.get(key) ?? []), record]);
+  }
+
+  return [...grouped.entries()]
+    .sort(([left], [right]) => right.localeCompare(left))
+    .slice(0, 14)
+    .map(([key, dayRecords]) => {
+      const typeCounts = [...countPartnerActivityTypes(dayRecords).entries()]
+        .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+        .map(([type, count]) => ({ type, count }));
+      const sortedRecords = [...dayRecords].sort((left, right) => dateValue(right.at) - dateValue(left.at));
+
+      return {
+        key,
+        label: formatPartnerActivityDateLabel(key),
+        total: dayRecords.length,
+        latestAt: sortedRecords[0]?.at,
+        typeCounts,
+        highlights: sortedRecords.slice(0, 4),
+      };
+    });
+}
+
+function countPartnerActivityTypes(records: Array<{ type: string }>) {
+  const counts = new Map<string, number>();
+  for (const record of records) {
+    counts.set(record.type, (counts.get(record.type) ?? 0) + 1);
+  }
+  return counts;
+}
+
+function partnerActivityDateKey(value?: string | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toISOString().slice(0, 10);
+}
+
+function formatPartnerActivityDateLabel(key: string) {
+  const date = new Date(`${key}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return key;
+  return new Intl.DateTimeFormat('en-CA', {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  }).format(date);
 }
 
 function buildPartnerMasterFacts(
