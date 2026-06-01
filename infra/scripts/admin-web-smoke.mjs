@@ -669,6 +669,7 @@ if (bookingLinkMatch) {
     'Operator command queue',
     'Operator action availability',
     'Evidence packet for admin decision',
+    'Connected operations records',
     'Chat evidence',
     'Location evidence',
     'Payment evidence',

@@ -302,6 +302,64 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     bookingActivityRecords,
   });
+  const connectedRecordLinks = [
+    {
+      label: 'Customer record',
+      value: booking.customerProfile?.id ? 'Linked' : 'Profile missing',
+      detail: booking.customerProfile?.user?.phone ?? 'Open the in-page customer evidence block.',
+      href: booking.customerProfile?.id ? `/customers/${booking.customerProfile.id}` : '#customer',
+      tone: booking.customerProfile?.id ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Preferred partner',
+      value: booking.preferredProvider?.id ? providerName(booking.preferredProvider) : 'Not selected',
+      detail: 'First-pick partner record and booking gate state.',
+      href: booking.preferredProvider?.id ? `/partners/${booking.preferredProvider.id}` : '#handoff',
+      tone: booking.preferredProvider?.id ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Final partner',
+      value: finalProvider?.id ? providerName(finalProvider) : 'Customer choice pending',
+      detail: 'Final selected partner, location, payout, and service records.',
+      href: finalProvider?.id ? `/partners/${finalProvider.id}` : '#participants',
+      tone: finalProvider?.id ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Chat archive',
+      value: booking.chatRoom ? `${messages.length} message(s)` : 'No room',
+      detail: 'Admin-retained transcript for completion, cancellation, and no-show context.',
+      href: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : '#chat',
+      tone: booking.chatRoom ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Notification trace',
+      value: `${notificationTrace.rows.length} alert(s)`,
+      detail: 'Partner alerts, customer updates, delivery status, and retry context.',
+      href: `/notifications?booking=${encodeURIComponent(booking.id)}`,
+      tone: notificationTrace.rows.length ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Payment queue',
+      value: booking.payment?.status ?? 'No payment',
+      detail: `${booking.payment?.method ?? 'NONE'} / ${money(booking.payment?.amount, booking.payment?.currency)}`,
+      href: booking.payment?.status === 'AUTHORIZED' ? '/payments?review=authorized' : '/payments',
+      tone: booking.payment ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Refund queue',
+      value: `${refundLedgerRows.length} refund row(s)`,
+      detail: bookingRefundLedgerEvidence(booking),
+      href: refundLedgerRows.length ? '/refunds?review=open' : '#payment',
+      tone: refundLedgerRows.length ? 'pill-warn' : 'pill-neutral',
+    },
+    {
+      label: 'Cash settlement',
+      value: bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'Clear',
+      detail: financeTrace.walletLedger,
+      href: bookingCashDebtNeedsSettlement(booking) ? '/cash-settlements' : '#finance',
+      tone: bookingCashDebtNeedsSettlement(booking) ? 'pill-danger' : 'pill-success',
+    },
+  ];
 
   return (
     <>
@@ -457,6 +515,31 @@ export default async function BookingDetailPage({ params }: PageProps) {
               <a className="text-link" href={record.href}>
                 Open
               </a>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" id="connected-operations-records" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Connected operations records</h2>
+            <p className="muted">
+              Jump from this booking to the linked customer, partner, chat archive, notification trace,
+              payment, refund, and settlement records.
+            </p>
+          </div>
+          <span className="pill pill-info">{connectedRecordLinks.length} links</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {connectedRecordLinks.map((record) => (
+            <div key={record.label}>
+              <span>{record.label}</span>
+              <strong>{record.value}</strong>
+              <small>{record.detail}</small>
+              <Link className={`pill ${record.tone}`} href={record.href}>
+                Open
+              </Link>
             </div>
           ))}
         </div>
