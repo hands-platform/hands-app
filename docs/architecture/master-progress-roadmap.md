@@ -43,7 +43,7 @@ Checked commands:
 - `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
 - API policy coverage now explicitly guards admin price-step enforcement, service base-price step enforcement, payout-above-customer-price rejection, and partner price minimum/step rejection markers.
 - API smoke now verifies that a completed direct booking using a partner custom service price selects the matching service payout matrix row, including gross amount, partner payout, platform fee, VAT, other cost, net company fee before withholding, and rule ID.
-- `API_BASE_URL=http://localhost:3100/api SOCKET_BASE_URL=http://localhost:3100 node infra/scripts/api-smoke.mjs`: PASS. This now verifies customer cancellation, admin no-show, and admin expiry closure metadata.
+- `API_BASE_URL=http://localhost:3100/api SOCKET_BASE_URL=http://localhost:3100 node infra/scripts/api-smoke.mjs`: PASS. This verifies booking creation, matching, direct/custom service price payout rules, chat retention, cancellation, no-show, expiry closure metadata, cash wallet debt, payout/tax setup, notification retry, storage, locations, and admin traceability.
 - `npm.cmd run security:secrets`: PASS
 - `npm.cmd run typecheck`: PASS
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
@@ -56,6 +56,7 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/customers,/partners node infra/scripts/admin-web-smoke.mjs`: PASS. Customer and partner list operations are now additionally guarded for the requested list-first management columns, including customer last work/completed work/payment/chat/address/memo evidence and partner ID/profile/state/location/work/revenue/payout/account/checklist evidence.
 - `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/bookings,/chat-archive,/partner-controls node infra/scripts/admin-web-smoke.mjs`: PASS. This focused operating-core check verifies dashboard, customer, partner, booking, chat archive, partner controls, and dynamic customer/partner/booking details after the latest admin continuity changes.
 - `ADMIN_WEB_SMOKE_PATHS=/bookings node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted booking check now guards the dynamic booking detail operating ledger, including service/pricing and refund evidence rows.
+- `ADMIN_WEB_SMOKE_PATHS=/bookings node infra/scripts/admin-web-smoke.mjs`: PASS. Booking detail now also guards the customer-wide and partner-wide chat archive shortcuts.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-handoff node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/operations-handoff` renders the shift handoff checklist without runtime errors or people-ranking wording.
 - `ADMIN_WEB_SMOKE_PATHS=/notifications?review=failed node infra/scripts/admin-web-smoke.mjs`: PASS. Failed notification review links are now covered by smoke tests.
 - `ADMIN_WEB_SMOKE_PATHS=/partners?sort=booking-count,/partners?sort=gross-revenue,/partners?sort=pending-payout,/partners?sort=available-payout node infra/scripts/admin-web-smoke.mjs`: PASS. Partner operations sorting by booking count, gross revenue, pending payout, and available payout is now guarded.
@@ -64,6 +65,7 @@ Checked commands:
 - Rendered admin text sampling across dashboard, partners, customers, bookings, operations policy, partner controls, app sessions, services, tax policy, setup, notifications, and a booking detail page: PASS, no visible standalone `Provider` display wording.
 - `ADMIN_WEB_SMOKE_PATHS=/,/operations-policy,/partner-controls,/setup,/notifications,/earnings,/cash-settlements,/chat-archive,/audit-log node infra/scripts/admin-web-smoke.mjs`: PASS. This confirms finance, settlement, notification, setup, chat archive, audit, and partner control views after broader Partner terminology cleanup.
 - Browser-rendered text sweep across dashboard, partners, customers, bookings, operations policy, partner controls, app sessions, services, tax policy, setup, notifications, earnings, payouts, cash settlements, chat archive, reviews, payments, refunds, coupons, and audit log: PASS, no visible legacy `Provider`, hierarchy/badge wording, or people-scoring wording.
+- Customer, partner, and booking detail pages now cross-link to the full admin chat archive by customer ID, partner ID, and booking ID so completed service chats remain inspectable by operators even when mobile apps hide closed chats.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 11 tests
 - `flutter analyze` in partner app: PASS
