@@ -220,7 +220,11 @@ const pages = [
     markers: ['Finance Closeout', 'Finance date range', 'Range:', 'Last 7 days', 'Closeout reconciliation board'],
   },
   { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
-  { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
+  { path: '/earnings', markers: ['Partner Earnings', 'Earnings date range', 'Money flow command center'] },
+  {
+    path: '/earnings?range=7d',
+    markers: ['Partner Earnings', 'Earnings date range', 'Last 7 days', 'Money flow command center'],
+  },
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
   { path: '/refunds?range=7d', markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'] },

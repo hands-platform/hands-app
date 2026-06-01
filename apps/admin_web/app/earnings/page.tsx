@@ -15,17 +15,26 @@ const emptySummary: AdminEarningSummary = {
   currency: 'VND',
 };
 
-export default async function EarningsPage() {
-  const [summary, earnings, payoutBatches] = await Promise.all([
+type EarningsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function EarningsPage({ searchParams }: EarningsPageProps) {
+  const filters = buildEarningFilters(searchParams ? await searchParams : {});
+  const [apiSummary, earnings, payoutBatches] = await Promise.all([
     adminGet<AdminEarningSummary>('/admin/earnings/summary', emptySummary),
     adminGet<AdminEarning[]>('/admin/earnings', []),
     adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
   ]);
-  const sortedEarnings = sortEarnings(earnings);
-  const payoutQueue = buildProviderPayoutQueue(sortedEarnings, payoutBatches);
+  const currency = apiSummary.currency || earnings[0]?.currency || payoutBatches[0]?.currency || 'VND';
+  const filteredEarnings = earnings.filter((earning) => isInRecordRange(earning.createdAt, filters.range));
+  const filteredPayoutBatches = payoutBatches.filter((batch) => isInRecordRange(batch.createdAt, filters.range));
+  const summary = filters.range === 'all' ? apiSummary : summarizeEarnings(filteredEarnings, currency);
+  const sortedEarnings = sortEarnings(filteredEarnings);
+  const payoutQueue = buildProviderPayoutQueue(sortedEarnings, filteredPayoutBatches);
   const cashDebtQueue = buildCashDebtQueue(sortedEarnings);
   const cashDebtTotals = buildCashDebtTotals(cashDebtQueue);
-  const financeSignals = buildFinanceSignals(sortedEarnings, payoutBatches, payoutQueue, cashDebtQueue);
+  const financeSignals = buildFinanceSignals(sortedEarnings, filteredPayoutBatches, payoutQueue, cashDebtQueue);
   const serviceBridge = buildServiceEarningBridge(sortedEarnings);
   const moneyFlowCards = buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals);
   const moneyFlowChecks = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue);
@@ -44,6 +53,32 @@ export default async function EarningsPage() {
   return (
     <>
       <h1>Partner Earnings</h1>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Earnings date range</h2>
+            <p className="muted">
+              Range: {rangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout batches
+              on this page use record dates.
+            </p>
+          </div>
+          <Link className="text-link" href="/finance-closeout">
+            Open finance closeout
+          </Link>
+        </div>
+        <div className="filter-row" style={{ marginTop: 12 }}>
+          {[
+            ['All dates', '/earnings'],
+            ['Today', '/earnings?range=today'],
+            ['Last 7 days', '/earnings?range=7d'],
+            ['Last 30 days', '/earnings?range=30d'],
+          ].map(([label, href]) => (
+            <Link className="filter-pill" href={href} key={href}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </section>
       <section className="grid">
         {metrics.map(([label, value]) => (
           <div className="card" key={label}>
@@ -548,6 +583,99 @@ function sortEarnings(earnings: AdminEarning[]) {
     }
     return Date.parse(right.createdAt ?? '') - Date.parse(left.createdAt ?? '');
   });
+}
+
+type EarningRange = 'all' | 'today' | '7d' | '30d';
+
+function buildEarningFilters(params: Record<string, string | string[] | undefined>) {
+  return {
+    range: normalizeRange(readParam(params.range)),
+  };
+}
+
+function readParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+}
+
+function normalizeRange(value: string): EarningRange {
+  if (value === 'today' || value === '7d' || value === '30d') {
+    return value;
+  }
+  return 'all';
+}
+
+function rangeLabel(range: EarningRange) {
+  if (range === 'today') {
+    return 'Today';
+  }
+  if (range === '7d') {
+    return 'Last 7 days';
+  }
+  if (range === '30d') {
+    return 'Last 30 days';
+  }
+  return 'All dates';
+}
+
+function isInRecordRange(value: string | undefined | null, range: EarningRange) {
+  const start = rangeStart(range);
+  if (!start) {
+    return true;
+  }
+  if (!value) {
+    return false;
+  }
+  const recordTime = Date.parse(value);
+  return Number.isFinite(recordTime) && recordTime >= start.getTime();
+}
+
+function rangeStart(range: EarningRange) {
+  const now = new Date();
+  if (range === 'today') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (range === '7d') {
+    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  }
+  if (range === '30d') {
+    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+  return null;
+}
+
+function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEarningSummary {
+  return earnings.reduce<AdminEarningSummary>(
+    (summary, earning) => {
+      summary.count += 1;
+      summary.grossAmount += earning.grossAmount;
+      summary.platformFee += earning.platformFee;
+      summary.withholdingAmount += earning.withholdingAmount;
+      summary.tipAmount += earning.tipAmount;
+      summary.netAmount += earning.netAmount;
+      if (earning.status === 'PENDING') {
+        summary.pendingNetAmount += earning.netAmount;
+      }
+      if (earning.status === 'AVAILABLE') {
+        summary.availableNetAmount += earning.netAmount;
+      }
+      if (earning.status === 'PAID') {
+        summary.paidNetAmount += earning.netAmount;
+      }
+      return summary;
+    },
+    {
+      count: 0,
+      grossAmount: 0,
+      platformFee: 0,
+      withholdingAmount: 0,
+      tipAmount: 0,
+      netAmount: 0,
+      pendingNetAmount: 0,
+      availableNetAmount: 0,
+      paidNetAmount: 0,
+      currency,
+    },
+  );
 }
 
 type ProviderPayoutQueueItem = {
