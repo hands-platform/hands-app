@@ -1,5 +1,6 @@
 import { AdminReview, adminGet } from '../../lib/admin-api';
 import Link from 'next/link';
+import { readSearchParam } from '../../lib/date-range';
 import { moderateReview } from './actions';
 
 type ReviewsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -294,7 +295,7 @@ function buildReviewFilters(params: Record<string, string | string[] | undefined
 }
 
 function readParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+  return readSearchParam(value);
 }
 
 function filterReviews(reviews: AdminReview[], filters: ReturnType<typeof buildReviewFilters>) {

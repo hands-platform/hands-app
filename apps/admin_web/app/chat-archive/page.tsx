@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
 import { buildCsvDataHref } from '../../lib/csv-export';
+import { readSearchParam } from '../../lib/date-range';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -459,7 +460,7 @@ function statusPillClass(status: string) {
 }
 
 function readParam(value: string | string[] | undefined) {
-  return (Array.isArray(value) ? value[0] : value)?.trim() ?? '';
+  return readSearchParam(value);
 }
 
 function shortId(id?: string) {

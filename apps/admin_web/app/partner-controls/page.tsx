@@ -12,6 +12,7 @@ import {
   liftProviderSanction,
   updateProviderReport,
 } from './actions';
+import { readSearchParam } from '../../lib/date-range';
 
 type PartnerControlsSearchParams = Promise<Record<string, string | string[] | undefined>>;
 type PartnerControlPolicy = {
@@ -1687,7 +1688,7 @@ function emptyPartnerControlMessage(kind: 'report' | 'sanction', activeFilters: 
 }
 
 function readParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+  return readSearchParam(value);
 }
 
 function filterReports(reports: AdminProviderReport[], filters: ReturnType<typeof buildFilters>) {

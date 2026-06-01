@@ -1,5 +1,6 @@
 import { AdminNotification, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
 import Link from 'next/link';
+import { readSearchParam } from '../../lib/date-range';
 import { enablePushDevice, retryNotification } from './actions';
 
 type NotificationsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -400,10 +401,7 @@ function buildNotificationFilters(params: Record<string, string | string[] | und
 }
 
 function readParam(value: string | string[] | undefined) {
-  if (Array.isArray(value)) {
-    return value[0] ?? '';
-  }
-  return value ?? '';
+  return readSearchParam(value);
 }
 
 function filterNotifications(notifications: AdminNotification[], filters: { review: string; booking: string }) {
