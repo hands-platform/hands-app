@@ -160,6 +160,7 @@ Admin dashboard:
 - Admin smoke tests now fail if operator-facing pages expose judgmental account wording such as account misuse, fraud, abuse controls, suspicious session, or trusted-partner labels. Account/device handling should stay factual and review-based.
 - Admin smoke tests now fail if operator-facing pages expose partner hierarchy wording such as trust badge, partner badge, profile badge, or promoted-into labels. Optional partner checks should be described as profile review or account review.
 - Admin smoke tests now fail if any operator-facing admin page exposes visible legacy `Provider` display wording. DB/API/internal type names can remain `Provider`, but rendered operator copy should say `Partner`.
+- Admin smoke tests now also fail if operator-facing admin pages expose visible people-ranking or penalty wording. Historical notes and audit metadata are displayed through neutral closeout-decision wording.
 - Admin smoke tests now guard the booking detail `Service feedback` marker so booking records keep factual feedback language in the source-of-truth view.
 - Admin smoke tests now guard finance and work-volume partner sort URLs so operator list ordering remains available after admin refactors.
 - Admin smoke tests now guard customer work-volume, spend, and app-access sort URLs so customer operations remain record-based and searchable.
@@ -244,7 +245,7 @@ Goal: Mobile apps and admin use the same policy logic.
 1. Matching policy service
    - Partner first-response window: configurable, currently 10 minutes.
    - Open Matching Marketplace stays visible to eligible marketplace participants.
-   - Distance is used for ranking, alert preferences, and the admin-configurable marketplace eligibility radius.
+   - Distance is used for sorting, alert preferences, and the admin-configurable marketplace eligibility radius.
    - Current MVP target default radius is 10km, but the customer still selects the final partner.
    - Customer can select among available participants.
 

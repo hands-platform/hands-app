@@ -44,7 +44,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
             <h2>Feedback command board</h2>
             <p className="muted">
               Customer comments, partner coaching notes, and public visibility decisions are handled here
-              without ranking customers or partners.
+              as factual service records.
             </p>
           </div>
           <span

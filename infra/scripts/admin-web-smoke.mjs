@@ -397,7 +397,7 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'legacy Provider wording', pattern: /\bProvider\b|\bPROVIDER\(S\)\b/ },
     { label: 'legacy backup wording', pattern: /\b[Bb]ackup\b/ },
     { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
-    { label: 'people scoring wording', pattern: /\b(score|scoring|VIP|tip|tips)\b/i },
+    { label: 'people scoring wording', pattern: /\b(score|scoring|ranking|ranked|VIP|tip|tips|penalty|penalties)\b/i },
     { label: 'partner average feedback wording', pattern: /\bFeedback value\b/i },
     { label: 'person-rating wording', pattern: /\b(stars? or below|star \/)\b/i },
     {

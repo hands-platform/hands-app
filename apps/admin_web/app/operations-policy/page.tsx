@@ -3483,7 +3483,12 @@ function displayOperationalWording(value: string | null | undefined) {
     .replaceAll('backup mode', 'marketplace mode')
     .replaceAll('Backup mode', 'Marketplace mode')
     .replaceAll('backup list', 'marketplace list')
-    .replaceAll('Backup list', 'Marketplace list');
+    .replaceAll('Backup list', 'Marketplace list')
+    .replaceAll('customer or partner penalty', 'customer or partner closeout decision')
+    .replaceAll('customer or partner penalties', 'customer or partner closeout decisions')
+    .replaceAll('false penalties', 'incorrect automatic decisions')
+    .replaceAll('penalties', 'closeout decisions')
+    .replaceAll('penalty', 'closeout decision');
 }
 
 type PolicySaveCheck = {

@@ -227,7 +227,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: NO_SHOW_ADMIN_REVIEW_REQUIRED,
         label: 'Admin review required',
-        tradeoff: 'Reduces false penalties while the marketplace is young.',
+        tradeoff: 'Reduces incorrect automatic decisions while the marketplace is young.',
       },
       {
         value: NO_SHOW_AUTO_AFTER_EVIDENCE,

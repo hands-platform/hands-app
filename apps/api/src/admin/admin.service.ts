@@ -1299,7 +1299,7 @@ export class AdminService {
     const policyNote =
       noShowPolicy === NO_SHOW_AUTO_AFTER_EVIDENCE
         ? 'Policy: evidence-backed no-show automation is active; verify evidence trail before payment closeout.'
-        : 'Policy: admin review required before customer or partner penalty.';
+        : 'Policy: admin review required before any payment or closeout decision.';
     const entry = `[${new Date().toISOString()}] No-show marked by operations${
       reason ? `: ${reason}. ` : '. '
     }${policyNote}`;
