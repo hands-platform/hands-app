@@ -5552,6 +5552,7 @@ bool isProviderDeviceBlockedMessage(String value) {
 
 bool isProviderAccountBlockedMessage(String value) {
   final normalized = value.toLowerCase();
-  return normalized.contains('provider account is blocked') ||
+  return normalized.contains('partner account is blocked') ||
+      normalized.contains('provider account is blocked') ||
       normalized.contains('account is blocked');
 }
