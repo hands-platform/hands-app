@@ -6,6 +6,7 @@ const violations = [];
 
 checkRequiredAuthorityDoc();
 checkNoContradictoryOperationsDocs();
+checkNoContradictoryNegativeWalletWording();
 checkOnDemandBookingContract();
 checkCustomerFinalSelectionContract();
 checkNoTipContract();
@@ -68,6 +69,27 @@ function checkNoContradictoryOperationsDocs() {
     'should not use customer or partner feedback as a people-ranking, risk-scoring, or automatic dispatch system',
     'must not drive automatic penalties, badges, rankings, or dispatch priority',
   ]);
+}
+
+function checkNoContradictoryNegativeWalletWording() {
+  const forbiddenPhrases = [
+    'blocked from accepting or joining',
+    'blocked from joining, accepting',
+    'blocks booking acceptance or marketplace joining',
+    'blocked from joining bookings',
+    'blocked from joining open matching',
+    'cannot join open marketplace matching',
+  ];
+
+  for (const file of [
+    ...listFiles('apps/admin_web/app', '.tsx'),
+    ...listFiles('docs/architecture', '.md'),
+  ]) {
+    const source = read(file);
+    for (const phrase of forbiddenPhrases) {
+      rejectMarker(file, source, phrase);
+    }
+  }
 }
 
 function checkOnDemandBookingContract() {
