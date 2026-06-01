@@ -650,9 +650,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   ) : null}
                 </td>
                 <td>
-                  {booking.selectedProvider?.displayName ??
-                    booking.preferredProvider?.displayName ??
-                    'No partner'}
+                  {bookingPartnerDisplayName(booking)}
                 </td>
                 <td>
                   <strong>{booking.payment?.status ?? 'No payment'}</strong>
@@ -670,6 +668,15 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   <Link className="text-link" href={`/bookings/${booking.id}`}>
                     Booking
                   </Link>
+                  {booking.chatRoom ? (
+                    <Link
+                      className="text-link"
+                      href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}
+                      style={{ marginLeft: 10 }}
+                    >
+                      Chat archive
+                    </Link>
+                  ) : null}
                 </td>
               </tr>
             ))}
@@ -709,6 +716,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                   <Link className="text-link" href={`/bookings/${booking.id}`}>
                     Open booking
                   </Link>
+                  {booking.chatRoom ? (
+                    <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
+                      Open full chat archive
+                    </Link>
+                  ) : null}
                 </div>
                 <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
                   {readChatMessages(booking)
@@ -1269,10 +1281,7 @@ function buildCustomerAccountFacts(
     bookings
       .map(
         (booking) =>
-          booking.selectedProvider?.displayName ??
-          booking.preferredProvider?.displayName ??
-          booking.selectedProvider?.user?.fullName ??
-          booking.preferredProvider?.user?.fullName,
+          bookingPartnerDisplayName(booking),
       )
       .filter(Boolean) as string[],
   );
@@ -1656,9 +1665,9 @@ function buildCustomerActivityRecords(
       type: 'BOOKING',
       at: booking.createdAt ?? booking.scheduledStartAt ?? '',
       title: `${booking.status} booking ${shortId(booking.id)}`,
-      detail: `${bookingServiceLabel(booking)} / partner ${
-        booking.selectedProvider?.displayName ?? booking.preferredProvider?.displayName ?? 'not selected'
-      } / scheduled ${formatDate(booking.scheduledStartAt)}${
+      detail: `${bookingServiceLabel(booking)} / partner ${bookingPartnerDisplayName(
+        booking,
+      )} / scheduled ${formatDate(booking.scheduledStartAt)}${
         isClosedCustomerBooking(booking) ? ` / ${bookingClosureLabel(booking)}` : ''
       }`,
       href: `/bookings/${booking.id}`,
@@ -2060,7 +2069,21 @@ function compactText(value: string, maxLength: number) {
 }
 
 function displayMarketplaceText(value?: string | null) {
-  return (value ?? '').replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
+  return (value ?? '')
+    .replace(/\bbackup\b/g, 'marketplace')
+    .replace(/\bBackup\b/g, 'Marketplace')
+    .replace(/\bProvider\b/g, 'Partner')
+    .replace(/\bprovider\b/g, 'partner');
+}
+
+function bookingPartnerDisplayName(booking: AdminBookingDetail) {
+  return displayMarketplaceText(
+    booking.selectedProvider?.displayName ??
+      booking.preferredProvider?.displayName ??
+      booking.selectedProvider?.user?.fullName ??
+      booking.preferredProvider?.user?.fullName ??
+      'No partner',
+  );
 }
 
 function dateMs(value?: string | null) {
