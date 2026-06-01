@@ -17,7 +17,7 @@ Use Supabase for PostgreSQL, PostGIS, Auth, Storage, RLS, SQL/RPC where useful, 
 - Customers choose a service address first.
 - Customers browse visible partners through distance-sorted discovery.
 - Partner visibility and partner availability are separate.
-- A partner with stale location can remain visible; stale location affects ranking, alerts, and operator warnings, not automatic hiding.
+- A partner with stale location can remain visible; stale location affects distance sorting, alert eligibility, and operator warnings, not automatic hiding.
 - Booking confirmation is mandatory before booking creation.
 - Every booking must store an immutable booking address snapshot.
 - A preferred partner request opens the Open Matching Marketplace.
