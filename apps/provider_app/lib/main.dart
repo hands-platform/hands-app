@@ -548,9 +548,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                 return preferredProvider is Map<String, dynamic> &&
                     preferredProvider['userId'] != auth.userId;
               }).length,
-              chatReady: bookingItems
-                  .where(isProviderAppChatVisible)
-                  .length,
+              chatReady: bookingItems.where(isProviderAppChatVisible).length,
             ),
             const SizedBox(height: 16),
             Wrap(
@@ -862,8 +860,7 @@ class _ProviderScheduleScreenState
             onPressed:
                 loading ? null : (auth == null ? signInAndLoad : loadSchedule),
             icon: const Icon(Icons.work_history_outlined),
-            label:
-                Text(auth == null ? 'Demo partner login' : 'Refresh jobs'),
+            label: Text(auth == null ? 'Demo partner login' : 'Refresh jobs'),
           ),
           if (loading) ...[
             const SizedBox(height: 12),
@@ -884,8 +881,7 @@ class _ProviderScheduleScreenState
               closed: closedCount),
           const SizedBox(height: 16),
           if (auth == null)
-            const InfoCard(
-                text: 'Login first to load your partner job queue.')
+            const InfoCard(text: 'Login first to load your partner job queue.')
           else if (items.isEmpty)
             const InfoCard(
                 text: 'No assigned, joined, or completed bookings yet.')
@@ -1034,7 +1030,8 @@ bool isProviderAppChatVisible(Map<String, dynamic>? booking) {
   if (booking == null) {
     return false;
   }
-  return asMap(booking['chatRoom']) != null && !isProviderClosedBooking(booking);
+  return asMap(booking['chatRoom']) != null &&
+      !isProviderClosedBooking(booking);
 }
 
 String providerScheduleNextAction(Map<String, dynamic> booking) {
@@ -1906,7 +1903,7 @@ class EarningsScreen extends ConsumerWidget {
           Text(
             auth == null
                 ? 'Login to view completed service earnings.'
-                : 'Track gross, extra amounts, fees, and net payout.',
+                : 'Track gross revenue, platform fees, tax withholding, and net payout.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -2045,8 +2042,8 @@ class EarningsScreen extends ConsumerWidget {
                                           .headlineSmall,
                                     ),
                                     const SizedBox(height: 8),
-                                      Text(
-                                        'Extra amount ${summary['tipAmount'] ?? 0} $currency'),
+                                    Text(
+                                        'Tax withholding ${summary['taxAmount'] ?? 0} $currency'),
                                     Text(
                                         'Platform fee ${summary['platformFee'] ?? 0} $currency'),
                                     Text('Payout batches ${batches.length}'),
@@ -2067,7 +2064,7 @@ class EarningsScreen extends ConsumerWidget {
                                     subtitle: Text(
                                         'Booking ${earning['bookingId']} - ${earning['status']}'),
                                     trailing: Text(
-                                        '+${earning['tipAmount'] ?? 0} extra'),
+                                        '${earning['platformFee'] ?? 0} fee'),
                                   ),
                                 ),
                           ],
@@ -2186,7 +2183,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           'Service is already in progress. Reload chat to join the live room.',
         'COMPLETED' =>
           'Service complete. Chat is archived for admin records and no longer shown in the app.',
-        'CANCELLED' || 'EXPIRED' || 'REFUNDED' =>
+        'CANCELLED' ||
+        'EXPIRED' ||
+        'REFUNDED' =>
           'This booking is closed. Chat is archived for admin records.',
         _ => 'No selected booking chat yet.',
       };
@@ -4934,7 +4933,8 @@ ProviderRequestGuidance providerRequestGuidance({
       preferredProvider?['displayName']?.toString().trim();
   final hasChat = isProviderAppChatVisible(booking);
   final isMatched = booking['status'] == 'MATCHED';
-  final actionBlockedByWallet = walletBlocked && isPreferredRequest && !isMatched;
+  final actionBlockedByWallet =
+      walletBlocked && isPreferredRequest && !isMatched;
   final responseWindowLabel = providerMatchingWindowText(booking);
   final backupRadiusLabel = providerBackupRadiusText(booking);
 
