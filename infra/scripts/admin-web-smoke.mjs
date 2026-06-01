@@ -566,6 +566,7 @@ if (providerLinkMatch) {
     const providerBody = await fetchPage(providerPath);
     const providerMarkers = [
       'Partner operator command queue',
+      'Partner recent operations timeline',
       'Partner connected operations records',
       'Partner operator notes',
       'Partner ops command center',
@@ -618,6 +619,7 @@ if (customerLinkMatch) {
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
     'Customer detail',
+    'Customer recent operations timeline',
     'Customer connected operations records',
     'Customer operator command queue',
     'Customer full record index',

@@ -450,6 +450,46 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
       </div>
 
+      <div className="card" id="partner-recent-operations-timeline" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner recent operations timeline</h2>
+            <p className="muted">
+              Latest factual partner events in the order operators need them: onboarding, app, location,
+              booking, chat, finance, payout, document, tax, and staff records.
+            </p>
+          </div>
+          <Link className="text-link" href="#app-activity">
+            Open full timeline
+          </Link>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {filteredPartnerActivityRecords.length ? (
+            filteredPartnerActivityRecords.slice(0, 8).map((record) => (
+              <div className="setup-stage-item" key={`recent-${record.type}-${record.id}-${record.at}`}>
+                <span>{record.type}</span>
+                <div>
+                  <Link className="text-link" href={partnerActivityRecordHref(record)}>
+                    <strong>{record.title}</strong>
+                  </Link>
+                  <p className="muted">{record.detail}</p>
+                </div>
+                <small>{formatDate(record.at)}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No partner event matched this filter</strong>
+                <p className="muted">Clear the date filter or choose a wider period.</p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="card" id="partner-connected-operations-records" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -2372,6 +2412,20 @@ type PartnerOperatorCommand = {
     | { type: 'approve-bank'; bankAccountId: string; label: string }
     | { type: 'approve-tax'; label: string };
 };
+
+function partnerActivityRecordHref(record: PartnerActivityRecord) {
+  if (['BOOKING', 'CHAT'].includes(record.type)) return '#booking-chat-records';
+  if (['EARNING', 'PAYOUT'].includes(record.type)) return '#payout';
+  if (['LOCATION', 'SESSION', 'DEVICE', 'ACCOUNT'].includes(record.type)) return '#app-activity';
+  if (
+    ['VERIFY', 'DOCUMENT', 'BANK', 'TAX', 'AGREEMENT', 'REPORT', 'SANCTION', 'PROFILE', 'OPS'].includes(
+      record.type,
+    )
+  ) {
+    return '#documents';
+  }
+  return '#app-activity';
+}
 
 function PartnerOperatorCommandAction({
   providerId,
