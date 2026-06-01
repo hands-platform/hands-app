@@ -37,6 +37,9 @@ const pages = [
       'Customer Management',
       'Partner Management',
       'Finance Operations',
+      'Today operator order',
+      'Live customer wait',
+      'Cash fee settlement gate',
     ],
   },
   {
