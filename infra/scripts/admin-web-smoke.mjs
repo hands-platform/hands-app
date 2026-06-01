@@ -404,7 +404,7 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'operator risk scoring wording', pattern: /\b(risk score|risk rating|risk level)\b/i },
     {
       label: 'judgmental account wording',
-      pattern: /\b(account misuse|fraud|abuse controls|suspicious session|trusted partner)\b/i,
+      pattern: /\b(account misuse|fraud|misuse|abuse controls|suspicious|trusted partner)\b/i,
     },
     {
       label: 'partner hierarchy wording',

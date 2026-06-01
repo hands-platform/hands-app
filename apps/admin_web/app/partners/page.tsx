@@ -29,7 +29,7 @@ import {
 type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
 type AdminProviderPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
 type ProviderLocationState = 'recent' | 'stale' | 'expired' | 'missing';
-type ProviderSecurityState = 'clear' | 'account-blocked' | 'blocked' | 'suspicious' | 'shared' | 'missing';
+type ProviderSecurityState = 'clear' | 'account-blocked' | 'blocked' | 'session-check' | 'shared' | 'missing';
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 type ProviderCommandLane = {
   title: string;
@@ -349,7 +349,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="">All</option>
               <option value="account-blocked">Account blocked</option>
               <option value="blocked">Blocked device</option>
-              <option value="suspicious">Session check</option>
+              <option value="session-check">Session check</option>
               <option value="shared">Shared device</option>
               <option value="missing">No app device</option>
               <option value="clear">Clear</option>
@@ -2407,7 +2407,7 @@ function nextProviderListAction(
       priority: 68,
     };
   }
-  if (securityState === 'suspicious' || securityState === 'shared') {
+  if (securityState === 'session-check' || securityState === 'shared') {
     return {
       status: 'SECURITY',
       detail:
@@ -2616,7 +2616,7 @@ function ProviderLocationCell({
 function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
   const status = providerSecurityStatus(provider);
   const blockedDevices = (provider.devices ?? []).filter((device) => Boolean(device.blockedAt));
-  const suspiciousSessions = (provider.sessions ?? []).filter((session) => session.suspicious);
+  const sessionCheckSessions = (provider.sessions ?? []).filter((session) => session.suspicious);
   const sharedDevices = sharedDeviceIds(provider);
   const latestDevice = provider.devices?.[0];
   const latestSession = provider.sessions?.[0];
@@ -2642,8 +2642,8 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
         </p>
       ) : null}
       {blockedDevices.length ? <p className="muted">{blockedDevices.length} blocked device(s)</p> : null}
-      {suspiciousSessions.length ? (
-        <p className="muted">{suspiciousSessions.length} session check(s)</p>
+      {sessionCheckSessions.length ? (
+        <p className="muted">{sessionCheckSessions.length} session check(s)</p>
       ) : null}
       {sharedDevices.size ? <p className="muted">{sharedDevices.size} shared device id(s)</p> : null}
       <Link className="text-link" href={`/partners/${provider.id}`}>
@@ -2818,7 +2818,7 @@ function buildProviderCommandCenter(
   const accountBlocks = providers.filter((provider) => Boolean(provider.blockedAt)).length;
   const openControlItems = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
   const deviceFollowUp = providers.filter((provider) =>
-    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const supabasePending = providers.filter((provider) => !provider.user?.supabaseUserId).length;
 
@@ -2916,7 +2916,7 @@ function buildPartnerShiftHandoff(
   const pushMissing = providers.filter((provider) => !hasHealthyPush(provider));
   const payoutSetup = providers.filter(providerPayoutSetupNeedsReview);
   const accountControlFollowUp = providers.filter((provider) =>
-    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
   );
   const publicMedia = providers.filter(providerPublicMediaNeedsReview);
 
@@ -3395,7 +3395,7 @@ function buildPartnerDispatchForecast(
   const pushMissing = providers.filter((provider) => !hasHealthyPush(provider)).length;
   const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const deviceSessionFollowUp = providers.filter((provider) =>
-    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const hardBlocked = providers.filter((provider) => partnerHasHardAcceptanceBlocker(provider)).length;
   const payoutLocked = providers.filter(providerPayoutSetupNeedsReview).length;
@@ -3503,7 +3503,7 @@ function buildPartnerAcceptanceBlockerBoard(
   const accountOrSecurity = providers.filter(
     (provider) =>
       Boolean(provider.blockedAt) ||
-      ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+      ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
   );
   const locationHold = providers.filter((provider) =>
     ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
@@ -3738,7 +3738,7 @@ function partnerHasHardAcceptanceBlocker(provider: AdminProvider) {
     !hasApprovedRequiredKycDocuments(provider) ||
     !hasApprovedBankAccount(provider) ||
     providerUnsettledWalletBalance(provider) < 0 ||
-    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))
+    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider))
   );
 }
 
@@ -3783,7 +3783,7 @@ function buildPartnerSupplyLanes(providers: AdminProvider[], opsPolicy: Provider
       provider.blockedAt ||
       provider.verification?.status !== 'APPROVED' ||
       providerUnsettledWalletBalance(provider) < 0 ||
-      ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))
+      ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider))
     ) {
       lane.blocked += 1;
     }
@@ -3819,7 +3819,7 @@ function buildProviderSummary(providers: AdminProvider[], opsPolicy: ProviderOps
   const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
   const openControlItems = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
   const deviceFollowUp = providers.filter((provider) =>
-    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const readyNow = providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length;
 
@@ -3929,7 +3929,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
   ).length;
   const pushNeedsReview = providers.filter((provider) => !hasHealthyPush(provider)).length;
   const securityNeedsReview = providers.filter((provider) =>
-    ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider)),
+    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
   ).length;
   const reportNeedsReview = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
   const directReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length;
@@ -4128,7 +4128,7 @@ function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVI
   const securityState = providerSecurityStatus(provider);
   if (securityState === 'blocked') {
     issues.push({ label: 'device blocked', severity: 'high' });
-  } else if (securityState === 'suspicious') {
+  } else if (securityState === 'session-check') {
     issues.push({ label: 'session check', severity: 'high' });
   } else if (securityState === 'shared') {
     issues.push({ label: 'shared device', severity: 'high' });
@@ -4225,7 +4225,7 @@ function buildProviderFilters(params: Record<string, string | string[] | undefin
     providerStatus: readParam(params.providerStatus),
     kyc: readParam(params.kyc),
     location: readParam(params.location),
-    security: readParam(params.security),
+    security: normalizeProviderSecurityFilter(readParam(params.security)),
     readiness: readParam(params.readiness),
     review: normalizePartnerReviewFilter(readParam(params.review)),
     sort: readPartnerSort(readParam(params.sort)),
@@ -4278,7 +4278,7 @@ function buildProviderActiveFilters(filters: ProviderFilters) {
       ? {
           kind: 'security',
           value: filters.security,
-          label: `Device/session: ${filters.security}`,
+          label: `Device/session: ${providerSecurityLabel(filters.security as ProviderSecurityState)}`,
           description: providerFilterDescription('security', filters.security),
         }
       : null,
@@ -4382,6 +4382,11 @@ function normalizePartnerReviewFilter(value: string) {
   if (value === 'risk') return 'reports';
   if (value === 'backup-ready') return 'marketplace-ready';
   if (value === 'backup-blocked') return 'marketplace-blocked';
+  return value;
+}
+
+function normalizeProviderSecurityFilter(value: string) {
+  if (value === 'suspicious') return 'session-check';
   return value;
 }
 
@@ -4509,7 +4514,7 @@ function providerMatchesReviewQueue(
     return providerTaxNeedsReview(provider);
   }
   if (review === 'security') {
-    return ['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider));
+    return ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider));
   }
   if (review === 'reports') {
     return hasOpenPartnerControl(provider);
@@ -4581,7 +4586,7 @@ function providerPriority(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_
   if (provider.blockedAt) {
     return 0;
   }
-  if (['account-blocked', 'blocked', 'suspicious', 'shared'].includes(providerSecurityStatus(provider))) {
+  if (['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider))) {
     return 0;
   }
   if (providerDispatchReady(provider, opsPolicy)) {
@@ -4604,7 +4609,7 @@ function providerSecurityStatus(provider: AdminProvider): ProviderSecurityState 
     return 'blocked';
   }
   if ((provider.sessions ?? []).some((session) => session.suspicious)) {
-    return 'suspicious';
+    return 'session-check';
   }
   if (sharedDeviceIds(provider).size > 0) {
     return 'shared';
@@ -4622,7 +4627,7 @@ function sharedDeviceIds(provider: AdminProvider) {
 function providerSecurityLabel(status: ProviderSecurityState) {
   if (status === 'account-blocked') return 'Account blocked';
   if (status === 'blocked') return 'Device blocked';
-  if (status === 'suspicious') return 'Session check';
+  if (status === 'session-check') return 'Session check';
   if (status === 'shared') return 'Shared device';
   if (status === 'missing') return 'No app device';
   return 'Device clear';

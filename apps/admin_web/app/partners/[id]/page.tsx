@@ -1267,7 +1267,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         seen {formatDate(session.lastSeenAt)}
                       </p>
                       {session.suspiciousReason ? (
-                        <p className="muted">Reason: {session.suspiciousReason}</p>
+                        <p className="muted">Session note: {displaySessionCheckText(session.suspiciousReason)}</p>
                       ) : null}
                     </div>
                     <small>{formatDate(session.loggedInAt)}</small>
@@ -2054,6 +2054,18 @@ function marketplaceDisplayText(value: string) {
     .replace(/\bprovider\b/g, 'partner');
 }
 
+function displaySessionCheckText(value?: string | null) {
+  const text = value?.trim() || 'Session check';
+
+  return marketplaceDisplayText(text)
+    .replace(/\bsuspicious session\b/gi, 'session check')
+    .replace(/\bsuspicious\b/gi, 'session check')
+    .replace(/\bfraud\b/gi, 'account review')
+    .replace(/\bmisuse\b/gi, 'account review')
+    .replace(/\babuse controls\b/gi, 'account controls')
+    .replace(/\btrusted partner\b/gi, 'active partner');
+}
+
 type ProviderServicePricingRow = {
   id: string;
   name: string;
@@ -2818,7 +2830,7 @@ function buildPartnerActivityRecords(
       id: session.id,
       type: 'SESSION',
       at: session.lastSeenAt ?? session.loggedInAt ?? '',
-      title: `Partner app session ${session.suspicious ? 'needs follow-up' : 'recorded'}`,
+      title: `Partner app session ${session.suspicious ? 'check saved' : 'recorded'}`,
       detail: `IP ${session.ipAddress ?? 'missing'} / app ${session.appVersion ?? 'unknown'} / device ${maskDeviceId(
         session.deviceId,
       )}`,
@@ -4164,7 +4176,7 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
   const sessions = provider.sessions ?? [];
   const devices = provider.devices ?? [];
   const sharedDeviceMatches = provider.sharedDeviceMatches ?? [];
-  const suspiciousSessions = sessions.filter((session) => session.suspicious);
+  const sessionCheckSessions = sessions.filter((session) => session.suspicious);
   const blockedDevices = devices.filter((device) => device.blockedAt || !device.enabled);
   const mostRecentSession = sessions[0];
   const mostRecentDevice = devices[0];
@@ -4212,14 +4224,16 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
     },
     {
       title: 'Session checks',
-      status: suspiciousSessions.length ? `${suspiciousSessions.length} CHECK` : 'CLEAR',
-      detail: suspiciousSessions.length
-        ? suspiciousSessions.map((session) => session.suspiciousReason ?? 'Session check').join(' ')
+      status: sessionCheckSessions.length ? `${sessionCheckSessions.length} CHECK` : 'CLEAR',
+      detail: sessionCheckSessions.length
+        ? sessionCheckSessions
+            .map((session) => displaySessionCheckText(session.suspiciousReason ?? 'Session check'))
+            .join(' ')
         : 'No session check record is currently saved.',
-      action: suspiciousSessions.length
+      action: sessionCheckSessions.length
         ? 'Confirm identity and review recent app/device activity.'
         : 'No action.',
-      tone: suspiciousSessions.length ? 'blocked' : 'done',
+      tone: sessionCheckSessions.length ? 'blocked' : 'done',
     },
     {
       title: 'Shared device signal',
