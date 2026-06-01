@@ -92,6 +92,7 @@ Backend:
 Admin dashboard:
 
 - Operations dashboard with booking counts, matching wait, completion/cancel/no-show indicators, hourly and regional demand, active app users.
+- Admin sidebar now includes direct operator shortcuts for matching queue, customer choice, chat repair, failed notifications, KYC review, acceptance blocked, and marketplace-ready partner views.
 - Operations dashboard now includes a "Today operator order" control strip for live customer wait, partner response, customer choice and chat handoff, cash fee settlement, finance closeout, notification delivery, and operator queue sweep.
 - Booking monitor with matching stages, first-pick, marketplace participants, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, payment, finance, tax, wallet, location, alerts, and audit evidence into the deeper factual sections.
