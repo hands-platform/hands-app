@@ -2044,7 +2044,11 @@ function InfoLine({ label, value }: { label: string; value?: string | null }) {
 }
 
 function marketplaceDisplayText(value: string) {
-  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
+  return value
+    .replace(/\bbackup\b/g, 'marketplace')
+    .replace(/\bBackup\b/g, 'Marketplace')
+    .replace(/\bProvider\b/g, 'Partner')
+    .replace(/\bprovider\b/g, 'partner');
 }
 
 type ProviderServicePricingRow = {

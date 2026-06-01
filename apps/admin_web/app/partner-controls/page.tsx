@@ -69,7 +69,7 @@ export default async function PartnerControlsPage({
   const activeFilters = buildPartnerControlActiveFilters(filters);
   const providerOptions = providers.map((provider) => ({
     id: provider.id,
-    label: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+    label: partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id),
   }));
   const summary = buildPartnerControlSummary(reports, sanctions, providers, controlPolicy);
   const providerWatchlist = buildPartnerControlWatchlist(providers, controlPolicy);
@@ -965,7 +965,7 @@ function buildPartnerControlBoardItem(
 
   return {
     provider,
-    partner: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+    partner: partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id),
     status,
     walletBalance,
     reasons: fallbackReasons.slice(0, 5),
@@ -1952,7 +1952,7 @@ function providerUnsettledWalletBalance(provider: AdminProvider) {
 }
 
 function adminProviderName(provider: AdminProvider) {
-  return provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id;
+  return partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id);
 }
 
 function watchSeverityRank(severity: PartnerControlWatchItem['severity']) {
@@ -2008,7 +2008,7 @@ function sanctionSearchText(sanction: AdminProviderSanction) {
 }
 
 function providerName(provider: NonNullable<AdminProviderReport['providerProfile']>) {
-  return provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id;
+  return partnerDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id);
 }
 
 function providerNameOrId(
@@ -2019,7 +2019,15 @@ function providerNameOrId(
     | undefined,
   fallbackId: string,
 ) {
-  return provider?.displayName || provider?.user?.fullName || provider?.user?.phone || fallbackId;
+  return partnerDisplayText(provider?.displayName || provider?.user?.fullName || provider?.user?.phone || fallbackId);
+}
+
+function partnerDisplayText(value: string) {
+  return value
+    .replace(/\bbackup\b/g, 'marketplace')
+    .replace(/\bBackup\b/g, 'Marketplace')
+    .replace(/\bProvider\b/g, 'Partner')
+    .replace(/\bprovider\b/g, 'partner');
 }
 
 function reportAgeHours(report: AdminProviderReport) {

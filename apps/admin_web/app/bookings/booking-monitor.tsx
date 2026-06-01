@@ -781,7 +781,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="muted">{selectionPathLabel(booking)}</div>
                     {booking.selectedProvider ? (
                       <div className="muted">
-                        Final partner: {booking.selectedProvider.displayName ?? 'Partner'}
+                        Final partner: {partnerDisplayName(booking.selectedProvider)}
                       </div>
                     ) : (
                       <div className="muted">Final partner: waiting for customer choice</div>
@@ -790,7 +790,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                   </td>
                   <td>
                     <strong>{booking.participants?.length ?? 0} joined</strong>
-                    <div className="muted">First-pick {booking.preferredProvider?.displayName ?? 'none'}</div>
+                    <div className="muted">First-pick {partnerDisplayName(booking.preferredProvider, 'none')}</div>
                     <div className="muted">
                       {booking.preferredProvider?.user?.phone
                         ? `First-pick phone ${booking.preferredProvider.user.phone}`
@@ -807,21 +807,21 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div className="participant-list" style={{ marginTop: 8 }}>
                       {booking.preferredProvider && (
                         <span className="pill" style={{ background: '#eef6e8', borderColor: '#b9d4a8' }}>
-                          First-pick: {booking.preferredProvider.displayName ?? 'Partner'}{' '}
+                          First-pick: {partnerDisplayName(booking.preferredProvider)}{' '}
                           {preferredProviderStateLabel(booking)}
                         </span>
                       )}
                       {booking.selectedProvider &&
                         booking.selectedProvider.id !== booking.preferredProvider?.id && (
                           <span className="pill pill-success">
-                            Final: {booking.selectedProvider.displayName ?? 'Partner'}
+                            Final: {partnerDisplayName(booking.selectedProvider)}
                           </span>
                         )}
                       {marketplaceParticipants(booking)
                         .slice(0, 4)
                         .map((participant) => (
                           <span className="pill" key={participant.id}>
-                            Marketplace: {participant.providerProfile?.displayName ?? 'Partner'} (
+                            Marketplace: {partnerDisplayName(participant.providerProfile)} (
                             {participant.status})
                           </span>
                         ))}
@@ -2771,7 +2771,7 @@ function customerVisibleStateLabel(booking: AdminBooking) {
     return `Customer screen: closed as ${booking.status}`;
   }
   if (booking.selectedProvider) {
-    return `Customer screen: final partner ${booking.selectedProvider.displayName ?? 'selected'}${
+    return `Customer screen: final partner ${partnerDisplayName(booking.selectedProvider, 'selected')}${
       booking.chatRoom ? ' with chat ready' : ' but chat not ready'
     }`;
   }
@@ -3009,7 +3009,17 @@ function bookingProviderLabel(booking: AdminBooking) {
     booking.selectedProvider?.displayName ??
     booking.preferredProvider?.displayName ??
     marketplaceParticipants(booking)[0]?.providerProfile?.displayName;
-  return provider ? `Partner ${provider}` : 'Partner pending';
+  return provider ? `Partner ${partnerDisplayName({ displayName: provider })}` : 'Partner pending';
+}
+
+function partnerDisplayName(provider?: { displayName?: string | null } | null, fallback = 'Partner') {
+  return provider?.displayName
+    ? provider.displayName
+        .replace(/\bbackup\b/g, 'marketplace')
+        .replace(/\bBackup\b/g, 'Marketplace')
+        .replace(/\bProvider\b/g, 'Partner')
+        .replace(/\bprovider\b/g, 'partner')
+    : fallback;
 }
 
 function isSelectedProviderParticipant(booking: AdminBooking) {

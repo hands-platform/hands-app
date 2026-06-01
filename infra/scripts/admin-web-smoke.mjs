@@ -414,6 +414,15 @@ function assertNoLegacyVisibleLanguage(path, body) {
         .join(', ')}`,
     );
   }
+
+  if (/^\/(bookings|notifications|partner-controls|partner-risk|partners|provider-risk|providers)(?:[/?]|$)/.test(path)) {
+    const legacyProviderMatch = visibleText.match(/\bProvider\b/);
+    if (legacyProviderMatch) {
+      throw new Error(
+        `${path} contains visible legacy provider display wording: ${legacyProviderMatch[0]}`,
+      );
+    }
+  }
 }
 
 for (const page of smokePages) {

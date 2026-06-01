@@ -1206,7 +1206,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <tr id={`provider-${provider.id}`} key={provider.id}>
                 <td>
                   <Link className="text-link" href={`/partners/${provider.id}`}>
-                    {provider.displayName || provider.user?.fullName || provider.user?.phone}
+                    {providerDisplayName(provider)}
                   </Link>
                   <p className="muted">{provider.user?.phone ?? provider.id}</p>
                 </td>
@@ -2573,7 +2573,11 @@ function providerListActionPillClass(tone: ProviderListAction['tone']) {
 }
 
 function marketplaceDisplayText(value: string) {
-  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
+  return value
+    .replace(/\bbackup\b/g, 'marketplace')
+    .replace(/\bBackup\b/g, 'Marketplace')
+    .replace(/\bProvider\b/g, 'Partner')
+    .replace(/\bprovider\b/g, 'partner');
 }
 
 function providerDisplayName(provider: AdminProvider) {

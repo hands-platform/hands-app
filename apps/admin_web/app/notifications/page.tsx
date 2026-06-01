@@ -216,21 +216,22 @@ export default async function NotificationsPage({
                   <div className="muted">{relativeTime(notification.createdAt)}</div>
                 </td>
                 <td>
-                  <div>{notification.user?.fullName ?? notification.user?.phone ?? '-'}</div>
+                  <div>{notificationUserLabel(notification)}</div>
                   <div className="muted">{notification.user?.phone ?? 'No phone on file'}</div>
                   {notification.user?.providerProfile ? (
                     <div className="muted">
                       <Link className="text-link" href={`/partners/${notification.user.providerProfile.id}`}>
                         Partner{' '}
-                        {notification.user.providerProfile.displayName ??
-                          shortId(notification.user.providerProfile.id)}
+                        {notification.user.providerProfile.displayName
+                          ? marketplaceDisplayText(notification.user.providerProfile.displayName)
+                          : shortId(notification.user.providerProfile.id)}
                       </Link>{' '}
                       / {notification.user.providerProfile.status ?? 'status unknown'}
                     </div>
                   ) : null}
                 </td>
                 <td>
-                  <div>{humanizeType(notification.type)}</div>
+                  <div>{marketplaceDisplayText(humanizeType(notification.type))}</div>
                   <div className="muted">{typeMeaning(notification.type)}</div>
                 </td>
                 <td>
@@ -570,7 +571,16 @@ function humanizeType(type: string) {
 }
 
 function marketplaceDisplayText(value: string) {
-  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
+  return value
+    .replace(/\bbackup\b/g, 'marketplace')
+    .replace(/\bBackup\b/g, 'Marketplace')
+    .replace(/\bProvider\b/g, 'Partner')
+    .replace(/\bprovider\b/g, 'partner');
+}
+
+function notificationUserLabel(notification: AdminNotification) {
+  const label = notification.user?.fullName ?? notification.user?.phone ?? '-';
+  return notification.user?.providerProfile ? marketplaceDisplayText(label) : label;
 }
 
 function typeMeaning(type: string) {
