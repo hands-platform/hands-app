@@ -977,7 +977,8 @@ class ProviderScheduleCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 ProviderRequestTag(
-                    label: formatScheduleMoment(booking['scheduledStartAt'])),
+                    label:
+                        'Requested ${formatScheduleMoment(booking['scheduledStartAt'])}'),
                 ProviderRequestTag(
                     label: providerServiceDurationLabel(service)),
                 ProviderRequestTag(label: '${formatCurrency(amount)} VND'),

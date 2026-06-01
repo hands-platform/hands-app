@@ -737,7 +737,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     {pricingPolicy.status !== 'ready' && (
                       <span className={`pill ${pricingPolicy.tone}`}>{pricingPolicy.label}</span>
                     )}
-                    <div className="muted">{formatDate(booking.scheduledStartAt)}</div>
+                    <div className="muted">Requested {formatDate(booking.scheduledStartAt)}</div>
                     <div className="muted">{recencyLabel(booking, nowMs)}</div>
                     <div style={{ marginTop: 8 }}>
                       <Link className={`pill ${stagePillClass(stage.tone)}`} href={stage.href}>

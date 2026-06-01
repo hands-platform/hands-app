@@ -1645,10 +1645,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Phone" value={booking.customerProfile?.user?.phone ?? 'No phone'} />
           <InfoRow label="Address" value={addressLine} />
           <InfoRow label="Pin" value={addressPin} />
-          <InfoRow
-            label="Requested"
-            value={`${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`}
-          />
+          <InfoRow label="Request opened" value={formatDate(booking.scheduledStartAt)} />
           <InfoRow label="Expires" value={formatDate(booking.expiresAt)} />
         </div>
 
@@ -3433,7 +3430,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       type: 'SCHEDULE',
       at: booking.scheduledStartAt,
       title: 'Request timestamp',
-      detail: `${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`,
+      detail: `Request opened ${formatDate(booking.scheduledStartAt)}`,
       href: '#service',
     });
   }

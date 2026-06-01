@@ -4825,8 +4825,8 @@ class CustomerBookingHistoryCard extends StatelessWidget {
               runSpacing: 8,
               children: [
                 BookingHistoryPill(
-                    label: formatCustomerScheduleMoment(
-                        booking['scheduledStartAt'])),
+                    label:
+                        'Requested ${formatCustomerScheduleMoment(booking['scheduledStartAt'])}'),
                 BookingHistoryPill(
                     label: customerServiceOptionPriceLabel(
                   service,
