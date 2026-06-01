@@ -103,6 +103,7 @@ const pages = [
       'Last work',
       'Bookings',
       'Completed',
+      'wallet view',
       'Frequent service / area',
       'Repeated partner',
       'Total paid',
