@@ -25,6 +25,7 @@ import {
   syncSupabaseProviderRole,
   unblockProviderAccount,
 } from './actions';
+import { readSearchParam } from '../../lib/date-range';
 
 type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
 type AdminProviderPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
@@ -4375,7 +4376,7 @@ function emptyProviderMessage(activeFilters: Array<{ description: string }>) {
 }
 
 function readParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+  return readSearchParam(value);
 }
 
 function normalizePartnerReviewFilter(value: string) {

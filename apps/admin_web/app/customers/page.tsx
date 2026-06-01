@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AdminCustomer, adminGet } from '../../lib/admin-api';
 import { buildCsvDataHref } from '../../lib/csv-export';
+import { readSearchParam } from '../../lib/date-range';
 
 const ACTIVE_STATUSES = [
   'CREATED',
@@ -562,10 +563,6 @@ function buildCustomerFilters(params: Record<string, string | string[] | undefin
     minCompleted: readPositiveNumber(params.minCompleted),
     minSpend: readPositiveNumber(params.minSpend),
   };
-}
-
-function readSearchParam(value: string | string[] | undefined) {
-  return (Array.isArray(value) ? value[0] : value)?.trim() ?? '';
 }
 
 function readCustomerSort(value: string | string[] | undefined) {
