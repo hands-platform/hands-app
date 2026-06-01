@@ -13,6 +13,7 @@ const pages = [
       'Dashboard date range',
       'Daily operations snapshot',
       'Live operations radar',
+      'Evidence drilldown',
       'Customer wait lane',
       'First-pick and 10km market',
       'Customer final choice lane',

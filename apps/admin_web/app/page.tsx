@@ -571,6 +571,77 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       <section className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
+            <h2>Evidence drilldown</h2>
+            <p className="muted">
+              Fast paths for admin decisions that must be based on retained facts: chat, location, alert,
+              payment, cash settlement, refund, and audit evidence.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=attention">
+            Open evidence queue
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Chat evidence</span>
+            <strong>{liveBookingDeepDive.matchedWithoutChat + liveBookingDeepDive.quietActiveChats}</strong>
+            <small>
+              <Link className="text-link" href="/bookings?view=chat-repair">
+                Missing or quiet retained chat checks
+              </Link>
+            </small>
+          </div>
+          <div>
+            <span>No-show evidence</span>
+            <strong>{bookingOps.noShowSignal}</strong>
+            <small>
+              <Link className="text-link" href="/bookings?view=no-show">
+                Review only with booking and chat evidence
+              </Link>
+            </small>
+          </div>
+          <div>
+            <span>Alert evidence</span>
+            <strong>{failedNotifications.length}</strong>
+            <small>
+              <Link className="text-link" href="/notifications?review=failed">
+                Failed push and in-app delivery rows
+              </Link>
+            </small>
+          </div>
+          <div>
+            <span>Settlement evidence</span>
+            <strong>{cashSettlementSummary.rowCount}</strong>
+            <small>
+              <Link className="text-link" href="/cash-settlements">
+                Cash fee debt rows before final acceptance
+              </Link>
+            </small>
+          </div>
+          <div>
+            <span>Refund evidence</span>
+            <strong>{refunds.length}</strong>
+            <small>
+              <Link className="text-link" href="/refunds">
+                Refund ledger and payment release checks
+              </Link>
+            </small>
+          </div>
+          <div>
+            <span>Payout evidence</span>
+            <strong>{activePayoutBatches.length}</strong>
+            <small>
+              <Link className="text-link" href="/payouts">
+                Weekly, monthly, and admin-selected batches
+              </Link>
+            </small>
+          </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
             <h2>Dashboard date range</h2>
             <p className="muted">
               Range: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled
