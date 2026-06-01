@@ -162,6 +162,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <Link className="text-link" href={`/payments?customer=${customer.id}`}>
             Payment view
           </Link>
+          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(customer.id)}`}>
+            All customer chats
+          </Link>
         </div>
       </section>
 

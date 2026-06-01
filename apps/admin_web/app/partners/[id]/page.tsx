@@ -345,6 +345,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               Sync Supabase role
             </button>
           </form>
+          <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(provider.id)}`}>
+            All partner chats
+          </Link>
           {provider.blockedAt ? (
             <form action={unblockProviderAccount}>
               <input type="hidden" name="providerId" value={provider.id} />
