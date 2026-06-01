@@ -32,7 +32,6 @@ const bannedPatterns = [
 const ignoredTechnicalLiterals = new Set([
   'PROVIDER',
   'provider',
-  'provider account is blocked',
   'suspicious',
   'suspiciousReason',
   'QR banking provider / VietQR',
