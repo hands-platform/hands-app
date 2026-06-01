@@ -160,6 +160,7 @@ const pages = [
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
   { path: '/reviews', markers: ['Reviews And Reports', 'Review command board', 'Service recovery feedback'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
+  { path: '/notifications?review=failed', markers: ['Notifications', 'Failed sends', 'Delivery operations queue'] },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   { path: '/payouts', markers: ['Partner Payouts', 'Payout command queue'] },
   {
