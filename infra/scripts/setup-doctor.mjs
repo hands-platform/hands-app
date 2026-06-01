@@ -27,6 +27,10 @@ const steps = [
     ],
   },
   {
+    name: 'external setup copy guard',
+    command: ['infra/scripts/check-external-setup-copy.mjs'],
+  },
+  {
     name: 'supabase sql pack',
     command: ['infra/scripts/prepare-supabase-sql-pack.mjs'],
   },

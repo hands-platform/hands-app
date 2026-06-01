@@ -19,6 +19,7 @@
     "storage:smoke": "node infra/scripts/storage-smoke.mjs",
     "external:check:production": "node infra/scripts/check-external-setup.mjs --phase=production",
     "external:check:strict": "node infra/scripts/check-external-setup.mjs --strict",
+    "external:copy-check": "node infra/scripts/check-external-setup-copy.mjs",
     "external:pack": "node infra/scripts/external-registration-pack.mjs",
     "external:pack:write": "node infra/scripts/external-registration-pack.mjs --out=infra/setup/.generated/hands-external-registration-pack.md",
     "setup:doctor": "node infra/scripts/setup-doctor.mjs",
