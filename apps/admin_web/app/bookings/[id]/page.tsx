@@ -5736,7 +5736,7 @@ function bookingOperationalPolicySnapshot(
 
   const decisionTitle = customerConfirmMode
     ? 'Customer final confirmation mode'
-    : 'Auto-match preferred partner mode';
+    : 'Legacy accept mode ignored';
   const decisionStatus =
     customerConfirmMode && acceptedParticipants.length > 0 && !selected
       ? 'Customer action needed'

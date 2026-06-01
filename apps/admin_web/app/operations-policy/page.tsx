@@ -1232,7 +1232,7 @@ function buildPolicySimulation(
         className: 'timeline-done',
         tags: [
           {
-            label: customerFinalConfirm ? 'Customer final choice' : 'Auto-match after accept',
+            label: customerFinalConfirm ? 'Customer final choice' : 'Legacy value ignored',
             tone: 'pill-info',
           },
           { label: `${responseWindowMinutes} min`, tone: 'pill-success' },
@@ -1431,12 +1431,12 @@ function policyRecommendationPosture(
 
   if (setting.key === 'matching.preferred_accept_mode') {
     return {
-      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Customer-choice conflict' : 'Customer choice',
+      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Legacy value ignored' : 'Customer choice',
       detail:
         value === 'AUTO_MATCH_ON_ACCEPT'
-          ? 'This setting skips the final customer-choice step and conflicts with the current HANDS flow.'
-          : 'Customer final-choice mode adds one step but better matches the HANDS target flow.',
-      operatorAction: 'Use customer-confirm mode before scaling marketplace partner shortlist UX.',
+          ? 'The API now ignores this legacy value and keeps the request open until the customer chooses the final partner.'
+          : 'Customer final-choice mode is required for the HANDS MVP flow.',
+      operatorAction: 'Keep customer-confirm mode active before scaling marketplace partner shortlist UX.',
       alignedAction:
         'Customer final-choice posture is aligned with the intended direct + marketplace matching model.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
@@ -2337,7 +2337,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           (value) => formatSnapshotPolicyValue(settings, 'matching.preferred_accept_mode', value),
         ),
         operatorMeaning:
-          'Explains whether an accepted first-pick partner locks automatically or still waits for customer confirmation.',
+          'Confirms accepted first-pick partners wait for customer final selection; automatic final matching is disabled.',
       },
       {
         policy: 'Marketplace opening mode',
@@ -2387,7 +2387,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           : 'Marketplace visibility and join checks stay delayed until the first-pick response window passes.',
         operatorAction: customerConfirm
           ? 'Customer confirmation mode is active, so accepted partners still require customer final choice.'
-          : 'Auto-match mode is active, so accepted first-pick partners can lock faster.',
+          : 'Legacy auto-match value is ignored; reset the policy to customer final-choice mode for clean operations.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
@@ -3588,18 +3588,18 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'matching.preferred_accept_mode': {
       area: 'Customer choice',
-      title: 'Controls whether acceptance locks the booking',
+      title: 'Requires customer final partner choice',
       detail:
-        'Auto-match is faster. Customer confirmation keeps the booking open after partner accept so the customer can make the final choice.',
+        'Partner acceptance keeps the booking open after partner accept so the customer can make the final choice. Legacy auto-match values are ignored by the API.',
       saveChecks: [
         {
           label: 'Customer choice queue',
-          detail: 'Use this before switching toward customer-confirmation behavior.',
+          detail: 'Use this queue to confirm accepted partners are waiting for customer final choice.',
           href: '/bookings?view=customer-choice',
         },
         {
           label: 'Handoff repair',
-          detail: 'Check chat and service-start failures before making acceptance more automatic.',
+          detail: 'Check chat and service-start failures after the customer chooses a final partner.',
           href: '/bookings?view=handoff-repair',
         },
       ],

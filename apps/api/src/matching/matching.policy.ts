@@ -29,12 +29,9 @@ export const PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKI
 export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';
 export const WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
 export const WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
-export const PREFERRED_ACCEPT_AUTO_MATCH = 'AUTO_MATCH_ON_ACCEPT';
 export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 
-export type PreferredAcceptMode =
-  | typeof PREFERRED_ACCEPT_AUTO_MATCH
-  | typeof PREFERRED_ACCEPT_CUSTOMER_CONFIRM;
+export type PreferredAcceptMode = typeof PREFERRED_ACCEPT_CUSTOMER_CONFIRM;
 
 export type MatchingPolicy = {
   travelBufferMinutes: number;
@@ -129,21 +126,16 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_PREFERRED_ACCEPT_MODE_KEY,
     category: 'Decision',
-    label: 'When the first-pick partner accepts',
+    label: 'First-pick acceptance contract',
     description:
-      'Choose whether a first-pick partner acceptance immediately matches the booking or still asks the customer to confirm.',
+      'First-pick partner acceptance keeps the booking open until the customer confirms the final partner. Automatic matching is disabled for the MVP.',
     value: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     recommendedValue: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     options: [
       {
-        value: PREFERRED_ACCEPT_AUTO_MATCH,
-        label: 'Auto match on first-pick accept',
-        tradeoff: 'Fastest MVP flow, but the customer has less final control.',
-      },
-      {
         value: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
         label: 'Customer confirms final partner',
-        tradeoff: 'Best for long-term customer control, but needs a clearer waiting screen flow.',
+        tradeoff: 'Required HANDS MVP contract. The customer always chooses the final partner.',
       },
     ],
     enforced: true,
@@ -344,9 +336,8 @@ export function readPolicyInteger(value: unknown, fallback: number, min: number,
 }
 
 function readPreferredAcceptMode(value: unknown): PreferredAcceptMode {
-  return value === PREFERRED_ACCEPT_AUTO_MATCH
-    ? PREFERRED_ACCEPT_AUTO_MATCH
-    : PREFERRED_ACCEPT_CUSTOMER_CONFIRM;
+  void value;
+  return PREFERRED_ACCEPT_CUSTOMER_CONFIRM;
 }
 
 function toRadians(value: number) {

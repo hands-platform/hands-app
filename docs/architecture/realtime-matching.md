@@ -32,9 +32,9 @@ Enforced settings:
 - `matching.backup_open_mode`
 
 Existing open bookings keep their stored `expiresAt` timestamp so operators do not accidentally change a
-live customer countdown. `matching.preferred_accept_mode` controls whether the first-pick partner
-acceptance immediately matches the booking or keeps the booking open until the customer confirms that
-partner as the final selection.
+live customer countdown. `matching.preferred_accept_mode` is kept for snapshot compatibility, but the
+MVP contract is fixed: first-pick partner acceptance keeps the booking open until the customer confirms
+that partner as the final selection.
 
 ## BullMQ Queues
 

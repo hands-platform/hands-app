@@ -22,7 +22,6 @@ import {
   BACKUP_OPEN_IMMEDIATE,
   BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   MatchingPolicy,
-  PREFERRED_ACCEPT_AUTO_MATCH,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
   haversineMeters,
   roundTo100Meters,
@@ -698,38 +697,11 @@ export class BookingsService {
 
     if (booking.preferredProviderId === provider.id) {
       if (status === ParticipantStatus.ACCEPTED) {
-        const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
-        if (matchingPolicy.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM) {
-          const updated = await this.prisma.booking.update({
-            where: { id: bookingId },
-            data: {
-              status: BookingStatus.OPEN_MATCHING,
-              selectedProviderId: null,
-              participants: {
-                update: {
-                  where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
-                  data: { status, respondedAt: new Date() },
-                },
-              },
-            },
-            include: { participants: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
-          });
-          await this.notifications.create({
-            userId: booking.customerProfile.userId,
-            type: 'provider.accepted',
-            title: 'Partner is ready',
-            body: `${provider.displayName} accepted your request. Confirm this partner or choose another available partner.`,
-            data: { bookingId, providerProfileId: provider.id },
-          });
-          this.matchingGateway.emitProviderAccepted(bookingId, updated);
-          return updated;
-        }
-
         const updated = await this.prisma.booking.update({
           where: { id: bookingId },
           data: {
-            status: BookingStatus.MATCHED,
-            selectedProviderId: provider.id,
+            status: BookingStatus.OPEN_MATCHING,
+            selectedProviderId: null,
             participants: {
               update: {
                 where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
@@ -741,12 +713,12 @@ export class BookingsService {
         });
         await this.notifications.create({
           userId: booking.customerProfile.userId,
-          type: 'booking.accepted',
-          title: 'Partner accepted your booking',
-          body: `${provider.displayName} accepted your request.`,
-          data: { bookingId },
+          type: 'provider.accepted',
+          title: 'Partner is ready',
+          body: `${provider.displayName} accepted your request. Confirm this partner or choose another available partner.`,
+          data: { bookingId, providerProfileId: provider.id },
         });
-        this.matchingGateway.emitBookingMatched(bookingId, updated);
+        this.matchingGateway.emitProviderAccepted(bookingId, updated);
         return updated;
       }
 
@@ -970,10 +942,9 @@ export class BookingsService {
         fallback.backupProviderInvitationLimit,
       ),
       preferredAcceptMode:
-        snapshot.preferredAcceptMode === PREFERRED_ACCEPT_AUTO_MATCH ||
         snapshot.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM
           ? snapshot.preferredAcceptMode
-          : fallback.preferredAcceptMode,
+          : PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
       backupOpenMode:
         snapshot.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY ||
         snapshot.backupOpenMode === BACKUP_OPEN_IMMEDIATE

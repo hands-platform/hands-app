@@ -2741,7 +2741,7 @@ function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | nu
     snapshot.preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
       ? 'customer final'
       : snapshot.preferredAcceptMode === 'AUTO_MATCH_ON_ACCEPT'
-        ? 'auto match'
+        ? 'legacy auto ignored'
         : 'accept ?';
   return `Saved policy: ${timer} / ${radius} / ${freshness} / ${inviteLimit} / ${backupMode} / ${acceptMode}`;
 }
