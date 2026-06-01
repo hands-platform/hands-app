@@ -400,6 +400,8 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'people scoring wording', pattern: /\b(score|scoring|ranking|ranked|VIP|tip|tips|penalty|penalties)\b/i },
     { label: 'partner average feedback wording', pattern: /\bFeedback value\b/i },
     { label: 'person-rating wording', pattern: /\b(stars? or below|star \/)\b/i },
+    { label: 'separate partner activity page wording', pattern: /\bPartner Activity\b/i },
+    { label: 'operator risk scoring wording', pattern: /\b(risk score|risk rating|risk level)\b/i },
     {
       label: 'judgmental account wording',
       pattern: /\b(account misuse|fraud|abuse controls|suspicious session|trusted partner)\b/i,
