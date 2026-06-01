@@ -344,7 +344,7 @@ const projectControlSequence = [
     title: 'Backend rule consistency',
     status: 'Next',
     detail:
-      'Align admin-configurable rules with booking acceptance, first-pick response windows, marketplace participant alerts, wallet gates, fees, and tax logs.',
+      'Align admin-configurable rules with final acceptance gates, first-pick response windows, marketplace participant alerts, wallet gates, fees, and tax logs.',
   },
   {
     phase: 'Phase C',

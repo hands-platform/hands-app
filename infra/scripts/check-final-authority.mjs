@@ -102,6 +102,12 @@ function checkNoContradictoryNegativeWalletWording() {
     'before booking acceptance unlocks',
     'before accepting more bookings',
     'before accepting another booking',
+    'allowing new booking actions',
+    'block booking actions',
+    'may block booking actions',
+    'accepting new work',
+    'fully blocked, or allowed one recovery booking',
+    'Keep hard blocking',
   ];
 
   for (const file of [

@@ -27,7 +27,7 @@ type PolicySupplySensitivity = {
     radiusLabel: string;
     eligible: number;
     fresh: number;
-    hardBlocked: number;
+    finalGateHeld: number;
     operatorRead: string;
     pillClass: string;
   }>;
@@ -217,8 +217,8 @@ export default async function OperationsPolicyPage({
           <div>
             <h3>Current partner acceptance impact</h3>
             <p className="muted">
-              Applies the policy posture to the current partner snapshot so operators can see who can accept,
-              who is hard-blocked, and who only needs recovery follow-up.
+              Applies the policy posture to the current partner snapshot so operators can see who can pass
+              final gates, who needs account or identity follow-up, and who only needs recovery follow-up.
             </p>
           </div>
           <Link className="text-link" href="/partners">
@@ -261,16 +261,16 @@ export default async function OperationsPolicyPage({
           <div style={{ overflowX: 'auto' }}>
             <h3>Marketplace supply sensitivity</h3>
             <p className="muted">
-              Reference point: {supplySensitivity.referenceLabel}. Hard blockers include identity, bank,
-              cash-debt, and account controls.
+              Reference point: {supplySensitivity.referenceLabel}. Marketplace blockers include account,
+              identity, and bank readiness. Negative wallet stays visible and is shown as a final-gate hold.
             </p>
             <table className="table service-trace">
               <thead>
                 <tr>
                   <th>Radius</th>
-                  <th>Usable partners</th>
+                  <th>Visible partners</th>
                   <th>Fresh location</th>
-                  <th>Hard blocked</th>
+                  <th>Final-gate held</th>
                   <th>Operator read</th>
                 </tr>
               </thead>
@@ -282,7 +282,7 @@ export default async function OperationsPolicyPage({
                     </td>
                     <td>{row.eligible}</td>
                     <td>{row.fresh}</td>
-                    <td>{row.hardBlocked}</td>
+                    <td>{row.finalGateHeld}</td>
                     <td>{row.operatorRead}</td>
                   </tr>
                 ))}
@@ -816,8 +816,8 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Negative wallet gate"
-            recommendation="Keep hard blocking while wallet balance is negative."
-            detail="Cash services create company-fee debt. A hard gate is simpler for operations until settlement controls are mature."
+            recommendation="Keep marketplace visibility open and hold only configured final gates."
+            detail="Cash services create company-fee debt. Partners can still appear and show intent, while final customer confirmation waits for settlement."
           />
           <DecisionHint
             title="Phone OTP"
@@ -1206,7 +1206,7 @@ function buildPolicySimulation(
       {
         label: 'Marketplace policy',
         value: formatDistance(backupRadiusMeters),
-        helper: `${eligiblePartners.length} usable partner(s), ${freshEligible.length} fresh location(s).`,
+        helper: `${eligiblePartners.length} visible partner(s), ${freshEligible.length} fresh location(s).`,
       },
       {
         label: 'Candidate alert cap',
@@ -1461,13 +1461,14 @@ function policyRecommendationPosture(
 
   if (setting.key === 'wallet.negative_balance_gate') {
     return {
-      status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Hard block' : 'Recovery mode',
+      status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Final-gate hold' : 'Recovery supervision',
       detail:
         value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Cash-debt exposure is contained, but partner recovery requires manual settlement.'
-          : 'Recovery mode can help partners repay but increases operational cash-debt follow-up.',
-      operatorAction: 'Keep hard block until cash settlement collection and recovery controls are stronger.',
-      alignedAction: 'Hard block is safer for early operations with cash bookings.',
+          ? 'Cash-debt exposure is contained at final acceptance, customer selection, service-start, or payout release gates.'
+          : 'Recovery supervision keeps debt visible while operators manage configured final-gate exceptions.',
+      operatorAction:
+        'Keep marketplace visibility and join intent open; use settlement evidence before final confirmation gates.',
+      alignedAction: 'Final-gate settlement control matches the HANDS MVP authority rule.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: value === recommended ? 'pill-success' : 'pill-danger',
     };
@@ -1583,13 +1584,13 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     },
     {
       title: 'Negative wallet gate',
-      status: hardWalletBlock ? 'Hard block' : 'Recovery booking',
+      status: hardWalletBlock ? 'Final-gate hold' : 'Recovery supervision',
       detail: hardWalletBlock
         ? 'Partners with unpaid cash-service fee debt can stay visible, but final acceptance waits for settlement.'
-        : 'Partners with debt may receive one recovery booking, increasing collection follow-up.',
+        : 'Operators can supervise configured final-gate exceptions while debt collection remains visible.',
       operatorAction: hardWalletBlock
-        ? 'This protects HANDS cash-fee collection during early operations.'
-        : 'Use recovery only after settlement playbooks and recovery controls are mature.',
+        ? 'This protects HANDS cash-fee collection without removing marketplace visibility.'
+        : 'Use recovery supervision only with settlement references and audit notes.',
       className: hardWalletBlock ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: hardWalletBlock ? 'pill-success' : 'pill-danger',
       blocking: !hardWalletBlock,
@@ -1658,25 +1659,26 @@ function buildPolicySupplySensitivity(
         ageMinutes,
         distanceMeters,
         hasCoordinate: Boolean(coordinate),
-        hardBlocked: partnerHardBlocked(provider, { hardWalletBlock }),
+        marketplaceBlocked: partnerMarketplaceBlocked(provider),
+        finalGateHeld: partnerFinalGateHeld(provider, { hardWalletBlock }),
         online: provider.status === 'ONLINE_AVAILABLE',
       };
     })
     .filter((item) => item.hasCoordinate && item.distanceMeters !== null);
-  const currentUsable = candidates.filter(
+  const currentVisibleSupply = candidates.filter(
     (item) =>
       item.online &&
-      !item.hardBlocked &&
+      !item.marketplaceBlocked &&
       (item.distanceMeters ?? Infinity) <= backupRadiusMeters &&
       (item.ageMinutes ?? Infinity) <= freshnessMinutes,
   );
-  const currentHardBlocked = candidates.filter(
-    (item) => item.hardBlocked && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
+  const currentFinalGateHeld = candidates.filter(
+    (item) => item.finalGateHeld && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
   );
   const currentStaleExcluded = candidates.filter(
     (item) =>
       item.online &&
-      !item.hardBlocked &&
+      !item.marketplaceBlocked &&
       (item.distanceMeters ?? Infinity) <= backupRadiusMeters &&
       (item.ageMinutes === null || item.ageMinutes > freshnessMinutes),
   );
@@ -1694,14 +1696,14 @@ function buildPolicySupplySensitivity(
         helper: `${providers.length} total partner(s), ${candidates.length} with saved coordinates.`,
       },
       {
-        label: 'Current usable supply',
-        value: currentUsable.length.toString(),
-        helper: 'Online, not hard-blocked, inside radius, and fresh enough.',
+        label: 'Current visible supply',
+        value: currentVisibleSupply.length.toString(),
+        helper: 'Online, marketplace eligible, inside radius, and fresh enough.',
       },
       {
-        label: 'Hard blocked in radius',
-        value: currentHardBlocked.length.toString(),
-        helper: 'Identity, bank, wallet, or control gates stop acceptance even if nearby.',
+        label: 'Final-gate held in radius',
+        value: currentFinalGateHeld.length.toString(),
+        helper: 'Final customer confirmation may wait for settlement, identity, bank, or account controls.',
       },
       {
         label: 'Stale excluded',
@@ -1712,15 +1714,15 @@ function buildPolicySupplySensitivity(
     radiusRows: radiusOptions.map((radius) => {
       const insideRadius = candidates.filter((item) => (item.distanceMeters ?? Infinity) <= radius);
       const eligible = insideRadius.filter(
-        (item) => item.online && !item.hardBlocked && (item.ageMinutes ?? Infinity) <= freshnessMinutes,
+        (item) => item.online && !item.marketplaceBlocked && (item.ageMinutes ?? Infinity) <= freshnessMinutes,
       );
       const fresh = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= freshnessMinutes);
-      const hardBlocked = insideRadius.filter((item) => item.hardBlocked);
+      const finalGateHeld = insideRadius.filter((item) => item.finalGateHeld);
       return {
         radiusLabel: formatDistance(radius),
         eligible: eligible.length,
         fresh: fresh.length,
-        hardBlocked: hardBlocked.length,
+        finalGateHeld: finalGateHeld.length,
         operatorRead: radiusSensitivityRead(radius, backupRadiusMeters, eligible.length),
         pillClass:
           radius === backupRadiusMeters
@@ -1732,7 +1734,8 @@ function buildPolicySupplySensitivity(
     }),
     freshnessRows: freshnessOptions.map((freshness) => {
       const insideRadius = candidates.filter(
-        (item) => item.online && !item.hardBlocked && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
+        (item) =>
+          item.online && !item.marketplaceBlocked && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
       );
       const eligible = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= freshness);
       const staleExcluded = insideRadius.length - eligible.length;
@@ -1814,7 +1817,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       title:
         walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
           ? 'Negative wallet gates final acceptance'
-          : 'Recovery booking mode is enabled',
+          : 'Recovery supervision mode is enabled',
       detail:
         'Cash-service company fee debt is enforced before final acceptance, customer final selection, service start, and payout release.',
       verify:
@@ -2047,7 +2050,7 @@ function eligibleBackupPartnersForBooking(
     if (provider.id === preferredId || provider.status !== 'ONLINE_AVAILABLE') {
       return false;
     }
-    if (partnerHardBlocked(provider, { hardWalletBlock: policy.hardWalletBlock })) {
+    if (partnerMarketplaceBlocked(provider)) {
       return false;
     }
     const providerCoordinate = parseCoordinatePair(provider.currentLat, provider.currentLng);
@@ -2082,8 +2085,10 @@ function buildPartnerAcceptancePolicyImpact(
   policy: { backupLocationFreshnessMinutes: number; hardWalletBlock: boolean },
 ) {
   const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE'));
-  const readyPartners = providers.filter((provider) => partnerCanAcceptUnderCurrentPolicy(provider, policy));
-  const walletBlocked = providers.filter((provider) => partnerWalletBalance(provider) < 0);
+  const finalGateReadyPartners = providers.filter((provider) =>
+    partnerCanCompleteFinalGateUnderCurrentPolicy(provider, policy),
+  );
+  const walletGateHeld = providers.filter((provider) => partnerWalletBalance(provider) < 0);
   const identityBlocked = providers.filter((provider) => !partnerIdentityReady(provider));
   const bankBlocked = providers.filter((provider) => !partnerBankReady(provider));
   const locationBlocked = providers.filter(
@@ -2093,27 +2098,27 @@ function buildPartnerAcceptancePolicyImpact(
   const accountFollowUps = providers.filter((provider) => partnerAccountNeedsFollowUp(provider));
   const softRecovery = providers.filter(
     (provider) =>
-      !partnerCanAcceptUnderCurrentPolicy(provider, policy) && !partnerHardBlocked(provider, policy),
+      !partnerCanCompleteFinalGateUnderCurrentPolicy(provider, policy) &&
+      !partnerFinalGateHeld(provider, policy),
   );
 
   return [
     {
-      label: 'Can accept now',
-      value: readyPartners.length.toString(),
-      helper: `${onlinePartners.length} online partner(s), filtered by identity, bank, wallet, location, push, and control gates.`,
+      label: 'Final-gate ready',
+      value: finalGateReadyPartners.length.toString(),
+      helper: `${onlinePartners.length} online partner(s), filtered by final-gate, location, push, and control readiness.`,
     },
     {
-      label: 'Hard blocked',
-      value: providers.filter((provider) => partnerHardBlocked(provider, policy)).length.toString(),
-      helper:
-        'Account controls, identity failure, missing approved bank, or negative wallet under the current wallet policy.',
+      label: 'Account/identity held',
+      value: providers.filter((provider) => partnerMarketplaceBlocked(provider)).length.toString(),
+      helper: 'Account controls, identity failure, or missing approved bank can hold marketplace eligibility.',
     },
     {
-      label: 'Cash debt block',
-      value: walletBlocked.length.toString(),
+      label: 'Cash debt gate',
+      value: walletGateHeld.length.toString(),
       helper: policy.hardWalletBlock
         ? 'Negative wallet gates final acceptance or customer selection.'
-        : 'Negative wallet is visible but not a hard block under recovery mode.',
+        : 'Negative wallet stays visible while recovery supervision is enabled.',
     },
     {
       label: 'Identity block',
@@ -2149,23 +2154,29 @@ function buildPartnerAcceptancePolicyImpact(
   ];
 }
 
-function partnerCanAcceptUnderCurrentPolicy(
+function partnerCanCompleteFinalGateUnderCurrentPolicy(
   provider: AdminProvider,
   policy: { backupLocationFreshnessMinutes: number; hardWalletBlock: boolean },
 ) {
   return (
     provider.status === 'ONLINE_AVAILABLE' &&
-    !partnerHardBlocked(provider, policy) &&
+    !partnerFinalGateHeld(provider, policy) &&
     partnerLocationFresh(provider, policy.backupLocationFreshnessMinutes) &&
     partnerHasEnabledPush(provider)
   );
 }
 
-function partnerHardBlocked(provider: AdminProvider, policy: { hardWalletBlock: boolean }) {
+function partnerMarketplaceBlocked(provider: AdminProvider) {
   return (
     partnerAccountNeedsFollowUp(provider) ||
     !partnerIdentityReady(provider) ||
-    !partnerBankReady(provider) ||
+    !partnerBankReady(provider)
+  );
+}
+
+function partnerFinalGateHeld(provider: AdminProvider, policy: { hardWalletBlock: boolean }) {
+  return (
+    partnerMarketplaceBlocked(provider) ||
     (policy.hardWalletBlock && partnerWalletBalance(provider) < 0)
   );
 }
@@ -2772,7 +2783,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
         { label: booking.status, className: 'pill-neutral' },
       ],
       operatorAction:
-        'Recent wallet entries are negative. Confirm settlement before allowing new booking actions.',
+        'Recent wallet entries are negative. Confirm settlement before final acceptance, customer selection, service start, or payout release.',
     }));
 
   const lists: PolicyDrilldownListView[] = [
@@ -2797,7 +2808,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     {
       key: 'wallet-gate',
       title: 'Wallet gate queue',
-      helper: 'Partners with negative recent wallet ledger entries that may block booking actions.',
+      helper: 'Partners with negative recent wallet ledger entries that may hold configured final gates.',
       className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
       emptyText: 'No negative recent wallet ledger was found in the current booking sample.',
@@ -2961,7 +2972,7 @@ function freshnessSensitivityRead(
   staleExcluded: number,
 ) {
   if (eligibleCount === 0) {
-    return 'No usable partner remains under this freshness rule. Ask partners to reopen the app or loosen only with caution.';
+    return 'No visible partner remains under this freshness rule. Ask partners to reopen the app or loosen only with caution.';
   }
   if (freshness < currentFreshness) {
     return 'Stricter freshness improves distance confidence, but may hide partners who update every 10 minutes imperfectly.';
@@ -3055,15 +3066,15 @@ function buildOwnerDecisionPressure(
         participant.providerProfile.id !== booking.preferredProvider?.id,
     ),
   );
-  const currentUsableSupply = readSupplySummaryNumber(supplySensitivity, 'Current usable supply');
+  const currentVisibleSupply = readSupplySummaryNumber(supplySensitivity, 'Current visible supply');
   const staleExcluded = readSupplySummaryNumber(supplySensitivity, 'Stale excluded');
-  const hardBlockedInRadius = readSupplySummaryNumber(supplySensitivity, 'Hard blocked in radius');
+  const finalGateHeldInRadius = readSupplySummaryNumber(supplySensitivity, 'Final-gate held in radius');
   const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE')).length;
   const enabledPushPartners = providers.filter((provider) =>
     (provider.user?.pushDevices ?? []).some((device) => device.enabled),
   ).length;
   const pushGap = Math.max(onlinePartners - enabledPushPartners, 0);
-  const acceptanceBlocked = acceptanceMatrix.blockingCount + hardBlockedInRadius;
+  const finalGatePressure = acceptanceMatrix.blockingCount + finalGateHeldInRadius;
 
   const cards = [
     {
@@ -3081,15 +3092,15 @@ function buildOwnerDecisionPressure(
     },
     {
       title: 'Marketplace policy and supply',
-      status: currentUsableSupply > 0 ? 'Supply visible' : 'Supply thin',
-      detail: `${currentUsableSupply} usable partner(s) are inside the current policy sample. ${backupInterest.length} open booking(s) already show marketplace interest.`,
+      status: currentVisibleSupply > 0 ? 'Supply visible' : 'Supply thin',
+      detail: `${currentVisibleSupply} visible partner(s) are inside the current policy sample. ${backupInterest.length} open booking(s) already show marketplace interest.`,
       operatorAction:
-        currentUsableSupply > 0
+        currentVisibleSupply > 0
           ? 'Use the sensitivity table before changing the 10km radius.'
           : 'Refresh partner locations or consider city/service supply rules before launch.',
       href: '/partners?review=marketplace-ready',
-      className: currentUsableSupply > 0 ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: currentUsableSupply > 0 ? 'pill-success' : 'pill-danger',
+      className: currentVisibleSupply > 0 ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: currentVisibleSupply > 0 ? 'pill-success' : 'pill-danger',
     },
     {
       title: 'Location freshness rule',
@@ -3103,15 +3114,15 @@ function buildOwnerDecisionPressure(
       pillClass: staleExcluded ? 'pill-warn' : 'pill-success',
     },
     {
-      title: 'Wallet and hard blockers',
-      status: acceptanceBlocked ? 'Gate active' : 'Clear',
-      detail: `${acceptanceBlocked} partner blocker signal(s) affect booking acceptance or marketplace participation.`,
-      operatorAction: acceptanceBlocked
-        ? 'Keep negative-wallet and identity gates strict until finance and partner controls clear the queue.'
-        : 'No current sample pressure to relax booking acceptance gates.',
-      href: acceptanceBlocked ? '/partners?review=acceptance-blocked' : '/partner-controls',
-      className: acceptanceBlocked ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: acceptanceBlocked ? 'pill-danger' : 'pill-success',
+      title: 'Wallet and final-gate holds',
+      status: finalGatePressure ? 'Gate active' : 'Clear',
+      detail: `${finalGatePressure} partner final-gate signal(s) may require settlement, identity, bank, or account review.`,
+      operatorAction: finalGatePressure
+        ? 'Keep marketplace visibility open while finance and partner controls clear final-gate holds.'
+        : 'No current sample pressure to relax final acceptance gates.',
+      href: finalGatePressure ? '/partners?review=final-gate-held' : '/partner-controls',
+      className: finalGatePressure ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: finalGatePressure ? 'pill-danger' : 'pill-success',
     },
     {
       title: 'Partner push readiness',
@@ -3140,15 +3151,15 @@ function buildOwnerDecisionPressure(
         helper: 'Matched, on-the-way, arrived, or in-service bookings affected by operator decisions.',
       },
       {
-        label: 'Usable supply',
-        value: String(currentUsableSupply),
+        label: 'Visible supply',
+        value: String(currentVisibleSupply),
         helper: `${supplySensitivity.currentPolicyLabel} around ${supplySensitivity.referenceLabel}.`,
       },
       {
-        label: 'Acceptance blockers',
-        value: String(acceptanceBlocked),
+        label: 'Final-gate holds',
+        value: String(finalGatePressure),
         helper:
-          'Wallet, identity, bank, account-control, or radius blockers that change dispatch availability.',
+          'Wallet, identity, bank, or account-control signals that change final confirmation readiness.',
       },
     ],
     cards,
@@ -3219,25 +3230,25 @@ function operationsOwnerDecisionBacklog() {
     },
     {
       owner: 'Finance',
-      title: 'Negative wallet recovery',
+      title: 'Negative wallet final-gate policy',
       question:
-        'Should partners with cash-fee debt be fully blocked, or allowed one recovery booking under supervision?',
+        'Should cash-fee debt hold only customer final confirmation, or also service-start and payout-release gates?',
       signal:
-        'Review cash settlement speed, repeated debt partners, and customer impact before enabling recovery mode.',
+        'Review cash settlement speed, repeated debt partners, and customer impact before changing final-gate scope.',
       options: [
         {
-          label: 'Hard block',
+          label: 'Final gate only',
           tradeoff:
-            'Strongly protects company fees and tax withholding, but may reduce available supply for cash-heavy areas.',
+            'Keeps partners visible and able to show intent, while settlement is required before final customer confirmation.',
         },
         {
-          label: 'Recovery booking',
+          label: 'Final + payout gate',
           tradeoff:
-            'Can keep an eligible partner active while collecting debt, but needs tighter finance review and settlement controls.',
+            'Adds service-start or payout release review while preserving marketplace visibility and join intent.',
         },
       ],
       recommendation:
-        'Keep hard blocking until finance has a reliable settlement workflow and recovery control playbook.',
+        'Keep marketplace visibility and join intent open; apply settlement checks only at configured final gates.',
       decisionTrigger:
         'Revisit after cash-settlement median collection time is under 24 hours for two consecutive weeks.',
       href: '/cash-settlements',
@@ -3626,11 +3637,11 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Wallet controls',
       title: 'Controls unpaid cash-fee debt enforcement',
       detail:
-        'Block mode stops partners with negative cash-fee debt from accepting new work. Recovery mode permits one active booking so they can earn toward repayment.',
+        'Policy controls which final gates wait for cash-fee debt settlement. It must not remove marketplace visibility or join intent.',
       saveChecks: [
         {
           label: 'Cash debt queue',
-          detail: 'Review partners blocked by unpaid HANDS cash fees before changing acceptance gates.',
+          detail: 'Review partners held at final gates by unpaid HANDS cash fees before changing settlement gates.',
           href: '/partners?review=cash-debt',
         },
         {
