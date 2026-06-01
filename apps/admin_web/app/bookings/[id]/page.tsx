@@ -126,6 +126,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   ];
   const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
   const backupSupply = bookingBackupPartnerSupply(booking, providers, operationalPolicies);
+  const addressRadiusContract = bookingAddressRadiusContract(booking, backupSupply);
   const customerWaitPanel = bookingCustomerWaitPanel(booking, backupSupply, operationalPolicies);
   const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, backupSupply);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
@@ -1043,6 +1044,37 @@ export default async function BookingDetailPage({ params }: PageProps) {
               <h3>{decision.label}</h3>
               <p>{decision.value}</p>
               <small>{decision.helper}</small>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" id="address-radius-contract" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking address radius contract</h2>
+            <p className="muted">
+              The immutable booking address snapshot is the source of truth for 10km marketplace eligibility.
+            </p>
+          </div>
+          <span className={`pill ${addressRadiusContract.tone}`}>{addressRadiusContract.status}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {addressRadiusContract.metrics.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {addressRadiusContract.cards.map((card) => (
+            <div className={`ops-task-card ${card.className}`} key={card.title}>
+              <span className={`pill ${card.pillClass}`}>{card.status}</span>
+              <h3>{card.title}</h3>
+              <p>{card.detail}</p>
+              <small>{card.action}</small>
             </div>
           ))}
         </div>
@@ -4900,8 +4932,9 @@ function bookingBackupPartnerSupply(
     savedPolicy.backupProviderInvitationLimit ??
     readOptionalNumber(byKey.get('matching.backup_provider_invitation_limit')?.value) ??
     50;
-  const customerLat = Number(booking.lat);
-  const customerLng = Number(booking.lng);
+  const policyPin = bookingDispatchPin(booking);
+  const customerLat = policyPin.lat;
+  const customerLng = policyPin.lng;
   const hasCustomerPin = Number.isFinite(customerLat) && Number.isFinite(customerLng);
   const participantProviderIds = new Set(
     (booking.participants ?? []).map((participant) => participant.providerProfile?.id).filter(Boolean),
@@ -4968,7 +5001,7 @@ function bookingBackupPartnerSupply(
                   : `Location ${locationAgeMinutes}m old`,
             detail: blockers.length
               ? `Excluded: ${blockers.join(', ')}.`
-              : `Inside ${formatDistanceMeters(radiusMeters)} radius and location is within ${freshnessMinutes}m.`,
+              : `Inside ${formatDistanceMeters(radiusMeters)} radius from ${policyPin.source} and location is within ${freshnessMinutes}m.`,
           };
         })
         .sort((left, right) => {
@@ -5006,6 +5039,10 @@ function bookingBackupPartnerSupply(
     topCandidates: eligibleRows.slice(0, 5),
     excludedGroups,
     candidateCommand,
+    policyPin,
+    radiusMeters,
+    freshnessMinutes,
+    invitationLimit,
     eligibleCount,
     decisionStatus: hasCustomerPin ? (eligibleCount ? 'Supply available' : 'Supply low') : 'Missing pin',
     decisionTone: hasCustomerPin ? (eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
@@ -5020,6 +5057,11 @@ function bookingBackupPartnerSupply(
         : 'Review radius, partner online status, location freshness, and verification before extending the waiting window.'
       : 'Ask the customer to confirm location or edit booking coordinates before dispatching partners.',
     metrics: [
+      {
+        label: 'Radius pin',
+        value: policyPin.label,
+        helper: `${policyPin.source} is used for marketplace distance checks.`,
+      },
       {
         label: 'Eligible partners',
         value: eligibleCount.toString(),
@@ -5046,6 +5088,103 @@ function bookingBackupPartnerSupply(
         helper: 'Nearest eligible marketplace partners opened for this request before notifications are created.',
       },
     ],
+  };
+}
+
+function bookingAddressRadiusContract(
+  booking: AdminBookingDetail,
+  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>,
+) {
+  const pin = backupSupply.policyPin;
+  const snapshotLocked = Boolean(booking.addressSnapshot && pin.source === 'BookingAddressSnapshot');
+  const driftMeters = pin.legacyDriftMeters;
+  const driftLabel = driftMeters === null ? 'No legacy comparison' : distanceLabel(Math.round(driftMeters));
+  const driftOk = driftMeters === null || driftMeters <= 100;
+  const pinReady = Number.isFinite(pin.lat) && Number.isFinite(pin.lng);
+
+  return {
+    status: snapshotLocked && driftOk ? 'Snapshot locked' : pinReady ? 'Review pin' : 'Missing pin',
+    tone: snapshotLocked && driftOk ? 'pill-success' : pinReady ? 'pill-warn' : 'pill-danger',
+    metrics: [
+      {
+        label: 'Policy pin source',
+        value: pin.source,
+        helper: snapshotLocked
+          ? 'Marketplace distance is measured from the immutable booking address snapshot.'
+          : 'Legacy booking coordinates are being used because the snapshot is missing.',
+      },
+      {
+        label: 'Policy pin',
+        value: pin.label,
+        helper: bookingAddressSnapshotLabel(booking),
+      },
+      {
+        label: 'Marketplace radius',
+        value: formatDistanceMeters(backupSupply.radiusMeters),
+        helper: 'Partners outside this booking-address radius cannot join marketplace matching.',
+      },
+      {
+        label: 'Legacy coordinate drift',
+        value: driftLabel,
+        helper: driftOk ? 'Snapshot and legacy coordinates are aligned.' : 'Snapshot and legacy coordinates differ.',
+      },
+    ],
+    cards: [
+      {
+        title: 'Address snapshot',
+        status: snapshotLocked ? 'Required data ready' : 'Needs review',
+        detail: snapshotLocked
+          ? 'This booking has an immutable BookingAddressSnapshot for audit and dispatch.'
+          : 'Create or repair the address snapshot before relying on partner radius decisions.',
+        action: booking.addressSnapshot?.createdAt
+          ? `Created ${formatDate(booking.addressSnapshot.createdAt)}`
+          : 'No snapshot creation time available.',
+        className: snapshotLocked ? 'ops-task-done' : 'ops-task-blocked',
+        pillClass: snapshotLocked ? 'pill-success' : 'pill-danger',
+      },
+      {
+        title: '10km participation rule',
+        status: pinReady ? 'Enforced by pin' : 'Blocked',
+        detail: `Marketplace partners are evaluated from ${pin.source} and must be within ${formatDistanceMeters(
+          backupSupply.radiusMeters,
+        )}.`,
+        action: `${backupSupply.eligibleCount} eligible / ${backupSupply.rows.length} displayed.`,
+        className: pinReady ? 'ops-task-done' : 'ops-task-blocked',
+        pillClass: pinReady ? 'pill-success' : 'pill-danger',
+      },
+      {
+        title: 'Coordinate consistency',
+        status: driftOk ? 'Aligned' : 'Drift found',
+        detail: driftOk
+          ? 'Legacy booking coordinates do not conflict with the address snapshot.'
+          : 'Operators should verify customer address before extending the wait window.',
+        action: `Drift ${driftLabel}`,
+        className: driftOk ? 'ops-task-done' : 'ops-task-warning',
+        pillClass: driftOk ? 'pill-success' : 'pill-warn',
+      },
+    ],
+  };
+}
+
+function bookingDispatchPin(booking: AdminBookingDetail) {
+  const snapshotLat = readOptionalNumber(booking.addressSnapshot?.latitude);
+  const snapshotLng = readOptionalNumber(booking.addressSnapshot?.longitude);
+  const legacyLat = readOptionalNumber(booking.lat);
+  const legacyLng = readOptionalNumber(booking.lng);
+  const hasSnapshotPin = snapshotLat !== null && snapshotLng !== null;
+  const lat = hasSnapshotPin ? snapshotLat : legacyLat;
+  const lng = hasSnapshotPin ? snapshotLng : legacyLng;
+  const legacyDriftMeters =
+    hasSnapshotPin && legacyLat !== null && legacyLng !== null
+      ? approximateDistanceMeters(snapshotLat, snapshotLng, legacyLat, legacyLng)
+      : null;
+
+  return {
+    lat,
+    lng,
+    source: hasSnapshotPin ? 'BookingAddressSnapshot' : 'Legacy booking pin',
+    label: coordinateLabel(lat, lng),
+    legacyDriftMeters,
   };
 }
 
