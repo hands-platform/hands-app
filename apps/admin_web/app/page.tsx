@@ -1696,14 +1696,17 @@ export default async function DashboardPage() {
 
 function ExternalReadinessRow({ check }: { check: AdminExternalReadiness['checks'][number] }) {
   const href = externalSetupHref(check.category);
-  const missing = [...check.missing, ...(check.invalid ?? [])];
+  const missing = [...check.missing, ...(check.invalid ?? [])].map(externalReadinessDisplayText);
+  const configured = check.configured.map(externalReadinessDisplayText);
 
   return (
     <div className="ops-row">
       <div>
-        <strong>{check.name}</strong>
-        <p className="muted">{missing.length > 0 ? missing.join(', ') : check.detail}</p>
-        {check.configured.length > 0 && <p className="muted">Configured: {check.configured.join(', ')}</p>}
+        <strong>{externalReadinessDisplayText(check.name)}</strong>
+        <p className="muted">
+          {missing.length > 0 ? missing.join(', ') : externalReadinessDisplayText(check.detail)}
+        </p>
+        {configured.length > 0 && <p className="muted">Configured: {configured.join(', ')}</p>}
       </div>
       <div className="actions">
         <span className={`pill ${check.status === 'READY' ? 'pill-success' : 'pill-warn'}`}>
@@ -1715,6 +1718,17 @@ function ExternalReadinessRow({ check }: { check: AdminExternalReadiness['checks
       </div>
     </div>
   );
+}
+
+function externalReadinessDisplayText(value: string) {
+  return value
+    .replace(/\bCustomer and provider\b/g, 'Customer and partner')
+    .replace(/\bcustomer and provider\b/g, 'customer and partner')
+    .replace(/\bprovider Android\b/g, 'partner Android')
+    .replace(/\bProvider Android\b/g, 'Partner Android')
+    .replace(/\bOS push provider\b/g, 'OS push service')
+    .replace(/\bSMS provider\b/g, 'SMS service')
+    .replace(/\bprovider credentials\b/g, 'SMS backend credentials');
 }
 
 function externalSetupHref(category: string) {

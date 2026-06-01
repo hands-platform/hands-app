@@ -821,8 +821,8 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Phone OTP"
-            recommendation="Keep production SMS deferred until provider selection is complete."
-            detail="Use internal/demo auth for local development, then turn on phone auth once Twilio beta or Vietnam SMS provider credentials and sender rules are ready."
+            recommendation="Keep production SMS deferred until the SMS service selection is complete."
+            detail="Use internal/demo auth for local development, then turn on phone auth once Twilio beta or Vietnam SMS backend credentials and sender rules are ready."
           />
           <DecisionHint
             title="Cancellation after match"

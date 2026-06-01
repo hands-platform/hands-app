@@ -75,10 +75,10 @@ const setupOrder = [
   },
   {
     id: 'supabase-auth',
-    title: 'Supabase Phone Auth with SMS provider',
+    title: 'Supabase Phone Auth with SMS service',
     phase: 'Deferred OTP migration',
     operatorAction:
-      'Keep AUTH_BACKEND=nest and SMS_PROVIDER=dev until a real SMS provider and Supabase Phone Auth OTP are ready.',
+      'Keep AUTH_BACKEND=nest and SMS_PROVIDER=dev until a real SMS service and Supabase Phone Auth OTP are ready.',
     exitCriteria: 'SMS OTP delivery works and Supabase access tokens exchange into HANDS API tokens.',
     purpose:
       'Required before replacing local Nest/dev OTP with Supabase Phone Auth in customer and partner apps.',
@@ -751,22 +751,35 @@ function SummaryCard({ label, value, helper }: { label: string; value: number; h
 }
 
 function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][number] }) {
+  const configured = check.configured.map(externalReadinessDisplayText);
+  const missing = check.missing.map(externalReadinessDisplayText);
+  const invalid = (check.invalid ?? []).map(externalReadinessDisplayText);
+
   return (
     <div className="ops-row">
       <div>
-        <strong>{check.name}</strong>
-        <p className="muted">{check.detail}</p>
-        {check.configured.length > 0 && <p className="muted">Configured: {check.configured.join(', ')}</p>}
-        {check.missing.length > 0 && <p className="muted">Missing: {check.missing.join(', ')}</p>}
-        {(check.invalid ?? []).length > 0 && (
-          <p className="muted">Invalid: {(check.invalid ?? []).join(', ')}</p>
-        )}
+        <strong>{externalReadinessDisplayText(check.name)}</strong>
+        <p className="muted">{externalReadinessDisplayText(check.detail)}</p>
+        {configured.length > 0 && <p className="muted">Configured: {configured.join(', ')}</p>}
+        {missing.length > 0 && <p className="muted">Missing: {missing.join(', ')}</p>}
+        {invalid.length > 0 && <p className="muted">Invalid: {invalid.join(', ')}</p>}
       </div>
       <span className={`pill ${check.status === 'READY' ? 'pill-success' : 'pill-warn'}`}>
         {check.status}
       </span>
     </div>
   );
+}
+
+function externalReadinessDisplayText(value: string) {
+  return value
+    .replace(/\bCustomer and provider\b/g, 'Customer and partner')
+    .replace(/\bcustomer and provider\b/g, 'customer and partner')
+    .replace(/\bprovider Android\b/g, 'partner Android')
+    .replace(/\bProvider Android\b/g, 'Partner Android')
+    .replace(/\bOS push provider\b/g, 'OS push service')
+    .replace(/\bSMS provider\b/g, 'SMS service')
+    .replace(/\bprovider credentials\b/g, 'SMS backend credentials');
 }
 
 function buildSummary(readiness: AdminExternalReadiness, readinessUnavailable = false) {
