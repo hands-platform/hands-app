@@ -65,7 +65,7 @@ class _ProviderShellState extends ConsumerState<ProviderShell> {
           NavigationDestination(
               icon: Icon(Icons.radar_outlined), label: 'Requests'),
           NavigationDestination(
-              icon: Icon(Icons.calendar_month_outlined), label: 'Schedule'),
+              icon: Icon(Icons.work_history_outlined), label: 'Jobs'),
           NavigationDestination(
               icon: Icon(Icons.payments_outlined), label: 'Earnings'),
           NavigationDestination(
@@ -823,7 +823,7 @@ class _ProviderScheduleScreenState
       }
       setState(() {
         bookings = loaded;
-        statusMessage = 'Schedule refreshed with ${loaded.length} booking(s).';
+        statusMessage = 'Jobs refreshed with ${loaded.length} booking(s).';
       });
     } catch (exception) {
       if (mounted) {
@@ -851,7 +851,7 @@ class _ProviderScheduleScreenState
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('Schedule', style: Theme.of(context).textTheme.headlineMedium),
+          Text('Jobs', style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
             'Today, active service states, and closed booking records.',
@@ -861,9 +861,9 @@ class _ProviderScheduleScreenState
           FilledButton.icon(
             onPressed:
                 loading ? null : (auth == null ? signInAndLoad : loadSchedule),
-            icon: const Icon(Icons.calendar_month_outlined),
+            icon: const Icon(Icons.work_history_outlined),
             label:
-                Text(auth == null ? 'Demo partner login' : 'Refresh schedule'),
+                Text(auth == null ? 'Demo partner login' : 'Refresh jobs'),
           ),
           if (loading) ...[
             const SizedBox(height: 12),
@@ -885,7 +885,7 @@ class _ProviderScheduleScreenState
           const SizedBox(height: 16),
           if (auth == null)
             const InfoCard(
-                text: 'Login first to load your partner booking schedule.')
+                text: 'Login first to load your partner job queue.')
           else if (items.isEmpty)
             const InfoCard(
                 text: 'No assigned, joined, or completed bookings yet.')
@@ -1706,7 +1706,7 @@ class OpenBookingCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text('Scheduled: $scheduledLabel'),
+            Text('Requested: $scheduledLabel'),
             if (customerAddress != null) ...[
               const SizedBox(height: 4),
               Text(

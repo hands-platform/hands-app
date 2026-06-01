@@ -36,6 +36,13 @@ const requiredCoverage = [
     ],
   },
   {
+    area: 'on-demand booking only',
+    markers: [
+      'Customer-supplied scheduledStartAt should not create scheduled booking',
+      'ignoredFutureScheduledStartAt',
+    ],
+  },
+  {
     area: 'customer final partner selection',
     markers: [
       '/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider',

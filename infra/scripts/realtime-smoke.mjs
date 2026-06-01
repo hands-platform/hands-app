@@ -96,6 +96,7 @@ const adminAuth = await postJson('/auth/verify-otp', null, {
 });
 
 await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/approve`, adminAuth.accessToken);
+await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/unblock`, adminAuth.accessToken);
 const onlineProvider = await postJson('/provider/online', providerAuth.accessToken);
 if (onlineProvider.status === 'OFFLINE') {
   throw new Error(`Provider failed to go online before realtime smoke: ${JSON.stringify(onlineProvider)}`);

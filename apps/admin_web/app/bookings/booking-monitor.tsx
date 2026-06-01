@@ -2950,7 +2950,7 @@ function readOptionalString(value: unknown) {
 
 function formatDate(value?: string | null) {
   if (!value) {
-    return 'No schedule';
+    return 'No request time';
   }
   return dateTimeFormatter.format(new Date(value));
 }

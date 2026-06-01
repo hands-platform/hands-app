@@ -3580,7 +3580,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
           href: '/app-sessions?role=PROVIDER&state=live',
         },
         {
-          label: 'Schedule pressure',
+          label: 'Capacity pressure',
           detail: 'Look for stacked bookings that may create late arrivals if the buffer is too low.',
           href: '/bookings?view=matching',
         },

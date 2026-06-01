@@ -1614,7 +1614,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Address" value={addressLine} />
           <InfoRow label="Pin" value={addressPin} />
           <InfoRow
-            label="Scheduled"
+            label="Requested"
             value={`${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`}
           />
           <InfoRow label="Expires" value={formatDate(booking.expiresAt)} />
@@ -2386,7 +2386,7 @@ function bookingHandoffChecklist(
       id: 'booking-request',
       label: 'Request',
       title: bookingServiceOptionLabel(booking),
-      detail: `${booking.status} / scheduled ${formatDate(booking.scheduledStartAt)} / ${bookingAddressSnapshotLabel(booking)}`,
+      detail: `${booking.status} / requested ${formatDate(booking.scheduledStartAt)} / ${bookingAddressSnapshotLabel(booking)}`,
       status: 'Booking facts',
       href: '#customer',
     },
@@ -3403,7 +3403,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       id: `${booking.id}-scheduled`,
       type: 'SCHEDULE',
       at: booking.scheduledStartAt,
-      title: 'Scheduled service time',
+      title: 'Request timestamp',
       detail: `${formatDate(booking.scheduledStartAt)} - ${formatDate(booking.scheduledEndAt)}`,
       href: '#service',
     });

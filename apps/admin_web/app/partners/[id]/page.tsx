@@ -700,7 +700,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     {bookingServiceLabel(record.booking)} / {record.booking.status ?? 'UNKNOWN'}
                   </strong>
                   <p className="muted">
-                    Customer {partnerBookingCustomer(record.booking)} / scheduled{' '}
+                    Customer {partnerBookingCustomer(record.booking)} / requested{' '}
                     {formatDate(record.booking.scheduledStartAt)}
                   </p>
                   <p className="muted">

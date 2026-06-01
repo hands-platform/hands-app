@@ -1317,15 +1317,27 @@ await expectRequestFailure(
   400,
 );
 
+const ignoredFutureScheduledStartAt = new Date(Date.now() + 60 * 60_000).toISOString();
 const booking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
-  scheduledStartAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+  scheduledStartAt: ignoredFutureScheduledStartAt,
   address: { line1: 'District 1, Ho Chi Minh City' },
   lat: 10.7769,
   lng: 106.7009,
   paymentMethod: 'MOMO',
 });
 const bookingDetail = await getJson(`/customer/bookings/${booking.id}`, customerAuth.accessToken);
+if (
+  bookingDetail.scheduledStartAt === ignoredFutureScheduledStartAt ||
+  Date.parse(bookingDetail.scheduledStartAt) > Date.now() + 5 * 60_000
+) {
+  throw new Error(
+    `Customer-supplied scheduledStartAt should not create scheduled booking: ${JSON.stringify({
+      input: ignoredFutureScheduledStartAt,
+      persisted: bookingDetail.scheduledStartAt,
+    })}`,
+  );
+}
 assertBookingPricing('Open matching base-price', bookingDetail, {
   customerPrice: service.basePrice,
   paymentAmount: service.basePrice,

@@ -1273,7 +1273,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div className="risk-watch-header">
             <div>
               <h2>Hourly booking demand</h2>
-              <p className="muted">Reservations grouped by scheduled hour in Vietnam time.</p>
+              <p className="muted">Reservations grouped by request hour in Vietnam time.</p>
             </div>
             <span className="pill pill-info">Asia/Bangkok</span>
           </div>
@@ -2521,7 +2521,7 @@ function buildDailyOperationsSnapshot(input: {
     {
       label: 'Today bookings',
       value: todayBookings.length.toString(),
-      helper: 'Scheduled or created today in Vietnam time',
+      helper: 'Requested or created today in Vietnam time',
       href: '/bookings?date=today',
       tone: todayBookings.length ? 'info' : 'ok',
     },
@@ -3508,8 +3508,8 @@ function isNoShowSignal(booking: AdminBooking) {
   if (booking.status !== 'MATCHED' || !booking.scheduledStartAt) {
     return false;
   }
-  const scheduledAt = Date.parse(booking.scheduledStartAt);
-  return Number.isFinite(scheduledAt) && scheduledAt + 30 * 60_000 < Date.now() && !booking.chatRoom;
+  const requestedAt = Date.parse(booking.scheduledStartAt);
+  return Number.isFinite(requestedAt) && requestedAt + 30 * 60_000 < Date.now() && !booking.chatRoom;
 }
 
 function bookingRegionLabel(booking: AdminBooking) {
