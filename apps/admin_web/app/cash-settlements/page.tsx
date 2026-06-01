@@ -463,7 +463,9 @@ function isOpenCashDebt(earning: AdminEarning) {
 }
 
 function providerDisplayName(earning: AdminEarning) {
-  return earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Unknown partner';
+  return partnerDisplayText(
+    earning.providerProfile?.displayName ?? earning.providerProfile?.user?.fullName ?? 'Unknown partner',
+  );
 }
 
 function bookingServiceLabel(earning: AdminEarning) {
@@ -480,6 +482,10 @@ function cashSettlementReference(earning: AdminEarning) {
 
 function providerSettlementReference(providerProfileId: string) {
   return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
+}
+
+function partnerDisplayText(value: string) {
+  return value.replace(/\bProvider\b/g, 'Partner').replace(/\bprovider\b/g, 'partner');
 }
 
 function formatMoney(amount: number, currency: string) {

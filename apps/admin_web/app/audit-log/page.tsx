@@ -483,7 +483,7 @@ function metadataPreview(metadata: unknown) {
     return 'No metadata';
   }
   try {
-    return JSON.stringify(metadata, null, 2);
+    return operationalDisplayText(JSON.stringify(metadata, null, 2));
   } catch {
     return 'Metadata could not be rendered';
   }
@@ -615,7 +615,11 @@ function policyAuditKeyLabel(key: string) {
 }
 
 function operationalDisplayText(value: string) {
-  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
+  return value
+    .replace(/\bbackup\b/g, 'marketplace')
+    .replace(/\bBackup\b/g, 'Marketplace')
+    .replace(/\bProvider\b/g, 'Partner')
+    .replace(/\bprovider\b/g, 'partner');
 }
 
 function compactAuditValue(value: unknown) {

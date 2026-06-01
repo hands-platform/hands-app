@@ -276,7 +276,7 @@ const externalRegistrationPlan = [
   {
     id: 'sms-phone-provider',
     groupId: 'supabase-auth',
-    title: 'Phone OTP provider',
+    title: 'Phone OTP service',
     provider: 'Dev OTP / Twilio beta / Viettel or FPT production',
     owner: 'administration@hands.vn',
     status: 'Deferred',
@@ -288,7 +288,7 @@ const externalRegistrationPlan = [
   {
     id: 'onesignal',
     groupId: 'notifications',
-    title: 'Push notification provider',
+    title: 'Push notification service',
     provider: 'OneSignal',
     owner: 'administration@hands.vn',
     status: 'Deferred',

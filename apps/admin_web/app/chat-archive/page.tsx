@@ -354,7 +354,9 @@ function buildChatRoomRow(booking: AdminBookingDetail) {
     booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
   const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
   const partner = booking.selectedProvider ?? booking.preferredProvider;
-  const partnerName = partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No partner';
+  const partnerName = partnerDisplayText(
+    partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No partner',
+  );
   const partnerPhone = partner?.user?.phone ?? 'No phone';
   const serviceLabel = bookingServiceLabel(booking);
   const roomId = booking.chatRoom?.id ?? `booking-${booking.id}`;
@@ -424,7 +426,11 @@ function senderRole(message: AdminChatMessage) {
 }
 
 function senderLabel(message: AdminChatMessage) {
-  return message.sender?.fullName ?? message.sender?.phone ?? senderRole(message);
+  return partnerDisplayText(message.sender?.fullName ?? message.sender?.phone ?? senderRole(message));
+}
+
+function partnerDisplayText(value: string) {
+  return value.replace(/\bProvider\b/g, 'Partner').replace(/\bprovider\b/g, 'partner');
 }
 
 function bookingServiceLabel(booking: AdminBookingDetail) {

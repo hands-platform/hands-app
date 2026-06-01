@@ -3668,9 +3668,9 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'notification.partner_alert_channel': {
       area: 'Alert routing',
-      title: 'Controls partner booking alert delivery provider',
+      title: 'Controls partner booking alert delivery route',
       detail:
-        'In-app mode records inbox notifications only. OneSignal mode routes partner booking alerts through OS push delivery and logs provider results.',
+        'In-app mode records inbox notifications only. OneSignal mode routes partner booking alerts through OS push delivery and logs delivery results.',
       saveChecks: [
         {
           label: 'Delivery operations queue',

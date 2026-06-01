@@ -120,7 +120,7 @@ export default async function NotificationsPage({
             <div>
               <h3>Delivery operations queue</h3>
               <p className="muted">
-                Fix disabled tokens and push-provider setup before retrying, so failed alerts do not loop.
+                Fix disabled tokens and push delivery setup before retrying, so failed alerts do not loop.
               </p>
             </div>
             <span className={`pill ${opsQueue.length ? 'pill-warn' : 'pill-success'}`}>

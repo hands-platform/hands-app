@@ -634,11 +634,11 @@ export default async function PartnerControlsPage({
             {visibleReports.map((report) => (
               <tr key={report.id}>
                 <td>
-                  <strong>{report.summary}</strong>
+                  <strong>{partnerDisplayText(report.summary)}</strong>
                   <p className="muted">
                     {report.category} / {report.source} / {formatDate(report.createdAt)}
                   </p>
-                  {report.details ? <p className="muted">{report.details}</p> : null}
+                  {report.details ? <p className="muted">{partnerDisplayText(report.details)}</p> : null}
                   {report.bookingId ? (
                     <Link className="text-link" href={`/bookings/${report.bookingId}`}>
                       Booking {shortId(report.bookingId)}
@@ -660,7 +660,9 @@ export default async function PartnerControlsPage({
                   <span className={`pill ${statusPill(report.status)}`} style={{ marginLeft: 6 }}>
                     {report.status}
                   </span>
-                  {report.resolutionNote ? <p className="muted">{report.resolutionNote}</p> : null}
+                  {report.resolutionNote ? (
+                    <p className="muted">{partnerDisplayText(report.resolutionNote)}</p>
+                  ) : null}
                 </td>
                 <td>
                   <form className="actions" action={createProviderSanction}>
@@ -746,7 +748,7 @@ export default async function PartnerControlsPage({
                   <p>
                     <strong>{sanction.type}</strong>
                   </p>
-                  <p className="muted">{sanction.reason}</p>
+                  <p className="muted">{partnerDisplayText(sanction.reason)}</p>
                 </td>
                 <td>
                   {sanction.providerProfile ? (
@@ -765,7 +767,7 @@ export default async function PartnerControlsPage({
                       <p className="muted">
                         {sanction.report.severity} / {sanction.report.status}
                       </p>
-                      <p className="muted">{sanction.report.summary}</p>
+                      <p className="muted">{partnerDisplayText(sanction.report.summary)}</p>
                     </>
                   ) : (
                     <span className="muted">Manual account control</span>
@@ -1553,7 +1555,7 @@ function buildPartnerControlNextActions(input: {
       id: `report-${report.id}`,
       priority: severityPriority(report.severity) + (ageHours >= slaHours ? 30 : 0),
       status: ageHours >= slaHours ? 'OVERDUE' : report.severity,
-      title: report.summary,
+      title: partnerDisplayText(report.summary),
       detail: `${providerNameOrId(report.providerProfile, report.providerProfileId)} / ${report.category} / ${report.status} / ${ageLabel(ageHours)} old`,
       operatorAction:
         ageHours >= slaHours
@@ -1592,7 +1594,7 @@ function buildPartnerControlNextActions(input: {
       priority: sanction.type === 'ACCOUNT_BLOCK' ? 90 : sanction.type === 'PAYOUT_HOLD' ? 82 : 60,
       status: sanction.type,
       title: `${providerNameOrId(sanction.providerProfile, sanction.providerProfileId)} account control active`,
-      detail: sanction.reason,
+      detail: partnerDisplayText(sanction.reason),
       operatorAction:
         sanction.type === 'PAYOUT_HOLD'
           ? 'Resolve payout evidence before creating or paying payout batches.'

@@ -774,7 +774,7 @@ function buildEarningsMoneyFlowChecks(
     },
     {
       title: 'Cash job lock',
-      status: `${cashDebtQueue.length} PROVIDER(S)`,
+      status: `${cashDebtQueue.length} PARTNER(S)`,
       detail: cashDebtQueue.length
         ? 'Negative wallet partners must settle company fee before receiving more bookings.'
         : 'No cash fee debt currently blocks partner work.',
