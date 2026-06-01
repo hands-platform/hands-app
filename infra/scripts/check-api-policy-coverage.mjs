@@ -13,13 +13,18 @@ const requiredCoverage = [
       'Admin service matrix is missing the base payout rule',
       'Atomic service duration set was not created correctly',
       'Admin duplicate service duration set is rejected atomically',
+      'Admin service price step below HANDS VND unit is rejected',
+      'Admin service base price outside configured step is rejected',
       'Admin payout rule outside service price step is rejected',
+      'Admin payout above customer price is rejected',
     ],
   },
   {
     area: 'booking payout rule guard',
     markers: [
       'Booking without a service payout rule is rejected',
+      'Provider price below admin minimum is rejected',
+      'Provider price outside the admin price step is rejected',
       'Provider cannot activate a service price without an exact admin payout rule',
     ],
   },
