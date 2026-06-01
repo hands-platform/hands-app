@@ -376,7 +376,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       if (mounted) {
         setState(() {
           statusMessage =
-              'Wallet status could not be refreshed locally. The server will verify settlement before accepting.';
+              'Wallet status could not be refreshed locally. The server will verify settlement before finalizing.';
         });
       }
     }
@@ -1283,7 +1283,7 @@ class ProviderWalletGateCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Checking wallet settlement before accepting requests.',
+                  'Checking wallet settlement before final confirmation gates.',
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
@@ -1343,7 +1343,9 @@ class ProviderWalletGateCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              walletBlocked ? reason : 'You can accept new booking requests.',
+              walletBlocked
+                  ? reason
+                  : 'You can receive and finalize eligible booking requests.',
             ),
             if (walletBlocked) ...[
               const SizedBox(height: 8),
@@ -1990,8 +1992,8 @@ class EarningsScreen extends ConsumerWidget {
                                     Text(
                                       walletBlocked
                                           ? (walletBlockReason ??
-                                              'Unsettled cash service fees must be paid before accepting new bookings.')
-                                          : 'You can accept new booking requests.',
+                                              'Unsettled cash service fees must be paid before final confirmation.')
+                                          : 'You can receive and finalize eligible booking requests.',
                                     ),
                                     if (walletBlocked) ...[
                                       const SizedBox(height: 10),
@@ -4961,7 +4963,7 @@ ProviderRequestGuidance providerRequestGuidance({
       roleLabel: roleLabel,
       decisionLabel: 'Settlement required',
       nextAction:
-          'Settle your negative HANDS wallet before accepting this booking.',
+          'Settle your negative HANDS wallet before finalizing this booking.',
       contextMessage:
           'This booking is visible, but your wallet must be settled before final acceptance.',
       detailMessage: providerWalletBlockFallbackReasonClean,
@@ -5492,7 +5494,7 @@ ProviderActionBlockCopy? providerActionBlockCopy(String value) {
     return const ProviderActionBlockCopy(
       title: 'KYC approval required',
       detail:
-          'Your identity verification must be approved before you can accept booking requests.',
+          'Your identity verification must be approved before receiving paid work.',
       nextStep:
           'Open Profile, submit CCCD and selfie verification, then wait for HANDS operations approval.',
       icon: Icons.badge_outlined,
@@ -5514,7 +5516,7 @@ ProviderActionBlockCopy? providerActionBlockCopy(String value) {
     return const ProviderActionBlockCopy(
       title: 'Bank account approval required',
       detail:
-          'Your payout bank account must be approved before you can accept booking requests.',
+          'Your payout bank account must be approved before paid work starts.',
       nextStep:
           'Add or correct your bank account in Profile. HANDS must approve it before work starts.',
       icon: Icons.account_balance_outlined,
@@ -5534,7 +5536,7 @@ ProviderActionBlockCopy? providerActionBlockCopy(String value) {
     return const ProviderActionBlockCopy(
       title: 'Go online first',
       detail:
-          'You must be online and sharing your current location before accepting requests.',
+          'You must be online and sharing your current location before receiving requests.',
       nextStep:
           'Tap Go online, allow location permission, then refresh the request list.',
       icon: Icons.power_settings_new,

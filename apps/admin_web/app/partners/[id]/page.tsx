@@ -383,7 +383,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner operator command queue</h2>
             <p className="muted">
-              Same-shift partner operations queue for onboarding, booking acceptance, payout, location, app
+              Same-shift partner operations queue for onboarding, final booking gates, payout, location, app
               reachability, and service setup. This is factual handling for operators.
             </p>
           </div>
@@ -463,7 +463,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </label>
           <textarea
             name="note"
-            placeholder="Example: Partner confirmed they will refresh location before accepting new requests."
+            placeholder="Example: Partner confirmed they will refresh location before receiving new requests."
           />
           <button type="submit">Save partner operation note</button>
         </form>
@@ -839,9 +839,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <div className={`card ${cardClass(bookingAcceptance.tone)}`} style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Booking acceptance decision</h2>
+            <h2>Final booking gate decision</h2>
             <p className="muted">
-              Operator-facing decision for whether this partner can accept a customer booking right now.
+              Operator-facing decision for whether this partner can pass final customer selection and service-start gates right now.
             </p>
           </div>
           <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
@@ -849,7 +849,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <div className="service-trace-summary" style={{ marginTop: 12 }}>
           <div>
             <span>Decision</span>
-            <strong>{bookingAcceptance.canAccept ? 'Can accept' : 'Blocked'}</strong>
+            <strong>{bookingAcceptance.canAccept ? 'Gate clear' : 'Held'}</strong>
             <small>{bookingAcceptance.primaryReason}</small>
           </div>
           <div>
@@ -906,9 +906,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <div className="card" id="payout" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner acceptance unblock playbook</h2>
+            <h2>Partner final-gate unblock playbook</h2>
             <p className="muted">
-              Operator order for restoring this partner's booking acceptance. Finance and account-control
+              Operator order for restoring this partner's final booking gates. Finance and account-control
               blockers stay first; tax stays deferred until first earning and then blocks payout, not initial
               dispatch.
             </p>
@@ -2346,7 +2346,7 @@ function PartnerAcceptanceRepairCommandPanel({
     <div className={`card ${cardClass(command.tone)}`} style={{ marginBottom: 16 }}>
       <div className="risk-watch-header">
         <div>
-          <h2>Booking acceptance repair command</h2>
+          <h2>Final-gate repair command</h2>
           <p className="muted">
             Exact operator diagnosis for final acceptance, customer selection, marketplace visibility, and
             participation.
@@ -2577,7 +2577,7 @@ function buildPartnerOperatorCommandQueue({
     add({
       id: 'acceptance-gate',
       label: 'ACCEPT',
-      title: 'Booking acceptance is on hold',
+      title: 'Final booking gate is on hold',
       detail: bookingAcceptance.primaryReason,
       owner: 'Dispatch',
       tone: 'blocked',
@@ -2618,14 +2618,14 @@ function buildPartnerOperatorCommandQueue({
     tone: queueTone,
     metrics: [
       {
-        label: 'Booking acceptance',
+        label: 'Final gates',
         value: bookingAcceptance.canAccept ? 'Ready' : 'Hold',
         helper: bookingAcceptance.primaryReason,
       },
       {
         label: 'Cash fee debt',
         value: formatCurrency(cashDebt),
-        helper: cashDebt > 0 ? 'Blocks future acceptance.' : 'No cash fee debt.',
+        helper: cashDebt > 0 ? 'Holds final gates until settled.' : 'No cash fee debt.',
       },
       {
         label: 'First revenue',
@@ -3570,7 +3570,7 @@ function buildProviderBookingAcceptance(
   ];
 
   const blockers = gates.filter((gate) => !gate.ok);
-  const primaryReason = blockers[0]?.detail ?? 'All booking acceptance gates are clear.';
+  const primaryReason = blockers[0]?.detail ?? 'All final booking gates are clear.';
 
   return {
     canAccept: blockers.length === 0,
@@ -3612,7 +3612,7 @@ function buildPartnerAcceptanceRepairCommand(
     steps.push({
       owner: 'Ops',
       blocker: 'No active blocker',
-      reason: 'All booking acceptance gates are currently clear for this partner.',
+      reason: 'All final booking gates are currently clear for this partner.',
       operatorAction: 'Keep monitoring customer reviews, response speed, and location freshness.',
       href: `/partners/${provider.id}`,
       actionLabel: 'Open profile',
@@ -3727,16 +3727,16 @@ function partnerAppBlockMessage(
   dispatchPolicy: PartnerDispatchPolicy,
 ) {
   if (bookingAcceptance.canAccept) {
-    return 'Partner can accept booking requests.';
+    return 'Partner can receive and finalize booking requests.';
   }
   if (bookingAcceptance.cashDebt > 0) {
     return 'Final acceptance or customer selection waits until unpaid HANDS commission is settled.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
-    return 'Account requires admin review before accepting bookings.';
+    return 'Account requires admin review before receiving work.';
   }
   if (provider.verification?.status !== 'APPROVED' || provider.kyc?.status !== 'APPROVED') {
-    return 'Identity verification must be approved before accepting bookings.';
+    return 'Identity verification must be approved before receiving paid work.';
   }
   if (!hasApprovedBankAccount(provider)) {
     return 'Bank account must be approved before receiving paid bookings.';
@@ -3750,7 +3750,7 @@ function partnerAppBlockMessage(
   if (payoutOps.hold) {
     return 'Payout is held by admin review; booking may require operator confirmation.';
   }
-  return 'Partner is temporarily unavailable for booking acceptance.';
+  return 'Partner is temporarily unavailable for final booking flow.';
 }
 
 function buildPartnerAcceptanceUnblockPlaybook(
@@ -3813,7 +3813,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
       bookingImpact:
         identityGate?.ok && bankGate?.ok
           ? 'Partner meets the Level 2 active-work gate.'
-          : 'Blocks paid booking acceptance until identity evidence and bank readiness are approved.',
+          : 'Blocks paid work access until identity evidence and bank readiness are approved.',
       payoutImpact: 'Approved bank is also required before partner payout can be prepared.',
       action: identityGate?.ok && bankGate?.ok ? 'Review KYC evidence' : 'Finish KYC and bank review',
       href: `/partners/${provider.id}#kyc`,

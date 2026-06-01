@@ -2,12 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider_app/main.dart';
 
 void main() {
-  test('blocks booking actions when wallet balance is negative', () {
+  test('holds final gates when wallet balance is negative', () {
     final summary = {
       'walletBalance': -120000,
       'walletBlocked': true,
       'walletBlockReason': 'Custom settlement message',
-      'walletSettlementInstruction': 'Pay the HANDS fee to reopen requests.',
+      'walletSettlementInstruction': 'Pay the HANDS fee to clear final gates.',
       'walletSettlementReference': 'HANDS-WALLET-TEST1234',
     };
 
@@ -16,7 +16,7 @@ void main() {
     expect(providerWalletStatusLabel(summary), 'Settlement required');
     expect(
       providerWalletSettlementInstruction(summary),
-      'Pay the HANDS fee to reopen requests.',
+      'Pay the HANDS fee to clear final gates.',
     );
     expect(
       providerWalletSettlementSteps(summary),
@@ -62,7 +62,7 @@ void main() {
     );
   });
 
-  test('allows booking actions when unsettled wallet is non-negative', () {
+  test('clears final gates when unsettled wallet is non-negative', () {
     final summary = {
       'pendingNetAmount': -50000,
       'availableNetAmount': 70000,
@@ -129,7 +129,7 @@ void main() {
     expect(guidance.detailMessage, contains('5 km'));
   });
 
-  test('blocks direct request guidance when wallet is negative', () {
+  test('holds direct finalization guidance when wallet is negative', () {
     final guidance = providerRequestGuidance(
       booking: {'status': 'OPEN_MATCHING'},
       isPreferredRequest: true,

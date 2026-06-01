@@ -183,7 +183,7 @@ export default async function OperationsPolicyPage({
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Booking acceptance control matrix</h2>
+            <h2>Final partner choice control matrix</h2>
             <p className="muted">
               Current owner choices for the direct booking window, marketplace participation, partner push
               reach, and the negative wallet final-acceptance gate. This is the screen operators should check before changing
@@ -1801,7 +1801,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       detail:
         'This controls whether preferred partner acceptance returns control to the customer for the final partner choice.',
       verify:
-        'Verify by creating a direct booking, accepting in the partner app, then checking the customer waiting screen.',
+        'Verify by creating a direct booking, sending the partner response in the Partner app, then checking the customer waiting screen.',
     },
     {
       scope: 'Marketplace timing',
@@ -3601,7 +3601,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Customer choice',
       title: 'Requires customer final partner choice',
       detail:
-        'Partner acceptance keeps the booking open after partner accept so the customer can make the final choice. Legacy auto-match values are ignored by the API.',
+        'Partner response keeps the booking open after partner accept so the customer can make the final choice. Legacy auto-match values are ignored by the API.',
       saveChecks: [
         {
           label: 'Customer choice queue',

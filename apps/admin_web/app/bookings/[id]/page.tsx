@@ -2584,7 +2584,7 @@ function bookingCloseoutReadiness({
       label: 'Cash',
       status: cashDebtNeedsSettlement ? 'Cash fee settlement required' : 'No cash fee block',
       detail: cashDebtNeedsSettlement
-        ? 'Partner cash collection created company-fee debt; settle before future booking acceptance.'
+        ? 'Partner cash collection created company-fee debt; settle before final acceptance, customer selection, service start, or payout release.'
         : 'No negative cash-fee wallet block is active for this booking.',
       owner: 'Finance',
       href: '#finance',

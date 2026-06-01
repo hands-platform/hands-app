@@ -28,7 +28,7 @@ A partner can accept or join only when the operational gates pass:
 - Wallet is not negative unless an explicit recovery policy allows one active recovery booking.
 - Required app notification state is healthy enough for the selected notification policy.
 
-The API remains the final guard. Mobile and admin UI warnings are advisory, but the API must reject unsafe acceptance attempts.
+The API remains the final guard. Mobile and admin UI warnings are advisory, but the API must reject unsafe finalization attempts.
 
 ## Cash Fee Debt
 
@@ -36,7 +36,7 @@ Cash bookings are collected directly by the partner. HANDS records platform fee,
 
 When that wallet becomes negative:
 
-- The partner cannot accept new direct requests.
+- The partner cannot complete final direct-request confirmation until finance clears the debt.
 - The partner can still see and join marketplace opportunities so customer supply stays visible.
 - Final acceptance, customer final partner selection, service-start, or payout release can be blocked until the debt is settled, depending on the active operations policy.
 - The partner app displays the localized settlement-block message from `apps/provider_app/lib/main.dart`.
@@ -95,7 +95,7 @@ When a partner cannot complete final acceptance, customer final selection, servi
 3. Approve identity and bank readiness.
    - Owner: KYC.
    - Why: CCCD/selfie evidence and approved bank data are the Level 2 work gate for paid bookings.
-   - Booking impact: paid booking acceptance and marketplace participation stay blocked until the evidence is approved.
+   - Booking impact: paid work access and marketplace participation stay blocked until the evidence is approved.
    - Payout impact: bank approval is required before payout; tax profile remains staged until first earning.
 
 4. Refresh stale partner location.
@@ -113,10 +113,10 @@ When a partner cannot complete final acceptance, customer final selection, servi
 6. Keep tax as a post-first-earning payout gate.
    - Owner: Finance.
    - Why: tax policy must exist from day one, but tax profile collection should not increase signup friction before the first earning.
-   - Booking impact: missing tax profile should not block first booking acceptance.
+   - Booking impact: missing tax profile should not block first signup or first paid job.
    - Payout impact: after first earning, tax profile, tax address, and payout/tax agreements block payout or withdrawal until complete.
 
-This order is mirrored in `/partner-controls` under `Acceptance unblock playbook`.
+This order is mirrored in `/partner-controls` under `Final-gate unblock playbook`.
 
 ## No-Show Closeout
 

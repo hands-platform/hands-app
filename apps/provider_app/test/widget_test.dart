@@ -56,7 +56,7 @@ void main() {
         'Fee settlement required');
 
     final kycMessage = providerAppErrorMessage(ApiException(403, {
-      'message': 'Provider KYC must be approved before accepting bookings.',
+      'message': 'Partner KYC must be approved before receiving paid work.',
       'error': 'Forbidden',
       'statusCode': 403,
     }));
@@ -65,7 +65,7 @@ void main() {
 
     final bankMessage = providerAppErrorMessage(ApiException(403, {
       'message':
-          'Provider bank account must be approved before accepting bookings.',
+          'Partner bank account must be approved before receiving paid work.',
     }));
 
     expect(providerActionBlockCopy(bankMessage)?.title,

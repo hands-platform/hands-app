@@ -427,7 +427,7 @@ function paymentOpsHint(payment: AdminPayment) {
     return `Cash was collected by the partner. Settle ${money(
       debt,
       payment.currency,
-    )} HANDS fee/tax debt from Earnings before they can keep accepting bookings.`;
+    )} HANDS fee/tax debt from Earnings before final acceptance, customer selection, service start, or payout release proceeds.`;
   }
   if (payment.status === 'AUTHORIZED') {
     return 'Keep this on hold until the partner completes the service, then capture or refund.';

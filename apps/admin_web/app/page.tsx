@@ -1553,7 +1553,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       <section className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Acceptance unblock quick order</h2>
+            <h2>Final-gate unblock quick order</h2>
             <p className="muted">
               First-screen sequence for clearing partner final-gate holds. Tax setup stays as a
               post-first-earning payout gate, not an initial booking gate.

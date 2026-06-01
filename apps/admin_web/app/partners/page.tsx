@@ -606,7 +606,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner operations list</h2>
             <p className="muted">
-              List-first partner control view. Operators can check onboarding, booking acceptance, completed
+              List-first partner control view. Operators can check onboarding, final booking gates, completed
               work, last work, wallet, location, push, services, and app activity before opening the full
               partner record.
             </p>
@@ -629,7 +629,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <tr>
                 <th>Partner</th>
                 <th>Basic checklist</th>
-                <th>Booking acceptance</th>
+                <th>Final gates</th>
                 <th>Work history</th>
                 <th>Money</th>
                 <th>App/location</th>
@@ -928,11 +928,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner acceptance blocker board</h2>
+            <h2>Partner final-gate hold board</h2>
             <p className="muted">
               Shows why partners cannot complete final acceptance before operators
-              try to dispatch them. Marketplace participation eligibility is checked with the same booking-readiness
-              gates shown below.
+              try to dispatch them. Marketplace participation is checked separately so negative wallet debt does
+              not hide otherwise available supply.
             </p>
           </div>
           <div className="participant-list">
@@ -941,7 +941,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             >
               {acceptanceBlockerBoard.hardBlocked} hard blocked
             </span>
-            <span className="pill pill-info">{acceptanceBlockerBoard.eligibleNow} can accept now</span>
+            <span className="pill pill-info">{acceptanceBlockerBoard.eligibleNow} final-gate clear</span>
           </div>
         </div>
         <div className="grid" style={{ marginTop: 12 }}>
@@ -1876,11 +1876,11 @@ function buildPartnerOperationRow(
         tone: partnerHasAppActivity(provider) ? 'ok' : 'neutral',
       },
     ],
-    acceptanceLabel: canAccept ? 'Can accept bookings' : 'Acceptance on hold',
+    acceptanceLabel: canAccept ? 'Final gate clear' : 'Final gate on hold',
     acceptanceDetail: canAccept
       ? backupEligibility.eligible
         ? `Ready for direct requests and ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} marketplace matching.`
-        : 'Ready for direct requests. Marketplace participation depends on booking location and policy.'
+        : 'Ready for direct requests. Marketplace participation depends on booking address, location freshness, and policy.'
       : partnerAcceptBlockerSummary(provider, opsPolicy),
     acceptanceTone: canAccept ? 'ok' : 'warn',
     completedWorkCount,
@@ -2734,7 +2734,6 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
   const blockers: Array<{ label: string; severity: 'hard' | 'soft' }> = [];
   const locationState = providerLocationStatus(provider, opsPolicy);
   const securityState = providerSecurityStatus(provider);
-  const walletBalance = providerUnsettledWalletBalance(provider);
 
   if (provider.blockedAt) {
     blockers.push({ label: 'account blocked', severity: 'hard' });
@@ -2751,9 +2750,8 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
   if (!hasApprovedBankAccount(provider)) {
     blockers.push({ label: 'bank account', severity: 'hard' });
   }
-  if (walletBalance < 0) {
-    blockers.push({ label: 'wallet debt', severity: 'hard' });
-  }
+  // Negative wallet is a final-gate finance hold, not a marketplace visibility blocker.
+  // Partners can still receive availability awareness and join a shortlist candidate pool.
   if (provider.status !== 'ONLINE_AVAILABLE') {
     blockers.push({ label: 'not online available', severity: 'soft' });
   }
@@ -2779,12 +2777,12 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
       ? `Can receive marketplace alerts and join eligible bookings within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )} during the ${opsPolicy.responseWindowMinutes}m first-pick window.`
-      : `Not ready for marketplace matching until blockers are resolved. Distance is still checked per booking within ${formatDistanceMeters(
+      : `Marketplace matching needs the listed non-finance blockers resolved. Negative wallet is checked later at final acceptance/customer selection. Distance is still checked per booking within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )}.`,
     operatorAction: eligible
       ? 'For a live booking, confirm the booking address is inside radius before asking this partner to join.'
-      : 'Fix the listed blockers before relying on this partner for marketplace participation or customer shortlist recovery.',
+      : 'Fix identity, account, location, or alert blockers before relying on this partner for marketplace participation or customer shortlist recovery.',
   };
 }
 
@@ -2862,7 +2860,7 @@ function buildProviderCommandCenter(
       tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
       detail:
         walletDebt > 0
-          ? 'Cash fee debt can block partners from accepting new bookings.'
+          ? 'Cash fee debt can hold final acceptance, customer selection, service start, or payout release.'
           : 'First-earning payout, bank, and freelance tax readiness are under control.',
       href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
       metrics: [
@@ -3473,7 +3471,8 @@ function buildPartnerDispatchForecast(
       {
         label: 'Wallet debt',
         count: walletDebt,
-        detail: 'Cash fee debt blocks accepting bookings until settlement is confirmed.',
+        detail:
+          'Cash fee debt keeps marketplace visibility available, but configured final gates wait for settlement.',
         href: '/partners?review=cash-debt',
         tone: walletDebt > 0 ? 'danger' : 'ok',
       },
@@ -4348,7 +4347,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'First earning payout setup highlights partners who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
   }
   if (kind === 'review' && value === 'cash-debt') {
-    return 'Cash fee debt highlights partners blocked from accepting bookings because HANDS commission was not settled.';
+    return 'Cash fee debt highlights partners whose final acceptance or customer selection waits until HANDS commission is settled.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
     return 'Final gate held highlights partners who can remain visible but cannot complete final acceptance or customer selection yet.';

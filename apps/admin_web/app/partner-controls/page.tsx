@@ -247,7 +247,7 @@ export default async function PartnerControlsPage({
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Booking acceptance unblock board</h2>
+            <h2>Final-gate unblock board</h2>
             <p className="muted">
               Shows which partners cannot complete final acceptance now, which issues only affect payout, and
               exactly where staff should clear the blocker.
@@ -299,10 +299,10 @@ export default async function PartnerControlsPage({
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Acceptance unblock playbook</h2>
+            <h2>Final-gate unblock playbook</h2>
             <p className="muted">
-              Step-by-step operating order for restoring partner booking acceptance without mixing payout-only
-              gates into customer dispatch decisions.
+              Step-by-step operating order for restoring partner finalization gates without mixing payout-only
+              gates into customer discovery or marketplace participation decisions.
             </p>
           </div>
           <span
@@ -352,7 +352,7 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Partner operating block matrix</h2>
             <p className="muted">
-              Explains why a partner may be blocked from accepting bookings, payout, or dispatch-sensitive
+              Explains why a partner may be held from paid work, payout, or dispatch-sensitive
               work, with the exact screen an operator should open next.
             </p>
           </div>
@@ -1170,7 +1170,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         reason:
           'Distance sorting and configured invitation-radius decisions can be wrong when online location is missing or stale.',
         operatorAction:
-          'Ask the partner to reopen the app and refresh location before accepting dispatch-sensitive bookings.',
+          'Ask the partner to reopen the app and refresh location before dispatch-sensitive work.',
         href: `/partners/${item.provider.id}`,
         priority: 64,
       });
@@ -1280,7 +1280,7 @@ function buildBookingAcceptanceUnblockBoard(
       status: accountBlockedItems.length ? 'BLOCKING' : 'CLEAR',
       detail: accountBlockedItems.length
         ? 'Blocked accounts or active account controls must be reviewed before the partner receives work.'
-        : 'No account block is currently preventing partner booking acceptance.',
+        : 'No account block is currently holding partner work access.',
       operatorScript:
         'Keep the block active until evidence, notes, and the unblock reason are clear in the audit trail.',
       customerImpact: 'Customers will not see or match with partners under active account restrictions.',
@@ -1408,11 +1408,11 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'Negative wallet is the strongest final-acceptance gate because cash bookings create unpaid HANDS fee debt.',
       bookingImpact:
-        'Blocks direct acceptance and marketplace matching until deposit, admin offset, or earning offset is recorded.',
+        'Keeps marketplace visibility available, but final acceptance/customer selection waits until deposit, admin offset, or earning offset is recorded.',
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:
-        'Prevents assigning customers to partners who still owe settlement from previous cash services.',
+        'Prevents finalizing customers with partners who still owe settlement from previous cash services.',
       action: card('wallet-debt')?.action ?? 'Open settlement queue',
       href: card('wallet-debt')?.href ?? '/cash-settlements',
       blockingCount: card('wallet-debt')?.blockingCount ?? 0,
@@ -1427,7 +1427,7 @@ function buildAcceptanceUnblockPlaybook(
       pillClass: card('account-controls')?.blockingCount ? 'pill-danger' : 'pill-success',
       detail:
         'Account blocks and active account controls are deliberate operational controls and should stay above convenience.',
-      bookingImpact: 'Blocks partner visibility and booking acceptance while the restriction is active.',
+      bookingImpact: 'Blocks partner visibility and work access while the restriction is active.',
       payoutImpact: 'Payout holds should remain until the report or account control has a clean audit outcome.',
       customerImpact: 'Keeps customer bookings away from accounts with unresolved admin holds until documented review is complete.',
       action: card('account-controls')?.action ?? 'Review account blocks',
@@ -1445,7 +1445,7 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'KYC, required CCCD/selfie documents, and bank approval are the Level 2 work gate for paid bookings.',
       bookingImpact:
-        'Blocks paid booking acceptance and marketplace participation until the evidence is approved.',
+        'Blocks paid work access and marketplace participation until the evidence is approved.',
       payoutImpact: 'Bank approval is required before payout; tax remains staged until first earning.',
       customerImpact: 'Keeps customer confidence high while avoiding excessive signup friction.',
       action: card('verification-readiness')?.action ?? 'Open acceptance-blocked partners',
@@ -1499,7 +1499,7 @@ function buildAcceptanceUnblockPlaybook(
       pillClass: card('tax-after-first-earning')?.blockingCount ? 'pill-warn' : 'pill-success',
       detail:
         'Tax policy must be configured from day one, but partner tax profile collection waits until first earning.',
-      bookingImpact: 'Should not block first signup or first booking acceptance.',
+      bookingImpact: 'Should not block first signup or first paid job.',
       payoutImpact:
         'Blocks payout and withdrawal after first earning until MST, address, and agreements are complete.',
       customerImpact: 'Reduces partner onboarding drop-off while finance remains controlled before payout.',
@@ -1831,7 +1831,7 @@ function partnerControlDetail(input: {
   signals: Array<{ kind: string }>;
 }) {
   if (input.walletBalance < 0) {
-    return 'Partner cannot safely accept more cash/direct work until company fee debt is settled.';
+    return 'Partner can remain visible, but final cash/direct work gates wait until company fee debt is settled.';
   }
   if (input.openReportCount > 0) {
     return 'Open report history needs operator review before profile review, payout, or account changes.';
@@ -1867,7 +1867,7 @@ function partnerControlNextStep(
     return 'Update report status with resolution note or apply an account control if needed.';
   }
   if (providerLocationSignal(input.provider, controlPolicy)) {
-    return 'Ask the partner to reopen the app and refresh their current location before accepting bookings.';
+    return 'Ask the partner to reopen the app and refresh their current location before dispatch-sensitive work.';
   }
   return 'Complete missing verification data before enabling additional profile review or payout features.';
 }

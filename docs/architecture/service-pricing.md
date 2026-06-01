@@ -99,7 +99,7 @@ If the partner wallet is negative:
 - The settlement action requires a deposit reference or offset reference on the earning row.
 - The Partner app Earnings screen shows the debt amount and settlement instruction
   returned by `GET /partner/earnings/summary`.
-- The Partner app warns before accepting cash requests that direct customer cash can create
+- The Partner app warns before confirming cash requests that direct customer cash can create
   wallet debt after completion.
 
 The partner-facing final-acceptance block copy currently follows the API message:

@@ -58,7 +58,7 @@ Allowed:
 
 Blocked only when policy requires settlement before:
 
-- Final booking acceptance
+- Final booking gates
 - Final confirmation
 - Service start
 - New matched booking confirmation
