@@ -1521,7 +1521,7 @@ try {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
     scheduledStartAt: new Date(Date.now() + 82 * 60_000).toISOString(),
-    address: { line1: 'Narrow backup radius smoke flow' },
+    address: { line1: 'Narrow marketplace radius smoke flow' },
     lat: 10.7769,
     lng: 106.7009,
     paymentMethod: 'CASH',
@@ -1529,18 +1529,18 @@ try {
   const narrowRadiusOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
   if (narrowRadiusOpenBookings.some((item) => item.id === narrowRadiusBooking.id)) {
     throw new Error(
-      `Narrow backup radius should hide far backup partner request: ${JSON.stringify(
+      `Narrow marketplace radius should hide far marketplace participant request: ${JSON.stringify(
         narrowRadiusOpenBookings,
       )}`,
     );
   }
   const narrowRadiusJoinError = await expectRequestFailure(
-    'Narrow backup radius partner join',
+    'Narrow marketplace radius partner join',
     () => postJson(`/provider/bookings/${narrowRadiusBooking.id}/join`, backupProviderAuth.accessToken),
     400,
   );
   if (!narrowRadiusJoinError.includes('Only partners within 1km can join this booking')) {
-    throw new Error(`Narrow backup radius returned an unexpected error: ${narrowRadiusJoinError}`);
+    throw new Error(`Narrow marketplace radius returned an unexpected error: ${narrowRadiusJoinError}`);
   }
 } finally {
   await postJson('/provider/location', backupProviderAuth.accessToken, {
@@ -1570,7 +1570,7 @@ try {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
     scheduledStartAt: new Date(Date.now() + 85 * 60_000).toISOString(),
-    address: { line1: 'Delayed backup visibility smoke flow' },
+    address: { line1: 'Delayed marketplace visibility smoke flow' },
     lat: 10.7783,
     lng: 106.6994,
     paymentMethod: 'CASH',
@@ -1583,13 +1583,13 @@ try {
   const delayedBackupOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
   if (delayedBackupOpenBookings.some((item) => item.id === delayedBackupBooking.id)) {
     throw new Error(
-      `Delayed backup booking snapshot should hide request from non-preferred partner even after live policy changes: ${JSON.stringify(
+      `Delayed marketplace booking snapshot should hide request from non-preferred partner even after live policy changes: ${JSON.stringify(
         delayedBackupOpenBookings,
       )}`,
     );
   }
   await expectRequestFailure(
-    'Delayed backup partner join',
+    'Delayed marketplace partner join',
     () => postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken),
     400,
   );
@@ -1601,14 +1601,14 @@ try {
   const declinedRequest = delayedBackupOpenAfterDecline.find((item) => item.id === delayedBackupBooking.id);
   if (!declinedRequest) {
     throw new Error(
-      `First-pick decline should immediately expose delayed backup request: ${JSON.stringify(
+      `First-pick decline should immediately expose delayed marketplace request: ${JSON.stringify(
         delayedBackupOpenAfterDecline,
       )}`,
     );
   }
   if (typeof declinedRequest.distanceMeters !== 'number' || declinedRequest.distanceMeters > 10000) {
     throw new Error(
-      `Declined first-pick backup request should keep 10km distance metadata: ${JSON.stringify(
+      `Declined first-pick marketplace request should keep 10km distance metadata: ${JSON.stringify(
         declinedRequest,
       )}`,
     );
@@ -1624,7 +1624,7 @@ try {
   );
   if (!backupDeclineNotificationObserved) {
     throw new Error(
-      `Backup partner decline should create a customer notification: ${JSON.stringify(
+      `Marketplace partner decline should create a customer notification: ${JSON.stringify(
         delayedBackupCustomerNotifications,
       )}`,
     );
@@ -1905,7 +1905,7 @@ const backupAcceptNotificationObserved = hybridCustomerNotifications.some(
 );
 if (!backupAcceptNotificationObserved) {
   throw new Error(
-    `Backup partner acceptance should create a customer notification: ${JSON.stringify(
+    `Marketplace partner acceptance should create a customer notification: ${JSON.stringify(
       hybridCustomerNotifications,
     )}`,
   );
@@ -2644,7 +2644,7 @@ if (!adminHybridBooking?.preferredProvider?.id || !adminHybridBooking?.selectedP
 }
 if (adminHybridBooking.preferredProvider.id === adminHybridBooking.selectedProvider.id) {
   throw new Error(
-    `Hybrid booking did not switch from preferred to backup provider: ${JSON.stringify(adminHybridBooking)}`,
+    `Hybrid booking did not switch from preferred to marketplace participant: ${JSON.stringify(adminHybridBooking)}`,
   );
 }
 const adminCancelledBooking = adminBookings.find((item) => item.id === cancellableMomoBooking.id);
@@ -2801,7 +2801,7 @@ if (
   )
 ) {
   throw new Error(
-    `Admin backup partner payload is missing registered push device: ${JSON.stringify(adminBackupPartner)}`,
+    `Admin marketplace partner payload is missing registered push device: ${JSON.stringify(adminBackupPartner)}`,
   );
 }
 const payment = await getJson('/admin/payments', adminAuth.accessToken).then((payments) =>

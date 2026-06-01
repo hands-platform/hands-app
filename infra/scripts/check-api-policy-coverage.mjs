@@ -57,9 +57,9 @@ const requiredCoverage = [
       'Direct booking should notify eligible marketplace partners',
       'trace.backupProviderRadiusMeters === 10000',
       "acceptedButWaiting.status !== 'OPEN_MATCHING' || acceptedButWaiting.selectedProviderId !== null",
-      'Delayed backup booking snapshot should hide request from non-preferred partner',
-      'Delayed backup partner join',
-      'First-pick decline should immediately expose delayed backup request',
+      'Delayed marketplace booking snapshot should hide request from non-preferred partner',
+      'Delayed marketplace partner join',
+      'First-pick decline should immediately expose delayed marketplace request',
     ],
   },
   {
