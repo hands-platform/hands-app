@@ -87,7 +87,14 @@ const pages = [
   { path: '/bookings?view=location', markers: ['Booking Monitor', 'Location ops'] },
   { path: '/bookings?view=chat', markers: ['Booking Monitor', 'Chat handoff'] },
   { path: '/bookings?view=chat-repair', markers: ['Booking Monitor', 'Chat repair'] },
-  { path: '/bookings?view=closeout', markers: ['Booking Monitor', 'Closeout ops'] },
+  {
+    path: '/bookings?view=closeout',
+    markers: ['Booking Monitor', 'Closeout ops', 'earning, tax, platform fee, or wallet ledger'],
+  },
+  {
+    path: '/bookings?view=pricing',
+    markers: ['Booking Monitor', 'Pricing ops', 'active service payout matrix'],
+  },
   { path: '/bookings?view=expired', markers: ['Booking Monitor', 'Expired'] },
   { path: '/bookings?view=no-show', markers: ['Booking Monitor', 'No-show'] },
   {
