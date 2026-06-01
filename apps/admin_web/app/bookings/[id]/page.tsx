@@ -4806,7 +4806,7 @@ function bookingCustomerWaitPanel(
           : 'No accepted partner is ready for final customer selection yet.',
       action: customerConfirmMode
         ? 'Customer selects the final partner before chat unlocks.'
-        : 'Policy may auto-lock the accepted preferred partner.',
+        : 'Policy conflicts with HANDS final-choice flow; return to customer-confirm mode.',
       className: selected
         ? 'ops-task-done'
         : waitingForCustomerChoice
@@ -5167,8 +5167,8 @@ function bookingOperationalPolicySnapshot(
         label: 'No-show handling',
         helper:
           booking.status === 'NO_SHOW'
-            ? 'Use this policy before applying customer or partner penalties.'
-            : 'Applies if the partner reports a customer no-show later.',
+            ? 'Use this policy to review evidence before payment or support closeout.'
+            : 'Applies if a no-show closeout needs operator review later.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({

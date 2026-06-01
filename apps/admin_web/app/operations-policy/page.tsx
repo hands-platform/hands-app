@@ -806,8 +806,8 @@ export default async function OperationsPolicyPage({
         <div className="booking-radar">
           <DecisionHint
             title="First-pick partner acceptance"
-            recommendation="For the stable product, customer final confirmation is stronger."
-            detail="MVP can keep auto-match for speed, but the long-term flow should let the customer pick from the first-pick partner plus marketplace partners."
+            recommendation="Keep customer final confirmation as the operating rule."
+            detail="The preferred partner can accept quickly, marketplace partners can still join the shortlist, and the customer chooses the final partner."
           />
           <DecisionHint
             title="Marketplace participation"
@@ -826,13 +826,13 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Cancellation after match"
-            recommendation="Start with admin review before adding automatic fees."
-            detail="This keeps early customer support flexible while HANDS learns real cancellation and partner arrival patterns."
+            recommendation="Keep admin review before any customer charge decision."
+            detail="This keeps early customer support flexible while HANDS learns real cancellation, chat, and partner arrival patterns."
           />
           <DecisionHint
             title="No-show disputes"
             recommendation="Require admin review until evidence upload and dispute screens are mature."
-            detail="No-show penalties are sensitive; manual review prevents trust damage in the first operating phase."
+            detail="No-show is an operational closeout state in MVP, not a person rating. Operators should review evidence before payment or support action."
           />
           <DecisionHint
             title="Partner alert channel"
@@ -1294,10 +1294,10 @@ function buildPolicySimulation(
         title: 'Final matching decision',
         detail: customerFinalConfirm
           ? 'Accepted partners still require customer final selection.'
-          : 'The first accepted partner can lock the booking faster.',
+          : 'This setting would skip the final customer choice step.',
         operatorAction: customerFinalConfirm
           ? 'This matches the current HANDS direction: customer always chooses the final partner.'
-          : 'Use only if HANDS decides faster auto-lock is more important than customer choice.',
+          : 'Treat this as a configuration conflict for HANDS and return to customer-confirm mode.',
         className: customerFinalConfirm ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: customerFinalConfirm ? 'pill-success' : 'pill-danger',
       },
@@ -1431,10 +1431,10 @@ function policyRecommendationPosture(
 
   if (setting.key === 'matching.preferred_accept_mode') {
     return {
-      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Fast lock' : 'Customer choice',
+      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Customer-choice conflict' : 'Customer choice',
       detail:
         value === 'AUTO_MATCH_ON_ACCEPT'
-          ? 'Fast lock reduces friction but weakens the customer final-choice flow.'
+          ? 'This setting skips the final customer-choice step and conflicts with the current HANDS flow.'
           : 'Customer final-choice mode adds one step but better matches the HANDS target flow.',
       operatorAction: 'Use customer-confirm mode before scaling marketplace partner shortlist UX.',
       alignedAction:
@@ -1557,13 +1557,13 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     },
     {
       title: 'Customer final selection',
-      status: customerFinalChoice ? 'Customer controls' : 'Auto-lock',
+      status: customerFinalChoice ? 'Customer controls' : 'Customer-choice conflict',
       detail: customerFinalChoice
         ? 'Even after partner acceptance, the customer keeps the final partner selection step.'
-        : 'The first accepted partner can lock the booking without final customer choice.',
+        : 'This setting would match a booking without the final customer choice step.',
       operatorAction: customerFinalChoice
         ? 'This is the safer long-term rule for a marketplace with customer partner choice.'
-        : 'Only use auto-lock if HANDS intentionally prioritizes speed over customer choice.',
+        : 'Return this policy to customer-confirm mode before production use.',
       className: customerFinalChoice ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: customerFinalChoice ? 'pill-success' : 'pill-danger',
       blocking: !customerFinalChoice,
@@ -1794,9 +1794,9 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       title:
         preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
           ? 'Customer keeps final partner selection'
-          : 'Partner acceptance can auto-lock',
+          : 'Customer final selection is disabled',
       detail:
-        'This controls whether accepting the preferred partner immediately matches the booking or returns control to the customer.',
+        'This controls whether preferred partner acceptance returns control to the customer for the final partner choice.',
       verify:
         'Verify by creating a direct booking, accepting in the partner app, then checking the customer waiting screen.',
     },
@@ -3273,9 +3273,9 @@ function operationsOwnerDecisionBacklog() {
       owner: 'Trust',
       title: 'No-show evidence',
       question:
-        'What evidence should be required before no-show penalties or customer fee decisions are automated?',
+        'What evidence should be required before no-show closeout or customer fee decisions are reviewed?',
       signal:
-        'Review chat, arrival timestamp, location proof, customer response, and dispute rate before auto no-show.',
+        'Review chat, arrival timestamp, location proof, customer response, and dispute context before no-show closeout.',
       options: [
         {
           label: 'Manual evidence review',
@@ -3283,8 +3283,8 @@ function operationsOwnerDecisionBacklog() {
             'More controlled for launch and disputes, but slower for partner compensation and customer closeout.',
         },
         {
-          label: 'Evidence-based automation',
-          tradeoff: 'Scales support decisions, but requires reliable location, chat, and timestamp capture.',
+          label: 'Evidence checklist',
+          tradeoff: 'Keeps decisions factual and repeatable, but requires reliable location, chat, and timestamp capture.',
         },
       ],
       recommendation:
@@ -3651,7 +3651,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'No-show review',
       title: 'Controls no-show evidence and payment review posture',
       detail:
-        'Admin-review mode keeps penalties manual. Evidence mode marks the policy in notes and audit logs for faster future automation.',
+        'Admin-review mode keeps no-show and fee decisions manual. Evidence mode records required proof in notes and audit logs for consistent review.',
       saveChecks: [
         {
           label: 'No-show board',
@@ -3661,7 +3661,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         {
           label: 'No-show alerts',
           detail:
-            'Check alert delivery so partners and customers are informed before penalties are reviewed.',
+            'Check alert delivery so partners and customers are informed before no-show closeout is reviewed.',
           href: '/notifications?review=no-show',
         },
       ],
