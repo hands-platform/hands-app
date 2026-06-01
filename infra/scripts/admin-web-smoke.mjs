@@ -184,7 +184,7 @@ const pages = [
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
-  { path: '/reviews', markers: ['Reviews And Reports', 'Review command board', 'Service recovery feedback'] },
+  { path: '/reviews', markers: ['Feedback And Reports', 'Feedback command board', 'Service recovery feedback'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
   { path: '/notifications?review=failed', markers: ['Notifications', 'Failed sends', 'Delivery operations queue'] },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
@@ -387,6 +387,7 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
     { label: 'people scoring wording', pattern: /\b(score|scoring|VIP|tip|tips)\b/i },
     { label: 'partner average feedback wording', pattern: /\bFeedback value\b/i },
+    { label: 'person-rating wording', pattern: /\b(stars? or below|star \/)\b/i },
   ];
   const violations = bannedPatterns
     .map((rule) => ({ ...rule, match: visibleText.match(rule.pattern) }))

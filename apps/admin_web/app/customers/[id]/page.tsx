@@ -1887,8 +1887,8 @@ function buildCustomerActivityRecords(
       id: review.id,
       type: 'REVIEW',
       at: review.createdAt ?? '',
-      title: `Review left for ${review.providerProfile?.displayName ?? 'partner'}`,
-      detail: `${review.rating} star / ${reviewBookingServiceLabel(review.booking)}`,
+      title: `Service feedback left for ${review.providerProfile?.displayName ?? 'partner'}`,
+      detail: `Feedback level ${review.rating}/5 / ${reviewBookingServiceLabel(review.booking)}`,
       href: '/reviews',
     });
   }

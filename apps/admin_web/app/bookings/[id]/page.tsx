@@ -1538,7 +1538,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
               value={`${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / partner blocked`}
             />
           )}
-          <InfoRow label="Review" value={booking.review ? `${booking.review.rating}/5` : 'Not submitted'} />
+          <InfoRow
+            label="Service feedback"
+            value={booking.review ? `Feedback level ${booking.review.rating}/5` : 'Not submitted'}
+          />
         </div>
 
         <div className="card">
@@ -2621,8 +2624,11 @@ function bookingOperatingTimeline({
     addItem({
       id: `review-${booking.review.id}`,
       type: 'REVIEW',
-      title: 'Customer review submitted',
-      detail: `${booking.review.rating}/5 / customer extra ${money(booking.review.tipAmount, paymentCurrency)}.`,
+      title: 'Customer service feedback submitted',
+      detail: `Feedback level ${booking.review.rating}/5 / customer extra ${money(
+        booking.review.tipAmount,
+        paymentCurrency,
+      )}.`,
       at: booking.review.createdAt,
       status: 'Review',
     });
@@ -3136,7 +3142,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       id: booking.review.id,
       type: 'REVIEW',
       at: booking.review.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-      title: `Customer review ${booking.review.rating}/5`,
+      title: `Customer service feedback ${booking.review.rating}/5`,
       detail: booking.review.comment ? compactActivityText(booking.review.comment, 110) : 'No comment',
       href: '/reviews',
     });

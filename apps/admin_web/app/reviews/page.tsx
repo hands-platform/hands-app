@@ -14,10 +14,10 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
 
   return (
     <>
-      <h1>Reviews And Reports</h1>
+      <h1>Feedback And Reports</h1>
       <section className="grid" style={{ marginBottom: 16 }}>
         <div className="card">
-          <p>Total reviews</p>
+          <p>Total feedback records</p>
           <h2>{summary.total}</h2>
         </div>
         <div className="card">
@@ -41,10 +41,10 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Review command board</h2>
+            <h2>Feedback command board</h2>
             <p className="muted">
-              Customer trust, partner coaching, and public review visibility are handled here before feedback
-              becomes an operational pattern.
+              Customer comments, partner coaching notes, and public visibility decisions are handled here
+              without ranking customers or partners.
             </p>
           </div>
           <span
@@ -54,7 +54,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
                 : 'pill-success'
             }`}
           >
-            {commandBoard.reduce((sum, item) => sum + item.reviews.length, 0)} review signal(s)
+            {commandBoard.reduce((sum, item) => sum + item.reviews.length, 0)} feedback signal(s)
           </span>
         </div>
         <div className="ops-task-grid">
@@ -65,13 +65,13 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
               <p>{item.detail}</p>
               <div className="participant-list">
                 <span className="pill">{item.status}</span>
-                <span className="pill">{item.reviews.length} review(s)</span>
+                <span className="pill">{item.reviews.length} record(s)</span>
               </div>
               {item.reviews.length > 0 ? (
                 <div className="stack">
                   {item.reviews.slice(0, 3).map((review) => (
                     <span className="muted" key={`${item.title}-${review.id}`}>
-                      {shortId(review.id)} / {reviewProviderLabel(review)} / {review.rating}/5 feedback
+                      {shortId(review.id)} / {reviewProviderLabel(review)} / feedback level {review.rating}/5
                     </span>
                   ))}
                 </div>
@@ -85,7 +85,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
       <div className="card">
         <div className="toolbar">
           <div>
-            <h2>Review operation filters</h2>
+            <h2>Feedback operation filters</h2>
             <p className="muted">
               Moderation board for guest feedback, dispute signals, and service recovery records.
             </p>
@@ -120,7 +120,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
         <table className="table">
           <thead>
             <tr>
-              <th>Review</th>
+              <th>Feedback</th>
               <th>Partner</th>
               <th>Customer</th>
               <th>Status</th>
@@ -259,8 +259,8 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
     {
       title: 'Service recovery feedback',
       detail:
-        'Feedback at 2 stars or below is a service recovery queue for refunds, partner support, or service mismatch.',
-      status: '2 stars or below',
+        'Feedback at 2/5 or below is a service recovery queue for refunds, partner support, or service mismatch.',
+      status: '2/5 or below',
       operatorAction: 'Check booking context, customer notes, and partner repetition.',
       href: '/reviews?review=service-recovery',
       tone: serviceRecovery.length > 0 ? 'warn' : 'ok',
@@ -325,7 +325,7 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
 
 function reviewFilterLinks() {
   return [
-    { label: 'All reviews', href: '/reviews', review: '' },
+    { label: 'All feedback', href: '/reviews', review: '' },
     { label: 'Reported', href: '/reviews?review=reported', review: 'reported' },
     { label: 'Service recovery', href: '/reviews?review=service-recovery', review: 'service-recovery' },
     { label: 'Hidden', href: '/reviews?review=hidden', review: 'hidden' },
@@ -336,28 +336,28 @@ function reviewFilterLinks() {
 
 function reviewFilterDescription(review: string) {
   if (review === 'reported') {
-    return 'reviews that need moderation follow-up.';
+    return 'feedback records that need moderation follow-up.';
   }
   if (review === 'service-recovery') {
-    return 'feedback at 2 stars or below that may need service recovery.';
+    return 'feedback at 2/5 or below that may need service recovery.';
   }
   if (review === 'hidden') {
-    return 'reviews removed from public visibility but retained for evidence.';
+    return 'feedback removed from public visibility but retained for evidence.';
   }
   if (review === 'published') {
-    return 'reviews currently visible to customers.';
+    return 'feedback currently visible to customers.';
   }
   if (review === 'tipped' || review === 'extra-amount') {
-    return 'reviews with a customer extra amount attached.';
+    return 'feedback with a customer extra amount attached.';
   }
-  return 'all review records.';
+  return 'all feedback records.';
 }
 
 function emptyReviewMessage(review: string) {
   if (!review) {
-    return 'No reviews loaded.';
+    return 'No feedback records loaded.';
   }
-  return `No reviews currently match this queue. ${reviewFilterDescription(review)}`;
+  return `No feedback records currently match this queue. ${reviewFilterDescription(review)}`;
 }
 
 function buildSummary(reviews: AdminReview[]) {
@@ -372,7 +372,7 @@ function buildSummary(reviews: AdminReview[]) {
 
 function starRow(rating: number) {
   const fullStars = Math.max(0, Math.min(5, Math.round(rating)));
-  return `${fullStars}/5 feedback`;
+  return `Feedback level ${fullStars}/5`;
 }
 
 function humanizeStatus(status: string) {
@@ -392,7 +392,7 @@ function statusMeaning(status: string) {
     case 'REPORTED':
       return 'Needs moderation follow-up';
     default:
-      return 'Review state under moderation';
+      return 'Feedback state under moderation';
   }
 }
 
@@ -403,7 +403,7 @@ function providerReviewHint(review: AdminReview) {
   if (review.tipAmount > 0) {
     return 'Customer extra amount is attached for finance context';
   }
-  return 'Use this review to track service feedback and booking context';
+  return 'Use this record to track service feedback and booking context';
 }
 
 function reviewProviderLabel(review: AdminReview) {
@@ -461,10 +461,10 @@ function opsHint(review: AdminReview) {
     return 'Review the text, confirm the report reason, and decide whether to keep it hidden.';
   }
   if (review.status === 'HIDDEN') {
-    return 'Hidden reviews should still be documented for support or partner coaching.';
+    return 'Hidden feedback should still be documented for support or partner coaching.';
   }
   if (review.rating <= 2) {
-    return 'Feedback at 2 stars or below deserves service recovery review before similar issues repeat.';
+    return 'Feedback at 2/5 or below deserves service recovery review before similar issues repeat.';
   }
   if (review.tipAmount > 0) {
     return 'Keep the extra amount visible for finance reconciliation, without using it as customer or partner evaluation.';
