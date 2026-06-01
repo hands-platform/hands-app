@@ -1,6 +1,6 @@
 # HANDS MVP Master Progress Roadmap
 
-Last checked: 2026-06-01
+Last checked: 2026-06-02
 
 This document is the single working map for HANDS MVP progress. It exists to keep backend, admin, mobile apps, external services, and product decisions from becoming fragmented.
 
@@ -53,7 +53,7 @@ Checked commands:
 - `npm.cmd run typecheck`: PASS
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
 - `npm.cmd run build --workspace @massage-vn/admin-web`: PASS
-- `node infra/scripts/admin-web-smoke.mjs`: PASS, 64 admin page checks plus dynamic customer, partner, legacy provider, and booking detail checks. On the current dev server this can take about 180-230 seconds, so short shell timeouts may fail even when the app is healthy.
+- `node infra/scripts/admin-web-smoke.mjs`: PASS, 77 admin page checks plus dynamic customer, partner, legacy provider, and booking detail checks. On the current dev server this can take about 180-250 seconds, so short shell timeouts may fail even when the app is healthy.
 - `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/partner-controls,/operations-policy,/bookings,/chat-archive,/app-sessions,/setup node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted operating-core check also verifies dynamic customer, partner, provider-legacy, and booking detail pages.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
@@ -116,6 +116,7 @@ Admin dashboard:
 - Booking monitor with matching stages, first-pick, marketplace participants, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Booking monitor rows now include an action status strip for chat, location, payment, cash fee debt, closeout, and pricing checks so operators can triage from the list before opening the detail page.
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, service/pricing, payment, refund, finance, tax, wallet, cash settlement, location, alerts, audit evidence, and operator notes into the deeper factual sections.
+- Booking detail now includes a connected operations records panel for direct jumps into linked customer, preferred/final partner, chat archive, notification trace, payment, refund, and cash settlement records.
 - Booking full record index now links directly to service/pricing, communication and movement, alerts, operator notes, and the full activity timeline so operators can jump from one booking to the needed evidence section.
 - Booking detail now includes an operator action availability matrix for payment sync/capture/release/refund, cash fee settlement, completed closeout, matching expiry, no-show handling, and internal notes.
 - Booking detail now includes a first-screen priority briefing for the operator's next action, customer/partner state, chat archive, location, payment, finance checks, and closeout handoff.
@@ -129,11 +130,13 @@ Admin dashboard:
 - Customer list and customer detail with activity, booking history, chat history, wallet/payment context, addresses, app sessions, notes, exports.
 - Customer list now separates closed booking evidence by customer/admin/partner closure role and no-show count when booking closure metadata exists.
 - Customer detail now includes a compact operating ledger for account, booking work, latest booking, last completed work, chat archive, wallet/payment, address, app access, devices, notifications, timeline, and operator notes.
+- Customer detail now includes a connected operations records panel for direct jumps into latest booking, last completed work, chat archive, payment, refund, saved location, app session, and operator records.
 - Customer detail now shows booking closure time, closure actor, closure reason, and no-show evidence in booking history and activity records without assigning a customer ranking.
 - Customer detail now renders all filtered chat rooms for the customer, not only the first page subset, and smoke tests guard the "Admin archive for every matched booking" marker.
 - Partner list and partner detail with KYC, bank, tax, services, booking records, chat records, devices, sessions, documents, wallet, payouts, controls.
 - Partner list now separates closed booking evidence by customer/admin/partner closure role and no-show count in the master list and CSV export.
 - Partner detail now includes a compact operating ledger for identity, KYC, documents, bank, tax, services, bookings, chat, wallet, payout, location, app devices, and admin trail evidence.
+- Partner detail now includes a connected operations records panel for direct jumps into latest booking, chat archive, KYC, bank, tax, location, wallet, payout, and operator notes.
 - Partner detail now shows booking closure time, closure actor, closure reason, and closure activity rows inside the same booking/chat archive.
 - Partner list now supports operations sorting by booking count, completed work count, gross revenue, pending payout, available payout, last work, app activity, location freshness, wallet debt, and checklist order.
 - Partner list and detail show feedback as factual review record counts instead of average feedback values, so partners are not ranked or scored in operator views.
