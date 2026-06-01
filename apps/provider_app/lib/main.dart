@@ -4808,10 +4808,10 @@ const providerWalletBlockHintReadable =
     'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, deposit the settlement amount or wait for admin offset before accepting more bookings.';
 
 const providerWalletBlockFallbackReasonClean =
-    'HANDS fee settlement is incomplete, so new booking requests are locked.';
+    'HANDS fee settlement is incomplete, so final booking acceptance is locked.';
 
 const providerWalletBlockHintClean =
-    'Cash jobs are paid directly to you. Settle unpaid HANDS fees or wait for an admin offset, then refresh wallet status.';
+    'Cash jobs are paid directly to you. You can still appear in marketplace opportunities, but final acceptance requires settling unpaid HANDS fees or an admin offset.';
 
 num providerWalletBalance(Map<String, dynamic> summary) {
   return asNum(summary['walletBalance']) ??

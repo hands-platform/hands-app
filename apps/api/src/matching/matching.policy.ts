@@ -183,7 +183,8 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
         label: 'Block accepts while negative',
-        tradeoff: 'Protects company fee collection and blocks new booking participation while debt is open.',
+        tradeoff:
+          'Keeps marketplace visibility open, but blocks final acceptance or customer selection while debt is open.',
       },
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,

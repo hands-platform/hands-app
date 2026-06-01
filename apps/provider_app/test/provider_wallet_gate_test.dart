@@ -140,6 +140,7 @@ void main() {
     expect(guidance.decisionLabel, 'Settlement required');
     expect(guidance.nextAction, contains('negative HANDS wallet'));
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
+    expect(guidance.infoMessage, contains('marketplace opportunities'));
   });
 
   test('explains marketplace opportunities after preferred partner exists', () {
