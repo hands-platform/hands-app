@@ -96,7 +96,10 @@ const adminAuth = await postJson('/auth/verify-otp', null, {
 });
 
 await postJson(`/admin/providers/${providerAuth.user.providerProfile.id}/approve`, adminAuth.accessToken);
-await postJson('/provider/online', providerAuth.accessToken);
+const onlineProvider = await postJson('/provider/online', providerAuth.accessToken);
+if (onlineProvider.status === 'OFFLINE') {
+  throw new Error(`Provider failed to go online before realtime smoke: ${JSON.stringify(onlineProvider)}`);
+}
 await postJson('/provider/location', providerAuth.accessToken, { lat: 10.7769, lng: 106.7009 });
 
 const providerSocket = await connectSocket(providerAuth.accessToken);
@@ -129,6 +132,7 @@ try {
   await emitAndWait(customerSocket, 'booking.join_room', { bookingId: booking.id });
 
   const providerJoined = waitForEvent(customerSocket, 'provider.joined', (payload) => payload.bookingId === booking.id);
+  await postJson('/provider/online', providerAuth.accessToken);
   await postJson(`/provider/bookings/${booking.id}/join`, providerAuth.accessToken);
   await providerJoined;
 

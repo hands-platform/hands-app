@@ -24,9 +24,6 @@ import {
   MatchingPolicy,
   PREFERRED_ACCEPT_AUTO_MATCH,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
-  WALLET_ALLOW_ONE_RECOVERY_BOOKING,
-  WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
-  WALLET_NEGATIVE_BALANCE_GATE_KEY,
   haversineMeters,
   roundTo100Meters,
 } from '../matching/matching.policy';
@@ -1175,10 +1172,6 @@ export class BookingsService {
   }
 
   private async ensureProviderWalletCanAccept(providerProfileId: string) {
-    const gatePolicy = await this.readOperationalPolicyValue(
-      WALLET_NEGATIVE_BALANCE_GATE_KEY,
-      WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
-    );
     const wallet = await this.prisma.providerEarning.aggregate({
       where: {
         providerProfileId,
@@ -1189,24 +1182,6 @@ export class BookingsService {
     });
     const walletBalance = wallet._sum.netAmount ?? 0;
     if (walletBalance < 0) {
-      if (gatePolicy === WALLET_ALLOW_ONE_RECOVERY_BOOKING) {
-        const activeRecoveryBookingCount = await this.prisma.booking.count({
-          where: {
-            selectedProviderId: providerProfileId,
-            status: {
-              in: [
-                BookingStatus.MATCHED,
-                BookingStatus.PROVIDER_ON_THE_WAY,
-                BookingStatus.ARRIVED,
-                BookingStatus.IN_SERVICE,
-              ],
-            },
-          },
-        });
-        if (activeRecoveryBookingCount === 0) {
-          return;
-        }
-      }
       throwProviderWalletBlocked({ providerProfileId, walletBalance });
     }
   }

@@ -120,11 +120,11 @@ const requiredCoverage = [
     ],
   },
   {
-    area: 'negative wallet recovery policy',
+    area: 'negative wallet final acceptance policy',
     markers: [
       'wallet.negative_balance_gate',
-      'ALLOW_ONE_RECOVERY_BOOKING',
-      'Negative wallet recovery policy allows only one active booking',
+      'Negative provider wallet blocks customer final selection',
+      'Negative provider wallet blocks customer final partner selection',
     ],
   },
   {

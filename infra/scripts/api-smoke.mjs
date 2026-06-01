@@ -2046,9 +2046,7 @@ const openMatchingWalletJoin = await postJson(
   walletDebtProviderAuth.accessToken,
 );
 if (
-  !openMatchingWalletJoin.participants?.some(
-    (participant) => participant.providerProfileId === walletDebtProviderAuth.user.providerProfile.id,
-  )
+  openMatchingWalletJoin.participant?.providerProfileId !== walletDebtProviderAuth.user.providerProfile.id
 ) {
   throw new Error(
     `Negative provider wallet should allow marketplace join intent before final acceptance: ${JSON.stringify(
@@ -2056,55 +2054,21 @@ if (
     )}`,
   );
 }
-const negativeWalletGateBeforeSmoke = await getOperationalPolicyValue(
-  adminAuth.accessToken,
-  'wallet.negative_balance_gate',
+const negativeWalletFinalSelectionError = await expectRequestFailure(
+  'Negative provider wallet blocks customer final partner selection',
+  () =>
+    postJson(
+      `/customer/bookings/${blockedOpenMatchingBooking.id}/select-provider`,
+      customerAuth.accessToken,
+      {
+        providerId: walletDebtProviderAuth.user.providerProfile.id,
+      },
+    ),
+  400,
 );
-await patchOperationalPolicyValue(
-  adminAuth.accessToken,
-  'wallet.negative_balance_gate',
-  'ALLOW_ONE_RECOVERY_BOOKING',
-);
-try {
-  await postJson(
-    `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
-    walletDebtProviderAuth.accessToken,
-  );
-  const recoveryMatchedBooking = await postJson(
-    `/customer/bookings/${blockedOpenMatchingBooking.id}/select-provider`,
-    customerAuth.accessToken,
-    {
-      providerId: walletDebtProviderAuth.user.providerProfile.id,
-    },
-  );
-  if (recoveryMatchedBooking.status !== 'MATCHED') {
-    throw new Error(
-      `Recovery wallet policy should allow one active matched booking: ${JSON.stringify(
-        recoveryMatchedBooking,
-      )}`,
-    );
-  }
-  const secondRecoveryBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
-    serviceId: service.id,
-    scheduledStartAt: new Date(Date.now() + 170 * 60_000).toISOString(),
-    address: { line1: 'Negative wallet second recovery smoke flow' },
-    lat: 10.7784,
-    lng: 106.6995,
-    paymentMethod: 'MOMO',
-  });
-  const secondRecoveryError = await expectRequestFailure(
-    'Negative wallet recovery policy allows only one active booking',
-    () => postJson(`/provider/bookings/${secondRecoveryBooking.id}/join`, walletDebtProviderAuth.accessToken),
-    400,
-  );
-  if (!secondRecoveryError.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
-    throw new Error(`Recovery wallet gate should block the second active booking: ${secondRecoveryError}`);
-  }
-} finally {
-  await patchOperationalPolicyValue(
-    adminAuth.accessToken,
-    'wallet.negative_balance_gate',
-    negativeWalletGateBeforeSmoke ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE',
+if (!negativeWalletFinalSelectionError.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
+  throw new Error(
+    `Negative wallet final selection response is missing wallet block code: ${negativeWalletFinalSelectionError}`,
   );
 }
 const payoutWalletBlockError = await expectRequestFailure(

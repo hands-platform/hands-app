@@ -181,7 +181,7 @@ const pages = [
       'Live matching policy',
       'id="matching-stage-impact"',
       'id="policy-matching-provider-response-window-minutes"',
-      'id="policy-matching-backup-provider-radius-meters"',
+      'id="policy-matching-marketplace-provider-radius-meters"',
       'id="policy-wallet-negative-balance-gate"',
       'Change reason',
     ],

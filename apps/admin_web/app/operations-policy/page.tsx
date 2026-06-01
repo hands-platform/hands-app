@@ -729,13 +729,13 @@ export default async function OperationsPolicyPage({
                   </td>
                   <td>
                     <strong>{displayOperationalWording(row.label)}</strong>
-                    <p className="muted">{row.key}</p>
+                    <p className="muted">{displayOperationalWording(row.key)}</p>
                   </td>
                   <td>{row.actorName}</td>
                   <td>{row.previousValue}</td>
                   <td>{row.value}</td>
                   <td>
-                    <p style={{ margin: 0 }}>{row.reason}</p>
+                    <p style={{ margin: 0 }}>{displayOperationalWording(row.reason)}</p>
                   </td>
                   <td>
                     <span className={`pill ${row.enforced ? 'pill-success' : 'pill-warn'}`}>
@@ -1046,7 +1046,7 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
 }
 
 function policySettingAnchor(key: string) {
-  return `policy-${key.replaceAll('.', '-').replaceAll('_', '-')}`;
+  return `policy-${key.replaceAll('backup', 'marketplace').replaceAll('.', '-').replaceAll('_', '-')}`;
 }
 
 function DecisionHint({
@@ -3010,7 +3010,8 @@ function policyKeyLabel(key: string) {
     .split('.')
     .map((part) => part.replace(/_/g, ' '))
     .join(' / ');
-  return label.charAt(0).toUpperCase() + label.slice(1);
+  const titled = label.charAt(0).toUpperCase() + label.slice(1);
+  return displayOperationalWording(titled);
 }
 
 function compactAuditValue(value: unknown) {
@@ -3018,9 +3019,9 @@ function compactAuditValue(value: unknown) {
     return '-';
   }
   if (typeof value === 'object') {
-    return JSON.stringify(value);
+    return displayOperationalWording(JSON.stringify(value));
   }
-  return String(value);
+  return displayOperationalWording(String(value));
 }
 
 function buildOwnerDecisionPressure(
@@ -3212,7 +3213,7 @@ function operationsOwnerDecisionBacklog() {
         'Start with one marketplace policy baseline, then add city/service overrides after Ho Chi Minh City data is stable.',
       decisionTrigger:
         'Revisit when marketplace alerts are ignored often, or accepted marketplace partners are repeatedly too far away.',
-      href: '/operations-policy#policy-matching-backup-provider-radius-meters',
+      href: '/operations-policy#policy-matching-marketplace-provider-radius-meters',
       className: 'ops-task-pending',
       pillClass: 'pill-info',
     },
@@ -3484,6 +3485,12 @@ function displayOperationalWording(value: string | null | undefined) {
     .replaceAll('Backup mode', 'Marketplace mode')
     .replaceAll('backup list', 'marketplace list')
     .replaceAll('Backup list', 'Marketplace list')
+    .replaceAll('backup_', 'marketplace_')
+    .replaceAll('.backup', '.marketplace')
+    .replaceAll('-backup-', '-marketplace-')
+    .replaceAll('-backup', '-marketplace')
+    .replace(/backup/g, 'marketplace')
+    .replace(/Backup/g, 'Marketplace')
     .replaceAll('customer or partner penalty', 'customer or partner closeout decision')
     .replaceAll('customer or partner penalties', 'customer or partner closeout decisions')
     .replaceAll('false penalties', 'incorrect automatic decisions')
