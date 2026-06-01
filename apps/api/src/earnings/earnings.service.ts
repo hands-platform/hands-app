@@ -65,7 +65,7 @@ export class EarningsService {
     const grossAmount =
       booking.payment?.amount ??
       booking.services.reduce((total, service) => total + service.price * service.quantity, 0);
-    const tipAmount = booking.review?.tipAmount ?? 0;
+    const tipAmount = 0;
     const availableAt = new Date(Date.now() + 24 * 60 * 60_000);
     const currency = booking.payment?.currency ?? 'VND';
     const serviceTypes = booking.services.flatMap((item) =>
@@ -136,35 +136,9 @@ export class EarningsService {
   }
 
   async applyTip(bookingId: string, tipAmount: number) {
-    if (tipAmount <= 0) {
-      return null;
-    }
-
-    const earning = await this.prisma.providerEarning.findUnique({
-      where: { bookingId },
-      include: { booking: { include: { payment: true } } },
-    });
-    if (!earning) {
-      return null;
-    }
-
-    return this.prisma.$transaction(async (tx) => {
-      const updated = await tx.providerEarning.update({
-        where: { bookingId },
-        data: {
-          tipAmount,
-          netAmount: calculateProviderWalletDelta({
-            paymentMethod: earning.booking.payment?.method,
-            grossAmount: earning.grossAmount,
-            platformFee: earning.platformFee,
-            withholdingAmount: earning.withholdingAmount,
-            tipAmount,
-          }),
-        },
-      });
-      await this.upsertEarningWalletLedger(tx, updated, earning.booking.payment?.method);
-      return updated;
-    });
+    void bookingId;
+    void tipAmount;
+    return null;
   }
 
   async listForProviderUser(userId: string) {

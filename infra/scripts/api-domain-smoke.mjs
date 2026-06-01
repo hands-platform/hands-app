@@ -31,8 +31,8 @@ assert.equal(
     withholdingAmount: 25000,
     tipAmount: 10000,
   }),
-  365000,
-  'non-cash bookings should credit customer price minus HANDS fee and withholding, plus tip',
+  355000,
+  'non-cash bookings should credit customer price minus HANDS fee and withholding without tips',
 );
 
 assert.equal(

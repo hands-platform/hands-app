@@ -107,7 +107,6 @@ export class BookingsService {
       : null;
     if (preferredProvider) {
       assertProviderCanReceiveBooking(preferredProvider);
-      await this.ensureProviderWalletCanAccept(preferredProvider.id);
       const configuredServiceCount = await this.prisma.providerService.count({
         where: {
           providerProfileId: preferredProvider.id,
@@ -634,7 +633,6 @@ export class BookingsService {
       throw new BadRequestException('Booking request is expired');
     }
     assertProviderCanReceiveBooking(provider);
-    await this.ensureProviderWalletCanAccept(provider.id);
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 

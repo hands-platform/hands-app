@@ -4,6 +4,8 @@ Last checked: 2026-06-01
 
 This document is the single working map for HANDS MVP progress. It exists to keep backend, admin, mobile apps, external services, and product decisions from becoming fragmented.
 
+Current highest-priority product authority: [HANDS MVP Final Authority](./hands-mvp-final-authority.md). If older roadmap text conflicts with that file, the final authority file wins.
+
 ## Master Refactor Source
 
 The archived master refactor prompt is now kept under the HANDS workspace at `C:\dev\massage-vn-workspace\references\HANDS_CODEX_MASTER_REFACTOR_PROMPT.md`.

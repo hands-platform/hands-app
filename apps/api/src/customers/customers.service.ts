@@ -1,14 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { BookingStatus, Prisma } from '@prisma/client';
-import { EarningsService } from '../earnings/earnings.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CustomersService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly earnings: EarningsService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async createReview(
     userId: string | undefined,
@@ -41,7 +37,7 @@ export class CustomersService {
           providerProfileId: booking.selectedProviderId!,
           rating: input.rating,
           comment: input.comment,
-          tipAmount: input.tipAmount ?? 0,
+          tipAmount: 0,
         },
       });
 
@@ -49,7 +45,6 @@ export class CustomersService {
       return review;
     });
 
-    await this.earnings.applyTip(booking.id, input.tipAmount ?? 0);
     return review;
   }
 

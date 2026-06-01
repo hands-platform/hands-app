@@ -113,7 +113,7 @@ const requiredCoverage = [
       'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
       'Negative provider wallet blocks direct booking acceptance',
       'Negative provider wallet blocks customer final selection',
-      'Negative provider wallet blocks open matching join',
+      'Negative provider wallet should allow marketplace join intent before final acceptance',
       'Negative provider wallet blocks payout batch creation',
     ],
   },

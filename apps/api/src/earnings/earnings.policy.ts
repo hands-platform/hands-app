@@ -30,7 +30,7 @@ export function calculateProviderWalletDelta(input: WalletDeltaInput) {
     return -(input.platformFee + input.withholdingAmount);
   }
 
-  return input.grossAmount - input.platformFee - input.withholdingAmount + input.tipAmount;
+  return input.grossAmount - input.platformFee - input.withholdingAmount;
 }
 
 export function calculateServicePayoutFeeFromRules(input: {

@@ -249,7 +249,7 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Booking acceptance unblock board</h2>
             <p className="muted">
-              Shows which partners cannot accept or join bookings now, which issues only affect payout, and
+              Shows which partners cannot complete final acceptance now, which issues only affect payout, and
               exactly where staff should clear the blocker.
             </p>
           </div>
@@ -1253,7 +1253,7 @@ function buildBookingAcceptanceUnblockBoard(
       title: 'Cash fee debt blocks acceptance',
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
-        ? 'Partners with negative wallet balance cannot accept or join new bookings until HANDS fee debt is settled.'
+        ? 'Partners with negative wallet balance can stay visible and join marketplace intent, but cannot complete final acceptance until HANDS fee debt is settled.'
         : 'No partner is currently blocked by cash-service fee debt.',
       operatorScript:
         'Tell the partner their unpaid HANDS fee must be deposited or offset before booking acceptance unlocks.',

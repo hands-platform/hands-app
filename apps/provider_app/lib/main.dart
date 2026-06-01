@@ -1823,9 +1823,7 @@ class OpenBookingCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             InfoCard(text: guidance.infoMessage),
-            if (walletBlocked &&
-                ((isPreferredRequest && !isMatched) ||
-                    (!isPreferredRequest && !joined))) ...[
+            if (walletBlocked && isPreferredRequest && !isMatched) ...[
               const SizedBox(height: 12),
               const ProviderErrorCard(
                   text: providerWalletBlockFallbackReasonClean),
@@ -1868,7 +1866,7 @@ class OpenBookingCard extends StatelessWidget {
               const InfoCard(text: 'Chat is ready. Continue from the Chat tab.')
             else if (!joined)
               FilledButton.icon(
-                onPressed: loading || walletBlocked ? null : onJoin,
+                onPressed: loading ? null : onJoin,
                 icon: const Icon(Icons.add_circle_outline),
                 label: Text(hasPreferredProvider
                     ? 'Offer marketplace support'
@@ -4936,8 +4934,7 @@ ProviderRequestGuidance providerRequestGuidance({
       preferredProvider?['displayName']?.toString().trim();
   final hasChat = isProviderAppChatVisible(booking);
   final isMatched = booking['status'] == 'MATCHED';
-  final actionBlockedByWallet =
-      walletBlocked && ((isPreferredRequest && !isMatched) || !joined);
+  final actionBlockedByWallet = walletBlocked && isPreferredRequest && !isMatched;
   final responseWindowLabel = providerMatchingWindowText(booking);
   final backupRadiusLabel = providerBackupRadiusText(booking);
 
@@ -4964,9 +4961,9 @@ ProviderRequestGuidance providerRequestGuidance({
       roleLabel: roleLabel,
       decisionLabel: 'Settlement required',
       nextAction:
-          'Settle your negative HANDS wallet before accepting or joining this booking.',
+          'Settle your negative HANDS wallet before accepting this booking.',
       contextMessage:
-          'This booking is available, but your wallet must be settled before you can take it.',
+          'This booking is visible, but your wallet must be settled before final acceptance.',
       detailMessage: providerWalletBlockFallbackReasonClean,
       infoMessage: providerWalletBlockHintClean,
     );

@@ -16,8 +16,8 @@ The MVP creates a partner earning record when the selected partner completes a b
 - `grossAmount`: captured payment amount, falling back to booking service totals.
 - `platformFee`: calculated from a service payout rule first, then from the active platform fee policy if no matching rule exists.
 - `withholdingAmount`: calculated from the active versioned tax policy.
-- `tipAmount`: legacy extra-payment field retained only for finance reconciliation until the model is renamed.
-- `netAmount` for MoMo/VNPay: `grossAmount - platformFee - withholdingAmount + legacy extra payment`.
+- `tipAmount`: legacy database field retained for compatibility, but HANDS MVP does not collect or apply tips.
+- `netAmount` for MoMo/VNPay: `grossAmount - platformFee - withholdingAmount`.
 - `netAmount` for cash: `-(platformFee + withholdingAmount)` because the partner already received the customer cash directly.
 - `availableAt`: 24 hours after completion for MVP payout review.
 
@@ -57,18 +57,18 @@ For the MVP, the partner wallet guard still reads unsettled `ProviderEarning.net
 - Positive delta: HANDS owes money to the partner.
 - Negative delta: the partner owes HANDS fees/tax from cash bookings.
 
-If the unsettled wallet balance is negative, the API blocks joining or accepting new bookings and returns the partner-facing message:
+If the unsettled wallet balance is negative, the API still allows marketplace visibility and join intent, but blocks final acceptance or customer final selection when the configured gate requires settlement. It returns the partner-facing message:
 
 `수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
 
-This supports two later settlement paths without changing booking flow:
+This supports two settlement paths without hiding partners from the marketplace:
 
 - Partner transfers the owed fee/tax amount directly to HANDS.
 - HANDS offsets the negative balance against later positive online-payment payouts.
 
 The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. The admin payments list and booking detail page also expose direct settlement forms for the same debt when finance is reviewing a cash booking from operational context.
 
-After finance confirms the partner deposit or an approved offset, the operator must enter a deposit reference or offset reference and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the partner from accepting new requests. The API rejects cash-fee debt settlement without a reference because finance needs an auditable payment or offset trail.
+After finance confirms the partner deposit or an approved offset, the operator must enter a deposit reference or offset reference and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks the partner from final acceptance. The API rejects cash-fee debt settlement without a reference because finance needs an auditable payment or offset trail.
 
 `ProviderWalletLedgerEntry` records the finance audit trail around those earning rows:
 

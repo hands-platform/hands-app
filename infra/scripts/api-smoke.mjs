@@ -2062,12 +2062,21 @@ const blockedOpenMatchingBooking = await postJson('/customer/bookings', customer
   lng: 106.6994,
   paymentMethod: 'MOMO',
 });
-const openMatchingWalletBlockError = await expectRequestFailure(
-  'Negative provider wallet blocks open matching join',
-  () =>
-    postJson(`/provider/bookings/${blockedOpenMatchingBooking.id}/join`, walletDebtProviderAuth.accessToken),
-  400,
+const openMatchingWalletJoin = await postJson(
+  `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
+  walletDebtProviderAuth.accessToken,
 );
+if (
+  !openMatchingWalletJoin.participants?.some(
+    (participant) => participant.providerProfileId === walletDebtProviderAuth.user.providerProfile.id,
+  )
+) {
+  throw new Error(
+    `Negative provider wallet should allow marketplace join intent before final acceptance: ${JSON.stringify(
+      openMatchingWalletJoin,
+    )}`,
+  );
+}
 const negativeWalletGateBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
   'wallet.negative_balance_gate',
@@ -2129,10 +2138,7 @@ const payoutWalletBlockError = await expectRequestFailure(
     }),
   400,
 );
-for (const [label, message] of [
-  ['open matching join', openMatchingWalletBlockError],
-  ['payout batch creation', payoutWalletBlockError],
-]) {
+for (const [label, message] of [['payout batch creation', payoutWalletBlockError]]) {
   if (!message.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
     throw new Error(`Negative wallet ${label} response is missing wallet block code: ${message}`);
   }
@@ -2308,7 +2314,6 @@ const review = await postJson('/customer/reviews', customerAuth.accessToken, {
   bookingId: booking.id,
   rating: 5,
   comment: 'Great service.',
-  tipAmount: 50000,
 });
 
 const completedCloseout = await postJson(`/admin/bookings/${booking.id}/closeout`, adminAuth.accessToken, {
@@ -2337,8 +2342,7 @@ if (
   completedEarning.netAmount !==
     completedEarning.grossAmount -
       completedEarning.platformFee -
-      completedEarning.withholdingAmount +
-      completedEarning.tipAmount
+      completedEarning.withholdingAmount
 ) {
   throw new Error(`Completed earning did not apply withholding policy: ${JSON.stringify(completedEarning)}`);
 }
