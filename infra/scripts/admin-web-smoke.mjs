@@ -197,6 +197,16 @@ const pages = [
     ],
   },
   { path: '/cash-settlements', markers: ['Cash Settlements', 'Settlement command queue'] },
+  {
+    path: '/finance-closeout',
+    markers: [
+      'Finance Closeout',
+      'Closeout reconciliation board',
+      'Payment-to-earning checks',
+      'Cash debt handoff',
+      'Payout release checks',
+    ],
+  },
   { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },

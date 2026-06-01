@@ -40,6 +40,7 @@ const navSections = [
   {
     label: 'Finance',
     links: [
+      ['/finance-closeout', 'Finance Closeout'],
       ['/payments', 'Payments'],
       ['/refunds', 'Refunds'],
       ['/earnings', 'Earnings'],
