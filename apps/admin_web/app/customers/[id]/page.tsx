@@ -695,7 +695,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
           {filteredChatBookings.length > 0 ? (
-            filteredChatBookings.slice(0, 12).map((booking) => (
+            filteredChatBookings.map((booking) => (
               <div className="card" key={booking.id}>
                 <div className="risk-watch-header">
                   <div>
