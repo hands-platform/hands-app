@@ -42,6 +42,7 @@ Checked commands:
 - `npm.cmd run setup:doctor`: PASS
 - `npm.cmd run external:copy-check`: PASS. This prevents the deferred Supabase Phone Auth/SMS path from drifting back to a deprecated SMS-provider path and keeps Vonage recorded as the selected next E2E SMS provider.
 - `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, matching policy marketplace windows, 10km radius/join guards, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
+- `npm.cmd run api:domain-smoke`: PASS. This builds the API and executes pure earnings policy checks for non-cash wallet credit, cash wallet fee/tax debt, service duration payout matrix aggregation, VAT, other cost, and net HANDS fee evidence.
 - API policy coverage now explicitly guards admin price-step enforcement, service base-price step enforcement, payout-above-customer-price rejection, and partner price minimum/step rejection markers.
 - API policy coverage now also guards partner device/session and account-control invariants: device block/unblock round trip, account block rejection, account unblock recovery, and shared-device session-check behavior without turning that signal into an automatic app block.
 - API smoke now verifies that a completed direct booking using a partner custom service price selects the matching service payout matrix row, including gross amount, partner payout, platform fee, VAT, other cost, net company fee before withholding, and rule ID.
@@ -327,7 +328,9 @@ The next safest implementation order is:
 1. Make booking detail the strongest cross-linking source of truth.
    - It should show customer, selected/preferred partner, service duration/price snapshot, matching participants, chat archive, location, payment, wallet, tax, refund, cash settlement, and admin notes in one place.
 2. Keep operations policy visible in admin and guarded by smoke/API tests whenever matching rules change.
-3. Add any missing backend tests for service pricing, payout/tax logs, and cash wallet debt.
+3. Extend backend tests around payout/tax persistence and settlement state transitions.
+   - Pure earnings policy smoke now covers service payout matrix math, VAT/other cost evidence, non-cash wallet credit, and cash wallet debt.
+   - Next backend test gap: database-level persistence for provider earnings, tax logs, platform fee logs, wallet ledger entries, payout batch linking, and cash debt settlement.
 4. Return to mobile E2E screens only after the booking detail and policy/finance records are easy to inspect from admin.
 5. Apply final design/localization after these operational flows stop shifting.
 
