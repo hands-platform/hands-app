@@ -100,6 +100,7 @@ Admin dashboard:
 - Booking detail now includes a first-screen priority briefing for the operator's next action, customer/partner state, chat archive, location, payment, finance checks, and closeout handoff.
 - Booking detail now includes closeout readiness checks and an exception register for customer/address, partner choice, chat archive, payment state, finance ledger, cash settlement, location, and audit evidence.
 - Booking detail now includes a service pricing snapshot for selected service duration, customer price, partner payout, HANDS fee, tax/withholding, and wallet impact.
+- Booking detail now includes a focused communication and movement handoff panel for chat retention, latest message, booking alert delivery, disabled device evidence, and partner location snapshots.
 - Booking detail exposes immutable customer address snapshots to customer and admin reads, and API smoke verifies this so later location refactors do not overwrite booking history.
 - Booking detail now exposes closure evidence as the source-of-truth view: top metric, operating ledger, operating timeline, and activity CSV include closure time, actor, reason, and note.
 - Booking monitor rows now surface closure evidence when a booking has `closedAt`, and terminal bookings without an explicit actor/reason are flagged for operator completion.

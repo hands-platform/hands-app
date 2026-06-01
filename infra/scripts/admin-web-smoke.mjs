@@ -529,6 +529,7 @@ if (bookingLinkMatch) {
     'Operator notes',
     'Closeout readiness',
     'Operating timeline',
+    'Communication and movement handoff',
     'Chat lifecycle and retention',
     'Service pricing snapshot',
     'Open customer record',
