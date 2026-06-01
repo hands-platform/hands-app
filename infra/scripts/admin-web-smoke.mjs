@@ -615,6 +615,7 @@ if (customerLinkMatch) {
   const customerBody = await fetchPage(customerPath);
   const customerMarkers = [
     'Customer detail',
+    'Customer connected operations records',
     'Customer operator command queue',
     'Customer full record index',
     'Customer operating ledger',

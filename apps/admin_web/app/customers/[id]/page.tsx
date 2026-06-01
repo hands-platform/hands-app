@@ -80,6 +80,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     (sum, booking) => sum + (booking.chatRoom?.messages?.length ?? 0),
     0,
   );
+  const customerPaymentCount = bookings.filter((booking) => booking.payment).length;
   const customerActivityRecords = buildCustomerActivityRecords(customer, bookings, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
   const filteredBookings = bookings.filter((booking) =>
@@ -119,6 +120,70 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     pushDevices,
     notifications,
   });
+  const connectedCustomerRecordLinks = [
+    {
+      label: 'Latest booking',
+      value: latestBooking ? shortId(latestBooking.id) : 'None',
+      detail: latestBooking
+        ? `${latestBooking.status} / ${bookingServiceLabel(latestBooking)}`
+        : 'No booking has been created for this customer.',
+      href: latestBooking ? `/bookings/${latestBooking.id}` : '#booking-history',
+      tone: latestBooking ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Last completed work',
+      value: lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None',
+      detail: lastCompletedBooking
+        ? formatDate(lastCompletedBooking.updatedAt ?? lastCompletedBooking.createdAt)
+        : 'No completed service record yet.',
+      href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : '#booking-history',
+      tone: lastCompletedBooking ? 'pill-success' : 'pill-neutral',
+    },
+    {
+      label: 'Chat archive',
+      value: `${chatMessageCount} message(s)`,
+      detail: `${chatRooms.length} retained customer-partner room(s).`,
+      href: `/chat-archive?q=${encodeURIComponent(customer.id)}`,
+      tone: chatRooms.length ? 'pill-success' : 'pill-neutral',
+    },
+    {
+      label: 'Payment records',
+      value: formatMoney(wallet.capturedSpend),
+      detail: `${customerPaymentCount} payment row(s), ${wallet.refundCount} refund row(s).`,
+      href: `/payments?customer=${encodeURIComponent(customer.id)}`,
+      tone: customerPaymentCount ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Refund records',
+      value: formatMoney(wallet.refundAmount),
+      detail: wallet.refundCount ? 'Open refund ledger rows exist.' : 'No refund row loaded.',
+      href: wallet.refundCount ? '/refunds?review=open' : '#wallet',
+      tone: wallet.refundCount ? 'pill-warn' : 'pill-neutral',
+    },
+    {
+      label: 'Saved locations',
+      value: `${addresses.length} location(s)`,
+      detail: addresses[0]?.value ?? 'No saved address or selected map pin.',
+      href: '#addresses',
+      tone: addresses.length ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'App sessions',
+      value: latestSession ? 'Seen' : 'None',
+      detail: latestSession
+        ? `${latestSession.platform ?? 'Unknown'} / ${formatDate(latestSession.lastSeenAt)}`
+        : 'No app session loaded.',
+      href: customer.user?.id ? `/app-sessions?user=${encodeURIComponent(customer.user.id)}` : '#customer-info',
+      tone: latestSession ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Operator notes',
+      value: `${recentAuditLogs.length} note(s)`,
+      detail: recentAuditLogs[0]?.action ?? 'No operator note loaded.',
+      href: `/audit-log?target=${encodeURIComponent(`customer:${customer.id}`)}`,
+      tone: recentAuditLogs.length ? 'pill-info' : 'pill-neutral',
+    },
+  ];
   const customerOperatingLedger = buildCustomerOperatingLedger({
     customer,
     bookings,
@@ -222,6 +287,31 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           value={latestSession ? 'Seen' : 'None'}
           helper={latestSession ? formatDate(latestSession.lastSeenAt) : 'No app session recorded'}
         />
+      </section>
+
+      <section className="card" id="customer-connected-operations-records" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer connected operations records</h2>
+            <p className="muted">
+              Jump from this customer to the linked bookings, completed work, chat archive, payment, refund,
+              saved location, app session, and operator records.
+            </p>
+          </div>
+          <span className="pill pill-info">{connectedCustomerRecordLinks.length} links</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {connectedCustomerRecordLinks.map((record) => (
+            <div key={record.label}>
+              <span>{record.label}</span>
+              <strong>{record.value}</strong>
+              <small>{record.detail}</small>
+              <Link className={`pill ${record.tone}`} href={record.href}>
+                Open
+              </Link>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card" id="customer-operator-command-queue" style={{ marginBottom: 16 }}>
