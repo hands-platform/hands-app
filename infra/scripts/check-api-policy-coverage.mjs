@@ -43,6 +43,27 @@ const requiredCoverage = [
     ],
   },
   {
+    area: 'matching policy marketplace window',
+    markers: [
+      "'matching.provider_response_window_minutes'",
+      "'matching.backup_provider_radius_meters'",
+      'Direct booking should notify eligible marketplace partners',
+      'trace.backupProviderRadiusMeters === 10000',
+      "acceptedButWaiting.status !== 'OPEN_MATCHING' || acceptedButWaiting.selectedProviderId !== null",
+      'Delayed backup booking snapshot should hide request from non-preferred partner',
+      'Delayed backup partner join',
+      'First-pick decline should immediately expose delayed backup request',
+    ],
+  },
+  {
+    area: 'marketplace radius join guard',
+    markers: [
+      'hybridBackupNotification.data?.backupProviderRadiusMeters !== 10000',
+      'Only partners within 1km can join this booking',
+      'Provider open bookings must expose only joinable 10km requests with distance metadata',
+    ],
+  },
+  {
     area: 'admin chat retention after completion',
     markers: [
       'Completed booking did not retain admin chat archive',
