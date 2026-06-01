@@ -2395,7 +2395,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'Partner controls',
         title: 'Negative wallet gate protects cash-fee debt',
         detail:
-          'Partners with unpaid cash-fee debt should be blocked from accepting or joining until settlement is posted.',
+          'Partners with unpaid cash-fee debt can still show intent, but final acceptance or customer selection should wait until settlement is posted.',
         operatorAction:
           negativeCashDebtBookings.length > 0
             ? `${negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`

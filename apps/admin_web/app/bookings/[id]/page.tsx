@@ -5800,7 +5800,7 @@ function bookingOperationalPolicySnapshot(
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
             ? 'Negative wallet partners can hold one active recovery booking before being blocked again.'
-            : 'Negative wallet partners are blocked from joining, accepting, or being selected.',
+            : 'Negative wallet partners can show intent, but final acceptance or customer selection is blocked.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({

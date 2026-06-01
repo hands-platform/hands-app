@@ -155,7 +155,7 @@ Current MVP policy:
 - marketplace partner location freshness: `30` minutes
 - marketplace partners can appear while the first partner is still deciding
 - customer always selects the final partner
-- negative partner wallet blocks booking acceptance
+- negative partner wallet can allow marketplace intent, but blocks final acceptance or customer selection
 - cancellation and no-show decisions require admin review first
 
 Seed/default values:
