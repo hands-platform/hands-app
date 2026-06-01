@@ -10,6 +10,7 @@ const pages = [
     path: '/',
     markers: [
       'HANDS Admin',
+      'Dashboard date range',
       'Daily operations snapshot',
       'Matching wait now',
       'Active app customers',
@@ -51,6 +52,10 @@ const pages = [
       'Finance snapshot',
       'Partner readiness funnel',
     ],
+  },
+  {
+    path: '/?range=7d',
+    markers: ['HANDS Admin', 'Dashboard date range', 'Last 7 days', 'Hourly booking demand'],
   },
   {
     path: '/bookings',

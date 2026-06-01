@@ -16,6 +16,13 @@ import {
   apiGet,
   adminGet,
 } from '../lib/admin-api';
+import {
+  type AdminDateRange,
+  dateRangeLabel,
+  isInDateRange,
+  normalizeDateRange,
+  readSearchParam,
+} from '../lib/date-range';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -137,7 +144,22 @@ type TodayCommandOrderItem = {
   tone: 'ok' | 'info' | 'warn' | 'danger';
 };
 
-export default async function DashboardPage() {
+type DashboardPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+type DashboardFilters = {
+  range: AdminDateRange;
+};
+
+const dashboardRangeLinks: Array<{ range: AdminDateRange; label: string; href: string }> = [
+  { range: 'all', label: 'All dates', href: '/' },
+  { range: 'today', label: 'Today', href: '/?range=today' },
+  { range: '7d', label: 'Last 7 days', href: '/?range=7d' },
+  { range: '30d', label: 'Last 30 days', href: '/?range=30d' },
+];
+
+export default async function DashboardPage({ searchParams }: { searchParams?: DashboardPageSearchParams }) {
+  const filters = buildDashboardFilters(searchParams ? await searchParams : {});
+  const selectedRangeLabel = dateRangeLabel(filters.range);
   const [
     users,
     providers,
@@ -197,11 +219,24 @@ export default async function DashboardPage() {
   const cashDebtRows = openCashDebtEarnings(earningRows);
   const cashDebtAmount = cashSettlementSummary.totalDebtAmount;
   const queueSummary = buildOpsQueueSummary(queue);
-  const bookingOps = buildBookingOpsInsights(bookings);
-  const bookingDeepDive = buildBookingOperationsDeepDive(bookings, payments);
+  const rangeBookings = bookings.filter((booking) =>
+    isInDateRange(booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt, filters.range),
+  );
+  const rangePayments = payments.filter((payment) =>
+    isInDateRange(payment.booking?.createdAt ?? payment.refunds?.[0]?.createdAt, filters.range),
+  );
+  const rangeNotifications = notifications.filter((notification) =>
+    isInDateRange(notification.createdAt, filters.range),
+  );
+  const rangeEarningRows = earningRows.filter((earning) => isInDateRange(earning.createdAt, filters.range));
+  const rangePayoutBatches = payoutBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range));
+  const bookingOps = buildBookingOpsInsights(rangeBookings);
+  const liveBookingOps = buildBookingOpsInsights(bookings);
+  const bookingDeepDive = buildBookingOperationsDeepDive(rangeBookings, rangePayments);
+  const liveBookingDeepDive = buildBookingOperationsDeepDive(bookings, payments);
   const appPresence = buildAppPresence(users, bookings, appSessions);
-  const hourlyDemand = buildHourlyBookingDemand(bookings);
-  const regionalDemand = buildRegionalBookingDemand(bookings);
+  const hourlyDemand = buildHourlyBookingDemand(rangeBookings);
+  const regionalDemand = buildRegionalBookingDemand(rangeBookings);
   const partnerSupply = buildPartnerSupplyInsights(
     providers,
     bookings,
@@ -240,8 +275,8 @@ export default async function DashboardPage() {
   const shiftBriefing = buildShiftCommandBriefing({
     queue,
     commandSignals,
-    bookingOps,
-    bookingDeepDive,
+    bookingOps: liveBookingOps,
+    bookingDeepDive: liveBookingDeepDive,
     appPresence,
     partnerSupply,
     matchingControl,
@@ -251,7 +286,7 @@ export default async function DashboardPage() {
   });
   const operatorStartChecklist = buildOperatorStartChecklist({
     queue,
-    bookingOps,
+    bookingOps: liveBookingOps,
     appPresence,
     partnerSupply,
     matchingControl,
@@ -264,14 +299,14 @@ export default async function DashboardPage() {
     bookings,
     providers,
     appPresence,
-    bookingOps,
+    bookingOps: liveBookingOps,
     failedNotifications,
     cashSettlementSummary,
     activePayoutBatches,
   });
   const todayCommandOrder = buildTodayCommandOrder({
     queue,
-    bookingOps,
+    bookingOps: liveBookingOps,
     matchingControl,
     appPresence,
     cashSettlementSummary,
@@ -282,39 +317,39 @@ export default async function DashboardPage() {
   const metrics = [
     [
       'Total bookings',
-      bookings.length.toString(),
-      'All reservations currently loaded into the admin snapshot.',
+      rangeBookings.length.toString(),
+      `${selectedRangeLabel} reservations in the selected dashboard window.`,
     ],
     [
       'Open matching',
       bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length.toString(),
-      'Customer is waiting for partner response.',
+      'Live counter: customer is waiting for partner response.',
     ],
     ['Active bookings', activeBookings.length.toString(), 'Bookings that still need operational visibility.'],
     [
       'Completed bookings',
       bookingOps.completed.toString(),
-      'Finished services ready for payment/review closeout.',
+      `${selectedRangeLabel} finished services ready for payment/review closeout.`,
     ],
     [
       'Cancelled bookings',
       bookingOps.cancelled.toString(),
-      'Cancelled requests needing refund/release review.',
+      `${selectedRangeLabel} cancelled requests needing refund/release review.`,
     ],
     [
       'Expired bookings',
       bookingOps.expired.toString(),
-      'Expired requests that should have payment release and customer follow-up checked.',
+      `${selectedRangeLabel} expired requests that should have payment release and customer follow-up checked.`,
     ],
     [
       'No-show signal',
       bookingOps.noShowSignal.toString(),
-      'Formal NO_SHOW reservations plus overdue matched bookings without chat.',
+      `${selectedRangeLabel} formal NO_SHOW reservations plus overdue matched bookings without chat.`,
     ],
     [
       'Closeout checks',
       bookingOps.completedCloseoutChecks.toString(),
-      'Completed bookings missing capture, earning, tax, fee, or wallet ledger records.',
+      `${selectedRangeLabel} completed bookings missing capture, earning, tax, fee, or wallet ledger records.`,
     ],
     [
       'Online partners',
@@ -349,8 +384,10 @@ export default async function DashboardPage() {
     ],
     [
       'Failed notifications',
-      failedNotifications.length.toString(),
-      'Delivery failures that may need retry or disabled-device review.',
+      rangeNotifications
+        .filter((notification) => (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'))
+        .length.toString(),
+      `${selectedRangeLabel} delivery failures that may need retry or disabled-device review.`,
     ],
     [
       'Available payout',
@@ -364,8 +401,8 @@ export default async function DashboardPage() {
     ],
     [
       'Open payout batches',
-      activePayoutBatches.length.toString(),
-      'Draft, processing, failed, or held payout batches needing finance visibility.',
+      rangePayoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status)).length.toString(),
+      `${selectedRangeLabel} draft, processing, failed, or held payout batches needing finance visibility.`,
     ],
     [
       'Action queue',
@@ -483,6 +520,48 @@ export default async function DashboardPage() {
           <Link className="text-link" href="/audit-log">
             Audit log
           </Link>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Dashboard date range</h2>
+            <p className="muted">
+              Range: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled work,
+              closeout checks, and notification history use this window. Live queues and app sessions stay
+              current so urgent work is never hidden.
+            </p>
+          </div>
+          <span className="pill pill-info">{selectedRangeLabel}</span>
+        </div>
+        <div className="actions" style={{ marginTop: 12 }}>
+          {dashboardRangeLinks.map((link) => (
+            <Link
+              className={filters.range === link.range ? 'pill pill-info' : 'text-link'}
+              href={link.href}
+              key={link.range}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Range bookings</span>
+            <strong>{rangeBookings.length}</strong>
+            <small>Records included in demand and status analysis.</small>
+          </div>
+          <div>
+            <span>Range payments</span>
+            <strong>{rangePayments.length}</strong>
+            <small>Payment method mix for the selected window.</small>
+          </div>
+          <div>
+            <span>Range earnings</span>
+            <strong>{rangeEarningRows.length}</strong>
+            <small>Earning rows created in the selected window.</small>
+          </div>
         </div>
       </section>
 
@@ -941,7 +1020,8 @@ export default async function DashboardPage() {
             <div>
               <h2>Booking attention cockpit</h2>
               <p className="muted">
-                Dispatch exceptions that should be checked before they become customer complaints.
+                Dispatch exceptions for the selected dashboard date range that should be checked before they
+                become customer complaints.
               </p>
             </div>
             <Link className="text-link" href="/bookings?view=attention">
@@ -1010,7 +1090,7 @@ export default async function DashboardPage() {
             <div>
               <h2>Service and payment mix</h2>
               <p className="muted">
-                Which services and payment methods are creating operational load right now.
+                Which services and payment methods created operational load in the selected dashboard date range.
               </p>
             </div>
             <Link className="text-link" href="/services">
@@ -1069,7 +1149,8 @@ export default async function DashboardPage() {
             <div>
               <h2>Booking status control</h2>
               <p className="muted">
-                Total, matching, completion, cancellation, and no-show proxy for daily operations.
+                Total, matching, completion, cancellation, and no-show proxy for the selected dashboard date
+                range.
               </p>
             </div>
             <Link className="text-link" href="/bookings">
@@ -1693,6 +1774,12 @@ export default async function DashboardPage() {
       <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3100/api'}</p>
     </>
   );
+}
+
+function buildDashboardFilters(params: Record<string, string | string[] | undefined>): DashboardFilters {
+  return {
+    range: normalizeDateRange(readSearchParam(params.range)),
+  };
 }
 
 function ExternalReadinessRow({ check }: { check: AdminExternalReadiness['checks'][number] }) {
