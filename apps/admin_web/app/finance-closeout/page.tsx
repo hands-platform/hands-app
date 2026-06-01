@@ -8,6 +8,13 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
+import {
+  AdminDateRange,
+  dateRangeLabel,
+  isInDateRange,
+  normalizeDateRange,
+  readSearchParam,
+} from '../../lib/date-range';
 
 type FinanceCloseoutPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -36,9 +43,9 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
   ]);
 
   const currency = earningsSummary.currency || payments[0]?.currency || cashSummary?.currency || 'VND';
-  const filteredRefunds = refunds.filter((refund) => isInRecordRange(refund.createdAt, filters.range));
-  const filteredEarnings = earnings.filter((earning) => isInRecordRange(earning.createdAt, filters.range));
-  const filteredPayouts = payouts.filter((batch) => isInRecordRange(batch.createdAt, filters.range));
+  const filteredRefunds = refunds.filter((refund) => isInDateRange(refund.createdAt, filters.range));
+  const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
+  const filteredPayouts = payouts.filter((batch) => isInDateRange(batch.createdAt, filters.range));
   const filteredEarningsSummary = summarizeEarnings(filteredEarnings, currency);
   const reconciliation = buildReconciliation({
     payments,
@@ -256,7 +263,7 @@ type ReconciliationInput = {
   payouts: AdminPayoutBatch[];
   cashSummary: AdminCashSettlementSummary | null;
   currency: string;
-  range: FinanceCloseoutRange;
+  range: AdminDateRange;
 };
 
 function buildReconciliation(input: ReconciliationInput) {
@@ -409,64 +416,12 @@ function formatMoney(amount: number, currency: string) {
   return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
 }
 
-type FinanceCloseoutRange = 'all' | 'today' | '7d' | '30d';
-
 function buildFinanceCloseoutFilters(params: Record<string, string | string[] | undefined>) {
-  const range = normalizeRange(readFirstParam(params.range));
+  const range = normalizeDateRange(readSearchParam(params.range));
   return {
     range,
-    label: rangeLabel(range),
+    label: dateRangeLabel(range),
   };
-}
-
-function readFirstParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-function normalizeRange(value: string | undefined): FinanceCloseoutRange {
-  if (value === 'today' || value === '7d' || value === '30d') {
-    return value;
-  }
-  return 'all';
-}
-
-function rangeLabel(range: FinanceCloseoutRange) {
-  if (range === 'today') {
-    return 'Today';
-  }
-  if (range === '7d') {
-    return 'Last 7 days';
-  }
-  if (range === '30d') {
-    return 'Last 30 days';
-  }
-  return 'All records';
-}
-
-function isInRecordRange(value: string | undefined | null, range: FinanceCloseoutRange) {
-  const start = rangeStart(range);
-  if (!start) {
-    return true;
-  }
-  if (!value) {
-    return false;
-  }
-  const recordTime = Date.parse(value);
-  return Number.isFinite(recordTime) && recordTime >= start.getTime();
-}
-
-function rangeStart(range: FinanceCloseoutRange) {
-  const now = new Date();
-  if (range === 'today') {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  if (range === '7d') {
-    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  }
-  if (range === '30d') {
-    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-  return null;
 }
 
 function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEarningSummary {

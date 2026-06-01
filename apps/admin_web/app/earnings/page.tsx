@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
+import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
 
 const emptySummary: AdminEarningSummary = {
@@ -27,8 +28,8 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
     adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
   ]);
   const currency = apiSummary.currency || earnings[0]?.currency || payoutBatches[0]?.currency || 'VND';
-  const filteredEarnings = earnings.filter((earning) => isInRecordRange(earning.createdAt, filters.range));
-  const filteredPayoutBatches = payoutBatches.filter((batch) => isInRecordRange(batch.createdAt, filters.range));
+  const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
+  const filteredPayoutBatches = payoutBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range));
   const summary = filters.range === 'all' ? apiSummary : summarizeEarnings(filteredEarnings, currency);
   const sortedEarnings = sortEarnings(filteredEarnings);
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, filteredPayoutBatches);
@@ -58,7 +59,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
           <div>
             <h2>Earnings date range</h2>
             <p className="muted">
-              Range: {rangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout batches
+              Range: {dateRangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout batches
               on this page use record dates.
             </p>
           </div>
@@ -585,62 +586,10 @@ function sortEarnings(earnings: AdminEarning[]) {
   });
 }
 
-type EarningRange = 'all' | 'today' | '7d' | '30d';
-
 function buildEarningFilters(params: Record<string, string | string[] | undefined>) {
   return {
-    range: normalizeRange(readParam(params.range)),
+    range: normalizeDateRange(readSearchParam(params.range)),
   };
-}
-
-function readParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
-}
-
-function normalizeRange(value: string): EarningRange {
-  if (value === 'today' || value === '7d' || value === '30d') {
-    return value;
-  }
-  return 'all';
-}
-
-function rangeLabel(range: EarningRange) {
-  if (range === 'today') {
-    return 'Today';
-  }
-  if (range === '7d') {
-    return 'Last 7 days';
-  }
-  if (range === '30d') {
-    return 'Last 30 days';
-  }
-  return 'All dates';
-}
-
-function isInRecordRange(value: string | undefined | null, range: EarningRange) {
-  const start = rangeStart(range);
-  if (!start) {
-    return true;
-  }
-  if (!value) {
-    return false;
-  }
-  const recordTime = Date.parse(value);
-  return Number.isFinite(recordTime) && recordTime >= start.getTime();
-}
-
-function rangeStart(range: EarningRange) {
-  const now = new Date();
-  if (range === 'today') {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  if (range === '7d') {
-    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  }
-  if (range === '30d') {
-    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-  return null;
 }
 
 function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEarningSummary {

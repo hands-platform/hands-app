@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminCashSettlementSummary, AdminEarning, adminGet } from '../../lib/admin-api';
+import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { settleCashFeeDebt } from './actions';
 
 type CashSettlementsPageProps = {
@@ -12,7 +13,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
     adminGet<AdminEarning[]>('/admin/cash-settlement-earnings', []),
     adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
   ]);
-  const filteredEarnings = earnings.filter((earning) => isInRecordRange(earning.createdAt, filters.range));
+  const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
   const rows = buildCashSettlementRows(filteredEarnings);
   const providers = buildProviderGroups(rows);
   const visibleSummary = buildSummary(rows, providers);
@@ -34,7 +35,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           <div>
             <h2>Cash settlement date range</h2>
             <p className="muted">
-              Range: {rangeLabel(filters.range)}. All date-filtered totals are calculated from visible cash
+              Range: {dateRangeLabel(filters.range)}. All date-filtered totals are calculated from visible cash
               earning records; all-date totals use the API summary.
             </p>
           </div>
@@ -523,62 +524,10 @@ function partnerDisplayText(value: string) {
   return value.replace(/\bProvider\b/g, 'Partner').replace(/\bprovider\b/g, 'partner');
 }
 
-type CashSettlementRange = 'all' | 'today' | '7d' | '30d';
-
 function buildCashSettlementFilters(params: Record<string, string | string[] | undefined>) {
   return {
-    range: normalizeRange(readParam(params.range)),
+    range: normalizeDateRange(readSearchParam(params.range)),
   };
-}
-
-function readParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
-}
-
-function normalizeRange(value: string): CashSettlementRange {
-  if (value === 'today' || value === '7d' || value === '30d') {
-    return value;
-  }
-  return 'all';
-}
-
-function rangeLabel(range: CashSettlementRange) {
-  if (range === 'today') {
-    return 'Today';
-  }
-  if (range === '7d') {
-    return 'Last 7 days';
-  }
-  if (range === '30d') {
-    return 'Last 30 days';
-  }
-  return 'All dates';
-}
-
-function isInRecordRange(value: string | undefined | null, range: CashSettlementRange) {
-  const start = rangeStart(range);
-  if (!start) {
-    return true;
-  }
-  if (!value) {
-    return false;
-  }
-  const recordTime = Date.parse(value);
-  return Number.isFinite(recordTime) && recordTime >= start.getTime();
-}
-
-function rangeStart(range: CashSettlementRange) {
-  const now = new Date();
-  if (range === 'today') {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  if (range === '7d') {
-    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  }
-  if (range === '30d') {
-    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-  return null;
 }
 
 function formatMoney(amount: number, currency: string) {

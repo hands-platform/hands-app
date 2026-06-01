@@ -1,4 +1,5 @@
 import { AdminPayment, adminGet } from '../../lib/admin-api';
+import { AdminDateRange, dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import Link from 'next/link';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
 
@@ -56,7 +57,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
               Jump straight from the dashboard lane into the payment subset that needs operator review.
             </p>
             <p className="muted">
-              Payment date range: {rangeLabel(filters.range)}. Until the payment table stores its own
+              Payment date range: {dateRangeLabel(filters.range)}. Until the payment table stores its own
               timestamp, this uses the linked booking record date.
             </p>
             {activeFilter?.review ? (
@@ -227,19 +228,15 @@ function sortPayments(payments: AdminPayment[]) {
 
 function buildPaymentFilters(params: Record<string, string | string[] | undefined>) {
   return {
-    review: readParam(params.review),
-    range: normalizeRange(readParam(params.range)),
+    review: readSearchParam(params.review),
+    range: normalizeDateRange(readSearchParam(params.range)),
   };
-}
-
-function readParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
 }
 
 function filterPayments(payments: AdminPayment[], filters: ReturnType<typeof buildPaymentFilters>) {
   return payments.filter(
     (payment) =>
-      isInRecordRange(paymentRecordDate(payment), filters.range) &&
+      isInDateRange(paymentRecordDate(payment), filters.range) &&
       (!filters.review || paymentMatchesReview(payment, filters.review)),
   );
 }
@@ -282,15 +279,6 @@ function paymentFilterLinks() {
   ];
 }
 
-type PaymentRange = 'all' | 'today' | '7d' | '30d';
-
-function normalizeRange(value: string): PaymentRange {
-  if (value === 'today' || value === '7d' || value === '30d') {
-    return value;
-  }
-  return 'all';
-}
-
 function paymentRangeLinks(review: string) {
   return [
     { label: 'All dates', href: withPaymentReview('/payments', review), range: 'all' as const },
@@ -300,7 +288,7 @@ function paymentRangeLinks(review: string) {
   ];
 }
 
-function withPaymentRange(href: string, range: PaymentRange) {
+function withPaymentRange(href: string, range: AdminDateRange) {
   if (range === 'all') {
     return href;
   }
@@ -316,19 +304,6 @@ function withPaymentReview(href: string, review: string) {
   return `${href}${separator}review=${review}`;
 }
 
-function rangeLabel(range: PaymentRange) {
-  if (range === 'today') {
-    return 'Today';
-  }
-  if (range === '7d') {
-    return 'Last 7 days';
-  }
-  if (range === '30d') {
-    return 'Last 30 days';
-  }
-  return 'All dates';
-}
-
 function paymentRecordDate(payment: AdminPayment) {
   return payment.booking?.createdAt ?? null;
 }
@@ -336,32 +311,6 @@ function paymentRecordDate(payment: AdminPayment) {
 function paymentRecordDateLabel(payment: AdminPayment) {
   const value = paymentRecordDate(payment);
   return value ? `Record date ${new Date(value).toLocaleString()}` : 'No payment record date';
-}
-
-function isInRecordRange(value: string | undefined | null, range: PaymentRange) {
-  const start = rangeStart(range);
-  if (!start) {
-    return true;
-  }
-  if (!value) {
-    return false;
-  }
-  const recordTime = Date.parse(value);
-  return Number.isFinite(recordTime) && recordTime >= start.getTime();
-}
-
-function rangeStart(range: PaymentRange) {
-  const now = new Date();
-  if (range === 'today') {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  if (range === '7d') {
-    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  }
-  if (range === '30d') {
-    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-  return null;
 }
 
 function paymentFilterDescription(review: string) {

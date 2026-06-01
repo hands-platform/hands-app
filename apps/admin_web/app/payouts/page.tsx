@@ -1,4 +1,5 @@
 import { AdminEarning, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
+import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { markPayoutFailed, markPayoutPaid, markPayoutProcessing, updatePayoutTransferRef } from './actions';
 
 type PayoutsPageProps = {
@@ -8,7 +9,7 @@ type PayoutsPageProps = {
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const filters = buildPayoutFilters(searchParams ? await searchParams : {});
   const allBatches = await adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []);
-  const batches = sortBatches(allBatches.filter((batch) => isInRecordRange(batch.createdAt, filters.range)));
+  const batches = sortBatches(allBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range)));
   const summary = buildSummary(batches);
   const commandSignals = buildPayoutCommandSignals(batches);
   const payoutLanes = buildPayoutLanes(batches);
@@ -25,7 +26,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           <div>
             <h2>Payout date range</h2>
             <p className="muted">
-              Range: {rangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service
+              Range: {dateRangeLabel(filters.range)}. Batch summary, release checks, status lanes, and service
               evidence use payout batch record dates.
             </p>
           </div>
@@ -597,62 +598,10 @@ function payoutPriority(status: string) {
   }
 }
 
-type PayoutRange = 'all' | 'today' | '7d' | '30d';
-
 function buildPayoutFilters(params: Record<string, string | string[] | undefined>) {
   return {
-    range: normalizeRange(readParam(params.range)),
+    range: normalizeDateRange(readSearchParam(params.range)),
   };
-}
-
-function readParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
-}
-
-function normalizeRange(value: string): PayoutRange {
-  if (value === 'today' || value === '7d' || value === '30d') {
-    return value;
-  }
-  return 'all';
-}
-
-function rangeLabel(range: PayoutRange) {
-  if (range === 'today') {
-    return 'Today';
-  }
-  if (range === '7d') {
-    return 'Last 7 days';
-  }
-  if (range === '30d') {
-    return 'Last 30 days';
-  }
-  return 'All dates';
-}
-
-function isInRecordRange(value: string | undefined | null, range: PayoutRange) {
-  const start = rangeStart(range);
-  if (!start) {
-    return true;
-  }
-  if (!value) {
-    return false;
-  }
-  const recordTime = Date.parse(value);
-  return Number.isFinite(recordTime) && recordTime >= start.getTime();
-}
-
-function rangeStart(range: PayoutRange) {
-  const now = new Date();
-  if (range === 'today') {
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
-  if (range === '7d') {
-    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  }
-  if (range === '30d') {
-    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  }
-  return null;
 }
 
 function buildSummary(batches: AdminPayoutBatch[]) {
