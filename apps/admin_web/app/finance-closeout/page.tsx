@@ -9,7 +9,12 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 
-export default async function FinanceCloseoutPage() {
+type FinanceCloseoutPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function FinanceCloseoutPage({ searchParams }: FinanceCloseoutPageProps) {
+  const filters = buildFinanceCloseoutFilters(searchParams ? await searchParams : {});
   const [payments, refunds, earningsSummary, earnings, payouts, cashSummary] = await Promise.all([
     adminGet<AdminPayment[]>('/admin/payments', []),
     adminGet<AdminRefund[]>('/admin/refunds', []),
@@ -31,7 +36,20 @@ export default async function FinanceCloseoutPage() {
   ]);
 
   const currency = earningsSummary.currency || payments[0]?.currency || cashSummary?.currency || 'VND';
-  const reconciliation = buildReconciliation({ payments, refunds, earningsSummary, earnings, payouts, cashSummary, currency });
+  const filteredRefunds = refunds.filter((refund) => isInRecordRange(refund.createdAt, filters.range));
+  const filteredEarnings = earnings.filter((earning) => isInRecordRange(earning.createdAt, filters.range));
+  const filteredPayouts = payouts.filter((batch) => isInRecordRange(batch.createdAt, filters.range));
+  const filteredEarningsSummary = summarizeEarnings(filteredEarnings, currency);
+  const reconciliation = buildReconciliation({
+    payments,
+    refunds: filteredRefunds,
+    earningsSummary: filteredEarningsSummary,
+    earnings: filteredEarnings,
+    payouts: filteredPayouts,
+    cashSummary,
+    currency,
+    range: filters.range,
+  });
   const closeoutTasks = buildCloseoutTasks(reconciliation);
   const handoffRows = buildHandoffRows(reconciliation);
 
@@ -43,6 +61,33 @@ export default async function FinanceCloseoutPage() {
         releases. This page does not judge customers or partners; it only shows factual money-flow records
         that operators must check before handoff.
       </p>
+
+      <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Finance date range</h2>
+            <p className="muted">
+              Range: {filters.label}. Refunds, earnings, payout batches, and local cash debt use record dates.
+              Payment hold rows remain all-time until payment timestamps are exposed by the API.
+            </p>
+          </div>
+          <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
+            Open finance audit
+          </Link>
+        </div>
+        <div className="filter-row" style={{ marginTop: 12 }}>
+          {[
+            ['All records', '/finance-closeout'],
+            ['Today', '/finance-closeout?range=today'],
+            ['Last 7 days', '/finance-closeout?range=7d'],
+            ['Last 30 days', '/finance-closeout?range=30d'],
+          ].map(([label, href]) => (
+            <Link className="filter-pill" href={href} key={href}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
         <div className="card">
@@ -59,7 +104,7 @@ export default async function FinanceCloseoutPage() {
         </div>
         <div className="card">
           <p>Available payout</p>
-          <h2>{formatMoney(earningsSummary.availableNetAmount, currency)}</h2>
+          <h2>{formatMoney(filteredEarningsSummary.availableNetAmount, currency)}</h2>
         </div>
         <div className="card">
           <p>Open payout batches</p>
@@ -114,22 +159,22 @@ export default async function FinanceCloseoutPage() {
         <div className="service-trace-summary">
           <div>
             <span>Gross represented</span>
-            <strong>{formatMoney(earningsSummary.grossAmount, currency)}</strong>
-            <small>{earningsSummary.count} earning record(s)</small>
+            <strong>{formatMoney(filteredEarningsSummary.grossAmount, currency)}</strong>
+            <small>{filteredEarningsSummary.count} earning record(s)</small>
           </div>
           <div>
             <span>HANDS fee</span>
-            <strong>{formatMoney(earningsSummary.platformFee, currency)}</strong>
+            <strong>{formatMoney(filteredEarningsSummary.platformFee, currency)}</strong>
             <small>Before VAT, withholding, and other cost views.</small>
           </div>
           <div>
             <span>Tax withheld</span>
-            <strong>{formatMoney(earningsSummary.withholdingAmount, currency)}</strong>
+            <strong>{formatMoney(filteredEarningsSummary.withholdingAmount, currency)}</strong>
             <small>Stored from active tax policy snapshots.</small>
           </div>
           <div>
             <span>Pending partner net</span>
-            <strong>{formatMoney(earningsSummary.pendingNetAmount, currency)}</strong>
+            <strong>{formatMoney(filteredEarningsSummary.pendingNetAmount, currency)}</strong>
             <small>Positive payout or negative cash-fee debt.</small>
           </div>
         </div>
@@ -211,6 +256,7 @@ type ReconciliationInput = {
   payouts: AdminPayoutBatch[];
   cashSummary: AdminCashSettlementSummary | null;
   currency: string;
+  range: FinanceCloseoutRange;
 };
 
 function buildReconciliation(input: ReconciliationInput) {
@@ -225,6 +271,9 @@ function buildReconciliation(input: ReconciliationInput) {
     (batch) => ['PROCESSING', 'PAID'].includes(batch.status) && !batch.transferRef,
   );
   const earningsWithoutTaxLogs = input.earnings.filter((earning) => (earning.taxLogs?.length ?? 0) === 0);
+  const rangedCashDebtAmount = input.earnings
+    .filter((earning) => earning.netAmount < 0 && earning.status !== 'PAID')
+    .reduce((sum, earning) => sum + Math.abs(earning.netAmount), 0);
 
   return {
     authorizedPayments,
@@ -237,7 +286,10 @@ function buildReconciliation(input: ReconciliationInput) {
     openPaymentCount: authorizedPayments.length + cashPending.length,
     openRefundCount: openRefunds.length,
     openPayoutCount: openPayouts.length,
-    cashDebtAmount: input.cashSummary?.totalDebtAmount ?? Math.abs(Math.min(0, input.earningsSummary.netAmount)),
+    cashDebtAmount:
+      input.range === 'all'
+        ? input.cashSummary?.totalDebtAmount ?? Math.abs(Math.min(0, input.earningsSummary.netAmount))
+        : rangedCashDebtAmount,
     missingReferenceCount: missingPaymentRefs.length + payoutMissingRefs.length,
     currency: input.currency,
   };
@@ -355,6 +407,101 @@ function InfoTile({ label, value }: { label: string; value: string }) {
 
 function formatMoney(amount: number, currency: string) {
   return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
+}
+
+type FinanceCloseoutRange = 'all' | 'today' | '7d' | '30d';
+
+function buildFinanceCloseoutFilters(params: Record<string, string | string[] | undefined>) {
+  const range = normalizeRange(readFirstParam(params.range));
+  return {
+    range,
+    label: rangeLabel(range),
+  };
+}
+
+function readFirstParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function normalizeRange(value: string | undefined): FinanceCloseoutRange {
+  if (value === 'today' || value === '7d' || value === '30d') {
+    return value;
+  }
+  return 'all';
+}
+
+function rangeLabel(range: FinanceCloseoutRange) {
+  if (range === 'today') {
+    return 'Today';
+  }
+  if (range === '7d') {
+    return 'Last 7 days';
+  }
+  if (range === '30d') {
+    return 'Last 30 days';
+  }
+  return 'All records';
+}
+
+function isInRecordRange(value: string | undefined | null, range: FinanceCloseoutRange) {
+  const start = rangeStart(range);
+  if (!start) {
+    return true;
+  }
+  if (!value) {
+    return false;
+  }
+  const recordTime = Date.parse(value);
+  return Number.isFinite(recordTime) && recordTime >= start.getTime();
+}
+
+function rangeStart(range: FinanceCloseoutRange) {
+  const now = new Date();
+  if (range === 'today') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (range === '7d') {
+    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  }
+  if (range === '30d') {
+    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+  return null;
+}
+
+function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEarningSummary {
+  return earnings.reduce<AdminEarningSummary>(
+    (summary, earning) => {
+      summary.count += 1;
+      summary.grossAmount += earning.grossAmount;
+      summary.platformFee += earning.platformFee;
+      summary.withholdingAmount += earning.withholdingAmount;
+      summary.tipAmount += earning.tipAmount;
+      summary.netAmount += earning.netAmount;
+      if (earning.status === 'PENDING') {
+        summary.pendingNetAmount += earning.netAmount;
+      }
+      if (earning.status === 'AVAILABLE') {
+        summary.availableNetAmount += earning.netAmount;
+      }
+      if (earning.status === 'PAID') {
+        summary.paidNetAmount += earning.netAmount;
+      }
+      return summary;
+    },
+    {
+      count: 0,
+      grossAmount: 0,
+      platformFee: 0,
+      withholdingAmount: 0,
+      tipAmount: 0,
+      netAmount: 0,
+      pendingNetAmount: 0,
+      availableNetAmount: 0,
+      paidNetAmount: 0,
+      currency,
+    },
+  );
 }
 
 function relativeTime(value: string) {

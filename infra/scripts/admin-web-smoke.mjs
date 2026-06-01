@@ -201,11 +201,16 @@ const pages = [
     path: '/finance-closeout',
     markers: [
       'Finance Closeout',
+      'Finance date range',
       'Closeout reconciliation board',
       'Payment-to-earning checks',
       'Cash debt handoff',
       'Payout release checks',
     ],
+  },
+  {
+    path: '/finance-closeout?range=7d',
+    markers: ['Finance Closeout', 'Finance date range', 'Range:', 'Last 7 days', 'Closeout reconciliation board'],
   },
   { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
