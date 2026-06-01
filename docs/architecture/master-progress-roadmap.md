@@ -96,6 +96,7 @@ Admin dashboard:
 - Admin sidebar now includes direct operator shortcuts for matching queue, customer choice, chat repair, failed notifications, KYC review, acceptance blocked, and marketplace-ready partner views.
 - Operations dashboard now includes a "Today operator order" control strip for live customer wait, partner response, customer choice and chat handoff, cash fee settlement, finance closeout, notification delivery, and operator queue sweep.
 - Booking monitor with matching stages, first-pick, marketplace participants, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
+- Booking monitor rows now include an action status strip for chat, location, payment, cash fee debt, closeout, and pricing checks so operators can triage from the list before opening the detail page.
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, service/pricing, payment, refund, finance, tax, wallet, cash settlement, location, alerts, audit evidence, and operator notes into the deeper factual sections.
 - Booking full record index now links directly to service/pricing, communication and movement, alerts, operator notes, and the full activity timeline so operators can jump from one booking to the needed evidence section.
 - Booking detail now includes an operator action availability matrix for payment sync/capture/release/refund, cash fee settlement, completed closeout, matching expiry, no-show handling, and internal notes.

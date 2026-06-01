@@ -62,6 +62,7 @@ const pages = [
       'Booking / stage',
       'Address / customer',
       'Payment / wallet',
+      'Action status strip',
       'Stage 3 choice',
     ],
   },

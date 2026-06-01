@@ -130,6 +130,13 @@ type BookingListStage = {
   href: string;
 };
 
+type BookingListActionChip = {
+  label: string;
+  detail: string;
+  tone: string;
+  href: string;
+};
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
@@ -715,6 +722,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               const addressState = bookingAddressSnapshotState(booking);
               const chatState = bookingChatListState(booking);
               const closureState = bookingClosureListSignal(booking);
+              const actionChips = bookingListActionChips(booking, currentTimeMs);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -886,6 +894,19 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     <div style={{ marginTop: 8 }}>{opsSignal(booking)}</div>
                     <div className="muted" style={{ marginTop: 8 }}>
                       {nextAction(booking)}
+                    </div>
+                    <div className="participant-list" style={{ marginTop: 10 }}>
+                      <span className="muted">Action status strip</span>
+                      {actionChips.map((chip) => (
+                        <Link
+                          className={`pill ${chip.tone}`}
+                          href={chip.href}
+                          key={chip.label}
+                          title={chip.detail}
+                        >
+                          {chip.label}
+                        </Link>
+                      ))}
                     </div>
                     {closureState && (
                       <div className="muted" style={{ marginTop: 8 }}>
@@ -2503,6 +2524,65 @@ function bookingChatListState(booking: AdminBooking) {
     detail: 'Chat opens after the customer locks a final partner.',
     tone: 'pill-neutral',
   };
+}
+
+function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingListActionChip[] {
+  const paymentNeedsOps = bookingPaymentNeedsOps(booking);
+  const locationNeedsOps = bookingLocationNeedsOps(booking, nowMs);
+  const chatNeedsRepair = bookingChatRepairNeedsOps(booking);
+  const cashDebtNeedsOps = bookingCashDebtNeedsOps(booking);
+  const closeoutNeedsOps = bookingCompletedCloseoutNeedsOps(booking);
+  const pricingNeedsOps = bookingPricingPolicyNeedsOps(booking);
+  const chatState = bookingChatListState(booking);
+  const pricingPolicy = bookingPricingPolicySignal(booking);
+  const paymentAmount = booking.payment
+    ? money(Number(booking.payment.amount ?? 0), booking.payment.currency)
+    : 'No payment record';
+
+  return [
+    {
+      label: chatNeedsRepair ? 'Chat repair' : chatState.label,
+      detail: chatState.detail,
+      tone: chatNeedsRepair ? 'pill-danger' : chatState.tone,
+      href: chatNeedsRepair ? '/bookings?view=chat-repair' : '/bookings?view=chat',
+    },
+    {
+      label: locationNeedsOps ? 'Location check' : 'Location clear',
+      detail: bookingLocationSignalLabel(booking, nowMs),
+      tone: locationNeedsOps ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=location',
+    },
+    {
+      label: paymentNeedsOps ? 'Payment check' : 'Payment clear',
+      detail: booking.payment
+        ? `${booking.payment.method} / ${booking.payment.status} / ${paymentAmount}`
+        : 'No payment record is attached to this booking.',
+      tone: paymentNeedsOps ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=payment',
+    },
+    {
+      label: cashDebtNeedsOps ? 'Cash debt' : 'Cash clear',
+      detail: cashDebtNeedsOps
+        ? 'Partner cash fee debt must be settled before more booking acceptance.'
+        : 'No partner cash fee debt is visible for this booking.',
+      tone: cashDebtNeedsOps ? 'pill-danger' : 'pill-success',
+      href: '/bookings?view=cash-debt',
+    },
+    {
+      label: closeoutNeedsOps ? 'Closeout check' : 'Closeout clear',
+      detail: closeoutNeedsOps
+        ? 'Completed booking needs payment, earning, tax, fee, or wallet ledger closeout.'
+        : 'No completed closeout blocker is visible.',
+      tone: closeoutNeedsOps ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=closeout',
+    },
+    {
+      label: pricingNeedsOps ? 'Pricing check' : 'Pricing clear',
+      detail: pricingPolicy.label,
+      tone: pricingNeedsOps ? pricingPolicy.tone : 'pill-success',
+      href: '/bookings?view=pricing',
+    },
+  ];
 }
 
 function checkLevel(flags: BookingCheckFlag[]) {
