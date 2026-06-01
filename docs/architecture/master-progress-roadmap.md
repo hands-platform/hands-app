@@ -42,6 +42,7 @@ Checked commands:
 - `npm.cmd run setup:doctor`: PASS
 - `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, matching policy marketplace windows, 10km radius/join guards, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
 - API policy coverage now explicitly guards admin price-step enforcement, service base-price step enforcement, payout-above-customer-price rejection, and partner price minimum/step rejection markers.
+- API policy coverage now also guards partner device/session and account-control invariants: device block/unblock round trip, account block rejection, account unblock recovery, and shared-device session-check behavior without turning that signal into an automatic app block.
 - API smoke now verifies that a completed direct booking using a partner custom service price selects the matching service payout matrix row, including gross amount, partner payout, platform fee, VAT, other cost, net company fee before withholding, and rule ID.
 - `API_BASE_URL=http://localhost:3100/api SOCKET_BASE_URL=http://localhost:3100 node infra/scripts/api-smoke.mjs`: PASS. This verifies booking creation, matching, direct/custom service price payout rules, chat retention, cancellation, no-show, expiry closure metadata, cash wallet debt, payout/tax setup, notification retry, storage, locations, and admin traceability.
 - `npm.cmd run security:secrets`: PASS

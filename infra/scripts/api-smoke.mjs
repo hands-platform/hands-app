@@ -405,6 +405,24 @@ if (
     )}`,
   );
 }
+const sharedProviderDeviceSession = await postJson('/provider/device-session', backupProviderAuth.accessToken, {
+  deviceId: providerSmokeDeviceId,
+  platform: 'android',
+  appVersion: 'smoke-test',
+});
+if (
+  sharedProviderDeviceSession.blocked !== false ||
+  sharedProviderDeviceSession.ok !== true ||
+  sharedProviderDeviceSession.sharedDeviceProfileCount < 1 ||
+  sharedProviderDeviceSession.session?.suspicious !== true ||
+  !String(sharedProviderDeviceSession.session?.suspiciousReason ?? '').includes('already linked')
+) {
+  throw new Error(
+    `Shared partner device should create a session check without blocking app access: ${JSON.stringify(
+      sharedProviderDeviceSession,
+    )}`,
+  );
+}
 
 const partnerControlReport = await postJson('/admin/partner-reports', adminAuth.accessToken, {
   providerProfileId: providerAuth.user.providerProfile.id,

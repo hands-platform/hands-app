@@ -81,6 +81,18 @@ const requiredCoverage = [
     ],
   },
   {
+    area: 'partner device and account access controls',
+    markers: [
+      'Provider device session was not recorded correctly',
+      'Blocked provider device was not rejected by device-session',
+      'Unblocked provider device still appears blocked',
+      'Blocked provider account cannot go online',
+      'Blocked provider account was not rejected by device-session',
+      'Unblocked provider account still appears blocked',
+      'Shared partner device should create a session check without blocking app access',
+    ],
+  },
+  {
     area: 'tax policy and withholding',
     markers: [
       'Tax policy version list did not return an array',
