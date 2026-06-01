@@ -142,6 +142,7 @@ Admin dashboard:
 - Admin smoke tests now guard the dashboard operator order, failed-notification review page, and customer retained chat archive visibility.
 - Admin smoke tests now fail if average feedback wording appears in operator-facing admin pages.
 - Admin smoke tests now fail if operator-facing pages expose star-judgment wording such as "stars or below" or "star /"; reviews remain factual service feedback records.
+- Admin smoke tests now guard the booking detail `Service feedback` marker so booking records keep factual feedback language in the source-of-truth view.
 - Admin smoke tests now guard finance and work-volume partner sort URLs so operator list ordering remains available after admin refactors.
 - Admin smoke tests now guard customer work-volume, spend, and app-access sort URLs so customer operations remain record-based and searchable.
 

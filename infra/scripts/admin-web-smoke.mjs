@@ -532,6 +532,7 @@ if (bookingLinkMatch) {
     'Booking stage snapshot',
     'Applied operations policy',
     'Payment and refund',
+    'Service feedback',
     'Finance trace',
     'Chat transcript',
     'Location trail',
