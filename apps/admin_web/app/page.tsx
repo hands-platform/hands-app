@@ -128,6 +128,15 @@ type DailyOperationsSnapshotItem = {
   tone: 'ok' | 'info' | 'warn' | 'danger';
 };
 
+type TodayCommandOrderItem = {
+  step: string;
+  title: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+};
+
 export default async function DashboardPage() {
   const [
     users,
@@ -258,6 +267,15 @@ export default async function DashboardPage() {
     bookingOps,
     failedNotifications,
     cashSettlementSummary,
+    activePayoutBatches,
+  });
+  const todayCommandOrder = buildTodayCommandOrder({
+    queue,
+    bookingOps,
+    matchingControl,
+    appPresence,
+    cashSettlementSummary,
+    failedNotifications,
     activePayoutBatches,
   });
 
@@ -498,6 +516,36 @@ export default async function DashboardPage() {
                 ))}
               </div>
             </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Today operator order</h2>
+            <p className="muted">
+              Suggested admin sequence for the current shift. It keeps the team focused on live customers,
+              matching, chat handoff, cash settlement, payout, and alert delivery using factual activity only.
+            </p>
+          </div>
+          <Link className="text-link" href={todayCommandOrder[0]?.href ?? '/bookings'}>
+            Start first item
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {todayCommandOrder.map((item) => (
+            <Link
+              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
+              href={item.href}
+              key={item.step}
+            >
+              <small>{item.step}</small>
+              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.value}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <span className="ops-task-card-action">Open</span>
+            </Link>
           ))}
         </div>
       </section>
@@ -2441,6 +2489,110 @@ function buildDailyOperationsSnapshot(input: {
   ];
 }
 
+function buildTodayCommandOrder(input: {
+  queue: OpsQueueItem[];
+  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
+  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
+  appPresence: ReturnType<typeof buildAppPresence>;
+  cashSettlementSummary: AdminCashSettlementSummary;
+  failedNotifications: AdminNotification[];
+  activePayoutBatches: AdminPayoutBatch[];
+}): TodayCommandOrderItem[] {
+  const liveMatchingCustomers = input.appPresence.liveOpenMatchingCustomers;
+  const matchingFollowUps = input.matchingControl.openRows.filter(
+    (row) => row.expired || row.freshEligibleCount === 0,
+  ).length;
+  const customerChoiceRows = input.matchingControl.openRows.filter((row) =>
+    row.customerState.toLowerCase().includes('choose'),
+  ).length;
+  const highQueueCount = input.queue.filter((item) => item.severity === 'high').length;
+  const financeQueueCount = input.queue.filter((item) =>
+    ['Finance', 'Payment', 'Payout'].includes(item.area),
+  ).length;
+
+  return [
+    {
+      step: 'Step 1',
+      title: 'Live customer wait',
+      value: `${input.bookingOps.openMatching} open`,
+      detail:
+        liveMatchingCustomers > 0
+          ? `${liveMatchingCustomers} customer(s) are in app while matching is open. Watch the booking board first.`
+          : 'No live customer is currently visible in open matching, but keep the booking board first in the shift.',
+      href: '/bookings?view=matching',
+      tone: input.bookingOps.openMatching ? 'warn' : 'ok',
+    },
+    {
+      step: 'Step 2',
+      title: 'Partner response and marketplace',
+      value: `${matchingFollowUps} follow-up`,
+      detail:
+        matchingFollowUps > 0
+          ? 'Some open matching rows need partner supply, location refresh, or timer review.'
+          : 'First-pick response window and marketplace participant supply look normal in the current snapshot.',
+      href: matchingFollowUps ? '/bookings?view=marketplace' : '/operations-policy',
+      tone: matchingFollowUps ? 'danger' : 'ok',
+    },
+    {
+      step: 'Step 3',
+      title: 'Customer choice and chat handoff',
+      value: `${customerChoiceRows} ready`,
+      detail:
+        customerChoiceRows > 0
+          ? 'At least one customer can select from the shortlist. After match, confirm chat handoff stays archived.'
+          : 'No customer shortlist is currently ready. Keep chat creation checks visible for matched bookings.',
+      href: customerChoiceRows ? '/bookings?view=matching' : '/bookings?view=chat',
+      tone: customerChoiceRows ? 'info' : 'ok',
+    },
+    {
+      step: 'Step 4',
+      title: 'Cash fee settlement gate',
+      value: `${input.cashSettlementSummary.providerCount} partner(s)`,
+      detail: input.cashSettlementSummary.providerCount
+        ? `${money(
+            input.cashSettlementSummary.totalDebtAmount,
+            input.cashSettlementSummary.currency,
+          )} in open cash fee debt can block booking acceptance until settled.`
+        : 'No negative wallet cash fee block is loaded in the current snapshot.',
+      href: '/cash-settlements',
+      tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
+    },
+    {
+      step: 'Step 5',
+      title: 'Finance closeout and payouts',
+      value: `${financeQueueCount} item(s)`,
+      detail:
+        financeQueueCount > 0
+          ? `${input.activePayoutBatches.length} payout batch(es), closeout checks, or payment/refund records need review.`
+          : 'Payment closeout, refund, and payout queues have no urgent item in the current snapshot.',
+      href: financeQueueCount ? '/payments' : '/payouts',
+      tone: financeQueueCount ? 'warn' : 'ok',
+    },
+    {
+      step: 'Step 6',
+      title: 'Notification delivery',
+      value: `${input.failedNotifications.length} failed`,
+      detail:
+        input.failedNotifications.length > 0
+          ? 'Retry failed delivery rows or disable stale devices so staff do not assume alerts arrived.'
+          : 'No failed notification rows are loaded right now.',
+      href: '/notifications?review=failed',
+      tone: input.failedNotifications.length ? 'warn' : 'ok',
+    },
+    {
+      step: 'Step 7',
+      title: 'Operator queue sweep',
+      value: `${highQueueCount} high`,
+      detail:
+        highQueueCount > 0
+          ? 'Open the first high-priority checklist item after the live customer and finance gates.'
+          : 'No high-priority checklist item remains after the main operating lanes.',
+      href: input.queue[0]?.href ?? '/',
+      tone: highQueueCount ? 'danger' : 'ok',
+    },
+  ];
+}
+
 function isBangkokToday(value?: string | null) {
   if (!value) return false;
   const timestamp = Date.parse(value);
@@ -4196,6 +4348,20 @@ function opsQueueCardClass(severity: OpsQueueItem['severity']) {
   if (severity === 'high') return 'ops-task-blocked';
   if (severity === 'medium') return 'ops-task-pending';
   return 'ops-task-done';
+}
+
+function todayCommandOrderCardClass(tone: TodayCommandOrderItem['tone']) {
+  if (tone === 'danger') return 'ops-task-blocked';
+  if (tone === 'warn') return 'ops-task-pending';
+  if (tone === 'info') return 'ops-task-active';
+  return 'ops-task-done';
+}
+
+function todayCommandOrderPillClass(tone: TodayCommandOrderItem['tone']) {
+  if (tone === 'danger') return 'pill-danger';
+  if (tone === 'warn') return 'pill-warn';
+  if (tone === 'info') return 'pill-info';
+  return 'pill-success';
 }
 
 function buildOpsQueueSummary(queue: OpsQueueItem[]) {
