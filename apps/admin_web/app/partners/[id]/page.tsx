@@ -2153,7 +2153,7 @@ type PartnerAcceptanceRepairCommand = {
   partnerAppMessage: string;
   customerImpact: string;
   operatorDecision: string;
-  fallbackRouting: string;
+  marketplaceRouting: string;
   steps: Array<{
     owner: string;
     blocker: string;
@@ -2352,8 +2352,8 @@ function PartnerAcceptanceRepairCommandPanel({
           <small>Use this before manual override or dispatch.</small>
         </div>
         <div>
-          <span>Fallback routing</span>
-          <strong>{command.fallbackRouting}</strong>
+          <span>Marketplace routing</span>
+          <strong>{command.marketplaceRouting}</strong>
           <small>Where live demand should go while blocked.</small>
         </div>
       </div>
@@ -3584,7 +3584,7 @@ function buildPartnerAcceptanceRepairCommand(
   const operatorDecision = bookingAcceptance.canAccept
     ? 'No manual repair required. Monitor service quality and response speed.'
     : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
-  const fallbackRouting = bookingAcceptance.canAccept
+  const marketplaceRouting = bookingAcceptance.canAccept
     ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
     : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
 
@@ -3622,7 +3622,7 @@ function buildPartnerAcceptanceRepairCommand(
     partnerAppMessage,
     customerImpact,
     operatorDecision,
-    fallbackRouting,
+    marketplaceRouting,
     steps,
   };
 }

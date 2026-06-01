@@ -3323,7 +3323,7 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';
   }
   if (booking.status === 'OPEN_MATCHING') {
-    return 'Monitor partner response speed and fallback supply. Customer is still waiting.';
+    return 'Monitor partner response speed and marketplace supply. Customer is still waiting.';
   }
   if (booking.status === 'MATCHED') {
     return 'Partner is selected. Monitor chat readiness, location sharing, and arrival progression.';
@@ -5198,7 +5198,7 @@ function bookingOperationalPolicySnapshot(
             : `${minutesLeft} min left. ${bookingPolicySnapshotHelper(
                 savedMatchingPolicy.providerResponseWindowMinutes,
                 responseWindow,
-                'Live policy fallback.',
+                'Live policy default.',
               )}`,
       },
       {
@@ -5243,12 +5243,12 @@ function bookingOperationalPolicySnapshot(
           ? `Booking has a final partner. ${bookingPolicySnapshotHelper(
               savedMatchingPolicy.preferredAcceptMode,
               acceptMode,
-              'Live policy fallback.',
+              'Live policy default.',
             )}`
           : `Booking is still waiting for final selection. ${bookingPolicySnapshotHelper(
               savedMatchingPolicy.preferredAcceptMode,
               acceptMode,
-              'Live policy fallback.',
+              'Live policy default.',
             )}`,
       },
     ],
@@ -5297,7 +5297,7 @@ function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminAuditLog
         ? 'Policy changed'
         : hasSavedMatchingPolicy
           ? 'Snapshot saved'
-          : 'Live fallback';
+          : 'Live policy default';
   const statusTone =
     manualLogs.length > 0 || policyLogsAfterOpen.length > 0
       ? 'pill-warn'
@@ -5311,7 +5311,7 @@ function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminAuditLog
         ? 'Current policy changed after this booking opened'
         : hasSavedMatchingPolicy
           ? 'Booking has its own matching policy snapshot'
-          : 'Booking is using live policy fallback';
+          : 'Booking is using live policy default';
   const detail =
     manualLogs.length > 0
       ? 'This booking has operator actions in the audit log. Check notes, payment actions, no-show, expiry, or closeout before making another change.'
@@ -5352,7 +5352,7 @@ function bookingOperationsTrace(booking: AdminBookingDetail, logs: AdminAuditLog
       },
       {
         label: 'Policy source',
-        value: hasSavedMatchingPolicy ? 'Saved snapshot' : 'Live fallback',
+        value: hasSavedMatchingPolicy ? 'Saved snapshot' : 'Live policy default',
         helper: hasSavedMatchingPolicy
           ? 'Booking behavior is explainable from saved metadata.'
           : 'Use live policy with extra caution.',

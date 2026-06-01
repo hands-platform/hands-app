@@ -1121,7 +1121,7 @@ export default async function DashboardPage() {
               <InfoRow
                 label="Reachable customers"
                 value={appPresence.reachableCustomers.toString()}
-                detail="Fallback proxy from enabled push devices when session heartbeats are missing."
+                detail="Alternative signal from enabled push devices when session heartbeats are missing."
               />
               <InfoRow
                 label="Push-disabled customers"
@@ -1802,7 +1802,7 @@ function buildMatchingControlRoom(
       `${formatDistance(bookingBackupRadiusMeters)} radius`,
       `${bookingBackupLocationMaxAgeMinutes}m freshness`,
       `${bookingResponseWindowMinutes}m window`,
-      savedPolicy ? 'saved policy' : 'live fallback',
+      savedPolicy ? 'saved policy' : 'live policy default',
       booking.expiresAt ? `timer ${timeUntilLabel(booking.expiresAt)}` : 'no timer',
     ].join(' / ');
 
@@ -1925,7 +1925,7 @@ function buildMatchingControlRoom(
         status:
           openMatching.length === 0 || openMatchingWithPolicySnapshot.length === openMatching.length
             ? 'Traceable'
-            : 'Legacy fallback',
+            : 'Live policy default',
         title: 'Open booking policy snapshots',
         detail:
           openMatching.length === 0

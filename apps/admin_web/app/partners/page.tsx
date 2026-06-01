@@ -2715,7 +2715,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
   if (!provider.user?.supabaseUserId) {
     return 'Partner is operational in Nest auth. Supabase role sync will become available after Supabase OTP login links this phone.';
   }
-  return 'Partner is ready for direct requests and fallback matching.';
+  return 'Partner is ready for direct requests and marketplace matching.';
 }
 
 function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
@@ -3553,7 +3553,7 @@ function buildPartnerAcceptanceBlockerBoard(
         status: pushHold.length ? 'Alert gap' : 'Ready',
         detail: 'Partners without enabled push devices may miss first-pick and marketplace participation prompts.',
         operatorAction:
-          'Use in-app refresh, token registration, or contact fallback before relying on them for demand.',
+          'Use in-app refresh, token registration, or direct contact before relying on them for demand.',
         href: '/partners?review=push',
         tone: pushHold.length ? 'warn' : 'ok',
         samples: partnerBlockerSamples(pushHold),

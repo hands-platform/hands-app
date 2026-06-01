@@ -210,7 +210,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       ['Stage 4 handoff repair', (stageCounts.get('handoff-repair') ?? 0).toString()],
       ['No partners yet', noParticipants.length.toString()],
       ['First-pick pending', preferredPending.length.toString()],
-      ['Fallback options', waitingSelection.length.toString()],
+      ['Marketplace options', waitingSelection.length.toString()],
       ['Marketplace selected', backupChosen.length.toString()],
       ['Chat live', chatLive.length.toString()],
       ['No-show', noShow.length.toString()],
@@ -790,7 +790,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     </div>
                     <div className="participant-list" style={{ marginTop: 8 }}>
                       <span className={`pill ${matchingPolicy ? 'pill-info' : 'pill-warn'}`}>
-                        {matchingPolicy ? 'Saved policy' : 'Live fallback'}
+                        {matchingPolicy ? 'Saved policy' : 'Live policy default'}
                       </span>
                       <span className={`pill ${bookingBackupAlertTraceTone(booking)}`}>
                         {bookingBackupAlertTracePill(booking)}
@@ -2071,7 +2071,7 @@ function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: Book
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return 'Monitor the first-pick partner response window and prepare fallback partner selection.';
+    return 'Monitor the first-pick partner response window and prepare marketplace partner options.';
   }
   if (booking.status === 'OPEN_MATCHING') {
     return 'Check nearby partner supply and notification delivery until the customer has options.';
@@ -2212,10 +2212,10 @@ function opsSignal(booking: AdminBooking) {
     return <span className="signal signal-warn">First-pick partner pending</span>;
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    return <span className="signal signal-warn">No fallback partners yet</span>;
+    return <span className="signal signal-warn">No marketplace partners yet</span>;
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount > 0) {
-    return <span className="signal signal-info">Fallback options ready</span>;
+    return <span className="signal signal-info">Marketplace options ready</span>;
   }
   if (booking.status === 'MATCHED' && isBackupSelected(booking)) {
     return <span className="signal signal-info">Marketplace partner selected</span>;
@@ -2555,7 +2555,7 @@ function nextAction(booking: AdminBooking) {
     booking.preferredProvider &&
     isPreferredAwaitingDecision(booking)
   ) {
-    return 'Wait for the first-pick partner, but monitor fallback partner supply.';
+    return 'Wait for the first-pick partner, but monitor marketplace partner supply.';
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
     return 'Check notifications and nearby partner supply.';
@@ -2637,7 +2637,7 @@ function bookingServicePayoutRuleLabel(booking: AdminBooking) {
 
 function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | null) {
   if (!snapshot) {
-    return 'Matching policy: live fallback';
+    return 'Matching policy: live policy default';
   }
   const timer = snapshot.providerResponseWindowMinutes
     ? `${snapshot.providerResponseWindowMinutes}m`
