@@ -313,6 +313,7 @@ const pages = [
       'Review queue',
     ],
   },
+  { path: '/providers', markers: ['Partners', 'Partner operations list', 'Partner master list'] },
   { path: '/providers?review=cash-debt', markers: ['Partners', 'Cash fee debt'] },
   { path: '/services', markers: ['Service catalog', 'Duration pricing matrix'] },
   {
