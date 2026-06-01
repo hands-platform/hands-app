@@ -522,6 +522,8 @@ if (bookingLinkMatch) {
     'Operator command queue',
     'Booking handoff checklist',
     'Booking full record index',
+    'Service and pricing',
+    'Communication and movement',
     'Booking operating ledger',
     'Service/Pricing',
     'Refund',

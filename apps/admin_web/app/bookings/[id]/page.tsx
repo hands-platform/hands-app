@@ -501,10 +501,25 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <strong>{booking.payment?.status ?? 'NONE'}</strong>
             <small>{money(booking.payment?.amount, booking.payment?.currency)}</small>
           </a>
+          <a href="#service-pricing-snapshot">
+            <span>Service and pricing</span>
+            <strong>{financeTrace.payoutRuleStatus}</strong>
+            <small>{financeTrace.serviceOption}</small>
+          </a>
+          <a href="#communication-movement-handoff">
+            <span>Communication and movement</span>
+            <strong>{communicationMovementHandoff.status}</strong>
+            <small>{messages.length} message(s), {locationTrail(booking).length} location row(s).</small>
+          </a>
           <a href="#alerts">
             <span>Alerts</span>
             <strong>{notificationTrace.rows.length}</strong>
             <small>{notificationTrace.backupBatches.length} marketplace alert batch(es).</small>
+          </a>
+          <a href="#operator-notes">
+            <span>Operator notes</span>
+            <strong>{operatorNoteLines.length}</strong>
+            <small>Internal handling notes retained on this booking.</small>
           </a>
           <a href="#booking-activity">
             <span>Activity timeline</span>
