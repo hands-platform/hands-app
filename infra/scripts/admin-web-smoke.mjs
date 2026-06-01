@@ -523,6 +523,8 @@ if (bookingLinkMatch) {
     'Booking handoff checklist',
     'Booking full record index',
     'Booking operating ledger',
+    'Service/Pricing',
+    'Refund',
     'Closeout readiness',
     'Operating timeline',
     'Chat lifecycle and retention',

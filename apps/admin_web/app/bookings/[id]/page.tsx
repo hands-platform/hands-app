@@ -37,6 +37,15 @@ type BookingActivityRecord = {
   href?: string;
 };
 
+type BookingRefundLedgerRow = {
+  id: string;
+  amount: number;
+  status: string;
+  createdAt?: string | null;
+  reason?: string | null;
+  payment?: { currency?: string | null } | null;
+};
+
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
 const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
@@ -72,6 +81,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
+  const refundLedgerRows = bookingRefundRows(booking);
   const closureSummary = bookingClosureSummary(booking);
   const servicePricingSnapshotRows = [
     {
@@ -172,12 +182,24 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#chat',
     },
     {
+      area: 'Service/Pricing',
+      status: financeTrace.payoutRuleStatus,
+      evidence: `${financeTrace.serviceOption} / customer ${financeTrace.customerPrice} / partner ${financeTrace.providerPayout}`,
+      href: '#service',
+    },
+    {
       area: 'Payment',
       status: booking.payment?.status ?? 'NONE',
       evidence: `${booking.payment?.method ?? 'No method'} / ${money(
         booking.payment?.amount,
         booking.payment?.currency,
       )}`,
+      href: '#payment',
+    },
+    {
+      area: 'Refund',
+      status: refundLedgerRows.length ? `${refundLedgerRows.length} refund record(s)` : 'No refund record',
+      evidence: bookingRefundLedgerEvidence(booking),
       href: '#payment',
     },
     {
@@ -3955,6 +3977,31 @@ function paymentHint(booking: AdminBookingDetail) {
     return 'Refund path is active.';
   }
   return `${booking.payment.method} payment is being monitored.`;
+}
+
+function bookingRefundRows(booking: AdminBookingDetail): BookingRefundLedgerRow[] {
+  if (booking.refunds?.length) {
+    return booking.refunds;
+  }
+
+  return (booking.payment?.refunds ?? []).map((refund) => ({
+    ...refund,
+    payment: { currency: booking.payment?.currency ?? 'VND' },
+  }));
+}
+
+function bookingRefundLedgerEvidence(booking: AdminBookingDetail) {
+  const rows = bookingRefundRows(booking);
+  if (!rows.length) {
+    return booking.payment?.status === 'REFUNDED'
+      ? 'Payment is marked refunded but no refund row is loaded.'
+      : 'No refund action has been recorded for this booking.';
+  }
+
+  const latest = [...rows].sort((left, right) => safeTime(right.createdAt) - safeTime(left.createdAt))[0];
+  const currency = latest.payment?.currency ?? booking.payment?.currency ?? 'VND';
+  const reason = latest.reason ? ` / ${latest.reason}` : '';
+  return `${latest.status} / ${money(latest.amount, currency)} / ${formatDate(latest.createdAt)}${reason}`;
 }
 
 function canMarkNoShow(status: string) {
