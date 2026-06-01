@@ -233,6 +233,14 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messages,
     latestLocation,
   });
+  const operatorPriorityBriefing = bookingOperatorPriorityBriefing({
+    booking,
+    operatorCommandQueue,
+    closeoutReadiness,
+    financeFlags,
+    latestLocation,
+    messageCount: messages.length,
+  });
 
   return (
     <>
@@ -301,6 +309,42 @@ export default async function BookingDetailPage({ params }: PageProps) {
           value={attentionSummary.label}
           helper={attentionSummary.helper}
         />
+      </section>
+
+      <section className="card" id="booking-priority-briefing" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking priority briefing</h2>
+            <p className="muted">
+              First-screen operator summary for handoff, chat, location, payment, and closeout. This shows
+              factual state only, not customer or partner judgment.
+            </p>
+          </div>
+          <span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {operatorPriorityBriefing.rows.map((row) => (
+            <div key={row.label}>
+              <span>{row.label}</span>
+              <strong>{row.value}</strong>
+              <small>{row.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {operatorPriorityBriefing.steps.map((step) => (
+            <div className="setup-stage-item" key={step.id}>
+              <span>{step.label}</span>
+              <div>
+                <strong>{step.title}</strong>
+                <p className="muted">{step.detail}</p>
+              </div>
+              <Link className="text-link" href={step.href}>
+                {step.linkLabel}
+              </Link>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card" id="operator-command-queue" style={{ marginBottom: 16 }}>
@@ -1902,6 +1946,122 @@ function bookingOperatorCommandQueue({
     tone: urgentCount ? 'pill-warn' : 'pill-success',
     labels,
     commands: commands.slice(0, 8),
+  };
+}
+
+function bookingOperatorPriorityBriefing({
+  booking,
+  operatorCommandQueue,
+  closeoutReadiness,
+  financeFlags,
+  latestLocation,
+  messageCount,
+}: {
+  booking: AdminBookingDetail;
+  operatorCommandQueue: ReturnType<typeof bookingOperatorCommandQueue>;
+  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
+  financeFlags: AttentionFlag[];
+  latestLocation?: AdminLocationSnapshot;
+  messageCount: number;
+}) {
+  const primaryCommand = operatorCommandQueue.commands[0];
+  const nextAction = bookingOperatingNextAction(booking);
+  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const participantCount = booking.participants?.length ?? 0;
+  const customerName = booking.customerProfile?.user?.fullName ?? 'Customer';
+  const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
+  const partnerLabel = finalPartner ? providerName(finalPartner) : 'Not selected';
+  const paymentLabel = booking.payment
+    ? `${booking.payment.method} / ${booking.payment.status}`
+    : 'No payment';
+  const locationLabel = latestLocation
+    ? providerLocationMetricValue(booking)
+    : ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
+      ? 'Missing'
+      : 'Not required yet';
+  const closeoutLabel =
+    closeoutReadiness.openItems.length > 0
+      ? `${closeoutReadiness.openItems.length} item(s)`
+      : closeoutReadiness.status;
+
+  return {
+    status: primaryCommand.tone === 'pill-success' ? 'Monitoring' : 'Action first',
+    tone: primaryCommand.tone,
+    rows: [
+      {
+        label: 'First action',
+        value: primaryCommand.title,
+        helper: `${primaryCommand.owner}: ${primaryCommand.detail}`,
+      },
+      {
+        label: 'Next operator step',
+        value: nextAction.title,
+        helper: nextAction.detail,
+      },
+      {
+        label: 'Customer',
+        value: customerName,
+        helper: `${customerPhone} / ${bookingAddressSnapshotLabel(booking)}`,
+      },
+      {
+        label: 'Partner state',
+        value: partnerLabel,
+        helper: `${participantCount} joined / ${providerHint(booking)}`,
+      },
+      {
+        label: 'Chat archive',
+        value: booking.chatRoom ? 'Ready' : 'Missing',
+        helper: `${messageCount} retained message(s). Admin keeps chat history after service closeout.`,
+      },
+      {
+        label: 'Location signal',
+        value: locationLabel,
+        helper: latestLocation
+          ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
+          : providerLocationMetricHelper(booking),
+      },
+      {
+        label: 'Payment',
+        value: paymentLabel,
+        helper: paymentHint(booking),
+      },
+      {
+        label: 'Closeout',
+        value: closeoutLabel,
+        helper:
+          financeFlags.length > 0
+            ? `${financeFlags.length} finance check(s): ${financeFlags.map((flag) => flag.title).join(', ')}`
+            : closeoutReadiness.helper,
+      },
+    ],
+    steps: [
+      {
+        id: 'priority-command',
+        label: '1',
+        title: primaryCommand.title,
+        detail: primaryCommand.detail,
+        href: '#operator-command-queue',
+        linkLabel: 'Open queue',
+      },
+      {
+        id: 'priority-handoff',
+        label: '2',
+        title: finalPartner ? 'Confirm partner handoff' : 'Keep partner choice visible',
+        detail: finalPartner
+          ? `${providerName(finalPartner)} is linked. Confirm chat, service pin, and payment handoff are visible.`
+          : 'Customer choice is still pending. Keep candidate list, partner alerts, and marketplace window easy to audit.',
+        href: '#booking-handoff-checklist',
+        linkLabel: 'Open handoff',
+      },
+      {
+        id: 'priority-closeout',
+        label: '3',
+        title: closeoutReadiness.status,
+        detail: closeoutReadiness.helper,
+        href: '#booking-closeout-readiness',
+        linkLabel: 'Open closeout',
+      },
+    ],
   };
 }
 
