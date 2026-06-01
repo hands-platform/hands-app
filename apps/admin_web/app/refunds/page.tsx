@@ -88,6 +88,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
             <p className="muted">
               Use these shortcuts from the dashboard to focus on the refund queue state.
             </p>
+            <p className="muted">Refund date range: {rangeLabel(filters.range)}.</p>
             {activeFilter?.review ? (
               <p className="muted">
                 Active queue: <strong>{activeFilter.label}</strong> -{' '}
@@ -99,16 +100,27 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
             Showing {refunds.length} of {allRefunds.length}
           </span>
         </div>
+        <div className="participant-list" style={{ marginBottom: 12 }}>
+          {refundRangeLinks(filters.review).map((item) => (
+            <Link
+              className={`pill ${filters.range === item.range ? 'pill-info' : 'pill-neutral'}`}
+              href={item.href}
+              key={item.label}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
         <div className="participant-list">
-          {filters.review ? (
+          {filters.review || filters.range !== 'all' ? (
             <Link className="pill pill-success" href="/refunds">
-              Clear filter
+              Clear filters
             </Link>
           ) : null}
           {refundFilterLinks().map((item) => (
             <Link
               className={`pill ${filters.review === item.review ? 'pill-warn' : 'pill-neutral'}`}
-              href={item.href}
+              href={withRefundRange(item.href, filters.range)}
               key={item.label}
             >
               {item.label}
@@ -250,6 +262,7 @@ function buildRefundCommandBoard(refunds: AdminRefund[]): RefundCommandItem[] {
 function buildRefundFilters(params: Record<string, string | string[] | undefined>) {
   return {
     review: readParam(params.review),
+    range: normalizeRange(readParam(params.range)),
   };
 }
 
@@ -258,11 +271,11 @@ function readParam(value: string | string[] | undefined) {
 }
 
 function filterRefunds(refunds: AdminRefund[], filters: ReturnType<typeof buildRefundFilters>) {
-  if (!filters.review) {
-    return refunds;
-  }
-
-  return refunds.filter((refund) => refundMatchesReview(refund, filters.review));
+  return refunds.filter(
+    (refund) =>
+      isInRecordRange(refund.createdAt, filters.range) &&
+      (!filters.review || refundMatchesReview(refund, filters.review)),
+  );
 }
 
 function refundMatchesReview(refund: AdminRefund, review: string) {
@@ -293,6 +306,76 @@ function refundFilterLinks() {
     { label: 'Refunded bookings', href: '/refunds?review=refunded-booking', review: 'refunded-booking' },
     { label: 'Completed', href: '/refunds?review=completed', review: 'completed' },
   ];
+}
+
+type RefundRange = 'all' | 'today' | '7d' | '30d';
+
+function normalizeRange(value: string): RefundRange {
+  if (value === 'today' || value === '7d' || value === '30d') {
+    return value;
+  }
+  return 'all';
+}
+
+function refundRangeLinks(review: string) {
+  return [
+    { label: 'All dates', href: withRefundReview('/refunds', review), range: 'all' as const },
+    { label: 'Today', href: withRefundReview('/refunds?range=today', review), range: 'today' as const },
+    { label: 'Last 7 days', href: withRefundReview('/refunds?range=7d', review), range: '7d' as const },
+    { label: 'Last 30 days', href: withRefundReview('/refunds?range=30d', review), range: '30d' as const },
+  ];
+}
+
+function withRefundRange(href: string, range: RefundRange) {
+  if (range === 'all') {
+    return href;
+  }
+  const separator = href.includes('?') ? '&' : '?';
+  return `${href}${separator}range=${range}`;
+}
+
+function withRefundReview(href: string, review: string) {
+  if (!review) {
+    return href;
+  }
+  const separator = href.includes('?') ? '&' : '?';
+  return `${href}${separator}review=${review}`;
+}
+
+function rangeLabel(range: RefundRange) {
+  if (range === 'today') {
+    return 'Today';
+  }
+  if (range === '7d') {
+    return 'Last 7 days';
+  }
+  if (range === '30d') {
+    return 'Last 30 days';
+  }
+  return 'All dates';
+}
+
+function isInRecordRange(value: string, range: RefundRange) {
+  const start = rangeStart(range);
+  if (!start) {
+    return true;
+  }
+  const recordTime = Date.parse(value);
+  return Number.isFinite(recordTime) && recordTime >= start.getTime();
+}
+
+function rangeStart(range: RefundRange) {
+  const now = new Date();
+  if (range === 'today') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (range === '7d') {
+    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  }
+  if (range === '30d') {
+    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+  return null;
 }
 
 function refundFilterDescription(review: string) {

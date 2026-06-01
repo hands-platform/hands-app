@@ -216,6 +216,7 @@ const pages = [
   { path: '/earnings', markers: ['Partner Earnings', 'Money flow command center'] },
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
+  { path: '/refunds?range=7d', markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'] },
   { path: '/reviews', markers: ['Feedback And Reports', 'Feedback command board', 'Service recovery feedback'] },
   { path: '/reviews?review=extra-amount', markers: ['Feedback And Reports', 'Extra payment records'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
