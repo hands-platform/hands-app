@@ -32,6 +32,10 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
           <h2>{summary.payments}</h2>
         </div>
         <div className="card">
+          <p>Finance closeout</p>
+          <h2>{summary.financeCloseout}</h2>
+        </div>
+        <div className="card">
           <p>Service pricing</p>
           <h2>{summary.servicePricing}</h2>
         </div>
@@ -106,6 +110,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               <option value="Dispatch">Dispatch</option>
               <option value="Operations/Policy">Operations/Policy</option>
               <option value="Payment">Payment</option>
+              <option value="Finance/Closeout">Finance/Closeout</option>
               <option value="Service/Pricing">Service/Pricing</option>
               <option value="Notification">Notification</option>
               <option value="Provider">Partner</option>
@@ -245,6 +250,7 @@ function buildSummary(logs: AdminAuditLog[]) {
     total: logs.length,
     dispatch: logs.filter((log) => isDispatchAction(log.action)).length,
     payments: logs.filter((log) => isPaymentAction(log.action)).length,
+    financeCloseout: logs.filter((log) => isFinanceCloseoutAction(log.action)).length,
     servicePricing: logs.filter((log) => isServicePricingAction(log.action)).length,
     notifications: logs.filter((log) => isNotificationAction(log.action)).length,
     needsReview: logs.filter((log) => auditPriority(log.action) >= 3).length,
@@ -269,7 +275,8 @@ function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
   const servicePolicyLogs = logs.filter(
     (log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'),
   );
-  const moneyLogs = logs.filter((log) => isPaymentAction(log.action) || log.action.startsWith('payout.'));
+  const moneyLogs = logs.filter((log) => isPaymentAction(log.action) || isPayoutAction(log.action));
+  const financeCloseoutLogs = logs.filter((log) => isFinanceCloseoutAction(log.action));
   const dispatchLogs = logs.filter(
     (log) => isDispatchAction(log.action) || log.action.startsWith('booking.'),
   );
@@ -296,6 +303,16 @@ function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
       href: '/audit-log?bucket=Payment',
       tone: moneyLogs.length > 0 ? 'warn' : 'ok',
       logs: moneyLogs,
+    },
+    {
+      title: 'Finance closeout trail',
+      detail:
+        'End-of-shift finance audit for booking closeout, cash debt settlement, payout batches, and payment state.',
+      status: 'Closeout',
+      operatorAction: 'Open Finance Closeout, then confirm every listed event has a matching ledger row.',
+      href: '/audit-log?bucket=Finance%2FCloseout',
+      tone: financeCloseoutLogs.length > 0 ? 'warn' : 'ok',
+      logs: financeCloseoutLogs,
     },
     {
       title: 'Dispatch and partner actions',
@@ -336,7 +353,7 @@ function filterAuditLogs(logs: AdminAuditLog[], filters: AuditLogFilters) {
     if (query && !auditSearchText(log).includes(query)) {
       return false;
     }
-    if (filters.bucket && actionBucketLabel(log.action) !== filters.bucket) {
+    if (filters.bucket && !matchesAuditBucket(log.action, filters.bucket)) {
       return false;
     }
     if (filters.priority && String(auditPriority(log.action)) !== filters.priority) {
@@ -358,6 +375,12 @@ function auditPriority(action: string) {
     return 4;
   }
   if (action.startsWith('service_payout_rule.')) {
+    return 4;
+  }
+  if (action.startsWith('payout_batch.')) {
+    return 3;
+  }
+  if (action === 'booking.completed.closeout') {
     return 4;
   }
   if (action.startsWith('service.')) {
@@ -388,6 +411,23 @@ function isPaymentAction(action: string) {
   return action.startsWith('payment.') || action.startsWith('refund.');
 }
 
+function isPayoutAction(action: string) {
+  return action.startsWith('payout.') || action.startsWith('payout_batch.');
+}
+
+function isFinanceCloseoutAction(action: string) {
+  return (
+    isPaymentAction(action) ||
+    isPayoutAction(action) ||
+    action === 'booking.completed.closeout' ||
+    action === 'booking.expire.manual' ||
+    action === 'booking.no_show.mark' ||
+    action.startsWith('earning.') ||
+    action.startsWith('provider_wallet.') ||
+    action.startsWith('wallet_ledger.')
+  );
+}
+
 function isNotificationAction(action: string) {
   return action.startsWith('notification.');
 }
@@ -397,6 +437,9 @@ function isServicePricingAction(action: string) {
 }
 
 function actionBucketLabel(action: string) {
+  if (isPayoutAction(action)) {
+    return 'Finance/Closeout';
+  }
   if (action.startsWith('operational_policy.')) {
     return 'Operations/Policy';
   }
@@ -424,6 +467,13 @@ function actionBucketLabel(action: string) {
   return 'System';
 }
 
+function matchesAuditBucket(action: string, bucket: string) {
+  if (bucket === 'Finance/Closeout') {
+    return isFinanceCloseoutAction(action);
+  }
+  return actionBucketLabel(action) === bucket;
+}
+
 function isProviderReviewAction(action: string) {
   return (
     action.startsWith('provider_') ||
@@ -443,6 +493,9 @@ function signalClass(action: string) {
     return 'signal signal-info';
   }
   if (isPaymentAction(action)) {
+    return 'signal signal-warn';
+  }
+  if (isPayoutAction(action)) {
     return 'signal signal-warn';
   }
   if (isNotificationAction(action)) {
@@ -648,6 +701,12 @@ function relatedBoardHref(log: AdminAuditLog) {
   if (log.action.startsWith('refund.')) {
     return targetId ? `/refunds#refund-${targetId}` : '/refunds';
   }
+  if (isPayoutAction(log.action)) {
+    return targetId ? `/payouts#${targetId}` : '/payouts';
+  }
+  if (isFinanceCloseoutAction(log.action)) {
+    return '/finance-closeout';
+  }
   if (log.action.startsWith('notification.')) {
     return '/notifications';
   }
@@ -807,6 +866,12 @@ function opsHint(action: string, target: string) {
   if (action.startsWith('payment.')) {
     return 'Confirm the money state matches the booking state before closing the loop.';
   }
+  if (isPayoutAction(action)) {
+    return 'Confirm transfer references, withholding logs, and partner payout readiness before release.';
+  }
+  if (isFinanceCloseoutAction(action)) {
+    return 'Trace this row through Finance Closeout before ending the shift.';
+  }
   if (action.startsWith('notification.')) {
     return 'Check retry or delivery health if the customer or partner missed an alert.';
   }
@@ -834,6 +899,12 @@ function opsDetail(action: string) {
   }
   if (action.endsWith('.capture')) {
     return 'Capture should only happen once service completion is confirmed.';
+  }
+  if (isPayoutAction(action)) {
+    return 'Payout updates should line up with earnings, tax logs, bank references, and active account controls.';
+  }
+  if (action === 'booking.completed.closeout') {
+    return 'Completed closeout should leave payment, earning, tax, wallet, and chat archive records aligned.';
   }
   if (action.endsWith('.retry')) {
     return 'Retry events are useful when push, SMS, or webhook delivery needed another pass.';

@@ -262,6 +262,7 @@ const pages = [
     markers: ['App Sessions', 'Filtered to partner sessions, live heartbeat', 'Latest app sessions'],
   },
   { path: '/audit-log', markers: ['Audit Log', 'Audit command board'] },
+  { path: '/audit-log?bucket=Finance%2FCloseout', markers: ['Audit Log', 'Finance closeout trail'] },
   {
     path: '/partners',
     markers: [
