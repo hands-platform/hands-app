@@ -227,7 +227,13 @@ const pages = [
   },
   {
     path: '/finance-closeout?range=7d',
-    markers: ['Finance Closeout', 'Finance date range', 'Range:', 'Last 7 days', 'Closeout reconciliation board'],
+    markers: [
+      'Finance Closeout',
+      'Finance date range',
+      'Range:',
+      'Last 7 days',
+      'Closeout reconciliation board',
+    ],
   },
   { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
   { path: '/earnings', markers: ['Partner Earnings', 'Earnings date range', 'Money flow command center'] },
@@ -241,10 +247,16 @@ const pages = [
     markers: ['Payments', 'Payment operation filters', 'Payment date range', 'Last 7 days'],
   },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
-  { path: '/refunds?range=7d', markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'] },
-  { path: '/reviews', markers: ['Feedback And Reports', 'Feedback command board', 'Service recovery feedback'] },
+  {
+    path: '/refunds?range=7d',
+    markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'],
+  },
+  { path: '/reviews', markers: ['Feedback And Reports', 'Feedback command board', 'Service follow-up'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
-  { path: '/notifications?review=failed', markers: ['Notifications', 'Failed sends', 'Delivery operations queue'] },
+  {
+    path: '/notifications?review=failed',
+    markers: ['Notifications', 'Failed sends', 'Delivery operations queue'],
+  },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   { path: '/payouts', markers: ['Partner Payouts', 'Payout date range', 'Payout command queue'] },
   {
@@ -414,9 +426,7 @@ const requestedSmokePaths = ((process.env.ADMIN_WEB_SMOKE_PATHS ?? '') || reques
   .map((path) => path.trim())
   .filter(Boolean);
 const smokePages =
-  requestedSmokePaths.length > 0
-    ? pages.filter((page) => requestedSmokePaths.includes(page.path))
-    : pages;
+  requestedSmokePaths.length > 0 ? pages.filter((page) => requestedSmokePaths.includes(page.path)) : pages;
 
 if (requestedSmokePaths.length > 0 && smokePages.length === 0) {
   throw new Error(`No admin smoke pages matched ADMIN_WEB_SMOKE_PATHS=${requestedSmokePaths.join(',')}`);
@@ -478,7 +488,10 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'legacy Provider wording', pattern: /\bProvider\b|\bPROVIDER\(S\)\b/ },
     { label: 'legacy backup wording', pattern: /\b[Bb]ackup\b/ },
     { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
-    { label: 'people scoring wording', pattern: /\b(score|scoring|ranking|ranked|VIP|tip|tips|penalty|penalties)\b/i },
+    {
+      label: 'people scoring wording',
+      pattern: /\b(score|scoring|ranking|ranked|VIP|tip|tips|penalty|penalties)\b/i,
+    },
     { label: 'partner average feedback wording', pattern: /\bFeedback value\b/i },
     { label: 'person-rating wording', pattern: /\b(stars? or below|star \/)\b/i },
     { label: 'separate partner activity page wording', pattern: /\bPartner Activity\b/i },
@@ -489,7 +502,8 @@ function assertNoLegacyVisibleLanguage(path, body) {
     },
     {
       label: 'partner hierarchy wording',
-      pattern: /\b(trusted|trust review|trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
+      pattern:
+        /\b(trusted|trust review|trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
     },
   ];
   const violations = bannedPatterns
@@ -502,7 +516,6 @@ function assertNoLegacyVisibleLanguage(path, body) {
         .join(', ')}`,
     );
   }
-
 }
 
 for (const page of smokePages) {
@@ -515,9 +528,10 @@ for (const page of smokePages) {
   console.log(`PASS ${page.path}`);
 }
 
-const providersBody = shouldRunDeepSection('/partners') || shouldRunDeepSection('/providers')
-  ? await fetchPage('/providers')
-  : '';
+const providersBody =
+  shouldRunDeepSection('/partners') || shouldRunDeepSection('/providers')
+    ? await fetchPage('/providers')
+    : '';
 const providerLinkMatch = providersBody.match(/href="\/(?:partners|providers)\/([^"]+)"/);
 if (providerLinkMatch) {
   const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];

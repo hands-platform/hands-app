@@ -42,7 +42,11 @@ const CUSTOMER_ACTIVITY_TYPE_OPTIONS = [
   { value: 'booking_work', label: 'Bookings and completed work', types: ['BOOKING', 'WORK'] },
   { value: 'chat', label: 'Chat archive', types: ['CHAT'] },
   { value: 'payment', label: 'Payments and refunds', types: ['PAYMENT', 'REFUND'] },
-  { value: 'address_app', label: 'Account, addresses, sessions, devices', types: ['ACCOUNT', 'ADDRESS', 'SESSION', 'DEVICE'] },
+  {
+    value: 'address_app',
+    label: 'Account, addresses, sessions, devices',
+    types: ['ACCOUNT', 'ADDRESS', 'SESSION', 'DEVICE'],
+  },
   {
     value: 'support',
     label: 'Notifications, reviews, staff records',
@@ -263,8 +267,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer full record index</h2>
             <p className="muted">
-              Factual customer record map for operators. This page shows booking, work, payment, chat, address,
-              notification, app session, and operator history.
+              Factual customer record map for operators. This page shows booking, work, payment, chat,
+              address, notification, app session, and operator history.
             </p>
           </div>
           <span className="pill pill-info">{customerActivityRecords.length} event(s)</span>
@@ -308,8 +312,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer operating ledger</h2>
             <p className="muted">
-              Compact factual ledger for account, booking work, chat archive, payment, wallet, address,
-              app device, notification, and operator history. This ledger is factual history only.
+              Compact factual ledger for account, booking work, chat archive, payment, wallet, address, app
+              device, notification, and operator history. This ledger is factual history only.
             </p>
           </div>
           <span className="pill pill-info">{customerOperatingLedger.length} record areas</span>
@@ -652,9 +656,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
                     </p>
                   ) : null}
                 </td>
-                <td>
-                  {bookingPartnerDisplayName(booking)}
-                </td>
+                <td>{bookingPartnerDisplayName(booking)}</td>
                 <td>
                   <strong>{booking.payment?.status ?? 'No payment'}</strong>
                   <p className="muted">
@@ -1051,8 +1053,7 @@ function buildCustomerOperatorCommandQueue({
   );
   const paymentIssueBooking = bookings.find(
     (booking) =>
-      booking.payment &&
-      !['AUTHORIZED', 'CAPTURED', 'REFUNDED', 'RELEASED'].includes(booking.payment.status),
+      booking.payment && !['AUTHORIZED', 'CAPTURED', 'REFUNDED', 'RELEASED'].includes(booking.payment.status),
   );
   const refundBooking = bookings.find(
     (booking) => (booking.payment?.refunds?.length ?? 0) > 0 || (booking.refunds?.length ?? 0) > 0,
@@ -1060,8 +1061,7 @@ function buildCustomerOperatorCommandQueue({
   const enabledPushDevices = pushDevices?.filter((device) => device.enabled) ?? [];
   const unreadNotifications = notifications?.filter((notification) => !notification.readAt) ?? [];
   const lastSeenMs = latestSession ? dateMs(latestSession.lastSeenAt) : 0;
-  const staleSession =
-    !latestSession || Date.now() - lastSeenMs > 1000 * 60 * 60 * 24 * 7;
+  const staleSession = !latestSession || Date.now() - lastSeenMs > 1000 * 60 * 60 * 24 * 7;
   const missingAddress = addresses.length === 0;
   const commands: CustomerOperatorCommand[] = [];
 
@@ -1106,7 +1106,8 @@ function buildCustomerOperatorCommandQueue({
         type: 'note',
         label: 'Add chat note',
         bookingId: quietChatBooking.id,
-        preset: 'Chat room exists but no messages are archived yet; operator should verify customer contact if needed.',
+        preset:
+          'Chat room exists but no messages are archived yet; operator should verify customer contact if needed.',
       },
     });
   }
@@ -1150,7 +1151,8 @@ function buildCustomerOperatorCommandQueue({
       action: {
         type: 'note',
         label: 'Add address note',
-        preset: 'Customer has no saved service address loaded; ask customer to confirm the service location before dispatch.',
+        preset:
+          'Customer has no saved service address loaded; ask customer to confirm the service location before dispatch.',
       },
     });
   }
@@ -1228,7 +1230,9 @@ function buildCustomerOperatorCommandQueue({
       {
         label: 'Live bookings',
         value: activeBookings.length.toString(),
-        detail: activeBooking ? `${shortId(activeBooking.id)} / ${activeBooking.status}` : 'No active booking',
+        detail: activeBooking
+          ? `${shortId(activeBooking.id)} / ${activeBooking.status}`
+          : 'No active booking',
       },
       {
         label: 'Completed work',
@@ -1248,7 +1252,7 @@ function buildCustomerOperatorCommandQueue({
       {
         label: 'Saved locations',
         value: addresses.length.toString(),
-        detail: missingAddress ? 'No saved address loaded' : addresses[0]?.value ?? 'Address loaded',
+        detail: missingAddress ? 'No saved address loaded' : (addresses[0]?.value ?? 'Address loaded'),
       },
       {
         label: 'App reachability',
@@ -1281,12 +1285,7 @@ function buildCustomerAccountFacts(
   const latestPaymentBooking = bookings.find((booking) => booking.payment);
   const frequentService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
   const frequentPartner = mostCommonLabel(
-    bookings
-      .map(
-        (booking) =>
-          bookingPartnerDisplayName(booking),
-      )
-      .filter(Boolean) as string[],
+    bookings.map((booking) => bookingPartnerDisplayName(booking)).filter(Boolean) as string[],
   );
 
   return [
@@ -1453,7 +1452,9 @@ function buildCustomerOperatingLedger({
               lastCompletedBooking.scheduledStartAt,
           )}`
         : 'No completed service record loaded.',
-      href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : `/customers/${customer.id}#booking-history`,
+      href: lastCompletedBooking
+        ? `/bookings/${lastCompletedBooking.id}`
+        : `/customers/${customer.id}#booking-history`,
     },
     {
       area: 'Chat archive',
@@ -1719,7 +1720,6 @@ function buildCustomerActivityRecords(
         )} / net ${formatMoney(Number(booking.earning.netAmount ?? 0))}`,
         href: '/earnings',
       });
-
     }
 
     for (const ledger of booking.walletLedgerEntries ?? []) {
@@ -1900,7 +1900,7 @@ function buildCustomerActivityRecords(
       type: 'REVIEW',
       at: review.createdAt ?? '',
       title: `Service feedback left for ${review.providerProfile?.displayName ?? 'partner'}`,
-      detail: `Feedback level ${review.rating}/5 / ${reviewBookingServiceLabel(review.booking)}`,
+      detail: `Feedback record / ${reviewBookingServiceLabel(review.booking)}`,
       href: '/reviews',
     });
   }

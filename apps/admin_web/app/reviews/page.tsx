@@ -30,8 +30,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           <h2>{summary.published}</h2>
         </div>
         <div className="card">
-          <p>Service recovery</p>
-          <h2>{summary.serviceRecovery}</h2>
+          <p>Follow-up records</p>
+          <h2>{summary.followUp}</h2>
         </div>
       </section>
 
@@ -40,8 +40,8 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           <div>
             <h2>Feedback command board</h2>
             <p className="muted">
-              Customer comments, partner coaching notes, and public visibility decisions are handled here
-              as factual service records.
+              Customer comments, partner coaching notes, and public visibility decisions are handled here as
+              factual service records.
             </p>
           </div>
           <span
@@ -68,7 +68,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
                 <div className="stack">
                   {item.reviews.slice(0, 3).map((review) => (
                     <span className="muted" key={`${item.title}-${review.id}`}>
-                      {shortId(review.id)} / {reviewProviderLabel(review)} / feedback level {review.rating}/5
+                      {shortId(review.id)} / {reviewProviderLabel(review)} / {humanizeStatus(review.status)}
                     </span>
                   ))}
                 </div>
@@ -130,9 +130,9 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
             {reviews.map((review) => (
               <tr key={review.id}>
                 <td>
-                  <div>{starRow(review.rating)}</div>
+                  <div>Feedback record</div>
                   <div className="muted" style={{ marginTop: 6 }}>
-                    {review.rating}/5
+                    {shortId(review.id)}
                   </div>
                 </td>
                 <td>
@@ -215,9 +215,6 @@ function reviewPriority(review: AdminReview) {
   if (review.status === 'HIDDEN') {
     return 1;
   }
-  if (review.rating <= 2) {
-    return 2;
-  }
   if (review.status === 'PUBLISHED') {
     return 3;
   }
@@ -238,7 +235,9 @@ type ReviewCommandItem = {
 
 function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
   const reported = reviews.filter((review) => review.status === 'REPORTED');
-  const serviceRecovery = reviews.filter((review) => review.rating <= 2);
+  const followUp = reviews.filter(
+    (review) => review.status === 'REPORTED' || Boolean(review.reportReason?.trim()),
+  );
   const hidden = reviews.filter((review) => review.status === 'HIDDEN');
 
   return [
@@ -252,14 +251,13 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
       reviews: reported,
     },
     {
-      title: 'Service recovery feedback',
-      detail:
-        'Feedback at 2/5 or below is a service recovery queue for refunds, partner support, or service mismatch.',
-      status: '2/5 or below',
-      operatorAction: 'Check booking context, customer notes, and partner repetition.',
-      href: '/reviews?review=service-recovery',
-      tone: serviceRecovery.length > 0 ? 'warn' : 'ok',
-      reviews: serviceRecovery,
+      title: 'Service follow-up',
+      detail: 'Records with report reasons need booking context, chat evidence, and support follow-up.',
+      status: 'Follow-up',
+      operatorAction: 'Check booking context, customer notes, and service evidence.',
+      href: '/reviews?review=follow-up',
+      tone: followUp.length > 0 ? 'warn' : 'ok',
+      reviews: followUp,
     },
     {
       title: 'Hidden evidence',
@@ -294,8 +292,8 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   if (filter === 'reported') {
     return review.status === 'REPORTED';
   }
-  if (filter === 'service-recovery') {
-    return review.rating <= 2;
+  if (filter === 'follow-up') {
+    return review.status === 'REPORTED' || Boolean(review.reportReason?.trim());
   }
   if (filter === 'hidden') {
     return review.status === 'HIDDEN';
@@ -310,7 +308,7 @@ function reviewFilterLinks() {
   return [
     { label: 'All feedback', href: '/reviews', review: '' },
     { label: 'Reported', href: '/reviews?review=reported', review: 'reported' },
-    { label: 'Service recovery', href: '/reviews?review=service-recovery', review: 'service-recovery' },
+    { label: 'Follow-up', href: '/reviews?review=follow-up', review: 'follow-up' },
     { label: 'Hidden', href: '/reviews?review=hidden', review: 'hidden' },
     { label: 'Published', href: '/reviews?review=published', review: 'published' },
   ];
@@ -320,8 +318,8 @@ function reviewFilterDescription(review: string) {
   if (review === 'reported') {
     return 'feedback records that need moderation follow-up.';
   }
-  if (review === 'service-recovery') {
-    return 'feedback at 2/5 or below that may need service recovery.';
+  if (review === 'follow-up') {
+    return 'feedback records with report reasons or moderation follow-up.';
   }
   if (review === 'hidden') {
     return 'feedback removed from public visibility but retained for evidence.';
@@ -344,13 +342,9 @@ function buildSummary(reviews: AdminReview[]) {
     total: reviews.length,
     flagged: reviews.filter((review) => review.status === 'REPORTED' || review.status === 'HIDDEN').length,
     published: reviews.filter((review) => review.status === 'PUBLISHED').length,
-    serviceRecovery: reviews.filter((review) => review.rating <= 2).length,
+    followUp: reviews.filter((review) => review.status === 'REPORTED' || Boolean(review.reportReason?.trim()))
+      .length,
   };
-}
-
-function starRow(rating: number) {
-  const fullStars = Math.max(0, Math.min(5, Math.round(rating)));
-  return `Feedback level ${fullStars}/5`;
 }
 
 function humanizeStatus(status: string) {
@@ -375,8 +369,8 @@ function statusMeaning(status: string) {
 }
 
 function providerReviewHint(review: AdminReview) {
-  if (review.rating <= 2) {
-    return 'Service recovery feedback may need follow-up';
+  if (review.status === 'REPORTED' || review.reportReason?.trim()) {
+    return 'Feedback has a follow-up marker';
   }
   return 'Use this record to track service feedback and booking context';
 }
@@ -406,7 +400,7 @@ function reviewToneLabel(tone: ReviewCommandTone) {
 }
 
 function signalClass(review: AdminReview) {
-  if (review.status === 'REPORTED' || review.rating <= 2) {
+  if (review.status === 'REPORTED') {
     return 'signal signal-warn';
   }
   if (review.status === 'PUBLISHED') {
@@ -422,9 +416,6 @@ function opsSignal(review: AdminReview) {
   if (review.status === 'HIDDEN') {
     return 'Already hidden';
   }
-  if (review.rating <= 2) {
-    return 'Service recovery';
-  }
   return 'Monitor';
 }
 
@@ -434,9 +425,6 @@ function opsHint(review: AdminReview) {
   }
   if (review.status === 'HIDDEN') {
     return 'Hidden feedback should still be documented for support or partner coaching.';
-  }
-  if (review.rating <= 2) {
-    return 'Feedback at 2/5 or below deserves service recovery review before similar issues repeat.';
   }
   return 'Routine feedback row for customer sentiment and booking context.';
 }
@@ -451,8 +439,8 @@ function dateMs(value?: string | null) {
 }
 
 function normalizeReviewFilter(value: string) {
-  if (value === 'low-rating') {
-    return 'service-recovery';
+  if (value === 'low-rating' || value === 'service-recovery') {
+    return 'follow-up';
   }
   return value;
 }
