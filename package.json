@@ -24,6 +24,7 @@
     "external:pack:write": "node infra/scripts/external-registration-pack.mjs --out=infra/setup/.generated/hands-external-registration-pack.md",
     "setup:doctor": "node infra/scripts/setup-doctor.mjs",
     "security:secrets": "node infra/scripts/check-secret-leaks.mjs",
+    "api:domain-smoke": "node infra/scripts/api-domain-smoke.mjs",
     "api:policy-coverage": "node infra/scripts/check-api-policy-coverage.mjs",
     "supabase:schema:check": "node infra/scripts/check-supabase-schema.mjs",
     "supabase:sql:pack": "node infra/scripts/prepare-supabase-sql-pack.mjs",

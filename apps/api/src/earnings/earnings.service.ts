@@ -16,6 +16,10 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import {
+  calculateProviderWalletDelta,
+  calculateServicePayoutFeeFromRules,
+} from './earnings.policy';
+import {
   PROVIDER_WALLET_BLOCK_CODE,
   PROVIDER_WALLET_BLOCK_REASON,
   PROVIDER_WALLET_SETTLEMENT_INSTRUCTION,
@@ -90,7 +94,7 @@ export class EarningsService {
         serviceTypes,
         occurredAt: booking.updatedAt ?? new Date(),
       });
-      const netAmount = this.calculateProviderWalletDelta({
+      const netAmount = calculateProviderWalletDelta({
         paymentMethod: booking.payment?.method,
         grossAmount,
         platformFee: platformFee.platformFeeAmount,
@@ -149,7 +153,7 @@ export class EarningsService {
         where: { bookingId },
         data: {
           tipAmount,
-          netAmount: this.calculateProviderWalletDelta({
+          netAmount: calculateProviderWalletDelta({
             paymentMethod: earning.booking.payment?.method,
             grossAmount: earning.grossAmount,
             platformFee: earning.platformFee,
@@ -665,20 +669,6 @@ export class EarningsService {
     };
   }
 
-  private calculateProviderWalletDelta(input: {
-    paymentMethod?: PaymentMethod | null;
-    grossAmount: number;
-    platformFee: number;
-    withholdingAmount: number;
-    tipAmount: number;
-  }) {
-    if (input.paymentMethod === PaymentMethod.CASH) {
-      return -(input.platformFee + input.withholdingAmount);
-    }
-
-    return input.grossAmount - input.platformFee - input.withholdingAmount + input.tipAmount;
-  }
-
   private async upsertEarningWalletLedger(
     tx: TxClient,
     earning: {
@@ -869,59 +859,12 @@ export class EarningsService {
         })),
       },
     });
-    const ruleByServiceAndPrice = new Map(
-      payoutRules.map((rule) => [`${rule.serviceId}:${rule.customerPrice}`, rule]),
-    );
-    const selectedRules = input.services.map((service) => ({
-      service,
-      rule: ruleByServiceAndPrice.get(`${service.serviceId}:${service.price}`),
-    }));
-    if (selectedRules.some((item) => !item.rule)) {
-      return null;
-    }
-
-    const ruleLines = selectedRules.map(({ service, rule }) => {
-      if (!rule) {
-        throw new BadRequestException('Missing service payout rule');
-      }
-      const customerAmount = service.price * service.quantity;
-      const providerPayoutAmount = rule.providerPayoutAmount * service.quantity;
-      const platformFeeAmount = Math.max(0, customerAmount - providerPayoutAmount);
-      const vatAmount = Math.round((platformFeeAmount * rule.vatBps) / 10_000);
-      const otherCostAmount = rule.otherCostAmount * service.quantity;
-      return {
-        serviceId: service.serviceId,
-        serviceName: service.serviceName,
-        quantity: service.quantity,
-        customerPrice: service.price,
-        customerAmount,
-        providerPayoutAmount,
-        platformFeeAmount,
-        vatBps: rule.vatBps,
-        vatAmount,
-        otherCostAmount,
-        ruleId: rule.id,
-      };
-    });
-    const providerPayoutAmount = ruleLines.reduce((sum, line) => sum + line.providerPayoutAmount, 0);
-    const platformFeeAmount = Math.max(0, input.grossAmount - providerPayoutAmount);
-    const vatAmount = ruleLines.reduce((sum, line) => sum + line.vatAmount, 0);
-    const otherCostAmount = ruleLines.reduce((sum, line) => sum + line.otherCostAmount, 0);
-
-    return {
-      platformFeeAmount,
+    return calculateServicePayoutFeeFromRules({
+      grossAmount: input.grossAmount,
       currency: input.currency,
-      policyVersionId: null,
-      ruleSnapshot: {
-        source: 'SERVICE_PAYOUT_RULE',
-        providerPayoutAmount,
-        vatAmount,
-        otherCostAmount,
-        grossAmount: input.grossAmount,
-        netCompanyFeeBeforeWithholding: platformFeeAmount - vatAmount - otherCostAmount,
-        lines: ruleLines,
-      },
-    };
+      services: input.services,
+      payoutRules,
+    });
   }
 
   private async requireProviderProfile(userId: string) {
