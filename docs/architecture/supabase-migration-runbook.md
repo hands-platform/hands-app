@@ -191,7 +191,7 @@ Current `hands-staging` status:
 - Storage buckets: `hands-public`, `hands-private`
 - Local API Supabase auth smoke: passing
 - Mobile OTP switch: waiting for deferred Supabase Phone Auth/SMS configuration
-- Planned SMS provider path: Twilio Verify for beta, then Viettel/FPT or another Vietnam-capable provider for production
+- Planned SMS provider path: Vonage for the next Phone Auth/SMS E2E pass, with Viettel/FPT or another Vietnam-capable backend as fallback if delivery or cost requires it
 
 Rollback during staging is simple: create a fresh staging Supabase project and rerun the generated bundle. Do not run destructive SQL against production-like data until backup/restore has been tested.
 

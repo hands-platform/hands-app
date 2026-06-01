@@ -21,7 +21,7 @@ Do not commit real `.env` files or secrets.
 3. Storage/CDN credentials
 4. MoMo and VNPay sandbox credentials
 5. OneSignal or another OS push provider
-6. SMS provider for Supabase Phone Auth after dev/Twilio beta validation
+6. Vonage SMS credentials for Supabase Phone Auth after the deferred Phone Auth E2E pass starts
 
 ## Verification
 

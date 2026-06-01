@@ -79,7 +79,7 @@ Current project:
 - Supabase JWT secret verified against the anon token
 - Local API Supabase auth smoke test passed
 - Phone Auth/SMS setup deferred
-- Planned SMS provider for Supabase Phone Auth: Twilio Verify for beta, then Viettel/FPT or another Vietnam-capable provider for production
+- Planned SMS provider for Supabase Phone Auth: Vonage for the next E2E pass, with Viettel/FPT or another Vietnam-capable backend as fallback if delivery or cost requires it
 
 Need from operator:
 
@@ -174,7 +174,7 @@ Planned callback domains:
 
 ### 9. SMS
 
-Planned provider path: Twilio Verify for beta validation, then Viettel/FPT or another Vietnam-capable provider for production.
+Planned provider path: Vonage for the next Phone Auth/SMS E2E pass, then evaluate Viettel/FPT or another Vietnam-capable backend only if delivery or cost requires it.
 
 Phone Auth/SMS E2E is intentionally deferred. Keep local auth on `AUTH_BACKEND=nest` and `SMS_PROVIDER=dev` until SMS provider credentials are ready and OTP delivery is tested.
 

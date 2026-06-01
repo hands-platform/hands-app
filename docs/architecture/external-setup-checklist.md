@@ -450,7 +450,7 @@ Last checked from `C:\dev\massage-vn-workspace\repo` on 2026-05-28:
 - Runtime operations policy: exposed in Admin Setup and Operations Policy, covered by admin web smoke and API smoke
 - No-show closeout alerts: customer and partner notification rows are created when Admin marks no-show, with `/notifications?review=no-show` and booking detail trace coverage
 - Supabase Phone Auth/SMS: deferred
-- Planned SMS provider path: Twilio Verify for beta, then Viettel/FPT or another Vietnam-capable production provider
+- Planned SMS provider path: Vonage for the next Phone Auth/SMS E2E pass, with Viettel/FPT or another Vietnam-capable backend as fallback if delivery or cost requires it
 - Mobile auth switch: still `AUTH_BACKEND=nest` locally until SMS provider + Supabase Phone Auth E2E is configured
 - Secret hygiene: Supabase publishable/anon/service/JWT secret values, MapTiler, and Geoapify keys must stay only in ignored `.env` files or external secret storage, never in Git
 - Local MinIO storage: ready for MVP

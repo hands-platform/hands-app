@@ -86,7 +86,7 @@ const setupOrder = [
     notes: [
       'This step is intentionally deferred so product development can continue without breaking login.',
       'Do not fill Supabase Phone Auth SMS fields with placeholder values.',
-      'Use dev OTP locally, Twilio Verify for beta if needed, and Viettel/FPT SMS for production cost optimization.',
+      'Use dev OTP locally. Vonage is the selected SMS path for the next Phone Auth E2E pass; Viettel/FPT or a custom Vietnam SMS backend remain fallback options if delivery or cost requires it.',
       'Partner role exchange must remain server-verified and must not accept a client-selected role.',
       'After this passes, mobile apps can switch AUTH_BACKEND from nest to supabase.',
     ],
@@ -277,12 +277,12 @@ const externalRegistrationPlan = [
     id: 'sms-phone-provider',
     groupId: 'supabase-auth',
     title: 'Phone OTP service',
-    provider: 'Dev OTP / Twilio beta / Viettel or FPT production',
+    provider: 'Dev OTP / Vonage deferred / Viettel or FPT fallback',
     owner: 'administration@hands.vn',
     status: 'Deferred',
     statusClass: 'pill-neutral',
     detail:
-      'Supabase Phone Auth remains deferred. Keep local/dev OTP until beta or production SMS delivery is tested.',
+      'Supabase Phone Auth remains deferred. Keep local/dev OTP until Vonage SMS delivery and the API token exchange are tested end to end.',
     env: ['SMS_PROVIDER', 'SMS_API_KEY', 'SMS_API_URL'],
   },
   {

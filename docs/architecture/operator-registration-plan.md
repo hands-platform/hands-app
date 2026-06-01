@@ -283,7 +283,7 @@ npm.cmd run external:check:production
 Purpose:
 
 - Real phone OTP delivery in Vietnam.
-- Use Twilio Verify for beta if useful, then evaluate Viettel/FPT or another Vietnam-capable provider before production OTP.
+- Use Vonage for the next Phone Auth/SMS E2E pass, then evaluate Viettel/FPT or another Vietnam-capable backend only if delivery or cost requires it.
 
 Set only if the backend SMS provider is used:
 

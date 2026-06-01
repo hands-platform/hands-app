@@ -301,7 +301,7 @@ Goal: Customer and partner apps can run the whole local operational flow.
 
 Goal: Replace local/dev behavior with production services.
 
-1. Supabase Auth with production SMS provider after dev/Twilio beta validation.
+1. Supabase Auth with Vonage SMS after deferred Phone Auth E2E validation.
 2. Supabase Storage or S3/R2 bucket policy.
 3. OneSignal push E2E.
 4. MoMo/VNPay sandbox payment E2E.
