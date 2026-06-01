@@ -392,7 +392,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <select name="sort" defaultValue={filters.sort}>
               <option value="ops-priority">Checklist order</option>
               <option value="last-work">Last completed work</option>
+              <option value="booking-count">Booking count</option>
               <option value="completed-count">Completed work count</option>
+              <option value="gross-revenue">Gross revenue</option>
+              <option value="pending-payout">Pending payout</option>
+              <option value="available-payout">Available payout</option>
               <option value="last-activity">Last app activity</option>
               <option value="location-freshness">Location freshness</option>
               <option value="wallet-debt">Wallet debt first</option>
@@ -1919,14 +1923,10 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     partnerClosedCount: closedRows.filter((booking) => booking.closedByRole === 'PROVIDER').length,
     noShowCount: bookingRows.filter((booking) => booking.status === 'NO_SHOW').length,
     reviewCount: Number(provider.reviewCount ?? 0),
-    grossRevenue: earnings.reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0),
+    grossRevenue: providerGrossRevenue(provider),
     platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
-    pendingPayout: earnings
-      .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status))
-      .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0),
-    availablePayout: earnings
-      .filter((earning) => earning.status === 'AVAILABLE')
-      .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0),
+    pendingPayout: providerPendingPayout(provider),
+    availablePayout: providerAvailablePayout(provider),
     accountBlocked,
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
   };
@@ -1979,6 +1979,22 @@ function providerCompletedWorkCount(provider: AdminProvider) {
     if (earning.booking?.status === 'COMPLETED') return true;
     return ['AVAILABLE', 'PAID'].includes(earning.status);
   }).length;
+}
+
+function providerGrossRevenue(provider: AdminProvider) {
+  return (provider.earnings ?? []).reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0);
+}
+
+function providerPendingPayout(provider: AdminProvider) {
+  return (provider.earnings ?? [])
+    .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status))
+    .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
+}
+
+function providerAvailablePayout(provider: AdminProvider) {
+  return (provider.earnings ?? [])
+    .filter((earning) => earning.status === 'AVAILABLE')
+    .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
 }
 
 function providerLastCompletedWorkAt(provider: AdminProvider) {
@@ -4159,6 +4175,21 @@ function sortProviders(
         dateMs(providerLastCompletedWorkAt(right)) - dateMs(providerLastCompletedWorkAt(left))
       );
     }
+    if (sort === 'booking-count') {
+      return (
+        providerBookingRows(right).length - providerBookingRows(left).length ||
+        dateMs(providerLastCompletedWorkAt(right)) - dateMs(providerLastCompletedWorkAt(left))
+      );
+    }
+    if (sort === 'gross-revenue') {
+      return providerGrossRevenue(right) - providerGrossRevenue(left);
+    }
+    if (sort === 'pending-payout') {
+      return providerPendingPayout(right) - providerPendingPayout(left);
+    }
+    if (sort === 'available-payout') {
+      return providerAvailablePayout(right) - providerAvailablePayout(left);
+    }
     if (sort === 'last-activity') {
       return dateMs(partnerLastActivityAt(right)) - dateMs(partnerLastActivityAt(left));
     }
@@ -4354,7 +4385,11 @@ function readPartnerSort(value: string) {
   return [
     'ops-priority',
     'last-work',
+    'booking-count',
     'completed-count',
+    'gross-revenue',
+    'pending-payout',
+    'available-payout',
     'last-activity',
     'location-freshness',
     'wallet-debt',
@@ -4366,7 +4401,11 @@ function readPartnerSort(value: string) {
 
 function partnerSortLabel(sort: string) {
   if (sort === 'last-work') return 'last completed work';
+  if (sort === 'booking-count') return 'booking count';
   if (sort === 'completed-count') return 'completed work count';
+  if (sort === 'gross-revenue') return 'gross revenue';
+  if (sort === 'pending-payout') return 'pending payout';
+  if (sort === 'available-payout') return 'available payout';
   if (sort === 'last-activity') return 'last app activity';
   if (sort === 'location-freshness') return 'location freshness';
   if (sort === 'wallet-debt') return 'wallet debt first';
