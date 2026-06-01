@@ -520,6 +520,7 @@ if (bookingLinkMatch) {
   const bookingBody = await fetchPage(bookingPath);
   const bookingMarkers = [
     'Operator command queue',
+    'Operator action availability',
     'Booking handoff checklist',
     'Booking full record index',
     'Service and pricing',

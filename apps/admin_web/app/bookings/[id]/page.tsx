@@ -281,6 +281,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messages,
     latestLocation,
   });
+  const operatorActionMatrix = bookingOperatorActionMatrix(booking);
   const operatorPriorityBriefing = bookingOperatorPriorityBriefing({
     booking,
     operatorCommandQueue,
@@ -429,6 +430,45 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
+      <section className="card" id="operator-action-availability" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Operator action availability</h2>
+            <p className="muted">
+              Action map for this booking: what can be handled now, what is locked by status, and where the
+              operator should open the actual form.
+            </p>
+          </div>
+          <span className="pill pill-info">
+            {operatorActionMatrix.filter((row) => row.available).length}/{operatorActionMatrix.length} available
+          </span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Availability</th>
+              <th>Evidence</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {operatorActionMatrix.map((row) => (
+              <tr key={row.action}>
+                <td>{row.action}</td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>
+                  <ActionLink href={row.href} label={row.hrefLabel} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
       <section className="card" id="booking-handoff-checklist" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -460,7 +500,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="payment-actions" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Booking full record index</h2>
@@ -2064,6 +2104,107 @@ function bookingOperatorCommandQueue({
     labels,
     commands: commands.slice(0, 8),
   };
+}
+
+function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
+  const paymentStatus = booking.payment?.status ?? 'NONE';
+  const paymentIsTerminal = isTerminalPayment(paymentStatus);
+  const paymentActionAvailable = Boolean(booking.payment?.id) && !paymentIsTerminal;
+  const cashDebt = bookingCashDebtNeedsSettlement(booking);
+  const closeoutAvailable = canCloseoutCompletedBooking(booking);
+  const expireAvailable = canExpireBooking(booking.status);
+  const noShowAvailable = canMarkNoShow(booking.status);
+  const refundRows = bookingRefundRows(booking);
+
+  return [
+    {
+      action: 'Payment sync',
+      available: Boolean(booking.payment?.providerRef) && !paymentIsTerminal,
+      status: Boolean(booking.payment?.providerRef) && !paymentIsTerminal ? 'Available' : 'Locked',
+      tone: Boolean(booking.payment?.providerRef) && !paymentIsTerminal ? 'pill-info' : 'pill-neutral',
+      evidence: booking.payment?.providerRef
+        ? `${paymentStatus} / provider ref ${booking.payment.providerRef}`
+        : 'No payment provider reference to sync.',
+      href: '#payment-actions',
+      hrefLabel: 'Open payment actions',
+    },
+    {
+      action: 'Capture payment',
+      available: paymentActionAvailable && paymentStatus === 'AUTHORIZED',
+      status: paymentActionAvailable && paymentStatus === 'AUTHORIZED' ? 'Available' : 'Locked',
+      tone: paymentActionAvailable && paymentStatus === 'AUTHORIZED' ? 'pill-warn' : 'pill-neutral',
+      evidence:
+        paymentStatus === 'AUTHORIZED'
+          ? `${booking.status} / ${money(booking.payment?.amount, booking.payment?.currency)} authorized`
+          : `Payment status is ${paymentStatus}.`,
+      href: '#payment-actions',
+      hrefLabel: 'Open payment actions',
+    },
+    {
+      action: 'Release or refund',
+      available: paymentActionAvailable,
+      status: paymentActionAvailable ? 'Available' : 'Locked',
+      tone: paymentActionAvailable ? 'pill-warn' : 'pill-neutral',
+      evidence: refundRows.length
+        ? `${refundRows.length} refund row(s) already recorded.`
+        : `${booking.status} / payment ${paymentStatus}.`,
+      href: '#payment-actions',
+      hrefLabel: 'Open payment actions',
+    },
+    {
+      action: 'Settle cash fee debt',
+      available: cashDebt,
+      status: cashDebt ? 'Available' : 'Locked',
+      tone: cashDebt ? 'pill-danger' : 'pill-neutral',
+      evidence: cashDebt
+        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} blocks partner acceptance.`
+        : booking.payment?.method === 'CASH'
+          ? 'Cash booking has no active negative wallet block.'
+          : `${booking.payment?.method ?? 'No method'} booking.`,
+      href: '#payment-actions',
+      hrefLabel: 'Open payment actions',
+    },
+    {
+      action: 'Reconcile completed booking',
+      available: closeoutAvailable,
+      status: closeoutAvailable ? 'Available' : 'Locked',
+      tone: closeoutAvailable ? 'pill-warn' : 'pill-neutral',
+      evidence: completedCloseoutLabel(booking),
+      href: '#completed-closeout',
+      hrefLabel: 'Open closeout',
+    },
+    {
+      action: 'Expire matching',
+      available: expireAvailable,
+      status: expireAvailable ? 'Available' : 'Locked',
+      tone: expireAvailable ? 'pill-info' : 'pill-neutral',
+      evidence: expireAvailable
+        ? `Open matching can be expired. Timer ${formatDate(booking.expiresAt)}.`
+        : `Current status is ${booking.status}.`,
+      href: '#matching-expiry',
+      hrefLabel: 'Open expiry',
+    },
+    {
+      action: 'Mark no-show',
+      available: noShowAvailable,
+      status: noShowAvailable ? 'Available' : 'Locked',
+      tone: noShowAvailable ? 'pill-neutral' : 'pill-neutral',
+      evidence: noShowAvailable
+        ? 'Use after communication and service movement are reviewed.'
+        : `Current status is ${booking.status}.`,
+      href: '#no-show-handling',
+      hrefLabel: 'Open no-show',
+    },
+    {
+      action: 'Add operator note',
+      available: true,
+      status: 'Available',
+      tone: 'pill-info',
+      evidence: `${bookingOperatorNoteLines(booking).length} note line(s) currently retained.`,
+      href: '#operator-notes',
+      hrefLabel: 'Open notes',
+    },
+  ];
 }
 
 function bookingOperatorPriorityBriefing({

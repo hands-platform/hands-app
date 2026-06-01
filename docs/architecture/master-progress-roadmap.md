@@ -98,6 +98,7 @@ Admin dashboard:
 - Booking monitor with matching stages, first-pick, marketplace participants, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, service/pricing, payment, refund, finance, tax, wallet, cash settlement, location, alerts, audit evidence, and operator notes into the deeper factual sections.
 - Booking full record index now links directly to service/pricing, communication and movement, alerts, operator notes, and the full activity timeline so operators can jump from one booking to the needed evidence section.
+- Booking detail now includes an operator action availability matrix for payment sync/capture/release/refund, cash fee settlement, completed closeout, matching expiry, no-show handling, and internal notes.
 - Booking detail now includes a first-screen priority briefing for the operator's next action, customer/partner state, chat archive, location, payment, finance checks, and closeout handoff.
 - Booking detail now includes closeout readiness checks and an exception register for customer/address, partner choice, chat archive, payment state, finance ledger, cash settlement, location, and audit evidence.
 - Booking detail now includes a service pricing snapshot for selected service duration, customer price, partner payout, HANDS fee, tax/withholding, and wallet impact.
