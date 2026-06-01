@@ -54,6 +54,7 @@ Checked commands:
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
 - `npm.cmd run build --workspace @massage-vn/admin-web`: PASS
 - `node infra/scripts/admin-web-smoke.mjs`: PASS, 77 admin page checks plus dynamic customer, partner, legacy provider, and booking detail checks. On the current dev server this can take about 180-250 seconds, so short shell timeouts may fail even when the app is healthy.
+- `ADMIN_WEB_SMOKE_PATHS=/ node infra/scripts/admin-web-smoke.mjs`: PASS. The dashboard now includes an Operations command board that groups live booking wait, first-pick and 10km marketplace participation, customer final choice, chat/evidence, partner supply, finance closeout, notifications, and external setup into one operator-first command order.
 - `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/partner-controls,/operations-policy,/bookings,/chat-archive,/app-sessions,/setup node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted operating-core check also verifies dynamic customer, partner, provider-legacy, and booking detail pages.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
