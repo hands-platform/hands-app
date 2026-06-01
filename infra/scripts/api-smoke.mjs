@@ -2035,7 +2035,7 @@ if (
   );
 }
 const expectedProviderWalletBlockReason =
-  'You cannot accept new bookings because unpaid HANDS cash-service fees are still pending settlement.';
+  'Outstanding HANDS fee settlement must be completed before final acceptance, customer selection, service start, or payout release.';
 if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
@@ -2044,7 +2044,7 @@ if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWall
   );
 }
 const directWalletBlockError = await expectRequestFailure(
-  'Negative provider wallet blocks direct booking acceptance',
+  'Negative provider wallet holds direct final acceptance',
   () => postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken),
   400,
 );
@@ -2061,7 +2061,7 @@ const customerSelectionWalletBlockError = await expectRequestFailure(
   400,
 );
 for (const [label, message] of [
-  ['direct booking acceptance', directWalletBlockError],
+  ['direct final acceptance', directWalletBlockError],
   ['customer final selection', customerSelectionWalletBlockError],
 ]) {
   if (!message.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
@@ -2107,7 +2107,7 @@ if (!negativeWalletFinalSelectionError.includes('"code":"PROVIDER_WALLET_NEGATIV
   );
 }
 const payoutWalletBlockError = await expectRequestFailure(
-  'Negative provider wallet blocks payout batch creation',
+  'Negative provider wallet holds payout batch creation',
   () =>
     postJson('/admin/payout-batches', adminAuth.accessToken, {
       providerProfileId: walletDebtProviderAuth.user.providerProfile.id,

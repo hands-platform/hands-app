@@ -4804,10 +4804,10 @@ const providerWalletBlockFallbackReasonReadable =
     '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 const providerWalletBlockHintReadable =
-    'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, deposit the settlement amount or wait for admin offset before accepting more bookings.';
+    'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, marketplace opportunities stay visible but final gates wait for settlement or admin offset.';
 
 const providerWalletBlockFallbackReasonClean =
-    'HANDS fee settlement is incomplete, so final booking acceptance is locked.';
+    'HANDS fee settlement is incomplete, so final customer confirmation is waiting.';
 
 const providerWalletBlockHintClean =
     'Cash jobs are paid directly to you. You can still appear in marketplace opportunities, but final acceptance requires settling unpaid HANDS fees or an admin offset.';
@@ -4895,7 +4895,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
     if (reference != null)
       'Use reference $reference when sending the deposit or requesting admin offset.',
     'After admin confirms the deposit or offset, refresh wallet status.',
-    'New booking acceptance unlocks only when the wallet is no longer negative.',
+    'Final acceptance, customer selection, service start, and payout release unlock when the wallet is no longer negative.',
   ];
 }
 
@@ -5127,7 +5127,7 @@ String providerCashBookingSettlementHint(Map<String, dynamic> booking) {
       amount == null ? 'this request' : '${formatCurrency(amount)} VND';
   return 'Cash payment: the customer pays you directly for $amountText. '
       'After completion, HANDS fees and tax withholding can create wallet debt. '
-      'Keep your wallet settled so future booking acceptance stays available.';
+      'Keep your wallet settled so final confirmation, service start, and payout gates stay clear.';
 }
 
 String providerServiceOptionLabel(Map<String, dynamic>? service) {

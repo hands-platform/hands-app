@@ -168,21 +168,21 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'Negative wallet booking gate',
     description:
-      'Choose how strictly partners with unpaid cash-service platform fees are blocked from accepting new work.',
+      'Choose which final gates wait for unpaid cash-service platform fees while marketplace visibility stays open.',
     value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
     recommendedValue: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
     options: [
       {
         value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
-        label: 'Block accepts while negative',
+        label: 'Hold final gates while negative',
         tradeoff:
           'Keeps marketplace visibility open, but blocks final acceptance or customer selection while debt is open.',
       },
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,
-        label: 'Allow one recovery booking',
+        label: 'Recovery supervision',
         tradeoff:
-          'More partner-friendly by allowing one active recovery booking, but leaves unpaid fees open longer.',
+          'Lets operators supervise configured final-gate exceptions, but leaves unpaid fees open longer.',
       },
     ],
     enforced: true,

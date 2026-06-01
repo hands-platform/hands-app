@@ -102,6 +102,8 @@ function checkNoContradictoryNegativeWalletWording() {
     'before booking acceptance unlocks',
     'before accepting more bookings',
     'before accepting another booking',
+    'New booking acceptance stays blocked',
+    'new booking acceptance stays blocked',
     'allowing new booking actions',
     'block booking actions',
     'may block booking actions',
@@ -112,6 +114,10 @@ function checkNoContradictoryNegativeWalletWording() {
 
   for (const file of [
     ...listFiles('apps/admin_web/app', '.tsx'),
+    ...listFiles('apps/api/src', '.ts'),
+    ...listFiles('apps/customer_app/lib', '.dart'),
+    ...listFiles('apps/provider_app/lib', '.dart'),
+    'infra/scripts/api-smoke.mjs',
     ...listFiles('docs/architecture', '.md'),
   ]) {
     const source = read(file);

@@ -52,14 +52,14 @@ Admin refunds cancel unpaid earnings and set their net amount to zero. If an ear
 
 ## Partner Wallet Guard
 
-For the MVP, the partner wallet guard still reads unsettled `ProviderEarning.netAmount` totals because that keeps booking acceptance fast and simple:
+For the MVP, the partner wallet guard still reads unsettled `ProviderEarning.netAmount` totals because that keeps final-gate checks fast and simple:
 
 - Positive delta: HANDS owes money to the partner.
 - Negative delta: the partner owes HANDS fees/tax from cash bookings.
 
 If the unsettled wallet balance is negative, the API still allows marketplace visibility and join intent, but blocks final acceptance or customer final selection when the configured gate requires settlement. It returns the partner-facing message:
 
-`수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
+`Outstanding HANDS fee settlement must be completed before final acceptance, customer selection, service start, or payout release.`
 
 This supports two settlement paths without hiding partners from the marketplace:
 

@@ -2702,7 +2702,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
   if (walletBalance < 0) {
     return `Partner wallet is negative by ${formatProviderMoney(
       Math.abs(walletBalance),
-    )}. New booking acceptance stays blocked until finance settles the cash fee debt.`;
+    )}. Marketplace visibility stays available, but configured final gates wait until finance settles the cash fee debt.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Partner is approved but not currently online for direct or marketplace requests.';
