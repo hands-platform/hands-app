@@ -176,6 +176,22 @@ void main() {
     expect(guidance.infoMessage, 'Service started. Chat is ready.');
   });
 
+  test('provider app hides service chat after booking is closed', () {
+    final liveBooking = {
+      'status': 'IN_SERVICE',
+      'chatRoom': {'id': 'room-live'},
+    };
+    final completedBooking = {
+      'status': 'COMPLETED',
+      'chatRoom': {'id': 'room-archive'},
+    };
+
+    expect(isProviderAppChatVisible(liveBooking), isTrue);
+    expect(isProviderAppChatVisible(completedBooking), isFalse);
+    expect(providerScheduleNextAction(completedBooking),
+        'Service complete. Check earnings and payout status.');
+  });
+
   test('formats provider booking service option labels consistently', () {
     final service = {
       'name': 'Foot Massage',

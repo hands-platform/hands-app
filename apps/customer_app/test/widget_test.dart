@@ -237,4 +237,20 @@ void main() {
     );
     expect(confirmedAction.title, 'Booking confirmed');
   });
+
+  test('customer app hides service chat after booking is closed', () {
+    final liveBooking = {
+      'status': 'IN_SERVICE',
+      'chatRoom': {'id': 'room-live'},
+    };
+    final completedBooking = {
+      'status': 'COMPLETED',
+      'chatRoom': {'id': 'room-archive'},
+    };
+
+    expect(isCustomerAppChatVisible(liveBooking), isTrue);
+    expect(isCustomerAppChatVisible(completedBooking), isFalse);
+    expect(customerBookingNextAction(completedBooking),
+        'Service complete. Review when ready.');
+  });
 }
