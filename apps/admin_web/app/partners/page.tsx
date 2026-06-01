@@ -243,7 +243,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       admin_closed_count: master.adminClosedCount,
       partner_closed_count: master.partnerClosedCount,
       no_show_count: master.noShowCount,
-      feedback_average_value: master.reviewAverage,
       feedback_record_count: master.reviewCount,
       gross_revenue_vnd: master.grossRevenue,
       platform_fee_vnd: master.platformFee,
@@ -279,7 +278,6 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     'admin_closed_count',
     'partner_closed_count',
     'no_show_count',
-    'feedback_average_value',
     'feedback_record_count',
     'gross_revenue_vnd',
     'platform_fee_vnd',
@@ -563,7 +561,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   </td>
                   <td>
                     <strong>{row.reviewCount} review(s)</strong>
-                    <p className="muted">Feedback value {row.reviewAverage}/5</p>
+                    <p className="muted">Open detail to read factual feedback records</p>
                   </td>
                   <td>
                     <strong>{formatProviderMoney(row.grossRevenue)}</strong>
@@ -1747,7 +1745,6 @@ type PartnerMasterRow = {
   adminClosedCount: number;
   partnerClosedCount: number;
   noShowCount: number;
-  reviewAverage: string;
   reviewCount: number;
   grossRevenue: number;
   platformFee: number;
@@ -1921,7 +1918,6 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     adminClosedCount: closedRows.filter((booking) => booking.closedByRole === 'ADMIN').length,
     partnerClosedCount: closedRows.filter((booking) => booking.closedByRole === 'PROVIDER').length,
     noShowCount: bookingRows.filter((booking) => booking.status === 'NO_SHOW').length,
-    reviewAverage: formatProviderRating(provider.ratingAvg),
     reviewCount: Number(provider.reviewCount ?? 0),
     grossRevenue: earnings.reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0),
     platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
@@ -1960,11 +1956,6 @@ function partnerInitials(value: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
-}
-
-function formatProviderRating(value: AdminProvider['ratingAvg']) {
-  const rating = Number(value ?? 0);
-  return Number.isFinite(rating) ? rating.toFixed(1) : '0.0';
 }
 
 function partnerOperationPillClass(tone: PartnerOperationChecklistItem['tone']) {

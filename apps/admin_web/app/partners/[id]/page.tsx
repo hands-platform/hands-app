@@ -1641,7 +1641,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <InfoLine label="Address" value={provider.residentialAddress} />
           <InfoLine label="Service city" value={provider.city} />
           <InfoLine label="Service area" value={formatJsonSummary(provider.serviceArea)} />
-          <InfoLine label="Feedback records" value={formatFeedbackRecords(provider)} />
+          <InfoLine label="Feedback records" value={`${provider.reviewCount ?? 0} review(s) saved`} />
           <InfoLine label="Next available" value={formatDate(provider.nextAvailableAt)} />
           <InfoLine label="Profile badge reviewed at" value={formatDate(provider.trustedAt)} />
           <InfoLine label="User name" value={provider.user?.fullName} />
@@ -3053,7 +3053,7 @@ function buildPartnerMasterFacts(
     {
       label: 'Feedback records',
       value: `${provider.reviewCount ?? 0} review(s)`,
-      helper: `Feedback value ${Number(provider.ratingAvg ?? 0).toFixed(1)}/5`,
+      helper: 'Open the review section to read original customer feedback records',
     },
     {
       label: 'Revenue',
@@ -5017,13 +5017,6 @@ function jsonStringList(value: unknown) {
 function formatJsonList(value: unknown) {
   const items = jsonStringList(value);
   return items.length ? items.join(', ') : null;
-}
-
-function formatFeedbackRecords(provider: ProviderDetail) {
-  const rating = provider.ratingAvg ?? 0;
-  const numericRating = typeof rating === 'number' ? rating : Number(rating);
-  const formattedRating = Number.isFinite(numericRating) ? numericRating.toFixed(1) : String(rating);
-  return `${provider.reviewCount ?? 0} review(s) / feedback value ${formattedRating}/5`;
 }
 
 function providerPublicMediaLabel(purpose?: string | null) {
