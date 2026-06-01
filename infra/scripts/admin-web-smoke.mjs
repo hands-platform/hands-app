@@ -47,6 +47,9 @@ const pages = [
       'Today operator order',
       'Live customer wait',
       'Cash fee settlement gate',
+      'Service and payment mix',
+      'Finance snapshot',
+      'Partner readiness funnel',
     ],
   },
   {
