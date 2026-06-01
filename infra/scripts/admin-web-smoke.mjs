@@ -158,6 +158,8 @@ const pages = [
       'Current partner acceptance impact',
       'Policy sensitivity preview',
       'Matching stage impact preview',
+      'Owner decision backlog',
+      'Current decision pressure',
       'Before saving this policy',
       'First-pick queue',
       'Live matching policy',
