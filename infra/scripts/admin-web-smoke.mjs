@@ -394,6 +394,7 @@ function visibleTextFromHtml(body) {
 function assertNoLegacyVisibleLanguage(path, body) {
   const visibleText = visibleTextFromHtml(body);
   const bannedPatterns = [
+    { label: 'legacy Provider wording', pattern: /\bProvider\b|\bPROVIDER\(S\)\b/ },
     { label: 'legacy backup wording', pattern: /\b[Bb]ackup\b/ },
     { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
     { label: 'people scoring wording', pattern: /\b(score|scoring|VIP|tip|tips)\b/i },
@@ -419,14 +420,6 @@ function assertNoLegacyVisibleLanguage(path, body) {
     );
   }
 
-  if (/^\/(bookings|notifications|partner-controls|partner-risk|partners|provider-risk|providers)(?:[/?]|$)/.test(path)) {
-    const legacyProviderMatch = visibleText.match(/\bProvider\b/);
-    if (legacyProviderMatch) {
-      throw new Error(
-        `${path} contains visible legacy provider display wording: ${legacyProviderMatch[0]}`,
-      );
-    }
-  }
 }
 
 for (const page of smokePages) {

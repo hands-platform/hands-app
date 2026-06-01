@@ -62,6 +62,8 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/customers?sort=booking-count,/customers?sort=completed-count,/customers?sort=captured-spend,/customers?sort=last-seen node infra/scripts/admin-web-smoke.mjs`: PASS. Customer operations sorting by booking volume, completed work, captured spend, and app access is now guarded.
 - `ADMIN_WEB_SMOKE_PATHS=/notifications,/partners,/bookings,/partner-controls node infra/scripts/admin-web-smoke.mjs`: PASS. This now guards partner-facing admin pages and dynamic booking detail against visible legacy `Provider` display wording.
 - Rendered admin text sampling across dashboard, partners, customers, bookings, operations policy, partner controls, app sessions, services, tax policy, setup, notifications, and a booking detail page: PASS, no visible standalone `Provider` display wording.
+- `ADMIN_WEB_SMOKE_PATHS=/,/operations-policy,/partner-controls,/setup,/notifications,/earnings,/cash-settlements,/chat-archive,/audit-log node infra/scripts/admin-web-smoke.mjs`: PASS. This confirms finance, settlement, notification, setup, chat archive, audit, and partner control views after broader Partner terminology cleanup.
+- Browser-rendered text sweep across dashboard, partners, customers, bookings, operations policy, partner controls, app sessions, services, tax policy, setup, notifications, earnings, payouts, cash settlements, chat archive, reviews, payments, refunds, coupons, and audit log: PASS, no visible legacy `Provider`, hierarchy/badge wording, or people-scoring wording.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 11 tests
 - `flutter analyze` in partner app: PASS
@@ -155,7 +157,7 @@ Admin dashboard:
 - Admin smoke tests now fail if operator-facing pages expose star-judgment wording such as "stars or below" or "star /"; reviews remain factual service feedback records.
 - Admin smoke tests now fail if operator-facing pages expose judgmental account wording such as account misuse, fraud, abuse controls, suspicious session, or trusted-partner labels. Account/device handling should stay factual and review-based.
 - Admin smoke tests now fail if operator-facing pages expose partner hierarchy wording such as trust badge, partner badge, profile badge, or promoted-into labels. Optional partner checks should be described as profile review or account review.
-- Admin smoke tests now fail if partner-facing admin pages expose visible legacy `Provider` display wording. DB/API/internal type names can remain `Provider`, but rendered operator copy should say `Partner`.
+- Admin smoke tests now fail if any operator-facing admin page exposes visible legacy `Provider` display wording. DB/API/internal type names can remain `Provider`, but rendered operator copy should say `Partner`.
 - Admin smoke tests now guard the booking detail `Service feedback` marker so booking records keep factual feedback language in the source-of-truth view.
 - Admin smoke tests now guard finance and work-volume partner sort URLs so operator list ordering remains available after admin refactors.
 - Admin smoke tests now guard customer work-volume, spend, and app-access sort URLs so customer operations remain record-based and searchable.
