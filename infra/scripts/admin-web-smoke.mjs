@@ -557,6 +557,8 @@ if (bookingLinkMatch) {
     'Operating timeline',
     'Communication and movement handoff',
     'Chat lifecycle and retention',
+    'All customer chats',
+    'All partner chats',
     'Service pricing snapshot',
     'Open customer record',
     'Preferred, final, and marketplace shortlist.',
