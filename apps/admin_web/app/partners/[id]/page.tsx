@@ -638,7 +638,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <button type="submit">Apply filter</button>
             <a
               className="text-link"
-              download={`hands-partner-${shortRiskId(provider.id)}-activity.csv`}
+              download={`hands-partner-${shortRecordId(provider.id)}-activity.csv`}
               href={filteredActivityCsvHref}
             >
               Export activity CSV
@@ -1056,7 +1056,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         {formatCurrency(earning.withholdingAmount)}
                       </p>
                       <p className="muted">
-                        {earning.bookingId ? `Booking ${shortRiskId(earning.bookingId)} / ` : ''}
+                        {earning.bookingId ? `Booking ${shortRecordId(earning.bookingId)} / ` : ''}
                         payment {earning.booking?.payment?.method ?? 'UNKNOWN'} / created{' '}
                         {formatDate(earning.createdAt)}
                       </p>
@@ -1184,8 +1184,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               Review shared devices, session checks, blocked devices, and stale partner app activity.
             </p>
           </div>
-          <span className={`pill ${securitySummary.risky ? 'pill-danger' : 'pill-success'}`}>
-            {securitySummary.risky ? 'Follow-up needed' : 'No active follow-up'}
+          <span className={`pill ${securitySummary.followUpNeeded ? 'pill-danger' : 'pill-success'}`}>
+            {securitySummary.followUpNeeded ? 'Follow-up needed' : 'No active follow-up'}
           </span>
         </div>
         <div className="ops-task-grid">
@@ -1367,7 +1367,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   Started {formatDate(payoutHold.startsAt)} / expires {formatDate(payoutHold.expiresAt)}
                 </p>
               </div>
-              <small>{shortRiskId(payoutHold.id)}</small>
+              <small>{shortRecordId(payoutHold.id)}</small>
             </div>
           ) : null}
           <form className="form-grid" action={createProviderSanction}>
@@ -1417,11 +1417,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         {report.category} / {report.source} / {formatDate(report.createdAt)}
                       </p>
                       <div className="participant-list" style={{ marginTop: 6 }}>
-                        <span className={`pill ${riskSeverityPill(report.severity)}`}>{report.severity}</span>
-                        <span className={`pill ${riskStatusPill(report.status)}`}>{report.status}</span>
+                        <span className={`pill ${reportSeverityPill(report.severity)}`}>{report.severity}</span>
+                        <span className={`pill ${reportStatusPill(report.status)}`}>{report.status}</span>
                         {report.bookingId ? (
                           <Link className="text-link" href={`/bookings/${report.bookingId}`}>
-                            Booking {shortRiskId(report.bookingId)}
+                            Booking {shortRecordId(report.bookingId)}
                           </Link>
                         ) : null}
                       </div>
@@ -1469,7 +1469,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         <button type="submit">Apply control</button>
                       </form>
                     </div>
-                    <small>{shortRiskId(report.id)}</small>
+                    <small>{shortRecordId(report.id)}</small>
                   </div>
                 ))}
               </div>
@@ -1503,7 +1503,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         </form>
                       ) : null}
                     </div>
-                    <small>{shortRiskId(sanction.id)}</small>
+                    <small>{shortRecordId(sanction.id)}</small>
                   </div>
                 ))}
               </div>
@@ -2679,7 +2679,7 @@ function buildPartnerActivityRecords(
       id: bookingRecord.booking.id,
       type: 'BOOKING',
       at: bookingRecord.booking.scheduledStartAt ?? bookingRecord.booking.createdAt ?? '',
-      title: `${bookingRecord.relation} booking ${shortRiskId(bookingRecord.booking.id)}`,
+      title: `${bookingRecord.relation} booking ${shortRecordId(bookingRecord.booking.id)}`,
       detail: `${bookingServiceLabel(bookingRecord.booking)} / ${bookingRecord.booking.status ?? 'UNKNOWN'} / customer ${partnerBookingCustomer(
         bookingRecord.booking,
       )}${isClosedPartnerBooking(bookingRecord.booking) ? ` / ${bookingClosureLabel(bookingRecord.booking)}` : ''}`,
@@ -2689,7 +2689,7 @@ function buildPartnerActivityRecords(
         id: `${bookingRecord.booking.id}-closure`,
         type: 'BOOKING',
         at: bookingRecord.booking.closedAt,
-        title: `Booking closed ${shortRiskId(bookingRecord.booking.id)}`,
+        title: `Booking closed ${shortRecordId(bookingRecord.booking.id)}`,
         detail: bookingClosureLabel(bookingRecord.booking),
       });
     }
@@ -2699,7 +2699,7 @@ function buildPartnerActivityRecords(
         id: message.id,
         type: 'CHAT',
         at: message.createdAt ?? bookingRecord.booking.createdAt ?? '',
-        title: `Chat message in ${shortRiskId(bookingRecord.booking.id)}`,
+        title: `Chat message in ${shortRecordId(bookingRecord.booking.id)}`,
         detail: `${message.sender?.fullName ?? message.sender?.phone ?? message.sender?.roles?.join(', ') ?? 'Unknown'}: ${trimText(
           message.body,
           90,
@@ -2845,7 +2845,7 @@ function buildPartnerActivityRecords(
       id: earning.id,
       type: 'EARNING',
       at: earning.createdAt ?? earning.availableAt ?? earning.paidAt ?? '',
-      title: `${earning.status} earning ${shortRiskId(earning.id)}`,
+      title: `${earning.status} earning ${shortRecordId(earning.id)}`,
       detail: `Gross ${formatCurrency(earning.grossAmount)} / platform fee ${formatCurrency(
         earning.platformFee,
       )} / net ${formatCurrency(earning.netAmount)}`,
@@ -2857,7 +2857,7 @@ function buildPartnerActivityRecords(
       id: batch.id,
       type: 'PAYOUT',
       at: batch.createdAt ?? batch.paidAt ?? '',
-      title: `${batch.status} payout batch ${shortRiskId(batch.id)}`,
+      title: `${batch.status} payout batch ${shortRecordId(batch.id)}`,
       detail: `${formatCurrency(batch.totalNetAmount)}${batch.transferRef ? ` / ${batch.transferRef}` : ''}`,
     });
   }
@@ -4229,7 +4229,7 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
 
   return {
     cards,
-    risky: cards.some((card) => card.tone === 'blocked'),
+    followUpNeeded: cards.some((card) => card.tone === 'blocked'),
   };
 }
 
@@ -4599,19 +4599,19 @@ function providerDocumentResubmissionInstruction(type?: string | null) {
   return 'Ask the partner to upload a clearer replacement image for review.';
 }
 
-function riskSeverityPill(severity: string) {
+function reportSeverityPill(severity: string) {
   if (severity === 'CRITICAL' || severity === 'HIGH') return 'pill-danger';
   if (severity === 'MEDIUM') return 'pill-warn';
   return 'pill-neutral';
 }
 
-function riskStatusPill(status: string) {
+function reportStatusPill(status: string) {
   if (status === 'RESOLVED' || status === 'DISMISSED') return 'pill-success';
   if (status === 'INVESTIGATING') return 'pill-warn';
   return 'pill-info';
 }
 
-function shortRiskId(value: string) {
+function shortRecordId(value: string) {
   return value.length > 12 ? `${value.slice(0, 8)}...` : value;
 }
 
