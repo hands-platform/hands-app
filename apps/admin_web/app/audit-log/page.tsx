@@ -1,19 +1,22 @@
 import { AdminAuditLog, adminGet } from '../../lib/admin-api';
+import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import Link from 'next/link';
 
 type AuditLogFilters = {
   q: string;
   bucket: string;
   priority: string;
+  range: ReturnType<typeof normalizeDateRange>;
 };
 type AuditLogPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function AuditLogPage({ searchParams }: { searchParams?: AuditLogPageSearchParams }) {
   const filters = buildAuditFilters(searchParams ? await searchParams : {});
   const allLogs = sortLogs(await adminGet<AdminAuditLog[]>('/admin/audit-logs', []));
-  const logs = filterAuditLogs(allLogs, filters);
+  const dateFilteredLogs = allLogs.filter((log) => isInDateRange(log.createdAt, filters.range));
+  const logs = filterAuditLogs(dateFilteredLogs, filters);
   const summary = buildSummary(logs);
-  const commandBoard = buildAuditCommandBoard(allLogs);
+  const commandBoard = buildAuditCommandBoard(dateFilteredLogs, filters.range);
 
   return (
     <>
@@ -104,6 +107,15 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
             <input name="q" defaultValue={filters.q} placeholder="Action, target, actor, metadata" />
           </label>
           <label>
+            Date range
+            <select name="range" defaultValue={filters.range}>
+              <option value="all">All dates</option>
+              <option value="today">Today</option>
+              <option value="7d">Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+            </select>
+          </label>
+          <label>
             Bucket
             <select name="bucket" defaultValue={filters.bucket}>
               <option value="">All</option>
@@ -134,7 +146,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               Clear filters
             </a>
             <span className="muted">
-              Showing {logs.length} of {allLogs.length} events
+              Showing {logs.length} of {dateFilteredLogs.length} events / {dateRangeLabel(filters.range)}
             </span>
           </div>
         </form>
@@ -270,7 +282,7 @@ type AuditCommandItem = {
   logs: AdminAuditLog[];
 };
 
-function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
+function buildAuditCommandBoard(logs: AdminAuditLog[], range: AuditLogFilters['range']): AuditCommandItem[] {
   const now = Date.now();
   const servicePolicyLogs = logs.filter(
     (log) => isServicePricingAction(log.action) || log.action.startsWith('tax_'),
@@ -291,7 +303,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
         'Service price, payout, VAT, tax, and fee edits have downstream effects on bookings and wallet debt.',
       status: 'Policy',
       operatorAction: 'Review before/after metadata and confirm the change was intentional.',
-      href: '/audit-log?bucket=Service%2FPricing',
+      href: withAuditRange('/audit-log?bucket=Service%2FPricing', range),
       tone: servicePolicyLogs.length > 0 ? 'warn' : 'ok',
       logs: servicePolicyLogs,
     },
@@ -300,7 +312,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
       detail: 'Payment, refund, payout, and settlement events should line up with booking outcomes.',
       status: 'Money',
       operatorAction: 'Check ledger impact before closing payment or payout tasks.',
-      href: '/audit-log?bucket=Payment',
+      href: withAuditRange('/audit-log?bucket=Payment', range),
       tone: moneyLogs.length > 0 ? 'warn' : 'ok',
       logs: moneyLogs,
     },
@@ -310,7 +322,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
         'End-of-shift finance audit for booking closeout, cash debt settlement, payout batches, and payment state.',
       status: 'Closeout',
       operatorAction: 'Open Finance Closeout, then confirm every listed event has a matching ledger row.',
-      href: '/audit-log?bucket=Finance%2FCloseout',
+      href: withAuditRange('/audit-log?bucket=Finance%2FCloseout', range),
       tone: financeCloseoutLogs.length > 0 ? 'warn' : 'ok',
       logs: financeCloseoutLogs,
     },
@@ -319,7 +331,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
       detail: 'Booking, matching, partner status, and verification changes affect service delivery.',
       status: 'Dispatch',
       operatorAction: 'Trace handoff problems from booking detail back to the acting operator.',
-      href: '/audit-log?bucket=Dispatch',
+      href: withAuditRange('/audit-log?bucket=Dispatch', range),
       tone: dispatchLogs.length > 0 ? 'info' : 'ok',
       logs: dispatchLogs,
     },
@@ -328,7 +340,7 @@ function buildAuditCommandBoard(logs: AdminAuditLog[]): AuditCommandItem[] {
       detail: 'High-priority edits from the last 24 hours should be reviewed before shift handoff.',
       status: 'Last 24h',
       operatorAction: 'Use this lane for end-of-shift review and incident handoff.',
-      href: '/audit-log?priority=4',
+      href: withAuditRange('/audit-log?priority=4', range),
       tone: recentHighPriority.length > 0 ? 'warn' : 'ok',
       logs: recentHighPriority,
     },
@@ -340,11 +352,19 @@ function buildAuditFilters(params: Record<string, string | string[] | undefined>
     q: readParam(params.q),
     bucket: readParam(params.bucket),
     priority: readParam(params.priority),
+    range: normalizeDateRange(readSearchParam(params.range)),
   };
 }
 
 function readParam(value: string | string[] | undefined) {
-  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+  return readSearchParam(value);
+}
+
+function withAuditRange(href: string, range: AuditLogFilters['range']) {
+  if (range === 'all') {
+    return href;
+  }
+  return `${href}${href.includes('?') ? '&' : '?'}range=${range}`;
 }
 
 function filterAuditLogs(logs: AdminAuditLog[], filters: AuditLogFilters) {
