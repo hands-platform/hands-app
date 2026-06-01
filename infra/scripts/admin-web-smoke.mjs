@@ -124,6 +124,22 @@ const pages = [
     markers: ['Customer Management', 'Sort: last completed work', 'All customers'],
   },
   {
+    path: '/customers?sort=booking-count',
+    markers: ['Customer Management', 'Sort: booking count', 'All customers'],
+  },
+  {
+    path: '/customers?sort=completed-count',
+    markers: ['Customer Management', 'Sort: completed work count', 'All customers'],
+  },
+  {
+    path: '/customers?sort=captured-spend',
+    markers: ['Customer Management', 'Sort: captured spend', 'All customers'],
+  },
+  {
+    path: '/customers?sort=last-seen',
+    markers: ['Customer Management', 'Sort: last app session', 'All customers'],
+  },
+  {
     path: '/operations-policy',
     markers: [
       'Operations Policy',

@@ -56,6 +56,7 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/operations-handoff node infra/scripts/admin-web-smoke.mjs`: PASS. Browser verification also confirmed `/operations-handoff` renders the shift handoff checklist without runtime errors or people-ranking wording.
 - `ADMIN_WEB_SMOKE_PATHS=/notifications?review=failed node infra/scripts/admin-web-smoke.mjs`: PASS. Failed notification review links are now covered by smoke tests.
 - `ADMIN_WEB_SMOKE_PATHS=/partners?sort=booking-count,/partners?sort=gross-revenue,/partners?sort=pending-payout,/partners?sort=available-payout node infra/scripts/admin-web-smoke.mjs`: PASS. Partner operations sorting by booking count, gross revenue, pending payout, and available payout is now guarded.
+- `ADMIN_WEB_SMOKE_PATHS=/customers?sort=booking-count,/customers?sort=completed-count,/customers?sort=captured-spend,/customers?sort=last-seen node infra/scripts/admin-web-smoke.mjs`: PASS. Customer operations sorting by booking volume, completed work, captured spend, and app access is now guarded.
 - `flutter analyze` in customer app: PASS
 - `flutter test` in customer app: PASS, 10 tests
 - `flutter analyze` in partner app: PASS
@@ -140,6 +141,7 @@ Admin dashboard:
 - Admin smoke tests now guard the dashboard operator order, failed-notification review page, and customer retained chat archive visibility.
 - Admin smoke tests now fail if average feedback wording appears in operator-facing admin pages.
 - Admin smoke tests now guard finance and work-volume partner sort URLs so operator list ordering remains available after admin refactors.
+- Admin smoke tests now guard customer work-volume, spend, and app-access sort URLs so customer operations remain record-based and searchable.
 
 Customer mobile app:
 
