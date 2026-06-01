@@ -19,7 +19,7 @@ HANDS partner onboarding is split into small domains so legal, tax, payout, and 
 | Bank accounts | Masked account data, QR banking metadata, admin review                    | `ProviderBankAccount`                                                                   |
 | Tax           | Partner MST/tax profile, versioned policy rules, withholding logs         | `ProviderTaxProfile`, `TaxPolicyVersion`, `TaxRule`, `ProviderTaxLog`, `WithholdingLog` |
 | Agreements    | Terms, privacy, location, payout, and tax policy consent versions         | `ProviderAgreement`                                                                     |
-| Security      | Device, session, IP, app version, suspicious activity hooks               | `ProviderDevice`, `ProviderSession`                                                     |
+| Security      | Device, session, IP, app version, and account review signals              | `ProviderDevice`, `ProviderSession`                                                     |
 | Admin ops     | KYC, bank, tax, payout approval and audit trail                           | `ProviderVerificationLog`, `AdminAuditLog`                                              |
 
 Internal table and route names still use `Provider*` for compatibility. User-facing product language should say partner.
@@ -31,7 +31,7 @@ Internal table and route names still use `Provider*` for compatibility. User-fac
 | `LEVEL_1_SIGNUP`         | Can sign up and create the basic profile | Phone/auth plus basic profile                                               |
 | `LEVEL_2_ACTIVE`         | Can receive and complete jobs            | KYC approved and approved bank account                                      |
 | `LEVEL_3_PAYOUT_ENABLED` | Can request payouts                      | First earned revenue, tax profile, residential address, required agreements |
-| `LEVEL_4_TRUSTED`        | Trusted badge                            | Admin career/profile review                                                 |
+| `LEVEL_4_TRUSTED`        | Optional profile review recorded         | Admin career/profile review                                                 |
 
 Tax fields are intentionally not required during signup. They appear when the partner earns revenue for the first time, not before the first job. This keeps signup light while still moving tax and settlement compliance forward as soon as money exists.
 
@@ -56,10 +56,11 @@ requirements become active gates for payout and settlement readiness.
 
 Cash bookings are handled differently from online payments. When a partner receives
 cash directly from the customer, HANDS records platform fee and withholding as a
-negative wallet amount. A negative partner wallet blocks new booking acceptance until
-finance confirms partner repayment or an approved admin offset. The booking API returns:
+negative wallet amount. A negative partner wallet becomes a settlement-required state
+and blocks configured acceptance or service-start gates until finance confirms partner
+repayment or an approved admin offset. The partner-facing response should explain:
 
-`수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.`
+`Outstanding HANDS fee settlement must be completed before accepting another booking.`
 
 ## Tax Policy Rule
 
@@ -132,5 +133,5 @@ Supabase should mirror these domains with RLS:
 - Do not store raw CCCD, tax codes, or bank account numbers in plain text.
 - Use hashing for lookup/matching and encryption or a vault for values that must be recoverable.
 - Add malware scanning/moderation before KYC approval.
-- Add admin review queues for KYC, bank, tax profile, and trusted badge.
+- Add admin review queues for KYC, bank, tax profile, and optional profile review.
 - Add one-way audit logs for every approval, rejection, block, and payout action.

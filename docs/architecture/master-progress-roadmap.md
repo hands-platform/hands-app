@@ -40,6 +40,7 @@ Core principles:
 Checked commands:
 
 - `npm.cmd run setup:doctor`: PASS
+- `npm.cmd run external:copy-check`: PASS. This prevents the deferred Supabase Phone Auth/SMS path from drifting back to a deprecated SMS-provider path and keeps Vonage recorded as the selected next E2E SMS provider.
 - `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, matching policy marketplace windows, 10km radius/join guards, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
 - API policy coverage now explicitly guards admin price-step enforcement, service base-price step enforcement, payout-above-customer-price rejection, and partner price minimum/step rejection markers.
 - API policy coverage now also guards partner device/session and account-control invariants: device block/unblock round trip, account block rejection, account unblock recovery, and shared-device session-check behavior without turning that signal into an automatic app block.
@@ -78,7 +79,7 @@ Checked commands:
 - `npm.cmd run external:check:maps`: PASS
 - `npm.cmd run supabase:schema:check`: PASS, 38 required tables
 - `npm.cmd run mobile:architecture:check`: PASS
-- `npm.cmd run mobile:visible-copy`: PASS. This guards customer/partner app visible copy against gratuity, VIP, and people-scoring wording.
+- `npm.cmd run mobile:visible-copy`: PASS. This guards customer/partner app visible copy against gratuity, VIP, people-scoring wording, and partner hierarchy wording.
 
 Known environment note:
 
@@ -162,8 +163,9 @@ Admin dashboard:
 - Admin smoke tests now guard the dashboard operator order, failed-notification review page, and customer retained chat archive visibility.
 - Admin smoke tests now fail if average feedback wording appears in operator-facing admin pages.
 - Admin smoke tests now fail if operator-facing pages expose star-judgment wording such as "stars or below" or "star /"; reviews remain factual service feedback records.
-- Admin smoke tests now fail if operator-facing pages expose judgmental account wording such as account misuse, fraud, abuse controls, suspicious session, or trusted-partner labels. Account/device handling should stay factual and review-based.
-- Admin smoke tests now fail if operator-facing pages expose partner hierarchy wording such as trust badge, partner badge, profile badge, or promoted-into labels. Optional partner checks should be described as profile review or account review.
+- Admin smoke tests now fail if operator-facing pages expose judgmental account wording such as account misuse, fraud, abuse controls, suspicious session, or hierarchy-style partner labels. Account/device handling should stay factual and review-based.
+- Admin smoke tests now fail if operator-facing pages expose partner hierarchy or badge-style wording. Optional partner checks should be described as profile review or account review.
+- Setup doctor now includes an external setup copy guard so operators see Vonage as the deferred Phone Auth/SMS path and do not fill deprecated SMS-provider settings by mistake.
 - Admin smoke tests now fail if any operator-facing admin page exposes visible legacy `Provider` display wording. DB/API/internal type names can remain `Provider`, but rendered operator copy should say `Partner`.
 - Admin smoke tests now also fail if operator-facing admin pages expose visible people-ranking or penalty wording. Historical notes and audit metadata are displayed through neutral closeout-decision wording.
 - Admin smoke tests now guard the booking detail `Service feedback` marker so booking records keep factual feedback language in the source-of-truth view.
