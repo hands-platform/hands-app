@@ -13,7 +13,7 @@ Working summary:
 - HANDS is address-based, profile-first, and built around Open Matching Marketplace.
 - Supabase is infrastructure; NestJS remains the business authority.
 - Customer final partner selection is always the source of truth.
-- Distance affects sorting, alert preference, and operations filters; it must not be a hard discovery or participation boundary in MVP.
+- Distance affects sorting, alert preference, operations filters, and the admin-configurable marketplace eligibility radius. The current MVP target default is 10km, but distance never auto-selects the final partner.
 - Booking confirmation and immutable booking address snapshots are mandatory.
 - Partner visibility and availability are separate.
 - Negative wallet balance is a settlement warning; hard blocking applies only at final acceptance/confirmation/service-start gates when policy requires it.
@@ -46,7 +46,7 @@ Checked commands:
 - `npm.cmd run typecheck`: PASS
 - `npm.cmd run build --workspace @massage-vn/api`: PASS
 - `npm.cmd run build --workspace @massage-vn/admin-web`: PASS
-- `node infra/scripts/admin-web-smoke.mjs`: PASS, 52 admin pages plus dynamic detail checks. On the current dev server this can take about 130-170 seconds, so short shell timeouts may fail even when the app is healthy.
+- `node infra/scripts/admin-web-smoke.mjs`: PASS, 54 admin pages plus dynamic detail checks. On the current dev server this can take about 130-170 seconds, so short shell timeouts may fail even when the app is healthy.
 - `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/partner-controls,/operations-policy,/bookings,/chat-archive,/app-sessions,/setup node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted operating-core check also verifies dynamic customer, partner, provider-legacy, and booking detail pages.
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
@@ -90,6 +90,7 @@ Admin dashboard:
 - Operations dashboard with booking counts, matching wait, completion/cancel/no-show indicators, hourly and regional demand, active app users.
 - Booking monitor with matching stages, first-pick, marketplace participants, customer choice, handoff repair, payment, cash debt, location, chat, closeout, expired, no-show views.
 - Booking detail now includes a compact operating ledger that links customer, partner, chat, payment, finance, tax, wallet, location, alerts, and audit evidence into the deeper factual sections.
+- Booking detail now includes a first-screen priority briefing for the operator's next action, customer/partner state, chat archive, location, payment, finance checks, and closeout handoff.
 - Booking detail now includes closeout readiness checks and an exception register for customer/address, partner choice, chat archive, payment state, finance ledger, cash settlement, location, and audit evidence.
 - Booking detail now includes a service pricing snapshot for selected service duration, customer price, partner payout, HANDS fee, tax/withholding, and wallet impact.
 - Booking detail exposes immutable customer address snapshots to customer and admin reads, and API smoke verifies this so later location refactors do not overwrite booking history.
@@ -210,7 +211,8 @@ Goal: Mobile apps and admin use the same policy logic.
 1. Matching policy service
    - Partner first-response window: configurable, currently 10 minutes.
    - Open Matching Marketplace stays visible to eligible marketplace participants.
-   - Distance is used for ranking and alert preferences, not as a hard participation gate.
+   - Distance is used for ranking, alert preferences, and the admin-configurable marketplace eligibility radius.
+   - Current MVP target default radius is 10km, but the customer still selects the final partner.
    - Customer can select among available participants.
 
 2. Wallet/cash debt gate

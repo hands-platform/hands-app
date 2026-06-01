@@ -154,7 +154,7 @@ Dedicated installer for Git, Docker Desktop, and Flutter:
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\install-dev-tools-admin.ps1
 ```
 
-The smoke script covers demo OTP login, partner verification file presign/read-url, admin verification approval, booking creation, partner join, customer selection, chat, completion, review/tip, partner earnings, payout batch creation, admin refund, and notification reads.
+The smoke script covers demo OTP login, partner verification file presign/read-url, admin verification approval, booking creation, partner join, customer selection, chat, completion, review/feedback, partner earnings, payout batch creation, admin refund, and notification reads.
 
 This repository is structured for small, commit-ready phases. Phase 1 includes reports, architecture docs, Docker, Prisma schema, backend skeleton, and starter mobile/admin UI.
 

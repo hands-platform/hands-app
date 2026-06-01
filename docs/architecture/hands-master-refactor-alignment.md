@@ -29,14 +29,14 @@ Use Supabase for PostgreSQL, PostGIS, Auth, Storage, RLS, SQL/RPC where useful, 
 
 - No automatic final dispatch.
 - No radius-only or nearby-only discovery.
-- No hard 10km participation gate.
+- No automatic final selection based on radius.
 - No scheduled/calendar booking in MVP.
 - No store/station/branch model.
 - No premium membership/subscription/gratuity flow.
 - No customer or partner rating/risk ranking.
 - No Firebase dependency.
 
-Distance can still drive sorting, alert preferences, and operations filters. It must not be treated as a hard visibility or participation boundary unless a future policy explicitly adds that as an operator choice.
+Distance can still drive sorting, alert preferences, and operations filters. Marketplace participation can use an admin-configurable eligibility radius; the current MVP target default is 10km, but the customer still chooses the final partner and the platform does not auto-assign by distance.
 
 ## Admin Language
 

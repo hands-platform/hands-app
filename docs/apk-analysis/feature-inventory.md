@@ -16,7 +16,7 @@
 - Cancellation reason and penalty flows
 - Chat list and chat detail with media/location affordances
 - Notifications, favorites, order history
-- Profile, wallet, transactions, recharge/withdraw, VIP/subscription, referral
+- Profile, wallet, transactions, recharge/withdraw, reference-app VIP/subscription, referral
 
 ## Provider/Staff Features
 
@@ -42,4 +42,6 @@
 
 The MVP keeps the broad screen order and navigation hierarchy, but changes the core booking model into open matching:
 
-`service -> partner list/detail -> booking confirmation -> open matching -> partner participants -> customer selects final partner -> chat/location/service lifecycle -> review/tip`
+`service -> partner list/detail -> booking confirmation -> open matching -> partner participants -> customer selects final partner -> chat/location/service lifecycle -> review/feedback`
+
+Reference-app VIP/subscription and gratuity-like flows are recorded only as analysis findings. They are not part of the HANDS MVP operating model.
