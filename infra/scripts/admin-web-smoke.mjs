@@ -667,6 +667,11 @@ if (bookingLinkMatch) {
   const bookingMarkers = [
     'Operator command queue',
     'Operator action availability',
+    'Evidence packet for admin decision',
+    'Chat evidence',
+    'Location evidence',
+    'Payment evidence',
+    'Operator note evidence',
     'Booking handoff checklist',
     'Booking full record index',
     'Service and pricing',
