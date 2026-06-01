@@ -467,7 +467,7 @@ function opsHint(review: AdminReview) {
     return 'Feedback at 2 stars or below deserves service recovery review before similar issues repeat.';
   }
   if (review.tipAmount > 0) {
-    return 'Keep the extra amount visible for finance reconciliation, without turning it into a customer or partner ranking.';
+    return 'Keep the extra amount visible for finance reconciliation, without using it as customer or partner evaluation.';
   }
   return 'Routine feedback row for customer sentiment and booking context.';
 }

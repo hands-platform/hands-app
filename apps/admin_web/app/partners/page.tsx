@@ -2239,7 +2239,7 @@ function PartnerBackupEligibilityCell({
 }
 
 function buildProviderPriorityLane(providers: AdminProvider[], opsPolicy: ProviderOpsPolicy) {
-  const ranked = providers
+  const ordered = providers
     .map((provider) => ({ provider, action: nextProviderListAction(provider, opsPolicy) }))
     .filter((item) => item.action.tone !== 'done')
     .sort((left, right) => {
@@ -2250,8 +2250,8 @@ function buildProviderPriorityLane(providers: AdminProvider[], opsPolicy: Provid
     });
 
   return {
-    items: ranked.slice(0, 6),
-    blockedCount: ranked.filter((item) => item.action.tone === 'blocked').length,
+    items: ordered.slice(0, 6),
+    blockedCount: ordered.filter((item) => item.action.tone === 'blocked').length,
   };
 }
 
