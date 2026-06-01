@@ -311,9 +311,19 @@ export default async function BookingDetailPage({ params }: PageProps) {
               Open customer
             </Link>
           )}
+          {booking.customerProfile?.id && (
+            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.customerProfile.id)}`}>
+              All customer chats
+            </Link>
+          )}
           {finalProvider?.id && (
             <Link className="text-link" href={`/partners/${finalProvider.id}`}>
               Open partner
+            </Link>
+          )}
+          {finalProvider?.id && (
+            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(finalProvider.id)}`}>
+              All partner chats
             </Link>
           )}
           {booking.chatRoom?.id && (
