@@ -166,6 +166,17 @@ type LiveOperationsRadarItem = {
   checks: string[];
 };
 
+type OperationsCommandBoardItem = {
+  lane: string;
+  owner: 'Dispatch' | 'Finance' | 'Partner Ops' | 'Support' | 'Setup';
+  status: string;
+  value: string;
+  detail: string;
+  href: string;
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  checks: string[];
+};
+
 type DashboardPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 type DashboardFilters = {
@@ -346,6 +357,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     externalReadiness,
   });
   const liveOperationsRadar = buildLiveOperationsRadar({
+    bookingOps: liveBookingOps,
+    bookingDeepDive: liveBookingDeepDive,
+    matchingControl,
+    appPresence,
+    partnerSupply,
+    cashSettlementSummary,
+    failedNotifications,
+    activePayoutBatches,
+    externalReadiness,
+  });
+  const operationsCommandBoard = buildOperationsCommandBoard({
     bookingOps: liveBookingOps,
     bookingDeepDive: liveBookingDeepDive,
     matchingControl,
@@ -565,6 +587,43 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <Link className="text-link" href="/audit-log">
             Audit log
           </Link>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Operations command board</h2>
+            <p className="muted">
+              One-screen command order for live bookings, first-pick wait, 10km partner
+              marketplace, customer choice, chat handoff, settlement gates, notifications, and setup.
+            </p>
+          </div>
+          <Link className="text-link" href={operationsCommandBoard[0]?.href ?? '/bookings'}>
+            Open first action
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {operationsCommandBoard.map((item) => (
+            <Link
+              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
+              href={item.href}
+              key={item.lane}
+            >
+              <small>{item.owner}</small>
+              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.status}</span>
+              <h3>{item.lane}</h3>
+              <strong>{item.value}</strong>
+              <p>{item.detail}</p>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                {item.checks.map((check) => (
+                  <span className="pill pill-neutral" key={check}>
+                    {check}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -2996,6 +3055,169 @@ function buildShiftOperatingRoute(input: {
         : 'Current-stage setup is usable; deferred production providers remain tracked for launch preparation.',
       href: '/setup',
       tone: currentStageSetupBlocked ? 'danger' : 'ok',
+    },
+  ];
+}
+
+function buildOperationsCommandBoard(input: {
+  bookingOps: ReturnType<typeof buildBookingOpsInsights>;
+  bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
+  matchingControl: ReturnType<typeof buildMatchingControlRoom>;
+  appPresence: ReturnType<typeof buildAppPresence>;
+  partnerSupply: ReturnType<typeof buildPartnerSupplyInsights>;
+  cashSettlementSummary: AdminCashSettlementSummary;
+  failedNotifications: AdminNotification[];
+  activePayoutBatches: AdminPayoutBatch[];
+  externalReadiness: AdminExternalReadiness;
+}): OperationsCommandBoardItem[] {
+  const openMatchingFollowUp = input.matchingControl.openRows.filter(
+    (row) => row.expired || row.freshEligibleCount === 0,
+  ).length;
+  const firstPickRows = input.matchingControl.openRows.filter((row) =>
+    row.backupState.toLowerCase().includes('first-pick'),
+  ).length;
+  const marketplaceRows = input.matchingControl.openRows.filter((row) =>
+    row.backupState.toLowerCase().includes('marketplace'),
+  ).length;
+  const customerChoiceRows = input.matchingControl.openRows.filter((row) =>
+    row.customerState.toLowerCase().includes('choose'),
+  ).length;
+  const chatHandoffRows = input.bookingDeepDive.matchedWithoutChat + input.bookingDeepDive.quietActiveChats;
+  const financeRows =
+    input.bookingOps.completedCloseoutChecks +
+    input.cashSettlementSummary.rowCount +
+    input.activePayoutBatches.length;
+  const setupOpen =
+    input.externalReadiness.currentStageOk === false
+      ? input.externalReadiness.blockingCategories?.length ?? 0
+      : 0;
+
+  return [
+    {
+      lane: 'Live booking command',
+      owner: 'Dispatch',
+      status: openMatchingFollowUp ? 'Action' : input.bookingOps.openMatching ? 'Live' : 'Clear',
+      value: `${input.bookingOps.openMatching} open`,
+      detail: openMatchingFollowUp
+        ? `${openMatchingFollowUp} active booking row(s) have expired timers or no fresh nearby partner.`
+        : `${input.appPresence.liveOpenMatchingCustomers} customer(s) are live while matching is open.`,
+      href: openMatchingFollowUp ? '/bookings?view=attention' : '/bookings?view=matching',
+      tone: openMatchingFollowUp ? 'danger' : input.bookingOps.openMatching ? 'warn' : 'ok',
+      checks: [
+        `${input.bookingDeepDive.openWithoutParticipants} without partner`,
+        `${input.bookingDeepDive.expiredOpenMatching} expired timer(s)`,
+        'Booking address snapshot',
+      ],
+    },
+    {
+      lane: 'First-pick and 10km market',
+      owner: 'Dispatch',
+      status: firstPickRows || marketplaceRows ? 'Monitoring' : 'Clear',
+      value: `${firstPickRows} first / ${marketplaceRows} market`,
+      detail:
+        firstPickRows || marketplaceRows
+          ? 'Preferred partner keeps the first window while nearby partners can request to participate for customer choice.'
+          : 'No first-pick or marketplace handoff is waiting in the current open sample.',
+      href: firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
+      tone: firstPickRows || marketplaceRows ? 'info' : 'ok',
+      checks: [
+        '10 minute first-pick',
+        input.matchingControl.metrics.find((item) => item.label === 'Candidate radius')?.value ?? '10 km',
+        'No auto assignment',
+      ],
+    },
+    {
+      lane: 'Customer final choice',
+      owner: 'Support',
+      status: customerChoiceRows ? 'Choose' : 'Waiting',
+      value: `${customerChoiceRows} ready`,
+      detail:
+        customerChoiceRows > 0
+          ? 'Accepted partners are visible; customer must select the final partner before work is locked.'
+          : 'No customer final-choice handoff is waiting now.',
+      href: customerChoiceRows ? '/bookings?view=customer-choice' : '/bookings',
+      tone: customerChoiceRows ? 'info' : 'ok',
+      checks: [
+        `${input.bookingDeepDive.customerFinalSelection} selection wait`,
+        'Customer-owned decision',
+        'No direct cancel after match',
+      ],
+    },
+    {
+      lane: 'Chat and evidence',
+      owner: 'Support',
+      status: chatHandoffRows ? 'Review' : 'Clear',
+      value: `${chatHandoffRows} check`,
+      detail:
+        chatHandoffRows > 0
+          ? 'Matched work must have chat available during service and retained for admin decisions after completion.'
+          : 'Matched chat and admin archive checks are clear in the loaded data.',
+      href: chatHandoffRows ? '/bookings?view=chat-repair' : '/chat-archive',
+      tone: chatHandoffRows ? 'warn' : 'ok',
+      checks: [
+        `${input.bookingDeepDive.matchedWithoutChat} missing room`,
+        `${input.bookingDeepDive.quietActiveChats} quiet room`,
+        'Archive retained',
+      ],
+    },
+    {
+      lane: 'Partner supply',
+      owner: 'Partner Ops',
+      status: input.partnerSupply.onlineAvailable ? 'Available' : 'Check',
+      value: `${input.partnerSupply.onlineAvailable}/${input.partnerSupply.online} online`,
+      detail:
+        input.partnerSupply.onlineAvailable > 0
+          ? `${input.partnerSupply.staleLocation} partner location pin(s) are older than the freshness window.`
+          : 'No online available partner is visible; check app sessions, location update, and onboarding readiness.',
+      href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
+      tone: input.partnerSupply.onlineAvailable ? (input.partnerSupply.staleLocation ? 'warn' : 'ok') : 'warn',
+      checks: [
+        `${input.partnerSupply.liveSessions} app session(s)`,
+        `${input.partnerSupply.noLocation} missing pin`,
+        `${input.partnerSupply.pendingVerification} KYC waiting`,
+      ],
+    },
+    {
+      lane: 'Finance closeout',
+      owner: 'Finance',
+      status: financeRows ? 'Review' : 'Clear',
+      value: `${financeRows} item(s)`,
+      detail:
+        input.cashSettlementSummary.providerCount > 0
+          ? 'Negative wallet keeps visibility, but final acceptance waits for cash fee settlement.'
+          : 'Completed work, cash settlement, and payout batch rows are visible for scheduled closeout.',
+      href: financeRows ? '/finance-closeout' : '/earnings',
+      tone: financeRows ? 'warn' : 'ok',
+      checks: [
+        `${input.cashSettlementSummary.rowCount} cash fee row(s)`,
+        `${input.activePayoutBatches.length} payout batch(es)`,
+        'Weekly/monthly/admin batch',
+      ],
+    },
+    {
+      lane: 'Notifications',
+      owner: 'Support',
+      status: input.failedNotifications.length ? 'Retry' : 'Clear',
+      value: `${input.failedNotifications.length} failed`,
+      detail:
+        input.failedNotifications.length > 0
+          ? 'Failed delivery rows should be retried or marked so operators know whether the customer or partner saw it.'
+          : 'No failed notification rows are visible in the current operations window.',
+      href: input.failedNotifications.length ? '/notifications?review=failed' : '/notifications',
+      tone: input.failedNotifications.length ? 'warn' : 'ok',
+      checks: ['Delivery status', 'Disabled device', 'Retry log'],
+    },
+    {
+      lane: 'External setup',
+      owner: 'Setup',
+      status: setupOpen ? 'Open' : 'Ready',
+      value: `${setupOpen} setup`,
+      detail: setupOpen
+        ? 'Current-stage external setup still has blocking categories to complete before production use.'
+        : 'Current-stage external setup is usable; deferred production providers stay tracked in Setup.',
+      href: '/setup',
+      tone: setupOpen ? 'warn' : 'ok',
+      checks: ['Supabase infra', 'MapTiler/Geoapify', 'NestJS authority'],
     },
   ];
 }

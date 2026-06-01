@@ -11,6 +11,7 @@ const pages = [
     markers: [
       'HANDS Admin',
       'Dashboard date range',
+      'Operations command board',
       'Daily operations snapshot',
       'Live operations radar',
       'Evidence drilldown',
