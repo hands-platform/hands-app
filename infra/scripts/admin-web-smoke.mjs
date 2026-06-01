@@ -399,6 +399,10 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'people scoring wording', pattern: /\b(score|scoring|VIP|tip|tips)\b/i },
     { label: 'partner average feedback wording', pattern: /\bFeedback value\b/i },
     { label: 'person-rating wording', pattern: /\b(stars? or below|star \/)\b/i },
+    {
+      label: 'judgmental account wording',
+      pattern: /\b(account misuse|fraud|abuse controls|suspicious session|trusted partner)\b/i,
+    },
   ];
   const violations = bannedPatterns
     .map((rule) => ({ ...rule, match: visibleText.match(rule.pattern) }))

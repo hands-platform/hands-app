@@ -413,7 +413,7 @@ function buildSessionCommandCards(
       title: 'Shared device safety',
       value: `${sharedDeviceChecks} device(s)`,
       status: sharedDeviceChecks ? 'REVIEW' : 'CLEAR',
-      detail: 'Multiple accounts on one device can indicate family phones, staff testing, or account misuse.',
+      detail: 'Multiple accounts on one device can indicate family phones, staff testing, or shared-device handling.',
       action: sharedDeviceChecks
         ? 'Review account/device notes before dispatching'
         : 'No duplicate device check visible',
@@ -528,9 +528,9 @@ function buildSessionCheckRows(sessions: AdminAppSession[]) {
       rows.push({
         key: `duplicate-${deviceId}`,
         status: 'SHARED DEVICE',
-        title: 'Multiple accounts share one app device',
+        title: 'Shared app device needs account review',
         detail: `${userCount} user accounts used ${shortDeviceId(deviceId)}.`,
-        action: 'Review account safety',
+        action: 'Review account and device notes',
         tone: 'ops-task-blocked',
       });
     }

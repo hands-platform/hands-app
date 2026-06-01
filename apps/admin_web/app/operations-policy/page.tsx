@@ -2139,7 +2139,7 @@ function buildPartnerAcceptancePolicyImpact(
       label: 'Account follow-up',
       value: accountFollowUps.length.toString(),
       helper:
-        'Blocked account, active sanction, blocked device, suspicious session, or shared device signal.',
+        'Blocked account, active admin hold, blocked device, session follow-up, or shared device signal.',
     },
     {
       label: 'Recovery queue',
@@ -3232,7 +3232,7 @@ function operationsOwnerDecisionBacklog() {
         {
           label: 'Recovery booking',
           tradeoff:
-            'Can keep a trusted partner active while collecting debt, but needs tighter finance review and abuse controls.',
+            'Can keep an eligible partner active while collecting debt, but needs tighter finance review and settlement controls.',
         },
       ],
       recommendation:

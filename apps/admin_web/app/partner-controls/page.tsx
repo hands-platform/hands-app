@@ -1418,7 +1418,7 @@ function buildAcceptanceUnblockPlaybook(
     {
       id: 'playbook-account-controls',
       step: '2',
-      owner: 'Trust',
+      owner: 'Account ops',
       title: 'Resolve account controls',
       status: card('account-controls')?.status ?? 'UNKNOWN',
       pillClass: card('account-controls')?.blockingCount ? 'pill-danger' : 'pill-success',
@@ -1426,7 +1426,7 @@ function buildAcceptanceUnblockPlaybook(
         'Account blocks and active account controls are deliberate operational controls and should stay above convenience.',
       bookingImpact: 'Blocks partner visibility and booking acceptance while the restriction is active.',
       payoutImpact: 'Payout holds should remain until the report or account control has a clean audit outcome.',
-      customerImpact: 'Protects customers from partners under unresolved safety, fraud, or behavior review.',
+      customerImpact: 'Keeps customer bookings away from accounts with unresolved admin holds until documented review is complete.',
       action: card('account-controls')?.action ?? 'Review account blocks',
       href: card('account-controls')?.href ?? '/partner-controls?sanction=ACTIVE',
       blockingCount: card('account-controls')?.blockingCount ?? 0,
