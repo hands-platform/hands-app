@@ -152,8 +152,7 @@ create table if not exists public.providers (
   bio text,
   status public.provider_status not null default 'OFFLINE',
   verification_status public.verification_status not null default 'DRAFT',
-  rating numeric(3, 2) not null default 0,
-  review_count integer not null default 0,
+  feedback_record_count integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (user_id)
@@ -220,12 +219,25 @@ create table if not exists public.bookings (
   address_text text not null,
   latitude double precision not null check (latitude between -90 and 90),
   longitude double precision not null check (longitude between -180 and 180),
-  scheduled_at timestamptz not null default now(),
+  requested_at timestamptz not null default now(),
   expires_at timestamptz,
   subtotal_vnd integer not null default 0,
   total_vnd integer not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
+);
+
+create table if not exists public.booking_address_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null unique references public.bookings(id) on delete cascade,
+  customer_id uuid not null references public.profiles(id),
+  address_text text not null,
+  latitude double precision not null check (latitude between -90 and 90),
+  longitude double precision not null check (longitude between -180 and 180),
+  location geography(point, 4326)
+    generated always as (st_setsrid(st_makepoint(longitude, latitude), 4326)::geography) stored,
+  source text not null default 'CUSTOMER_SELECTED',
+  created_at timestamptz not null default now()
 );
 
 create table if not exists public.booking_services (
@@ -283,9 +295,8 @@ create table if not exists public.reviews (
   booking_id uuid not null unique references public.bookings(id) on delete cascade,
   customer_id uuid not null references public.profiles(id),
   provider_id uuid not null references public.providers(id),
-  rating integer not null check (rating between 1 and 5),
+  feedback_label text not null default 'SERVICE_FEEDBACK',
   body text,
-  tip_amount_vnd integer not null default 0,
   status public.review_status not null default 'PUBLISHED',
   report_reason text,
   moderated_at timestamptz,
@@ -311,7 +322,6 @@ create table if not exists public.provider_earnings (
   gross_amount_vnd integer not null check (gross_amount_vnd >= 0),
   platform_fee_vnd integer not null check (platform_fee_vnd >= 0),
   withholding_amount_vnd integer not null default 0 check (withholding_amount_vnd >= 0),
-  tip_amount_vnd integer not null default 0 check (tip_amount_vnd >= 0),
   net_amount_vnd integer not null check (net_amount_vnd >= 0),
   currency text not null default 'VND',
   status public.earning_status not null default 'PENDING',
@@ -428,6 +438,10 @@ create index if not exists customer_selected_locations_customer_idx
 create index if not exists bookings_customer_idx on public.bookings(customer_id, created_at desc);
 create index if not exists bookings_selected_provider_idx on public.bookings(selected_provider_id, created_at desc);
 create index if not exists bookings_status_idx on public.bookings(status, created_at desc);
+create index if not exists booking_address_snapshots_booking_idx
+  on public.booking_address_snapshots(booking_id);
+create index if not exists booking_address_snapshots_location_idx
+  on public.booking_address_snapshots using gist(location);
 create index if not exists booking_participants_provider_idx
   on public.booking_participants(provider_id, created_at desc);
 create index if not exists messages_room_idx on public.messages(chat_room_id, created_at desc);
@@ -508,6 +522,7 @@ alter table public.provider_services enable row level security;
 alter table public.provider_locations enable row level security;
 alter table public.customer_selected_locations enable row level security;
 alter table public.bookings enable row level security;
+alter table public.booking_address_snapshots enable row level security;
 alter table public.booking_services enable row level security;
 alter table public.booking_participants enable row level security;
 alter table public.chat_rooms enable row level security;
@@ -612,6 +627,28 @@ create policy "bookings participant read"
       from public.booking_participants bp
       join public.providers p on p.id = bp.provider_id
       where bp.booking_id = bookings.id
+        and p.user_id = auth.uid()
+    )
+  );
+
+drop policy if exists "booking address snapshots participant read" on public.booking_address_snapshots;
+create policy "booking address snapshots participant read"
+  on public.booking_address_snapshots for select
+  using (
+    customer_id = auth.uid()
+    or public.is_admin()
+    or exists (
+      select 1
+      from public.bookings b
+      join public.providers p on p.id in (b.preferred_provider_id, b.selected_provider_id)
+      where b.id = booking_id
+        and p.user_id = auth.uid()
+    )
+    or exists (
+      select 1
+      from public.booking_participants bp
+      join public.providers p on p.id = bp.provider_id
+      where bp.booking_id = booking_address_snapshots.booking_id
         and p.user_id = auth.uid()
     )
   );
@@ -1186,6 +1223,7 @@ grant select, insert, update, delete on table
   public.provider_locations,
   public.customer_selected_locations,
   public.bookings,
+  public.booking_address_snapshots,
   public.booking_services,
   public.booking_participants,
   public.chat_rooms,

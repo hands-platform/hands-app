@@ -135,6 +135,7 @@ The schema includes:
 - `provider_locations`
 - `customer_selected_locations`
 - `bookings`
+- `booking_address_snapshots`
 - `booking_services`
 - `booking_participants`
 - `chat_rooms`

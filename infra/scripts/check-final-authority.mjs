@@ -8,6 +8,7 @@ checkRequiredAuthorityDoc();
 checkNoContradictoryOperationsDocs();
 checkOnDemandBookingContract();
 checkCustomerFinalSelectionContract();
+checkSupabaseDraftContract();
 checkSupabaseBoundary();
 checkMobileVisibleCopyGuardIsStrict();
 
@@ -111,6 +112,20 @@ function checkCustomerFinalSelectionContract() {
     'Stage 3 choice',
     'Customer Choice',
     'legacy Provider wording',
+  ]);
+}
+
+function checkSupabaseDraftContract() {
+  const schema = read('infra/supabase/hands-core-schema.sql');
+  for (const marker of ['scheduled_at', 'tip_amount_vnd', 'rating numeric', 'rating integer']) {
+    rejectMarker('infra/supabase/hands-core-schema.sql', schema, marker);
+  }
+  requireMarkers('infra/supabase/hands-core-schema.sql', schema, [
+    'feedback_record_count integer not null default 0',
+    'requested_at timestamptz not null default now()',
+    'create table if not exists public.booking_address_snapshots',
+    'feedback_label text not null default',
+    'booking address snapshots participant read',
   ]);
 }
 

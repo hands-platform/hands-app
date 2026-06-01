@@ -98,23 +98,24 @@ The guard blocks Firebase references, direct Supabase imports from screens/prese
 
 Recommended Supabase/PostgreSQL tables:
 
-| Table                         | Purpose                                                            |
-| ----------------------------- | ------------------------------------------------------------------ |
-| `profiles`                    | Shared user profile linked to Supabase Auth user id.               |
-| `providers`                   | Provider profile, verification state, status, public profile data. |
-| `services`                    | Massage service catalog.                                           |
-| `provider_services`           | Provider-specific offerings and prices.                            |
-| `provider_locations`          | Last-known provider location and freshness timestamp.              |
-| `customer_selected_locations` | Customer-confirmed booking locations.                              |
-| `bookings`                    | Direct booking and matching state.                                 |
-| `booking_participants`        | Preferred and marketplace provider participation.                  |
-| `payments`                    | Cash, MoMo, VNPay, refund/capture state.                           |
-| `reviews`                     | Customer review and rating records.                                |
-| `chat_rooms`                  | Booking chat room.                                                 |
-| `messages`                    | Chat messages.                                                     |
-| `notifications`               | In-app notification inbox.                                         |
-| `files`                       | Supabase Storage file metadata.                                    |
-| `admin_settings`              | Operational configuration.                                         |
+| Table                         | Purpose                                                           |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `profiles`                    | Shared user profile linked to Supabase Auth user id.              |
+| `providers`                   | Partner profile, verification state, status, public profile data. |
+| `services`                    | Massage service catalog.                                          |
+| `provider_services`           | Partner-specific offerings and prices.                            |
+| `provider_locations`          | Last-known partner location and freshness timestamp.              |
+| `customer_selected_locations` | Customer-confirmed booking locations.                             |
+| `booking_address_snapshots`   | Immutable address snapshot used for matching radius and audit.    |
+| `bookings`                    | Direct booking and matching state.                                |
+| `booking_participants`        | Preferred and marketplace partner participation.                  |
+| `payments`                    | Cash, MoMo, VNPay, refund/capture state.                          |
+| `reviews`                     | Service feedback records, not partner/customer scoring.           |
+| `chat_rooms`                  | Booking chat room.                                                |
+| `messages`                    | Chat messages.                                                    |
+| `notifications`               | In-app notification inbox.                                        |
+| `files`                       | Supabase Storage file metadata.                                   |
+| `admin_settings`              | Operational configuration.                                        |
 
 ## RLS Direction
 

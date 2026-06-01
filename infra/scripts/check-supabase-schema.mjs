@@ -43,6 +43,7 @@ const requiredTables = [
   'provider_locations',
   'customer_selected_locations',
   'bookings',
+  'booking_address_snapshots',
   'booking_services',
   'booking_participants',
   'chat_rooms',
@@ -71,6 +72,19 @@ const requiredTables = [
 ];
 
 const failures = [];
+
+const forbiddenSchemaFragments = [
+  { label: 'scheduled booking column', pattern: /\bscheduled_at\b/i },
+  { label: 'tip amount column', pattern: /\btip_amount_vnd\b/i },
+  { label: 'partner numeric rating column', pattern: /\brating\s+numeric\b/i },
+  { label: 'feedback score column', pattern: /\brating\s+integer\b/i },
+];
+
+for (const fragment of forbiddenSchemaFragments) {
+  if (fragment.pattern.test(supabaseSchema)) {
+    failures.push(`Supabase core schema still contains forbidden MVP field: ${fragment.label}.`);
+  }
+}
 
 for (const check of enumChecks) {
   const prismaValues = extractPrismaEnum(check.prisma);
