@@ -1189,7 +1189,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
     },
     {
       title: 'Handoff quality',
-      status: locationChecks.length > 0 || quietChat.length > 0 ? 'Monitor' : 'Healthy',
+      status: locationChecks.length > 0 || quietChat.length > 0 ? 'Monitor' : 'Clear',
       tone: locationChecks.length > 0 ? 'warn' : quietChat.length > 0 ? 'info' : 'ok',
       detail:
         locationChecks.length > 0

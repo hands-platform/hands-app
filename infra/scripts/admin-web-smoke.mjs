@@ -325,7 +325,7 @@ const pages = [
       'Runtime operations policy',
     ],
   },
-  { path: '/tax-policy', markers: ['Tax policy', 'Policy health'] },
+  { path: '/tax-policy', markers: ['Tax policy', 'Policy checklist'] },
 ];
 
 const requestedSmokePaths = ((process.env.ADMIN_WEB_SMOKE_PATHS ?? '') || requestedSmokeArgs.join(','))

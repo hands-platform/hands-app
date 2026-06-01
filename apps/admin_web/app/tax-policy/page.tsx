@@ -35,14 +35,14 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Policy health</h2>
+            <h2>Policy checklist</h2>
             <p className="muted">
               Keep exactly one active policy with a default rule. Every earning stores the selected rule
               snapshot, so changing future policy does not rewrite tax history.
             </p>
           </div>
           <span className={`pill ${healthItems.every((item) => item.ok) ? 'pill-success' : 'pill-warn'}`}>
-            {healthItems.every((item) => item.ok) ? 'Healthy' : 'Needs review'}
+            {healthItems.every((item) => item.ok) ? 'Configured' : 'Needs review'}
           </span>
         </div>
         <div className="setup-stage-list">

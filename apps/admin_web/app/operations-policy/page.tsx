@@ -1266,7 +1266,7 @@ function buildPolicySimulation(
     ],
     checks: [
       {
-        status: ready ? 'Healthy' : 'Needs supply',
+        status: ready ? 'Supply ready' : 'Needs supply',
         title: 'Dispatch supply check',
         detail: ready
           ? `${freshEligible.length} fresh partner location(s) are inside the current radius.`

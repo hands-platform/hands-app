@@ -832,7 +832,7 @@ export default async function DashboardPage() {
             <small>Policy records changed in the last 7 days.</small>
           </div>
           <div>
-            <span>Policy health</span>
+            <span>Policy alignment</span>
             <strong>{policySummary.healthLabel}</strong>
             <small>{policySummary.healthHelper}</small>
           </div>
@@ -1243,7 +1243,7 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="risk-watch-header">
             <div>
-              <h2>Partner supply health</h2>
+              <h2>Partner supply snapshot</h2>
               <p className="muted">
                 Current operational capacity, app presence, location freshness, and finance blockers.
               </p>
@@ -2073,7 +2073,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
     ],
     cards: [
       {
-        scope: outcomeHealthy ? 'Healthy' : stats.sampleCount ? 'Review' : 'Needs data',
+        scope: outcomeHealthy ? 'On track' : stats.sampleCount ? 'Review' : 'Needs data',
         title: outcomeHealthy
           ? 'Matching policy is performing in the current sample'
           : stats.sampleCount
