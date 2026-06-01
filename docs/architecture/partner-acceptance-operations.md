@@ -37,12 +37,13 @@ Cash bookings are collected directly by the partner. HANDS records platform fee,
 When that wallet becomes negative:
 
 - The partner cannot accept new direct requests.
-- The partner cannot join open marketplace matching.
+- The partner can still see and join marketplace opportunities so customer supply stays visible.
+- Final acceptance, customer final partner selection, service-start, or payout release can be blocked until the debt is settled, depending on the active operations policy.
 - The partner app displays the localized settlement-block message from `apps/provider_app/lib/main.dart`.
 - Admin finance can settle the debt through cash settlement, earning, payout, payment, or booking detail workflows.
 - Settlement must keep a reference or admin audit note.
 
-This protects HANDS from accumulating unpaid platform fees while still allowing cash payment as a low-friction Vietnam payment method.
+This protects HANDS from accumulating unpaid platform fees without hiding marketplace supply too early.
 
 ## Tax Timing
 
@@ -77,12 +78,12 @@ Operators should use these screens together:
 
 ## Acceptance Unblock Playbook
 
-When a partner cannot accept a direct request or join marketplace matching, operators should resolve blockers in this order:
+When a partner cannot complete final acceptance, customer final selection, service start, or payout release, operators should resolve blockers in this order:
 
 1. Clear negative wallet first.
    - Owner: Finance.
    - Why: cash bookings can create unpaid HANDS fee/tax debt.
-   - Booking impact: direct acceptance and marketplace joining stay blocked until the debt is settled, offset, or explicitly recovered.
+   - Booking impact: direct final acceptance and customer final selection stay blocked until the debt is settled, offset, or explicitly recovered. Marketplace join intent can remain visible.
    - Payout impact: finance should not release payout while the partner still owes HANDS settlement.
 
 2. Resolve account and sanction controls.

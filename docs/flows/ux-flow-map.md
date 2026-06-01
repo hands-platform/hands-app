@@ -13,7 +13,7 @@ Customer app uses five tabs:
 Partner app uses five tabs:
 
 - Requests: open matching jobs and invitations
-- Schedule: availability and upcoming services
+- Jobs: active service work, accepted requests, and completed records
 - Earnings: payout cycles, completed jobs, wallet settlement state
 - Chat: customer conversations
 - Profile: verification, services, online toggle

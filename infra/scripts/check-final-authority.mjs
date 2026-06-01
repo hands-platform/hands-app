@@ -5,6 +5,7 @@ const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slic
 const violations = [];
 
 checkRequiredAuthorityDoc();
+checkNoContradictoryOperationsDocs();
 checkOnDemandBookingContract();
 checkCustomerFinalSelectionContract();
 checkSupabaseBoundary();
@@ -43,6 +44,26 @@ function checkRequiredAuthorityDoc() {
     'Partner payouts are weekly, monthly, or admin-selected batch cycles',
     'Admin is an Operations Command Center',
     'visible product copy should use `Partner`',
+  ]);
+}
+
+function checkNoContradictoryOperationsDocs() {
+  const partnerAcceptance = read('docs/architecture/partner-acceptance-operations.md');
+  rejectMarker(
+    'docs/architecture/partner-acceptance-operations.md',
+    partnerAcceptance,
+    'The partner cannot join open marketplace matching.',
+  );
+  requireMarkers('docs/architecture/partner-acceptance-operations.md', partnerAcceptance, [
+    'The partner can still see and join marketplace opportunities',
+    'Final acceptance, customer final partner selection, service-start, or payout release can be blocked',
+    'Marketplace join intent can remain visible.',
+  ]);
+
+  const reviews = read('docs/architecture/reviews.md');
+  requireMarkers('docs/architecture/reviews.md', reviews, [
+    'should not use customer or partner feedback as a people-ranking, risk-scoring, or automatic dispatch system',
+    'must not drive automatic penalties, badges, rankings, or dispatch priority',
   ]);
 }
 
