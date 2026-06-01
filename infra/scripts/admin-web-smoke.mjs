@@ -525,6 +525,8 @@ if (bookingLinkMatch) {
     'Booking operating ledger',
     'Service/Pricing',
     'Refund',
+    'Cash settlement',
+    'Operator notes',
     'Closeout readiness',
     'Operating timeline',
     'Chat lifecycle and retention',

@@ -82,6 +82,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
   const refundLedgerRows = bookingRefundRows(booking);
+  const operatorNoteLines = bookingOperatorNoteLines(booking);
   const closureSummary = bookingClosureSummary(booking);
   const servicePricingSnapshotRows = [
     {
@@ -221,6 +222,19 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#finance',
     },
     {
+      area: 'Cash settlement',
+      status: bookingCashDebtNeedsSettlement(booking)
+        ? 'Partner blocked until settled'
+        : booking.payment?.method === 'CASH'
+          ? 'Cash ledger clear'
+          : 'Not a cash booking',
+      evidence:
+        booking.payment?.method === 'CASH'
+          ? `${financeTrace.platformFee} HANDS fee / ${financeTrace.withholding} withholding`
+          : `${booking.payment?.method ?? 'No method'} payment path`,
+      href: '#payment',
+    },
+    {
       area: 'Location',
       status: latestLocation ? 'Partner pin saved' : 'No partner pin',
       evidence: latestLocation
@@ -241,6 +255,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
       status: `${bookingActivityRecords.length} event(s)`,
       evidence: `${booking.auditLogs?.length ?? 0} audit row(s) / ${booking.opsTasks?.length ?? 0} task row(s)`,
       href: '#booking-activity',
+    },
+    {
+      area: 'Operator notes',
+      status: operatorNoteLines.length ? `${operatorNoteLines.length} note line(s)` : 'No notes',
+      evidence: operatorNoteLines[operatorNoteLines.length - 1] ?? 'No internal handling note has been added.',
+      href: '#operator-notes',
     },
     {
       area: 'Closure',
@@ -4002,6 +4022,13 @@ function bookingRefundLedgerEvidence(booking: AdminBookingDetail) {
   const currency = latest.payment?.currency ?? booking.payment?.currency ?? 'VND';
   const reason = latest.reason ? ` / ${latest.reason}` : '';
   return `${latest.status} / ${money(latest.amount, currency)} / ${formatDate(latest.createdAt)}${reason}`;
+}
+
+function bookingOperatorNoteLines(booking: AdminBookingDetail) {
+  return (booking.notes ?? '')
+    .split('\n')
+    .map((note) => note.trim())
+    .filter(Boolean);
 }
 
 function canMarkNoShow(status: string) {
