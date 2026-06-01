@@ -8,6 +8,7 @@ checkRequiredAuthorityDoc();
 checkNoContradictoryOperationsDocs();
 checkOnDemandBookingContract();
 checkCustomerFinalSelectionContract();
+checkNoTipContract();
 checkSupabaseDraftContract();
 checkSupabaseBoundary();
 checkMobileVisibleCopyGuardIsStrict();
@@ -113,6 +114,19 @@ function checkCustomerFinalSelectionContract() {
     'Customer Choice',
     'legacy Provider wording',
   ]);
+}
+
+function checkNoTipContract() {
+  const prisma = read('apps/api/prisma/schema.prisma');
+  const earnings = read('apps/api/src/earnings/earnings.service.ts');
+  const adminApi = read('apps/admin_web/lib/admin-api.ts');
+  for (const [file, source] of [
+    ['apps/api/prisma/schema.prisma', prisma],
+    ['apps/api/src/earnings/earnings.service.ts', earnings],
+    ['apps/admin_web/lib/admin-api.ts', adminApi],
+  ]) {
+    rejectMarker(file, source, 'tipAmount');
+  }
 }
 
 function checkSupabaseDraftContract() {

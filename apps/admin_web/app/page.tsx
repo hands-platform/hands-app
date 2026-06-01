@@ -184,7 +184,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       grossAmount: 0,
       platformFee: 0,
       withholdingAmount: 0,
-      tipAmount: 0,
       netAmount: 0,
       pendingNetAmount: 0,
       availableNetAmount: 0,
@@ -385,7 +384,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Failed notifications',
       rangeNotifications
-        .filter((notification) => (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'))
+        .filter((notification) =>
+          (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
+        )
         .length.toString(),
       `${selectedRangeLabel} delivery failures that may need retry or disabled-device review.`,
     ],
@@ -528,9 +529,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Dashboard date range</h2>
             <p className="muted">
-              Range: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled work,
-              closeout checks, and notification history use this window. Live queues and app sessions stay
-              current so urgent work is never hidden.
+              Range: {selectedRangeLabel}. Booking demand, service/payment mix, completed work, cancelled
+              work, closeout checks, and notification history use this window. Live queues and app sessions
+              stay current so urgent work is never hidden.
             </p>
           </div>
           <span className="pill pill-info">{selectedRangeLabel}</span>
@@ -747,8 +748,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div className="ops-task-note">
               <strong>No same-shift queue item is visible.</strong>
               <p className="muted">
-                Keep monitoring live matching, partner locations, cash debt, and notification delivery as demand
-                changes.
+                Keep monitoring live matching, partner locations, cash debt, and notification delivery as
+                demand changes.
               </p>
             </div>
           )}
@@ -1090,7 +1091,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <h2>Service and payment mix</h2>
               <p className="muted">
-                Which services and payment methods created operational load in the selected dashboard date range.
+                Which services and payment methods created operational load in the selected dashboard date
+                range.
               </p>
             </div>
             <Link className="text-link" href="/services">
@@ -1383,7 +1385,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <h2>Partner readiness funnel</h2>
               <p className="muted">
-                Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile review.
+                Funnel view for signup, KYC, banking, first revenue tax readiness, and optional profile
+                review.
               </p>
             </div>
             <Link className="text-link" href="/partner-controls">
@@ -1432,8 +1435,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Partner dispatch control</h2>
             <p className="muted">
-              Partner checklist queue for booking acceptance blockers, location readiness, first-revenue payout
-              requirements, and app contactability.
+              Partner checklist queue for booking acceptance blockers, location readiness, first-revenue
+              payout requirements, and app contactability.
             </p>
           </div>
           <Link className="text-link" href="/partners">
@@ -1944,7 +1947,11 @@ function buildMatchingControlRoom(
       bookingRegionLabel(booking),
       `first-pick ${booking.preferredProvider?.displayName ?? 'none'}`,
       `${participantCount} joined`,
-      firstPickDeclined ? 'first-pick declined' : backupWindowOpen ? 'marketplace open' : 'marketplace waiting',
+      firstPickDeclined
+        ? 'first-pick declined'
+        : backupWindowOpen
+          ? 'marketplace open'
+          : 'marketplace waiting',
       coordinate
         ? `${freshEligible.length}/${eligiblePartners.length} fresh eligible / ${eligiblePartnersAll.length} in radius`
         : 'no customer pin',
@@ -1984,8 +1991,8 @@ function buildMatchingControlRoom(
     bookingInsideResponseWindow(booking, responseWindowMinutes),
   ).length;
   const pastFirstPickWindow = openMatching.length - insideFirstPickWindow;
-  const customerChoiceReady = openMatching.filter(
-    (booking) => (booking.participants ?? []).some((participant) => participant.status === 'ACCEPTED'),
+  const customerChoiceReady = openMatching.filter((booking) =>
+    (booking.participants ?? []).some((participant) => participant.status === 'ACCEPTED'),
   ).length;
 
   return {
@@ -4159,7 +4166,8 @@ function buildOpsQueue(input: {
           : 'medium',
         owner: 'Partner Ops',
         priority: openReports.some((report) => ['HIGH', 'CRITICAL'].includes(report.severity)) ? 89 : 64,
-        recommendedAction: 'Open the report case, contact support evidence, and decide control action or closure.',
+        recommendedAction:
+          'Open the report case, contact support evidence, and decide control action or closure.',
       });
     }
     const activeSanctions = (provider.sanctions ?? []).filter((sanction) => sanction.status === 'ACTIVE');
@@ -4574,7 +4582,8 @@ function bookingFlags(booking: AdminBooking) {
       label: 'First-pick partner has not replied yet',
       severity: 'medium',
       priority: 61,
-      recommendedAction: 'Ask the first-pick partner to reply or prepare marketplace matching for the customer.',
+      recommendedAction:
+        'Ask the first-pick partner to reply or prepare marketplace matching for the customer.',
     });
   }
   if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
@@ -4582,7 +4591,8 @@ function bookingFlags(booking: AdminBooking) {
       label: 'No partner has joined yet',
       severity: 'medium',
       priority: 58,
-      recommendedAction: 'Check nearby partner supply and widen marketplace matching if the customer is waiting.',
+      recommendedAction:
+        'Check nearby partner supply and widen marketplace matching if the customer is waiting.',
     });
   }
   if (booking.status === 'MATCHED' && !booking.chatRoom) {
@@ -4756,7 +4766,8 @@ function operationalPolicyHref(key: string) {
 function policyOptionLabel(setting: AdminOperationalPolicySetting, useRecommended = false) {
   const value = String(useRecommended ? setting.recommendedValue : setting.value);
   return displayOperationalWording(
-    setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit)
+    setting.options?.find((option) => option.value === value)?.label ??
+      formatPolicyValue(value, setting.unit),
   );
 }
 

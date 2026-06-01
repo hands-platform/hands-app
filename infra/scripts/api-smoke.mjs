@@ -67,7 +67,6 @@ async function assertOperationalPolicyMetadata(accessToken) {
     (key) => settingsByKey.get(key)?.enforced !== true,
   );
   const optionPolicyKeys = [
-    'matching.preferred_accept_mode',
     'matching.backup_open_mode',
     'wallet.negative_balance_gate',
     'cancellation.after_match_policy',
@@ -142,9 +141,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
     });
     onboarding = await getJson('/provider/onboarding', providerAuth.accessToken);
     for (const type of requiredDocumentTypes) {
-      const document = onboarding.documents?.find(
-        (item) => item.type === type && item.status !== 'APPROVED',
-      );
+      const document = onboarding.documents?.find((item) => item.type === type && item.status !== 'APPROVED');
       if (document) {
         await postJson(`/admin/partner-documents/${document.id}/approve`, adminAccessToken);
       }
@@ -159,10 +156,7 @@ async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, la
       accountNumber: '000012345678',
       accountHolderName: `${label} Partner`,
     });
-    await postJson(
-      `/admin/partner-bank-accounts/${bankAccount.bankAccount.id}/approve`,
-      adminAccessToken,
-    );
+    await postJson(`/admin/partner-bank-accounts/${bankAccount.bankAccount.id}/approve`, adminAccessToken);
   }
 
   const ready = await getJson('/provider/onboarding', providerAuth.accessToken);
@@ -405,11 +399,15 @@ if (
     )}`,
   );
 }
-const sharedProviderDeviceSession = await postJson('/provider/device-session', backupProviderAuth.accessToken, {
-  deviceId: providerSmokeDeviceId,
-  platform: 'android',
-  appVersion: 'smoke-test',
-});
+const sharedProviderDeviceSession = await postJson(
+  '/provider/device-session',
+  backupProviderAuth.accessToken,
+  {
+    deviceId: providerSmokeDeviceId,
+    platform: 'android',
+    appVersion: 'smoke-test',
+  },
+);
 if (
   sharedProviderDeviceSession.blocked !== false ||
   sharedProviderDeviceSession.ok !== true ||
@@ -445,9 +443,7 @@ const partnerControlSanction = await postJson(
   },
 );
 if (partnerControlSanction.status !== 'ACTIVE' || partnerControlSanction.type !== 'WARNING') {
-  throw new Error(
-    `Partner sanction was not created correctly: ${JSON.stringify(partnerControlSanction)}`,
-  );
+  throw new Error(`Partner sanction was not created correctly: ${JSON.stringify(partnerControlSanction)}`);
 }
 const liftedPartnerControlSanction = await postJson(
   `/admin/partner-sanctions/${partnerControlSanction.id}/lift`,
@@ -467,7 +463,10 @@ const resolvedPartnerControlReport = await patchJson(
     resolutionNote: 'Smoke partner report resolved',
   },
 );
-if (resolvedPartnerControlReport.status !== 'RESOLVED' || resolvedPartnerControlReport.severity !== 'MEDIUM') {
+if (
+  resolvedPartnerControlReport.status !== 'RESOLVED' ||
+  resolvedPartnerControlReport.severity !== 'MEDIUM'
+) {
   throw new Error(
     `Partner report was not updated correctly: ${JSON.stringify(resolvedPartnerControlReport)}`,
   );
@@ -1025,7 +1024,10 @@ await expectRequestFailure(
     ),
   400,
 );
-await postJson(`/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/approve`, adminAuth.accessToken);
+await postJson(
+  `/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/approve`,
+  adminAuth.accessToken,
+);
 await postJson('/provider/online', kycNegativeProviderAuth.accessToken);
 await postJson('/provider/location', kycNegativeProviderAuth.accessToken, {
   lat: 10.7772,
@@ -1057,7 +1059,10 @@ for (const type of ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE']) {
     await postJson(`/admin/partner-documents/${document.id}/approve`, adminAuth.accessToken);
   }
 }
-await postJson(`/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`, adminAuth.accessToken);
+await postJson(
+  `/admin/partners/${kycNegativeProviderAuth.user.providerProfile.id}/kyc/approve`,
+  adminAuth.accessToken,
+);
 const missingBankBookingGateError = await expectRequestFailure(
   'Partner without approved bank account cannot receive direct booking',
   () =>
@@ -1406,9 +1411,7 @@ if (
     )}`,
   );
 }
-const hybridBackupNotificationTraces = Array.isArray(
-  hybridAdminBooking.metadata?.backupNotificationTraces,
-)
+const hybridBackupNotificationTraces = Array.isArray(hybridAdminBooking.metadata?.backupNotificationTraces)
   ? hybridAdminBooking.metadata.backupNotificationTraces
   : [];
 const hybridInitialBackupTrace = hybridBackupNotificationTraces.find(
@@ -1448,11 +1451,21 @@ try {
     lng: 106.6994,
     paymentMethod: 'CASH',
   });
-  await patchOperationalPolicyValue(
-    adminAuth.accessToken,
-    'matching.preferred_accept_mode',
-    'AUTO_MATCH_ON_ACCEPT',
+  const unsupportedPreferredAcceptModeError = await expectRequestFailure(
+    'Unsupported first-pick auto-match policy option',
+    () =>
+      patchOperationalPolicyValue(
+        adminAuth.accessToken,
+        'matching.preferred_accept_mode',
+        'AUTO_MATCH_ON_ACCEPT',
+      ),
+    400,
   );
+  if (!unsupportedPreferredAcceptModeError.includes('unsupported option')) {
+    throw new Error(
+      `Unsupported first-pick policy returned an unexpected error: ${unsupportedPreferredAcceptModeError}`,
+    );
+  }
   const acceptedButWaiting = await postJson(
     `/provider/bookings/${preferredAcceptPolicyBooking.id}/accept`,
     providerAuth.accessToken,
@@ -1725,7 +1738,9 @@ if (
   cancelledMomoBooking.closedReason !== 'customer_cancelled' ||
   !cancelledMomoBooking.closedAt
 ) {
-  throw new Error(`Cancelled booking did not record customer closure metadata: ${JSON.stringify(cancelledMomoBooking)}`);
+  throw new Error(
+    `Cancelled booking did not record customer closure metadata: ${JSON.stringify(cancelledMomoBooking)}`,
+  );
 }
 const cancelledPaymentSync = await postJson(
   `/admin/payments/${cancelledMomoBooking.payment.id}/sync`,
@@ -1823,12 +1838,15 @@ if (
   markedNoShowBooking.closedReason !== 'admin_no_show' ||
   !markedNoShowBooking.closedAt
 ) {
-  throw new Error(`Admin no-show action did not record closure metadata: ${JSON.stringify(markedNoShowBooking)}`);
+  throw new Error(
+    `Admin no-show action did not record closure metadata: ${JSON.stringify(markedNoShowBooking)}`,
+  );
 }
 const noShowCustomerNotifications = await getJson('/notifications', customerAuth.accessToken);
 if (
   !noShowCustomerNotifications.some(
-    (notification) => notification.type === 'booking.no_show' && notification.data?.bookingId === noShowBooking.id,
+    (notification) =>
+      notification.type === 'booking.no_show' && notification.data?.bookingId === noShowBooking.id,
   )
 ) {
   throw new Error(`No-show should notify the customer: ${JSON.stringify(noShowCustomerNotifications)}`);
@@ -1836,10 +1854,13 @@ if (
 const noShowPartnerNotifications = await getJson('/notifications', providerAuth.accessToken);
 if (
   !noShowPartnerNotifications.some(
-    (notification) => notification.type === 'booking.no_show' && notification.data?.bookingId === noShowBooking.id,
+    (notification) =>
+      notification.type === 'booking.no_show' && notification.data?.bookingId === noShowBooking.id,
   )
 ) {
-  throw new Error(`No-show should notify the preferred partner: ${JSON.stringify(noShowPartnerNotifications)}`);
+  throw new Error(
+    `No-show should notify the preferred partner: ${JSON.stringify(noShowPartnerNotifications)}`,
+  );
 }
 
 const manuallyExpiredBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
@@ -1867,7 +1888,9 @@ if (
   expiredByAdminBooking.closedReason !== 'admin_expired' ||
   !expiredByAdminBooking.closedNote?.includes('Smoke test manual expiry')
 ) {
-  throw new Error(`Admin expiry action did not record closure metadata: ${JSON.stringify(expiredByAdminBooking)}`);
+  throw new Error(
+    `Admin expiry action did not record closure metadata: ${JSON.stringify(expiredByAdminBooking)}`,
+  );
 }
 
 await postJson(`/provider/bookings/${booking.id}/join`, providerAuth.accessToken);
@@ -2295,9 +2318,7 @@ if (
   !completedEarning ||
   completedEarning.withholdingAmount <= 0 ||
   completedEarning.netAmount !==
-    completedEarning.grossAmount -
-      completedEarning.platformFee -
-      completedEarning.withholdingAmount
+    completedEarning.grossAmount - completedEarning.platformFee - completedEarning.withholdingAmount
 ) {
   throw new Error(`Completed earning did not apply withholding policy: ${JSON.stringify(completedEarning)}`);
 }
@@ -2409,9 +2430,13 @@ const acceptedDirectCustomPrice = await postJson(
 const matchedDirectCustomPrice =
   acceptedDirectCustomPrice.status === 'MATCHED'
     ? acceptedDirectCustomPrice
-    : await postJson(`/customer/bookings/${directCustomPriceBooking.id}/select-provider`, customerAuth.accessToken, {
-        providerId: providerAuth.user.providerProfile.id,
-      });
+    : await postJson(
+        `/customer/bookings/${directCustomPriceBooking.id}/select-provider`,
+        customerAuth.accessToken,
+        {
+          providerId: providerAuth.user.providerProfile.id,
+        },
+      );
 if (matchedDirectCustomPrice.status !== 'MATCHED') {
   throw new Error(
     `Custom-price direct booking did not match the selected partner: ${JSON.stringify(matchedDirectCustomPrice)}`,
@@ -2432,7 +2457,9 @@ const adminCustomPriceEarning = (await getJson('/admin/earnings', adminAuth.acce
   (earning) => earning.bookingId === directCustomPriceBooking.id,
 );
 const expectedHigherPlatformFee = higherCustomerPrice - higherPricePayoutRule.providerPayoutAmount;
-const expectedHigherVatAmount = Math.round((expectedHigherPlatformFee * higherPricePayoutRule.vatBps) / 10_000);
+const expectedHigherVatAmount = Math.round(
+  (expectedHigherPlatformFee * higherPricePayoutRule.vatBps) / 10_000,
+);
 const expectedHigherOtherCostAmount = higherPricePayoutRule.otherCostAmount;
 const expectedHigherNetCompanyFeeBeforeWithholding =
   expectedHigherPlatformFee - expectedHigherVatAmount - expectedHigherOtherCostAmount;
@@ -2618,8 +2645,13 @@ if (adminCancelledBooking?.status !== 'CANCELLED' || adminCancelledBooking?.paym
     `Admin booking monitor did not expose cancellation release state: ${JSON.stringify(adminCancelledBooking)}`,
   );
 }
-if (adminCancelledBooking?.closedByRole !== 'CUSTOMER' || adminCancelledBooking?.closedReason !== 'customer_cancelled') {
-  throw new Error(`Admin booking monitor did not expose customer cancellation metadata: ${JSON.stringify(adminCancelledBooking)}`);
+if (
+  adminCancelledBooking?.closedByRole !== 'CUSTOMER' ||
+  adminCancelledBooking?.closedReason !== 'customer_cancelled'
+) {
+  throw new Error(
+    `Admin booking monitor did not expose customer cancellation metadata: ${JSON.stringify(adminCancelledBooking)}`,
+  );
 }
 const adminNoShowBooking = adminBookings.find((item) => item.id === noShowBooking.id);
 if (adminNoShowBooking?.status !== 'NO_SHOW') {
@@ -2628,7 +2660,9 @@ if (adminNoShowBooking?.status !== 'NO_SHOW') {
   );
 }
 if (adminNoShowBooking?.closedByRole !== 'ADMIN' || adminNoShowBooking?.closedReason !== 'admin_no_show') {
-  throw new Error(`Admin booking monitor did not expose no-show closure metadata: ${JSON.stringify(adminNoShowBooking)}`);
+  throw new Error(
+    `Admin booking monitor did not expose no-show closure metadata: ${JSON.stringify(adminNoShowBooking)}`,
+  );
 }
 const adminExpiredBooking = adminBookings.find((item) => item.id === manuallyExpiredBooking.id);
 if (adminExpiredBooking?.status !== 'EXPIRED' || adminExpiredBooking?.payment?.status !== 'RELEASED') {
@@ -2637,7 +2671,9 @@ if (adminExpiredBooking?.status !== 'EXPIRED' || adminExpiredBooking?.payment?.s
   );
 }
 if (adminExpiredBooking?.closedByRole !== 'ADMIN' || adminExpiredBooking?.closedReason !== 'admin_expired') {
-  throw new Error(`Admin booking monitor did not expose expiry closure metadata: ${JSON.stringify(adminExpiredBooking)}`);
+  throw new Error(
+    `Admin booking monitor did not expose expiry closure metadata: ${JSON.stringify(adminExpiredBooking)}`,
+  );
 }
 const adminUsers = await getJson('/admin/users', adminAuth.accessToken);
 const adminCustomerUser = adminUsers.find((item) => item.id === customerAuth.user.id);
@@ -2690,9 +2726,7 @@ if (legacyAdminProvider?.id !== adminPartner.id) {
   );
 }
 if (!adminPartner?.user?.pushDevices?.some((device) => device.token === 'demo-provider-device-token')) {
-  throw new Error(
-    `Admin partner payload is missing registered push device: ${JSON.stringify(adminPartner)}`,
-  );
+  throw new Error(`Admin partner payload is missing registered push device: ${JSON.stringify(adminPartner)}`);
 }
 if (
   adminPartner?.kyc?.status !== 'APPROVED' ||
@@ -2708,9 +2742,7 @@ if (
     (file) => file.id === publicProfileImageUpload.file.id && file.reviewStatus === 'APPROVED',
   )
 ) {
-  throw new Error(
-    `Admin partner payload is missing approved public media: ${JSON.stringify(adminPartner)}`,
-  );
+  throw new Error(`Admin partner payload is missing approved public media: ${JSON.stringify(adminPartner)}`);
 }
 const partnerOpsNote = `Automated partner handoff note ${Date.now()}`;
 await postJson(`/admin/partners/${providerAuth.user.providerProfile.id}/ops-note`, adminAuth.accessToken, {

@@ -750,7 +750,6 @@ model Review {
   providerProfileId String
   rating            Int
   comment           String?
-  tipAmount         Int             @default(0)
   status            ReviewStatus    @default(PUBLISHED)
   reportReason      String?
   moderatedAt       DateTime?
@@ -767,7 +766,6 @@ model ProviderEarning {
   grossAmount         Int
   platformFee         Int
   withholdingAmount   Int                         @default(0)
-  tipAmount           Int                         @default(0)
   netAmount           Int
   currency            String                      @default("VND")
   status              EarningStatus               @default(PENDING)

@@ -15,10 +15,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
-import {
-  calculateProviderWalletDelta,
-  calculateServicePayoutFeeFromRules,
-} from './earnings.policy';
+import { calculateProviderWalletDelta, calculateServicePayoutFeeFromRules } from './earnings.policy';
 import {
   PROVIDER_WALLET_BLOCK_CODE,
   PROVIDER_WALLET_BLOCK_REASON,
@@ -65,7 +62,6 @@ export class EarningsService {
     const grossAmount =
       booking.payment?.amount ??
       booking.services.reduce((total, service) => total + service.price * service.quantity, 0);
-    const tipAmount = 0;
     const availableAt = new Date(Date.now() + 24 * 60 * 60_000);
     const currency = booking.payment?.currency ?? 'VND';
     const serviceTypes = booking.services.flatMap((item) =>
@@ -107,7 +103,6 @@ export class EarningsService {
           grossAmount,
           platformFee: platformFee.platformFeeAmount,
           withholdingAmount: tax.withholdingAmount,
-          tipAmount,
           netAmount,
           currency,
           status: EarningStatus.PENDING,
@@ -119,7 +114,6 @@ export class EarningsService {
           grossAmount,
           platformFee: platformFee.platformFeeAmount,
           withholdingAmount: tax.withholdingAmount,
-          tipAmount,
           netAmount,
           currency,
           status: EarningStatus.PENDING,
@@ -603,7 +597,6 @@ export class EarningsService {
           grossAmount: true,
           platformFee: true,
           withholdingAmount: true,
-          tipAmount: true,
           netAmount: true,
         },
       }),
@@ -627,7 +620,6 @@ export class EarningsService {
       grossAmount: total._sum.grossAmount ?? 0,
       platformFee: total._sum.platformFee ?? 0,
       withholdingAmount: total._sum.withholdingAmount ?? 0,
-      tipAmount: total._sum.tipAmount ?? 0,
       netAmount: total._sum.netAmount ?? 0,
       pendingNetAmount: pending._sum.netAmount ?? 0,
       availableNetAmount: available._sum.netAmount ?? 0,
@@ -645,7 +637,6 @@ export class EarningsService {
       grossAmount: number;
       platformFee: number;
       withholdingAmount: number;
-      tipAmount: number;
       netAmount: number;
       currency: string;
     },
@@ -731,7 +722,6 @@ export class EarningsService {
       grossAmount: number;
       platformFee: number;
       withholdingAmount: number;
-      tipAmount: number;
     },
     paymentMethod?: PaymentMethod | null,
   ): Prisma.InputJsonObject {
@@ -740,7 +730,6 @@ export class EarningsService {
       grossAmount: earning.grossAmount,
       platformFee: earning.platformFee,
       withholdingAmount: earning.withholdingAmount,
-      tipAmount: earning.tipAmount,
     };
   }
 

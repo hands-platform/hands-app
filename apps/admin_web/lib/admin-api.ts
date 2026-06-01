@@ -568,7 +568,6 @@ export type AdminEarning = {
   grossAmount: number;
   platformFee: number;
   withholdingAmount: number;
-  tipAmount: number;
   netAmount: number;
   currency: string;
   status: string;
@@ -618,7 +617,6 @@ export type AdminEarningSummary = {
   grossAmount: number;
   platformFee: number;
   withholdingAmount: number;
-  tipAmount: number;
   netAmount: number;
   pendingNetAmount: number;
   availableNetAmount: number;
@@ -722,7 +720,6 @@ export type AdminReview = {
   id: string;
   rating: number;
   comment?: string | null;
-  tipAmount: number;
   status: string;
   reportReason?: string | null;
   createdAt?: string;

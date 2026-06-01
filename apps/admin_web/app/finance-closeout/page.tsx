@@ -30,7 +30,6 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       grossAmount: 0,
       platformFee: 0,
       withholdingAmount: 0,
-      tipAmount: 0,
       netAmount: 0,
       pendingNetAmount: 0,
       availableNetAmount: 0,
@@ -268,9 +267,12 @@ type ReconciliationInput = {
 
 function buildReconciliation(input: ReconciliationInput) {
   const authorizedPayments = input.payments.filter((payment) => payment.status === 'AUTHORIZED');
-  const cashPending = input.payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING');
+  const cashPending = input.payments.filter(
+    (payment) => payment.method === 'CASH' && payment.status === 'PENDING',
+  );
   const missingPaymentRefs = input.payments.filter(
-    (payment) => ['AUTHORIZED', 'PENDING'].includes(payment.status) && !payment.providerRef && payment.method !== 'CASH',
+    (payment) =>
+      ['AUTHORIZED', 'PENDING'].includes(payment.status) && !payment.providerRef && payment.method !== 'CASH',
   );
   const openRefunds = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
   const openPayouts = input.payouts.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
@@ -295,7 +297,7 @@ function buildReconciliation(input: ReconciliationInput) {
     openPayoutCount: openPayouts.length,
     cashDebtAmount:
       input.range === 'all'
-        ? input.cashSummary?.totalDebtAmount ?? Math.abs(Math.min(0, input.earningsSummary.netAmount))
+        ? (input.cashSummary?.totalDebtAmount ?? Math.abs(Math.min(0, input.earningsSummary.netAmount)))
         : rangedCashDebtAmount,
     missingReferenceCount: missingPaymentRefs.length + payoutMissingRefs.length,
     currency: input.currency,
@@ -307,8 +309,11 @@ function buildCloseoutTasks(reconciliation: ReturnType<typeof buildReconciliatio
     {
       title: 'Payment hold review',
       status: `${reconciliation.authorizedPayments.length} HOLD(S)`,
-      detail: 'Authorized payments should remain held until service completion, then capture, release, or refund.',
-      action: reconciliation.authorizedPayments.length ? 'Open payment holds before handoff.' : 'No open holds.',
+      detail:
+        'Authorized payments should remain held until service completion, then capture, release, or refund.',
+      action: reconciliation.authorizedPayments.length
+        ? 'Open payment holds before handoff.'
+        : 'No open holds.',
       href: '/payments?review=authorized',
       className: reconciliation.authorizedPayments.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: reconciliation.authorizedPayments.length ? 'pill-warn' : 'pill-success',
@@ -316,8 +321,11 @@ function buildCloseoutTasks(reconciliation: ReturnType<typeof buildReconciliatio
     {
       title: 'Cash collection review',
       status: `${reconciliation.cashPending.length} CASH`,
-      detail: 'Cash bookings need confirmation that the partner collected customer cash and the wallet debt is recorded.',
-      action: reconciliation.cashPending.length ? 'Confirm cash rows and wallet ledger.' : 'No pending cash collection.',
+      detail:
+        'Cash bookings need confirmation that the partner collected customer cash and the wallet debt is recorded.',
+      action: reconciliation.cashPending.length
+        ? 'Confirm cash rows and wallet ledger.'
+        : 'No pending cash collection.',
       href: '/payments?review=cash',
       className: reconciliation.cashPending.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: reconciliation.cashPending.length ? 'pill-warn' : 'pill-success',
@@ -335,7 +343,9 @@ function buildCloseoutTasks(reconciliation: ReturnType<typeof buildReconciliatio
       title: 'Missing references',
       status: `${reconciliation.missingReferenceCount} CHECK`,
       detail: 'Gateway and transfer references are required for auditable finance handoff.',
-      action: reconciliation.missingReferenceCount ? 'Fill missing payment or payout references.' : 'References look complete.',
+      action: reconciliation.missingReferenceCount
+        ? 'Fill missing payment or payout references.'
+        : 'References look complete.',
       href: '/payments?review=missing-ref',
       className: reconciliation.missingReferenceCount ? 'ops-task-pending' : 'ops-task-done',
       pillClass: reconciliation.missingReferenceCount ? 'pill-warn' : 'pill-success',
@@ -343,8 +353,11 @@ function buildCloseoutTasks(reconciliation: ReturnType<typeof buildReconciliatio
     {
       title: 'Payout release review',
       status: `${reconciliation.openPayouts.length} BATCH(ES)`,
-      detail: 'Open payout batches should be checked against earnings, tax logs, transfer refs, and active holds.',
-      action: reconciliation.openPayouts.length ? 'Review payout blockers before bank transfer.' : 'No open payout batch.',
+      detail:
+        'Open payout batches should be checked against earnings, tax logs, transfer refs, and active holds.',
+      action: reconciliation.openPayouts.length
+        ? 'Review payout blockers before bank transfer.'
+        : 'No open payout batch.',
       href: '/payouts',
       className: reconciliation.openPayouts.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: reconciliation.openPayouts.length ? 'pill-warn' : 'pill-success',
@@ -352,8 +365,11 @@ function buildCloseoutTasks(reconciliation: ReturnType<typeof buildReconciliatio
     {
       title: 'Tax log coverage',
       status: `${reconciliation.earningsWithoutTaxLogs.length} ROW(S)`,
-      detail: 'Completed earnings should carry a tax snapshot so later policy changes do not rewrite history.',
-      action: reconciliation.earningsWithoutTaxLogs.length ? 'Check earnings without tax logs.' : 'Tax snapshots are present.',
+      detail:
+        'Completed earnings should carry a tax snapshot so later policy changes do not rewrite history.',
+      action: reconciliation.earningsWithoutTaxLogs.length
+        ? 'Check earnings without tax logs.'
+        : 'Tax snapshots are present.',
       href: '/earnings',
       className: reconciliation.earningsWithoutTaxLogs.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: reconciliation.earningsWithoutTaxLogs.length ? 'pill-warn' : 'pill-success',
@@ -448,7 +464,6 @@ function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEar
       grossAmount: 0,
       platformFee: 0,
       withholdingAmount: 0,
-      tipAmount: 0,
       netAmount: 0,
       pendingNetAmount: 0,
       availableNetAmount: 0,

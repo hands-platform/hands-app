@@ -8,7 +8,6 @@ const emptySummary: AdminEarningSummary = {
   grossAmount: 0,
   platformFee: 0,
   withholdingAmount: 0,
-  tipAmount: 0,
   netAmount: 0,
   pendingNetAmount: 0,
   availableNetAmount: 0,
@@ -29,13 +28,20 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   ]);
   const currency = apiSummary.currency || earnings[0]?.currency || payoutBatches[0]?.currency || 'VND';
   const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
-  const filteredPayoutBatches = payoutBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range));
+  const filteredPayoutBatches = payoutBatches.filter((batch) =>
+    isInDateRange(batch.createdAt, filters.range),
+  );
   const summary = filters.range === 'all' ? apiSummary : summarizeEarnings(filteredEarnings, currency);
   const sortedEarnings = sortEarnings(filteredEarnings);
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, filteredPayoutBatches);
   const cashDebtQueue = buildCashDebtQueue(sortedEarnings);
   const cashDebtTotals = buildCashDebtTotals(cashDebtQueue);
-  const financeSignals = buildFinanceSignals(sortedEarnings, filteredPayoutBatches, payoutQueue, cashDebtQueue);
+  const financeSignals = buildFinanceSignals(
+    sortedEarnings,
+    filteredPayoutBatches,
+    payoutQueue,
+    cashDebtQueue,
+  );
   const serviceBridge = buildServiceEarningBridge(sortedEarnings);
   const moneyFlowCards = buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals);
   const moneyFlowChecks = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue);
@@ -58,8 +64,8 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
           <div>
             <h2>Earnings date range</h2>
             <p className="muted">
-              Range: {dateRangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout batches
-              on this page use record dates.
+              Range: {dateRangeLabel(filters.range)}. Earning rows, service bridge, cash debt, and payout
+              batches on this page use record dates.
             </p>
           </div>
           <Link className="text-link" href="/finance-closeout">
@@ -614,7 +620,6 @@ function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEar
       grossAmount: 0,
       platformFee: 0,
       withholdingAmount: 0,
-      tipAmount: 0,
       netAmount: 0,
       pendingNetAmount: 0,
       availableNetAmount: 0,

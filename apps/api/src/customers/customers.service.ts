@@ -37,7 +37,6 @@ export class CustomersService {
           providerProfileId: booking.selectedProviderId!,
           rating: input.rating,
           comment: input.comment,
-          tipAmount: 0,
         },
       });
 
