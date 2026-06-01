@@ -296,6 +296,77 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     canApproveKyc,
   });
   const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
+  const latestPartnerBooking = partnerBookingArchive[0]?.booking;
+  const connectedPartnerRecordLinks = [
+    {
+      label: 'Latest booking',
+      value: latestPartnerBooking ? shortRecordId(latestPartnerBooking.id) : 'None',
+      detail: latestPartnerBooking
+        ? `${latestPartnerBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(latestPartnerBooking)}`
+        : 'No preferred, selected, or joined booking loaded.',
+      href: latestPartnerBooking ? `/bookings/${latestPartnerBooking.id}` : '#booking-chat-records',
+      tone: latestPartnerBooking ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Chat archive',
+      value: `${partnerBookingArchive.reduce(
+        (sum, record) => sum + readPartnerChatMessages(record.booking).length,
+        0,
+      )} message(s)`,
+      detail: `${partnerBookingArchive.filter((record) => record.booking.chatRoom).length} retained room(s).`,
+      href: `/chat-archive?q=${encodeURIComponent(provider.id)}`,
+      tone: partnerBookingArchive.some((record) => record.booking.chatRoom) ? 'pill-success' : 'pill-neutral',
+    },
+    {
+      label: 'KYC and documents',
+      value: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
+      detail: `${kycEvidence.missingDocuments.length} required document(s) missing approval.`,
+      href: '#kyc',
+      tone: canApproveKyc ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Bank account',
+      value: primaryBank?.status ?? 'Missing',
+      detail: primaryBank
+        ? `${primaryBank.bankName} / ${primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'masked'}`
+        : 'No payout bank account loaded.',
+      href: '#bank',
+      tone: primaryBank?.status === 'APPROVED' ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Tax profile',
+      value: provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'Missing' : 'Deferred'),
+      detail: providerHasFirstRevenueSignal(provider)
+        ? 'First earning exists; tax profile gates payout.'
+        : 'Tax collection stays deferred until first earning.',
+      href: '#tax',
+      tone:
+        provider.taxProfile?.status === 'APPROVED' || !providerHasFirstRevenueSignal(provider)
+          ? 'pill-success'
+          : 'pill-warn',
+    },
+    {
+      label: 'Location',
+      value: provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : 'No pin',
+      detail: provider.currentLat && provider.currentLng ? `${provider.currentLat}, ${provider.currentLng}` : 'No latest location loaded.',
+      href: '#location',
+      tone: provider.currentLocationUpdatedAt ? 'pill-info' : 'pill-warn',
+    },
+    {
+      label: 'Wallet and payout',
+      value: payoutOps.status,
+      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
+      href: '#payout',
+      tone: pillClass(payoutOps.tone),
+    },
+    {
+      label: 'Operator notes',
+      value: `${partnerOpsNotes.length} note(s)`,
+      detail: partnerOpsNotes[0] ? auditLogNoteText(partnerOpsNotes[0]) : 'No manual partner note saved.',
+      href: '#partner-operator-notes',
+      tone: partnerOpsNotes.length ? 'pill-info' : 'pill-neutral',
+    },
+  ];
   const filteredActivityCsvHref = buildCsvDataHref(
     filteredPartnerActivityRecords.map((record) => ({
       type: record.type,
@@ -377,6 +448,31 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
         <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
+      </div>
+
+      <div className="card" id="partner-connected-operations-records" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner connected operations records</h2>
+            <p className="muted">
+              Jump from this partner to linked booking, chat, KYC, bank, tax, location, wallet, payout, and
+              operator records.
+            </p>
+          </div>
+          <span className="pill pill-info">{connectedPartnerRecordLinks.length} links</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {connectedPartnerRecordLinks.map((record) => (
+            <div key={record.label}>
+              <span>{record.label}</span>
+              <strong>{record.value}</strong>
+              <small>{record.detail}</small>
+              <Link className={`pill ${record.tone}`} href={record.href}>
+                Open
+              </Link>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="card" id="partner-operator-command-queue" style={{ marginBottom: 16 }}>
