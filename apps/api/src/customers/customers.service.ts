@@ -8,7 +8,7 @@ export class CustomersService {
 
   async createReview(
     userId: string | undefined,
-    input: { bookingId: string; rating: number; comment?: string; tipAmount?: number },
+    input: { bookingId: string; rating: number; comment?: string },
   ) {
     if (!userId) {
       throw new BadRequestException('Authenticated customer is required');

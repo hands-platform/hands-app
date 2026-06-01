@@ -44,7 +44,6 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
     ['Gross', summary.grossAmount],
     ['Platform fee', summary.platformFee],
     ['Tax withheld', summary.withholdingAmount],
-    ['Customer extra', summary.tipAmount],
     ['Partner net', summary.netAmount],
     ['Pending net', summary.pendingNetAmount],
     ['Available net', summary.availableNetAmount],
@@ -473,7 +472,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
               <th>Booking</th>
               <th>Status</th>
               <th>Payout batch</th>
-              <th>Gross / Fee / Tax / Extra</th>
+              <th>Gross / Fee / Tax</th>
               <th>Net</th>
               <th>Action</th>
             </tr>
@@ -531,7 +530,6 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                   <div className="muted">
                     {formatMoney(earning.withholdingAmount ?? 0, earning.currency)} tax withheld
                   </div>
-                  <div className="muted">{formatMoney(earning.tipAmount, earning.currency)} customer extra</div>
                   <div className="muted">{taxPolicyHint(earning)}</div>
                 </td>
                 <td>
@@ -599,7 +597,6 @@ function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEar
       summary.grossAmount += earning.grossAmount;
       summary.platformFee += earning.platformFee;
       summary.withholdingAmount += earning.withholdingAmount;
-      summary.tipAmount += earning.tipAmount;
       summary.netAmount += earning.netAmount;
       if (earning.status === 'PENDING') {
         summary.pendingNetAmount += earning.netAmount;

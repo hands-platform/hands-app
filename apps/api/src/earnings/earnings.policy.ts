@@ -6,7 +6,6 @@ export type WalletDeltaInput = {
   grossAmount: number;
   platformFee: number;
   withholdingAmount: number;
-  tipAmount: number;
 };
 
 export type PricedServiceLine = {

@@ -431,7 +431,6 @@ function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEar
       summary.grossAmount += earning.grossAmount;
       summary.platformFee += earning.platformFee;
       summary.withholdingAmount += earning.withholdingAmount;
-      summary.tipAmount += earning.tipAmount;
       summary.netAmount += earning.netAmount;
       if (earning.status === 'PENDING') {
         summary.pendingNetAmount += earning.netAmount;

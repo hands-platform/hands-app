@@ -33,10 +33,6 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           <p>Service recovery</p>
           <h2>{summary.serviceRecovery}</h2>
         </div>
-        <div className="card">
-          <p>Customer extra</p>
-          <h2>{summary.extraAmount}</h2>
-        </div>
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -137,7 +133,6 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
                   <div>{starRow(review.rating)}</div>
                   <div className="muted" style={{ marginTop: 6 }}>
                     {review.rating}/5
-                    {review.tipAmount > 0 ? ` - Extra ${review.tipAmount}` : ''}
                   </div>
                 </td>
                 <td>
@@ -245,7 +240,6 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
   const reported = reviews.filter((review) => review.status === 'REPORTED');
   const serviceRecovery = reviews.filter((review) => review.rating <= 2);
   const hidden = reviews.filter((review) => review.status === 'HIDDEN');
-  const extraAmount = reviews.filter((review) => review.tipAmount > 0);
 
   return [
     {
@@ -275,15 +269,6 @@ function buildReviewCommandBoard(reviews: AdminReview[]): ReviewCommandItem[] {
       href: '/reviews?review=hidden',
       tone: hidden.length > 0 ? 'info' : 'ok',
       reviews: hidden,
-    },
-    {
-      title: 'Extra payment records',
-      detail: 'Customer extra amounts are retained as finance evidence without creating a separate reward program.',
-      status: 'Extra amount',
-      operatorAction: 'Use these rows only to reconcile money movement and customer feedback context.',
-      href: '/reviews?review=extra-amount',
-      tone: extraAmount.length > 0 ? 'info' : 'ok',
-      reviews: extraAmount,
     },
   ];
 }
@@ -318,9 +303,6 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   if (filter === 'published') {
     return review.status === 'PUBLISHED';
   }
-  if (filter === 'extra-amount') {
-    return review.tipAmount > 0;
-  }
   return true;
 }
 
@@ -331,7 +313,6 @@ function reviewFilterLinks() {
     { label: 'Service recovery', href: '/reviews?review=service-recovery', review: 'service-recovery' },
     { label: 'Hidden', href: '/reviews?review=hidden', review: 'hidden' },
     { label: 'Published', href: '/reviews?review=published', review: 'published' },
-    { label: 'Extra amount', href: '/reviews?review=extra-amount', review: 'extra-amount' },
   ];
 }
 
@@ -347,9 +328,6 @@ function reviewFilterDescription(review: string) {
   }
   if (review === 'published') {
     return 'feedback currently visible to customers.';
-  }
-  if (review === 'extra-amount') {
-    return 'feedback with a customer extra amount attached.';
   }
   return 'all feedback records.';
 }
@@ -367,7 +345,6 @@ function buildSummary(reviews: AdminReview[]) {
     flagged: reviews.filter((review) => review.status === 'REPORTED' || review.status === 'HIDDEN').length,
     published: reviews.filter((review) => review.status === 'PUBLISHED').length,
     serviceRecovery: reviews.filter((review) => review.rating <= 2).length,
-    extraAmount: reviews.filter((review) => review.tipAmount > 0).length,
   };
 }
 
@@ -400,9 +377,6 @@ function statusMeaning(status: string) {
 function providerReviewHint(review: AdminReview) {
   if (review.rating <= 2) {
     return 'Service recovery feedback may need follow-up';
-  }
-  if (review.tipAmount > 0) {
-    return 'Customer extra amount is attached for finance context';
   }
   return 'Use this record to track service feedback and booking context';
 }
@@ -451,9 +425,6 @@ function opsSignal(review: AdminReview) {
   if (review.rating <= 2) {
     return 'Service recovery';
   }
-  if (review.tipAmount > 0) {
-    return 'Extra amount';
-  }
   return 'Monitor';
 }
 
@@ -466,9 +437,6 @@ function opsHint(review: AdminReview) {
   }
   if (review.rating <= 2) {
     return 'Feedback at 2/5 or below deserves service recovery review before similar issues repeat.';
-  }
-  if (review.tipAmount > 0) {
-    return 'Keep the extra amount visible for finance reconciliation, without using it as customer or partner evaluation.';
   }
   return 'Routine feedback row for customer sentiment and booking context.';
 }

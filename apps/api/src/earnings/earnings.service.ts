@@ -99,7 +99,6 @@ export class EarningsService {
         grossAmount,
         platformFee: platformFee.platformFeeAmount,
         withholdingAmount: tax.withholdingAmount,
-        tipAmount,
       });
       const earning = await tx.providerEarning.upsert({
         where: { bookingId },
@@ -133,12 +132,6 @@ export class EarningsService {
       await this.upsertEarningWalletLedger(tx, earning, booking.payment?.method);
       return earning;
     });
-  }
-
-  async applyTip(bookingId: string, tipAmount: number) {
-    void bookingId;
-    void tipAmount;
-    return null;
   }
 
   async listForProviderUser(userId: string) {

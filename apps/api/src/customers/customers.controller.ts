@@ -25,7 +25,7 @@ export class CustomersController {
   @Roles(Role.CUSTOMER)
   createReview(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { bookingId: string; rating: number; comment?: string; tipAmount?: number },
+    @Body() body: { bookingId: string; rating: number; comment?: string },
   ) {
     return this.customers.createReview(user.id, body);
   }

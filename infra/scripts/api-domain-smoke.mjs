@@ -29,10 +29,9 @@ assert.equal(
     grossAmount: 500000,
     platformFee: 120000,
     withholdingAmount: 25000,
-    tipAmount: 10000,
   }),
   355000,
-  'non-cash bookings should credit customer price minus HANDS fee and withholding without tips',
+  'non-cash bookings should credit customer price minus HANDS fee and withholding only',
 );
 
 assert.equal(
@@ -41,7 +40,6 @@ assert.equal(
     grossAmount: 500000,
     platformFee: 120000,
     withholdingAmount: 25000,
-    tipAmount: 10000,
   }),
   -145000,
   'cash bookings should create wallet debt only for HANDS fee and withholding',
