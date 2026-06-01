@@ -2,14 +2,22 @@ import Link from 'next/link';
 import { AdminCashSettlementSummary, AdminEarning, adminGet } from '../../lib/admin-api';
 import { settleCashFeeDebt } from './actions';
 
-export default async function CashSettlementsPage() {
+type CashSettlementsPageProps = {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+};
+
+export default async function CashSettlementsPage({ searchParams }: CashSettlementsPageProps) {
+  const filters = buildCashSettlementFilters(searchParams ? await searchParams : {});
   const [earnings, apiSummary] = await Promise.all([
     adminGet<AdminEarning[]>('/admin/cash-settlement-earnings', []),
     adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
   ]);
-  const rows = buildCashSettlementRows(earnings);
+  const filteredEarnings = earnings.filter((earning) => isInRecordRange(earning.createdAt, filters.range));
+  const rows = buildCashSettlementRows(filteredEarnings);
   const providers = buildProviderGroups(rows);
-  const summary = mergeAuthoritativeSummary(buildSummary(rows, providers), apiSummary);
+  const visibleSummary = buildSummary(rows, providers);
+  const summary =
+    filters.range === 'all' ? mergeAuthoritativeSummary(visibleSummary, apiSummary) : visibleSummary;
   const commandCards = buildCommandCards(rows, providers, summary);
 
   return (
@@ -20,6 +28,33 @@ export default async function CashSettlementsPage() {
         platform fee or withholding. A negative wallet blocks new booking acceptance until this debt is
         settled with a bank reference or approved offset.
       </p>
+
+      <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Cash settlement date range</h2>
+            <p className="muted">
+              Range: {rangeLabel(filters.range)}. All date-filtered totals are calculated from visible cash
+              earning records; all-date totals use the API summary.
+            </p>
+          </div>
+          <Link className="text-link" href="/finance-closeout">
+            Open finance closeout
+          </Link>
+        </div>
+        <div className="filter-row" style={{ marginTop: 12 }}>
+          {[
+            ['All dates', '/cash-settlements'],
+            ['Today', '/cash-settlements?range=today'],
+            ['Last 7 days', '/cash-settlements?range=7d'],
+            ['Last 30 days', '/cash-settlements?range=30d'],
+          ].map(([label, href]) => (
+            <Link className="filter-pill" href={href} key={href}>
+              {label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
         <div className="card">
@@ -486,6 +521,64 @@ function providerSettlementReference(providerProfileId: string) {
 
 function partnerDisplayText(value: string) {
   return value.replace(/\bProvider\b/g, 'Partner').replace(/\bprovider\b/g, 'partner');
+}
+
+type CashSettlementRange = 'all' | 'today' | '7d' | '30d';
+
+function buildCashSettlementFilters(params: Record<string, string | string[] | undefined>) {
+  return {
+    range: normalizeRange(readParam(params.range)),
+  };
+}
+
+function readParam(value: string | string[] | undefined) {
+  return Array.isArray(value) ? (value[0] ?? '').trim() : (value ?? '').trim();
+}
+
+function normalizeRange(value: string): CashSettlementRange {
+  if (value === 'today' || value === '7d' || value === '30d') {
+    return value;
+  }
+  return 'all';
+}
+
+function rangeLabel(range: CashSettlementRange) {
+  if (range === 'today') {
+    return 'Today';
+  }
+  if (range === '7d') {
+    return 'Last 7 days';
+  }
+  if (range === '30d') {
+    return 'Last 30 days';
+  }
+  return 'All dates';
+}
+
+function isInRecordRange(value: string | undefined | null, range: CashSettlementRange) {
+  const start = rangeStart(range);
+  if (!start) {
+    return true;
+  }
+  if (!value) {
+    return false;
+  }
+  const recordTime = Date.parse(value);
+  return Number.isFinite(recordTime) && recordTime >= start.getTime();
+}
+
+function rangeStart(range: CashSettlementRange) {
+  const now = new Date();
+  if (range === 'today') {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }
+  if (range === '7d') {
+    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  }
+  if (range === '30d') {
+    return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  }
+  return null;
 }
 
 function formatMoney(amount: number, currency: string) {

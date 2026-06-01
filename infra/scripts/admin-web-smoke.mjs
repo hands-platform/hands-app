@@ -196,7 +196,14 @@ const pages = [
       'Finance and chat closeout',
     ],
   },
-  { path: '/cash-settlements', markers: ['Cash Settlements', 'Settlement command queue'] },
+  {
+    path: '/cash-settlements',
+    markers: ['Cash Settlements', 'Cash settlement date range', 'Settlement command queue'],
+  },
+  {
+    path: '/cash-settlements?range=7d',
+    markers: ['Cash Settlements', 'Cash settlement date range', 'Last 7 days', 'Settlement command queue'],
+  },
   {
     path: '/finance-closeout',
     markers: [
