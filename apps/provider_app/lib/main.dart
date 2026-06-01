@@ -976,7 +976,7 @@ class PartnerJobsCard extends StatelessWidget {
               children: [
                 ProviderRequestTag(
                     label:
-                        'Requested ${formatScheduleMoment(booking['scheduledStartAt'])}'),
+                        'Opened ${formatScheduleMoment(booking['createdAt'] ?? booking['scheduledStartAt'])}'),
                 ProviderRequestTag(
                     label: providerServiceDurationLabel(service)),
                 ProviderRequestTag(label: '${formatCurrency(amount)} VND'),
@@ -1616,7 +1616,8 @@ class OpenBookingCard extends StatelessWidget {
         bookingId.length <= 8 ? bookingId : bookingId.substring(0, 8);
     final updatedLabel =
         formatRelativeMoment(booking['updatedAt'] ?? booking['createdAt']);
-    final scheduledLabel = formatScheduleMoment(booking['scheduledStartAt']);
+    final scheduledLabel = formatScheduleMoment(
+        booking['createdAt'] ?? booking['scheduledStartAt']);
     final guidance = providerRequestGuidance(
       booking: booking,
       isPreferredRequest: isPreferredRequest,
@@ -1702,7 +1703,7 @@ class OpenBookingCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text('Requested: $scheduledLabel'),
+            Text('Opened: $scheduledLabel'),
             if (customerAddress != null) ...[
               const SizedBox(height: 4),
               Text(

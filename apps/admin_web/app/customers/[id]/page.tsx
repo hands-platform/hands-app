@@ -1671,7 +1671,7 @@ function buildCustomerActivityRecords(
       title: `${booking.status} booking ${shortId(booking.id)}`,
       detail: `${bookingServiceLabel(booking)} / partner ${bookingPartnerDisplayName(
         booking,
-      )} / requested ${formatDate(booking.scheduledStartAt)}${
+      )} / opened ${formatDate(booking.createdAt ?? booking.scheduledStartAt)}${
         isClosedCustomerBooking(booking) ? ` / ${bookingClosureLabel(booking)}` : ''
       }`,
       href: `/bookings/${booking.id}`,

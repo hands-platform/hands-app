@@ -266,7 +266,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       area: 'Operator notes',
       status: operatorNoteLines.length ? `${operatorNoteLines.length} note line(s)` : 'No notes',
-      evidence: operatorNoteLines[operatorNoteLines.length - 1] ?? 'No internal handling note has been added.',
+      evidence:
+        operatorNoteLines[operatorNoteLines.length - 1] ?? 'No internal handling note has been added.',
       href: '#operator-notes',
     },
     {
@@ -313,7 +314,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </Link>
           )}
           {booking.customerProfile?.id && (
-            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.customerProfile.id)}`}>
+            <Link
+              className="text-link"
+              href={`/chat-archive?q=${encodeURIComponent(booking.customerProfile.id)}`}
+            >
               All customer chats
             </Link>
           )}
@@ -451,7 +455,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </p>
           </div>
           <span className="pill pill-info">
-            {operatorActionMatrix.filter((row) => row.available).length}/{operatorActionMatrix.length} available
+            {operatorActionMatrix.filter((row) => row.available).length}/{operatorActionMatrix.length}{' '}
+            available
           </span>
         </div>
         <table className="table" style={{ marginTop: 14 }}>
@@ -564,8 +569,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </a>
           <a href="/cash-settlements">
             <span>Cash settlement desk</span>
-            <strong>{bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'Clear or non-cash'}</strong>
-            <small>{booking.payment?.method === 'CASH' ? financeTrace.walletLedger : 'No cash wallet debt'}</small>
+            <strong>
+              {bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'Clear or non-cash'}
+            </strong>
+            <small>
+              {booking.payment?.method === 'CASH' ? financeTrace.walletLedger : 'No cash wallet debt'}
+            </small>
           </a>
           <a href="/tax-policy">
             <span>Tax policy</span>
@@ -585,7 +594,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <a href="#communication-movement-handoff">
             <span>Communication and movement</span>
             <strong>{communicationMovementHandoff.status}</strong>
-            <small>{messages.length} message(s), {locationTrail(booking).length} location row(s).</small>
+            <small>
+              {messages.length} message(s), {locationTrail(booking).length} location row(s).
+            </small>
           </a>
           <a href="#alerts">
             <span>Alerts</span>
@@ -797,7 +808,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
-        <div className={`ops-task-note ${communicationMovementHandoff.noteClassName}`} style={{ marginTop: 14 }}>
+        <div
+          className={`ops-task-note ${communicationMovementHandoff.noteClassName}`}
+          style={{ marginTop: 14 }}
+        >
           <div className="ops-row">
             <div>
               <strong>{communicationMovementHandoff.nextAction}</strong>
@@ -967,8 +981,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Customer wait and matching decision</h2>
             <p className="muted">
-              First-pick timer, marketplace partner participation, customer final choice, and chat handoff in one
-              operating view.
+              First-pick timer, marketplace partner participation, customer final choice, and chat handoff in
+              one operating view.
             </p>
           </div>
           <span className={`pill ${customerWaitPanel.signalTone}`}>{customerWaitPanel.signalStatus}</span>
@@ -1233,8 +1247,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Booking alert trace</h2>
             <p className="muted">
-              Reservation-specific notification history for first-pick, marketplace partner visibility, retries,
-              and disabled device checks.
+              Reservation-specific notification history for first-pick, marketplace partner visibility,
+              retries, and disabled device checks.
             </p>
           </div>
           <Link className="text-link" href={`/notifications?booking=${booking.id}`}>
@@ -1645,7 +1659,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <InfoRow label="Phone" value={booking.customerProfile?.user?.phone ?? 'No phone'} />
           <InfoRow label="Address" value={addressLine} />
           <InfoRow label="Pin" value={addressPin} />
-          <InfoRow label="Request opened" value={formatDate(booking.scheduledStartAt)} />
+          <InfoRow label="Request opened" value={formatDate(booking.createdAt ?? booking.scheduledStartAt)} />
           <InfoRow label="Expires" value={formatDate(booking.expiresAt)} />
         </div>
 
@@ -2415,7 +2429,7 @@ function bookingHandoffChecklist(
       id: 'booking-request',
       label: 'Request',
       title: bookingServiceOptionLabel(booking),
-      detail: `${booking.status} / requested ${formatDate(booking.scheduledStartAt)} / ${bookingAddressSnapshotLabel(booking)}`,
+      detail: `${booking.status} / opened ${formatDate(booking.createdAt ?? booking.scheduledStartAt)} / ${bookingAddressSnapshotLabel(booking)}`,
       status: 'Booking facts',
       href: '#customer',
     },
@@ -3113,7 +3127,9 @@ function bookingCommunicationMovementHandoff({
       {
         label: 'Latest message',
         value: lastMessage ? formatDate(lastMessage.createdAt) : 'No message',
-        helper: lastMessage ? `${messageSenderLabel(lastMessage)} / ${compactActivityText(lastMessage.body, 72)}` : 'No customer or partner message yet.',
+        helper: lastMessage
+          ? `${messageSenderLabel(lastMessage)} / ${compactActivityText(lastMessage.body, 72)}`
+          : 'No customer or partner message yet.',
       },
       {
         label: 'Booking alerts',
@@ -3125,7 +3141,9 @@ function bookingCommunicationMovementHandoff({
       {
         label: 'Delivery checks',
         value: `${failedDeliveries} failed / ${pendingDeliveries} pending`,
-        helper: disabledDevices ? `${disabledDevices} disabled device(s) also found.` : 'No disabled device in linked alerts.',
+        helper: disabledDevices
+          ? `${disabledDevices} disabled device(s) also found.`
+          : 'No disabled device in linked alerts.',
       },
       {
         label: 'Partner location',
@@ -3138,7 +3156,9 @@ function bookingCommunicationMovementHandoff({
       {
         label: 'Movement rows',
         value: `${locationRows.length}`,
-        helper: locationRows.length ? 'Saved partner location snapshots linked to this booking.' : 'No movement row linked yet.',
+        helper: locationRows.length
+          ? 'Saved partner location snapshots linked to this booking.'
+          : 'No movement row linked yet.',
       },
     ],
     events,
@@ -3424,13 +3444,14 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
     });
   }
 
-  if (booking.scheduledStartAt) {
+  const requestOpenedAt = booking.createdAt ?? booking.scheduledStartAt;
+  if (requestOpenedAt) {
     records.push({
-      id: `${booking.id}-scheduled`,
-      type: 'SCHEDULE',
-      at: booking.scheduledStartAt,
+      id: `${booking.id}-opened`,
+      type: 'BOOKING',
+      at: requestOpenedAt,
       title: 'Request timestamp',
-      detail: `Request opened ${formatDate(booking.scheduledStartAt)}`,
+      detail: `Request opened ${formatDate(requestOpenedAt)}`,
       href: '#service',
     });
   }
@@ -3600,9 +3621,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       title: humanizeNotificationType(notification.type),
       detail: `${marketplaceDisplayText(notification.title)} / ${
         notification.deliveries?.[0]?.status ?? 'No delivery'
-      } / ${
-        notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'
-      }`,
+      } / ${notification.readAt ? `read ${formatDate(notification.readAt)}` : 'unread'}`,
       href: `/notifications?booking=${booking.id}`,
     });
   }
@@ -3736,7 +3755,9 @@ function bookingClosureSummary(booking: AdminBookingDetail) {
     };
   }
 
-  const actor = booking.closedByRole ? `${booking.closedByRole.toLowerCase()} closure` : 'closure actor missing';
+  const actor = booking.closedByRole
+    ? `${booking.closedByRole.toLowerCase()} closure`
+    : 'closure actor missing';
   const reason = booking.closedReason ? humanizeClosureReason(booking.closedReason) : 'reason not saved';
   const note = booking.closedNote ? ` / ${booking.closedNote}` : '';
 
@@ -4979,7 +5000,9 @@ function bookingBackupPartnerSupply(
 
           return {
             id: provider.id,
-            name: marketplaceDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id),
+            name: marketplaceDisplayText(
+              provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+            ),
             role,
             status: provider.status,
             eligible: blockers.length === 0,
@@ -5079,7 +5102,8 @@ function bookingBackupPartnerSupply(
       {
         label: 'Invite cap',
         value: invitationLimit.toString(),
-        helper: 'Nearest eligible marketplace partners opened for this request before notifications are created.',
+        helper:
+          'Nearest eligible marketplace partners opened for this request before notifications are created.',
       },
     ],
   };
@@ -5120,7 +5144,9 @@ function bookingAddressRadiusContract(
       {
         label: 'Legacy coordinate drift',
         value: driftLabel,
-        helper: driftOk ? 'Snapshot and legacy coordinates are aligned.' : 'Snapshot and legacy coordinates differ.',
+        helper: driftOk
+          ? 'Snapshot and legacy coordinates are aligned.'
+          : 'Snapshot and legacy coordinates differ.',
       },
     ],
     cards: [
@@ -6292,11 +6318,13 @@ function isPartnerNotificationType(type: string) {
 }
 
 function humanizeNotificationType(type: string) {
-  return marketplaceDisplayText(type
-    .toLowerCase()
-    .split(/[_\-.]/g)
-    .map((part) => (part === 'backup' ? 'Marketplace' : part.charAt(0).toUpperCase() + part.slice(1)))
-    .join(' '));
+  return marketplaceDisplayText(
+    type
+      .toLowerCase()
+      .split(/[_\-.]/g)
+      .map((part) => (part === 'backup' ? 'Marketplace' : part.charAt(0).toUpperCase() + part.slice(1)))
+      .join(' '),
+  );
 }
 
 function marketplaceDisplayText(value: string) {

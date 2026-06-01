@@ -200,7 +200,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     const closeoutChecks = orderedBookings.filter((booking) => bookingCompletedCloseoutNeedsOps(booking));
     const pricingChecks = orderedBookings.filter((booking) => bookingPricingPolicyNeedsOps(booking));
     const addressChecks = orderedBookings.filter((booking) => bookingAddressNeedsOps(booking));
-    const locationChecks = orderedBookings.filter((booking) => bookingLocationNeedsOps(booking, currentTimeMs));
+    const locationChecks = orderedBookings.filter((booking) =>
+      bookingLocationNeedsOps(booking, currentTimeMs),
+    );
     const chatRepair = orderedBookings.filter((booking) => bookingChatRepairNeedsOps(booking));
     const actionChecks = orderedBookings.filter((booking) =>
       bookingCheckFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
@@ -397,8 +399,8 @@ export function BookingMonitor({ bookings, initialView }: Props) {
           <div>
             <h2>Matching escalation board</h2>
             <p className="muted">
-              Direct first-pick partner flow, 10-minute response window, marketplace partner participation, and
-              customer final selection in one operating board.
+              Direct first-pick partner flow, 10-minute response window, marketplace partner participation,
+              and customer final selection in one operating board.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy">
@@ -515,7 +517,8 @@ export function BookingMonitor({ bookings, initialView }: Props) {
             <div className="card">
               <h3>No matching escalation right now</h3>
               <p className="muted">
-                Open matching, marketplace participation, customer final selection, and chat handoff are clear.
+                Open matching, marketplace participation, customer final selection, and chat handoff are
+                clear.
               </p>
             </div>
           )}
@@ -737,7 +740,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                     {pricingPolicy.status !== 'ready' && (
                       <span className={`pill ${pricingPolicy.tone}`}>{pricingPolicy.label}</span>
                     )}
-                    <div className="muted">Requested {formatDate(booking.scheduledStartAt)}</div>
+                    <div className="muted">
+                      Opened {formatDate(booking.createdAt ?? booking.scheduledStartAt)}
+                    </div>
                     <div className="muted">{recencyLabel(booking, nowMs)}</div>
                     <div style={{ marginTop: 8 }}>
                       <Link className={`pill ${stagePillClass(stage.tone)}`} href={stage.href}>
@@ -790,7 +795,9 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                   </td>
                   <td>
                     <strong>{booking.participants?.length ?? 0} joined</strong>
-                    <div className="muted">First-pick {partnerDisplayName(booking.preferredProvider, 'none')}</div>
+                    <div className="muted">
+                      First-pick {partnerDisplayName(booking.preferredProvider, 'none')}
+                    </div>
                     <div className="muted">
                       {booking.preferredProvider?.user?.phone
                         ? `First-pick phone ${booking.preferredProvider.user.phone}`
@@ -951,7 +958,8 @@ const bookingViewOptions: Array<{
   {
     view: 'matching',
     label: 'Matching ops',
-    description: 'direct first-pick, marketplace participant, final customer selection, and chat handoff work.',
+    description:
+      'direct first-pick, marketplace participant, final customer selection, and chat handoff work.',
     operatorHint:
       'Use this during live dispatch to manage the 10-minute partner response window and marketplace participant escalation.',
   },
@@ -1389,7 +1397,10 @@ function buildMatchingEscalationBoard(
         'Check partner availability, location freshness, push delivery, wallet debt, and online state before extending wait time.',
       href: noMarketplaceSupply.length > 0 ? '/bookings?view=no-supply' : '/bookings?view=matching',
       bookings: noMarketplaceSupply.length > 0 ? noMarketplaceSupply : marketplaceReady,
-      metrics: [metric('no marketplace', noMarketplaceSupply.length), metric('marketplace ready', marketplaceReady.length)],
+      metrics: [
+        metric('no marketplace', noMarketplaceSupply.length),
+        metric('marketplace ready', marketplaceReady.length),
+      ],
     },
     {
       title: 'Customer final selection',
@@ -1747,7 +1758,12 @@ function buildMatchingEscalationRows(
       const marketplaceCount = marketplaceParticipants(booking).length;
       const acceptedCount = acceptedParticipants(booking).length;
       const windowLabel = bookingMatchingWindowLabel(booking, nowMs);
-      const baseTags = [booking.status, windowLabel, `${marketplaceCount} marketplace`, `${acceptedCount} accepted`];
+      const baseTags = [
+        booking.status,
+        windowLabel,
+        `${marketplaceCount} marketplace`,
+        `${acceptedCount} accepted`,
+      ];
 
       if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
         return {
@@ -2441,8 +2457,7 @@ function bookingAddressNeedsOps(booking: AdminBooking) {
 
 function bookingChatRepairNeedsOps(booking: AdminBooking) {
   return (
-    !booking.chatRoom &&
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
+    !booking.chatRoom && ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
   );
 }
 
@@ -2913,10 +2928,7 @@ function readAddressText(value: unknown) {
   ];
   return (
     candidates
-      .find(
-        (candidate): candidate is string =>
-          typeof candidate === 'string' && candidate.trim().length > 0,
-      )
+      .find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0)
       ?.trim() ?? null
   );
 }

@@ -4826,7 +4826,7 @@ class CustomerBookingHistoryCard extends StatelessWidget {
               children: [
                 BookingHistoryPill(
                     label:
-                        'Requested ${formatCustomerScheduleMoment(booking['scheduledStartAt'])}'),
+                        'Opened ${formatCustomerScheduleMoment(booking['createdAt'] ?? booking['scheduledStartAt'])}'),
                 BookingHistoryPill(
                     label: customerServiceOptionPriceLabel(
                   service,
