@@ -551,10 +551,35 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <strong>{booking.payment?.status ?? 'NONE'}</strong>
             <small>{money(booking.payment?.amount, booking.payment?.currency)}</small>
           </a>
+          <a href="#finance">
+            <span>Finance trace</span>
+            <strong>{financeTrace.providerPayout}</strong>
+            <small>{financeTrace.platformFee} HANDS fee</small>
+          </a>
+          <a href={booking.earning?.id ? `/earnings#earning-${booking.earning.id}` : '/earnings'}>
+            <span>Earnings ledger</span>
+            <strong>{booking.earning?.status ?? 'No earning row yet'}</strong>
+            <small>{booking.earning?.id ? shortId(booking.earning.id) : 'Open finance ledger'}</small>
+          </a>
+          <a href="/cash-settlements">
+            <span>Cash settlement desk</span>
+            <strong>{bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'Clear or non-cash'}</strong>
+            <small>{booking.payment?.method === 'CASH' ? financeTrace.walletLedger : 'No cash wallet debt'}</small>
+          </a>
+          <a href="/tax-policy">
+            <span>Tax policy</span>
+            <strong>{financeTrace.withholding}</strong>
+            <small>Versioned rules, no hardcoded rates.</small>
+          </a>
           <a href="#service-pricing-snapshot">
             <span>Service and pricing</span>
             <strong>{financeTrace.payoutRuleStatus}</strong>
             <small>{financeTrace.serviceOption}</small>
+          </a>
+          <a href="#location">
+            <span>Location trail</span>
+            <strong>{providerLocationMetricValue(booking)}</strong>
+            <small>{providerLocationMetricHelper(booking)}</small>
           </a>
           <a href="#communication-movement-handoff">
             <span>Communication and movement</span>
