@@ -3952,10 +3952,10 @@ class _ProviderOnboardingCard extends StatelessWidget {
             ),
             _OnboardingStepCard(
               step: '5',
-              title: 'Trusted badge',
+              title: 'Profile review',
               detail:
-                  'Admin can add the trust badge after identity, experience, and profile evidence are reviewed.',
-              status: recommended == 'LEVEL_4_TRUSTED' ? 'Trusted' : 'Later',
+                  'Admin can complete an optional profile review after identity, experience, and profile evidence are reviewed.',
+              status: recommended == 'LEVEL_4_TRUSTED' ? 'Complete' : 'Later',
               complete: recommended == 'LEVEL_4_TRUSTED',
               icon: Icons.workspace_premium_outlined,
             ),

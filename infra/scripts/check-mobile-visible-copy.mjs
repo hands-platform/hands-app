@@ -1,11 +1,12 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 const dartFiles = [
-  'apps/customer_app/lib/main.dart',
-  'apps/customer_app/test/widget_test.dart',
-  'apps/provider_app/lib/main.dart',
-  'apps/provider_app/test/provider_wallet_gate_test.dart',
-];
+  ...listFiles('apps/customer_app/lib', '.dart'),
+  ...listFiles('apps/customer_app/test', '.dart'),
+  ...listFiles('apps/provider_app/lib', '.dart'),
+  ...listFiles('apps/provider_app/test', '.dart'),
+].sort();
 
 const textFiles = ['apps/customer_app/README.md', 'apps/provider_app/README.md'];
 
@@ -15,7 +16,16 @@ const bannedPatterns = [
   { label: 'VIP wording', pattern: /\bVIP\b/i },
   { label: 'people scoring wording', pattern: /\b(scoring|score)\b/i },
   { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
+  {
+    label: 'judgmental account wording',
+    pattern: /\b(account misuse|fraud|misuse|abuse controls|suspicious|trusted partner)\b/i,
+  },
+  {
+    label: 'partner hierarchy wording',
+    pattern: /\b(trusted badge|trust badge|partner badge|profile badge|promoted into)\b/i,
+  },
 ];
+const ignoredTechnicalLiterals = new Set(['suspicious', 'suspiciousReason']);
 
 const violations = [];
 
@@ -57,6 +67,9 @@ function recordViolations(file, value, line) {
   if (!normalized) {
     return;
   }
+  if (ignoredTechnicalLiterals.has(normalized)) {
+    return;
+  }
   for (const rule of bannedPatterns) {
     const match = normalized.match(rule.pattern);
     if (match) {
@@ -94,4 +107,15 @@ function lineNumberAt(source, index) {
     }
   }
   return line;
+}
+
+function listFiles(dir, extension) {
+  return readdirSync(dir).flatMap((entry) => {
+    const path = join(dir, entry);
+    const stat = statSync(path);
+    if (stat.isDirectory()) {
+      return listFiles(path, extension);
+    }
+    return path.endsWith(extension) ? [path] : [];
+  });
 }
