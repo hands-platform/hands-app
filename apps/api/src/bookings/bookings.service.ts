@@ -531,6 +531,7 @@ export class BookingsService {
       },
       include: {
         services: { include: { service: true } },
+        addressSnapshot: true,
         preferredProvider: true,
         participants: { include: { providerProfile: true } },
         selectedProvider: true,
@@ -579,7 +580,10 @@ export class BookingsService {
     const provider = await this.requireProvider(providerUserId);
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
-      include: { participants: { select: { providerProfileId: true, status: true } } },
+      include: {
+        addressSnapshot: true,
+        participants: { select: { providerProfileId: true, status: true } },
+      },
     });
     if (booking.status !== BookingStatus.OPEN_MATCHING) {
       throw new BadRequestException('Booking is not open for matching');
@@ -1094,6 +1098,7 @@ export class BookingsService {
     booking: {
       lat: unknown;
       lng: unknown;
+      addressSnapshot?: { latitude: unknown; longitude: unknown } | null;
       openedAt?: Date | string | null;
       preferredProviderId: string | null;
       participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
@@ -1106,9 +1111,10 @@ export class BookingsService {
     },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
+    const dispatchPin = bookingDispatchCoordinates(booking);
     const distanceMeters = calculateDistanceMeters(
-      Number(booking.lat),
-      Number(booking.lng),
+      dispatchPin.lat,
+      dispatchPin.lng,
       provider.currentLat,
       provider.currentLng,
     );
@@ -1354,19 +1360,39 @@ export class BookingsService {
   }
 }
 
-function addProviderMatchingDistance<T extends { lat: unknown; lng: unknown }>(
+function addProviderMatchingDistance<
+  T extends {
+    lat: unknown;
+    lng: unknown;
+    addressSnapshot?: { latitude: unknown; longitude: unknown } | null;
+  },
+>(
   booking: T,
   provider: { currentLat: unknown; currentLng: unknown },
 ) {
+  const dispatchPin = bookingDispatchCoordinates(booking);
   return {
     ...booking,
     distanceMeters: calculateDistanceMeters(
-      Number(booking.lat),
-      Number(booking.lng),
+      dispatchPin.lat,
+      dispatchPin.lng,
       provider.currentLat,
       provider.currentLng,
     ),
   };
+}
+
+function bookingDispatchCoordinates(booking: {
+  lat: unknown;
+  lng: unknown;
+  addressSnapshot?: { latitude: unknown; longitude: unknown } | null;
+}) {
+  const snapshotLat = Number(booking.addressSnapshot?.latitude);
+  const snapshotLng = Number(booking.addressSnapshot?.longitude);
+  if (Number.isFinite(snapshotLat) && Number.isFinite(snapshotLng)) {
+    return { lat: snapshotLat, lng: snapshotLng };
+  }
+  return { lat: Number(booking.lat), lng: Number(booking.lng) };
 }
 
 function assertProviderCanReceiveBooking(provider: {
