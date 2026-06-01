@@ -391,7 +391,7 @@ export default async function DashboardPage() {
       links: [
         ['All bookings', '/bookings'],
         ['Matching', '/bookings?view=matching'],
-        ['Partner candidates', '/bookings?view=backup'],
+        ['Partner candidates', '/bookings?view=marketplace'],
         ['Chat handoff', '/bookings?view=chat'],
       ],
     },

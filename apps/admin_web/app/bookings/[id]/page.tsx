@@ -915,7 +915,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                       partners.
                     </p>
                   </div>
-                  <Link className="text-link" href="/partners?review=backup-ready">
+                  <Link className="text-link" href="/partners?review=marketplace-ready">
                     Open marketplace queue
                   </Link>
                 </div>
@@ -4632,7 +4632,7 @@ function bookingBackupCandidateCommand(input: {
       tone: 'pill-success',
       title: 'This booking has usable marketplace partner supply',
       detail: `${input.eligibleCount} partner(s) can be nudged or exposed to the customer shortlist under current policy.`,
-      href: '/partners?review=backup-ready',
+      href: '/partners?review=marketplace-ready',
       action: 'Open marketplace-ready',
     };
   }
@@ -4643,7 +4643,7 @@ function bookingBackupCandidateCommand(input: {
       title: 'Nearby partners exist but are blocked',
       detail:
         'Prioritize app-open/location refresh, online status, and KYC before extending customer wait time.',
-      href: '/partners?review=backup-blocked',
+      href: '/partners?review=marketplace-blocked',
       action: 'Open blocked partners',
     };
   }
@@ -4759,14 +4759,14 @@ function bookingCustomerWaitPanel(
     headline = 'No fresh nearby partner can currently join under policy.';
     detail =
       'Ask partners to go online/refresh location, or review marketplace radius and location freshness policy.';
-    nextActionHref = '/partners?review=backup-blocked';
+    nextActionHref = '/partners?review=marketplace-blocked';
     nextActionLabel = 'Open blocked partners';
   } else if (waitingForPartnerJoin && backupWindowOpen) {
     signalStatus = 'Nudge partners';
     signalTone = 'pill-warn';
     headline = 'Customer is waiting and marketplace partners can join.';
     detail = `${backupSupply.eligibleCount} nearby partner(s) can be nudged into the shortlist.`;
-    nextActionHref = '/partners?review=backup-ready';
+    nextActionHref = '/partners?review=marketplace-ready';
     nextActionLabel = 'Open marketplace-ready partners';
   } else if (waitingForPartnerJoin) {
     signalStatus = 'First-pick wait';
@@ -4961,7 +4961,7 @@ function bookingStageSnapshot(
     noteClassName = 'ops-task-pending';
     headline = 'The marketplace partner window has usable supply.';
     detail = `${backupSupply.eligibleCount} partner(s) can join or be nudged while the customer waits.`;
-    actionHref = '/partners?review=backup-ready';
+    actionHref = '/partners?review=marketplace-ready';
     actionLabel = 'Open marketplace partners';
   } else if (status === 'OPEN_MATCHING') {
     stage = 'Stage 1 - First-pick response';

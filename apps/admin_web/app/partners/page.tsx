@@ -385,8 +385,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="push">Push alert readiness</option>
               <option value="acceptance-blocked">Booking acceptance blocked</option>
               <option value="direct-ready">Direct request ready</option>
-              <option value="backup-ready">Marketplace ready</option>
-              <option value="backup-blocked">Marketplace blocked</option>
+              <option value="marketplace-ready">Marketplace ready</option>
+              <option value="marketplace-blocked">Marketplace blocked</option>
             </select>
           </label>
           <label>
@@ -3138,7 +3138,7 @@ function buildPartnerDispatchHandoff(
         title: 'Marketplace ready',
         value: backupReady.length.toString(),
         detail: 'Partners eligible to receive marketplace alerts and join the customer shortlist.',
-        href: '/partners?review=backup-ready',
+        href: '/partners?review=marketplace-ready',
         tone: backupReady.length ? 'ok' : 'warn',
       },
       {
@@ -3871,7 +3871,7 @@ function buildPartnerFilterSummary(
       label: 'Marketplace ready',
       value: backupReady.toString(),
       detail: 'Can join open marketplace matching under current operating policy',
-      href: '/partners?review=backup-ready',
+      href: '/partners?review=marketplace-ready',
     },
     {
       label: 'Wallet settlement',
@@ -4023,7 +4023,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
     {
       label: 'Marketplace ready',
       count: backupReady,
-      href: '/partners?review=backup-ready',
+      href: '/partners?review=marketplace-ready',
       detail: 'Partners who can receive marketplace alerts and join customer shortlists under current policy.',
     },
   ];
@@ -4329,10 +4329,10 @@ function providerFilterDescription(kind: string, value: string) {
   if (kind === 'review' && value === 'direct-ready') {
     return 'Direct request ready highlights partners who can accept a preferred customer request immediately.';
   }
-  if (kind === 'review' && value === 'backup-ready') {
+  if (kind === 'review' && value === 'marketplace-ready') {
     return 'Marketplace ready highlights partners who can receive availability alerts and join customer shortlists.';
   }
-  if (kind === 'review' && value === 'backup-blocked') {
+  if (kind === 'review' && value === 'marketplace-blocked') {
     return 'Marketplace blocked highlights partners excluded from open matching until blockers are resolved.';
   }
   if (kind === 'review') {
@@ -4353,7 +4353,10 @@ function readParam(value: string | string[] | undefined) {
 }
 
 function normalizePartnerReviewFilter(value: string) {
-  return value === 'risk' ? 'reports' : value;
+  if (value === 'risk') return 'reports';
+  if (value === 'backup-ready') return 'marketplace-ready';
+  if (value === 'backup-blocked') return 'marketplace-blocked';
+  return value;
 }
 
 function readPartnerSort(value: string) {
@@ -4396,8 +4399,8 @@ function partnerReviewFilterLabel(review: string) {
     push: 'Push alert readiness',
     'acceptance-blocked': 'Booking acceptance blocked',
     'direct-ready': 'Direct request ready',
-    'backup-ready': 'Marketplace ready',
-    'backup-blocked': 'Marketplace blocked',
+    'marketplace-ready': 'Marketplace ready',
+    'marketplace-blocked': 'Marketplace blocked',
   };
   return labels[review] ?? review;
 }
@@ -4489,10 +4492,10 @@ function providerMatchesReviewQueue(
   if (review === 'direct-ready') {
     return partnerCanAcceptBookingNow(provider, opsPolicy);
   }
-  if (review === 'backup-ready') {
+  if (review === 'marketplace-ready') {
     return partnerBackupMatchingEligibility(provider, opsPolicy).eligible;
   }
-  if (review === 'backup-blocked') {
+  if (review === 'marketplace-blocked') {
     return !partnerBackupMatchingEligibility(provider, opsPolicy).eligible;
   }
   return true;

@@ -3086,7 +3086,7 @@ function buildOwnerDecisionPressure(
         currentUsableSupply > 0
           ? 'Use the sensitivity table before changing the 10km radius.'
           : 'Refresh partner locations or consider city/service supply rules before launch.',
-      href: '/partners?review=backup-ready',
+      href: '/partners?review=marketplace-ready',
       className: currentUsableSupply > 0 ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: currentUsableSupply > 0 ? 'pill-success' : 'pill-danger',
     },
@@ -3534,7 +3534,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         {
           label: 'Marketplace ready',
           detail: 'Review partners that can actually receive and join marketplace requests.',
-          href: '/partners?review=backup-ready',
+          href: '/partners?review=marketplace-ready',
         },
       ],
     },
@@ -3552,7 +3552,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         {
           label: 'Marketplace shortlist',
           detail: 'Confirm the customer shortlist will stay readable when more partners can join.',
-          href: '/bookings?view=backup',
+          href: '/bookings?view=marketplace',
         },
       ],
     },
