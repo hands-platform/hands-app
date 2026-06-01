@@ -55,7 +55,6 @@ export class BookingsService {
       serviceId: string;
       providerId?: string;
       couponCode?: string;
-      scheduledStartAt?: string;
       address: Prisma.InputJsonValue;
       lat: number;
       lng: number;
