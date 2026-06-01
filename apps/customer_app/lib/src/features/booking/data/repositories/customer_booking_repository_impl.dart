@@ -50,8 +50,6 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
       if (selectedLocationId != null) 'selectedLocationId': selectedLocationId,
       if (couponCode != null && couponCode.trim().isNotEmpty)
         'couponCode': couponCode.trim().toUpperCase(),
-      'scheduledStartAt':
-          DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
       'address': {
         'name': customerName,
         'phone': customerPhone,

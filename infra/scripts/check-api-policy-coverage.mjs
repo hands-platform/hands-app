@@ -75,6 +75,8 @@ const requiredCoverage = [
     area: 'booking closure metadata',
     markers: [
       'Cancelled booking did not record customer closure metadata',
+      'Matched booking customer direct cancel is blocked',
+      'Matched booking direct cancel should route to chat evidence and admin review',
       'Admin no-show action did not record closure metadata',
       'Admin expiry action did not record closure metadata',
       'Admin booking monitor did not expose customer cancellation metadata',

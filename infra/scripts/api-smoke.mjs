@@ -1769,35 +1769,14 @@ try {
       )}`,
     );
   }
-  const cancelledAfterMatch = await postJson(
-    `/customer/bookings/${afterMatchCancellationBooking.id}/cancel`,
-    customerAuth.accessToken,
+  const afterMatchCancellationError = await expectRequestFailure(
+    'Matched booking customer direct cancel is blocked',
+    () => postJson(`/customer/bookings/${afterMatchCancellationBooking.id}/cancel`, customerAuth.accessToken),
+    400,
   );
-  if (cancelledAfterMatch.status !== 'CANCELLED' || cancelledAfterMatch.payment?.status !== 'AUTHORIZED') {
+  if (!afterMatchCancellationError.includes('Matched bookings cannot be cancelled directly')) {
     throw new Error(
-      `After-match cancellation policy should keep payment hold for admin review: ${JSON.stringify(
-        cancelledAfterMatch,
-      )}`,
-    );
-  }
-  if (
-    cancelledAfterMatch.closedByRole !== 'CUSTOMER' ||
-    cancelledAfterMatch.closedReason !== 'customer_cancelled' ||
-    !cancelledAfterMatch.closedNote?.includes('payment hold')
-  ) {
-    throw new Error(
-      `After-match cancellation did not keep review closure metadata: ${JSON.stringify(cancelledAfterMatch)}`,
-    );
-  }
-  const cancellationReviewTask = await getJson(
-    `/admin/bookings/${afterMatchCancellationBooking.id}`,
-    adminAuth.accessToken,
-  ).then((item) => item.opsTasks?.find((task) => task.type === 'PAYMENT_REVIEWED'));
-  if (cancellationReviewTask?.status !== 'PENDING') {
-    throw new Error(
-      `After-match cancellation policy did not create pending payment review task: ${JSON.stringify(
-        cancellationReviewTask,
-      )}`,
+      `Matched booking direct cancel should route to chat evidence and admin review: ${afterMatchCancellationError}`,
     );
   }
 } finally {
