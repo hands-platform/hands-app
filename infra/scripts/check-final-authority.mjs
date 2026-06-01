@@ -9,6 +9,7 @@ checkNoContradictoryOperationsDocs();
 checkOnDemandBookingContract();
 checkCustomerFinalSelectionContract();
 checkNoTipContract();
+checkPayoutBatchContract();
 checkSupabaseDraftContract();
 checkSupabaseBoundary();
 checkMobileVisibleCopyGuardIsStrict();
@@ -18,7 +19,7 @@ console.log(
     {
       ok: violations.length === 0,
       purpose:
-        'Static HANDS MVP final authority guard: NestJS business authority, on-demand booking, customer final selection, no tip flow, and Partner visible copy.',
+        'Static HANDS MVP final authority guard: NestJS business authority, on-demand booking, customer final selection, no tip flow, payout batch authority, and Partner visible copy.',
       violations,
     },
     null,
@@ -127,6 +128,23 @@ function checkNoTipContract() {
   ]) {
     rejectMarker(file, source, 'tipAmount');
   }
+}
+
+function checkPayoutBatchContract() {
+  const earnings = read('apps/api/src/earnings/earnings.service.ts');
+  const adminEarnings = read('apps/admin_web/app/earnings/page.tsx');
+  const smoke = read('infra/scripts/api-smoke.mjs');
+  requireMarkers('apps/api/src/earnings/earnings.service.ts', earnings, [
+    'Positive partner earnings must be paid through payout batches',
+  ]);
+  requireMarkers('apps/admin_web/app/earnings/page.tsx', adminEarnings, [
+    'payout batching, and cash',
+    'return isCashDebt(earning);',
+  ]);
+  requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
+    'Positive partner earnings must be paid through payout batches',
+    'Draft payout batch should not mark earnings paid',
+  ]);
 }
 
 function checkSupabaseDraftContract() {
