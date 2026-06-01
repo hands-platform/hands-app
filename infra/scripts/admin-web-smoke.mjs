@@ -189,6 +189,7 @@ const pages = [
   { path: '/payments', markers: ['Payments', 'Payment operation filters'] },
   { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
   { path: '/reviews', markers: ['Feedback And Reports', 'Feedback command board', 'Service recovery feedback'] },
+  { path: '/reviews?review=extra-amount', markers: ['Feedback And Reports', 'Extra payment records'] },
   { path: '/notifications', markers: ['Notifications', 'Delivery operations queue', 'No-show alerts'] },
   { path: '/notifications?review=failed', markers: ['Notifications', 'Failed sends', 'Delivery operations queue'] },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },

@@ -317,7 +317,7 @@ function reviewMatchesFilter(review: AdminReview, filter: string) {
   if (filter === 'published') {
     return review.status === 'PUBLISHED';
   }
-  if (filter === 'tipped' || filter === 'extra-amount') {
+  if (filter === 'extra-amount') {
     return review.tipAmount > 0;
   }
   return true;
@@ -347,7 +347,7 @@ function reviewFilterDescription(review: string) {
   if (review === 'published') {
     return 'feedback currently visible to customers.';
   }
-  if (review === 'tipped' || review === 'extra-amount') {
+  if (review === 'extra-amount') {
     return 'feedback with a customer extra amount attached.';
   }
   return 'all feedback records.';
@@ -482,5 +482,8 @@ function dateMs(value?: string | null) {
 }
 
 function normalizeReviewFilter(value: string) {
-  return value === 'low-rating' ? 'service-recovery' : value;
+  if (value === 'low-rating') {
+    return 'service-recovery';
+  }
+  return value;
 }
