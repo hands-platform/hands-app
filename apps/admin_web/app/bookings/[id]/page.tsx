@@ -4927,7 +4927,7 @@ function bookingBackupPartnerSupply(
 
           return {
             id: provider.id,
-            name: provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+            name: marketplaceDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id),
             role,
             status: provider.status,
             eligible: blockers.length === 0,
