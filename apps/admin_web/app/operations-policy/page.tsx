@@ -2778,7 +2778,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
   const lists: PolicyDrilldownListView[] = [
     {
       key: 'open-matching',
-      title: 'Open matching watchlist',
+      title: 'Open matching queue',
       helper: 'Bookings currently waiting for first-pick and marketplace partner decisions.',
       className: openMatchingRows.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: openMatchingRows.length ? 'pill-warn' : 'pill-success',
@@ -2796,7 +2796,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     },
     {
       key: 'wallet-gate',
-      title: 'Wallet gate watchlist',
+      title: 'Wallet gate queue',
       helper: 'Partners with negative recent wallet ledger entries that may block booking actions.',
       className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
