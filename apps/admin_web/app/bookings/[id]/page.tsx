@@ -128,6 +128,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const backupSupply = bookingBackupPartnerSupply(booking, providers, operationalPolicies);
   const addressRadiusContract = bookingAddressRadiusContract(booking, backupSupply);
   const customerWaitPanel = bookingCustomerWaitPanel(booking, backupSupply, operationalPolicies);
+  const mvpAuthorityContract = bookingMvpAuthorityContract({
+    booking,
+    operationalPolicies,
+    backupSupply,
+    messageCount: messages.length,
+    financeTrace,
+  });
   const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, backupSupply);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
   const operationsTrace = bookingOperationsTrace(booking, booking.auditLogs ?? []);
@@ -451,6 +458,52 @@ export default async function BookingDetailPage({ params }: PageProps) {
           value={attentionSummary.label}
           helper={attentionSummary.helper}
         />
+      </section>
+
+      <section className="card" id="mvp-authority-contract" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>MVP authority contract</h2>
+            <p className="muted">
+              One-screen check against the HANDS MVP policy: NestJS business authority, address snapshot,
+              first-pick, 10km marketplace, customer final partner choice, chat retention, and wallet gate.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy">
+            Open policy controls
+          </Link>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Contract</th>
+              <th>Current state</th>
+              <th>Evidence</th>
+              <th>Operator use</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mvpAuthorityContract.map((row) => (
+              <tr key={row.contract}>
+                <td>
+                  <strong>{row.contract}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.operatorUse}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" id="booking-recent-operations-timeline" style={{ marginBottom: 16 }}>
@@ -5717,6 +5770,140 @@ function bookingAddressRadiusContract(
       },
     ],
   };
+}
+
+type BookingMvpAuthorityContractRow = {
+  contract: string;
+  scope: string;
+  status: string;
+  tone: 'pill-success' | 'pill-warn' | 'pill-danger' | 'pill-info' | 'pill-neutral';
+  evidence: string;
+  operatorUse: string;
+  href: string;
+};
+
+function bookingMvpAuthorityContract({
+  booking,
+  operationalPolicies,
+  backupSupply,
+  messageCount,
+  financeTrace,
+}: {
+  booking: AdminBookingDetail;
+  operationalPolicies: AdminOperationalPolicySetting[];
+  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>;
+  messageCount: number;
+  financeTrace: ReturnType<typeof bookingFinanceTrace>;
+}): BookingMvpAuthorityContractRow[] {
+  const byKey = new Map(operationalPolicies.map((setting) => [setting.key, setting]));
+  const savedPolicy = readBookingMatchingPolicySnapshot(booking);
+  const responseWindowMinutes =
+    savedPolicy.providerResponseWindowMinutes ??
+    readOptionalNumber(byKey.get('matching.provider_response_window_minutes')?.value) ??
+    10;
+  const radiusMeters =
+    savedPolicy.backupProviderRadiusMeters ??
+    readOptionalNumber(byKey.get('matching.backup_provider_radius_meters')?.value) ??
+    10000;
+  const acceptedParticipants = (booking.participants ?? []).filter(
+    (participant) => participant.status === 'ACCEPTED',
+  );
+  const selectedPartner =
+    booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);
+  const pinReady = Number.isFinite(backupSupply.policyPin.lat) && Number.isFinite(backupSupply.policyPin.lng);
+  const addressSnapshotReady = Boolean(booking.addressSnapshot);
+  const walletDebt = bookingCashDebtNeedsSettlement(booking);
+  const terminal = TERMINAL_BOOKING_STATUSES.has(booking.status);
+  const chatReady = Boolean(booking.chatRoom);
+
+  return [
+    {
+      contract: 'Business authority',
+      scope: 'Supabase infra, NestJS decisions',
+      status: 'NestJS authoritative',
+      tone: 'pill-success',
+      evidence: 'Supabase stores auth/storage/realtime infrastructure; API/admin policy owns booking permissions.',
+      operatorUse: 'Use API state and audit rows for booking decisions, not client-only state.',
+      href: '#operator-action-availability',
+    },
+    {
+      contract: 'Booking address snapshot',
+      scope: 'Required dispatch pin',
+      status: addressSnapshotReady ? 'Snapshot ready' : pinReady ? 'Legacy pin only' : 'Missing pin',
+      tone: addressSnapshotReady ? 'pill-success' : pinReady ? 'pill-warn' : 'pill-danger',
+      evidence: `${bookingAddressSnapshotLabel(booking)} / ${backupSupply.policyPin.label}`,
+      operatorUse: 'Marketplace distance and evidence review should use the immutable booking address.',
+      href: '#address-radius-contract',
+    },
+    {
+      contract: 'First-pick window',
+      scope: 'Preferred partner response',
+      status: booking.preferredProvider ? `${responseWindowMinutes}m window` : 'No preferred partner',
+      tone: booking.preferredProvider ? 'pill-info' : 'pill-warn',
+      evidence: booking.preferredProvider
+        ? `${providerName(booking.preferredProvider)} / expires ${
+            booking.expiresAt ? formatDate(booking.expiresAt) : 'not saved'
+          }`
+        : 'The booking has no first-pick partner record.',
+      operatorUse: 'Preferred partner gets the first response window; customer still chooses final partner.',
+      href: '#customer-wait-panel',
+    },
+    {
+      contract: '10km marketplace',
+      scope: 'Booking-address radius',
+      status: pinReady ? `${formatDistanceMeters(radiusMeters)} radius` : 'Blocked by missing pin',
+      tone: pinReady ? (backupSupply.eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
+      evidence: `${backupSupply.eligibleCount} eligible / ${backupSupply.rows.length} partner row(s) sampled.`,
+      operatorUse: 'Only partners within booking-address radius and fresh-location policy should join the shortlist.',
+      href: '#marketplace-supply',
+    },
+    {
+      contract: 'Customer final choice',
+      scope: 'No automatic assignment',
+      status: selectedPartner
+        ? 'Final partner selected'
+        : acceptedParticipants.length
+          ? 'Customer choice pending'
+          : 'Waiting for accepted partner',
+      tone: selectedPartner ? 'pill-success' : acceptedParticipants.length ? 'pill-warn' : 'pill-info',
+      evidence: selectedPartner
+        ? providerName(selectedPartner)
+        : `${acceptedParticipants.length} accepted partner(s), ${booking.participants?.length ?? 0} participant(s).`,
+      operatorUse: 'Do not auto-assign; keep the customer selection step visible before chat unlocks.',
+      href: '#participants',
+    },
+    {
+      contract: 'Chat lifecycle',
+      scope: 'Created after match, retained for admin',
+      status: chatReady ? 'Chat archived' : selectedPartner ? 'Repair needed' : 'Locked until match',
+      tone: chatReady ? 'pill-success' : selectedPartner ? 'pill-danger' : 'pill-info',
+      evidence: chatReady
+        ? `Room ${shortId(booking.chatRoom?.id ?? '')} / ${messageCount} message(s).`
+        : 'No chat room is attached to this booking yet.',
+      operatorUse: 'Matched work needs chat for coordination; completed work keeps transcript in admin.',
+      href: '#chat',
+    },
+    {
+      contract: 'Wallet final gate',
+      scope: 'Negative wallet can browse/join, final acceptance is held',
+      status: walletDebt ? 'Settlement needed' : 'Gate clear',
+      tone: walletDebt ? 'pill-danger' : 'pill-success',
+      evidence: financeTrace.walletLedger,
+      operatorUse:
+        'Cash fee debt should block final acceptance/customer selection/service start until settlement rules clear it.',
+      href: '#finance',
+    },
+    {
+      contract: 'On-demand service rules',
+      scope: 'No schedule picker, no gratuity flow',
+      status: terminal ? 'Closeout record' : 'On-demand active',
+      tone: 'pill-success',
+      evidence: `${financeTrace.serviceOption} / payment ${booking.payment?.method ?? 'NONE'} / no gratuity lane.`,
+      operatorUse:
+        'Keep scheduling and gratuity decisions out of MVP booking flow; use policy/admin closeout records.',
+      href: '#service',
+    },
+  ];
 }
 
 function bookingDispatchPin(booking: AdminBookingDetail) {
