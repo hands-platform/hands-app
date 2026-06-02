@@ -143,7 +143,11 @@ const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
 const PARTNER_ACTIVITY_TYPE_OPTIONS = [
   { value: 'all', label: 'All event types', types: [] },
   { value: 'booking_chat', label: 'Bookings and chat archive', types: ['BOOKING', 'CHAT'] },
-  { value: 'app_device', label: 'Account, app sessions, and devices', types: ['ACCOUNT', 'SESSION', 'DEVICE'] },
+  {
+    value: 'app_device',
+    label: 'Account, app sessions, and devices',
+    types: ['ACCOUNT', 'SESSION', 'DEVICE'],
+  },
   { value: 'location', label: 'Location snapshots', types: ['LOCATION'] },
   { value: 'finance', label: 'Earnings and payouts', types: ['EARNING', 'PAYOUT'] },
   {
@@ -266,10 +270,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const filteredPartnerBookingArchive = partnerBookingArchive.filter((record) =>
     isWithinDetailDateFilter(record.booking.scheduledStartAt ?? record.booking.createdAt, dateFilters),
   );
-  const partnerBookingEvidenceRows = buildPartnerBookingEvidenceRows(
-    provider,
-    filteredPartnerBookingArchive,
-  );
+  const partnerBookingEvidenceRows = buildPartnerBookingEvidenceRows(provider, filteredPartnerBookingArchive);
   const filteredPartnerActivityRecords = partnerActivityRecords.filter(
     (record) =>
       isWithinDetailDateFilter(record.at, dateFilters) &&
@@ -315,6 +316,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     filteredPartnerBookingArchive,
     dispatchPolicy,
   );
+  const partnerBookingGateAttempts = buildPartnerBookingGateAttemptRows(
+    provider.auditLogs ?? [],
+    provider.id,
+  );
+  const filteredPartnerBookingGateAttempts = buildPartnerBookingGateAttemptRows(
+    (provider.auditLogs ?? []).filter((log) => isWithinDetailDateFilter(log.createdAt, dateFilters)),
+    provider.id,
+  );
   const partnerOperatorCommandQueue = buildPartnerOperatorCommandQueue({
     provider,
     primaryBank,
@@ -335,6 +344,15 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         : 'No preferred, selected, or joined booking loaded.',
       href: latestPartnerBooking ? `/bookings/${latestPartnerBooking.id}` : '#booking-chat-records',
       tone: latestPartnerBooking ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'First-pick gate attempts',
+      value: `${partnerBookingGateAttempts.length} attempt(s)`,
+      detail: partnerBookingGateAttempts[0]
+        ? `${partnerBookingGateAttempts[0].reasonLabel} / latest ${formatDate(partnerBookingGateAttempts[0].at)}`
+        : 'No booking create gate attempt is linked to this partner.',
+      href: partnerBookingGateAttempts[0]?.bookingMonitorHref ?? '/bookings?view=blocked-create',
+      tone: partnerBookingGateAttempts.length ? 'pill-warn' : 'pill-neutral',
     },
     {
       label: 'Chat archive',
@@ -364,7 +382,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     },
     {
       label: 'Tax profile',
-      value: provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'Missing' : 'Deferred'),
+      value:
+        provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'Missing' : 'Deferred'),
       detail: providerHasFirstRevenueSignal(provider)
         ? 'First earning exists; tax profile gates payout.'
         : 'Tax collection stays deferred until first earning.',
@@ -377,7 +396,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     {
       label: 'Location',
       value: provider.currentLocationUpdatedAt ? formatDate(provider.currentLocationUpdatedAt) : 'No pin',
-      detail: provider.currentLat && provider.currentLng ? `${provider.currentLat}, ${provider.currentLng}` : 'No latest location loaded.',
+      detail:
+        provider.currentLat && provider.currentLng
+          ? `${provider.currentLat}, ${provider.currentLng}`
+          : 'No latest location loaded.',
       href: '#location',
       tone: provider.currentLocationUpdatedAt ? 'pill-info' : 'pill-warn',
     },
@@ -418,10 +440,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               Back to partners
             </Link>
           </p>
-          <h1>{marketplaceDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id)}</h1>
+          <h1>
+            {marketplaceDisplayText(
+              provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+            )}
+          </h1>
           <p className="muted">
-            {marketplaceDisplayText(provider.legalName ?? 'Legal name missing')} / {provider.user?.phone ?? 'No phone'} /{' '}
-            {provider.city ?? 'No city'}
+            {marketplaceDisplayText(provider.legalName ?? 'Legal name missing')} /{' '}
+            {provider.user?.phone ?? 'No phone'} / {provider.city ?? 'No city'}
           </p>
         </div>
         <div className="actions">
@@ -605,6 +631,73 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
       </div>
 
+      <div className="card" id="partner-booking-create-gates" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner booking create gate evidence</h2>
+            <p className="muted">
+              Booking creation attempts where this partner was the first-pick partner. These rows show factual
+              address, distance, and GPS evidence before payment and matching.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=blocked-create&gate=first-pick-distance">
+            Open gate queue
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Loaded attempts</span>
+            <strong>{partnerBookingGateAttempts.length}</strong>
+            <small>All recent partner-linked gate attempts.</small>
+          </div>
+          <div>
+            <span>Filtered attempts</span>
+            <strong>{filteredPartnerBookingGateAttempts.length}</strong>
+            <small>Matches current date filter.</small>
+          </div>
+          <div>
+            <span>Latest gate</span>
+            <strong>{partnerBookingGateAttempts[0]?.reasonLabel ?? 'None'}</strong>
+            <small>
+              {partnerBookingGateAttempts[0] ? formatDate(partnerBookingGateAttempts[0].at) : 'No gate row'}
+            </small>
+          </div>
+        </div>
+        {filteredPartnerBookingGateAttempts.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No first-pick booking create gate attempt matched this date filter.
+          </p>
+        ) : (
+          <div className="setup-stage-list" style={{ marginTop: 14 }}>
+            {filteredPartnerBookingGateAttempts.slice(0, 12).map((attempt) => (
+              <div className="setup-stage-item" key={attempt.id}>
+                <span>{attempt.gateLabel}</span>
+                <div>
+                  <Link className="text-link" href={attempt.bookingMonitorHref}>
+                    <strong>{attempt.reasonLabel}</strong>
+                  </Link>
+                  <p className="muted">{attempt.detail}</p>
+                  <div className="participant-list" style={{ marginTop: 8 }}>
+                    <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
+                    <span className="pill pill-neutral">{attempt.addressLabel}</span>
+                    <span className="pill pill-neutral">{attempt.distanceLabel}</span>
+                  </div>
+                  <div className="participant-list" style={{ marginTop: 8 }}>
+                    <Link className="text-link" href={attempt.bookingMonitorHref}>
+                      Booking gate queue
+                    </Link>
+                    <Link className="text-link" href={attempt.auditHref}>
+                      Audit evidence
+                    </Link>
+                  </div>
+                </div>
+                <small>{formatDate(attempt.at)}</small>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="card" id="partner-connected-operations-records" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -699,7 +792,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             Quick note preset
             <select name="preset" defaultValue="">
               <option value="">Manual note only</option>
-              <option value="Partner contacted; waiting for reply.">Partner contacted; waiting for reply.</option>
+              <option value="Partner contacted; waiting for reply.">
+                Partner contacted; waiting for reply.
+              </option>
               <option value="Partner app session and push reachability checked.">
                 Partner app session and push reachability checked.
               </option>
@@ -748,9 +843,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner booking evidence bundles</h2>
             <p className="muted">
-              Reservation-by-reservation partner work bundle for operators. Each row connects the partner role,
-              customer address snapshot, chat archive, payment, earning, payout/wallet records, location, and
-              staff task records as factual history only.
+              Reservation-by-reservation partner work bundle for operators. Each row connects the partner
+              role, customer address snapshot, chat archive, payment, earning, payout/wallet records,
+              location, and staff task records as factual history only.
             </p>
           </div>
           <span className="pill pill-info">{partnerBookingEvidenceRows.length} booking bundle(s)</span>
@@ -1096,7 +1191,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     </Link>
                   ) : null}
                   {record.booking.chatRoom?.id ? (
-                    <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(record.booking.id)}`}>
+                    <Link
+                      className="text-link"
+                      href={`/chat-archive?q=${encodeURIComponent(record.booking.id)}`}
+                    >
                       Open chat archive
                     </Link>
                   ) : null}
@@ -1227,7 +1325,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Final booking gate decision</h2>
             <p className="muted">
-              Operator-facing decision for whether this partner can pass final customer selection and service-start gates right now.
+              Operator-facing decision for whether this partner can pass final customer selection and
+              service-start gates right now.
             </p>
           </div>
           <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
@@ -1294,9 +1393,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner final-gate unblock playbook</h2>
             <p className="muted">
-              Operator order for restoring this partner&apos;s final booking gates. Finance and account-control
-              blockers stay first; tax stays deferred until first earning and then blocks payout, not initial
-              dispatch.
+              Operator order for restoring this partner&apos;s final booking gates. Finance and
+              account-control blockers stay first; tax stays deferred until first earning and then blocks
+              payout, not initial dispatch.
             </p>
           </div>
           <span
@@ -1653,7 +1752,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         seen {formatDate(session.lastSeenAt)}
                       </p>
                       {session.suspiciousReason ? (
-                        <p className="muted">Session note: {displaySessionCheckText(session.suspiciousReason)}</p>
+                        <p className="muted">
+                          Session note: {displaySessionCheckText(session.suspiciousReason)}
+                        </p>
                       ) : null}
                     </div>
                     <small>{formatDate(session.loggedInAt)}</small>
@@ -1806,7 +1907,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                         {report.category} / {report.source} / {formatDate(report.createdAt)}
                       </p>
                       <div className="participant-list" style={{ marginTop: 6 }}>
-                        <span className={`pill ${reportSeverityPill(report.severity)}`}>{report.severity}</span>
+                        <span className={`pill ${reportSeverityPill(report.severity)}`}>
+                          {report.severity}
+                        </span>
                         <span className={`pill ${reportStatusPill(report.status)}`}>{report.status}</span>
                         {report.bookingId ? (
                           <Link className="text-link" href={`/bookings/${report.bookingId}`}>
@@ -2597,6 +2700,19 @@ type PartnerBookingJourneyRow = {
     href: string;
   }>;
 };
+type PartnerBookingGateAttemptRow = {
+  id: string;
+  at: string;
+  gate: string;
+  gateLabel: string;
+  reasonLabel: string;
+  detail: string;
+  addressLabel: string;
+  distanceLabel: string;
+  bookingMonitorHref: string;
+  auditHref: string;
+  tone: string;
+};
 
 type PartnerAcceptanceRepairCommand = {
   status: string;
@@ -2754,8 +2870,8 @@ function PartnerDetailReadinessSnapshot({
         <div>
           <h2>Partner readiness snapshot</h2>
           <p className="muted">
-            Fast operating checks for dispatch, marketplace matching, cash settlement, KYC, payout, and service
-            readiness.
+            Fast operating checks for dispatch, marketplace matching, cash settlement, KYC, payout, and
+            service readiness.
           </p>
         </div>
         <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
@@ -2938,7 +3054,8 @@ function buildPartnerOperatorCommandQueue({
       id: 'profile-approve',
       label: 'PROFILE',
       title: 'Public partner profile can be approved',
-      detail: 'KYC is approved. Review profile, photos, service area, and public-facing text before approval.',
+      detail:
+        'KYC is approved. Review profile, photos, service area, and public-facing text before approval.',
       owner: 'Verification',
       tone: 'pending',
       action: { type: 'approve-profile', label: 'Approve profile' },
@@ -2974,7 +3091,8 @@ function buildPartnerOperatorCommandQueue({
       id: 'tax-approve',
       label: 'TAX',
       title: 'Tax profile ready after first earning',
-      detail: 'Partner has revenue and tax profile is pending. Approve only after checking MST/address/identity match.',
+      detail:
+        'Partner has revenue and tax profile is pending. Approve only after checking MST/address/identity match.',
       owner: 'Finance',
       tone: 'pending',
       action: { type: 'approve-tax', label: 'Approve tax' },
@@ -2996,7 +3114,8 @@ function buildPartnerOperatorCommandQueue({
       id: 'service-pricing',
       label: 'SERVICE',
       title: 'No bookable service option',
-      detail: 'Partner needs at least one service duration priced at or above the admin minimum before customers can book.',
+      detail:
+        'Partner needs at least one service duration priced at or above the admin minimum before customers can book.',
       owner: 'Catalog',
       tone: 'blocked',
       action: { type: 'link', href: '#service-pricing', label: 'Open services' },
@@ -3056,7 +3175,8 @@ function buildPartnerOperatorCommandQueue({
       id: 'normal-monitoring',
       label: 'OK',
       title: 'Normal partner monitoring',
-      detail: 'No immediate operator action is visible. Continue monitoring bookings, app activity, and payout records.',
+      detail:
+        'No immediate operator action is visible. Continue monitoring bookings, app activity, and payout records.',
       owner: 'Operations',
       tone: 'done',
       action: { type: 'link', href: '#booking-chat-records', label: 'Open records' },
@@ -3136,9 +3256,7 @@ function buildPartnerBookingEvidenceRows(
   return bookingArchive.slice(0, 30).map((record) => {
     const booking = record.booking;
     const chatMessages = readPartnerChatMessages(booking);
-    const participant = (booking.participants ?? []).find(
-      (item) => item.providerProfileId === provider.id,
-    );
+    const participant = (booking.participants ?? []).find((item) => item.providerProfileId === provider.id);
     const earning = (provider.earnings ?? []).find((item) => item.bookingId === booking.id);
     const walletRows = earning?.walletLedgerEntries ?? [];
     const latestLocation = provider.currentLocationUpdatedAt
@@ -3160,7 +3278,9 @@ function buildPartnerBookingEvidenceRows(
     const opsParts = [
       `participant ${participant?.status ?? 'not linked'}`,
       participant?.joinedAt ? `joined ${formatDate(participant.joinedAt)}` : 'join time not stored',
-      participant?.respondedAt ? `responded ${formatDate(participant.respondedAt)}` : 'response time not stored',
+      participant?.respondedAt
+        ? `responded ${formatDate(participant.respondedAt)}`
+        : 'response time not stored',
       `location ${latestLocation}`,
     ];
 
@@ -3207,9 +3327,7 @@ function buildPartnerBookingJourneyRows(
 ): PartnerBookingJourneyRow[] {
   return bookingArchive.slice(0, 20).map((record) => {
     const booking = record.booking;
-    const participant = (booking.participants ?? []).find(
-      (item) => item.providerProfileId === provider.id,
-    );
+    const participant = (booking.participants ?? []).find((item) => item.providerProfileId === provider.id);
     const chatMessages = readPartnerChatMessages(booking);
     const latestMessage = chatMessages[chatMessages.length - 1];
     const earning = (provider.earnings ?? []).find((item) => item.bookingId === booking.id);
@@ -3282,7 +3400,11 @@ function buildPartnerBookingJourneyRows(
             : participant?.joinedAt
               ? `${participant.status} joined`
               : 'No response row',
-          tone: participant?.respondedAt ? 'pill-success' : participant?.joinedAt ? 'pill-info' : 'pill-neutral',
+          tone: participant?.respondedAt
+            ? 'pill-success'
+            : participant?.joinedAt
+              ? 'pill-info'
+              : 'pill-neutral',
         },
         {
           label: 'Chat',
@@ -3554,12 +3676,18 @@ function buildPartnerActivityRecords(
   }
 
   for (const log of provider.auditLogs ?? []) {
+    const bookingGateAttempt =
+      log.action === 'booking.create.rejected'
+        ? buildPartnerBookingGateAttemptRows([log], provider.id)[0]
+        : null;
     records.push({
       id: log.id,
       type: 'OPS',
       at: log.createdAt,
-      title: log.action,
-      detail: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${auditLogNoteText(log)}`,
+      title: bookingGateAttempt ? `Booking create stopped: ${bookingGateAttempt.reasonLabel}` : log.action,
+      detail: bookingGateAttempt
+        ? `${bookingGateAttempt.gateLabel} / ${bookingGateAttempt.detail}`
+        : `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${auditLogNoteText(log)}`,
     });
   }
 
@@ -3676,6 +3804,113 @@ function formatPartnerActivityDateLabel(key: string) {
     month: 'short',
     day: '2-digit',
   }).format(date);
+}
+
+function buildPartnerBookingGateAttemptRows(
+  auditLogs: AdminAuditLog[],
+  providerId: string,
+): PartnerBookingGateAttemptRow[] {
+  return auditLogs
+    .filter((log) => log.action === 'booking.create.rejected')
+    .map((log) => {
+      const metadata = readMetadataObject(log.metadata);
+      const reasonCode = readString(metadata.reasonCode) ?? 'UNKNOWN';
+      const gate = partnerBookingGateFilter(reasonCode);
+      const bookingAddress = readMetadataObject(metadata.bookingAddress);
+      const addressText = readString(bookingAddress.addressText);
+      const customerProfileId = readString(metadata.customerProfileId);
+      const customerDistance = readNumber(metadata.customerDistanceMeters);
+      const customerDistanceLimit = readNumber(metadata.customerDistanceLimitMeters);
+      const partnerDistance = readNumber(metadata.preferredProviderDistanceMeters);
+      const partnerDistanceLimit = readNumber(metadata.preferredProviderDistanceLimitMeters);
+      const currentLocationRecordedAt = readString(metadata.currentLocationRecordedAt);
+      const serviceId = readString(metadata.serviceId);
+      const distanceParts = [
+        partnerDistance !== null
+          ? `First-pick ${formatDistance(partnerDistance)} / limit ${formatDistance(
+              partnerDistanceLimit ?? 0,
+            )}`
+          : null,
+        customerDistance !== null
+          ? `Customer GPS ${formatDistance(customerDistance)} / limit ${formatDistance(
+              customerDistanceLimit ?? 0,
+            )}`
+          : null,
+      ].filter(Boolean);
+      const detailParts = [
+        addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing',
+        currentLocationRecordedAt
+          ? `Customer GPS proof: ${formatDate(currentLocationRecordedAt)}`
+          : 'No current GPS timestamp',
+        serviceId ? `Service ${shortRecordId(serviceId)}` : null,
+        customerProfileId ? `Customer ${shortRecordId(customerProfileId)}` : null,
+      ].filter(Boolean);
+
+      return {
+        id: log.id,
+        at: log.createdAt,
+        gate,
+        gateLabel: partnerBookingGateLabel(gate),
+        reasonLabel: partnerBookingGateReasonLabel(reasonCode),
+        detail: detailParts.join(' / '),
+        addressLabel: addressText ? trimText(addressText, 72) : 'No address metadata',
+        distanceLabel: distanceParts.length ? distanceParts.join(' / ') : 'No distance value',
+        bookingMonitorHref: `/bookings?view=blocked-create&gate=${gate}`,
+        auditHref: `/audit-log?query=booking.create.rejected&target=${encodeURIComponent(
+          `provider:${providerId}`,
+        )}`,
+        tone: gate === 'unknown' ? 'pill-warn' : 'pill-info',
+      };
+    })
+    .sort((left, right) => dateValue(right.at) - dateValue(left.at));
+}
+
+function partnerBookingGateFilter(reasonCode: string) {
+  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') return 'service-area';
+  if (
+    reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING' ||
+    reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE' ||
+    reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING' ||
+    reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID'
+  ) {
+    return 'customer-gps';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') return 'customer-distance';
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') return 'first-pick-distance';
+  return 'unknown';
+}
+
+function partnerBookingGateLabel(gate: string) {
+  if (gate === 'service-area') return 'Service area';
+  if (gate === 'customer-gps') return 'Customer GPS proof';
+  if (gate === 'customer-distance') return 'Customer distance';
+  if (gate === 'first-pick-distance') return 'First-pick distance';
+  return 'Unknown gate';
+}
+
+function partnerBookingGateReasonLabel(reasonCode: string) {
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
+    return 'Partner was outside the first-pick distance gate';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
+    return 'Customer GPS was too far from selected service address';
+  }
+  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
+    return 'Selected service address was outside enabled service area';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
+    return 'Customer current-location proof was stale';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
+    return 'Customer current-location proof was missing';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
+    return 'Customer GPS timestamp was missing';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
+    return 'Customer GPS timestamp was invalid';
+  }
+  return reasonCode.replace(/_/g, ' ').toLowerCase();
 }
 
 function buildPartnerMasterFacts(
@@ -4191,7 +4426,10 @@ function buildPartnerOperatingLedger(
     },
     {
       area: 'Documents',
-      status: verificationFileCount + documentCount ? `${verificationFileCount + documentCount} file(s)` : 'No files',
+      status:
+        verificationFileCount + documentCount
+          ? `${verificationFileCount + documentCount} file(s)`
+          : 'No files',
       evidence: `${documentCount} typed document(s) / ${verificationFileCount} verification file(s)`,
       href: `/partners/${provider.id}#documents`,
     },
@@ -4207,7 +4445,8 @@ function buildPartnerOperatingLedger(
     },
     {
       area: 'Tax',
-      status: provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'REQUIRED' : 'DEFERRED'),
+      status:
+        provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'REQUIRED' : 'DEFERRED'),
       evidence: provider.taxProfile
         ? `${marketplaceDisplayText(provider.taxProfile.legalName)} / tax ****${provider.taxProfile.taxCodeLast4 ?? '----'}`
         : providerHasFirstRevenueSignal(provider)
@@ -4408,8 +4647,27 @@ function trimText(value: string, maxLength: number) {
   return `${value.slice(0, Math.max(0, maxLength - 3))}...`;
 }
 
+function readMetadataObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function readNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 function auditLogNoteText(log: AdminAuditLog) {
-  const metadata = log.metadata && typeof log.metadata === 'object' ? (log.metadata as Record<string, unknown>) : {};
+  const metadata = readMetadataObject(log.metadata);
   const note = metadata.note ?? metadata.preset ?? metadata.reason ?? metadata.summary ?? metadata.status;
   if (typeof note === 'string' && note.trim()) {
     return trimText(note.trim(), 140);
@@ -4451,7 +4709,10 @@ function buildProviderBookingAcceptance(
         cashDebt > 0
           ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash fee/tax settlement.`
           : 'No open negative wallet debt is visible.',
-      action: cashDebt > 0 ? 'Record partner deposit or admin offset before final acceptance or customer selection.' : 'Clear',
+      action:
+        cashDebt > 0
+          ? 'Record partner deposit or admin offset before final acceptance or customer selection.'
+          : 'Clear',
     },
     {
       label: 'Account controls',
@@ -5867,7 +6128,9 @@ function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
       status: document?.status ?? 'MISSING',
       uploadedAt: document?.fileAsset?.uploadedAt,
       rejectionReason: document?.rejectionReason,
-      fileLabel: marketplaceDisplayText(document?.fileAsset?.contentType ?? document?.fileAsset?.key ?? 'No file uploaded'),
+      fileLabel: marketplaceDisplayText(
+        document?.fileAsset?.contentType ?? document?.fileAsset?.key ?? 'No file uploaded',
+      ),
     };
   });
   const missingDocuments = rows.filter((row) => row.status !== 'APPROVED').map((row) => row.type);

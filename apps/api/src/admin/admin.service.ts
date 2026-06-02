@@ -531,6 +531,7 @@ export class AdminService {
           { metadata: { path: ['providerProfileId'], equals: providerProfileId } },
           { metadata: { path: ['partnerProfileId'], equals: providerProfileId } },
           { metadata: { path: ['providerId'], equals: providerProfileId } },
+          { metadata: { path: ['preferredProviderId'], equals: providerProfileId } },
         ],
       },
       orderBy: { createdAt: 'desc' },
@@ -568,15 +569,20 @@ export class AdminService {
       throw new NotFoundException('Partner not found');
     }
 
-    const auditLog = await this.writeAudit(actorId, 'provider.ops_note.add', `provider:${providerProfileId}`, {
-      providerProfileId,
-      providerUserId: provider.userId,
-      providerPhone: provider.user.phone,
-      providerName: provider.displayName ?? provider.legalName ?? provider.user.fullName,
-      status: provider.status,
-      note: content,
-      preset,
-    });
+    const auditLog = await this.writeAudit(
+      actorId,
+      'provider.ops_note.add',
+      `provider:${providerProfileId}`,
+      {
+        providerProfileId,
+        providerUserId: provider.userId,
+        providerPhone: provider.user.phone,
+        providerName: provider.displayName ?? provider.legalName ?? provider.user.fullName,
+        status: provider.status,
+        note: content,
+        preset,
+      },
+    );
 
     return { ok: true, auditLog };
   }
