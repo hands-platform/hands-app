@@ -784,7 +784,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <th>Current blocker</th>
                 <th>Operator move</th>
                 <th>SLA</th>
-                <th>Age signal</th>
+                <th>Record age</th>
                 <th>Open</th>
               </tr>
             </thead>
@@ -1061,7 +1061,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <h2>Dispatch capacity forecast</h2>
             <p className="muted">
               Converts the filtered partner list into dispatch capacity, recovery work, and city-level supply
-              signals for direct requests and marketplace matching.
+              records for direct requests and marketplace matching.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy">
@@ -1126,7 +1126,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <div className="setup-stage-item">
                   <span>EMPTY</span>
                   <div>
-                    <strong>No city signal yet</strong>
+                    <strong>No city data yet</strong>
                     <p className="muted">Partner city data will appear here once profiles are filled.</p>
                   </div>
                   <small>0</small>
@@ -3027,7 +3027,7 @@ function buildPartnerShiftHandoff(
       ? {
           title: 'Finish first-earning payout and tax setup',
           scope: 'Payout gate',
-          detail: `${payoutSetup.length} partner(s) have revenue signal but still need tax, address, or agreement readiness.`,
+          detail: `${payoutSetup.length} partner(s) have revenue records but still need tax, address, or agreement readiness.`,
           operatorAction:
             'Ask for tax profile/address/terms only after first revenue, then approve before withdrawal.',
           href: '/partners?review=payout-setup',
@@ -3384,7 +3384,7 @@ function latestSecurityAgeLabel(provider: AdminProvider) {
   if (blockedDevice?.blockedAt) {
     return `Device blocked ${formatRelativeAge(blockedDevice.blockedAt)}.`;
   }
-  return 'No recent session signal.';
+  return 'No recent session record.';
 }
 
 function partnerSampleNames(providers: AdminProvider[], limit = 4) {

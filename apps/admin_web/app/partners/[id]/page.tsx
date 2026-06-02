@@ -2399,7 +2399,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
 
         <div className="card">
-          <h2>Recent payout signals</h2>
+          <h2>Recent payout records</h2>
           <InfoLine label="Recent earnings" value={(provider.earnings?.length ?? 0).toString()} />
           <InfoLine label="Recent payout batches" value={(provider.payoutBatches?.length ?? 0).toString()} />
           {(provider.earnings ?? []).slice(0, 3).map((earning) => (
@@ -2754,7 +2754,7 @@ function PartnerDetailReadinessSnapshot({
         <div>
           <h2>Partner readiness snapshot</h2>
           <p className="muted">
-            Fast operating signals for dispatch, marketplace matching, cash settlement, KYC, payout, and service
+            Fast operating checks for dispatch, marketplace matching, cash settlement, KYC, payout, and service
             readiness.
           </p>
         </div>
@@ -5076,7 +5076,7 @@ function buildProviderPayoutOps(provider: ProviderDetail) {
       detail: formatCurrency(unpaidNetAmount),
       action: unpaidEarnings.length
         ? 'Eligible only after all payout gates are clear.'
-        : 'No unpaid earning signal.',
+        : 'No unpaid earning record.',
       tone: unpaidEarnings.length ? (payoutReady ? 'done' : 'pending') : 'pending',
     },
     {
@@ -5158,7 +5158,7 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       status: devices.length || sessions.length ? (staleAppActivity ? 'STALE' : 'RECENT') : 'MISSING',
       detail:
         devices.length || sessions.length
-          ? `Latest partner app signal is ${Number.isFinite(lastSeenMinutes) ? `${lastSeenMinutes}m old` : 'missing'}.`
+          ? `Latest partner app record is ${Number.isFinite(lastSeenMinutes) ? `${lastSeenMinutes}m old` : 'missing'}.`
           : 'No partner app device or session has been recorded yet.',
       action:
         devices.length || sessions.length
@@ -5191,7 +5191,7 @@ function buildProviderSecuritySummary(provider: ProviderDetail) {
       tone: sessionCheckSessions.length ? 'blocked' : 'done',
     },
     {
-      title: 'Shared device signal',
+      title: 'Shared device record',
       status: sharedDeviceMatches.length ? `${sharedDeviceMatches.length} MATCH` : 'CLEAR',
       detail: sharedDeviceMatches.length
         ? 'The same device identifier appears on another partner profile.'
@@ -5467,8 +5467,8 @@ function buildProviderRegistrationDossier(provider: ProviderDetail) {
       detail:
         serviceAreaComplete && (!hasFirstRevenue || addressComplete)
           ? hasFirstRevenue
-            ? 'Residential/tax address, city, and a service area/location signal are available.'
-            : 'Service area/location signal is available. Residential tax address can stay deferred until first earning.'
+            ? 'Residential/tax address, city, and service area/location data are available.'
+            : 'Service area/location data is available. Residential tax address can stay deferred until first earning.'
           : hasFirstRevenue
             ? 'Residential/tax address, service city, GPS location, or service area still needs confirmation.'
             : 'GPS location or service area still needs confirmation before dispatch.',
