@@ -55,9 +55,9 @@ export class BookingsService {
       serviceId: string;
       providerId?: string;
       couponCode?: string;
-      address: Prisma.InputJsonValue;
-      lat: number;
-      lng: number;
+      address?: Prisma.InputJsonValue;
+      lat?: number;
+      lng?: number;
       selectedLocationId?: string;
       notes?: string;
       paymentMethod: PaymentMethod;
@@ -71,6 +71,8 @@ export class BookingsService {
     if (!customer) {
       throw new NotFoundException('Customer profile not found');
     }
+    assertBookingServiceId(input.serviceId);
+    assertBookingPaymentMethod(input.paymentMethod);
 
     const service = await this.prisma.massageService.findUniqueOrThrow({ where: { id: input.serviceId } });
     const preferredProvider = input.providerId
@@ -123,14 +125,22 @@ export class BookingsService {
     if (input.selectedLocationId && !selectedLocation) {
       throw new BadRequestException('Selected customer location was not found');
     }
+    const bookingLat = normalizeBookingCoordinate(input.lat ?? selectedLocation?.latitude, 'lat');
+    const bookingLng = normalizeBookingCoordinate(input.lng ?? selectedLocation?.longitude, 'lng');
+    assertVietnamBookingCoordinate(bookingLat, bookingLng);
+    const addressText = bookingAddressText(input.address) ?? selectedLocation?.addressText?.trim();
+    if (!addressText) {
+      throw new BadRequestException('Booking address text is required');
+    }
+    const addressPayload = normalizeBookingAddress(input.address, addressText);
     const matchingPolicy = await this.matching.getPolicy();
     const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
     const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
     const finalAmount = Math.max(0, customerPrice - discountAmount);
     const preferredProviderDistanceMeters = preferredProvider
       ? calculateDistanceMeters(
-          input.lat,
-          input.lng,
+          bookingLat,
+          bookingLng,
           preferredProvider.currentLat,
           preferredProvider.currentLng,
         )
@@ -142,17 +152,17 @@ export class BookingsService {
         status: BookingStatus.OPEN_MATCHING,
         scheduledStartAt,
         scheduledEndAt,
-        address: input.address,
-        lat: input.lat,
-        lng: input.lng,
+        address: addressPayload,
+        lat: bookingLat,
+        lng: bookingLng,
         addressSnapshot: {
           create: {
             customerProfileId: customer.id,
             selectedLocationId: selectedLocation?.id,
-            address: input.address,
-            addressText: bookingAddressText(input.address),
-            latitude: input.lat,
-            longitude: input.lng,
+            address: addressPayload,
+            addressText,
+            latitude: bookingLat,
+            longitude: bookingLng,
           },
         },
         notes: input.notes,
@@ -1467,7 +1477,7 @@ function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingServic
   };
 }
 
-function bookingAddressText(address: Prisma.InputJsonValue) {
+function bookingAddressText(address: Prisma.InputJsonValue | undefined) {
   if (address && typeof address === 'object' && !Array.isArray(address)) {
     const record = address as Record<string, unknown>;
     const knownText =
@@ -1487,6 +1497,42 @@ function bookingAddressText(address: Prisma.InputJsonValue) {
     return address.trim();
   }
   return null;
+}
+
+function assertBookingServiceId(serviceId: unknown) {
+  if (typeof serviceId !== 'string' || !serviceId.trim()) {
+    throw new BadRequestException('serviceId is required');
+  }
+}
+
+function assertBookingPaymentMethod(paymentMethod: unknown) {
+  if (!Object.values(PaymentMethod).includes(paymentMethod as PaymentMethod)) {
+    throw new BadRequestException('Valid paymentMethod is required');
+  }
+}
+
+function normalizeBookingCoordinate(value: unknown, fieldName: 'lat' | 'lng') {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new BadRequestException(`${fieldName} is required`);
+  }
+  return parsed;
+}
+
+function assertVietnamBookingCoordinate(lat: number, lng: number) {
+  if (lat < 8 || lat > 24 || lng < 102 || lng > 110) {
+    throw new BadRequestException('Booking address must be inside Vietnam');
+  }
+}
+
+function normalizeBookingAddress(address: Prisma.InputJsonValue | undefined, addressText: string) {
+  if (address && typeof address === 'object' && !Array.isArray(address)) {
+    return { ...(address as Record<string, unknown>), addressText } as Prisma.InputJsonValue;
+  }
+  if (typeof address === 'string' && address.trim()) {
+    return { addressText: address.trim() } as Prisma.InputJsonValue;
+  }
+  return { addressText } as Prisma.InputJsonValue;
 }
 
 function readPlainRecord(value: unknown): Record<string, unknown> | undefined {

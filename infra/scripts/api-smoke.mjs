@@ -1322,6 +1322,53 @@ await expectRequestFailure(
   400,
 );
 
+await expectRequestFailure(
+  'Booking address text is required for immutable dispatch snapshot',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      address: {},
+      lat: 10.7769,
+      lng: 106.7009,
+      paymentMethod: 'CASH',
+    }),
+  400,
+);
+await expectRequestFailure(
+  'Booking dispatch pin must be inside Vietnam',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      address: { line1: 'Out of country smoke flow' },
+      lat: 40.7128,
+      lng: -74.006,
+      paymentMethod: 'CASH',
+    }),
+  400,
+);
+
+const selectedLocationOnlyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  selectedLocationId: savedSelectedLocation.id,
+  paymentMethod: 'CASH',
+});
+const selectedLocationOnlyBookingDetail = await getJson(
+  `/customer/bookings/${selectedLocationOnlyBooking.id}`,
+  customerAuth.accessToken,
+);
+if (
+  selectedLocationOnlyBookingDetail.addressSnapshot?.selectedLocationId !== savedSelectedLocation.id ||
+  selectedLocationOnlyBookingDetail.addressSnapshot?.addressText !== savedSelectedLocation.addressText ||
+  Number(selectedLocationOnlyBookingDetail.addressSnapshot?.latitude) !== Number(savedSelectedLocation.latitude) ||
+  Number(selectedLocationOnlyBookingDetail.addressSnapshot?.longitude) !== Number(savedSelectedLocation.longitude)
+) {
+  throw new Error(
+    `Selected-location-only booking should create an immutable dispatch snapshot: ${JSON.stringify(
+      selectedLocationOnlyBookingDetail.addressSnapshot,
+    )}`,
+  );
+}
+
 const ignoredFutureScheduledStartAt = new Date(Date.now() + 60 * 60_000).toISOString();
 const booking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,

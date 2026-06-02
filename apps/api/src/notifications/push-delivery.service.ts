@@ -136,7 +136,9 @@ async function readJsonResponse(response: Response): Promise<Record<string, unkn
     if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
       return payload as Record<string, unknown>;
     }
-  } catch {}
+  } catch {
+    // Non-JSON response bodies are treated as empty delivery payloads.
+  }
 
   return {};
 }
