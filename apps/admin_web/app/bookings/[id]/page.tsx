@@ -309,6 +309,15 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     bookingActivityRecords,
   });
+  const manualDecisionReadiness = bookingManualDecisionReadiness({
+    booking,
+    messages,
+    latestLocation,
+    notificationTrace,
+    refundLedgerRows,
+    operatorNoteLines,
+    closeoutReadiness,
+  });
   const connectedRecordLinks = [
     {
       label: 'Customer record',
@@ -511,8 +520,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Booking recent operations timeline</h2>
             <p className="muted">
-              Latest factual booking steps before an operator decides: address, first-pick wait, 10km
-              partner participation, customer final choice, chat, location, payment, cash debt, and closeout.
+              Latest factual booking steps before an operator decides: address, first-pick wait, 10km partner
+              participation, customer final choice, chat, location, payment, cash debt, and closeout.
             </p>
           </div>
           <Link className="text-link" href="#operating-timeline">
@@ -575,8 +584,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <h2>Evidence packet for admin decision</h2>
             <p className="muted">
               Cancellation, no-show, refund, and settlement decisions should use retained booking evidence.
-              This packet groups chat, location, payment, alerts, notes, and audit records as factual
-              decision context for the customer and partner.
+              This packet groups chat, location, payment, alerts, notes, and audit records as factual decision
+              context for the customer and partner.
             </p>
           </div>
           <span className={`pill ${evidencePacket.tone}`}>{evidencePacket.status}</span>
@@ -608,6 +617,50 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" id="manual-decision-readiness" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Manual outcome decision readiness</h2>
+            <p className="muted">
+              Operations-only decision board for cancellation, no-show, refund/release, cash fee settlement,
+              and completed closeout. It keeps the decision factual and evidence-based.
+            </p>
+          </div>
+          <span className="pill pill-info">{manualDecisionReadiness.length} decision lane(s)</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Decision lane</th>
+              <th>Status</th>
+              <th>Evidence loaded</th>
+              <th>Operator use</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {manualDecisionReadiness.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.operatorUse}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" id="booking-full-evidence-bundle" style={{ marginBottom: 16 }}>
@@ -2038,10 +2091,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               value={`${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / partner blocked`}
             />
           )}
-          <InfoRow
-            label="Service feedback"
-            value={booking.review ? 'Submitted' : 'Not submitted'}
-          />
+          <InfoRow label="Service feedback" value={booking.review ? 'Submitted' : 'Not submitted'} />
         </div>
 
         <div className="card">
@@ -2778,9 +2828,10 @@ function bookingEvidencePacket({
         detail: chatReady
           ? `Room ${shortId(booking.chatRoom?.id ?? 'missing')} keeps ${messages.length} retained message(s).`
           : 'No retained chat room is attached.',
-        evidence: messages.length > 0
-          ? `Latest message: ${formatDate(messages[messages.length - 1]?.createdAt)}`
-          : 'No chat message evidence.',
+        evidence:
+          messages.length > 0
+            ? `Latest message: ${formatDate(messages[messages.length - 1]?.createdAt)}`
+            : 'No chat message evidence.',
         href: '#chat',
       },
       {
@@ -2790,7 +2841,9 @@ function bookingEvidencePacket({
         detail: latestLocation
           ? `Latest partner pin is ${coordinateLabel(latestLocation.lat, latestLocation.lng)}.`
           : 'No partner location pin has been retained.',
-        evidence: latestLocation ? `Recorded ${formatDate(latestLocation.recordedAt)}` : 'No location timestamp.',
+        evidence: latestLocation
+          ? `Recorded ${formatDate(latestLocation.recordedAt)}`
+          : 'No location timestamp.',
         href: '#location',
       },
       {
@@ -2816,7 +2869,9 @@ function bookingEvidencePacket({
         label: 'Alerts',
         title: 'Alert evidence',
         detail: `${notificationTrace.rows.length} notification row(s) and ${notificationTrace.backupBatches.length} marketplace batch(es).`,
-        evidence: failedAlerts ? `${failedAlerts} failed delivery row(s)` : 'No failed delivery row in this packet.',
+        evidence: failedAlerts
+          ? `${failedAlerts} failed delivery row(s)`
+          : 'No failed delivery row in this packet.',
         href: '#alerts',
       },
       {
@@ -2853,6 +2908,127 @@ function bookingEvidencePacket({
       },
     ],
   };
+}
+
+function bookingManualDecisionReadiness({
+  booking,
+  messages,
+  latestLocation,
+  notificationTrace,
+  refundLedgerRows,
+  operatorNoteLines,
+  closeoutReadiness,
+}: {
+  booking: AdminBookingDetail;
+  messages: AdminChatMessage[];
+  latestLocation?: AdminLocationSnapshot | null;
+  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
+  refundLedgerRows: BookingRefundLedgerRow[];
+  operatorNoteLines: string[];
+  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
+}) {
+  const chatEvidence = messages.length > 0;
+  const alertEvidence = notificationTrace.rows.length > 0;
+  const noteEvidence = operatorNoteLines.length > 0;
+  const movementEvidence = Boolean(latestLocation);
+  const evidenceSummary = [
+    chatEvidence ? `${messages.length} chat message(s)` : 'no chat messages',
+    movementEvidence ? `location ${formatDate(latestLocation?.recordedAt)}` : 'no partner pin',
+    alertEvidence ? `${notificationTrace.rows.length} alert row(s)` : 'no alert rows',
+    noteEvidence ? `${operatorNoteLines.length} operator note(s)` : 'no operator notes',
+  ].join(' / ');
+  const decisionEvidenceReady = chatEvidence || movementEvidence || alertEvidence || noteEvidence;
+  const paymentStatus = booking.payment?.status ?? 'NONE';
+  const canReviewRefund =
+    Boolean(booking.payment) && !['REFUNDED', 'RELEASED', 'FAILED', 'CANCELLED'].includes(paymentStatus);
+  const cashDebt = bookingCashDebtNeedsSettlement(booking);
+  const terminal = TERMINAL_BOOKING_STATUSES.has(booking.status);
+  const closureTone = terminal
+    ? booking.status === 'NO_SHOW'
+      ? 'pill-danger'
+      : 'pill-info'
+    : 'pill-neutral';
+
+  return [
+    {
+      lane: 'Customer cancellation or closure',
+      scope: 'After direct matching, customer outcome changes are handled by operations evidence review.',
+      status: terminal
+        ? bookingClosureSummary(booking).status
+        : decisionEvidenceReady
+          ? 'Evidence ready'
+          : 'Needs note',
+      tone: terminal ? closureTone : decisionEvidenceReady ? 'pill-success' : 'pill-warn',
+      evidence: evidenceSummary,
+      operatorUse:
+        'Use retained chat, alerts, location, and operator notes before changing customer-facing booking outcome.',
+      href: '#booking-evidence-packet',
+    },
+    {
+      lane: 'No-show decision',
+      scope: 'No-show is an admin decision based on communication and service movement context.',
+      status:
+        booking.status === 'NO_SHOW'
+          ? 'Marked no-show'
+          : canMarkNoShow(booking.status)
+            ? decisionEvidenceReady
+              ? 'Ready to review'
+              : 'Needs evidence'
+            : 'Locked',
+      tone:
+        booking.status === 'NO_SHOW'
+          ? 'pill-danger'
+          : canMarkNoShow(booking.status)
+            ? decisionEvidenceReady
+              ? 'pill-info'
+              : 'pill-warn'
+            : 'pill-neutral',
+      evidence: evidenceSummary,
+      operatorUse: 'Check chat, alert delivery, partner location, and notes before using the no-show action.',
+      href: '#no-show-handling',
+    },
+    {
+      lane: 'Refund or payment release',
+      scope: 'Payment outcome must match booking closure and customer communication.',
+      status: refundLedgerRows.length
+        ? `${refundLedgerRows.length} refund row(s)`
+        : canReviewRefund
+          ? 'Review payment'
+          : 'No payment action',
+      tone: refundLedgerRows.length ? 'pill-warn' : canReviewRefund ? 'pill-info' : 'pill-neutral',
+      evidence: `${paymentStatus} / ${bookingRefundLedgerEvidence(booking)} / ${evidenceSummary}`,
+      operatorUse:
+        'Use payment status, refund rows, and evidence packet before release, refund, or capture decisions.',
+      href: '#payment-actions',
+    },
+    {
+      lane: 'Cash fee settlement',
+      scope: 'Cash bookings can create partner fee debt; debt blocks final acceptance until settled.',
+      status: cashDebt
+        ? 'Settlement required'
+        : booking.payment?.method === 'CASH'
+          ? 'Cash ledger clear'
+          : 'Not cash',
+      tone: cashDebt ? 'pill-danger' : booking.payment?.method === 'CASH' ? 'pill-success' : 'pill-neutral',
+      evidence: bookingCashDebtNeedsSettlement(booking)
+        ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
+        : `${booking.payment?.method ?? 'NONE'} / ${booking.payment?.status ?? 'NONE'}`,
+      operatorUse:
+        'If debt exists, confirm company fee deposit or admin offset before future final acceptance is unlocked.',
+      href: '#finance',
+    },
+    {
+      lane: 'Completed work closeout',
+      scope: 'Completed bookings need payment, earning, tax, platform fee, and wallet records aligned.',
+      status: closeoutReadiness.status,
+      tone: closeoutReadiness.tone,
+      evidence: closeoutReadiness.openItems.length
+        ? closeoutReadiness.openItems.map((item) => item.label).join(', ')
+        : closeoutReadiness.helper,
+      operatorUse: 'Use this before weekly/monthly/admin-date settlement batches and payout reporting.',
+      href: '#booking-closeout-readiness',
+    },
+  ];
 }
 
 function buildBookingEvidenceBundleRows({
@@ -2894,7 +3070,8 @@ function buildBookingEvidenceBundleRows({
       evidence: `${booking.customerProfile?.user?.fullName ?? 'Customer'} / ${
         booking.customerProfile?.user?.phone ?? 'No phone'
       }`,
-      operatorUse: 'Open the customer record to review bookings, wallet, addresses, and retained chat history.',
+      operatorUse:
+        'Open the customer record to review bookings, wallet, addresses, and retained chat history.',
       href: booking.customerProfile?.id ? `/customers/${booking.customerProfile.id}` : '#customer',
     },
     {
@@ -2924,7 +3101,9 @@ function buildBookingEvidenceBundleRows({
       tone: chatReady ? 'pill-success' : 'pill-warn',
       evidence: chatReady
         ? `${messages.length} retained message(s), latest ${
-            messages[messages.length - 1]?.createdAt ? formatDate(messages[messages.length - 1].createdAt) : 'none'
+            messages[messages.length - 1]?.createdAt
+              ? formatDate(messages[messages.length - 1].createdAt)
+              : 'none'
           }`
         : bookingChatRepairNeedsOps(booking)
           ? 'Matched booking should have a retained chat archive.'
@@ -2935,7 +3114,9 @@ function buildBookingEvidenceBundleRows({
     {
       lane: 'Money',
       recordLabel: booking.payment?.id ? shortId(booking.payment.id) : 'No payment row',
-      status: hasMoneyTrace ? booking.payment?.status ?? booking.earning?.status ?? 'Trace loaded' : 'Missing',
+      status: hasMoneyTrace
+        ? (booking.payment?.status ?? booking.earning?.status ?? 'Trace loaded')
+        : 'Missing',
       tone: hasMoneyTrace ? 'pill-info' : 'pill-warn',
       evidence: `${booking.payment?.method ?? 'NONE'} / customer ${financeTrace.customerPrice} / partner ${
         financeTrace.providerPayout
@@ -2951,7 +3132,8 @@ function buildBookingEvidenceBundleRows({
       evidence: latestLocation
         ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
         : `Customer pin ${bookingDispatchPin(booking).label}`,
-      operatorUse: 'Use location rows only as operational history; routing and live tracking are not required for MVP.',
+      operatorUse:
+        'Use location rows only as operational history; routing and live tracking are not required for MVP.',
       href: '#location',
     },
     {
@@ -2962,7 +3144,8 @@ function buildBookingEvidenceBundleRows({
       evidence: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} partner alert(s), ${
         notificationTrace.backupBatches.length
       } marketplace batch(es)`,
-      operatorUse: 'Check whether customer and partner app notifications were created, delivered, read, or retried.',
+      operatorUse:
+        'Check whether customer and partner app notifications were created, delivered, read, or retried.',
       href: `/notifications?booking=${encodeURIComponent(booking.id)}`,
     },
     {
@@ -2972,7 +3155,7 @@ function buildBookingEvidenceBundleRows({
       tone: operatorNoteLines.length || latestActivity ? 'pill-success' : 'pill-neutral',
       evidence: latestActivity
         ? `${latestActivity.title} / ${formatDate(latestActivity.at)}`
-        : operatorNoteLines[operatorNoteLines.length - 1] ?? 'No operator trail loaded',
+        : (operatorNoteLines[operatorNoteLines.length - 1] ?? 'No operator trail loaded'),
       operatorUse: 'Use notes and audit rows before manual closeout, no-show, refund, or settlement actions.',
       href: '#booking-activity',
     },
@@ -2980,9 +3163,10 @@ function buildBookingEvidenceBundleRows({
 }
 
 function bookingChatRepairNeedsOps(booking: AdminBookingDetail) {
-  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
-    booking.status,
-  ) && !booking.chatRoom;
+  return (
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status) &&
+    !booking.chatRoom
+  );
 }
 
 function bookingHandoffChecklist(
@@ -5842,7 +6026,8 @@ function bookingMvpAuthorityContract({
       scope: 'Supabase infra, NestJS decisions',
       status: 'NestJS authoritative',
       tone: 'pill-success',
-      evidence: 'Supabase stores auth/storage/realtime infrastructure; API/admin policy owns booking permissions.',
+      evidence:
+        'Supabase stores auth/storage/realtime infrastructure; API/admin policy owns booking permissions.',
       operatorUse: 'Use API state and audit rows for booking decisions, not client-only state.',
       href: '#operator-action-availability',
     },
@@ -5874,7 +6059,8 @@ function bookingMvpAuthorityContract({
       status: pinReady ? `${formatDistanceMeters(radiusMeters)} radius` : 'Blocked by missing pin',
       tone: pinReady ? (backupSupply.eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
       evidence: `${backupSupply.eligibleCount} eligible / ${backupSupply.rows.length} partner row(s) sampled.`,
-      operatorUse: 'Only partners within booking-address radius and fresh-location policy should join the shortlist.',
+      operatorUse:
+        'Only partners within booking-address radius and fresh-location policy should join the shortlist.',
       href: '#marketplace-supply',
     },
     {
@@ -6657,7 +6843,9 @@ function readBookingMatchingPolicySnapshot(booking: AdminBookingDetail) {
     backupProviderInvitationLimit: readOptionalNumber(policy?.backupProviderInvitationLimit),
     bookingMaxCustomerCurrentToAddressKm: readOptionalNumber(policy?.bookingMaxCustomerCurrentToAddressKm),
     bookingMaxPreferredProviderDistanceKm: readOptionalNumber(policy?.bookingMaxPreferredProviderDistanceKm),
-    bookingCurrentLocationFreshnessMinutes: readOptionalNumber(policy?.bookingCurrentLocationFreshnessMinutes),
+    bookingCurrentLocationFreshnessMinutes: readOptionalNumber(
+      policy?.bookingCurrentLocationFreshnessMinutes,
+    ),
     preferredAcceptMode: readOptionalString(policy?.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy?.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy?.travelBufferMinutes),
