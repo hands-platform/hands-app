@@ -7124,7 +7124,11 @@ function bookingOperationalPolicySnapshot(
   const acceptMode = byKey.get('matching.preferred_accept_mode');
   const backupOpenMode = byKey.get('matching.backup_open_mode');
   const walletGate = byKey.get('wallet.negative_balance_gate');
+  const actionEvidenceGateMode = byKey.get('decision.action_evidence_gate_mode');
+  const cashSettlementClearancePolicy = byKey.get('cash.settlement_clearance_policy');
+  const firstPickExpiryActionPolicy = byKey.get('matching.first_pick_expiry_action_policy');
   const cancellationPolicy = byKey.get('cancellation.after_match_policy');
+  const noShowEvidenceRequirementPolicy = byKey.get('no_show.evidence_requirement_policy');
   const noShowPolicy = byKey.get('no_show.partner_report_policy');
   const partnerAlertPolicy = byKey.get('notification.partner_alert_channel');
   const expiresAt = booking.expiresAt ? new Date(booking.expiresAt).getTime() : null;
@@ -7182,6 +7186,36 @@ function bookingOperationalPolicySnapshot(
         enforced: false,
       }),
       bookingPolicyDecisionCard({
+        setting: actionEvidenceGateMode,
+        key: 'decision.action_evidence_gate_mode',
+        label: 'Action evidence gate',
+        helper:
+          String(actionEvidenceGateMode?.value) === 'STRICT_EVIDENCE_REQUIRED'
+            ? 'Money and closeout actions should wait for strict retained evidence before operators proceed.'
+            : 'Operators should review retained payment, chat, address, wallet, alert, and audit evidence before manual actions.',
+        enforced: false,
+      }),
+      bookingPolicyDecisionCard({
+        setting: cashSettlementClearancePolicy,
+        key: 'cash.settlement_clearance_policy',
+        label: 'Cash fee clearance',
+        helper:
+          String(cashSettlementClearancePolicy?.value) === 'DEPOSIT_REFERENCE_REQUIRED'
+            ? 'Cash fee debt clearance should include a company deposit reference before final gates reopen.'
+            : 'Cash fee debt can clear through verified company deposit or approved admin offset with evidence.',
+        enforced: false,
+      }),
+      bookingPolicyDecisionCard({
+        setting: firstPickExpiryActionPolicy,
+        key: 'matching.first_pick_expiry_action_policy',
+        label: 'First-pick expiry',
+        helper:
+          String(firstPickExpiryActionPolicy?.value) === 'EXPIRE_ONLY_AFTER_OPERATOR_REVIEW'
+            ? 'Do not expire automatically; operators review first-pick timeout and available partners.'
+            : 'After first-pick timeout, marketplace alternatives can remain visible while operators review the request.',
+        enforced: false,
+      }),
+      bookingPolicyDecisionCard({
         setting: cancellationPolicy,
         key: 'cancellation.after_match_policy',
         label: 'After-match cancellation',
@@ -7189,6 +7223,16 @@ function bookingOperationalPolicySnapshot(
           booking.status === 'CANCELLED'
             ? 'Use this policy to decide release, refund, or fee review for this cancelled booking.'
             : 'Applies if the customer cancels after a partner has accepted or been selected.',
+        enforced: false,
+      }),
+      bookingPolicyDecisionCard({
+        setting: noShowEvidenceRequirementPolicy,
+        key: 'no_show.evidence_requirement_policy',
+        label: 'No-show evidence requirement',
+        helper:
+          String(noShowEvidenceRequirementPolicy?.value) === 'CHAT_AND_OPERATOR_NOTE_REQUIRED'
+            ? 'No-show closeout should include chat evidence and an operator note before money handling.'
+            : 'No-show closeout should use retained factual records such as chat, alert, location, or operator notes.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({
