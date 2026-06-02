@@ -5853,13 +5853,27 @@ Future<CustomerLocationSnapshot> resolveCustomerLocation(WidgetRef ref) async {
 Future<CustomerLocationSnapshot> resolveDiscoveryLocation(WidgetRef ref) async {
   final selected = ref.read(selectedCustomerLocationProvider);
   if (selected != null) {
+    return discoveryLocationFromSelected(selected);
+  }
+  return resolveCustomerLocation(ref);
+}
+
+CustomerLocationSnapshot discoveryLocationFromSelected(
+  SelectedCustomerLocation selected,
+) {
+  if (isVietnamCoordinate(selected.latitude, selected.longitude)) {
     return CustomerLocationSnapshot(
       latitude: selected.latitude,
       longitude: selected.longitude,
       addressText: selected.addressText,
     );
   }
-  return resolveCustomerLocation(ref);
+  return const CustomerLocationSnapshot(
+    latitude: demoCustomerLat,
+    longitude: demoCustomerLng,
+    addressText: demoCustomerAddress,
+    isDemoLocation: true,
+  );
 }
 
 String locationTitle(String addressText, bool isDemoLocation) {

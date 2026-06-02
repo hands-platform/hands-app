@@ -212,7 +212,8 @@ void main() {
         'Admin minimum');
   });
 
-  test('waiting customer action explains marketplace choices and confirmed bookings',
+  test(
+      'waiting customer action explains marketplace choices and confirmed bookings',
       () {
     final marketplaceAction = waitingCustomerAction(
       status: 'OPEN_MATCHING',
@@ -254,31 +255,63 @@ void main() {
         'Service complete. Review when ready.');
   });
 
+  test('customer discovery falls back to Vietnam when selected pin is overseas',
+      () {
+    final vietnam = discoveryLocationFromSelected(
+      const SelectedCustomerLocation(
+        latitude: 10.7769,
+        longitude: 106.7009,
+        addressText: 'District 1, Ho Chi Minh City, Vietnam',
+      ),
+    );
+    expect(vietnam.isDemoLocation, isFalse);
+    expect(vietnam.addressText, contains('Ho Chi Minh City'));
+
+    final overseas = discoveryLocationFromSelected(
+      const SelectedCustomerLocation(
+        latitude: 37.5665,
+        longitude: 126.9780,
+        addressText: 'Seoul, South Korea',
+      ),
+    );
+    expect(overseas.isDemoLocation, isTrue);
+    expect(overseas.latitude, demoCustomerLat);
+    expect(overseas.longitude, demoCustomerLng);
+  });
+
   test('customer direct cancel is only available before partner commitment',
       () {
-    expect(canCustomerDirectlyCancelBooking({
-      'status': 'OPEN_MATCHING',
-      'participants': [],
-    }), isTrue);
+    expect(
+        canCustomerDirectlyCancelBooking({
+          'status': 'OPEN_MATCHING',
+          'participants': [],
+        }),
+        isTrue);
 
-    expect(canCustomerDirectlyCancelBooking({
-      'status': 'OPEN_MATCHING',
-      'participants': [
-        {'providerProfileId': 'partner-1', 'status': 'JOINED'},
-      ],
-    }), isTrue);
+    expect(
+        canCustomerDirectlyCancelBooking({
+          'status': 'OPEN_MATCHING',
+          'participants': [
+            {'providerProfileId': 'partner-1', 'status': 'JOINED'},
+          ],
+        }),
+        isTrue);
 
-    expect(canCustomerDirectlyCancelBooking({
-      'status': 'OPEN_MATCHING',
-      'participants': [
-        {'providerProfileId': 'partner-1', 'status': 'ACCEPTED'},
-      ],
-    }), isFalse);
+    expect(
+        canCustomerDirectlyCancelBooking({
+          'status': 'OPEN_MATCHING',
+          'participants': [
+            {'providerProfileId': 'partner-1', 'status': 'ACCEPTED'},
+          ],
+        }),
+        isFalse);
 
-    expect(canCustomerDirectlyCancelBooking({
-      'status': 'MATCHED',
-      'selectedProvider': {'id': 'partner-1'},
-    }), isFalse);
+    expect(
+        canCustomerDirectlyCancelBooking({
+          'status': 'MATCHED',
+          'selectedProvider': {'id': 'partner-1'},
+        }),
+        isFalse);
     expect(customerCancellationNeedsOpsReview('MATCHED'), isTrue);
     expect(customerCancellationNeedsOpsReview('COMPLETED'), isFalse);
   });
