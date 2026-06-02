@@ -19,9 +19,18 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
   const params = searchParams ? await searchParams : {};
   const dateFilters = readDetailDateFilters(params);
   const filters = readChatArchiveFilters(params);
-  const bookings = await adminGet<AdminBookingDetail[]>('/admin/chat-archive', []);
+  const [bookings, allBookings] = await Promise.all([
+    adminGet<AdminBookingDetail[]>('/admin/chat-archive', []),
+    adminGet<AdminBookingDetail[]>('/admin/bookings', []),
+  ]);
   const rooms = filterChatRooms(bookings.map(buildChatRoomRow), filters, dateFilters);
+  const repairRows = filterChatRepairRows(
+    buildChatRepairRows(allBookings, bookings.map(buildChatRoomRow)),
+    filters,
+    dateFilters,
+  );
   const summary = buildChatArchiveSummary(rooms);
+  const repairSummary = buildChatRepairSummary(repairRows);
   const messageCsvHref = buildCsvDataHref(
     rooms.flatMap((room) =>
       room.messages.map((message) => ({
@@ -96,6 +105,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
               <option value="completed">Completed</option>
               <option value="closed">Cancelled / expired / refunded</option>
               <option value="no-message">Room without messages</option>
+              <option value="missing-room">Matched without room</option>
             </select>
           </label>
           <label>
@@ -158,7 +168,114 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
           value={summary.emptyRooms.toString()}
           helper="Chat room exists but no message"
         />
+        <MetricCard
+          label="Missing rooms"
+          value={repairSummary.missingRooms.toString()}
+          helper="Matched booking needs a chat room"
+        />
         <MetricCard label="Latest message" value={summary.latestMessageAt} helper="Newest loaded message" />
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Chat integrity repair queue</h2>
+            <p className="muted">
+              Matched and completed bookings should have an admin-retained chat archive. Use this queue to
+              find missing rooms or rooms where no message has been stored yet.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=chat-repair">
+            Booking chat repair
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Repair rows</span>
+            <strong>{repairRows.length}</strong>
+            <small>{dateFilters.label}</small>
+          </div>
+          <div>
+            <span>Missing room</span>
+            <strong>{repairSummary.missingRooms}</strong>
+            <small>Matched booking has no room.</small>
+          </div>
+          <div>
+            <span>Empty room</span>
+            <strong>{repairSummary.emptyRooms}</strong>
+            <small>Room exists with no retained message.</small>
+          </div>
+          <div>
+            <span>Completed affected</span>
+            <strong>{repairSummary.completedRows}</strong>
+            <small>Completed work needing archive confirmation.</small>
+          </div>
+        </div>
+        {repairRows.length ? (
+          <div style={{ marginTop: 14, overflowX: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Booking</th>
+                  <th>Issue</th>
+                  <th>Customer</th>
+                  <th>Partner</th>
+                  <th>Service</th>
+                  <th>Operator action</th>
+                  <th>Open</th>
+                </tr>
+              </thead>
+              <tbody>
+                {repairRows.slice(0, 30).map((row) => (
+                  <tr key={`${row.booking.id}-${row.issue}`}>
+                    <td>
+                      <strong>{shortId(row.booking.id)}</strong>
+                      <p className="muted">{formatDate(row.booking.updatedAt ?? row.booking.createdAt)}</p>
+                    </td>
+                    <td>
+                      <span className={`pill ${row.pillClass}`}>{row.issue}</span>
+                      <p className="muted">{row.detail}</p>
+                    </td>
+                    <td>
+                      <strong>{row.customerName}</strong>
+                      <p className="muted">{row.customerPhone}</p>
+                    </td>
+                    <td>
+                      <strong>{row.partnerName}</strong>
+                      <p className="muted">{row.partnerPhone}</p>
+                    </td>
+                    <td>{row.serviceLabel}</td>
+                    <td>{row.operatorAction}</td>
+                    <td>
+                      <div className="actions">
+                        <Link className="text-link" href={`/bookings/${row.booking.id}#chat`}>
+                          Booking
+                        </Link>
+                        {row.customerId ? (
+                          <Link className="text-link" href={`/customers/${row.customerId}#chat-history`}>
+                            Customer
+                          </Link>
+                        ) : null}
+                        {row.partnerId ? (
+                          <Link
+                            className="text-link"
+                            href={`/partners/${row.partnerId}#booking-chat-records`}
+                          >
+                            Partner
+                          </Link>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No chat repair row matches this filter.
+          </p>
+        )}
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -340,6 +457,7 @@ function filterChatRooms(
     if (filters.status === 'completed' && room.booking.status !== 'COMPLETED') return false;
     if (filters.status === 'closed' && !isClosedStatus(room.booking.status)) return false;
     if (filters.status === 'no-message' && room.messages.length > 0) return false;
+    if (filters.status === 'missing-room') return false;
     if (filters.sender && !room.messages.some((message) => senderFilterMatch(message, filters.sender))) {
       return false;
     }
@@ -392,6 +510,103 @@ function buildChatRoomRow(booking: AdminBookingDetail) {
     latestMessageAt,
     searchText,
   };
+}
+
+function buildChatRepairRows(
+  bookings: AdminBookingDetail[],
+  archiveRows: ReturnType<typeof buildChatRoomRow>[],
+) {
+  const archiveByBookingId = new Map(archiveRows.map((row) => [row.booking.id, row]));
+  return bookings
+    .filter((booking) => shouldHaveChatArchive(booking.status))
+    .map((booking) => {
+      const archive = archiveByBookingId.get(booking.id);
+      const messages = archive?.messages ?? [];
+      if (booking.chatRoom && messages.length > 0) return null;
+      const customerName =
+        booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
+      const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
+      const partner = booking.selectedProvider ?? booking.preferredProvider;
+      const partnerName = partnerDisplayText(
+        partner?.displayName ?? partner?.user?.fullName ?? partner?.user?.phone ?? 'No partner',
+      );
+      const partnerPhone = partner?.user?.phone ?? 'No phone';
+      const missingRoom = !booking.chatRoom;
+
+      return {
+        booking,
+        issue: missingRoom ? 'Missing room' : 'No message',
+        detail: missingRoom
+          ? 'Matched booking should create a customer-partner chat room.'
+          : 'Chat room exists, but no retained message is stored yet.',
+        operatorAction: missingRoom
+          ? 'Open booking detail and verify chat creation handoff.'
+          : 'Confirm whether the first service message was sent or needs follow-up.',
+        customerId: booking.customerProfileId,
+        customerName,
+        customerPhone,
+        partnerId: partner?.id,
+        partnerName,
+        partnerPhone,
+        serviceLabel: bookingServiceLabel(booking),
+        pillClass: missingRoom ? 'pill-danger' : 'pill-warn',
+      };
+    })
+    .filter((row): row is NonNullable<typeof row> => Boolean(row))
+    .sort(
+      (left, right) =>
+        dateMs(right.booking.updatedAt ?? right.booking.createdAt) -
+        dateMs(left.booking.updatedAt ?? left.booking.createdAt),
+    );
+}
+
+function filterChatRepairRows(
+  rows: ReturnType<typeof buildChatRepairRows>,
+  filters: ChatArchiveFilters,
+  dateFilters: ReturnType<typeof readDetailDateFilters>,
+) {
+  const query = filters.q.toLowerCase();
+  return rows.filter((row) => {
+    const rowInDate =
+      isWithinDetailDateFilter(row.booking.createdAt, dateFilters) ||
+      isWithinDetailDateFilter(row.booking.updatedAt, dateFilters);
+    if (!rowInDate) return false;
+    if (filters.status === 'active' && !isActiveStatus(row.booking.status)) return false;
+    if (filters.status === 'completed' && row.booking.status !== 'COMPLETED') return false;
+    if (filters.status === 'closed' && !isClosedStatus(row.booking.status)) return false;
+    if (filters.status === 'no-message' && row.issue !== 'No message') return false;
+    if (filters.status === 'missing-room' && row.issue !== 'Missing room') return false;
+    if (filters.sender) return false;
+    if (!query) return true;
+    return [
+      row.booking.id,
+      row.booking.status,
+      row.customerId,
+      row.customerName,
+      row.customerPhone,
+      row.partnerId,
+      row.partnerName,
+      row.partnerPhone,
+      row.serviceLabel,
+      row.issue,
+      row.detail,
+    ]
+      .join(' ')
+      .toLowerCase()
+      .includes(query);
+  });
+}
+
+function buildChatRepairSummary(rows: ReturnType<typeof buildChatRepairRows>) {
+  return {
+    missingRooms: rows.filter((row) => row.issue === 'Missing room').length,
+    emptyRooms: rows.filter((row) => row.issue === 'No message').length,
+    completedRows: rows.filter((row) => row.booking.status === 'COMPLETED').length,
+  };
+}
+
+function shouldHaveChatArchive(status: string) {
+  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(status);
 }
 
 function buildChatArchiveSummary(rooms: ReturnType<typeof buildChatRoomRow>[]) {

@@ -188,6 +188,7 @@ const pages = [
     markers: [
       'Chat Archive',
       'Chat archive index',
+      'Chat integrity repair queue',
       'Message transcript preview',
       'Export messages CSV',
       'Admin retained',
@@ -196,6 +197,14 @@ const pages = [
   {
     path: '/chat-archive?sender=partner&range=30d',
     markers: ['Chat Archive', 'Sender', 'Message transcript preview'],
+  },
+  {
+    path: '/chat-archive?status=missing-room',
+    markers: ['Chat Archive', 'Matched without room', 'Chat integrity repair queue', 'Missing room'],
+  },
+  {
+    path: '/chat-archive?status=no-message',
+    markers: ['Chat Archive', 'Room without messages', 'Chat integrity repair queue', 'Empty room'],
   },
   {
     path: '/customers?sort=last-work',
