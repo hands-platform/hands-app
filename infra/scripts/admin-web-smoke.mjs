@@ -332,7 +332,7 @@ const pages = [
     path: '/payments?range=7d',
     markers: ['Payments', 'Payment operation filters', 'Payment date range', 'Last 7 days'],
   },
-  { path: '/refunds', markers: ['Refunds', 'Refund command board'] },
+  { path: '/refunds', markers: ['Refunds', 'Refund command board', 'Refund action execution map'] },
   {
     path: '/refunds?range=7d',
     markers: ['Refunds', 'Refund operation filters', 'Refund date range', 'Last 7 days'],

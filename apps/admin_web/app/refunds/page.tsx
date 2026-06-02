@@ -210,6 +210,21 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
                   <div className="muted" style={{ marginTop: 8 }}>
                     {refundOpsHint(refund)}
                   </div>
+                  <div className="ops-task-note" style={{ marginTop: 10 }}>
+                    <strong>Refund action execution map</strong>
+                    <div className="setup-stage-list" style={{ marginTop: 8 }}>
+                      {refundActionExecutionMap(refund).map((item) => (
+                        <div className="setup-stage-item" key={`${refund.id}-${item.action}`}>
+                          <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                          <div>
+                            <strong>{item.action}</strong>
+                            <p className="muted">{item.reason}</p>
+                            <small>{item.operatorRule}</small>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -244,6 +259,14 @@ type RefundDecisionChecklistItem = {
   href: string;
   status: string;
   className: string;
+  pillClass: string;
+};
+
+type RefundActionExecutionItem = {
+  action: string;
+  status: string;
+  reason: string;
+  operatorRule: string;
   pillClass: string;
 };
 
@@ -350,6 +373,67 @@ function buildRefundDecisionChecklist(refunds: AdminRefund[]): RefundDecisionChe
       status: `${settled.length} settled`,
       className: settled.length ? 'ops-task-done' : 'ops-task-pending',
       pillClass: settled.length ? 'pill-success' : 'pill-info',
+    },
+  ];
+}
+
+function refundActionExecutionMap(refund: AdminRefund): RefundActionExecutionItem[] {
+  const bookingStatus = refund.booking?.status ?? 'UNKNOWN';
+  const paymentStatus = refund.payment?.status ?? 'UNKNOWN';
+  const paymentMethod = refund.payment?.method ?? 'UNKNOWN';
+  const isOpen = refund.status !== 'COMPLETED';
+  const paymentAligned = refund.status === 'COMPLETED' || paymentStatus === 'REFUNDED';
+  const outcomeNeedsEvidence = ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(bookingStatus);
+  const hasBookingRecord = Boolean(refund.booking);
+
+  return [
+    {
+      action: 'Confirm booking evidence',
+      status: hasBookingRecord ? 'Linked' : 'Missing',
+      reason: hasBookingRecord
+        ? `Booking ${shortId(refund.bookingId)} is linked and currently ${bookingStatus}.`
+        : `Booking ${shortId(refund.bookingId)} is not included in the current refund payload.`,
+      operatorRule:
+        'Open booking detail and keep chat, payment, location, and operator notes attached to the decision.',
+      pillClass: hasBookingRecord ? 'pill-success' : 'pill-danger',
+    },
+    {
+      action: 'Review outcome context',
+      status: outcomeNeedsEvidence ? 'Evidence path' : 'Monitor',
+      reason: outcomeNeedsEvidence
+        ? `Booking outcome is ${bookingStatus}; admin decision evidence should explain the refund path.`
+        : `Booking outcome is ${bookingStatus}; keep the refund aligned with the active booking state.`,
+      operatorRule:
+        'Cancellation, expiry, no-show, and refund outcomes should be handled from saved records, not personal judgement.',
+      pillClass: outcomeNeedsEvidence ? 'pill-warn' : 'pill-neutral',
+    },
+    {
+      action: 'Match payment ledger',
+      status: paymentAligned ? 'Aligned' : 'Update needed',
+      reason: paymentAligned
+        ? `Refund status ${refund.status} and payment status ${paymentStatus} are compatible.`
+        : `Refund status is ${refund.status}, but payment status is ${paymentStatus}.`,
+      operatorRule: 'Do not close the refund case until payment ledger state and refund status match.',
+      pillClass: paymentAligned ? 'pill-success' : 'pill-danger',
+    },
+    {
+      action: 'Customer update',
+      status: isOpen ? 'Message needed' : 'Closed',
+      reason: isOpen
+        ? 'This refund is still open, so the customer-facing update path should be clear.'
+        : 'This refund is closed; confirm the customer can see the outcome in support history.',
+      operatorRule: 'Every open refund should have an operator note or customer communication path.',
+      pillClass: isOpen ? 'pill-warn' : 'pill-success',
+    },
+    {
+      action: 'Finance handoff',
+      status: refund.status === 'COMPLETED' ? 'Ready' : 'Open',
+      reason:
+        refund.status === 'COMPLETED'
+          ? `${paymentMethod} refund can be sampled in finance closeout.`
+          : `${paymentMethod} refund still needs payment and booking evidence before closeout.`,
+      operatorRule: 'Finance closeout should reconcile booking, payment, refund, and audit records together.',
+      pillClass: refund.status === 'COMPLETED' ? 'pill-success' : 'pill-info',
     },
   ];
 }
