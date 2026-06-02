@@ -752,6 +752,8 @@ if (bookingLinkMatch) {
     'Operator action availability',
     'Booking recent operations timeline',
     'Evidence packet for admin decision',
+    'Chat evidence decision board',
+    'Retained chat evidence is the first place operators should look',
     'Booking full evidence bundle',
     'Connected operations records',
     'Chat evidence',
