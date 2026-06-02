@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slice('--root='.length) ?? '.');
@@ -14,6 +14,7 @@ checkNoTipContract();
 checkPayoutBatchContract();
 checkSupabaseDraftContract();
 checkSupabaseBoundary();
+checkLegacyRiskRoutesAreRedirectOnly();
 checkMobileVisibleCopyGuardIsStrict();
 
 console.log(
@@ -294,6 +295,21 @@ function checkSupabaseBoundary() {
   }
 }
 
+function checkLegacyRiskRoutesAreRedirectOnly() {
+  const nextConfig = read('apps/admin_web/next.config.ts');
+  requireMarkers('apps/admin_web/next.config.ts', nextConfig, [
+    "source: '/provider-risk'",
+    "source: '/partner-risk'",
+    "destination: '/partner-controls'",
+  ]);
+
+  for (const dir of ['apps/admin_web/app/provider-risk', 'apps/admin_web/app/partner-risk']) {
+    for (const file of [...listFilesIfExists(dir, '.ts'), ...listFilesIfExists(dir, '.tsx')]) {
+      fail(file, 'Legacy risk route must stay redirect-only. Use /partner-controls or /partners for admin work.');
+    }
+  }
+}
+
 function checkMobileVisibleCopyGuardIsStrict() {
   const source = read('infra/scripts/check-mobile-visible-copy.mjs');
   requireMarkers('infra/scripts/check-mobile-visible-copy.mjs', source, [
@@ -342,4 +358,12 @@ function listFiles(dir, extension) {
     }
     return relativePath.endsWith(extension) ? [relativePath] : [];
   });
+}
+
+function listFilesIfExists(dir, extension) {
+  const absoluteDir = resolve(root, dir);
+  if (!existsSync(absoluteDir)) {
+    return [];
+  }
+  return listFiles(dir, extension);
 }
