@@ -23,6 +23,7 @@ const pages = [
       'Daily operations snapshot',
       'Live operations radar',
       'Evidence drilldown',
+      'Booking evidence command queue',
       'Customer wait lane',
       'First-pick and 10km market',
       'Customer final choice lane',
@@ -131,6 +132,14 @@ const pages = [
   { path: '/bookings?view=location', markers: ['Booking Monitor', 'Location ops'] },
   { path: '/bookings?view=chat', markers: ['Booking Monitor', 'Chat handoff'] },
   { path: '/bookings?view=chat-repair', markers: ['Booking Monitor', 'Chat repair'] },
+  {
+    path: '/bookings?view=all&evidence=money',
+    markers: ['Booking Monitor', 'Evidence filter', 'Payment / wallet check'],
+  },
+  {
+    path: '/bookings?view=all&evidence=chat',
+    markers: ['Booking Monitor', 'Evidence filter', 'Chat archive check'],
+  },
   {
     path: '/bookings?view=closeout',
     markers: ['Booking Monitor', 'Closeout ops', 'earning, tax, platform fee, or wallet ledger'],

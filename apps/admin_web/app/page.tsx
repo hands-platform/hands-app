@@ -177,6 +177,17 @@ type OperationsCommandBoardItem = {
   checks: string[];
 };
 
+type BookingEvidenceCommandQueueItem = {
+  lane: string;
+  status: string;
+  value: string;
+  detail: string;
+  href: string;
+  owner: 'Dispatch' | 'Finance' | 'Support';
+  tone: 'ok' | 'info' | 'warn' | 'danger';
+  checks: string[];
+};
+
 type DashboardPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 type DashboardFilters = {
@@ -266,6 +277,15 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const liveBookingOps = buildBookingOpsInsights(bookings);
   const bookingDeepDive = buildBookingOperationsDeepDive(rangeBookings, rangePayments);
   const liveBookingDeepDive = buildBookingOperationsDeepDive(bookings, payments);
+  const failedNotifications = notifications.filter((notification) =>
+    (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
+  );
+  const bookingEvidenceCommandQueue = buildBookingEvidenceCommandQueue({
+    bookings,
+    bookingDeepDive: liveBookingDeepDive,
+    cashSettlementSummary,
+    failedNotifications,
+  });
   const appPresence = buildAppPresence(users, bookings, appSessions);
   const hourlyDemand = buildHourlyBookingDemand(rangeBookings);
   const regionalDemand = buildRegionalBookingDemand(rangeBookings);
@@ -297,9 +317,6 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const topCommandSignal = commandSignals[0];
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
   const pendingVerification = providers.filter((provider) => provider.verification?.status === 'SUBMITTED');
-  const failedNotifications = notifications.filter((notification) =>
-    (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
-  );
   const activePayoutBatches = payoutBatches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
   const policySummary = buildOperationalPolicySummary(operationalPolicies);
   const matchingControl = buildMatchingControlRoom(bookings, providers, operationalPolicies);
@@ -762,6 +779,44 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </Link>
             </small>
           </div>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking evidence command queue</h2>
+            <p className="muted">
+              Direct routes into the booking monitor evidence filters. Use these when staff need the exact
+              booking list behind address, partner choice, chat archive, payment, wallet, location, alert,
+              or closeout evidence.
+            </p>
+          </div>
+          <Link className="text-link" href={bookingEvidenceCommandQueue[0]?.href ?? '/bookings'}>
+            Open first evidence queue
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {bookingEvidenceCommandQueue.map((item) => (
+            <Link
+              className={`ops-task-card ${todayCommandOrderCardClass(item.tone)}`}
+              href={item.href}
+              key={item.lane}
+            >
+              <small>{item.owner}</small>
+              <span className={`pill ${todayCommandOrderPillClass(item.tone)}`}>{item.status}</span>
+              <h3>{item.lane}</h3>
+              <strong>{item.value}</strong>
+              <p>{item.detail}</p>
+              <div className="participant-list" style={{ marginTop: 10 }}>
+                {item.checks.map((check) => (
+                  <span className="pill pill-neutral" key={check}>
+                    {check}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -3287,6 +3342,187 @@ function buildOperationsCommandBoard(input: {
       checks: ['Supabase infra', 'MapTiler/Geoapify', 'NestJS authority'],
     },
   ];
+}
+
+function buildBookingEvidenceCommandQueue(input: {
+  bookings: AdminBooking[];
+  bookingDeepDive: ReturnType<typeof buildBookingOperationsDeepDive>;
+  cashSettlementSummary: AdminCashSettlementSummary;
+  failedNotifications: AdminNotification[];
+}): BookingEvidenceCommandQueueItem[] {
+  const addressChecks = input.bookings.filter((booking) => !booking.addressSnapshot).length;
+  const partnerChoiceChecks = input.bookings.filter(dashboardBookingPartnerChoiceNeedsEvidence).length;
+  const chatChecks = input.bookingDeepDive.matchedWithoutChat + input.bookingDeepDive.quietActiveChats;
+  const moneyChecks =
+    input.bookingDeepDive.releaseChecks +
+    input.bookingDeepDive.captureChecks +
+    input.bookingDeepDive.manualCloseout +
+    input.cashSettlementSummary.rowCount;
+  const locationChecks = input.bookings.filter(dashboardBookingLocationNeedsEvidence).length;
+  const alertChecks =
+    input.failedNotifications.length + input.bookings.filter(dashboardBookingAlertNeedsEvidence).length;
+  const closeoutChecks = input.bookings.filter(dashboardBookingCloseoutNeedsEvidence).length;
+
+  const items: BookingEvidenceCommandQueueItem[] = [
+    {
+      lane: 'Address evidence',
+      owner: 'Dispatch',
+      status: evidenceStatus(addressChecks),
+      value: `${addressChecks} check`,
+      detail:
+        addressChecks > 0
+          ? 'Booking rows need an address snapshot before partner discovery and distance evidence are reliable.'
+          : 'Every loaded booking has the address snapshot needed for operations review.',
+      href: '/bookings?view=all&evidence=address',
+      tone: evidenceTone(addressChecks, 1, 3),
+      checks: ['BookingAddressSnapshot', 'Customer pin', 'Address text'],
+    },
+    {
+      lane: 'Partner choice evidence',
+      owner: 'Dispatch',
+      status: evidenceStatus(partnerChoiceChecks),
+      value: `${partnerChoiceChecks} wait`,
+      detail:
+        partnerChoiceChecks > 0
+          ? 'Open rows need a preferred partner decision, marketplace participant, or customer final selection trace.'
+          : 'Partner choice rows are clear for the loaded operations set.',
+      href: '/bookings?view=matching&evidence=partner',
+      tone: evidenceTone(partnerChoiceChecks, 2, 6),
+      checks: ['First-pick window', '10km marketplace', 'Customer final choice'],
+    },
+    {
+      lane: 'Chat archive evidence',
+      owner: 'Support',
+      status: evidenceStatus(chatChecks),
+      value: `${chatChecks} room`,
+      detail:
+        chatChecks > 0
+          ? 'Matched work should have chat available during service and retained after completion for admin review.'
+          : 'Chat room and message archive checks are clear in the loaded booking set.',
+      href: '/bookings?view=all&evidence=chat',
+      tone: evidenceTone(chatChecks, 1, 4),
+      checks: ['Room exists', 'Message archive', 'Admin retained'],
+    },
+    {
+      lane: 'Payment and wallet evidence',
+      owner: 'Finance',
+      status: evidenceStatus(moneyChecks),
+      value: `${moneyChecks} item`,
+      detail:
+        moneyChecks > 0
+          ? 'Payment release, capture, cash fee, tax, earning, and wallet ledger rows need finance visibility.'
+          : 'Payment, cash fee, earning, and wallet evidence is clear in the loaded data.',
+      href: '/bookings?view=all&evidence=money',
+      tone: evidenceTone(moneyChecks, 1, 5),
+      checks: ['Payment status', 'Cash fee', 'Wallet ledger'],
+    },
+    {
+      lane: 'Location evidence',
+      owner: 'Dispatch',
+      status: evidenceStatus(locationChecks),
+      value: `${locationChecks} pin`,
+      detail:
+        locationChecks > 0
+          ? 'Active handoff rows need a fresh partner location pin or an operator-visible reason it is missing.'
+          : 'Active handoff rows have usable location evidence or do not require a live pin yet.',
+      href: '/bookings?view=all&evidence=location',
+      tone: evidenceTone(locationChecks, 1, 5),
+      checks: ['Booking address', 'Partner pin', 'Freshness window'],
+    },
+    {
+      lane: 'Alert evidence',
+      owner: 'Support',
+      status: evidenceStatus(alertChecks),
+      value: `${alertChecks} alert`,
+      detail:
+        alertChecks > 0
+          ? 'Notification delivery and marketplace invite traces need review so staff know who actually saw the request.'
+          : 'Notification delivery evidence is clear in the loaded operations window.',
+      href: '/bookings?view=all&evidence=alerts',
+      tone: evidenceTone(alertChecks, 1, 4),
+      checks: ['Delivery state', 'Retry log', 'Invite trace'],
+    },
+    {
+      lane: 'Closeout evidence',
+      owner: 'Finance',
+      status: evidenceStatus(closeoutChecks),
+      value: `${closeoutChecks} close`,
+      detail:
+        closeoutChecks > 0
+          ? 'Completed, cancelled, expired, refunded, and no-show rows need final evidence before finance or support closeout.'
+          : 'Closeout evidence is clear for terminal booking rows.',
+      href: '/bookings?view=all&evidence=closeout',
+      tone: evidenceTone(closeoutChecks, 1, 5),
+      checks: ['Final status', 'Chat proof', 'Finance trace'],
+    },
+  ];
+
+  const toneWeight: Record<BookingEvidenceCommandQueueItem['tone'], number> = {
+    danger: 4,
+    warn: 3,
+    info: 2,
+    ok: 1,
+  };
+  return items.sort((left, right) => {
+    const toneDelta = toneWeight[right.tone] - toneWeight[left.tone];
+    if (toneDelta !== 0) return toneDelta;
+    return Number.parseInt(right.value, 10) - Number.parseInt(left.value, 10);
+  });
+}
+
+function dashboardBookingPartnerChoiceNeedsEvidence(booking: AdminBooking) {
+  if (booking.status !== 'OPEN_MATCHING') {
+    return false;
+  }
+  const acceptedCount = (booking.participants ?? []).filter((participant) =>
+    ['ACCEPTED', 'SELECTED'].includes(participant.status),
+  ).length;
+  return !booking.selectedProvider && (!booking.preferredProvider || acceptedCount > 0);
+}
+
+function dashboardBookingLocationNeedsEvidence(booking: AdminBooking) {
+  if (!['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
+    return false;
+  }
+  const partner = booking.selectedProvider ?? booking.preferredProvider;
+  if (!partner || !parseCoordinatePair(partner.currentLat, partner.currentLng)) {
+    return true;
+  }
+  const age = locationAgeMinutes(partner.currentLocationUpdatedAt);
+  return age === null || age > 30;
+}
+
+function dashboardBookingAlertNeedsEvidence(booking: AdminBooking) {
+  if (booking.status !== 'OPEN_MATCHING') {
+    return false;
+  }
+  const metadata = readPlainRecord(booking.metadata);
+  const traces = Array.isArray(metadata?.backupNotificationTraces) ? metadata.backupNotificationTraces : [];
+  const notifiedCount = traces.reduce((total, value) => {
+    const trace = readPlainRecord(value);
+    return total + (readOptionalNumber(trace?.notifiedCount) ?? 0);
+  }, 0);
+  return (booking.participants?.length ?? 0) === 0 && notifiedCount === 0;
+}
+
+function dashboardBookingCloseoutNeedsEvidence(booking: AdminBooking) {
+  if (completedCloseoutNeedsOps(booking) || isNoShowSignal(booking)) {
+    return true;
+  }
+  if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status)) {
+    return unresolvedReleasePayment(booking) || !booking.chatRoom;
+  }
+  return booking.status === 'REFUNDED' && (booking.refunds?.length ?? 0) === 0;
+}
+
+function evidenceStatus(count: number) {
+  return count > 0 ? 'Review' : 'Clear';
+}
+
+function evidenceTone(count: number, warnAt: number, dangerAt: number): BookingEvidenceCommandQueueItem['tone'] {
+  if (count >= dangerAt) return 'danger';
+  if (count >= warnAt) return 'warn';
+  return 'ok';
 }
 
 function buildLiveOperationsRadar(input: {

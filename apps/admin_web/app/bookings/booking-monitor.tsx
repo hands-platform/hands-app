@@ -8,6 +8,7 @@ import { AdminBooking } from '../../lib/admin-api';
 type Props = {
   bookings: AdminBooking[];
   initialView: BookingView;
+  initialEvidenceFilter?: BookingEvidenceFilter;
 };
 
 type BookingView =
@@ -137,7 +138,15 @@ type BookingListActionChip = {
   href: string;
 };
 
-type BookingEvidenceFilter = 'all' | 'address' | 'partner' | 'chat' | 'money' | 'location' | 'alerts' | 'closeout';
+export type BookingEvidenceFilter =
+  | 'all'
+  | 'address'
+  | 'partner'
+  | 'chat'
+  | 'money'
+  | 'location'
+  | 'alerts'
+  | 'closeout';
 
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
@@ -167,7 +176,7 @@ const bookingEvidenceFilterOptions: Array<{ value: BookingEvidenceFilter; label:
   { value: 'closeout', label: 'Closeout evidence check' },
 ];
 
-export function BookingMonitor({ bookings, initialView }: Props) {
+export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 'all' }: Props) {
   const router = useRouter();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshLabel, setLastRefreshLabel] = useState('pending');
@@ -178,7 +187,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
-  const [evidenceFilter, setEvidenceFilter] = useState<BookingEvidenceFilter>('all');
+  const [evidenceFilter, setEvidenceFilter] = useState<BookingEvidenceFilter>(initialEvidenceFilter);
   const currentTimeMs = nowMs ?? 0;
 
   const orderedBookings = useMemo(

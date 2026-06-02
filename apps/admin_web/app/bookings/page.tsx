@@ -1,5 +1,5 @@
 import { AdminBooking, adminGet } from '../../lib/admin-api';
-import { BookingMonitor } from './booking-monitor';
+import { BookingMonitor, type BookingEvidenceFilter } from './booking-monitor';
 
 type BookingsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -7,8 +7,15 @@ export default async function BookingsPage({ searchParams }: { searchParams?: Bo
   const bookings = await adminGet<AdminBooking[]>('/admin/bookings', []);
   const params = await searchParams;
   const initialView = readBookingView(params?.view, params?.status);
+  const initialEvidenceFilter = readBookingEvidenceFilter(params?.evidence);
 
-  return <BookingMonitor bookings={bookings} initialView={initialView} />;
+  return (
+    <BookingMonitor
+      bookings={bookings}
+      initialView={initialView}
+      initialEvidenceFilter={initialEvidenceFilter}
+    />
+  );
 }
 
 function readBookingView(value: string | string[] | undefined, statusValue?: string | string[] | undefined) {
@@ -44,4 +51,20 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     return 'no-show';
   }
   return 'active';
+}
+
+function readBookingEvidenceFilter(value: string | string[] | undefined): BookingEvidenceFilter {
+  const evidence = Array.isArray(value) ? value[0] : value;
+  if (
+    evidence === 'address' ||
+    evidence === 'partner' ||
+    evidence === 'chat' ||
+    evidence === 'money' ||
+    evidence === 'location' ||
+    evidence === 'alerts' ||
+    evidence === 'closeout'
+  ) {
+    return evidence;
+  }
+  return 'all';
 }
