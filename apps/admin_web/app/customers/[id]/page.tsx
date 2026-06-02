@@ -70,7 +70,20 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const bookingStats = buildBookingStats(bookings);
   const addresses = buildAddressRows(customer);
   const latestBooking = bookings[0];
+  const activeBooking = bookings.find((booking) => ACTIVE_STATUSES.includes(booking.status));
   const lastCompletedBooking = bookings.find((booking) => booking.status === 'COMPLETED');
+  const latestChatBooking = bookings.find((booking) => booking.chatRoom);
+  const latestPaymentBooking = bookings.find((booking) => booking.payment);
+  const latestRefundBooking = bookings.find(
+    (booking) => (booking.payment?.refunds?.length ?? 0) > 0 || (booking.refunds?.length ?? 0) > 0,
+  );
+  const latestAddressSnapshotBooking = bookings.find((booking) => booking.addressSnapshot);
+  const latestOpsBooking = bookings.find(
+    (booking) => bookingOpsTaskCount(booking) > 0 || bookingAuditLogCount(booking) > 0,
+  );
+  const latestPartnerBooking = bookings.find(
+    (booking) => booking.selectedProviderId || booking.preferredProviderId,
+  );
   const latestSession = customer.user?.appSessions?.[0];
   const pushDevices = customer.user?.pushDevices ?? [];
   const notifications = customer.user?.notifications ?? [];
@@ -135,6 +148,15 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   });
   const connectedCustomerRecordLinks = [
     {
+      label: 'Active booking',
+      value: activeBooking ? shortId(activeBooking.id) : 'None',
+      detail: activeBooking
+        ? `${activeBooking.status} / ${bookingServiceLabel(activeBooking)}`
+        : 'No live customer booking is currently loaded.',
+      href: activeBooking ? `/bookings/${activeBooking.id}` : '#booking-history',
+      tone: activeBooking ? 'pill-warn' : 'pill-neutral',
+    },
+    {
       label: 'Latest booking',
       value: latestBooking ? shortId(latestBooking.id) : 'None',
       detail: latestBooking
@@ -153,24 +175,61 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       tone: lastCompletedBooking ? 'pill-success' : 'pill-neutral',
     },
     {
+      label: 'Latest partner link',
+      value: latestPartnerBooking
+        ? shortId(latestPartnerBooking.selectedProviderId ?? latestPartnerBooking.preferredProviderId ?? '')
+        : 'None',
+      detail: latestPartnerBooking
+        ? `${bookingPartnerDisplayName(latestPartnerBooking)} / booking ${shortId(latestPartnerBooking.id)}`
+        : 'No preferred or final partner is attached to the loaded booking records.',
+      href:
+        latestPartnerBooking?.selectedProviderId || latestPartnerBooking?.preferredProviderId
+          ? `/partners/${latestPartnerBooking.selectedProviderId ?? latestPartnerBooking.preferredProviderId}`
+          : '#booking-history',
+      tone: latestPartnerBooking ? 'pill-info' : 'pill-neutral',
+    },
+    {
       label: 'Chat archive',
       value: `${chatMessageCount} message(s)`,
-      detail: `${chatRooms.length} retained customer-partner room(s).`,
-      href: `/chat-archive?q=${encodeURIComponent(customer.id)}`,
+      detail: latestChatBooking
+        ? `Latest room ${shortId(latestChatBooking.chatRoom?.id)} / ${chatRooms.length} retained room(s).`
+        : 'No customer-partner chat archive is attached yet.',
+      href: latestChatBooking
+        ? `/chat-archive?q=${encodeURIComponent(latestChatBooking.id)}`
+        : `/chat-archive?q=${encodeURIComponent(customer.id)}`,
       tone: chatRooms.length ? 'pill-success' : 'pill-neutral',
+    },
+    {
+      label: 'Address snapshot',
+      value: latestAddressSnapshotBooking ? shortId(latestAddressSnapshotBooking.id) : 'None',
+      detail: latestAddressSnapshotBooking
+        ? bookingAddressEvidenceLabel(latestAddressSnapshotBooking)
+        : 'No immutable booking address snapshot is loaded yet.',
+      href: latestAddressSnapshotBooking
+        ? `/bookings/${latestAddressSnapshotBooking.id}#address-evidence`
+        : '#addresses',
+      tone: latestAddressSnapshotBooking ? 'pill-success' : 'pill-warn',
     },
     {
       label: 'Payment records',
       value: formatMoney(wallet.capturedSpend),
-      detail: `${customerPaymentCount} payment row(s), ${wallet.refundCount} refund row(s).`,
-      href: `/payments?customer=${encodeURIComponent(customer.id)}`,
+      detail: latestPaymentBooking
+        ? `${customerPaymentCount} payment row(s), latest ${latestPaymentBooking.payment?.status ?? 'UNKNOWN'} on ${shortId(
+            latestPaymentBooking.id,
+          )}.`
+        : `${customerPaymentCount} payment row(s), ${wallet.refundCount} refund row(s).`,
+      href: latestPaymentBooking
+        ? `/bookings/${latestPaymentBooking.id}#payment-evidence`
+        : `/payments?customer=${encodeURIComponent(customer.id)}`,
       tone: customerPaymentCount ? 'pill-info' : 'pill-neutral',
     },
     {
       label: 'Refund records',
       value: formatMoney(wallet.refundAmount),
-      detail: wallet.refundCount ? 'Open refund ledger rows exist.' : 'No refund row loaded.',
-      href: wallet.refundCount ? '/refunds?review=open' : '#wallet',
+      detail: latestRefundBooking
+        ? `Latest refund evidence is on booking ${shortId(latestRefundBooking.id)}.`
+        : 'No refund row loaded.',
+      href: latestRefundBooking ? `/bookings/${latestRefundBooking.id}#refund-evidence` : '#wallet',
       tone: wallet.refundCount ? 'pill-warn' : 'pill-neutral',
     },
     {
@@ -188,6 +247,17 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         : 'No app session loaded.',
       href: customer.user?.id ? `/app-sessions?user=${encodeURIComponent(customer.user.id)}` : '#customer-info',
       tone: latestSession ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Booking ops records',
+      value: latestOpsBooking ? shortId(latestOpsBooking.id) : 'None',
+      detail: latestOpsBooking
+        ? `${bookingOpsTaskCount(latestOpsBooking)} task(s), ${bookingAuditLogCount(
+            latestOpsBooking,
+          )} audit row(s).`
+        : 'No booking-level operator task is attached yet.',
+      href: latestOpsBooking ? `/bookings/${latestOpsBooking.id}#ops-evidence` : '#customer-activity',
+      tone: latestOpsBooking ? 'pill-info' : 'pill-neutral',
     },
     {
       label: 'Operator notes',
@@ -2716,6 +2786,16 @@ function buildCustomerBookingJourneyRows(bookings: AdminBookingDetail[]): Custom
       ],
     };
   });
+}
+
+function bookingOpsTaskCount(booking: unknown) {
+  const record = booking && typeof booking === 'object' ? (booking as { opsTasks?: unknown }) : {};
+  return Array.isArray(record.opsTasks) ? record.opsTasks.length : 0;
+}
+
+function bookingAuditLogCount(booking: unknown) {
+  const record = booking && typeof booking === 'object' ? (booking as { auditLogs?: unknown }) : {};
+  return Array.isArray(record.auditLogs) ? record.auditLogs.length : 0;
 }
 
 function countActivityTypes(records: Array<{ type: string }>) {

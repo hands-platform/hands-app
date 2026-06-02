@@ -542,7 +542,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
           {evidencePacket.records.map((record) => (
-            <div className="setup-stage-item" key={record.id}>
+            <div className="setup-stage-item" id={record.id} key={record.id}>
               <span>{record.label}</span>
               <div>
                 <strong>{record.title}</strong>
@@ -2707,6 +2707,18 @@ function bookingEvidencePacket({
     ],
     records: [
       {
+        id: 'address-evidence',
+        label: 'Address',
+        title: 'Address evidence',
+        detail: booking.addressSnapshot
+          ? `Locked address snapshot: ${bookingAddressSnapshotLabel(booking)}.`
+          : 'No immutable address snapshot is attached yet.',
+        evidence: booking.addressSnapshot
+          ? `Pin ${coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)}`
+          : 'Legacy or missing booking address needs operator review.',
+        href: '#address-radius-contract',
+      },
+      {
         id: 'chat-evidence',
         label: 'Chat',
         title: 'Chat evidence',
@@ -2737,6 +2749,16 @@ function bookingEvidencePacket({
         href: '#payment',
       },
       {
+        id: 'refund-evidence',
+        label: 'Refund',
+        title: 'Refund evidence',
+        detail: refundLedgerRows.length
+          ? `${refundLedgerRows.length} refund row(s) are attached to this booking.`
+          : 'No refund row is attached to this booking.',
+        evidence: bookingRefundLedgerEvidence(booking),
+        href: '#payment',
+      },
+      {
         id: 'alert-evidence',
         label: 'Alerts',
         title: 'Alert evidence',
@@ -2755,6 +2777,16 @@ function bookingEvidencePacket({
           operatorNoteLines[operatorNoteLines.length - 1] ??
           'Use operator notes before manual cancellation, no-show, or refund decisions.',
         href: '#operator-notes',
+      },
+      {
+        id: 'ops-evidence',
+        label: 'Ops',
+        title: 'Operations evidence',
+        detail: `${booking.opsTasks?.length ?? 0} task row(s), ${booking.auditLogs?.length ?? 0} audit row(s).`,
+        evidence:
+          operatorNoteLines[operatorNoteLines.length - 1] ??
+          'Use structured ops status and audit rows before manual outcome changes.',
+        href: '#structured-ops-status',
       },
       {
         id: 'audit-evidence',
