@@ -108,7 +108,17 @@ const requiredCoverage = [
       'Duplicate active default tax rule is rejected',
       'Overlapping amount-band tax rule is rejected',
       'Completed earning did not apply withholding policy',
+      'completedCloseout.earning?.taxLogs?.length',
       'Draft payout batch should include withholding logs',
+    ],
+  },
+  {
+    area: 'earning closeout persistence',
+    markers: [
+      'completedCloseout.earning?.platformFeeLogs?.length',
+      'completedCloseout.earning?.walletLedgerEntries?.length',
+      'Completed earning service payout line does not match the selected service option',
+      'Completed earning service payout snapshot does not match the admin pricing rule',
     ],
   },
   {
@@ -121,6 +131,8 @@ const requiredCoverage = [
       'Positive partner earnings must be paid through payout batches',
       'Draft payout batch should not mark earnings paid',
       'Payout paid status requires transfer reference',
+      'Payout paid wallet ledger was not recorded',
+      'earning.payoutBatchId === payoutBatch.id',
     ],
   },
   {

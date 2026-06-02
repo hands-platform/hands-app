@@ -1,6 +1,6 @@
 # HANDS MVP Master Progress Roadmap
 
-Last checked: 2026-06-02
+Last checked: 2026-06-03
 
 This document is the single working map for HANDS MVP progress. It exists to keep backend, admin, mobile apps, external services, and product decisions from becoming fragmented.
 
@@ -44,6 +44,7 @@ Checked commands:
 - `npm.cmd run setup:doctor`: PASS
 - `npm.cmd run external:copy-check`: PASS. This prevents the deferred Supabase Phone Auth/SMS path from drifting back to a deprecated SMS-provider path and keeps Vonage recorded as the selected next E2E SMS provider.
 - `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, matching policy marketplace windows, 10km radius/join guards, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
+- API policy coverage now explicitly guards completed earning closeout persistence markers for tax logs, platform fee logs, wallet ledger entries, selected service payout lines, pricing-rule snapshots, payout batch linking, and paid-payout wallet ledger entries.
 - `npm.cmd run api:domain-smoke`: PASS. This builds the API and executes pure earnings policy checks for non-cash wallet credit, cash wallet fee/tax debt, service duration payout matrix aggregation, VAT, other cost, and net HANDS fee evidence.
 - API policy coverage now explicitly guards admin price-step enforcement, service base-price step enforcement, payout-above-customer-price rejection, and partner price minimum/step rejection markers.
 - API policy coverage now also guards partner device/session and account-control invariants: device block/unblock round trip, account block rejection, account unblock recovery, and shared-device session-check behavior without turning that record into an automatic app block.
@@ -334,9 +335,9 @@ The next safest implementation order is:
 1. Make booking detail the strongest cross-linking source of truth.
    - It should show customer, selected/preferred partner, service duration/price snapshot, matching participants, chat archive, location, payment, wallet, tax, refund, cash settlement, and admin notes in one place.
 2. Keep operations policy visible in admin and guarded by smoke/API tests whenever matching rules change.
-3. Extend backend tests around payout/tax persistence and settlement state transitions.
-   - Pure earnings policy smoke now covers service payout matrix math, VAT/other cost evidence, non-cash wallet credit, and cash wallet debt.
-   - Next backend test gap: database-level persistence for provider earnings, tax logs, platform fee logs, wallet ledger entries, payout batch linking, and cash debt settlement.
+3. Keep backend settlement persistence guarded while changing service pricing, tax, wallet, or payout code.
+   - Pure earnings policy smoke covers service payout matrix math, VAT/other cost evidence, non-cash wallet credit, and cash wallet debt.
+   - API smoke and policy coverage now guard database-level persistence for provider earnings, tax logs, platform fee logs, wallet ledger entries, payout batch linking, paid-payout ledger entries, and cash debt settlement.
 4. Return to mobile E2E screens only after the booking detail and policy/finance records are easy to inspect from admin.
 5. Apply final design/localization after these operational flows stop shifting.
 
