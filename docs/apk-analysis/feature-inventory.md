@@ -24,7 +24,7 @@
 - Staff profile form and introduction
 - Identity verification with ID/passport/self image
 - Verification pending/approved/denied states
-- Staff home/dashboard with quality/rank/earnings signals
+- Staff home/dashboard with quality/rank/earnings indicators
 - Availability, schedule/work time, services and pricing
 - Staff order list and order detail
 - Accept/reject/confirm/check-in/complete-style actions
