@@ -24,6 +24,7 @@ type BookingView =
   | 'no-supply'
   | 'blocked-create'
   | 'address'
+  | 'manual-decision'
   | 'payment'
   | 'cash-debt'
   | 'closeout'
@@ -1318,6 +1319,14 @@ const bookingViewOptions: Array<{
       'Use this before dispatch. A confirmed address snapshot protects customer, partner, and admin records.',
   },
   {
+    view: 'manual-decision',
+    label: 'Manual decision',
+    description:
+      'cancelled, expired, no-show, cash-debt, or completed closeout bookings that need admin evidence review.',
+    operatorHint:
+      'Use this before changing outcomes, refunds, cash fee settlement, or closeout records. Decide from factual evidence only.',
+  },
+  {
     view: 'payment',
     label: 'Payment ops',
     description: 'bookings whose payment state can block closeout, refund, capture, or settlement.',
@@ -2198,6 +2207,9 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
   if (view === 'address') {
     return bookingAddressNeedsOps(booking);
   }
+  if (view === 'manual-decision') {
+    return bookingManualDecisionNeedsOps(booking);
+  }
   if (view === 'payment') {
     return bookingPaymentNeedsOps(booking);
   }
@@ -2808,6 +2820,9 @@ function emptyBookingMessage(view: BookingView) {
   if (view === 'address') {
     return 'No booking is missing an immutable address snapshot.';
   }
+  if (view === 'manual-decision') {
+    return 'No manual-decision bookings need review. Cancellation, no-show, refund/release, cash debt, and completed closeout queues are clear.';
+  }
   if (view === 'payment') {
     return 'No payment-check bookings match this queue. Capture, release, refund, cash, and partner refs are clear.';
   }
@@ -3010,6 +3025,14 @@ function bookingPaymentNeedsOps(booking: AdminBooking) {
     return true;
   }
   return false;
+}
+
+function bookingManualDecisionNeedsOps(booking: AdminBooking) {
+  return (
+    ['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status) ||
+    bookingCashDebtNeedsOps(booking) ||
+    bookingCompletedCloseoutNeedsOps(booking)
+  );
 }
 
 function bookingCompletedCloseoutNeedsOps(booking: AdminBooking) {

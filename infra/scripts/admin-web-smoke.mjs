@@ -131,6 +131,7 @@ const pages = [
     markers: ['Booking Monitor', 'Create gate filter', 'Customer GPS proof'],
   },
   { path: '/bookings?view=address', markers: ['Booking Monitor', 'Address check'] },
+  { path: '/bookings?view=manual-decision', markers: ['Booking Monitor', 'Manual decision'] },
   { path: '/bookings?view=payment', markers: ['Booking Monitor', 'Payment ops'] },
   { path: '/bookings?view=cash-debt', markers: ['Booking Monitor', 'Cash fee debt'] },
   { path: '/bookings?view=location', markers: ['Booking Monitor', 'Location ops'] },

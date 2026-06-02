@@ -39,6 +39,7 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     view === 'no-supply' ||
     view === 'blocked-create' ||
     view === 'address' ||
+    view === 'manual-decision' ||
     view === 'payment' ||
     view === 'cash-debt' ||
     view === 'closeout' ||
