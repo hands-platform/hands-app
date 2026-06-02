@@ -16,10 +16,11 @@ The MVP creates a partner earning record when the selected partner completes a b
 - `grossAmount`: captured payment amount, falling back to booking service totals.
 - `platformFee`: calculated from a service payout rule first, then from the active platform fee policy if no matching rule exists.
 - `withholdingAmount`: calculated from the active versioned tax policy.
-- `tipAmount`: legacy database field retained for compatibility, but HANDS MVP does not collect or apply tips.
 - `netAmount` for MoMo/VNPay: `grossAmount - platformFee - withholdingAmount`.
 - `netAmount` for cash: `-(platformFee + withholdingAmount)` because the partner already received the customer cash directly.
 - `availableAt`: 24 hours after completion for MVP payout review.
+
+HANDS MVP does not collect, store, calculate, or expose customer tips or gratuity. Historical starter migrations may mention removed columns, but active schema, API code, admin UI, mobile UI, and smoke checks must keep the flow out of the product.
 
 Cash bookings therefore create a company receivable instead of a partner payout. The partner wallet can go negative when cash-service platform fees or tax withholding have not been settled.
 

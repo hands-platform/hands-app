@@ -143,7 +143,7 @@ Admin dashboard:
 - Partner list and detail show feedback as factual review record counts instead of average feedback values, so partners are not ranked or scored in operator views.
 - Customer and partner pages are intentionally factual: they show IDs, contact, joined/recent access dates, completed work, booking/payment/chat/activity records, and operator notes without customer or partner ranking.
 - Partner queue wording is checklist/order based, not rating/ranking based. Operator ordering is for fixing factual blockers only.
-- Admin finance/review wording avoids presenting a gratuity program. Existing legacy extra-payment fields are shown as neutral customer extra/payment evidence until the backend model is migrated.
+- Admin finance/review wording avoids presenting a gratuity program. Active schema, API code, admin UI, and mobile UI keep customer tips/gratuity out of the MVP; immutable starter migrations are treated only as historical records.
 - Services page with service groups, duration options, minimum price, price step, payout policy, fee/tax visibility.
 - Tax policy page with versioned tax rules.
 - Operations policy page for matching and wallet gates.

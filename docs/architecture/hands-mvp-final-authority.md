@@ -55,6 +55,6 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 
 ## Current Migration Notes
 
-- Legacy database fields such as `scheduledStartAt` and `tipAmount` may remain until schema migrations are safe.
+- Starter migrations can remain as immutable history, but active Prisma schema, API code, Supabase draft schema, admin UI, mobile UI, and smoke checks must follow the final MVP rules.
 - Active MVP behavior must not expose scheduled booking or tip flows.
 - Smoke tests should protect final MVP policy, not old assumptions.
