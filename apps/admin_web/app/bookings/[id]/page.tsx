@@ -628,7 +628,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
               and completed closeout. It keeps the decision factual and evidence-based.
             </p>
           </div>
-          <span className="pill pill-info">{manualDecisionReadiness.length} decision lane(s)</span>
+          <div className="actions">
+            <Link className="text-link" href="/bookings?view=manual-decision">
+              Open manual queue
+            </Link>
+            <span className="pill pill-info">{manualDecisionReadiness.length} decision lane(s)</span>
+          </div>
         </div>
         <table className="table" style={{ marginTop: 14 }}>
           <thead>
@@ -786,6 +791,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               <th>Action</th>
               <th>Availability</th>
               <th>Evidence</th>
+              <th>Operator rule</th>
               <th>Open</th>
             </tr>
           </thead>
@@ -797,6 +803,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                   <span className={`pill ${row.tone}`}>{row.status}</span>
                 </td>
                 <td>{row.evidence}</td>
+                <td>{row.operatorRule}</td>
                 <td>
                   <ActionLink href={row.href} label={row.hrefLabel} />
                 </td>
@@ -2521,8 +2528,10 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       evidence: booking.payment?.providerRef
         ? `${paymentStatus} / provider ref ${booking.payment.providerRef}`
         : 'No payment provider reference to sync.',
-      href: '#payment-actions',
-      hrefLabel: 'Open payment actions',
+      operatorRule:
+        'Use for provider-gateway reconciliation only. Do not change customer outcome from sync alone.',
+      href: '#booking-ops',
+      hrefLabel: 'Open action forms',
     },
     {
       action: 'Capture payment',
@@ -2533,8 +2542,10 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
         paymentStatus === 'AUTHORIZED'
           ? `${booking.status} / ${money(booking.payment?.amount, booking.payment?.currency)} authorized`
           : `Payment status is ${paymentStatus}.`,
-      href: '#payment-actions',
-      hrefLabel: 'Open payment actions',
+      operatorRule:
+        'Capture only after service completion is confirmed by retained booking, chat, and closeout evidence.',
+      href: '#booking-ops',
+      hrefLabel: 'Open action forms',
     },
     {
       action: 'Release or refund',
@@ -2544,8 +2555,10 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       evidence: refundRows.length
         ? `${refundRows.length} refund row(s) already recorded.`
         : `${booking.status} / payment ${paymentStatus}.`,
-      href: '#payment-actions',
-      hrefLabel: 'Open payment actions',
+      operatorRule:
+        'Release or refund only after cancellation, expiry, or no-show evidence has been reviewed.',
+      href: '#booking-ops',
+      hrefLabel: 'Open action forms',
     },
     {
       action: 'Settle cash fee debt',
@@ -2557,8 +2570,10 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
         : booking.payment?.method === 'CASH'
           ? 'Cash booking has no active negative wallet block.'
           : `${booking.payment?.method ?? 'No method'} booking.`,
-      href: '#payment-actions',
-      hrefLabel: 'Open payment actions',
+      operatorRule:
+        'Settle only when company fee deposit or admin offset evidence is available for this cash booking.',
+      href: '#booking-ops',
+      hrefLabel: 'Open action forms',
     },
     {
       action: 'Reconcile completed booking',
@@ -2566,6 +2581,8 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       status: closeoutAvailable ? 'Available' : 'Locked',
       tone: closeoutAvailable ? 'pill-warn' : 'pill-neutral',
       evidence: completedCloseoutLabel(booking),
+      operatorRule:
+        'Run after payment, earning, tax, platform fee, wallet, and chat archive records are aligned.',
       href: '#completed-closeout',
       hrefLabel: 'Open closeout',
     },
@@ -2577,6 +2594,8 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       evidence: expireAvailable
         ? `Open matching can be expired. Timer ${formatDate(booking.expiresAt)}.`
         : `Current status is ${booking.status}.`,
+      operatorRule:
+        'Expire only when the customer should stop waiting and the payment hold can be released or reviewed.',
       href: '#matching-expiry',
       hrefLabel: 'Open expiry',
     },
@@ -2584,10 +2603,12 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       action: 'Mark no-show',
       available: noShowAvailable,
       status: noShowAvailable ? 'Available' : 'Locked',
-      tone: noShowAvailable ? 'pill-neutral' : 'pill-neutral',
+      tone: noShowAvailable ? 'pill-warn' : 'pill-neutral',
       evidence: noShowAvailable
         ? 'Use after communication and service movement are reviewed.'
         : `Current status is ${booking.status}.`,
+      operatorRule:
+        'Mark no-show only from factual chat, alert, location, and operator-note evidence. Do not rank the customer or partner.',
       href: '#no-show-handling',
       hrefLabel: 'Open no-show',
     },
@@ -2597,6 +2618,8 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       status: 'Available',
       tone: 'pill-info',
       evidence: `${bookingOperatorNoteLines(booking).length} note line(s) currently retained.`,
+      operatorRule:
+        'Use notes to record what happened, who was contacted, and what evidence supports the next decision.',
       href: '#operator-notes',
       hrefLabel: 'Open notes',
     },
