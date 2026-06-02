@@ -102,6 +102,7 @@ const pages = [
       'Dispatch partner repair shortcuts',
       'Customer protection closeout board',
       'Booking operation filters',
+      'Evidence filter',
       'Booking / stage',
       'Address / customer',
       'Payment / wallet',

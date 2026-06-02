@@ -137,6 +137,8 @@ type BookingListActionChip = {
   href: string;
 };
 
+type BookingEvidenceFilter = 'all' | 'address' | 'partner' | 'chat' | 'money' | 'location' | 'alerts' | 'closeout';
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
@@ -154,6 +156,16 @@ const clockFormatter = new Intl.DateTimeFormat('en-GB', {
   second: '2-digit',
   timeZone: displayTimeZone,
 });
+const bookingEvidenceFilterOptions: Array<{ value: BookingEvidenceFilter; label: string }> = [
+  { value: 'all', label: 'All evidence' },
+  { value: 'address', label: 'Address snapshot check' },
+  { value: 'partner', label: 'Partner selection check' },
+  { value: 'chat', label: 'Chat archive check' },
+  { value: 'money', label: 'Payment / wallet check' },
+  { value: 'location', label: 'Location check' },
+  { value: 'alerts', label: 'Alert delivery check' },
+  { value: 'closeout', label: 'Closeout evidence check' },
+];
 
 export function BookingMonitor({ bookings, initialView }: Props) {
   const router = useRouter();
@@ -166,6 +178,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
+  const [evidenceFilter, setEvidenceFilter] = useState<BookingEvidenceFilter>('all');
   const currentTimeMs = nowMs ?? 0;
 
   const orderedBookings = useMemo(
@@ -272,9 +285,10 @@ export function BookingMonitor({ bookings, initialView }: Props) {
       (booking) =>
         bookingMatchesSearch(booking, searchQuery) &&
         bookingMatchesStatusFilter(booking, statusFilter) &&
-        bookingMatchesPaymentFilter(booking, paymentFilter),
+        bookingMatchesPaymentFilter(booking, paymentFilter) &&
+        bookingMatchesEvidenceFilter(booking, evidenceFilter, currentTimeMs),
     );
-  }, [baseVisibleBookings, paymentFilter, searchQuery, statusFilter]);
+  }, [baseVisibleBookings, currentTimeMs, evidenceFilter, paymentFilter, searchQuery, statusFilter]);
 
   const statusFilterOptions = useMemo(
     () => uniqueSortedOptions(orderedBookings.map((booking) => booking.status)),
@@ -743,6 +757,19 @@ export function BookingMonitor({ bookings, initialView }: Props) {
               ))}
             </select>
           </label>
+          <label>
+            Evidence filter
+            <select
+              value={evidenceFilter}
+              onChange={(event) => setEvidenceFilter(event.target.value as BookingEvidenceFilter)}
+            >
+              {bookingEvidenceFilterOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <div className="actions" style={{ alignSelf: 'end' }}>
             <button
               type="button"
@@ -750,6 +777,7 @@ export function BookingMonitor({ bookings, initialView }: Props) {
                 setSearchQuery('');
                 setStatusFilter('all');
                 setPaymentFilter('all');
+                setEvidenceFilter('all');
               }}
             >
               Clear list filters
@@ -2008,6 +2036,60 @@ function bookingMatchesStatusFilter(booking: AdminBooking, statusFilter: string)
 
 function bookingMatchesPaymentFilter(booking: AdminBooking, paymentFilter: string) {
   return paymentFilter === 'all' || (booking.payment?.method ?? 'NO_PAYMENT') === paymentFilter;
+}
+
+function bookingMatchesEvidenceFilter(
+  booking: AdminBooking,
+  evidenceFilter: BookingEvidenceFilter,
+  nowMs: number,
+) {
+  if (evidenceFilter === 'all') {
+    return true;
+  }
+  if (evidenceFilter === 'address') {
+    return bookingAddressNeedsOps(booking);
+  }
+  if (evidenceFilter === 'partner') {
+    return (
+      booking.status === 'OPEN_MATCHING' ||
+      (activeStatuses.has(booking.status) && !booking.selectedProvider)
+    );
+  }
+  if (evidenceFilter === 'chat') {
+    return bookingChatRepairNeedsOps(booking) || Boolean(booking.chatRoom);
+  }
+  if (evidenceFilter === 'money') {
+    return (
+      bookingPaymentNeedsOps(booking) ||
+      bookingCashDebtNeedsOps(booking) ||
+      bookingCompletedCloseoutNeedsOps(booking)
+    );
+  }
+  if (evidenceFilter === 'location') {
+    return bookingLocationNeedsOps(booking, nowMs) || hasProviderLocation(booking);
+  }
+  if (evidenceFilter === 'alerts') {
+    return bookingAlertEvidenceNeedsOps(booking, nowMs);
+  }
+  if (evidenceFilter === 'closeout') {
+    return (
+      terminalBookingStatuses.has(booking.status) ||
+      bookingCompletedCloseoutNeedsOps(booking) ||
+      booking.status === 'NO_SHOW'
+    );
+  }
+  return true;
+}
+
+function bookingAlertEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
+  const summary = bookingBackupAlertTraceSummary(booking, nowMs);
+  if (summary.batchCount > 0) {
+    return true;
+  }
+  return (
+    booking.status === 'OPEN_MATCHING' &&
+    ((booking.participants?.length ?? 0) === 0 || bookingListStage(booking, nowMs).key === 'marketplace')
+  );
 }
 
 function bookingSearchHaystack(booking: AdminBooking) {
