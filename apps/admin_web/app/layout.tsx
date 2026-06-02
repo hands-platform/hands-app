@@ -60,7 +60,7 @@ const navSections = [
     links: [
       ['/chat-archive', 'Chat Archive'],
       ['/notifications', 'Notifications'],
-      ['/reviews', 'Reviews'],
+      ['/reviews', 'Feedback'],
       ['/coupons', 'Coupons'],
       ['/audit-log', 'Audit Log'],
     ],

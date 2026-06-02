@@ -1987,7 +1987,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           )}
           <InfoRow
             label="Service feedback"
-            value={booking.review ? `Feedback level ${booking.review.rating}/5` : 'Not submitted'}
+            value={booking.review ? 'Submitted' : 'Not submitted'}
           />
         </div>
 
@@ -3489,9 +3489,9 @@ function bookingOperatingTimeline({
       id: `review-${booking.review.id}`,
       type: 'REVIEW',
       title: 'Customer service feedback submitted',
-      detail: `Feedback level ${booking.review.rating}/5.`,
+      detail: `Saved numeric input ${booking.review.rating}/5.`,
       at: booking.review.createdAt,
-      status: 'Review',
+      status: 'Feedback',
     });
   }
 
@@ -4173,8 +4173,10 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       id: booking.review.id,
       type: 'REVIEW',
       at: booking.review.createdAt ?? booking.updatedAt ?? booking.createdAt ?? '',
-      title: `Customer service feedback ${booking.review.rating}/5`,
-      detail: booking.review.comment ? compactActivityText(booking.review.comment, 110) : 'No comment',
+      title: 'Customer service feedback submitted',
+      detail: booking.review.comment
+        ? `${compactActivityText(booking.review.comment, 90)} / numeric input ${booking.review.rating}/5`
+        : `No comment / numeric input ${booking.review.rating}/5`,
       href: '/reviews',
     });
   }
@@ -6108,7 +6110,7 @@ function bookingStageSnapshot(
     noteClassName = status === 'COMPLETED' ? 'ops-task-done' : 'ops-task-pending';
     headline = 'This booking is in closeout.';
     detail =
-      'Use finance, refund, no-show, audit, and review sections to confirm the operational record is clean.';
+      'Use finance, refund, no-show, audit, and feedback sections to confirm the operational record is clean.';
     actionHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : `/bookings/${booking.id}`;
     actionLabel = booking.payment?.id ? 'Open payment trail' : 'Review closeout';
   } else if (selectedPartner && chatReady) {

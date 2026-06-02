@@ -609,7 +609,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </p>
                   </td>
                   <td>
-                    <strong>{row.reviewCount} review(s)</strong>
+                    <strong>{row.reviewCount} feedback record(s)</strong>
                     <p className="muted">Open detail to read factual feedback records</p>
                   </td>
                   <td>

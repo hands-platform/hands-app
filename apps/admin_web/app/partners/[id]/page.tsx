@@ -2030,7 +2030,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <InfoLine label="Address" value={provider.residentialAddress} />
           <InfoLine label="Service city" value={provider.city} />
           <InfoLine label="Service area" value={formatJsonSummary(provider.serviceArea)} />
-          <InfoLine label="Feedback records" value={`${provider.reviewCount ?? 0} review(s) saved`} />
+          <InfoLine label="Feedback records" value={`${provider.reviewCount ?? 0} record(s) saved`} />
           <InfoLine label="Next available" value={formatDate(provider.nextAvailableAt)} />
           <InfoLine label="Profile review completed at" value={formatDate(provider.trustedAt)} />
           <InfoLine label="User name" value={provider.user?.fullName} />
@@ -3763,8 +3763,8 @@ function buildPartnerMasterFacts(
     },
     {
       label: 'Feedback records',
-      value: `${provider.reviewCount ?? 0} review(s)`,
-      helper: 'Open the review section to read original customer feedback records',
+      value: `${provider.reviewCount ?? 0} feedback record(s)`,
+      helper: 'Open the feedback section to read original customer feedback records',
     },
     {
       label: 'Revenue',
@@ -4568,7 +4568,7 @@ function buildPartnerAcceptanceRepairCommand(
       owner: 'Ops',
       blocker: 'No active blocker',
       reason: 'All final booking gates are currently clear for this partner.',
-      operatorAction: 'Keep monitoring customer reviews, response speed, and location freshness.',
+      operatorAction: 'Keep monitoring customer feedback records, response speed, and location freshness.',
       href: `/partners/${provider.id}`,
       actionLabel: 'Open profile',
       tone: 'done',

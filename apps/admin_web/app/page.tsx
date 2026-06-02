@@ -532,7 +532,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         'Profiles, booking history, chat archive, wallet-style payment view, saved addresses, and CS notes.',
       links: [
         ['Customers', '/customers'],
-        ['Reviews', '/reviews'],
+        ['Feedback', '/reviews'],
         ['Coupons', '/coupons'],
         ['Notifications', '/notifications'],
       ],
