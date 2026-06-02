@@ -21,7 +21,7 @@
 18. Partner starts service.
 19. Customer tracks basic location status, not realtime route.
 20. Service completes.
-21. Customer writes review and optional tip.
+21. Customer writes a service review.
 
 ## Fallbacks
 - GPS denied: customer can search address manually.
