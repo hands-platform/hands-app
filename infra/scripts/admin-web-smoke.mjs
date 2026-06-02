@@ -333,21 +333,6 @@ const pages = [
     ],
   },
   {
-    path: '/partner-risk',
-    markers: ['Partner Controls', 'Partner control board', 'Final-gate unblock board'],
-  },
-  {
-    path: '/provider-risk',
-    markers: [
-      'Partner Controls',
-      'Partner control board',
-      'Final-gate unblock board',
-      'Final-gate unblock playbook',
-      'Partner control command center',
-      'System control checklist',
-    ],
-  },
-  {
     path: '/app-sessions',
     markers: [
       'App Sessions',

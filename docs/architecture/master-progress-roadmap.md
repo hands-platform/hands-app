@@ -225,7 +225,7 @@ The codebase is healthy, but the work can become fragmented in these areas:
 - Mobile UI has working flows, but design is intentionally temporary.
 - Policies for matching, cash fee debt, tax, payout, and service pricing must stay admin-configurable, not hardcoded in apps.
 - Old secondary-participation/radius wording is being removed incrementally. Internal variable/API names can remain until compatibility migrations are planned.
-- Legacy `/partner-risk` and `/provider-risk` routes are compatibility redirects only. New work should link to `/partner-controls` or `/partners`.
+- Legacy `/partner-risk` and `/provider-risk` routes are compatibility redirects only. Default admin smoke coverage now targets `/partner-controls`; new work should link to `/partner-controls` or `/partners`.
 
 ## Recommended Build Order From Here
 
