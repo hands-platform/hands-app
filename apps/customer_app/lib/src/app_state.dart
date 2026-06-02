@@ -97,6 +97,9 @@ class CustomerRepository {
     required String addressLine,
     required double lat,
     required double lng,
+    double? currentLat,
+    double? currentLng,
+    DateTime? currentLocationUpdatedAt,
   }) async {
     return _bookingRepository.createBooking(
       serviceId,
@@ -108,6 +111,9 @@ class CustomerRepository {
       addressLine: addressLine,
       lat: lat,
       lng: lng,
+      currentLat: currentLat,
+      currentLng: currentLng,
+      currentLocationUpdatedAt: currentLocationUpdatedAt,
     );
   }
 

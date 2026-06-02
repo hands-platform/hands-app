@@ -5,6 +5,9 @@ export const DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES = 10;
 export const DEFAULT_BACKUP_PROVIDER_RADIUS_METERS = 10000;
 export const DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES = 30;
 export const DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT = 50;
+export const DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM = 20;
+export const DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM = 50;
+export const DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES = 10;
 
 export const MATCHING_TRAVEL_BUFFER_MINUTES_KEY = 'matching.travel_buffer_minutes';
 export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
@@ -13,6 +16,14 @@ export const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
 export const MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY =
   'matching.backup_provider_invitation_limit';
+export const BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM_KEY =
+  'booking.max_customer_current_to_booking_address_km';
+export const BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM_KEY =
+  'booking.max_preferred_partner_distance_km';
+export const BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY =
+  'booking.current_location_freshness_minutes';
+export const BOOKING_DISTANCE_GATE_ENABLED_KEY = 'booking.distance_gate_enabled';
+export const BOOKING_SERVICE_AREA_REQUIRED_KEY = 'booking.service_area_required';
 export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
 export const MATCHING_BACKUP_OPEN_MODE_KEY = 'matching.backup_open_mode';
 export const BACKUP_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
@@ -39,6 +50,11 @@ export type MatchingPolicy = {
   backupProviderRadiusMeters: number;
   backupProviderLocationMaxAgeMinutes: number;
   backupProviderInvitationLimit: number;
+  bookingMaxCustomerCurrentToAddressKm: number;
+  bookingMaxPreferredProviderDistanceKm: number;
+  bookingCurrentLocationFreshnessMinutes: number;
+  bookingDistanceGateEnabled: boolean;
+  bookingServiceAreaRequired: boolean;
   preferredAcceptMode: PreferredAcceptMode;
   backupOpenMode: typeof BACKUP_OPEN_IMMEDIATE | typeof BACKUP_OPEN_AFTER_FIRST_PICK_DELAY;
 };
@@ -121,6 +137,65 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     unit: 'minutes',
     min: 0,
     max: 120,
+    enforced: true,
+  },
+  {
+    key: BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM_KEY,
+    category: 'Booking',
+    label: 'Customer current-to-service address gate',
+    description:
+      'Maximum allowed distance between the customer current GPS and the confirmed service address before payment and matching open.',
+    value: DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
+    recommendedValue: DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
+    unit: 'km',
+    min: 1,
+    max: 100,
+    enforced: true,
+  },
+  {
+    key: BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM_KEY,
+    category: 'Booking',
+    label: 'First-pick partner-to-service address gate',
+    description:
+      'Maximum allowed distance between the preferred partner last saved location and the booking address.',
+    value: DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
+    recommendedValue: DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
+    unit: 'km',
+    min: 1,
+    max: 300,
+    enforced: true,
+  },
+  {
+    key: BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY,
+    category: 'Booking',
+    label: 'Customer current location freshness',
+    description:
+      'Maximum age of the customer current GPS snapshot accepted at booking confirmation.',
+    value: DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
+    recommendedValue: DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
+    unit: 'minutes',
+    min: 1,
+    max: 60,
+    enforced: true,
+  },
+  {
+    key: BOOKING_DISTANCE_GATE_ENABLED_KEY,
+    category: 'Booking',
+    label: 'Booking distance gate',
+    description:
+      'When enabled, bookings are rejected before payment if customer GPS or first-pick partner distance gates fail.',
+    value: true,
+    recommendedValue: true,
+    enforced: true,
+  },
+  {
+    key: BOOKING_SERVICE_AREA_REQUIRED_KEY,
+    category: 'Booking',
+    label: 'Vietnam service area required',
+    description:
+      'When enabled, booking address snapshots must be inside the enabled Vietnam service area.',
+    value: true,
+    recommendedValue: true,
     enforced: true,
   },
   {
@@ -304,6 +379,44 @@ export function resolveMatchingPolicy(
       1,
       200,
     ),
+    bookingMaxCustomerCurrentToAddressKm: readPolicyInteger(
+      settings[BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM_KEY],
+      readPositiveInteger(
+        config,
+        'BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM',
+        DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
+      ),
+      1,
+      100,
+    ),
+    bookingMaxPreferredProviderDistanceKm: readPolicyInteger(
+      settings[BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM_KEY],
+      readPositiveInteger(
+        config,
+        'BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM',
+        DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
+      ),
+      1,
+      300,
+    ),
+    bookingCurrentLocationFreshnessMinutes: readPolicyInteger(
+      settings[BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY],
+      readPositiveInteger(
+        config,
+        'BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES',
+        DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
+      ),
+      1,
+      60,
+    ),
+    bookingDistanceGateEnabled: readPolicyBoolean(
+      settings[BOOKING_DISTANCE_GATE_ENABLED_KEY],
+      true,
+    ),
+    bookingServiceAreaRequired: readPolicyBoolean(
+      settings[BOOKING_SERVICE_AREA_REQUIRED_KEY],
+      true,
+    ),
     preferredAcceptMode: readPreferredAcceptMode(settings[MATCHING_PREFERRED_ACCEPT_MODE_KEY]),
     backupOpenMode:
       settings[MATCHING_BACKUP_OPEN_MODE_KEY] === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY
@@ -333,6 +446,21 @@ function readPositiveInteger(config: ConfigService, key: string, fallback: numbe
 export function readPolicyInteger(value: unknown, fallback: number, min: number, max: number) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
+}
+
+function readPolicyBoolean(value: unknown, fallback: boolean) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    if (value.toLowerCase() === 'true') {
+      return true;
+    }
+    if (value.toLowerCase() === 'false') {
+      return false;
+    }
+  }
+  return fallback;
 }
 
 function readPreferredAcceptMode(value: unknown): PreferredAcceptMode {

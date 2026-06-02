@@ -43,6 +43,9 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
     required String addressLine,
     required double lat,
     required double lng,
+    double? currentLat,
+    double? currentLng,
+    DateTime? currentLocationUpdatedAt,
   }) async {
     final result = await _api.postJson('/customer/bookings', {
       'serviceId': serviceId,
@@ -57,6 +60,10 @@ class CustomerBookingRepositoryImpl implements CustomerBookingRepository {
       },
       'lat': lat,
       'lng': lng,
+      if (currentLat != null) 'currentLat': currentLat,
+      if (currentLng != null) 'currentLng': currentLng,
+      if (currentLocationUpdatedAt != null)
+        'currentLocationUpdatedAt': currentLocationUpdatedAt.toUtc().toIso8601String(),
       'paymentMethod': 'CASH',
     });
     final bookingId = result['id'] as String;

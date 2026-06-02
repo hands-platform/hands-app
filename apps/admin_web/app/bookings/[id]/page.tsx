@@ -5895,12 +5895,12 @@ function bookingMvpAuthorityContract({
     },
     {
       contract: 'On-demand service rules',
-      scope: 'No schedule picker, no gratuity flow',
+      scope: 'No schedule picker, no customer extra-payment flow',
       status: terminal ? 'Closeout record' : 'On-demand active',
       tone: 'pill-success',
-      evidence: `${financeTrace.serviceOption} / payment ${booking.payment?.method ?? 'NONE'} / no gratuity lane.`,
+      evidence: `${financeTrace.serviceOption} / payment ${booking.payment?.method ?? 'NONE'} / no customer extra-payment lane.`,
       operatorUse:
-        'Keep scheduling and gratuity decisions out of MVP booking flow; use policy/admin closeout records.',
+        'Keep scheduling and customer extra-payment decisions out of MVP booking flow; use policy/admin closeout records.',
       href: '#service',
     },
   ];

@@ -325,6 +325,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     required addressLine,
                     required lat,
                     required lng,
+                    currentLat,
+                    currentLng,
+                    currentLocationUpdatedAt,
                   }) =>
                       ref.read(customerRepositoryProvider).createBooking(
                             service['id'] as String,
@@ -336,6 +339,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             addressLine: addressLine,
                             lat: lat,
                             lng: lng,
+                            currentLat: currentLat,
+                            currentLng: currentLng,
+                            currentLocationUpdatedAt: currentLocationUpdatedAt,
                           ),
                 ),
               ),
@@ -1686,6 +1692,9 @@ class BookingConfirmationPage extends ConsumerStatefulWidget {
     required String addressLine,
     required double lat,
     required double lng,
+    double? currentLat,
+    double? currentLng,
+    DateTime? currentLocationUpdatedAt,
   }) onConfirm;
 
   @override
@@ -1701,6 +1710,9 @@ class _BookingConfirmationPageState
   final couponController = TextEditingController();
   double? customerLat;
   double? customerLng;
+  double? currentGpsLat;
+  double? currentGpsLng;
+  DateTime? currentGpsUpdatedAt;
   int couponDiscountAmount = 0;
   String? appliedCouponCode;
   String? couponMessage;
@@ -1753,6 +1765,15 @@ class _BookingConfirmationPageState
         customerLng = location.longitude;
         addressController.text = location.addressText ?? addressController.text;
         locationConfirmed = !location.isDemoLocation;
+        if (location.isDemoLocation) {
+          currentGpsLat = null;
+          currentGpsLng = null;
+          currentGpsUpdatedAt = null;
+        } else {
+          currentGpsLat = location.latitude;
+          currentGpsLng = location.longitude;
+          currentGpsUpdatedAt = DateTime.now();
+        }
         locationMessage = location.isDemoLocation
             ? 'GPS is unavailable or outside Vietnam. Choose the service pin on the map before booking.'
             : 'GPS loaded. You can still adjust the service pin on the map.';
@@ -1811,6 +1832,15 @@ class _BookingConfirmationPageState
       });
       return;
     }
+    if (currentGpsLat == null ||
+        currentGpsLng == null ||
+        currentGpsUpdatedAt == null) {
+      setState(() {
+        error =
+            'Please refresh your current GPS before booking. You can still browse partners from anywhere.';
+      });
+      return;
+    }
     setState(() {
       submitting = true;
       error = null;
@@ -1833,6 +1863,9 @@ class _BookingConfirmationPageState
             addressLine: addressController.text.trim(),
             lat: lat,
             lng: lng,
+            currentLat: currentGpsLat,
+            currentLng: currentGpsLng,
+            currentLocationUpdatedAt: currentGpsUpdatedAt,
           );
       if (mounted) {
         Navigator.of(context).pop(booking);
@@ -4486,6 +4519,9 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
                     required addressLine,
                     required lat,
                     required lng,
+                    currentLat,
+                    currentLng,
+                    currentLocationUpdatedAt,
                   }) =>
                       ref.read(customerRepositoryProvider).createBooking(
                             service['id'] as String,
@@ -4497,6 +4533,9 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
                             addressLine: addressLine,
                             lat: lat,
                             lng: lng,
+                            currentLat: currentLat,
+                            currentLng: currentLng,
+                            currentLocationUpdatedAt: currentLocationUpdatedAt,
                           ),
                 ),
               ),

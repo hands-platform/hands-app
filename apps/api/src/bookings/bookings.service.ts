@@ -61,6 +61,9 @@ export class BookingsService {
       selectedLocationId?: string;
       notes?: string;
       paymentMethod: PaymentMethod;
+      currentLat?: number;
+      currentLng?: number;
+      currentLocationUpdatedAt?: string;
     },
   ) {
     if (!userId) {
@@ -125,18 +128,32 @@ export class BookingsService {
     if (input.selectedLocationId && !selectedLocation) {
       throw new BadRequestException('Selected customer location was not found');
     }
+    const matchingPolicy = await this.matching.getPolicy();
     const bookingLat = normalizeBookingCoordinate(input.lat ?? selectedLocation?.latitude, 'lat');
     const bookingLng = normalizeBookingCoordinate(input.lng ?? selectedLocation?.longitude, 'lng');
-    assertVietnamBookingCoordinate(bookingLat, bookingLng);
+    if (matchingPolicy.bookingServiceAreaRequired) {
+      assertVietnamBookingCoordinate(bookingLat, bookingLng);
+    } else {
+      assertWorldBookingCoordinate(bookingLat, bookingLng);
+    }
     const addressText = bookingAddressText(input.address) ?? selectedLocation?.addressText?.trim();
     if (!addressText) {
       throw new BadRequestException('Booking address text is required');
     }
     const addressPayload = normalizeBookingAddress(input.address, addressText);
-    const matchingPolicy = await this.matching.getPolicy();
     const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
     const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
     const finalAmount = Math.max(0, customerPrice - discountAmount);
+    const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);
+    const customerToBookingDistanceMeters = customerCurrentLocation
+      ? calculateDistanceMeters(
+          customerCurrentLocation.lat,
+          customerCurrentLocation.lng,
+          bookingLat,
+          bookingLng,
+        )
+      : null;
+    assertCustomerBookingDistanceGate(customerToBookingDistanceMeters, matchingPolicy);
     const preferredProviderDistanceMeters = preferredProvider
       ? calculateDistanceMeters(
           bookingLat,
@@ -145,6 +162,17 @@ export class BookingsService {
           preferredProvider.currentLng,
         )
       : null;
+    assertPreferredProviderDistanceGate(preferredProvider, preferredProviderDistanceMeters, matchingPolicy);
+    const bookingGateSnapshot = bookingDistanceGateSnapshot({
+      matchingPolicy,
+      bookingLat,
+      bookingLng,
+      addressText,
+      customerCurrentLocation,
+      customerToBookingDistanceMeters,
+      preferredProvider,
+      preferredProviderDistanceMeters,
+    });
 
     let booking = await this.prisma.booking.create({
       data: {
@@ -173,6 +201,7 @@ export class BookingsService {
         expiresAt,
         metadata: {
           matchingPolicy: bookingMatchingPolicySnapshot(matchingPolicy),
+          bookingGate: bookingGateSnapshot,
         },
         services: {
           create: {
@@ -950,6 +979,26 @@ export class BookingsService {
         snapshot.backupProviderInvitationLimit,
         fallback.backupProviderInvitationLimit,
       ),
+      bookingMaxCustomerCurrentToAddressKm: readSnapshotInteger(
+        snapshot.bookingMaxCustomerCurrentToAddressKm,
+        fallback.bookingMaxCustomerCurrentToAddressKm,
+      ),
+      bookingMaxPreferredProviderDistanceKm: readSnapshotInteger(
+        snapshot.bookingMaxPreferredProviderDistanceKm,
+        fallback.bookingMaxPreferredProviderDistanceKm,
+      ),
+      bookingCurrentLocationFreshnessMinutes: readSnapshotInteger(
+        snapshot.bookingCurrentLocationFreshnessMinutes,
+        fallback.bookingCurrentLocationFreshnessMinutes,
+      ),
+      bookingDistanceGateEnabled: readSnapshotBoolean(
+        snapshot.bookingDistanceGateEnabled,
+        fallback.bookingDistanceGateEnabled,
+      ),
+      bookingServiceAreaRequired: readSnapshotBoolean(
+        snapshot.bookingServiceAreaRequired,
+        fallback.bookingServiceAreaRequired,
+      ),
       preferredAcceptMode:
         snapshot.preferredAcceptMode === PREFERRED_ACCEPT_CUSTOMER_CONFIRM
           ? snapshot.preferredAcceptMode
@@ -1471,6 +1520,11 @@ function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingServic
     backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
     backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
     backupProviderInvitationLimit: policy.backupProviderInvitationLimit,
+    bookingMaxCustomerCurrentToAddressKm: policy.bookingMaxCustomerCurrentToAddressKm,
+    bookingMaxPreferredProviderDistanceKm: policy.bookingMaxPreferredProviderDistanceKm,
+    bookingCurrentLocationFreshnessMinutes: policy.bookingCurrentLocationFreshnessMinutes,
+    bookingDistanceGateEnabled: policy.bookingDistanceGateEnabled,
+    bookingServiceAreaRequired: policy.bookingServiceAreaRequired,
     preferredAcceptMode: policy.preferredAcceptMode,
     backupOpenMode: policy.backupOpenMode,
     travelBufferMinutes: policy.travelBufferMinutes,
@@ -1525,6 +1579,120 @@ function assertVietnamBookingCoordinate(lat: number, lng: number) {
   }
 }
 
+function assertWorldBookingCoordinate(lat: number, lng: number) {
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new BadRequestException('Booking address coordinate is invalid');
+  }
+}
+
+function normalizeBookingAttemptCurrentLocation(
+  input: { currentLat?: number; currentLng?: number; currentLocationUpdatedAt?: string },
+  policy: MatchingPolicy,
+) {
+  if (!policy.bookingDistanceGateEnabled) {
+    return null;
+  }
+  const lat = Number(input.currentLat);
+  const lng = Number(input.currentLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new BadRequestException('Recent customer current location is required before booking');
+  }
+  const recordedAt = input.currentLocationUpdatedAt ? new Date(input.currentLocationUpdatedAt) : null;
+  if (!recordedAt || Number.isNaN(recordedAt.getTime())) {
+    throw new BadRequestException('Recent customer current location timestamp is required before booking');
+  }
+  const now = Date.now();
+  if (recordedAt.getTime() > now + 60_000) {
+    throw new BadRequestException('Customer current location timestamp is invalid');
+  }
+  const ageMinutes = Math.max(0, (now - recordedAt.getTime()) / 60_000);
+  if (ageMinutes > policy.bookingCurrentLocationFreshnessMinutes) {
+    throw new BadRequestException(
+      `Customer current location must be refreshed within ${policy.bookingCurrentLocationFreshnessMinutes} minutes before booking`,
+    );
+  }
+  return { lat, lng, recordedAt, ageMinutes };
+}
+
+function assertCustomerBookingDistanceGate(
+  distanceMeters: number | null,
+  policy: MatchingPolicy,
+) {
+  if (!policy.bookingDistanceGateEnabled) {
+    return;
+  }
+  const limitMeters = policy.bookingMaxCustomerCurrentToAddressKm * 1000;
+  if (distanceMeters === null || distanceMeters > limitMeters) {
+    throw new BadRequestException(
+      `Customer current location must be within ${policy.bookingMaxCustomerCurrentToAddressKm}km of the booking address`,
+    );
+  }
+}
+
+function assertPreferredProviderDistanceGate(
+  preferredProvider: { id: string } | null,
+  distanceMeters: number | null,
+  policy: MatchingPolicy,
+) {
+  if (!policy.bookingDistanceGateEnabled || !preferredProvider) {
+    return;
+  }
+  const limitMeters = policy.bookingMaxPreferredProviderDistanceKm * 1000;
+  if (distanceMeters === null || distanceMeters > limitMeters) {
+    throw new BadRequestException(
+      `Preferred partner must be within ${policy.bookingMaxPreferredProviderDistanceKm}km of the booking address`,
+    );
+  }
+}
+
+function bookingDistanceGateSnapshot(input: {
+  matchingPolicy: MatchingPolicy;
+  bookingLat: number;
+  bookingLng: number;
+  addressText: string;
+  customerCurrentLocation: ReturnType<typeof normalizeBookingAttemptCurrentLocation>;
+  customerToBookingDistanceMeters: number | null;
+  preferredProvider: { id: string; currentLat?: unknown; currentLng?: unknown; currentLocationUpdatedAt?: Date | null } | null;
+  preferredProviderDistanceMeters: number | null;
+}) {
+  return {
+    distanceGateEnabled: input.matchingPolicy.bookingDistanceGateEnabled,
+    serviceAreaRequired: input.matchingPolicy.bookingServiceAreaRequired,
+    serviceArea: 'VIETNAM',
+    serviceAreaValid: isVietnamBookingCoordinate(input.bookingLat, input.bookingLng),
+    bookingAddress: {
+      lat: input.bookingLat,
+      lng: input.bookingLng,
+      addressText: input.addressText,
+    },
+    customerCurrentLocation: input.customerCurrentLocation
+      ? {
+          lat: input.customerCurrentLocation.lat,
+          lng: input.customerCurrentLocation.lng,
+          recordedAt: input.customerCurrentLocation.recordedAt.toISOString(),
+          ageMinutes: Number(input.customerCurrentLocation.ageMinutes.toFixed(2)),
+        }
+      : null,
+    customerToBookingAddressDistanceMeters: input.customerToBookingDistanceMeters,
+    customerDistanceLimitMeters: input.matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
+    preferredProviderId: input.preferredProvider?.id ?? null,
+    preferredProviderLocation: input.preferredProvider
+      ? {
+          lat: input.preferredProvider.currentLat === null ? null : Number(input.preferredProvider.currentLat),
+          lng: input.preferredProvider.currentLng === null ? null : Number(input.preferredProvider.currentLng),
+          updatedAt: input.preferredProvider.currentLocationUpdatedAt?.toISOString() ?? null,
+        }
+      : null,
+    preferredProviderDistanceMeters: input.preferredProviderDistanceMeters,
+    preferredProviderDistanceLimitMeters: input.matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
+    gatePassed: true,
+  };
+}
+
+function isVietnamBookingCoordinate(lat: number, lng: number) {
+  return lat >= 8 && lat <= 24 && lng >= 102 && lng <= 110;
+}
+
 function normalizeBookingAddress(address: Prisma.InputJsonValue | undefined, addressText: string) {
   if (address && typeof address === 'object' && !Array.isArray(address)) {
     return { ...(address as Record<string, unknown>), addressText } as Prisma.InputJsonValue;
@@ -1544,6 +1712,10 @@ function readPlainRecord(value: unknown): Record<string, unknown> | undefined {
 function readSnapshotInteger(value: unknown, fallback: number) {
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function readSnapshotBoolean(value: unknown, fallback: boolean) {
+  return typeof value === 'boolean' ? value : fallback;
 }
 
 function toJson(value: unknown): Prisma.InputJsonValue {

@@ -5,6 +5,9 @@ import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import {
+  DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
+  DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
+  DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
   MATCHING_BACKUP_OPEN_MODE_KEY,
   MATCHING_PREFERRED_ACCEPT_MODE_KEY,
   resolveMatchingPolicy,
@@ -23,7 +26,7 @@ export class MatchingService {
     const settings = await this.prisma.operationalPolicySetting.findMany({
       where: {
         OR: [
-          { category: { in: ['Matching'] } },
+          { category: { in: ['Matching', 'Booking'] } },
           { key: { in: [MATCHING_PREFERRED_ACCEPT_MODE_KEY, MATCHING_BACKUP_OPEN_MODE_KEY] } },
         ],
       },
@@ -52,6 +55,11 @@ export class MatchingService {
         backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
         backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
         backupProviderInvitationLimit: policy.backupProviderInvitationLimit,
+        bookingMaxCustomerCurrentToAddressKm: policy.bookingMaxCustomerCurrentToAddressKm,
+        bookingMaxPreferredProviderDistanceKm: policy.bookingMaxPreferredProviderDistanceKm,
+        bookingCurrentLocationFreshnessMinutes: policy.bookingCurrentLocationFreshnessMinutes,
+        bookingDistanceGateEnabled: policy.bookingDistanceGateEnabled,
+        bookingServiceAreaRequired: policy.bookingServiceAreaRequired,
         preferredAcceptMode: policy.preferredAcceptMode,
         backupOpenMode: policy.backupOpenMode,
         finalSelection: 'CUSTOMER_SELECTS_PARTNER',
@@ -143,6 +151,21 @@ function getPolicyFromPayload(
   const backupProviderInvitationLimit = Number(
     'backupProviderInvitationLimit' in policy ? policy.backupProviderInvitationLimit : undefined,
   );
+  const bookingMaxCustomerCurrentToAddressKm = Number(
+    'bookingMaxCustomerCurrentToAddressKm' in policy
+      ? policy.bookingMaxCustomerCurrentToAddressKm
+      : DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
+  );
+  const bookingMaxPreferredProviderDistanceKm = Number(
+    'bookingMaxPreferredProviderDistanceKm' in policy
+      ? policy.bookingMaxPreferredProviderDistanceKm
+      : DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
+  );
+  const bookingCurrentLocationFreshnessMinutes = Number(
+    'bookingCurrentLocationFreshnessMinutes' in policy
+      ? policy.bookingCurrentLocationFreshnessMinutes
+      : DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
+  );
   const preferredAcceptMode =
     'preferredAcceptMode' in policy && typeof policy.preferredAcceptMode === 'string'
       ? policy.preferredAcceptMode
@@ -158,6 +181,9 @@ function getPolicyFromPayload(
     !Number.isFinite(travelBufferMinutes) ||
     !Number.isFinite(backupProviderLocationMaxAgeMinutes) ||
     !Number.isFinite(backupProviderInvitationLimit) ||
+    !Number.isFinite(bookingMaxCustomerCurrentToAddressKm) ||
+    !Number.isFinite(bookingMaxPreferredProviderDistanceKm) ||
+    !Number.isFinite(bookingCurrentLocationFreshnessMinutes) ||
     !preferredAcceptMode ||
     !backupOpenMode
   ) {
@@ -169,6 +195,17 @@ function getPolicyFromPayload(
     backupProviderRadiusMeters,
     backupProviderLocationMaxAgeMinutes,
     backupProviderInvitationLimit,
+    bookingMaxCustomerCurrentToAddressKm,
+    bookingMaxPreferredProviderDistanceKm,
+    bookingCurrentLocationFreshnessMinutes,
+    bookingDistanceGateEnabled:
+      'bookingDistanceGateEnabled' in policy && typeof policy.bookingDistanceGateEnabled === 'boolean'
+        ? policy.bookingDistanceGateEnabled
+        : true,
+    bookingServiceAreaRequired:
+      'bookingServiceAreaRequired' in policy && typeof policy.bookingServiceAreaRequired === 'boolean'
+        ? policy.bookingServiceAreaRequired
+        : true,
     travelBufferMinutes,
     preferredAcceptMode,
     backupOpenMode,

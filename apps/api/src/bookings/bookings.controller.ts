@@ -27,6 +27,9 @@ export class BookingsController {
       selectedLocationId?: string;
       notes?: string;
       paymentMethod: PaymentMethod;
+      currentLat?: number;
+      currentLng?: number;
+      currentLocationUpdatedAt?: string;
     },
   ) {
     return this.bookings.createOpenMatchingBooking(user.id, body);

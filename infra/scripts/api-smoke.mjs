@@ -1,4 +1,8 @@
 const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3100/api';
+const defaultCustomerCurrentLocation = {
+  currentLat: 10.7769,
+  currentLng: 106.7009,
+};
 
 async function request(path, options = {}) {
   const { retryRateLimit = true, ...fetchOptions } = options;
@@ -31,7 +35,7 @@ const postJson = (path, accessToken, body = {}) =>
   request(path, {
     method: 'POST',
     headers: { authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify(body),
+    body: JSON.stringify(applyBookingAttemptLocationDefaults(path, body)),
   });
 
 const getJson = (path, accessToken) =>
@@ -56,6 +60,11 @@ async function assertOperationalPolicyMetadata(accessToken) {
     'matching.travel_buffer_minutes',
     'matching.preferred_accept_mode',
     'matching.backup_open_mode',
+    'booking.max_customer_current_to_booking_address_km',
+    'booking.max_preferred_partner_distance_km',
+    'booking.current_location_freshness_minutes',
+    'booking.distance_gate_enabled',
+    'booking.service_area_required',
     'wallet.negative_balance_gate',
     'cancellation.after_match_policy',
     'no_show.partner_report_policy',
@@ -96,6 +105,24 @@ const patchOperationalPolicyValue = (accessToken, key, value) =>
   });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function applyBookingAttemptLocationDefaults(path, body) {
+  if (path !== '/customer/bookings' || !body || typeof body !== 'object' || Array.isArray(body)) {
+    return body;
+  }
+  if (
+    'currentLat' in body ||
+    'currentLng' in body ||
+    'currentLocationUpdatedAt' in body
+  ) {
+    return body;
+  }
+  return {
+    ...body,
+    ...defaultCustomerCurrentLocation,
+    currentLocationUpdatedAt: new Date().toISOString(),
+  };
+}
 
 async function expectRequestFailure(label, fn, expectedStatus) {
   try {
@@ -1357,6 +1384,52 @@ await expectRequestFailure(
     }),
   400,
 );
+await expectRequestFailure(
+  'Booking requires a recent customer current location before payment and matching',
+  () =>
+    request('/customer/bookings', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${customerAuth.accessToken}` },
+      body: JSON.stringify({
+        serviceId: service.id,
+        address: { line1: 'District 1, Ho Chi Minh City' },
+        lat: 10.7769,
+        lng: 106.7009,
+        paymentMethod: 'CASH',
+      }),
+    }),
+  400,
+);
+await expectRequestFailure(
+  'Booking rejects stale customer current location snapshots',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      address: { line1: 'District 1, Ho Chi Minh City' },
+      lat: 10.7769,
+      lng: 106.7009,
+      currentLat: 10.7769,
+      currentLng: 106.7009,
+      currentLocationUpdatedAt: new Date(Date.now() - 20 * 60_000).toISOString(),
+      paymentMethod: 'CASH',
+    }),
+  400,
+);
+await expectRequestFailure(
+  'Booking rejects service addresses too far from the customer current location',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      address: { line1: 'Da Nang city center' },
+      lat: 16.0471,
+      lng: 108.2068,
+      currentLat: 10.7769,
+      currentLng: 106.7009,
+      currentLocationUpdatedAt: new Date().toISOString(),
+      paymentMethod: 'CASH',
+    }),
+  400,
+);
 
 const selectedLocationOnlyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -1414,6 +1487,17 @@ if (
   throw new Error(
     `Customer booking detail should expose immutable address snapshot: ${JSON.stringify(
       bookingDetail.addressSnapshot,
+    )}`,
+  );
+}
+if (
+  bookingDetail.metadata?.bookingGate?.gatePassed !== true ||
+  bookingDetail.metadata?.bookingGate?.customerToBookingAddressDistanceMeters !== 0 ||
+  bookingDetail.metadata?.bookingGate?.customerDistanceLimitMeters !== 20000
+) {
+  throw new Error(
+    `Customer booking detail should expose the booking distance gate snapshot: ${JSON.stringify(
+      bookingDetail.metadata?.bookingGate,
     )}`,
   );
 }

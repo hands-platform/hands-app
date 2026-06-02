@@ -17,6 +17,9 @@ abstract class CustomerBookingRepository {
     required String addressLine,
     required double lat,
     required double lng,
+    double? currentLat,
+    double? currentLng,
+    DateTime? currentLocationUpdatedAt,
   });
 
   Future<Map<String, dynamic>> selectProvider(
