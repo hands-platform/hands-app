@@ -1430,6 +1430,30 @@ await expectRequestFailure(
     }),
   400,
 );
+await postJson('/provider/location', providerAuth.accessToken, {
+  lat: 16.0471,
+  lng: 108.2068,
+});
+await expectRequestFailure(
+  'Booking rejects preferred partners too far from the booking address',
+  () =>
+    postJson('/customer/bookings', customerAuth.accessToken, {
+      serviceId: service.id,
+      providerId: providerAuth.user.providerProfile.id,
+      address: { line1: 'District 1, Ho Chi Minh City' },
+      lat: 10.7769,
+      lng: 106.7009,
+      currentLat: 10.7769,
+      currentLng: 106.7009,
+      currentLocationUpdatedAt: new Date().toISOString(),
+      paymentMethod: 'CASH',
+    }),
+  400,
+);
+await postJson('/provider/location', providerAuth.accessToken, {
+  lat: 10.7769,
+  lng: 106.7009,
+});
 
 const selectedLocationOnlyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
