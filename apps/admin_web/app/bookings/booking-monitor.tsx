@@ -296,6 +296,50 @@ export function BookingMonitor({ bookings, initialView }: Props) {
     [currentTimeMs, orderedBookings],
   );
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
+  const topNextAction = nextActions[0];
+  const dispatchCommandLane = commandCenter.find((lane) => lane.title === 'Dispatch pressure') ?? commandCenter[0];
+  const protectionCommandLane =
+    commandCenter.find((lane) => lane.title === 'Customer protection') ?? commandCenter[1];
+  const paymentCommandLane = commandCenter.find((lane) => lane.title === 'Payment closeout') ?? commandCenter[2];
+  const handoffCommandLane = commandCenter.find((lane) => lane.title === 'Handoff quality') ?? commandCenter[3];
+  const commandSummaryCards = [
+    {
+      label: 'Current lane',
+      value: activeView.label,
+      detail: `${visibleBookings.length} visible booking(s). ${activeView.operatorHint}`,
+      href: `/bookings?view=${view}`,
+    },
+    {
+      label: 'Top operator action',
+      value: topNextAction?.priority ?? 'Clear',
+      detail: topNextAction?.operatorAction ?? 'No immediate booking action is waiting in this view.',
+      href: topNextAction?.href ?? '/bookings?view=active',
+    },
+    {
+      label: 'Dispatch pressure',
+      value: dispatchCommandLane?.status ?? 'Stable',
+      detail: dispatchCommandLane?.detail ?? 'Booking demand and partner supply signals are loaded.',
+      href: dispatchCommandLane?.href ?? '/bookings?view=matching',
+    },
+    {
+      label: 'Customer protection',
+      value: protectionCommandLane?.status ?? 'Clear',
+      detail: protectionCommandLane?.detail ?? 'Customer handoff, chat, and cancellation evidence are loaded.',
+      href: protectionCommandLane?.href ?? '/bookings?view=attention',
+    },
+    {
+      label: 'Payment closeout',
+      value: paymentCommandLane?.status ?? 'Ready',
+      detail: paymentCommandLane?.detail ?? 'Payment, cash debt, and closeout checks are loaded.',
+      href: paymentCommandLane?.href ?? '/bookings?view=payment',
+    },
+    {
+      label: 'Handoff quality',
+      value: handoffCommandLane?.status ?? 'Clear',
+      detail: handoffCommandLane?.detail ?? 'Partner location and chat handoff checks are loaded.',
+      href: handoffCommandLane?.href ?? '/bookings?view=location',
+    },
+  ];
 
   useEffect(() => {
     const mountTimer = window.setTimeout(() => {
@@ -350,6 +394,31 @@ export function BookingMonitor({ bookings, initialView }: Props) {
           >
             Refresh now
           </button>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operations command summary</h2>
+            <p className="muted">
+              Start here before drilling into booking records: lane size, first-pick and 10km marketplace
+              pressure, customer protection, payment closeout, and handoff quality.
+            </p>
+          </div>
+          <span className="pill pill-info">
+            {autoRefresh ? 'Auto refresh on' : 'Auto refresh paused'} ·{' '}
+            {isPending ? 'refreshing' : `last ${hasMounted ? lastRefreshLabel : 'pending'}`}
+          </span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {commandSummaryCards.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={item.label}>
+              <span className="signal signal-info">{item.label}</span>
+              <h3>{item.value}</h3>
+              <p>{item.detail}</p>
+            </Link>
+          ))}
         </div>
       </section>
 

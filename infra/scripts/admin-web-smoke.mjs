@@ -95,6 +95,7 @@ const pages = [
     path: '/bookings',
     markers: [
       'Booking Monitor',
+      'Booking operations command summary',
       'Matching escalation board',
       'Matching flow timeline',
       'Marketplace participation',
