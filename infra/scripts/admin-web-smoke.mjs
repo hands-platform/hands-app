@@ -286,7 +286,12 @@ const pages = [
   },
   {
     path: '/cash-settlements',
-    markers: ['Cash Settlements', 'Cash settlement date range', 'Settlement command queue'],
+    markers: [
+      'Cash Settlements',
+      'Cash settlement date range',
+      'Settlement command queue',
+      'Cash settlement action execution map',
+    ],
   },
   {
     path: '/cash-settlements?range=7d',

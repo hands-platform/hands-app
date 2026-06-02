@@ -254,6 +254,21 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                     {row.lastLedgerRef ? <small>Last ledger ref: {row.lastLedgerRef}</small> : null}
                     <small>{row.nextAction}</small>
                   </div>
+                  <div className="ops-task-note" style={{ marginTop: 10 }}>
+                    <strong>Cash settlement action execution map</strong>
+                    <div className="setup-stage-list" style={{ marginTop: 8 }}>
+                      {cashSettlementActionExecutionMap(row).map((item) => (
+                        <div className="setup-stage-item" key={`${row.earning.id}-${item.action}`}>
+                          <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                          <div>
+                            <strong>{item.action}</strong>
+                            <p className="muted">{item.reason}</p>
+                            <small>{item.operatorRule}</small>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </td>
                 <td>
                   <form action={settleCashFeeDebt} className="inline-form">
@@ -338,6 +353,14 @@ type EvidenceChecklistItem = {
   pillClass: string;
 };
 
+type CashSettlementActionExecutionItem = {
+  action: string;
+  status: string;
+  reason: string;
+  operatorRule: string;
+  pillClass: string;
+};
+
 type CashSettlementSummary = {
   providerCount: number;
   rowCount: number;
@@ -380,6 +403,69 @@ function buildCashSettlementRows(earnings: AdminEarning[]): CashSettlementRow[] 
       }
       return Date.parse(left.earning.createdAt ?? '') - Date.parse(right.earning.createdAt ?? '');
     });
+}
+
+function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlementActionExecutionItem[] {
+  const hasPaymentEvidence = Boolean(row.earning.booking?.payment);
+  const hasReference = Boolean(row.settlementReference);
+  const hasLedgerReference = Boolean(row.lastLedgerRef);
+  const isOldDebt = cashSettlementRowAgeHours(row) >= 24;
+
+  return [
+    {
+      action: 'Confirm cash collection',
+      status: hasPaymentEvidence && row.paymentMethod === 'CASH' ? 'Ready' : 'Check booking',
+      reason:
+        hasPaymentEvidence && row.paymentMethod === 'CASH'
+          ? `Booking payment is marked CASH and customer cash amount is ${formatMoney(
+              row.bookingAmount,
+              row.earning.currency,
+            )}.`
+          : 'Payment evidence is missing or the booking payment method is not cash in the current payload.',
+      operatorRule: 'Open the booking detail before settlement if the payment method or amount is unclear.',
+      pillClass: hasPaymentEvidence && row.paymentMethod === 'CASH' ? 'pill-success' : 'pill-warn',
+    },
+    {
+      action: 'Attach settlement reference',
+      status: hasReference ? 'Reference ready' : 'Reference needed',
+      reason: hasReference
+        ? `Use ${row.settlementReference} as the bank deposit or approved offset reference.`
+        : 'No suggested settlement reference is available for this debt row.',
+      operatorRule: 'The backend requires a reference so finance can audit the wallet reopening decision.',
+      pillClass: hasReference ? 'pill-success' : 'pill-danger',
+    },
+    {
+      action: 'Settle wallet debt',
+      status: row.debtAmount > 0 ? 'Debt open' : 'Clear',
+      reason:
+        row.debtAmount > 0
+          ? `${formatMoney(row.debtAmount, row.earning.currency)} remains as HANDS fee/tax wallet debt.`
+          : 'No open wallet debt remains on this earning row.',
+      operatorRule:
+        'Settle only after deposit evidence or approved offset; final acceptance and service start stay gated until cleared.',
+      pillClass: row.debtAmount > 0 ? 'pill-danger' : 'pill-success',
+    },
+    {
+      action: 'Ledger trace',
+      status: hasLedgerReference ? 'Trace exists' : 'No prior trace',
+      reason: hasLedgerReference
+        ? `Last wallet ledger reference is ${row.lastLedgerRef}.`
+        : 'No wallet ledger reference has been recorded yet for this row.',
+      operatorRule: 'Keep the booking, payment, earning, and wallet ledger references aligned.',
+      pillClass: hasLedgerReference ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      action: 'Aging follow-up',
+      status: isOldDebt ? 'Over 24h' : 'Fresh',
+      reason: isOldDebt
+        ? 'This cash debt has been open longer than 24 hours.'
+        : 'This cash debt is still inside the first 24-hour finance follow-up window.',
+      operatorRule: isOldDebt
+        ? 'Prioritize partner deposit confirmation or admin offset review.'
+        : 'Keep in the normal settlement queue.',
+      pillClass: isOldDebt ? 'pill-warn' : 'pill-success',
+    },
+  ];
 }
 
 function buildCashSettlementEvidenceChecklist(
@@ -601,6 +687,14 @@ function bookingServiceLabel(earning: AdminEarning) {
 
 function cashSettlementReference(earning: AdminEarning) {
   return `HANDS-CASH-${shortId(earning.bookingId).toUpperCase()}`;
+}
+
+function cashSettlementRowAgeHours(row: CashSettlementRow) {
+  const createdMs = Date.parse(row.earning.createdAt ?? '');
+  if (!Number.isFinite(createdMs)) {
+    return 0;
+  }
+  return (Date.now() - createdMs) / (60 * 60 * 1000);
 }
 
 function providerSettlementReference(providerProfileId: string) {
