@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { AdminBooking } from '../../lib/admin-api';
+import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 
 type Props = {
   bookings: AdminBooking[];
+  bookingCreateRejections?: AdminAuditLog[];
   initialView: BookingView;
   initialEvidenceFilter?: BookingEvidenceFilter;
 };
@@ -20,6 +21,7 @@ type BookingView =
   | 'customer-choice'
   | 'handoff-repair'
   | 'no-supply'
+  | 'blocked-create'
   | 'address'
   | 'payment'
   | 'cash-debt'
@@ -176,7 +178,12 @@ const bookingEvidenceFilterOptions: Array<{ value: BookingEvidenceFilter; label:
   { value: 'closeout', label: 'Closeout evidence check' },
 ];
 
-export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 'all' }: Props) {
+export function BookingMonitor({
+  bookings,
+  bookingCreateRejections = [],
+  initialView,
+  initialEvidenceFilter = 'all',
+}: Props) {
   const router = useRouter();
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [lastRefreshLabel, setLastRefreshLabel] = useState('pending');
@@ -202,6 +209,13 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
         return bookingTimestamp(right) - bookingTimestamp(left);
       }),
     [bookings],
+  );
+  const orderedBookingCreateRejections = useMemo(
+    () =>
+      [...bookingCreateRejections].sort(
+        (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
+      ),
+    [bookingCreateRejections],
   );
 
   const summary = useMemo(() => {
@@ -235,6 +249,7 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
       ['Open matching', open.length.toString()],
       ['Matched', matched.length.toString()],
       ['Follow-up queue', actionChecks.length.toString()],
+      ['Blocked create attempts', orderedBookingCreateRejections.length.toString()],
       ['Stage 1 first-pick', (stageCounts.get('first-pick') ?? 0).toString()],
       ['Stage 2 marketplace', (stageCounts.get('marketplace') ?? 0).toString()],
       ['Stage 3 customer choice', (stageCounts.get('customer-choice') ?? 0).toString()],
@@ -254,11 +269,19 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
       ['Location checks', locationChecks.length.toString()],
       ['Chat repair', chatRepair.length.toString()],
     ];
-  }, [currentTimeMs, orderedBookings]);
+  }, [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings]);
 
   const commandCenter = useMemo(
     () => buildBookingCommandCenter(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
+  );
+  const bookingGateRejectionLane = useMemo(
+    () => buildBookingGateRejectionLane(orderedBookingCreateRejections, currentTimeMs),
+    [currentTimeMs, orderedBookingCreateRejections],
+  );
+  const commandCenterWithGate = useMemo(
+    () => [bookingGateRejectionLane, ...commandCenter],
+    [bookingGateRejectionLane, commandCenter],
   );
   const nextActions = useMemo(
     () => buildBookingNextActions(orderedBookings, currentTimeMs),
@@ -286,6 +309,9 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
   );
 
   const baseVisibleBookings = useMemo(() => {
+    if (view === 'blocked-create') {
+      return [];
+    }
     return orderedBookings.filter((booking) => bookingMatchesView(booking, view, currentTimeMs));
   }, [currentTimeMs, orderedBookings, view]);
 
@@ -313,10 +339,12 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
       new Map(
         bookingViewOptions.map((option) => [
           option.view,
-          orderedBookings.filter((booking) => bookingMatchesView(booking, option.view, currentTimeMs)).length,
+          option.view === 'blocked-create'
+            ? orderedBookingCreateRejections.length
+            : orderedBookings.filter((booking) => bookingMatchesView(booking, option.view, currentTimeMs)).length,
         ]),
       ),
-    [currentTimeMs, orderedBookings],
+    [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings],
   );
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
   const topNextAction = nextActions[0];
@@ -361,6 +389,12 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
       value: handoffCommandLane?.status ?? 'Clear',
       detail: handoffCommandLane?.detail ?? 'Partner location and chat handoff checks are loaded.',
       href: handoffCommandLane?.href ?? '/bookings?view=location',
+    },
+    {
+      label: 'Blocked create attempts',
+      value: `${orderedBookingCreateRejections.length}`,
+      detail: bookingGateRejectionLane.detail,
+      href: '/bookings?view=blocked-create',
     },
   ];
 
@@ -471,7 +505,7 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
           <span className="pill pill-info">Operator first view</span>
         </div>
         <div className="grid" style={{ marginTop: 12 }}>
-          {commandCenter.map((lane) => (
+          {commandCenterWithGate.map((lane) => (
             <Link className="card" href={lane.href} key={lane.title}>
               <p>{lane.title}</p>
               <h2>{lane.status}</h2>
@@ -811,6 +845,63 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
         </p>
       </section>
 
+      {view === 'blocked-create' && (
+        <section className="card" style={{ marginTop: 16 }}>
+          <div className="risk-watch-header">
+            <div>
+              <h2>Blocked booking attempts</h2>
+              <p className="muted">
+                Booking create requests stopped before payment authorization and matching. These records are
+                evidence for support follow-up, not customer or partner scoring.
+              </p>
+            </div>
+            <Link className="text-link" href="/audit-log?query=booking.create.rejected">
+              Open audit log
+            </Link>
+          </div>
+          {orderedBookingCreateRejections.length === 0 ? (
+            <div className="empty-state" style={{ marginTop: 14 }}>
+              No blocked booking create attempts are recorded.
+            </div>
+          ) : (
+            <div className="ops-task-grid" style={{ marginTop: 14 }}>
+              {orderedBookingCreateRejections.slice(0, 30).map((log) => {
+                const evidence = bookingGateRejectionInfo(log);
+                return (
+                  <article className="ops-task-card" key={log.id}>
+                    <span className={`signal ${commandToneClass(evidence.tone)}`}>
+                      {evidence.reasonLabel}
+                    </span>
+                    <h3>{shortId(log.id)}</h3>
+                    <p>{evidence.operatorAction}</p>
+                    <div className="participant-list">
+                      <span className="pill">Created {formatDate(log.createdAt)}</span>
+                      <span className="pill">{evidence.customerDistanceLabel}</span>
+                      <span className="pill">{evidence.preferredPartnerDistanceLabel}</span>
+                    </div>
+                    <div className="stack" style={{ marginTop: 10 }}>
+                      <span className="muted">Address: {evidence.addressText}</span>
+                      <span className="muted">Customer GPS: {evidence.currentLocationLabel}</span>
+                      <span className="muted">Booking pin: {evidence.bookingAddressLabel}</span>
+                    </div>
+                    <div className="actions" style={{ marginTop: 12 }}>
+                      {evidence.customerHref && (
+                        <Link className="text-link" href={evidence.customerHref}>
+                          Customer detail
+                        </Link>
+                      )}
+                      <Link className="text-link" href={`/audit-log?query=${encodeURIComponent(log.id)}`}>
+                        Audit evidence
+                      </Link>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
       <section className="card" style={{ marginTop: 16 }}>
         <table className="table">
           <thead>
@@ -1108,6 +1199,13 @@ const bookingViewOptions: Array<{
     description: 'open matching bookings with no partner participation yet.',
     operatorHint:
       'Use this when customers are waiting but no partner has joined. Call/notify nearby partners or review location/service pricing.',
+  },
+  {
+    view: 'blocked-create',
+    label: 'Blocked create',
+    description: 'booking create attempts rejected before payment authorization and matching.',
+    operatorHint:
+      'Use this to debug customer GPS, service address, and first-pick partner distance gates before support follow-up.',
   },
   {
     view: 'address',
@@ -2311,6 +2409,175 @@ function bookingPriority(booking: AdminBooking) {
   return 1;
 }
 
+function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): BookingCommandLane {
+  const customerTooFar = logs.filter((log) => bookingGateReasonCode(log) === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR');
+  const partnerTooFar = logs.filter((log) => bookingGateReasonCode(log) === 'PREFERRED_PARTNER_TOO_FAR');
+  const latest = logs[0];
+  const latestAge = latest ? relativeTimeLabel(latest.createdAt, nowMs) : 'none';
+
+  return {
+    title: 'Blocked booking attempts',
+    status: logs.length > 0 ? `${logs.length} stopped` : 'Clear',
+    tone: logs.length > 0 ? 'warn' : 'ok',
+    detail:
+      logs.length > 0
+        ? `${customerTooFar.length} customer GPS gate and ${partnerTooFar.length} first-pick distance gate attempt(s). Latest ${latestAge}.`
+        : 'No booking create request has been blocked by the local booking gates.',
+    href: '/bookings?view=blocked-create',
+    metrics: [
+      { label: 'Customer GPS gate', value: customerTooFar.length.toString() },
+      { label: 'First-pick distance', value: partnerTooFar.length.toString() },
+      { label: 'Latest', value: latestAge },
+    ],
+  };
+}
+
+function bookingGateReasonCode(log: AdminAuditLog) {
+  const metadata = readPlainRecord(log.metadata);
+  return readOptionalString(metadata?.reasonCode) ?? readOptionalString(metadata?.code) ?? 'UNKNOWN';
+}
+
+function bookingGateRejectionInfo(log: AdminAuditLog) {
+  const metadata = readPlainRecord(log.metadata) ?? {};
+  const reasonCode = bookingGateReasonCode(log);
+  const bookingAddress =
+    readPlainRecord(metadata.bookingAddress) ??
+    readPlainRecord(metadata.address) ??
+    readPlainRecord(metadata.addressSnapshot);
+  const currentLocation =
+    readPlainRecord(metadata.customerCurrentLocation) ??
+    readPlainRecord(metadata.currentLocation) ??
+    readPlainRecord(metadata.customerLocation);
+  const customerProfileId =
+    readOptionalString(metadata.customerProfileId) ??
+    readOptionalString(metadata.customerId) ??
+    readCustomerIdFromAuditTarget(log.target);
+
+  const customerDistance = readFirstNumber([
+    metadata.customerDistanceMeters,
+    metadata.customerCurrentToBookingAddressMeters,
+    metadata.currentLocationDistanceMeters,
+  ]);
+  const customerDistanceLimit = readFirstNumber([
+    metadata.customerDistanceLimitMeters,
+    metadata.customerCurrentDistanceLimitMeters,
+    metadata.customerCurrentToBookingAddressLimitMeters,
+  ]);
+  const preferredPartnerDistance = readFirstNumber([
+    metadata.preferredProviderDistanceMeters,
+    metadata.preferredPartnerDistanceMeters,
+    metadata.partnerDistanceMeters,
+  ]);
+  const preferredPartnerDistanceLimit = readFirstNumber([
+    metadata.preferredProviderDistanceLimitMeters,
+    metadata.preferredPartnerDistanceLimitMeters,
+    metadata.partnerDistanceLimitMeters,
+  ]);
+
+  const bookingAddressLabel =
+    coordinatePairLabel(
+      bookingAddress?.latitude ?? bookingAddress?.lat ?? metadata.bookingLatitude,
+      bookingAddress?.longitude ?? bookingAddress?.lng ?? metadata.bookingLongitude,
+    ) ?? 'booking pin not recorded';
+  const currentLocationLabel =
+    coordinatePairLabel(
+      currentLocation?.latitude ?? currentLocation?.lat ?? metadata.currentLatitude,
+      currentLocation?.longitude ?? currentLocation?.lng ?? metadata.currentLongitude,
+    ) ?? 'current GPS not recorded';
+  const recordedAt =
+    readOptionalString(metadata.currentLocationRecordedAt) ??
+    readOptionalString(currentLocation?.updatedAt) ??
+    readOptionalString(currentLocation?.recordedAt);
+
+  return {
+    reasonLabel: bookingGateReasonLabel(reasonCode),
+    tone: reasonCode === 'UNKNOWN' ? ('info' as const) : ('warn' as const),
+    operatorAction: bookingGateOperatorAction(reasonCode),
+    addressText:
+      readAddressText(bookingAddress) ??
+      readOptionalString(metadata.addressText) ??
+      readOptionalString(metadata.bookingAddressText) ??
+      'Address not recorded',
+    customerDistanceLabel: formatGateDistance('Customer GPS', customerDistance, customerDistanceLimit),
+    preferredPartnerDistanceLabel: formatGateDistance(
+      'First-pick partner',
+      preferredPartnerDistance,
+      preferredPartnerDistanceLimit,
+    ),
+    currentLocationLabel: recordedAt
+      ? `${currentLocationLabel} / ${relativeTimeLabel(recordedAt, 0)}`
+      : currentLocationLabel,
+    bookingAddressLabel,
+    customerHref: customerProfileId ? `/customers/${customerProfileId}` : null,
+  };
+}
+
+function bookingGateReasonLabel(reasonCode: string) {
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
+    return 'Customer current location too far';
+  }
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
+    return 'First-pick partner too far';
+  }
+  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
+    return 'Address outside service area';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
+    return 'Customer GPS stale';
+  }
+  return reasonCode.replaceAll('_', ' ').toLowerCase();
+}
+
+function bookingGateOperatorAction(reasonCode: string) {
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
+    return 'Ask the customer to refresh GPS near the service address or choose a service address closer to their current location. Payment and matching did not start.';
+  }
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
+    return 'Ask the customer to choose a closer first-pick partner or correct the service address. Payment and matching did not start.';
+  }
+  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
+    return 'Confirm the requested address is inside an enabled Vietnam service area before booking can start.';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
+    return 'Ask the customer to refresh current location before booking. The saved GPS snapshot was too old.';
+  }
+  return 'Review the audit metadata and customer address before support follow-up.';
+}
+
+function formatGateDistance(label: string, distance: number | null, limit: number | null) {
+  if (distance === null && limit === null) {
+    return `${label}: not recorded`;
+  }
+  if (limit === null) {
+    return `${label}: ${formatMeters(distance)}`;
+  }
+  return `${label}: ${formatMeters(distance)} / limit ${formatMeters(limit)}`;
+}
+
+function formatMeters(value: number | null) {
+  if (value === null) {
+    return '?';
+  }
+  if (value >= 1000) {
+    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+  }
+  return `${Math.round(value).toLocaleString()} m`;
+}
+
+function readFirstNumber(values: unknown[]) {
+  for (const value of values) {
+    const parsed = readOptionalNumber(value);
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+function readCustomerIdFromAuditTarget(target: string) {
+  return target.startsWith('customer:') ? target.slice('customer:'.length) : null;
+}
+
 function emptyBookingMessage(view: BookingView) {
   if (view === 'active') {
     return 'No active bookings match this queue. Dispatch is clear right now.';
@@ -2335,6 +2602,9 @@ function emptyBookingMessage(view: BookingView) {
   }
   if (view === 'no-supply') {
     return 'No open matching booking is waiting without partner supply.';
+  }
+  if (view === 'blocked-create') {
+    return 'Blocked booking create attempts are listed above. No booking row exists because payment and matching did not start.';
   }
   if (view === 'address') {
     return 'No booking is missing an immutable address snapshot.';

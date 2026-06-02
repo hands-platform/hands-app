@@ -1,10 +1,14 @@
-import { AdminBooking, adminGet } from '../../lib/admin-api';
+import { AdminAuditLog, AdminBooking, adminGet } from '../../lib/admin-api';
 import { BookingMonitor, type BookingEvidenceFilter } from './booking-monitor';
 
 type BookingsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function BookingsPage({ searchParams }: { searchParams?: BookingsPageSearchParams }) {
-  const bookings = await adminGet<AdminBooking[]>('/admin/bookings', []);
+  const [bookings, auditLogs] = await Promise.all([
+    adminGet<AdminBooking[]>('/admin/bookings', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
+  ]);
+  const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
   const params = await searchParams;
   const initialView = readBookingView(params?.view, params?.status);
   const initialEvidenceFilter = readBookingEvidenceFilter(params?.evidence);
@@ -12,6 +16,7 @@ export default async function BookingsPage({ searchParams }: { searchParams?: Bo
   return (
     <BookingMonitor
       bookings={bookings}
+      bookingCreateRejections={bookingCreateRejections}
       initialView={initialView}
       initialEvidenceFilter={initialEvidenceFilter}
     />
@@ -30,6 +35,7 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     view === 'customer-choice' ||
     view === 'handoff-repair' ||
     view === 'no-supply' ||
+    view === 'blocked-create' ||
     view === 'address' ||
     view === 'payment' ||
     view === 'cash-debt' ||
