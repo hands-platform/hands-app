@@ -237,6 +237,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       verification_status: provider.verification?.status ?? 'DRAFT',
       joined_at: master.joinedAt ?? '',
       recent_access_at: master.lastSeenAt ?? '',
+      latest_session_device: master.latestSessionDevice,
+      latest_session_platform: master.latestSessionPlatform,
+      latest_session_ip: master.latestSessionIp,
+      latest_session_app_version: master.latestSessionAppVersion,
       location_state: master.locationState,
       location_updated_at: provider.currentLocationUpdatedAt ?? '',
       booking_count: master.bookingCount,
@@ -519,6 +523,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <th>Current state</th>
                 <th>Level</th>
                 <th>Joined / recent access</th>
+                <th>Device / IP</th>
                 <th>Location</th>
                 <th>Bookings</th>
                 <th>Feedback records</th>
@@ -564,6 +569,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </p>
                   </td>
                   <td>
+                    <strong>{row.latestSessionDevice}</strong>
+                    <p className="muted">{row.latestSessionIp}</p>
+                  </td>
+                  <td>
                     <strong>{providerLocationLabel(row.locationState)}</strong>
                     <p className="muted">{providerLocationAgeLabel(row.provider.currentLocationUpdatedAt)}</p>
                   </td>
@@ -607,7 +616,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               ))}
               {partnerMasterRows.length === 0 ? (
                 <tr>
-                  <td colSpan={15}>
+                  <td colSpan={16}>
                     <strong>No partner rows found</strong>
                     <p className="muted">Change the filters or clear search to view partner records.</p>
                   </td>
@@ -1758,6 +1767,10 @@ type PartnerMasterRow = {
   kycStatus: string;
   joinedAt: string | null;
   lastSeenAt: string | null;
+  latestSessionDevice: string;
+  latestSessionPlatform: string;
+  latestSessionIp: string;
+  latestSessionAppVersion: string;
   locationState: ProviderLocationState;
   bookingCount: number;
   completedCount: number;
@@ -1913,6 +1926,7 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
   const earnings = provider.earnings ?? [];
   const displayName = providerDisplayName(provider);
   const lastSeenAt = partnerLastSessionAt(provider);
+  const latestSessionFacts = partnerLatestSessionFacts(provider);
   const accountBlocked = Boolean(provider.blockedAt);
   const closedRows = bookingRows.filter((booking) => CLOSED_BOOKING_STATUSES.includes(booking.status));
 
@@ -1929,6 +1943,10 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     kycStatus: provider.kyc?.status ?? 'DRAFT',
     joinedAt: provider.user?.createdAt ?? null,
     lastSeenAt,
+    latestSessionDevice: latestSessionFacts.device,
+    latestSessionPlatform: latestSessionFacts.platform,
+    latestSessionIp: latestSessionFacts.ip,
+    latestSessionAppVersion: latestSessionFacts.appVersion,
     locationState: providerLocationStatus(provider, opsPolicy),
     bookingCount: bookingRows.length,
     completedCount:
@@ -1946,6 +1964,22 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     availablePayout: providerAvailablePayout(provider),
     accountBlocked,
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
+  };
+}
+
+function partnerLatestSessionFacts(provider: AdminProvider) {
+  const latestSession = provider.sessions?.[0];
+  const latestDevice = provider.devices?.[0];
+  const platform = latestDevice?.platform ?? 'Unknown platform';
+  const appVersion = latestSession?.appVersion ?? latestDevice?.appVersion;
+  const appVersionLabel = appVersion ? `v${appVersion}` : 'No app version';
+  const deviceId = latestSession?.deviceId ?? latestDevice?.deviceId;
+
+  return {
+    device: deviceId ? `${platform} / ${appVersionLabel} / ${maskToken(deviceId)}` : 'No session',
+    platform,
+    ip: latestSession?.ipAddress ?? 'No IP recorded',
+    appVersion: appVersion ?? 'No app version',
   };
 }
 
