@@ -319,7 +319,10 @@ const pages = [
     path: '/earnings?range=7d',
     markers: ['Partner Earnings', 'Earnings date range', 'Last 7 days', 'Money flow command center'],
   },
-  { path: '/payments', markers: ['Payments', 'Payment operation filters', 'Payment date range'] },
+  {
+    path: '/payments',
+    markers: ['Payments', 'Payment operation filters', 'Payment date range', 'Payment action execution map'],
+  },
   {
     path: '/payments?range=7d',
     markers: ['Payments', 'Payment operation filters', 'Payment date range', 'Last 7 days'],

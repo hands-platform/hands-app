@@ -1,5 +1,11 @@
 import { AdminPayment, adminGet } from '../../lib/admin-api';
-import { AdminDateRange, dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import {
+  AdminDateRange,
+  dateRangeLabel,
+  isInDateRange,
+  normalizeDateRange,
+  readSearchParam,
+} from '../../lib/date-range';
 import Link from 'next/link';
 import { capturePayment, refundPayment, releasePayment, settleCashDebt, syncPayment } from './actions';
 
@@ -22,10 +28,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
         <div className="card">
           <p>Pending cash</p>
           <h2>
-            {
-              payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING')
-                .length
-            }
+            {payments.filter((payment) => payment.method === 'CASH' && payment.status === 'PENDING').length}
           </h2>
         </div>
         <div className="card">
@@ -158,6 +161,21 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
                   <div>{paymentOpsSignal(payment)}</div>
                   <div className="muted" style={{ marginTop: 8 }}>
                     {paymentOpsHint(payment)}
+                  </div>
+                  <div className="ops-task-note" style={{ marginTop: 10 }}>
+                    <strong>Payment action execution map</strong>
+                    <div className="setup-stage-list" style={{ marginTop: 8 }}>
+                      {paymentActionExecutionMap(payment).map((row) => (
+                        <div className="setup-stage-item" key={`${payment.id}-${row.action}`}>
+                          <span className={`pill ${row.pillClass}`}>{row.status}</span>
+                          <div>
+                            <strong>{row.action}</strong>
+                            <p className="muted">{row.reason}</p>
+                            <small>{row.operatorRule}</small>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </td>
                 <td>{payment.providerRef ?? 'NONE'}</td>
@@ -442,6 +460,111 @@ function paymentOpsHint(payment: AdminPayment) {
     return 'Booking did not convert. Confirm the customer sees the hold release.';
   }
   return 'No urgent action required.';
+}
+
+type PaymentActionExecutionRow = {
+  action: string;
+  status: string;
+  reason: string;
+  operatorRule: string;
+  pillClass: string;
+};
+
+function paymentActionExecutionMap(payment: AdminPayment): PaymentActionExecutionRow[] {
+  const bookingStatus = payment.booking?.status ?? 'UNKNOWN';
+  const hasGatewayReference = Boolean(payment.providerRef);
+  const terminalPayment = ['CAPTURED', 'REFUNDED', 'RELEASED'].includes(payment.status);
+  const completedService = bookingStatus === 'COMPLETED';
+  const closedWithoutCapture = ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(bookingStatus);
+  const cashDebt = paymentCashDebtNeedsSettlement(payment);
+
+  return [
+    {
+      action: 'Sync',
+      status: hasGatewayReference ? 'Available' : 'No gateway ref',
+      reason: hasGatewayReference
+        ? `Gateway reference ${payment.providerRef} is saved on this payment.`
+        : 'No gateway reference is saved yet.',
+      operatorRule:
+        'Use sync before manual money actions when a gateway reference exists. Sync should not decide service outcome.',
+      pillClass: hasGatewayReference ? 'pill-success' : 'pill-neutral',
+    },
+    {
+      action: 'Capture',
+      status:
+        payment.status === 'AUTHORIZED' && completedService
+          ? 'Review capture'
+          : terminalPayment
+            ? 'Locked'
+            : payment.status === 'AUTHORIZED'
+              ? 'Wait for completion'
+              : 'Not authorized',
+      reason:
+        payment.status === 'AUTHORIZED' && completedService
+          ? 'The service is completed and the authorization hold is still active.'
+          : terminalPayment
+            ? `Payment is already ${payment.status}.`
+            : payment.status === 'AUTHORIZED'
+              ? `Booking is ${bookingStatus}; service completion evidence is not final yet.`
+              : `Payment status is ${payment.status}.`,
+      operatorRule: 'Capture only after completed service evidence and payment ledger review.',
+      pillClass: payment.status === 'AUTHORIZED' && completedService ? 'pill-warn' : 'pill-neutral',
+    },
+    {
+      action: 'Release',
+      status:
+        payment.status === 'AUTHORIZED' && closedWithoutCapture
+          ? 'Review release'
+          : terminalPayment
+            ? 'Locked'
+            : payment.status === 'AUTHORIZED'
+              ? 'Hold active'
+              : 'Not authorized',
+      reason:
+        payment.status === 'AUTHORIZED' && closedWithoutCapture
+          ? `Booking is ${bookingStatus}; release can close the authorization without capture.`
+          : terminalPayment
+            ? `Payment is already ${payment.status}.`
+            : payment.status === 'AUTHORIZED'
+              ? 'The hold is still active; check booking evidence before release.'
+              : `Payment status is ${payment.status}.`,
+      operatorRule: 'Release only when the booking outcome should not capture customer funds.',
+      pillClass: payment.status === 'AUTHORIZED' && closedWithoutCapture ? 'pill-warn' : 'pill-neutral',
+    },
+    {
+      action: 'Refund',
+      status:
+        payment.status === 'CAPTURED'
+          ? 'Evidence required'
+          : payment.status === 'REFUNDED'
+            ? 'Already refunded'
+            : payment.status === 'RELEASED'
+              ? 'Released'
+              : 'Not captured',
+      reason:
+        payment.status === 'CAPTURED'
+          ? 'Captured money can be refunded only after admin decision evidence is recorded.'
+          : payment.status === 'REFUNDED'
+            ? 'Refund path has already started.'
+            : payment.status === 'RELEASED'
+              ? 'The authorization was released, so no captured money remains here.'
+              : 'There is no captured payment to refund from this row.',
+      operatorRule: 'Refunds must preserve customer, partner, booking, payment, and chat evidence.',
+      pillClass: payment.status === 'CAPTURED' ? 'pill-warn' : 'pill-neutral',
+    },
+    {
+      action: 'Settle cash debt',
+      status: cashDebt ? 'Evidence required' : payment.method === 'CASH' ? 'Clear' : 'Not cash',
+      reason: cashDebt
+        ? 'Cash was collected by the partner and the HANDS fee/tax debt is still open.'
+        : payment.method === 'CASH'
+          ? 'This cash payment has no open partner wallet debt on the linked earning.'
+          : 'This payment is not a cash collection case.',
+      operatorRule:
+        'Settle with a deposit reference or approved admin offset before final acceptance, service start, or payout release.',
+      pillClass: cashDebt ? 'pill-danger' : payment.method === 'CASH' ? 'pill-success' : 'pill-neutral',
+    },
+  ];
 }
 
 function paymentCashDebtNeedsSettlement(payment: AdminPayment) {
