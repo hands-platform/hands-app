@@ -164,6 +164,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messageCount: messages.length,
     notificationCount: notificationTrace.rows.length,
   });
+  const payoutBatchEligibility = bookingPayoutBatchEligibility({
+    booking,
+    financeTrace,
+    financeFlags,
+    closeoutReadiness,
+  });
   const operatingSnapshot = bookingOperatingSnapshot({
     booking,
     addressLine,
@@ -2037,6 +2043,35 @@ export default async function BookingDetailPage({ params }: PageProps) {
             Customer charge, payout rule, earning, and wallet impact are aligned for this booking.
           </p>
         )}
+      </section>
+
+      <section className="card" id="payout-batch-eligibility" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payout batch eligibility</h2>
+            <p className="muted">
+              Booking-level release check before weekly, monthly, or admin-selected partner settlement
+              batches.
+            </p>
+          </div>
+          <span className={`pill ${payoutBatchEligibility.tone}`}>{payoutBatchEligibility.status}</span>
+        </div>
+        <p className="muted" style={{ marginTop: 8 }}>
+          {payoutBatchEligibility.summary}
+        </p>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {payoutBatchEligibility.rows.map((row) => (
+            <div className={`ops-task-card ${row.className}`} key={row.label}>
+              <div>
+                <span className={`pill ${row.pillClass}`}>{row.status}</span>
+                <h3>{row.label}</h3>
+                <p>{row.detail}</p>
+                <small>{row.operatorRule}</small>
+              </div>
+              <ActionLink href={row.href} label="Open" />
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="card" id="service-pricing-snapshot" style={{ marginBottom: 16 }}>
@@ -4112,6 +4147,141 @@ function toChecklistPillClass(value: string): BookingCloseoutChecklistItem['pill
   }
 
   return 'pill-neutral';
+}
+
+type BookingPayoutBatchEligibilityRow = {
+  label: string;
+  status: string;
+  detail: string;
+  operatorRule: string;
+  href: string;
+  className: BookingCloseoutChecklistItem['className'];
+  pillClass: BookingCloseoutChecklistItem['pillClass'];
+};
+
+function bookingPayoutBatchEligibility({
+  booking,
+  financeTrace,
+  financeFlags,
+  closeoutReadiness,
+}: {
+  booking: AdminBookingDetail;
+  financeTrace: ReturnType<typeof bookingFinanceTrace>;
+  financeFlags: AttentionFlag[];
+  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
+}) {
+  const isCompleted = booking.status === 'COMPLETED';
+  const paymentReady =
+    booking.payment?.method === 'CASH' ||
+    ['CAPTURED', 'PAID', 'SETTLED'].includes(booking.payment?.status ?? '');
+  const hasEarning = Boolean(booking.earning);
+  const hasTaxLog = (booking.earning?.taxLogs?.length ?? booking.taxLogs?.length ?? 0) > 0;
+  const hasPlatformFeeLog =
+    (booking.earning?.platformFeeLogs?.length ?? booking.platformFeeLogs?.length ?? 0) > 0;
+  const hasWalletLedger =
+    (booking.earning?.walletLedgerEntries?.length ?? booking.walletLedgerEntries?.length ?? 0) > 0;
+  const cashDebt = bookingCashDebtNeedsSettlement(booking);
+  const hasBatch = Boolean(booking.earning?.payoutBatchId);
+  const alreadyPaid = ['PAID', 'SETTLED'].includes(booking.earning?.status ?? '');
+  const closeoutReady = closeoutReadiness.openItems.length === 0 && financeFlags.length === 0;
+  const eligible = isCompleted && paymentReady && hasEarning && closeoutReady && !cashDebt;
+  const blocked = !isCompleted || !paymentReady || !hasEarning || cashDebt;
+  const status = alreadyPaid
+    ? 'Already paid'
+    : hasBatch
+      ? 'In batch'
+      : eligible
+        ? 'Batch ready'
+        : blocked
+          ? 'Blocked'
+          : 'Review';
+  const tone = alreadyPaid || hasBatch || eligible ? 'pill-success' : blocked ? 'pill-danger' : 'pill-warn';
+  const summary = alreadyPaid
+    ? 'This booking earning has already been paid or settled. Keep it visible as audit evidence.'
+    : hasBatch
+      ? `This booking earning is linked to payout batch ${shortId(booking.earning?.payoutBatchId ?? '')}.`
+      : eligible
+        ? 'This booking can be included in the next configured payout batch once finance chooses the batch cycle.'
+        : 'This booking should stay out of payout batches until the blocked or review items below are resolved.';
+
+  const rows: BookingPayoutBatchEligibilityRow[] = [
+    {
+      label: 'Completed service',
+      status: isCompleted ? 'Ready' : 'Not ready',
+      detail: `Booking status is ${booking.status}.`,
+      operatorRule: 'Only completed work enters partner payout batches.',
+      href: '#flow',
+      className: isCompleted ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: isCompleted ? 'pill-success' : 'pill-danger',
+    },
+    {
+      label: 'Payment settlement',
+      status: paymentReady ? 'Ready' : booking.payment?.status ?? 'Missing',
+      detail: booking.payment
+        ? `${booking.payment.method} / ${booking.payment.status} / ${financeTrace.customerPrice}`
+        : 'No payment row is linked to this booking.',
+      operatorRule: 'Non-cash bookings need captured payment; cash bookings use wallet debt controls.',
+      href: '#payment',
+      className: paymentReady ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: paymentReady ? 'pill-success' : 'pill-danger',
+    },
+    {
+      label: 'Earning ledger',
+      status: hasEarning ? (alreadyPaid ? 'Paid' : booking.earning?.status ?? 'Created') : 'Missing',
+      detail: hasEarning
+        ? `${money(booking.earning?.netAmount, booking.earning?.currency)} / payout batch ${
+            booking.earning?.payoutBatchId ? shortId(booking.earning.payoutBatchId) : 'not assigned'
+          }`
+        : 'No partner earning exists for this completed booking.',
+      operatorRule: 'The payout batch consumes the earning ledger, not the booking amount directly.',
+      href: '/earnings',
+      className: hasEarning ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: hasEarning ? 'pill-success' : 'pill-danger',
+    },
+    {
+      label: 'Tax, fee, and wallet logs',
+      status:
+        hasTaxLog && hasPlatformFeeLog && hasWalletLedger
+          ? 'Complete'
+          : `${[hasTaxLog, hasPlatformFeeLog, hasWalletLedger].filter(Boolean).length}/3`,
+      detail: `Tax ${hasTaxLog ? 'saved' : 'missing'} / platform fee ${
+        hasPlatformFeeLog ? 'saved' : 'missing'
+      } / wallet ${hasWalletLedger ? 'saved' : 'missing'}.`,
+      operatorRule:
+        'Batch release should preserve withholding, HANDS fee, and wallet evidence for audit review.',
+      href: '#finance',
+      className: hasTaxLog && hasPlatformFeeLog && hasWalletLedger ? 'ops-task-done' : 'ops-task-warning',
+      pillClass: hasTaxLog && hasPlatformFeeLog && hasWalletLedger ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Cash fee debt',
+      status: cashDebt ? 'Blocked' : 'Clear',
+      detail: cashDebt
+        ? `${financeTrace.walletLedger}. Settle company fee debt before batch release.`
+        : `Wallet impact ${financeTrace.walletLedger}.`,
+      operatorRule:
+        'Negative wallet partners can browse/join, but payout release waits for deposit or admin offset evidence.',
+      href: cashDebt ? '/cash-settlements' : '#finance',
+      className: cashDebt ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: cashDebt ? 'pill-danger' : 'pill-success',
+    },
+    {
+      label: 'Closeout readiness',
+      status: closeoutReady ? 'Ready' : `${closeoutReadiness.openItems.length + financeFlags.length} item(s)`,
+      detail: closeoutReady
+        ? closeoutReadiness.helper
+        : [
+            ...closeoutReadiness.openItems.map((item) => item.label),
+            ...financeFlags.map((flag) => flag.title),
+          ].join(', '),
+      operatorRule: 'Use retained booking evidence before including the earning in settlement batches.',
+      href: '#booking-closeout-readiness',
+      className: closeoutReady ? 'ops-task-done' : 'ops-task-warning',
+      pillClass: closeoutReady ? 'pill-success' : 'pill-warn',
+    },
+  ];
+
+  return { status, tone, summary, rows };
 }
 
 type BookingActionEvidenceGateRow = {

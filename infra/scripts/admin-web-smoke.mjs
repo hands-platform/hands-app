@@ -775,6 +775,7 @@ if (bookingLinkMatch) {
     'Booking full record index',
     'Service and pricing',
     'Finance trace',
+    'Payout batch eligibility',
     'Earnings ledger',
     'Cash settlement desk',
     'Tax policy',
