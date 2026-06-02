@@ -8,6 +8,7 @@ checkRequiredAuthorityDoc();
 checkNoContradictoryOperationsDocs();
 checkNoContradictoryNegativeWalletWording();
 checkOnDemandBookingContract();
+checkAddressBasedBookingContract();
 checkCustomerFinalSelectionContract();
 checkNoTipContract();
 checkPayoutBatchContract();
@@ -37,6 +38,7 @@ function checkRequiredAuthorityDoc() {
   requireMarkers('docs/architecture/hands-mvp-final-authority.md', source, [
     'Supabase is infrastructure. NestJS owns business rules',
     'Every booking must preserve an immutable `BookingAddressSnapshot`',
+    'Customers may browse partners from any country',
     'Preferred partner gets the first-pick window, currently 10 minutes',
     'default 10km, can join during the matching window',
     'The customer always chooses the final partner',
@@ -141,6 +143,34 @@ function checkOnDemandBookingContract() {
   requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
     'Customer-supplied scheduledStartAt should not create scheduled booking',
     'ignoredFutureScheduledStartAt',
+  ]);
+}
+
+function checkAddressBasedBookingContract() {
+  const service = read('apps/api/src/bookings/bookings.service.ts');
+  const customerApp = read('apps/customer_app/lib/main.dart');
+  const smoke = read('infra/scripts/api-smoke.mjs');
+
+  for (const marker of [
+    'bookingAttemptCurrentLocationGateError',
+    'customerBookingDistanceGateError',
+    'Recent customer current location is required before booking',
+    'Customer current location must be within',
+  ]) {
+    rejectMarker('apps/api/src/bookings/bookings.service.ts', service, marker);
+  }
+
+  rejectMarker('apps/customer_app/lib/main.dart', customerApp, 'Please refresh your current GPS before booking');
+  requireMarkers('apps/api/src/bookings/bookings.service.ts', service, [
+    'const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);',
+    'preferredProviderBookingDistanceGateError',
+    'bookingDistanceGateSnapshot',
+  ]);
+  requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
+    'Customer should be able to browse partners globally with long distance metadata',
+    'Booking should open from the confirmed service address without requiring customer GPS',
+    'Stale customer GPS should be ignored as optional evidence, not block address-based booking',
+    'globalBrowseKeepsPartnerDiscoveryOpen: true',
   ]);
 }
 

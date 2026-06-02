@@ -19,6 +19,7 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 - Supabase is infrastructure. NestJS owns business rules, authorization, booking state, matching, payments, settlement, and audit decisions.
 - Mobile and Admin must not bypass NestJS for critical business writes.
 - Customer discovery is address-based, not transient GPS-based.
+- Customers may browse partners from any country; booking creation depends on a confirmed service address in the active HANDS service area.
 - Every booking must preserve an immutable `BookingAddressSnapshot`.
 - Discovery can show partners beyond the Open Matching radius, but Open Matching participation is gated by booking address distance.
 - Preferred partner gets the first-pick window, currently 10 minutes.
