@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {
+  AdminAuditLog,
   AdminBooking,
   AdminCashSettlementSummary,
   AdminEarning,
@@ -215,6 +216,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     notifications,
     payoutBatches,
     appSessions,
+    auditLogs,
     externalReadiness,
     cashSettlementSummary,
     operationalPolicies,
@@ -239,6 +241,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     adminGet<AdminNotification[]>('/admin/notifications', []),
     adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
     adminGet<AdminAppSession[]>('/admin/app-sessions', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
     apiGet<AdminExternalReadiness>('/health/external', {
       ok: false,
       timestamp: new Date(0).toISOString(),
@@ -256,6 +259,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     notifications,
     earnings,
     earningRows,
+    bookingCreateRejections: auditLogs.filter((log) => log.action === 'booking.create.rejected'),
     cashSettlementSummary,
     payoutBatches,
   });
@@ -273,6 +277,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   );
   const rangeEarningRows = earningRows.filter((earning) => isInDateRange(earning.createdAt, filters.range));
   const rangePayoutBatches = payoutBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range));
+  const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
+  const rangeBookingCreateRejections = bookingCreateRejections.filter((log) =>
+    isInDateRange(log.createdAt, filters.range),
+  );
+  const bookingCreateGateSummary = buildBookingCreateGateSummary(bookingCreateRejections);
+  const rangeBookingCreateGateSummary = buildBookingCreateGateSummary(rangeBookingCreateRejections);
   const bookingOps = buildBookingOpsInsights(rangeBookings);
   const liveBookingOps = buildBookingOpsInsights(bookings);
   const bookingDeepDive = buildBookingOperationsDeepDive(rangeBookings, rangePayments);
@@ -434,6 +444,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       `${selectedRangeLabel} completed bookings missing capture, earning, tax, fee, or wallet ledger records.`,
     ],
     [
+      'Blocked create attempts',
+      rangeBookingCreateRejections.length.toString(),
+      `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerGpsGate} customer GPS, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
+    ],
+    [
       'Online partners',
       providers.filter((provider) => provider.status.startsWith('ONLINE')).length.toString(),
       'Supply currently visible to customers.',
@@ -501,6 +516,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     'Completed bookings',
     'Cancelled bookings',
     'No-show records',
+    'Blocked create attempts',
     'Customers in app',
     'Live matching customers',
     'Partners in app',
@@ -560,6 +576,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         ['All bookings', '/bookings'],
         ['Matching', '/bookings?view=matching'],
         ['Partner candidates', '/bookings?view=marketplace'],
+        ['Blocked create', '/bookings?view=blocked-create'],
         ['Chat handoff', '/bookings?view=chat'],
       ],
     },
@@ -725,6 +742,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           </Link>
         </div>
         <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Booking create gates</span>
+            <strong>{bookingCreateRejections.length}</strong>
+            <small>
+              <Link className="text-link" href="/bookings?view=blocked-create">
+                {bookingCreateGateSummary.customerGpsGate} customer GPS,{' '}
+                {bookingCreateGateSummary.firstPickDistanceGate} first-pick distance
+              </Link>
+            </small>
+          </div>
           <div>
             <span>Chat evidence</span>
             <strong>{liveBookingDeepDive.matchedWithoutChat + liveBookingDeepDive.quietActiveChats}</strong>
@@ -2791,6 +2818,33 @@ function readOptionalNumber(value: unknown) {
 
 function readOptionalString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function buildBookingCreateGateSummary(logs: AdminAuditLog[]) {
+  const customerGpsGate = logs.filter(
+    (log) =>
+      bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR' ||
+      bookingCreateGateReason(log) === 'CUSTOMER_CURRENT_LOCATION_STALE',
+  ).length;
+  const firstPickDistanceGate = logs.filter(
+    (log) => bookingCreateGateReason(log) === 'PREFERRED_PARTNER_TOO_FAR',
+  ).length;
+  const serviceAreaGate = logs.filter(
+    (log) => bookingCreateGateReason(log) === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+  ).length;
+
+  return {
+    total: logs.length,
+    customerGpsGate,
+    firstPickDistanceGate,
+    serviceAreaGate,
+    otherGate: Math.max(0, logs.length - customerGpsGate - firstPickDistanceGate - serviceAreaGate),
+  };
+}
+
+function bookingCreateGateReason(log: AdminAuditLog) {
+  const metadata = readPlainRecord(log.metadata);
+  return readOptionalString(metadata?.reasonCode) ?? readOptionalString(metadata?.code) ?? 'UNKNOWN';
 }
 
 function providersWithinRadius(providers: AdminProvider[], lat: number, lng: number, radiusMeters: number) {
@@ -5030,6 +5084,7 @@ function buildOpsQueue(input: {
   notifications: AdminNotification[];
   earnings: AdminEarningSummary;
   earningRows: AdminEarning[];
+  bookingCreateRejections: AdminAuditLog[];
   cashSettlementSummary: AdminCashSettlementSummary;
   payoutBatches: AdminPayoutBatch[];
 }) {
@@ -5049,6 +5104,21 @@ function buildOpsQueue(input: {
         recommendedAction: flag.recommendedAction,
       });
     }
+  }
+
+  const createGateSummary = buildBookingCreateGateSummary(input.bookingCreateRejections);
+  if (input.bookingCreateRejections.length > 0) {
+    items.push({
+      area: 'Booking',
+      href: '/bookings?view=blocked-create',
+      label: 'Booking create attempts blocked',
+      detail: `${input.bookingCreateRejections.length} stopped before payment: ${createGateSummary.customerGpsGate} customer GPS gate, ${createGateSummary.firstPickDistanceGate} first-pick distance gate.`,
+      severity: createGateSummary.customerGpsGate || createGateSummary.firstPickDistanceGate ? 'medium' : 'low',
+      owner: 'Support',
+      priority: 64,
+      recommendedAction:
+        'Open blocked create attempts and guide customers to refresh GPS, correct address, or choose a closer first-pick partner.',
+    });
   }
 
   for (const payment of input.payments) {
