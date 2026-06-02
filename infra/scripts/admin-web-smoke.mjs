@@ -763,6 +763,7 @@ if (bookingLinkMatch) {
     'Booking stage snapshot',
     'Applied operations policy',
     'Action evidence gate',
+    'Action button execution map',
     'Cash fee clearance',
     'First-pick expiry',
     'No-show evidence requirement',

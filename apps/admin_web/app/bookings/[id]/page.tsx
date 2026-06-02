@@ -1290,6 +1290,37 @@ export default async function BookingDetailPage({ params }: PageProps) {
               </a>
             ))}
           </div>
+          <div className="ops-task-note" id="action-button-execution-map" style={{ marginTop: 12 }}>
+            <strong>Action button execution map</strong>
+            <p className="muted">
+              Button-by-button operating readout. Use this before pressing payment, settlement, expiry,
+              no-show, or completed closeout actions.
+            </p>
+            <table className="table" style={{ marginTop: 12 }}>
+              <thead>
+                <tr>
+                  <th>Action button</th>
+                  <th>Current state</th>
+                  <th>Why</th>
+                  <th>Operator rule</th>
+                </tr>
+              </thead>
+              <tbody>
+                {actionEvidenceGate.rows.map((row) => (
+                  <tr key={`button-map-${row.action}`}>
+                    <td>
+                      <strong>{row.action}</strong>
+                    </td>
+                    <td>
+                      <span className={`pill ${row.pillClass}`}>{row.status}</span>
+                    </td>
+                    <td>{row.evidence}</td>
+                    <td>{row.operatorRule}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
         <div className="actions">
           {booking.payment?.id ? (
