@@ -576,6 +576,7 @@ if (providerLinkMatch) {
       'Partner operator command queue',
       'Partner recent operations timeline',
       'Partner connected operations records',
+      'Partner booking evidence bundles',
       'Partner operator notes',
       'Partner ops command center',
       'Partner master facts',

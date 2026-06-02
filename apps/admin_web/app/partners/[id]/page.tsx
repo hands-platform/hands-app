@@ -82,6 +82,16 @@ type PartnerDetailBooking = {
   scheduledEndAt?: string;
   createdAt?: string;
   address?: unknown;
+  addressSnapshot?: {
+    id?: string;
+    address?: unknown;
+    addressText?: string | null;
+    latitude?: string | number | null;
+    longitude?: string | number | null;
+    createdAt?: string | null;
+  } | null;
+  lat?: string | number | null;
+  lng?: string | number | null;
   closedAt?: string | null;
   closedByRole?: string | null;
   closedReason?: string | null;
@@ -255,6 +265,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
   const filteredPartnerBookingArchive = partnerBookingArchive.filter((record) =>
     isWithinDetailDateFilter(record.booking.scheduledStartAt ?? record.booking.createdAt, dateFilters),
+  );
+  const partnerBookingEvidenceRows = buildPartnerBookingEvidenceRows(
+    provider,
+    filteredPartnerBookingArchive,
   );
   const filteredPartnerActivityRecords = partnerActivityRecords.filter(
     (record) =>
@@ -626,6 +640,84 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
+      </div>
+
+      <div className="card" id="partner-booking-evidence-bundles" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner booking evidence bundles</h2>
+            <p className="muted">
+              Reservation-by-reservation partner work bundle for operators. Each row connects the partner role,
+              customer address snapshot, chat archive, payment, earning, payout/wallet records, location, and
+              staff task records as factual history only.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerBookingEvidenceRows.length} booking bundle(s)</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Booking</th>
+              <th>Partner role</th>
+              <th>Customer and location</th>
+              <th>Chat archive</th>
+              <th>Money records</th>
+              <th>Ops evidence</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerBookingEvidenceRows.map((row) => (
+              <tr key={`${row.id}-${row.relation}`}>
+                <td>
+                  <strong>{row.bookingLabel}</strong>
+                  <p className="muted">{row.serviceLabel}</p>
+                  <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
+                </td>
+                <td>
+                  <strong>{row.roleStatus}</strong>
+                  <p className="muted">{row.roleDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.customerStatus}</strong>
+                  <p className="muted">{row.customerDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.chatStatus}</strong>
+                  <p className="muted">{row.chatDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.moneyStatus}</strong>
+                  <p className="muted">{row.moneyDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.opsStatus}</strong>
+                  <p className="muted">{row.opsDetail}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={`/bookings/${row.id}`}>
+                    Booking
+                  </Link>
+                  {row.customerHref ? (
+                    <Link className="text-link" href={row.customerHref} style={{ marginLeft: 10 }}>
+                      Customer
+                    </Link>
+                  ) : null}
+                  {row.chatHref ? (
+                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      Chat
+                    </Link>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {partnerBookingEvidenceRows.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No partner booking bundle matched this date filter.
+          </p>
+        ) : null}
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
@@ -2338,6 +2430,26 @@ type PartnerAcceptanceUnblockStep = {
   bookingBlocked: boolean;
 };
 
+type PartnerBookingEvidenceRow = {
+  id: string;
+  relation: string;
+  bookingLabel: string;
+  serviceLabel: string;
+  status: string;
+  roleStatus: string;
+  roleDetail: string;
+  customerStatus: string;
+  customerDetail: string;
+  customerHref?: string;
+  chatStatus: string;
+  chatDetail: string;
+  chatHref?: string;
+  moneyStatus: string;
+  moneyDetail: string;
+  opsStatus: string;
+  opsDetail: string;
+};
+
 type PartnerDetailOpsBadge = {
   label: string;
   detail: string;
@@ -2888,6 +3000,77 @@ function buildPartnerBookingArchive(provider: ProviderDetail): PartnerBookingArc
       dateValue(right.booking.scheduledStartAt ?? right.booking.createdAt) -
       dateValue(left.booking.scheduledStartAt ?? left.booking.createdAt),
   );
+}
+
+function buildPartnerBookingEvidenceRows(
+  provider: ProviderDetail,
+  bookingArchive: PartnerBookingArchiveRecord[],
+): PartnerBookingEvidenceRow[] {
+  return bookingArchive.slice(0, 30).map((record) => {
+    const booking = record.booking;
+    const chatMessages = readPartnerChatMessages(booking);
+    const participant = (booking.participants ?? []).find(
+      (item) => item.providerProfileId === provider.id,
+    );
+    const earning = (provider.earnings ?? []).find((item) => item.bookingId === booking.id);
+    const walletRows = earning?.walletLedgerEntries ?? [];
+    const latestLocation = provider.currentLocationUpdatedAt
+      ? `${locationAgeLabel(provider.currentLocationUpdatedAt)} / ${provider.currentLat ?? '?'}:${provider.currentLng ?? '?'}`
+      : 'No latest location loaded';
+    const addressDetail = partnerBookingAddressEvidenceLabel(booking);
+    const moneyParts = [
+      booking.payment
+        ? `${booking.payment.status ?? 'UNKNOWN'} ${booking.payment.method ?? 'UNKNOWN'} ${formatCurrency(
+            booking.payment.amount ?? 0,
+            booking.payment.currency ?? 'VND',
+          )}`
+        : 'No payment row',
+      earning
+        ? `earning ${earning.status} net ${formatCurrency(earning.netAmount, earning.currency ?? 'VND')}`
+        : 'no earning row',
+      walletRows.length ? `${walletRows.length} wallet row(s)` : 'no wallet rows',
+    ];
+    const opsParts = [
+      `participant ${participant?.status ?? 'not linked'}`,
+      participant?.joinedAt ? `joined ${formatDate(participant.joinedAt)}` : 'join time not stored',
+      participant?.respondedAt ? `responded ${formatDate(participant.respondedAt)}` : 'response time not stored',
+      `location ${latestLocation}`,
+    ];
+
+    return {
+      id: booking.id,
+      relation: record.relation,
+      bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
+        booking.scheduledStartAt ?? booking.createdAt,
+      )}`,
+      serviceLabel: `${bookingServiceLabel(booking)} / ${formatCurrency(bookingTotal(booking))}`,
+      status: booking.status ?? 'UNKNOWN',
+      roleStatus:
+        record.relation === 'Selected'
+          ? 'Final partner'
+          : record.relation === 'Preferred'
+            ? 'First-pick partner'
+            : 'Marketplace participant',
+      roleDetail: `${record.relation} / ${participant?.status ?? 'booking relation'} / ${
+        booking.participants?.length ?? 0
+      } participant(s)`,
+      customerStatus: partnerBookingCustomer(booking),
+      customerDetail: addressDetail,
+      customerHref: booking.customerProfileId ? `/customers/${booking.customerProfileId}` : undefined,
+      chatStatus: booking.chatRoom ? `${chatMessages.length} message(s)` : 'No chat room',
+      chatDetail: booking.chatRoom
+        ? `Room ${shortRecordId(booking.chatRoom.id)}${record.lastMessage ? ` / last ${record.lastMessage}` : ''}`
+        : partnerBookingChatEvidenceLabel(booking),
+      chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
+      moneyStatus: earning?.status ?? booking.payment?.status ?? 'No earning',
+      moneyDetail: moneyParts.join(' / '),
+      opsStatus:
+        isClosedPartnerBooking(booking) || participant?.respondedAt || earning
+          ? 'Records linked'
+          : 'Minimal records',
+      opsDetail: opsParts.join(' / '),
+    };
+  });
 }
 
 function buildPartnerActivityRecords(
@@ -3699,10 +3882,72 @@ function bookingServiceLabel(booking: PartnerDetailBooking) {
   return labels.length ? labels.join(', ') : 'No service';
 }
 
+function bookingTotal(booking: PartnerDetailBooking) {
+  return (booking.services ?? []).reduce((sum, item) => {
+    return sum + (item.price ?? 0) * (item.quantity ?? 1);
+  }, 0);
+}
+
 function partnerBookingCustomer(booking: PartnerDetailBooking) {
   return (
     booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Unknown customer'
   );
+}
+
+function partnerBookingAddressEvidenceLabel(booking: PartnerDetailBooking) {
+  if (booking.addressSnapshot) {
+    const snapshotText = stringifyPartnerAddress(
+      booking.addressSnapshot.addressText ?? booking.addressSnapshot.address,
+    );
+    const coordinates =
+      booking.addressSnapshot.latitude != null && booking.addressSnapshot.longitude != null
+        ? `${booking.addressSnapshot.latitude}, ${booking.addressSnapshot.longitude}`
+        : 'coordinates not stored';
+    return `${snapshotText} / snapshot ${coordinates}`;
+  }
+  if (booking.address) {
+    return stringifyPartnerAddress(booking.address);
+  }
+  if (booking.lat != null && booking.lng != null) {
+    return `coordinates ${booking.lat}, ${booking.lng}`;
+  }
+  return 'No booking address evidence loaded';
+}
+
+function stringifyPartnerAddress(value: unknown) {
+  if (!value) return 'No address text';
+  if (typeof value === 'string') return value;
+  if (typeof value === 'object') {
+    const address = value as Record<string, unknown>;
+    const text =
+      address.addressText ??
+      address.address_text ??
+      address.address ??
+      address.formatted ??
+      address.label ??
+      address.name;
+    if (typeof text === 'string' && text.trim()) return text;
+    return trimText(JSON.stringify(address), 120);
+  }
+  return String(value);
+}
+
+function partnerBookingChatEvidenceLabel(booking: PartnerDetailBooking) {
+  const status = booking.status ?? '';
+  if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(status)) {
+    return 'Matched booking needs retained chat archive';
+  }
+  return 'No matched chat yet';
+}
+
+function partnerBookingStatusPillClass(status?: string) {
+  if (['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status ?? '')) {
+    return 'pill-info';
+  }
+  if (status === 'COMPLETED') return 'pill-success';
+  if (status === 'NO_SHOW') return 'pill-danger';
+  if (['CANCELLED', 'EXPIRED', 'REFUNDED'].includes(status ?? '')) return 'pill-warn';
+  return 'pill-neutral';
 }
 
 function isClosedPartnerBooking(booking: PartnerDetailBooking) {
