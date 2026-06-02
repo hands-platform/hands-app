@@ -386,6 +386,17 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     bookingActivityRecords,
   });
+  const bookingCloseoutChecklist = buildBookingCloseoutChecklist({
+    booking,
+    messages,
+    latestLocation,
+    notificationTrace,
+    financeTrace,
+    refundLedgerRows,
+    operatorNoteLines,
+    closeoutReadiness,
+    bookingActivityRecords,
+  });
 
   return (
     <>
@@ -710,6 +721,38 @@ export default async function BookingDetailPage({ params }: PageProps) {
             ))}
           </tbody>
         </table>
+      </section>
+
+      <section className="card" id="booking-closeout-checklist" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking closeout checklist</h2>
+            <p className="muted">
+              Final operator checklist before payment capture, refund/release, cash fee settlement, no-show,
+              cancellation, or completed-work closeout. It uses factual records only.
+            </p>
+          </div>
+          <div className="actions">
+            <Link className="text-link" href="/bookings?view=manual-decision">
+              Manual decision queue
+            </Link>
+            <Link className="text-link" href="/finance-closeout">
+              Finance closeout
+            </Link>
+          </div>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {bookingCloseoutChecklist.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+              <div>
+                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <h3>{item.title}</h3>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.operatorRule}</small>
+            </Link>
+          ))}
+        </div>
       </section>
 
       <section className="card" id="connected-operations-records" style={{ marginBottom: 16 }}>
@@ -3183,6 +3226,171 @@ function buildBookingEvidenceBundleRows({
       href: '#booking-activity',
     },
   ];
+}
+
+type BookingCloseoutChecklistItem = {
+  title: string;
+  status: string;
+  detail: string;
+  operatorRule: string;
+  href: string;
+  className: 'ops-task-done' | 'ops-task-warning' | 'ops-task-blocked';
+  pillClass: 'pill-success' | 'pill-warn' | 'pill-danger' | 'pill-info' | 'pill-neutral';
+};
+
+function buildBookingCloseoutChecklist({
+  booking,
+  messages,
+  latestLocation,
+  notificationTrace,
+  financeTrace,
+  refundLedgerRows,
+  operatorNoteLines,
+  closeoutReadiness,
+  bookingActivityRecords,
+}: {
+  booking: AdminBookingDetail;
+  messages: AdminChatMessage[];
+  latestLocation?: AdminLocationSnapshot | null;
+  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
+  financeTrace: ReturnType<typeof bookingFinanceTrace>;
+  refundLedgerRows: BookingRefundLedgerRow[];
+  operatorNoteLines: string[];
+  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
+  bookingActivityRecords: BookingActivityRecord[];
+}): BookingCloseoutChecklistItem[] {
+  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const acceptedParticipants =
+    booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+      .length ?? 0;
+  const addressReady = Boolean(booking.addressSnapshot);
+  const chatNeeded = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
+    booking.status,
+  );
+  const chatReady = Boolean(booking.chatRoom);
+  const cashDebt = bookingCashDebtNeedsSettlement(booking);
+  const terminal = TERMINAL_BOOKING_STATUSES.has(booking.status);
+  const taxRows = booking.taxLogs?.length ?? booking.earning?.taxLogs?.length ?? 0;
+  const failedAlerts = notificationTrace.rows.filter((row) => row.deliveryStatuses.includes('FAILED')).length;
+  const operatorTrailCount =
+    operatorNoteLines.length + bookingActivityRecords.length + (booking.auditLogs?.length ?? 0);
+  const latestMessage = messages[messages.length - 1];
+  const closeoutPillClass = toChecklistPillClass(closeoutReadiness.tone);
+
+  return [
+    {
+      title: 'Address snapshot',
+      status: addressReady ? 'Ready' : 'Repair needed',
+      detail: addressReady
+        ? `${bookingAddressSnapshotLabel(booking)} is locked for partner distance and evidence review.`
+        : 'BookingAddressSnapshot is required before distance matching and closeout review are reliable.',
+      operatorRule:
+        'Use the booking address, not the customer current location, for 10km partner participation.',
+      href: '#address-radius-contract',
+      className: addressReady ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: addressReady ? 'pill-success' : 'pill-danger',
+    },
+    {
+      title: 'Customer final partner choice',
+      status: finalPartner ? 'Selected' : acceptedParticipants ? 'Choice pending' : 'Waiting',
+      detail: finalPartner
+        ? `${providerName(finalPartner)} is linked as the selected partner for this booking.`
+        : `${acceptedParticipants} accepted partner(s) are available for the customer decision step.`,
+      operatorRule: 'No automatic partner assignment; customer selection is the final matching authority.',
+      href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
+      className: finalPartner
+        ? 'ops-task-done'
+        : acceptedParticipants
+          ? 'ops-task-warning'
+          : 'ops-task-blocked',
+      pillClass: finalPartner ? 'pill-success' : acceptedParticipants ? 'pill-warn' : 'pill-info',
+    },
+    {
+      title: 'Chat archive',
+      status: chatReady ? 'Archived' : chatNeeded ? 'Repair needed' : 'Locked',
+      detail: chatReady
+        ? `Room ${shortId(booking.chatRoom?.id ?? '')} keeps ${messages.length} message(s); latest ${
+            latestMessage?.createdAt ? formatDate(latestMessage.createdAt) : 'not sent yet'
+          }.`
+        : chatNeeded
+          ? 'Matched or active booking has no retained chat room attached.'
+          : 'Chat opens after the customer selects the final partner.',
+      operatorRule: 'Mobile chat may hide after completion, but admin must retain the transcript.',
+      href: chatReady
+        ? `/chat-archive?q=${encodeURIComponent(booking.id)}`
+        : chatNeeded
+          ? '/chat-archive?status=missing-room'
+          : '#chat',
+      className: chatReady ? 'ops-task-done' : chatNeeded ? 'ops-task-blocked' : 'ops-task-warning',
+      pillClass: chatReady ? 'pill-success' : chatNeeded ? 'pill-danger' : 'pill-info',
+    },
+    {
+      title: 'Money and wallet gate',
+      status: cashDebt ? 'Settlement needed' : (booking.payment?.status ?? 'No payment'),
+      detail: cashDebt
+        ? `${financeTrace.walletLedger}. Partner can browse and join, but final acceptance is held until settled or offset.`
+        : `${booking.payment?.method ?? 'NONE'} payment / customer ${financeTrace.customerPrice} / partner ${financeTrace.providerPayout}.`,
+      operatorRule:
+        'Cash fee debt must be resolved before final acceptance, service start, or payout batch release.',
+      href: cashDebt ? '/cash-settlements' : '#finance',
+      className: cashDebt ? 'ops-task-blocked' : booking.payment ? 'ops-task-done' : 'ops-task-warning',
+      pillClass: cashDebt ? 'pill-danger' : booking.payment ? 'pill-success' : 'pill-warn',
+    },
+    {
+      title: 'Manual outcome evidence',
+      status: terminal ? 'Terminal review' : refundLedgerRows.length ? 'Refund evidence' : 'Open',
+      detail: refundLedgerRows.length
+        ? `${refundLedgerRows.length} refund row(s). ${bookingRefundLedgerEvidence(booking)}`
+        : terminal
+          ? `${booking.status} booking needs retained chat, location, payment, and operator trail before closeout.`
+          : `Open booking with ${messages.length} chat message(s), ${notificationTrace.rows.length} alert(s), and ${failedAlerts} failed alert(s).`,
+      operatorRule: 'Cancellation, no-show, refund, and release decisions are admin evidence decisions.',
+      href: refundLedgerRows.length ? '/refunds?review=open' : '#manual-decision-readiness',
+      className: refundLedgerRows.length || terminal ? 'ops-task-warning' : 'ops-task-done',
+      pillClass: refundLedgerRows.length || terminal ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Finance closeout',
+      status: closeoutReadiness.status,
+      detail: closeoutReadiness.openItems.length
+        ? `Open items: ${closeoutReadiness.openItems.map((item) => item.label).join(', ')}. Tax rows ${taxRows}.`
+        : `${closeoutReadiness.helper} Tax rows ${taxRows}; operator trail ${operatorTrailCount}.`,
+      operatorRule: 'Use this before weekly, monthly, or admin-selected settlement batch processing.',
+      href: '#booking-closeout-readiness',
+      className:
+        closeoutPillClass === 'pill-danger'
+          ? 'ops-task-blocked'
+          : closeoutPillClass === 'pill-warn'
+            ? 'ops-task-warning'
+            : 'ops-task-done',
+      pillClass: closeoutPillClass,
+    },
+    {
+      title: 'Location and alert trail',
+      status: latestLocation ? 'Movement saved' : notificationTrace.rows.length ? 'Alerts saved' : 'Sparse',
+      detail: latestLocation
+        ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}.`
+        : `${notificationTrace.rows.length} alert row(s), ${failedAlerts} failed delivery row(s).`,
+      operatorRule: 'Use saved pins and alert delivery only as factual operations history.',
+      href: latestLocation ? '#location' : `/notifications?booking=${encodeURIComponent(booking.id)}`,
+      className: latestLocation || notificationTrace.rows.length ? 'ops-task-done' : 'ops-task-warning',
+      pillClass: latestLocation || notificationTrace.rows.length ? 'pill-info' : 'pill-neutral',
+    },
+  ];
+}
+
+function toChecklistPillClass(value: string): BookingCloseoutChecklistItem['pillClass'] {
+  if (
+    value === 'pill-success' ||
+    value === 'pill-warn' ||
+    value === 'pill-danger' ||
+    value === 'pill-info' ||
+    value === 'pill-neutral'
+  ) {
+    return value;
+  }
+
+  return 'pill-neutral';
 }
 
 function bookingChatRepairNeedsOps(booking: AdminBookingDetail) {
