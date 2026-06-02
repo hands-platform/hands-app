@@ -585,6 +585,7 @@ if (providerLinkMatch) {
     const providerMarkers = [
       'Partner operator command queue',
       'Partner recent operations timeline',
+      'Partner operations digest',
       'Partner connected operations records',
       'Partner booking evidence bundles',
       'Partner operator notes',

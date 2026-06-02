@@ -300,6 +300,16 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     bookingAcceptance,
     providerServicePricing,
   );
+  const partnerOperationsDigest = buildPartnerOperationsDigest({
+    provider,
+    bookingArchive: filteredPartnerBookingArchive,
+    primaryBank,
+    payoutOps,
+    bookingAcceptance,
+    providerServicePricing,
+    dispatchPolicy,
+    activityRecords: filteredPartnerActivityRecords,
+  });
   const partnerOperatorCommandQueue = buildPartnerOperatorCommandQueue({
     provider,
     primaryBank,
@@ -501,6 +511,40 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               <small>0</small>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="card" id="partner-operations-digest" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner operations digest</h2>
+            <p className="muted">
+              One-screen factual digest for partner operations: identity, activity gate, bookings, chat,
+              location, service pricing, finance, payout, tax, app reachability, and staff records.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerOperationsDigest.length} lanes</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {partnerOperationsDigest.map((row) => (
+            <div className="setup-stage-item" key={row.lane}>
+              <span>{row.lane}</span>
+              <div>
+                <Link className="text-link" href={row.href}>
+                  <strong>{row.status}</strong>
+                </Link>
+                <p className="muted">{row.detail}</p>
+                <div className="participant-list" style={{ marginTop: 8 }}>
+                  {row.evidence.map((item) => (
+                    <span className={`pill ${row.tone}`} key={item}>
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -2471,6 +2515,16 @@ type PartnerOperatingLedgerRow = {
   href: string;
 };
 
+type PartnerOperationsDigestRow = {
+  lane: string;
+  status: string;
+  detail: string;
+  href: string;
+  latestAt?: string;
+  tone: string;
+  evidence: string[];
+};
+
 type PartnerAcceptanceRepairCommand = {
   status: string;
   tone: ProviderOpsCard['tone'];
@@ -3697,6 +3751,201 @@ function buildPartnerOperatingChecklist(
       nextAction: enabledPushCount > 0 ? 'Can receive alerts' : 'Register device token',
       href: `/partners/${provider.id}#app-activity`,
       tone: enabledPushCount > 0 ? 'done' : 'pending',
+    },
+  ];
+}
+
+function buildPartnerOperationsDigest({
+  provider,
+  bookingArchive,
+  primaryBank,
+  payoutOps,
+  bookingAcceptance,
+  providerServicePricing,
+  dispatchPolicy,
+  activityRecords,
+}: {
+  provider: ProviderDetail;
+  bookingArchive: PartnerBookingArchiveRecord[];
+  primaryBank: NonNullable<ProviderDetail['bankAccounts']>[number] | null;
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>;
+  bookingAcceptance: ReturnType<typeof buildProviderBookingAcceptance>;
+  providerServicePricing: ReturnType<typeof buildProviderServicePricing>;
+  dispatchPolicy: PartnerDispatchPolicy;
+  activityRecords: PartnerActivityRecord[];
+}): PartnerOperationsDigestRow[] {
+  const activeBookings = bookingArchive.filter((record) =>
+    ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(
+      record.booking.status ?? '',
+    ),
+  );
+  const completedBookings = bookingArchive.filter((record) => record.booking.status === 'COMPLETED');
+  const chatRooms = bookingArchive.filter((record) => record.booking.chatRoom);
+  const chatMessages = bookingArchive.reduce(
+    (sum, record) => sum + readPartnerChatMessages(record.booking).length,
+    0,
+  );
+  const latestBooking = bookingArchive[0]?.booking;
+  const latestAccessAt = latestPartnerAccessAt(provider);
+  const enabledPushCount = (provider.user?.pushDevices ?? []).filter((device) => device.enabled).length;
+  const missingKycDocs = missingApprovedRequiredKycDocuments(provider);
+  const cashDebt = cashFeeDebtAmount(provider);
+  const locationFresh =
+    locationAgeMinutes(provider.currentLocationUpdatedAt) <= dispatchPolicy.locationFreshnessMinutes;
+  const latestStaffRecord = activityRecords.find((record) =>
+    ['VERIFY', 'DOCUMENT', 'BANK', 'TAX', 'AGREEMENT', 'REPORT', 'SANCTION', 'PROFILE', 'OPS'].includes(
+      record.type,
+    ),
+  );
+
+  return [
+    {
+      lane: 'Identity',
+      status: provider.legalName?.trim() ? 'Profile linked' : 'Profile incomplete',
+      detail: `${marketplaceDisplayText(provider.legalName ?? 'No legal name')} / ${
+        provider.user?.phone ?? 'No phone'
+      } / ${provider.city ?? 'No city'}`,
+      href: '#partner-master-facts',
+      latestAt: provider.user?.updatedAt ?? provider.user?.createdAt,
+      tone: provider.legalName?.trim() ? 'pill-success' : 'pill-warn',
+      evidence: [
+        provider.activityNickname ?? provider.displayName ?? 'No activity name',
+        provider.gender ?? 'No gender',
+        formatDate(provider.dateOfBirth),
+      ],
+    },
+    {
+      lane: 'Activity gate',
+      status: bookingAcceptance.canAccept ? 'Final gate clear' : 'Final gate on hold',
+      detail: bookingAcceptance.primaryReason,
+      href: '#final-booking-gate',
+      latestAt: latestBooking?.createdAt,
+      tone: bookingAcceptance.canAccept ? 'pill-success' : 'pill-warn',
+      evidence: [
+        `${providerServicePricing.readyCount} bookable option(s)`,
+        cashDebt > 0 ? `${formatCurrency(cashDebt)} cash fee debt` : 'Cash fee clear',
+        provider.blockedAt ? 'Account held' : 'Account open',
+      ],
+    },
+    {
+      lane: 'Bookings',
+      status: `${bookingArchive.length} total`,
+      detail: latestBooking
+        ? `Latest ${latestBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(latestBooking)}.`
+        : 'No preferred, selected, or joined booking is loaded.',
+      href: '#booking-chat-records',
+      latestAt: latestBooking?.createdAt,
+      tone: activeBookings.length ? 'pill-info' : completedBookings.length ? 'pill-success' : 'pill-neutral',
+      evidence: [
+        `${activeBookings.length} active`,
+        `${completedBookings.length} completed`,
+        latestBooking ? shortRecordId(latestBooking.id) : 'No latest booking',
+      ],
+    },
+    {
+      lane: 'Chat archive',
+      status: `${chatRooms.length} room(s)`,
+      detail: `${chatMessages} retained message(s). Admin keeps chat history after mobile closeout.`,
+      href: '#booking-chat-records',
+      latestAt: chatRooms[0]?.booking.chatRoom?.messages?.[0]?.createdAt ?? chatRooms[0]?.booking.createdAt,
+      tone: chatRooms.length ? 'pill-success' : 'pill-neutral',
+      evidence: ['Retained for admin', `${chatMessages} message(s)`, 'Customer coordination evidence'],
+    },
+    {
+      lane: 'KYC and files',
+      status: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
+      detail:
+        missingKycDocs.length > 0
+          ? `Missing approved file(s): ${missingKycDocs.map(providerDocumentLabel).join(', ')}.`
+          : 'Required identity files are approved or ready for final decision.',
+      href: '#kyc',
+      latestAt: provider.kyc?.reviewedAt ?? provider.kyc?.submittedAt ?? provider.user?.createdAt,
+      tone: missingKycDocs.length ? 'pill-warn' : 'pill-success',
+      evidence: [
+        `${provider.documents?.length ?? 0} document row(s)`,
+        `${provider.verification?.files?.length ?? 0} verification file(s)`,
+        `Profile ${provider.verification?.status ?? 'DRAFT'}`,
+      ],
+    },
+    {
+      lane: 'Location',
+      status: locationAgeLabel(provider.currentLocationUpdatedAt),
+      detail:
+        provider.currentLat && provider.currentLng
+          ? `${provider.currentLat}, ${provider.currentLng}. Policy freshness ${dispatchPolicy.locationFreshnessMinutes}m.`
+          : 'No latest location pin is saved.',
+      href: '#location',
+      latestAt: provider.currentLocationUpdatedAt ?? provider.locationSnapshots?.[0]?.recordedAt,
+      tone: locationFresh ? 'pill-success' : 'pill-warn',
+      evidence: [
+        `${provider.locationSnapshots?.length ?? 0} snapshot(s)`,
+        `${Math.round(dispatchPolicy.backupRadiusMeters / 1000)}km marketplace radius`,
+        locationFresh ? 'Fresh enough' : 'Refresh needed',
+      ],
+    },
+    {
+      lane: 'Finance',
+      status: payoutOps.status,
+      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate is clear or deferred.',
+      href: '#payout',
+      latestAt: provider.earnings?.[0]?.createdAt ?? provider.payoutBatches?.[0]?.createdAt,
+      tone: pillClass(payoutOps.tone),
+      evidence: [
+        `${provider.earnings?.length ?? 0} earning row(s)`,
+        `${provider.payoutBatches?.length ?? 0} payout batch row(s)`,
+        providerHasFirstRevenueSignal(provider) ? 'First earning exists' : 'Tax can stay deferred',
+      ],
+    },
+    {
+      lane: 'Tax and bank',
+      status: `${provider.taxProfile?.status ?? (providerHasFirstRevenueSignal(provider) ? 'MISSING' : 'DEFERRED')} / ${
+        primaryBank?.status ?? 'BANK MISSING'
+      }`,
+      detail: providerHasFirstRevenueSignal(provider)
+        ? 'First earning exists; tax, address, agreements, and bank rows must be complete before payout.'
+        : 'Do not force tax data before first earning. Bank can still be reviewed early.',
+      href: '#tax',
+      latestAt: provider.taxProfile?.approvedAt ?? primaryBank?.reviewedAt ?? undefined,
+      tone:
+        (provider.taxProfile?.status === 'APPROVED' || !providerHasFirstRevenueSignal(provider)) &&
+        primaryBank?.status === 'APPROVED'
+          ? 'pill-success'
+          : 'pill-warn',
+      evidence: [
+        primaryBank ? marketplaceDisplayText(primaryBank.bankName) : 'No bank row',
+        `${provider.agreements?.length ?? 0} agreement row(s)`,
+        provider.residentialAddress ? 'Address saved' : 'Address missing',
+      ],
+    },
+    {
+      lane: 'App reachability',
+      status: enabledPushCount > 0 ? 'Push-ready' : 'Push missing',
+      detail: latestAccessAt
+        ? `Last app access ${formatDate(latestAccessAt)}.`
+        : 'No app access row is loaded for this partner.',
+      href: '#app-activity',
+      latestAt: latestAccessAt ?? undefined,
+      tone: enabledPushCount > 0 ? 'pill-success' : 'pill-warn',
+      evidence: [
+        `${provider.devices?.length ?? 0} device row(s)`,
+        `${provider.sessions?.length ?? 0} session row(s)`,
+        `${enabledPushCount} enabled push device(s)`,
+      ],
+    },
+    {
+      lane: 'Staff trail',
+      status: `${provider.auditLogs?.length ?? 0} audit row(s)`,
+      detail: latestStaffRecord
+        ? `${latestStaffRecord.title} / ${latestStaffRecord.detail}`
+        : 'No staff record appears in the selected filter.',
+      href: '#partner-operator-notes',
+      latestAt: latestStaffRecord?.at,
+      tone: latestStaffRecord ? 'pill-info' : 'pill-neutral',
+      evidence: [
+        `${provider.verificationLogs?.length ?? 0} verification log(s)`,
+        `${provider.reports?.length ?? 0} report row(s)`,
+        `${provider.sanctions?.length ?? 0} account control row(s)`,
+      ],
     },
   ];
 }
