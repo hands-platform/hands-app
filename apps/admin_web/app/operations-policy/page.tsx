@@ -68,6 +68,28 @@ type MatchingStageImpactPreview = {
     pillClass: string;
   }>;
 };
+type BookingCreateGateReview = {
+  currentPolicyLabel: string;
+  summary: Array<{ label: string; value: string; helper: string }>;
+  rows: Array<{
+    key: string;
+    gate: string;
+    current: string;
+    defaultValue: string;
+    operatorMeaning: string;
+    evidence: string;
+    href: string;
+    pillClass: string;
+  }>;
+  recentAttempts: Array<{
+    id: string;
+    reason: string;
+    detail: string;
+    createdAt: string;
+    href: string;
+    pillClass: string;
+  }>;
+};
 
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 
@@ -105,6 +127,7 @@ export default async function OperationsPolicyPage({
     acceptanceMatrix,
   );
   const policyEnforcementTrace = buildPolicyEnforcementTrace(settings);
+  const bookingCreateGateReview = buildBookingCreateGateReview(settings, auditLogs);
 
   return (
     <>
@@ -143,6 +166,92 @@ export default async function OperationsPolicyPage({
           </div>
         </section>
       ) : null}
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking create gate controls</h2>
+            <p className="muted">
+              These policies stop unsafe bookings before payment authorization and matching. Customers can
+              browse globally, but immediate booking must pass the selected address, current GPS, service
+              area, and first-pick partner distance checks.
+            </p>
+          </div>
+          <span className="pill pill-info">{bookingCreateGateReview.currentPolicyLabel}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {bookingCreateGateReview.summary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 14, overflowX: 'auto' }}>
+          <table className="table service-trace">
+            <thead>
+              <tr>
+                <th>Gate</th>
+                <th>Current</th>
+                <th>Default</th>
+                <th>Operator meaning</th>
+                <th>Evidence</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bookingCreateGateReview.rows.map((row) => (
+                <tr key={row.key}>
+                  <td>
+                    <span className={`pill ${row.pillClass}`}>{row.gate}</span>
+                  </td>
+                  <td>{row.current}</td>
+                  <td>{row.defaultValue}</td>
+                  <td>{row.operatorMeaning}</td>
+                  <td>
+                    <Link className="text-link" href={row.href}>
+                      {row.evidence}
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="risk-watch-header" style={{ marginTop: 18 }}>
+          <div>
+            <h3>Recent blocked create attempts</h3>
+            <p className="muted">
+              Shows support evidence for failed booking creation. This is factual troubleshooting, not
+              customer or partner scoring.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=blocked-create">
+            Open blocked-create queue
+          </Link>
+        </div>
+        {bookingCreateGateReview.recentAttempts.length === 0 ? (
+          <div className="empty-state" style={{ marginTop: 12 }}>
+            No booking create gate rejections are currently recorded.
+          </div>
+        ) : (
+          <div className="ops-task-grid" style={{ marginTop: 14 }}>
+            {bookingCreateGateReview.recentAttempts.map((attempt) => (
+              <article className="ops-task-card" key={attempt.id}>
+                <span className={`pill ${attempt.pillClass}`}>{attempt.reason}</span>
+                <h3>{shortId(attempt.id)}</h3>
+                <p>{attempt.detail}</p>
+                <small>Recorded {formatDate(attempt.createdAt)}</small>
+                <div className="actions" style={{ marginTop: 10 }}>
+                  <Link className="text-link" href={attempt.href}>
+                    Open evidence
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -1406,6 +1515,120 @@ function buildPolicyRecommendationReview(
   };
 }
 
+function buildBookingCreateGateReview(
+  settings: AdminOperationalPolicySetting[],
+  auditLogs: AdminAuditLog[],
+): BookingCreateGateReview {
+  const customerDistanceKm =
+    policyNumberValue(settings, 'booking.max_customer_current_to_booking_address_km') ?? 20;
+  const preferredPartnerDistanceKm =
+    policyNumberValue(settings, 'booking.max_preferred_partner_distance_km') ?? 50;
+  const freshnessMinutes = policyNumberValue(settings, 'booking.current_location_freshness_minutes') ?? 10;
+  const distanceGateEnabled = policyBooleanValue(settings, 'booking.distance_gate_enabled') ?? true;
+  const serviceAreaRequired = policyBooleanValue(settings, 'booking.service_area_required') ?? true;
+  const rejections = auditLogs
+    .filter((log) => log.action === 'booking.create.rejected')
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+  const reasonCounts = bookingGateReasonCounts(rejections);
+
+  return {
+    currentPolicyLabel: distanceGateEnabled ? 'Distance gates active' : 'Distance gates disabled',
+    summary: [
+      {
+        label: 'Customer GPS gate',
+        value: `${customerDistanceKm} km`,
+        helper: 'Current app location must be near the selected booking address.',
+      },
+      {
+        label: 'First-pick partner gate',
+        value: `${preferredPartnerDistanceKm} km`,
+        helper: 'Preferred partner must be near the booking address before payment opens.',
+      },
+      {
+        label: 'Location freshness',
+        value: `${freshnessMinutes} min`,
+        helper: 'Customer current GPS must be recent enough for local booking authority.',
+      },
+      {
+        label: 'Blocked attempts',
+        value: String(rejections.length),
+        helper: 'Recent booking create requests stopped before payment and matching.',
+      },
+    ],
+    rows: [
+      {
+        key: 'booking.distance_gate_enabled',
+        gate: 'Distance gate',
+        current: distanceGateEnabled ? 'Enabled' : 'Disabled',
+        defaultValue: 'Enabled',
+        operatorMeaning: distanceGateEnabled
+          ? 'Local booking uses customer GPS and partner distance checks.'
+          : 'Customers may create bookings without distance protection. Keep this only for controlled tests.',
+        evidence: 'Blocked attempts',
+        href: '/bookings?view=blocked-create',
+        pillClass: distanceGateEnabled ? 'pill-success' : 'pill-danger',
+      },
+      {
+        key: 'booking.service_area_required',
+        gate: 'Service area',
+        current: serviceAreaRequired ? 'Required' : 'Optional',
+        defaultValue: 'Required',
+        operatorMeaning: serviceAreaRequired
+          ? 'Booking address must be inside an enabled Vietnam service area.'
+          : 'Booking can be created outside configured service areas. Use only before a city launch test.',
+        evidence: `${reasonCounts.get('SERVICE_AREA_REQUIRED') ?? 0} reject(s)`,
+        href: '/audit-log?query=SERVICE_AREA_REQUIRED',
+        pillClass: serviceAreaRequired ? 'pill-success' : 'pill-warn',
+      },
+      {
+        key: 'booking.max_customer_current_to_booking_address_km',
+        gate: 'Customer GPS',
+        current: `${customerDistanceKm} km`,
+        defaultValue: '20 km',
+        operatorMeaning:
+          'A customer can browse globally, but immediate booking requires their current GPS to be near the selected address.',
+        evidence: `${reasonCounts.get('CUSTOMER_CURRENT_LOCATION_TOO_FAR') ?? 0} reject(s)`,
+        href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+        pillClass: customerDistanceKm === 20 ? 'pill-success' : 'pill-warn',
+      },
+      {
+        key: 'booking.max_preferred_partner_distance_km',
+        gate: 'First-pick partner',
+        current: `${preferredPartnerDistanceKm} km`,
+        defaultValue: '50 km',
+        operatorMeaning:
+          'The selected first-pick partner must be close enough to the booking address before payment authorization.',
+        evidence: `${reasonCounts.get('PREFERRED_PARTNER_TOO_FAR') ?? 0} reject(s)`,
+        href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
+        pillClass: preferredPartnerDistanceKm === 50 ? 'pill-success' : 'pill-warn',
+      },
+      {
+        key: 'booking.current_location_freshness_minutes',
+        gate: 'Fresh GPS',
+        current: `${freshnessMinutes} min`,
+        defaultValue: '10 min',
+        operatorMeaning:
+          'The customer location proof must be recent. GPS failure still allows browsing and address search, but not unsafe immediate booking.',
+        evidence: `${reasonCounts.get('CURRENT_LOCATION_STALE') ?? 0} reject(s)`,
+        href: '/audit-log?query=CURRENT_LOCATION_STALE',
+        pillClass: freshnessMinutes === 10 ? 'pill-success' : 'pill-warn',
+      },
+    ],
+    recentAttempts: rejections.slice(0, 5).map((log) => {
+      const metadata = readPlainRecord(log.metadata);
+      const reasonCode = readOptionalString(metadata?.reasonCode) ?? 'UNKNOWN';
+      return {
+        id: log.id,
+        reason: bookingGateReasonLabel(reasonCode),
+        detail: bookingGateAttemptDetail(metadata),
+        createdAt: log.createdAt,
+        href: `/audit-log?query=${encodeURIComponent(reasonCode)}`,
+        pillClass: bookingGateReasonPill(reasonCode),
+      };
+    }),
+  };
+}
+
 function policyRecommendationPosture(
   setting: AdminOperationalPolicySetting,
   context: { openMatchingCount: number; activeBookingCount: number },
@@ -1514,6 +1737,85 @@ function policyRecommendationPosture(
       alignedAction: 'Final-gate settlement control matches the HANDS MVP authority rule.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: value === recommended ? 'pill-success' : 'pill-danger',
+    };
+  }
+
+  if (setting.key === 'booking.distance_gate_enabled') {
+    return {
+      status: value === 'true' ? 'Distance protected' : 'Distance disabled',
+      detail:
+        value === 'true'
+          ? 'Booking create keeps address, customer GPS, and preferred partner distance gates active.'
+          : 'Booking create can bypass distance gates. Keep this only for internal tests.',
+      operatorAction:
+        'Review blocked create attempts before changing this because customers can browse globally while booking remains local.',
+      alignedAction: 'Distance gates are active before payment authorization and matching.',
+      className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: value === recommended ? 'pill-success' : 'pill-danger',
+    };
+  }
+
+  if (setting.key === 'booking.service_area_required') {
+    return {
+      status: value === 'true' ? 'Service area required' : 'Service area bypass',
+      detail:
+        'This controls whether selected booking addresses must be inside enabled Vietnam operating areas.',
+      operatorAction:
+        'Use setup and blocked-create evidence before relaxing this during city launch configuration.',
+      alignedAction: 'Immediate booking stays inside configured HANDS service areas.',
+      className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: value === recommended ? 'pill-success' : 'pill-warn',
+    };
+  }
+
+  if (setting.key === 'booking.max_customer_current_to_booking_address_km') {
+    const looser =
+      Number.isFinite(numericValue) &&
+      Number.isFinite(numericRecommended) &&
+      numericValue > numericRecommended;
+    return {
+      status: looser ? 'Loose customer GPS gate' : 'Strict customer GPS gate',
+      detail:
+        'This controls how far the customer current GPS can be from the selected service address before booking creation is blocked.',
+      operatorAction:
+        'Review customer GPS rejection logs and address-search UX before changing this threshold.',
+      alignedAction: 'Customer local proof matches the 20 km baseline while global browsing stays open.',
+      className: looser ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: looser ? 'pill-warn' : 'pill-success',
+    };
+  }
+
+  if (setting.key === 'booking.max_preferred_partner_distance_km') {
+    const wider =
+      Number.isFinite(numericValue) &&
+      Number.isFinite(numericRecommended) &&
+      numericValue > numericRecommended;
+    return {
+      status: wider ? 'Wide first-pick gate' : 'Strict first-pick gate',
+      detail:
+        'This controls how far the selected first-pick partner can be from the booking address before payment opens.',
+      operatorAction:
+        'Check partner location coverage and rejected first-pick distance logs before widening this.',
+      alignedAction: 'First-pick partner distance matches the 50 km baseline for local direct booking.',
+      className: wider ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: wider ? 'pill-warn' : 'pill-success',
+    };
+  }
+
+  if (setting.key === 'booking.current_location_freshness_minutes') {
+    const looser =
+      Number.isFinite(numericValue) &&
+      Number.isFinite(numericRecommended) &&
+      numericValue > numericRecommended;
+    return {
+      status: looser ? 'Allows older GPS' : 'Fresh GPS required',
+      detail:
+        'This controls how recent customer current GPS must be before immediate booking can be created.',
+      operatorAction:
+        'Verify mobile permission and current-location capture before loosening freshness.',
+      alignedAction: 'Fresh customer GPS matches the 10 minute booking authority baseline.',
+      className: looser ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: looser ? 'pill-warn' : 'pill-success',
     };
   }
 
@@ -3109,6 +3411,83 @@ function policyStringValue(settings: AdminOperationalPolicySetting[], key: strin
   return readOptionalString(policyRawValue(settings, key));
 }
 
+function policyBooleanValue(settings: AdminOperationalPolicySetting[], key: string) {
+  const value = policyRawValue(settings, key);
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') {
+      return true;
+    }
+    if (normalized === 'false') {
+      return false;
+    }
+  }
+  return null;
+}
+
+function bookingGateReasonCounts(logs: AdminAuditLog[]) {
+  const counts = new Map<string, number>();
+  logs.forEach((log) => {
+    const metadata = readPlainRecord(log.metadata);
+    const reasonCode = readOptionalString(metadata?.reasonCode) ?? 'UNKNOWN';
+    counts.set(reasonCode, (counts.get(reasonCode) ?? 0) + 1);
+  });
+  return counts;
+}
+
+function bookingGateReasonLabel(reasonCode: string) {
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
+    return 'Customer GPS too far';
+  }
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
+    return 'First-pick partner too far';
+  }
+  if (reasonCode === 'SERVICE_AREA_REQUIRED') {
+    return 'Outside service area';
+  }
+  if (reasonCode === 'CURRENT_LOCATION_STALE') {
+    return 'Stale customer GPS';
+  }
+  return displayOperationalWording(reasonCode.replace(/_/g, ' ').toLowerCase());
+}
+
+function bookingGateReasonPill(reasonCode: string) {
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
+    return 'pill-warn';
+  }
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
+    return 'pill-danger';
+  }
+  return 'pill-info';
+}
+
+function bookingGateAttemptDetail(metadata: Record<string, unknown> | null) {
+  if (!metadata) {
+    return 'No detailed booking gate evidence was recorded.';
+  }
+  const reason = readOptionalString(metadata.reason);
+  const customerDistance = readOptionalNumber(metadata.customerDistanceMeters);
+  const customerLimit = readOptionalNumber(metadata.customerDistanceLimitMeters);
+  const partnerDistance = readOptionalNumber(metadata.preferredProviderDistanceMeters);
+  const partnerLimit = readOptionalNumber(metadata.preferredProviderDistanceLimitMeters);
+  const address = readPlainRecord(metadata.bookingAddress);
+  const addressText = readOptionalString(address?.addressText);
+  const parts = [
+    reason,
+    customerDistance !== null && customerLimit !== null
+      ? `Customer ${formatDistance(customerDistance)} / limit ${formatDistance(customerLimit)}`
+      : null,
+    partnerDistance !== null && partnerLimit !== null
+      ? `First-pick ${formatDistance(partnerDistance)} / limit ${formatDistance(partnerLimit)}`
+      : null,
+    addressText ? `Address: ${addressText}` : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join('. ') : 'Booking create was stopped before payment authorization.';
+}
+
 function referenceBookingCoordinate(bookings: AdminBooking[]) {
   const withCoordinate = bookings
     .filter((booking) => parseCoordinatePair(booking.lat, booking.lng))
@@ -3764,6 +4143,97 @@ type PolicyImpactDetails = {
 
 function policyImpactDetails(key: string): PolicyImpactDetails {
   const details: Record<string, PolicyImpactDetails> = {
+    'booking.distance_gate_enabled': {
+      area: 'Booking create gate',
+      title: 'Controls whether local booking distance checks are enforced',
+      detail:
+        'When enabled, booking creation checks customer current GPS against the selected service address and checks the preferred partner distance before payment authorization.',
+      saveChecks: [
+        {
+          label: 'Blocked create attempts',
+          detail:
+            'Review booking create rejections before disabling or re-enabling this gate, because customers can still browse globally while booking remains local.',
+          href: '/bookings?view=blocked-create',
+        },
+        {
+          label: 'Audit evidence',
+          detail: 'Confirm recent rejected creates include clear address and distance evidence for support.',
+          href: '/audit-log?query=booking.create.rejected',
+        },
+      ],
+    },
+    'booking.service_area_required': {
+      area: 'Booking create gate',
+      title: 'Controls whether booking addresses must be inside enabled Vietnam service areas',
+      detail:
+        'Customers may browse partners from any country, but immediate booking should only open in active HANDS service areas until city launch coverage is expanded.',
+      saveChecks: [
+        {
+          label: 'Service area launch list',
+          detail: 'Confirm the target city or district is enabled before relaxing this control.',
+          href: '/setup',
+        },
+        {
+          label: 'Blocked create attempts',
+          detail: 'Check whether failed bookings are caused by missing service area configuration.',
+          href: '/bookings?view=blocked-create',
+        },
+      ],
+    },
+    'booking.max_customer_current_to_booking_address_km': {
+      area: 'Booking create gate',
+      title: 'Controls customer GPS-to-service-address distance',
+      detail:
+        'Booking creation is blocked before payment if the customer current GPS is farther than this value from the selected service address. This protects local on-demand dispatch while allowing global browsing.',
+      saveChecks: [
+        {
+          label: 'Customer GPS rejects',
+          detail: 'Review rejected booking attempts where customer current location was too far from the booking address.',
+          href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+        },
+        {
+          label: 'Customer support queue',
+          detail: 'Check whether customers are selecting distant addresses because GPS failed or address search was unclear.',
+          href: '/customers',
+        },
+      ],
+    },
+    'booking.max_preferred_partner_distance_km': {
+      area: 'Booking create gate',
+      title: 'Controls preferred first-pick partner distance',
+      detail:
+        'The customer-selected first-pick partner must be close enough to the booking address before the booking can authorize payment and open matching.',
+      saveChecks: [
+        {
+          label: 'First-pick distance rejects',
+          detail: 'Review rejected booking attempts where the selected first-pick partner was too far from the booking address.',
+          href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
+        },
+        {
+          label: 'Partner location coverage',
+          detail: 'Check whether partners have fresh last locations in the city before widening this limit.',
+          href: '/partners?review=location',
+        },
+      ],
+    },
+    'booking.current_location_freshness_minutes': {
+      area: 'Booking create gate',
+      title: 'Controls current customer GPS freshness',
+      detail:
+        'The app must provide recent customer GPS evidence before immediate booking. If GPS fails, customers can still browse and search addresses, but booking should not bypass local proof.',
+      saveChecks: [
+        {
+          label: 'Blocked create attempts',
+          detail: 'Review location-related booking create failures before loosening freshness.',
+          href: '/bookings?view=blocked-create',
+        },
+        {
+          label: 'Mobile setup',
+          detail: 'Confirm customer app location permission and address search flows work before changing this threshold.',
+          href: '/setup',
+        },
+      ],
+    },
     'matching.provider_response_window_minutes': {
       area: 'Booking timer',
       title: 'Affects new booking expiry windows',
