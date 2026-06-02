@@ -126,6 +126,10 @@ const pages = [
   { path: '/bookings?view=customer-choice', markers: ['Booking Monitor', 'Stage 3 choice'] },
   { path: '/bookings?view=handoff-repair', markers: ['Booking Monitor', 'Stage 4 repair'] },
   { path: '/bookings?view=no-supply', markers: ['Booking Monitor', 'No supply'] },
+  {
+    path: '/bookings?view=blocked-create&gate=customer-gps',
+    markers: ['Booking Monitor', 'Create gate filter', 'Customer GPS proof'],
+  },
   { path: '/bookings?view=address', markers: ['Booking Monitor', 'Address check'] },
   { path: '/bookings?view=payment', markers: ['Booking Monitor', 'Payment ops'] },
   { path: '/bookings?view=cash-debt', markers: ['Booking Monitor', 'Cash fee debt'] },

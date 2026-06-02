@@ -10,6 +10,7 @@ type Props = {
   bookingCreateRejections?: AdminAuditLog[];
   initialView: BookingView;
   initialEvidenceFilter?: BookingEvidenceFilter;
+  initialGateFilter?: BookingGateFilter;
 };
 
 type BookingView =
@@ -150,6 +151,14 @@ export type BookingEvidenceFilter =
   | 'alerts'
   | 'closeout';
 
+export type BookingGateFilter =
+  | 'all'
+  | 'service-area'
+  | 'customer-gps'
+  | 'customer-distance'
+  | 'first-pick-distance'
+  | 'unknown';
+
 const activeStatuses = new Set(['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
@@ -178,11 +187,46 @@ const bookingEvidenceFilterOptions: Array<{ value: BookingEvidenceFilter; label:
   { value: 'closeout', label: 'Closeout evidence check' },
 ];
 
+const bookingGateFilterOptions: Array<{ value: BookingGateFilter; label: string; operatorHint: string }> = [
+  {
+    value: 'all',
+    label: 'All create gates',
+    operatorHint: 'Review every booking create attempt stopped before payment and matching.',
+  },
+  {
+    value: 'service-area',
+    label: 'Service area',
+    operatorHint:
+      'Address is outside the enabled Vietnam service area. Confirm the pin before support follow-up.',
+  },
+  {
+    value: 'customer-gps',
+    label: 'Customer GPS proof',
+    operatorHint: 'Customer current-location proof is missing, stale, invalid, or not timestamped.',
+  },
+  {
+    value: 'customer-distance',
+    label: 'Customer distance',
+    operatorHint: 'Customer current GPS is too far from the booking address snapshot.',
+  },
+  {
+    value: 'first-pick-distance',
+    label: 'First-pick distance',
+    operatorHint: 'Selected partner is outside the first-pick distance gate for this service address.',
+  },
+  {
+    value: 'unknown',
+    label: 'Unknown gate',
+    operatorHint: 'Audit metadata did not include a recognized reason code. Inspect the raw audit entry.',
+  },
+];
+
 export function BookingMonitor({
   bookings,
   bookingCreateRejections = [],
   initialView,
   initialEvidenceFilter = 'all',
+  initialGateFilter = 'all',
 }: Props) {
   const router = useRouter();
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -195,6 +239,7 @@ export function BookingMonitor({
   const [statusFilter, setStatusFilter] = useState('all');
   const [paymentFilter, setPaymentFilter] = useState('all');
   const [evidenceFilter, setEvidenceFilter] = useState<BookingEvidenceFilter>(initialEvidenceFilter);
+  const [gateFilter, setGateFilter] = useState<BookingGateFilter>(initialGateFilter);
   const currentTimeMs = nowMs ?? 0;
 
   const orderedBookings = useMemo(
@@ -216,6 +261,14 @@ export function BookingMonitor({
         (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
       ),
     [bookingCreateRejections],
+  );
+  const visibleBookingCreateRejections = useMemo(
+    () => orderedBookingCreateRejections.filter((log) => bookingGateMatchesFilter(log, gateFilter)),
+    [gateFilter, orderedBookingCreateRejections],
+  );
+  const bookingGateTriage = useMemo(
+    () => buildBookingGateTriage(orderedBookingCreateRejections, gateFilter, currentTimeMs),
+    [currentTimeMs, gateFilter, orderedBookingCreateRejections],
   );
 
   const summary = useMemo(() => {
@@ -341,18 +394,22 @@ export function BookingMonitor({
           option.view,
           option.view === 'blocked-create'
             ? orderedBookingCreateRejections.length
-            : orderedBookings.filter((booking) => bookingMatchesView(booking, option.view, currentTimeMs)).length,
+            : orderedBookings.filter((booking) => bookingMatchesView(booking, option.view, currentTimeMs))
+                .length,
         ]),
       ),
     [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings],
   );
   const activeView = bookingViewOptions.find((item) => item.view === view) ?? bookingViewOptions[0];
   const topNextAction = nextActions[0];
-  const dispatchCommandLane = commandCenter.find((lane) => lane.title === 'Dispatch pressure') ?? commandCenter[0];
+  const dispatchCommandLane =
+    commandCenter.find((lane) => lane.title === 'Dispatch pressure') ?? commandCenter[0];
   const protectionCommandLane =
     commandCenter.find((lane) => lane.title === 'Customer protection') ?? commandCenter[1];
-  const paymentCommandLane = commandCenter.find((lane) => lane.title === 'Payment closeout') ?? commandCenter[2];
-  const handoffCommandLane = commandCenter.find((lane) => lane.title === 'Handoff quality') ?? commandCenter[3];
+  const paymentCommandLane =
+    commandCenter.find((lane) => lane.title === 'Payment closeout') ?? commandCenter[2];
+  const handoffCommandLane =
+    commandCenter.find((lane) => lane.title === 'Handoff quality') ?? commandCenter[3];
   const commandSummaryCards = [
     {
       label: 'Current lane',
@@ -375,7 +432,8 @@ export function BookingMonitor({
     {
       label: 'Customer protection',
       value: protectionCommandLane?.status ?? 'Clear',
-      detail: protectionCommandLane?.detail ?? 'Customer handoff, chat, and cancellation evidence are loaded.',
+      detail:
+        protectionCommandLane?.detail ?? 'Customer handoff, chat, and cancellation evidence are loaded.',
       href: protectionCommandLane?.href ?? '/bookings?view=attention',
     },
     {
@@ -821,6 +879,7 @@ export function BookingMonitor({
                 setStatusFilter('all');
                 setPaymentFilter('all');
                 setEvidenceFilter('all');
+                setGateFilter('all');
               }}
             >
               Clear list filters
@@ -852,20 +911,64 @@ export function BookingMonitor({
               <h2>Blocked booking attempts</h2>
               <p className="muted">
                 Booking create requests stopped before payment authorization and matching. These records are
-                evidence for support follow-up, not customer or partner scoring.
+                evidence for support follow-up, not customer or partner evaluation.
               </p>
             </div>
             <Link className="text-link" href="/audit-log?query=booking.create.rejected">
               Open audit log
             </Link>
           </div>
-          {orderedBookingCreateRejections.length === 0 ? (
+          <div className="filter-grid" style={{ marginTop: 14 }}>
+            <label>
+              Create gate filter
+              <select
+                value={gateFilter}
+                onChange={(event) => setGateFilter(event.target.value as BookingGateFilter)}
+              >
+                {bookingGateFilterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} ({bookingGateCount(orderedBookingCreateRejections, option.value)})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="actions" style={{ alignSelf: 'end' }}>
+              <button type="button" onClick={() => setGateFilter('all')}>
+                Clear create gate
+              </button>
+            </div>
+          </div>
+          <div className="ops-task-grid" style={{ marginTop: 14 }}>
+            {bookingGateTriage.map((item) => (
+              <article className="ops-task-card" key={item.filter}>
+                <span className={`signal ${commandToneClass(item.tone)}`}>{item.status}</span>
+                <h3>{item.label}</h3>
+                <p>{item.operatorHint}</p>
+                <div className="participant-list">
+                  <span className="pill">{item.count} attempt(s)</span>
+                  <span className="pill">Latest {item.latestAge}</span>
+                </div>
+                <div className="actions" style={{ marginTop: 12 }}>
+                  <button type="button" onClick={() => setGateFilter(item.filter)}>
+                    Show this gate
+                  </button>
+                  <Link className="text-link" href={item.auditHref}>
+                    Audit evidence
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+          <p className="muted" style={{ marginTop: 12 }}>
+            {bookingGateFilterOptions.find((option) => option.value === gateFilter)?.operatorHint}
+          </p>
+          {visibleBookingCreateRejections.length === 0 ? (
             <div className="empty-state" style={{ marginTop: 14 }}>
-              No blocked booking create attempts are recorded.
+              No blocked booking create attempts match this create gate filter.
             </div>
           ) : (
             <div className="ops-task-grid" style={{ marginTop: 14 }}>
-              {orderedBookingCreateRejections.slice(0, 30).map((log) => {
+              {visibleBookingCreateRejections.slice(0, 30).map((log) => {
                 const evidence = bookingGateRejectionInfo(log);
                 return (
                   <article className="ops-task-card" key={log.id}>
@@ -2158,8 +2261,7 @@ function bookingMatchesEvidenceFilter(
   }
   if (evidenceFilter === 'partner') {
     return (
-      booking.status === 'OPEN_MATCHING' ||
-      (activeStatuses.has(booking.status) && !booking.selectedProvider)
+      booking.status === 'OPEN_MATCHING' || (activeStatuses.has(booking.status) && !booking.selectedProvider)
     );
   }
   if (evidenceFilter === 'chat') {
@@ -2410,30 +2512,105 @@ function bookingPriority(booking: AdminBooking) {
 }
 
 function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): BookingCommandLane {
-  const customerTooFar = logs.filter((log) => bookingGateReasonCode(log) === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR');
+  const customerTooFar = logs.filter(
+    (log) => bookingGateReasonCode(log) === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+  );
   const partnerTooFar = logs.filter((log) => bookingGateReasonCode(log) === 'PREFERRED_PARTNER_TOO_FAR');
-  const serviceArea = logs.filter((log) => bookingGateReasonCode(log) === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA');
-  const locationProof = logs.filter((log) => bookingGateReasonCode(log).startsWith('CUSTOMER_CURRENT_LOCATION_'));
+  const serviceArea = logs.filter(
+    (log) => bookingGateReasonCode(log) === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+  );
+  const locationProof = logs.filter((log) =>
+    bookingGateReasonCode(log).startsWith('CUSTOMER_CURRENT_LOCATION_'),
+  );
   const latest = logs[0];
   const latestAge = latest ? relativeTimeLabel(latest.createdAt, nowMs) : 'none';
 
   return {
     title: 'Blocked booking attempts',
     status: logs.length > 0 ? `${logs.length} stopped` : 'Clear',
-      tone: logs.length > 0 ? 'warn' : 'ok',
-      detail:
-        logs.length > 0
-          ? `${customerTooFar.length} customer distance, ${partnerTooFar.length} first-pick distance, ${serviceArea.length} service-area, and ${locationProof.length} customer GPS proof attempt(s). Latest ${latestAge}.`
-          : 'No booking create request has been blocked by the local booking gates.',
-      href: '/bookings?view=blocked-create',
-      metrics: [
-        { label: 'Customer GPS gate', value: customerTooFar.length.toString() },
-        { label: 'First-pick distance', value: partnerTooFar.length.toString() },
-        { label: 'Service area', value: serviceArea.length.toString() },
-        { label: 'GPS proof', value: locationProof.length.toString() },
-        { label: 'Latest', value: latestAge },
-      ],
-    };
+    tone: logs.length > 0 ? 'warn' : 'ok',
+    detail:
+      logs.length > 0
+        ? `${customerTooFar.length} customer distance, ${partnerTooFar.length} first-pick distance, ${serviceArea.length} service-area, and ${locationProof.length} customer GPS proof attempt(s). Latest ${latestAge}.`
+        : 'No booking create request has been blocked by the local booking gates.',
+    href: '/bookings?view=blocked-create',
+    metrics: [
+      { label: 'Customer GPS gate', value: customerTooFar.length.toString() },
+      { label: 'First-pick distance', value: partnerTooFar.length.toString() },
+      { label: 'Service area', value: serviceArea.length.toString() },
+      { label: 'GPS proof', value: locationProof.length.toString() },
+      { label: 'Latest', value: latestAge },
+    ],
+  };
+}
+
+function buildBookingGateTriage(logs: AdminAuditLog[], activeFilter: BookingGateFilter, nowMs: number) {
+  return bookingGateFilterOptions
+    .filter((option) => option.value !== 'all')
+    .map((option) => {
+      const matchingLogs = logs.filter((log) => bookingGateMatchesFilter(log, option.value));
+      const latest = matchingLogs[0];
+      const latestAge = latest ? relativeTimeLabel(latest.createdAt, nowMs) : 'none';
+      const active = activeFilter === option.value;
+      return {
+        filter: option.value,
+        label: option.label,
+        operatorHint: option.operatorHint,
+        count: matchingLogs.length,
+        latestAge,
+        status: active ? 'Selected' : matchingLogs.length > 0 ? `${matchingLogs.length} open` : 'Clear',
+        tone: matchingLogs.length > 0 ? ('warn' as const) : ('ok' as const),
+        auditHref: `/audit-log?query=${encodeURIComponent(bookingGateAuditQuery(option.value))}`,
+      };
+    });
+}
+
+function bookingGateCount(logs: AdminAuditLog[], filter: BookingGateFilter) {
+  return logs.filter((log) => bookingGateMatchesFilter(log, filter)).length;
+}
+
+function bookingGateMatchesFilter(log: AdminAuditLog, filter: BookingGateFilter) {
+  if (filter === 'all') {
+    return true;
+  }
+  const reasonCode = bookingGateReasonCode(log);
+  if (filter === 'service-area') {
+    return reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA';
+  }
+  if (filter === 'customer-distance') {
+    return reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR';
+  }
+  if (filter === 'first-pick-distance') {
+    return reasonCode === 'PREFERRED_PARTNER_TOO_FAR';
+  }
+  if (filter === 'customer-gps') {
+    return (
+      reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING' ||
+      reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING' ||
+      reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID' ||
+      reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE'
+    );
+  }
+  return reasonCode === 'UNKNOWN';
+}
+
+function bookingGateAuditQuery(filter: BookingGateFilter) {
+  if (filter === 'service-area') {
+    return 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA';
+  }
+  if (filter === 'customer-distance') {
+    return 'CUSTOMER_CURRENT_LOCATION_TOO_FAR';
+  }
+  if (filter === 'first-pick-distance') {
+    return 'PREFERRED_PARTNER_TOO_FAR';
+  }
+  if (filter === 'customer-gps') {
+    return 'CUSTOMER_CURRENT_LOCATION';
+  }
+  if (filter === 'unknown') {
+    return 'booking.create.rejected UNKNOWN';
+  }
+  return 'booking.create.rejected';
 }
 
 function bookingGateReasonCode(log: AdminAuditLog) {

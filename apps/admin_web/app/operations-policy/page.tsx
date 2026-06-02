@@ -222,8 +222,7 @@ export default async function OperationsPolicyPage({
           <div>
             <h3>Recent blocked create attempts</h3>
             <p className="muted">
-              Shows support evidence for failed booking creation. This is factual troubleshooting, not
-              customer or partner scoring.
+              Shows factual support evidence for failed booking creation and troubleshooting.
             </p>
           </div>
           <Link className="text-link" href="/bookings?view=blocked-create">

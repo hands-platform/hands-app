@@ -1,5 +1,5 @@
 import { AdminAuditLog, AdminBooking, adminGet } from '../../lib/admin-api';
-import { BookingMonitor, type BookingEvidenceFilter } from './booking-monitor';
+import { BookingMonitor, type BookingEvidenceFilter, type BookingGateFilter } from './booking-monitor';
 
 type BookingsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -12,6 +12,7 @@ export default async function BookingsPage({ searchParams }: { searchParams?: Bo
   const params = await searchParams;
   const initialView = readBookingView(params?.view, params?.status);
   const initialEvidenceFilter = readBookingEvidenceFilter(params?.evidence);
+  const initialGateFilter = readBookingGateFilter(params?.gate);
 
   return (
     <BookingMonitor
@@ -19,6 +20,7 @@ export default async function BookingsPage({ searchParams }: { searchParams?: Bo
       bookingCreateRejections={bookingCreateRejections}
       initialView={initialView}
       initialEvidenceFilter={initialEvidenceFilter}
+      initialGateFilter={initialGateFilter}
     />
   );
 }
@@ -71,6 +73,20 @@ function readBookingEvidenceFilter(value: string | string[] | undefined): Bookin
     evidence === 'closeout'
   ) {
     return evidence;
+  }
+  return 'all';
+}
+
+function readBookingGateFilter(value: string | string[] | undefined): BookingGateFilter {
+  const gate = Array.isArray(value) ? value[0] : value;
+  if (
+    gate === 'service-area' ||
+    gate === 'customer-gps' ||
+    gate === 'customer-distance' ||
+    gate === 'first-pick-distance' ||
+    gate === 'unknown'
+  ) {
+    return gate;
   }
   return 'all';
 }
