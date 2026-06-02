@@ -832,7 +832,7 @@ export default async function OperationsPolicyPage({
           <DecisionHint
             title="No-show disputes"
             recommendation="Require admin review until evidence upload and dispute screens are mature."
-            detail="No-show is an operational closeout state in MVP, not a person rating. Operators should review evidence before payment or support action."
+            detail="No-show is an operational closeout state in MVP, not a person judgment. Operators should review evidence before payment or support action."
           />
           <DecisionHint
             title="Partner alert channel"
@@ -858,7 +858,7 @@ export default async function OperationsPolicyPage({
             <div>
               <h3>Current decision pressure</h3>
               <p className="muted">
-                Data-driven signals that tell the owner which policy choice deserves attention first. This
+                Data-driven records that tell the owner which policy choice deserves attention first. This
                 keeps HANDS from changing flow rules without matching, supply, wallet, or push evidence.
               </p>
             </div>
@@ -892,7 +892,7 @@ export default async function OperationsPolicyPage({
               <span className={`pill ${item.pillClass}`}>{item.owner}</span>
               <h3>{item.title}</h3>
               <p>{item.question}</p>
-              <small>{item.signal}</small>
+              <small>{item.evidence}</small>
               <div className="booking-radar" style={{ marginTop: 12 }}>
                 {item.options.map((option) => (
                   <div className="insight-card" key={option.label}>
@@ -1278,7 +1278,7 @@ function buildPolicySimulation(
         pillClass: ready ? 'pill-success' : 'pill-danger',
       },
       {
-        status: immediateBackup ? 'Low anxiety' : 'Strict first-pick',
+        status: immediateBackup ? 'Customer alternatives visible' : 'Strict first-pick',
         title: 'Customer waiting experience',
         detail: immediateBackup
           ? 'Customers can see marketplace partner interest during the first response window.'
@@ -1782,7 +1782,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       title: `${formatDistance(backupRadiusMeters)} marketplace alert policy`,
       detail:
         'Marketplace partners are prioritized by customer distance before alerts and operator review.',
-      verify: 'Verify from Operations Policy simulator and Partner Controls location freshness signals.',
+      verify: 'Verify from Operations Policy simulator and Partner Controls location freshness records.',
     },
     {
       scope: 'Location gate',
@@ -2144,7 +2144,7 @@ function buildPartnerAcceptancePolicyImpact(
       label: 'Account follow-up',
       value: accountFollowUps.length.toString(),
       helper:
-        'Blocked account, active admin hold, blocked device, session follow-up, or shared device signal.',
+        'Blocked account, active admin hold, blocked device, session follow-up, or shared device record.',
     },
     {
       label: 'Recovery queue',
@@ -2623,7 +2623,7 @@ function buildPolicyEffectRows(input: {
         : belowAverage
           ? 'Matched rate is below the measured average. Check partner supply, alert delivery, and customer wait before expanding this value.'
           : needsOutcomeReview
-            ? 'Closed or below-average outcomes exist. Review the booking detail snapshots before changing this policy again.'
+            ? 'Closed outcome records need review. Check the booking detail snapshots before changing this policy again.'
             : 'This cohort is currently performing at or above the measured average in the sampled bookings.',
     };
   });
@@ -3179,7 +3179,7 @@ function operationsOwnerDecisionBacklog() {
       title: 'First-pick partner timer',
       question:
         'Should the first-pick partner keep the full response window, or should marketplace partners become more prominent earlier?',
-      signal:
+      evidence:
         'Review open matching wait time, first-pick response rate, and customer cancellation before changing the timer.',
       options: [
         {
@@ -3206,7 +3206,7 @@ function operationsOwnerDecisionBacklog() {
       title: 'Marketplace partner radius',
       question:
         'Should HANDS keep one nationwide default radius, or vary radius by city density and service type?',
-      signal:
+      evidence:
         'Review partner count within radius, average distance, late arrivals, and ignored marketplace alerts by city.',
       options: [
         {
@@ -3233,7 +3233,7 @@ function operationsOwnerDecisionBacklog() {
       title: 'Negative wallet final-gate policy',
       question:
         'Should cash-fee debt hold only customer final confirmation, or also service-start and payout-release gates?',
-      signal:
+      evidence:
         'Review cash settlement speed, repeated debt partners, and customer impact before changing final-gate scope.',
       options: [
         {
@@ -3260,7 +3260,7 @@ function operationsOwnerDecisionBacklog() {
       title: 'Cancellation fee rule',
       question:
         'When a customer cancels after partner commitment, should payment be released immediately or held for fee review?',
-      signal:
+      evidence:
         'Review after-match cancellation reasons, partner travel evidence, refund complaints, and manual review workload.',
       options: [
         {
@@ -3286,7 +3286,7 @@ function operationsOwnerDecisionBacklog() {
       title: 'No-show evidence',
       question:
         'What evidence should be required before no-show closeout or customer fee decisions are reviewed?',
-      signal:
+      evidence:
         'Review chat, arrival timestamp, location proof, customer response, and dispute context before no-show closeout.',
       options: [
         {
@@ -3312,7 +3312,7 @@ function operationsOwnerDecisionBacklog() {
       title: 'Partner alert channel',
       question:
         'When should time-sensitive booking alerts move from in-app only to mandatory OneSignal push delivery?',
-      signal:
+      evidence:
         'Review delivery failure rate, disabled devices, missed requests, and production push credential readiness.',
       options: [
         {
