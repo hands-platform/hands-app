@@ -1286,6 +1286,16 @@ function buildActionGatePolicyChecklist(
       href: '/cash-settlements',
     },
     {
+      key: 'payout.batch_cycle_policy',
+      title: 'Payout batch cycle',
+      recommendedValue: 'WEEKLY_OR_MONTHLY_BATCH',
+      detail:
+        'Positive partner earnings should move through weekly, monthly, or admin-selected payout batches instead of instant one-booking payouts.',
+      operatorAction:
+        'Use payout batches with transfer references so finance can reconcile earnings, tax, withholding, and wallet records.',
+      href: '/payouts',
+    },
+    {
       key: 'matching.first_pick_expiry_action_policy',
       title: 'First-pick expiry',
       recommendedValue: 'OPEN_MARKETPLACE_AND_OPERATOR_REVIEW',
@@ -1343,8 +1353,13 @@ function buildActionGatePolicyChecklist(
         helper: 'Negative wallet clearance is tied to settlement evidence.',
       },
       {
+        label: 'Payout cycle',
+        value: cards[2]?.status ?? 'Unknown',
+        helper: 'Positive earnings stay batch-settled by finance.',
+      },
+      {
         label: 'No-show closeout',
-        value: cards[3]?.status ?? 'Unknown',
+        value: cards[4]?.status ?? 'Unknown',
         helper: 'No-show remains an admin evidence decision.',
       },
     ],
@@ -4078,6 +4093,33 @@ function operationsOwnerDecisionBacklog() {
       pillClass: 'pill-warn',
     },
     {
+      owner: 'Finance',
+      title: 'Payout batch cycle',
+      question:
+        'Should positive partner earnings be settled on a weekly rhythm, monthly rhythm, or admin-selected payout day?',
+      evidence:
+        'Review completed earning volume, withholding logs, bank verification, cash-debt offsets, and transfer-reference workload before changing payout cadence.',
+      options: [
+        {
+          label: 'Weekly or monthly batch',
+          tradeoff:
+            'Predictable for finance and partners, with enough time to review tax, wallet, and bank records.',
+        },
+        {
+          label: 'Admin selected day',
+          tradeoff:
+            'Flexible for launch or holidays, but operators must keep transfer references and payout evidence clean.',
+        },
+      ],
+      recommendation:
+        'Start with batch settlement only: weekly or monthly default, plus admin-selected exception batches when needed.',
+      decisionTrigger:
+        'Revisit when payout batch volume, withholding records, and bank verification are stable for at least two cycles.',
+      href: '/payouts',
+      className: 'ops-task-pending',
+      pillClass: 'pill-info',
+    },
+    {
       owner: 'Support',
       title: 'Cancellation fee rule',
       question:
@@ -4609,6 +4651,26 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
           label: 'Partner cash holds',
           detail: 'Check partners blocked at final gates by unpaid platform fees.',
           href: '/partners?review=cash-debt',
+        },
+      ],
+    },
+    'payout.batch_cycle_policy': {
+      area: 'Payout settlement',
+      title: 'Controls positive earning payout cadence',
+      detail:
+        'Positive partner earnings remain settlement-batch based. Operators can run weekly, monthly, or admin-selected-day batches, but each paid batch should keep transfer references, withholding logs, and wallet ledger evidence.',
+      saveChecks: [
+        {
+          label: 'Payout batches',
+          detail:
+            'Review draft, approved, and paid batches before changing payout cadence or exception handling.',
+          href: '/payouts',
+        },
+        {
+          label: 'Earnings ledger',
+          detail:
+            'Confirm unpaid earnings, tax logs, withholding records, and wallet entries are ready for the next batch.',
+          href: '/earnings',
         },
       ],
     },

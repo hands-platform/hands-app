@@ -44,6 +44,10 @@ export const CASH_SETTLEMENT_CLEARANCE_POLICY_KEY = 'cash.settlement_clearance_p
 export const CASH_CLEAR_DEPOSIT_OR_OFFSET_REQUIRED = 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED';
 export const CASH_CLEAR_ADMIN_OFFSET_ONLY = 'ADMIN_OFFSET_ONLY';
 export const CASH_CLEAR_DEPOSIT_REFERENCE_REQUIRED = 'DEPOSIT_REFERENCE_REQUIRED';
+export const PAYOUT_BATCH_CYCLE_POLICY_KEY = 'payout.batch_cycle_policy';
+export const PAYOUT_BATCH_WEEKLY_OR_MONTHLY = 'WEEKLY_OR_MONTHLY_BATCH';
+export const PAYOUT_BATCH_ADMIN_SELECTED_DAY = 'ADMIN_SELECTED_DAY_BATCH';
+export const PAYOUT_BATCH_HYBRID_REVIEW = 'HYBRID_ADMIN_REVIEW';
 export const MATCHING_FIRST_PICK_EXPIRY_ACTION_POLICY_KEY = 'matching.first_pick_expiry_action_policy';
 export const FIRST_PICK_OPEN_MARKETPLACE_REVIEW = 'OPEN_MARKETPLACE_AND_OPERATOR_REVIEW';
 export const FIRST_PICK_EXPIRE_ONLY_AFTER_REVIEW = 'EXPIRE_ONLY_AFTER_OPERATOR_REVIEW';
@@ -322,6 +326,36 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         label: 'Deposit reference required',
         tradeoff:
           'Strongest cash evidence, but creates more manual support when partners cannot upload clean references.',
+      },
+    ],
+    enforced: true,
+  },
+  {
+    key: PAYOUT_BATCH_CYCLE_POLICY_KEY,
+    category: 'Decision',
+    label: 'Payout batch cycle',
+    description:
+      'Controls how positive partner earnings are grouped for settlement. Payout remains batch-based and admin-controlled, never paid instantly from a single booking.',
+    value: PAYOUT_BATCH_WEEKLY_OR_MONTHLY,
+    recommendedValue: PAYOUT_BATCH_WEEKLY_OR_MONTHLY,
+    options: [
+      {
+        value: PAYOUT_BATCH_WEEKLY_OR_MONTHLY,
+        label: 'Weekly or monthly batch',
+        tradeoff:
+          'Best MVP posture. Keeps settlement predictable while operators choose weekly or monthly payout runs.',
+      },
+      {
+        value: PAYOUT_BATCH_ADMIN_SELECTED_DAY,
+        label: 'Admin selected day',
+        tradeoff:
+          'Useful for special payout days, but requires careful operator checklist and transfer references.',
+      },
+      {
+        value: PAYOUT_BATCH_HYBRID_REVIEW,
+        label: 'Hybrid admin review',
+        tradeoff:
+          'Allows manual exception batches while preserving the default scheduled payout rhythm.',
       },
     ],
     enforced: true,
