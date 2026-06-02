@@ -78,9 +78,11 @@ type PartnerDetailBooking = {
   id: string;
   customerProfileId?: string;
   status?: string;
+  notes?: string | null;
   scheduledStartAt?: string;
   scheduledEndAt?: string;
   createdAt?: string;
+  updatedAt?: string;
   address?: unknown;
   addressSnapshot?: {
     id?: string;
@@ -122,6 +124,15 @@ type PartnerDetailBooking = {
       sender?: { phone?: string | null; fullName?: string | null; roles?: string[] | null } | null;
     }>;
   } | null;
+  opsTasks?: Array<{
+    id: string;
+    type: string;
+    status: string;
+    note?: string | null;
+    createdAt?: string;
+    updatedAt?: string;
+    actor?: { id?: string; phone?: string | null; fullName?: string | null } | null;
+  }>;
   payment?: { method?: string; status?: string; amount?: number; currency?: string | null } | null;
   review?: { rating?: number; comment?: string | null; createdAt?: string } | null;
 };
@@ -333,6 +344,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   );
   const partnerChatRetentionRows = buildPartnerChatRetentionRows(filteredPartnerBookingArchive);
   const partnerChatRetentionSummary = buildPartnerChatRetentionSummary(partnerChatRetentionRows);
+  const partnerBookingOpsLedgerRows = buildPartnerBookingOpsLedgerRows(filteredPartnerBookingArchive);
   const partnerBookingGateAttempts = buildPartnerBookingGateAttemptRows(
     provider.auditLogs ?? [],
     provider.id,
@@ -1323,6 +1335,70 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card" id="partner-booking-ops-ledger" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operations note ledger</h2>
+            <p className="muted">
+              Booking-level notes, manual closeout context, and staff tasks linked to this partner. This is
+              factual operator history only for follow-up, settlement, and evidence review.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerBookingOpsLedgerRows.length} booking note row(s)</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Booking</th>
+              <th>Relation</th>
+              <th>Manual notes</th>
+              <th>Staff tasks</th>
+              <th>Closeout context</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerBookingOpsLedgerRows.map((row) => (
+              <tr key={`${row.id}-${row.relation}`}>
+                <td>
+                  <strong>{row.bookingLabel}</strong>
+                  <p className="muted">{row.serviceLabel}</p>
+                  <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
+                </td>
+                <td>{row.relation}</td>
+                <td>
+                  <strong>{row.noteStatus}</strong>
+                  <p className="muted">{row.noteDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.taskStatus}</strong>
+                  <p className="muted">{row.taskDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.closeoutStatus}</strong>
+                  <p className="muted">{row.closeoutDetail}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={`/bookings/${row.id}`}>
+                    Booking
+                  </Link>
+                  {row.chatHref ? (
+                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      Chat
+                    </Link>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {partnerBookingOpsLedgerRows.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No booking-level operation notes or staff tasks matched this partner date filter.
+          </p>
+        ) : null}
       </div>
 
       <div className="card" id="app-activity" style={{ marginBottom: 16 }}>
@@ -2834,6 +2910,20 @@ type PartnerChatRetentionRow = {
   messageCount: number;
   mobileHidden: boolean;
 };
+type PartnerBookingOpsLedgerRow = {
+  id: string;
+  relation: string;
+  bookingLabel: string;
+  serviceLabel: string;
+  status: string;
+  noteStatus: string;
+  noteDetail: string;
+  taskStatus: string;
+  taskDetail: string;
+  closeoutStatus: string;
+  closeoutDetail: string;
+  chatHref?: string;
+};
 type PartnerBookingGateAttemptRow = {
   id: string;
   at: string;
@@ -3443,6 +3533,7 @@ function buildPartnerBookingEvidenceRows(
       participant?.respondedAt
         ? `responded ${formatDate(participant.respondedAt)}`
         : 'response time not stored',
+      `${booking.opsTasks?.length ?? 0} staff task(s)`,
       `location ${latestLocation}`,
     ];
 
@@ -3645,6 +3736,25 @@ function buildPartnerActivityRecords(
           message.body,
           90,
         )}`,
+      });
+    }
+    for (const task of bookingRecord.booking.opsTasks ?? []) {
+      records.push({
+        id: task.id,
+        type: 'OPS',
+        at: task.updatedAt ?? task.createdAt ?? bookingRecord.booking.updatedAt ?? '',
+        title: `${task.status} booking task`,
+        detail: `${task.type} / ${task.note ?? 'No note'} / ${task.actor?.fullName ?? task.actor?.phone ?? 'System'}`,
+      });
+    }
+    const latestNote = latestBookingManualNote(bookingRecord.booking.notes);
+    if (latestNote) {
+      records.push({
+        id: `${bookingRecord.booking.id}-booking-note`,
+        type: 'OPS',
+        at: bookingRecord.booking.updatedAt ?? bookingRecord.booking.createdAt ?? '',
+        title: `Booking note ${shortRecordId(bookingRecord.booking.id)}`,
+        detail: latestNote,
       });
     }
   }
@@ -4759,6 +4869,63 @@ function buildPartnerChatRetentionRows(records: PartnerBookingArchiveRecord[]): 
       mobileHidden,
     };
   });
+}
+
+function buildPartnerBookingOpsLedgerRows(
+  records: PartnerBookingArchiveRecord[],
+): PartnerBookingOpsLedgerRow[] {
+  return records
+    .filter((record) => {
+      const booking = record.booking;
+      return (
+        Boolean(booking.notes?.trim()) ||
+        (booking.opsTasks?.length ?? 0) > 0 ||
+        Boolean(booking.closedAt || booking.closedReason || booking.closedNote)
+      );
+    })
+    .slice(0, 40)
+    .map((record) => {
+      const booking = record.booking;
+      const tasks = [...(booking.opsTasks ?? [])].sort(
+        (left, right) =>
+          dateValue(right.updatedAt ?? right.createdAt) - dateValue(left.updatedAt ?? left.createdAt),
+      );
+      const latestTask = tasks[0];
+      const latestNote = latestBookingManualNote(booking.notes);
+
+      return {
+        id: booking.id,
+        relation: record.relation,
+        bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
+          booking.scheduledStartAt ?? booking.createdAt,
+        )}`,
+        serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
+        status: booking.status ?? 'UNKNOWN',
+        noteStatus: latestNote ? 'Manual note saved' : 'No manual note',
+        noteDetail: latestNote ?? 'No booking-level staff note has been saved for this reservation.',
+        taskStatus: tasks.length ? `${tasks.length} task row(s)` : 'No staff task',
+        taskDetail: latestTask
+          ? `${latestTask.status} ${latestTask.type} / ${latestTask.note ?? 'No task note'} / ${
+              latestTask.actor?.fullName ?? latestTask.actor?.phone ?? 'System'
+            }`
+          : 'No linked booking operation task is loaded.',
+        closeoutStatus: booking.closedAt ? 'Closed by operator flow' : 'Not closed',
+        closeoutDetail: booking.closedAt
+          ? `${formatDate(booking.closedAt)} / ${bookingClosureLabel(booking)}`
+          : 'No cancellation, no-show, refund, or closeout decision is saved.',
+        chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
+      };
+    });
+}
+
+function latestBookingManualNote(notes?: string | null) {
+  if (!notes?.trim()) return null;
+  const lines = notes
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const latest = lines[lines.length - 1];
+  return latest ? trimText(latest, 180) : null;
 }
 
 function buildPartnerChatRetentionSummary(rows: PartnerChatRetentionRow[]) {

@@ -606,6 +606,10 @@ export class AdminService {
           },
         },
       },
+      opsTasks: {
+        orderBy: { updatedAt: 'desc' as const },
+        include: { actor: { select: { id: true, phone: true, fullName: true } } },
+      },
       payment: true,
       review: true,
     };
