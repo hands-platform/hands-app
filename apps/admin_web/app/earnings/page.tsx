@@ -33,6 +33,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   );
   const summary = filters.range === 'all' ? apiSummary : summarizeEarnings(filteredEarnings, currency);
   const sortedEarnings = sortEarnings(filteredEarnings);
+  const ledgerEarnings = sortEarnings(filterEarningsByBatchState(filteredEarnings, filters.batchState));
   const payoutQueue = buildProviderPayoutQueue(sortedEarnings, filteredPayoutBatches);
   const cashDebtQueue = buildCashDebtQueue(sortedEarnings);
   const cashDebtTotals = buildCashDebtTotals(cashDebtQueue);
@@ -45,6 +46,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
   const serviceBridge = buildServiceEarningBridge(sortedEarnings);
   const moneyFlowCards = buildEarningsMoneyFlowCards(summary, serviceBridge, cashDebtTotals);
   const moneyFlowChecks = buildEarningsMoneyFlowChecks(summary, serviceBridge, cashDebtQueue);
+  const batchStateCards = buildEarningBatchStateCards(filteredEarnings, filters.range);
 
   const metrics = [
     ['Gross', summary.grossAmount],
@@ -464,6 +466,41 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       <div className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
+            <h2>Earning batch state filters</h2>
+            <p className="muted">
+              Filter the raw earning ledger by payout readiness. Totals, finance queue, and cash debt queue
+              stay based on the selected date range.
+            </p>
+          </div>
+          <span className="pill pill-info">{ledgerEarnings.length} ledger row(s)</span>
+        </div>
+        <div className="filter-row" style={{ marginTop: 12 }}>
+          {batchStateCards.map((card) => (
+            <Link
+              className={`filter-pill ${card.state === filters.batchState ? 'pill-info' : ''}`}
+              href={card.href}
+              key={card.state}
+            >
+              {card.label} · {card.count}
+            </Link>
+          ))}
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 16 }}>
+          {batchStateCards
+            .filter((card) => card.state !== 'all')
+            .map((card) => (
+              <div key={card.state}>
+                <span>{card.label}</span>
+                <strong>{card.count}</strong>
+                <small>{formatMoney(card.amount, summary.currency)}</small>
+              </div>
+            ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 20 }}>
+        <div className="risk-watch-header">
+          <div>
             <h2>Recent earnings ledger</h2>
             <p className="muted">
               Raw earning rows remain visible for booking traceability, tax audit, payout batching, and cash
@@ -484,7 +521,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
             </tr>
           </thead>
           <tbody>
-            {sortedEarnings.map((earning) => (
+            {ledgerEarnings.map((earning) => (
               <tr id={`earning-${earning.id}`} key={earning.id}>
                 <td>
                   <div>
@@ -566,7 +603,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                 </td>
               </tr>
             ))}
-            {sortedEarnings.length === 0 && (
+            {ledgerEarnings.length === 0 && (
               <tr>
                 <td colSpan={7}>No earnings loaded.</td>
               </tr>
@@ -591,6 +628,7 @@ function sortEarnings(earnings: AdminEarning[]) {
 function buildEarningFilters(params: Record<string, string | string[] | undefined>) {
   return {
     range: normalizeDateRange(readSearchParam(params.range)),
+    batchState: normalizeEarningBatchState(readSearchParam(params.batchState)),
   };
 }
 
@@ -700,6 +738,91 @@ type ServicePayoutSnapshotLine = {
   vatAmount?: number | string;
   otherCostAmount?: number | string;
 };
+
+type EarningBatchState = 'all' | 'ready' | 'cash-debt' | 'closeout-review' | 'batched' | 'paid';
+
+type EarningBatchStateCard = {
+  state: EarningBatchState;
+  label: string;
+  count: number;
+  amount: number;
+  href: string;
+};
+
+const earningBatchStateOptions: Array<{ state: EarningBatchState; label: string }> = [
+  { state: 'all', label: 'All rows' },
+  { state: 'ready', label: 'Batch ready' },
+  { state: 'cash-debt', label: 'Cash fee debt' },
+  { state: 'closeout-review', label: 'Closeout review' },
+  { state: 'batched', label: 'Already batched' },
+  { state: 'paid', label: 'Paid' },
+];
+
+function normalizeEarningBatchState(value: string): EarningBatchState {
+  return earningBatchStateOptions.some((option) => option.state === value)
+    ? (value as EarningBatchState)
+    : 'all';
+}
+
+function filterEarningsByBatchState(earnings: AdminEarning[], state: EarningBatchState) {
+  if (state === 'all') {
+    return earnings;
+  }
+  return earnings.filter((earning) => earningBatchState(earning) === state);
+}
+
+function buildEarningBatchStateCards(
+  earnings: AdminEarning[],
+  range: ReturnType<typeof buildEarningFilters>['range'],
+): EarningBatchStateCard[] {
+  return earningBatchStateOptions.map((option) => {
+    const stateEarnings = filterEarningsByBatchState(earnings, option.state);
+    return {
+      ...option,
+      count: stateEarnings.length,
+      amount: stateEarnings.reduce((sum, earning) => sum + earning.netAmount, 0),
+      href: earningBatchStateHref(range, option.state),
+    };
+  });
+}
+
+function earningBatchStateHref(
+  range: ReturnType<typeof buildEarningFilters>['range'],
+  state: EarningBatchState,
+) {
+  const params = new URLSearchParams();
+  if (range !== 'all') {
+    params.set('range', range);
+  }
+  if (state !== 'all') {
+    params.set('batchState', state);
+  }
+  const query = params.toString();
+  return query ? `/earnings?${query}` : '/earnings';
+}
+
+function earningBatchState(earning: AdminEarning): EarningBatchState | 'cancelled' {
+  if (isCashDebt(earning)) {
+    return 'cash-debt';
+  }
+  if (earning.status === 'PAID') {
+    return 'paid';
+  }
+  if (earning.status === 'CANCELLED') {
+    return 'cancelled';
+  }
+  if (earning.payoutBatchId) {
+    return 'batched';
+  }
+  if (isEarningReadyForBatch(earning)) {
+    return 'ready';
+  }
+  return 'closeout-review';
+}
+
+function isEarningReadyForBatch(earning: AdminEarning) {
+  return canCreatePayout(earning) && earning.booking?.status === 'COMPLETED';
+}
 
 function buildCashDebtQueue(earnings: AdminEarning[]): CashDebtQueueItem[] {
   return earnings

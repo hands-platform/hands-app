@@ -334,10 +334,23 @@ const pages = [
     ],
   },
   { path: '/coupons', markers: ['Coupons', 'Campaign command board'] },
-  { path: '/earnings', markers: ['Partner Earnings', 'Earnings date range', 'Money flow command center'] },
+  {
+    path: '/earnings',
+    markers: ['Partner Earnings', 'Earnings date range', 'Money flow command center', 'Earning batch state filters'],
+  },
   {
     path: '/earnings?range=7d',
-    markers: ['Partner Earnings', 'Earnings date range', 'Last 7 days', 'Money flow command center'],
+    markers: [
+      'Partner Earnings',
+      'Earnings date range',
+      'Last 7 days',
+      'Money flow command center',
+      'Earning batch state filters',
+    ],
+  },
+  {
+    path: '/earnings?batchState=ready',
+    markers: ['Partner Earnings', 'Earning batch state filters', 'Batch ready', 'Recent earnings ledger'],
   },
   {
     path: '/payments',
