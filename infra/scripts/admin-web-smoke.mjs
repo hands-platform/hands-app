@@ -41,7 +41,7 @@ const pages = [
       'Open matching',
       'Completed bookings',
       'Cancelled bookings',
-      'No-show signal',
+      'No-show records',
       'Booking status control',
       'Customer app presence',
       'Live app customers',

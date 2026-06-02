@@ -424,9 +424,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       `${selectedRangeLabel} expired requests that should have payment release and customer follow-up checked.`,
     ],
     [
-      'No-show signal',
+      'No-show records',
       bookingOps.noShowSignal.toString(),
-      `${selectedRangeLabel} formal NO_SHOW reservations plus overdue matched bookings without chat.`,
+      `${selectedRangeLabel} formal NO_SHOW reservations plus overdue matched bookings without chat records.`,
     ],
     [
       'Closeout checks',
@@ -500,7 +500,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     'Active bookings',
     'Completed bookings',
     'Cancelled bookings',
-    'No-show signal',
+    'No-show records',
     'Customers in app',
     'Live matching customers',
     'Partners in app',
@@ -1558,9 +1558,9 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <small>Operator decision</small>
             </div>
             <div>
-              <span>No-show signal</span>
+              <span>No-show records</span>
               <strong>{bookingOps.noShowSignal}</strong>
-              <small>Expired proxy</small>
+              <small>Formal and overdue</small>
             </div>
             <div>
               <span>Closeout checks</span>
@@ -5312,7 +5312,7 @@ function buildShiftCommandBriefing(input: {
       {
         label: 'Dispatch pressure',
         value: openMatchingRows.toString(),
-        helper: `${input.bookingDeepDive.openWithoutParticipants} without partner, ${input.bookingOps.noShowSignal} no-show signal`,
+        helper: `${input.bookingDeepDive.openWithoutParticipants} without partner, ${input.bookingOps.noShowSignal} no-show record(s)`,
         tone: openMatchingRows ? 'warn' : 'ok',
         href: '/bookings?view=active',
       },
@@ -5389,7 +5389,7 @@ function buildOperatorStartChecklist(input: {
       status: openMatchingFollowUp || input.bookingOps.noShowSignal ? 'Dispatch first' : 'Clear',
       detail: openMatchingFollowUp
         ? `${openMatchingFollowUp} open matching booking(s) have expired timers or no fresh partner supply.`
-        : `${input.bookingOps.openMatching} matching wait, ${input.bookingOps.noShowSignal} no-show signal.`,
+        : `${input.bookingOps.openMatching} matching wait, ${input.bookingOps.noShowSignal} no-show record(s).`,
       action: 'Open matching queue',
       href: openMatchingFollowUp ? '/bookings?view=matching' : '/bookings',
       className: openMatchingFollowUp ? 'ops-task-blocked' : 'ops-task-done',
