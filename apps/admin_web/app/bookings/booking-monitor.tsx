@@ -32,6 +32,9 @@ type BookingView =
   | 'location'
   | 'chat'
   | 'chat-repair'
+  | 'chat-evidence'
+  | 'evidence-missing'
+  | 'refund-review'
   | 'expired'
   | 'no-show'
   | 'all';
@@ -304,6 +307,13 @@ export function BookingMonitor({
       bookingLocationNeedsOps(booking, currentTimeMs),
     );
     const chatRepair = orderedBookings.filter((booking) => bookingChatRepairNeedsOps(booking));
+    const chatEvidence = orderedBookings.filter((booking) =>
+      bookingChatEvidenceNeedsOps(booking, currentTimeMs),
+    );
+    const evidenceMissing = orderedBookings.filter((booking) =>
+      bookingDecisionEvidenceMissing(booking, currentTimeMs),
+    );
+    const refundReview = orderedBookings.filter((booking) => bookingRefundReviewNeedsOps(booking));
     const actionChecks = orderedBookings.filter((booking) =>
       bookingCheckFlags(booking, currentTimeMs).some((flag) => flag.severity === 'high'),
     );
@@ -332,6 +342,9 @@ export function BookingMonitor({
       ['Pricing checks', pricingChecks.length.toString()],
       ['Location checks', locationChecks.length.toString()],
       ['Chat repair', chatRepair.length.toString()],
+      ['Chat evidence review', chatEvidence.length.toString()],
+      ['Evidence missing', evidenceMissing.length.toString()],
+      ['Refund review', refundReview.length.toString()],
     ];
   }, [currentTimeMs, orderedBookingCreateRejections.length, orderedBookings]);
 
@@ -1398,6 +1411,30 @@ const bookingViewOptions: Array<{
       'Use this when a matched customer and partner cannot coordinate. Repair chat before arrival, service start, or completion.',
   },
   {
+    view: 'chat-evidence',
+    label: 'Chat evidence',
+    description:
+      'bookings where chat, location, alerts, or notes should be reviewed before a manual outcome.',
+    operatorHint:
+      'Use this before cancellation, no-show, payment release, refund, or closeout decisions that depend on communication evidence.',
+  },
+  {
+    view: 'evidence-missing',
+    label: 'Evidence missing',
+    description:
+      'manual-decision bookings that do not yet have enough retained chat, location, or alert context.',
+    operatorHint:
+      'Use this to add an operator note or repair missing records before changing a booking outcome.',
+  },
+  {
+    view: 'refund-review',
+    label: 'Refund review',
+    description:
+      'bookings whose payment or refund state needs admin review after cancellation, expiry, no-show, or dispute.',
+    operatorHint:
+      'Use this with the evidence board before releasing, refunding, or reconciling customer payment movement.',
+  },
+  {
     view: 'expired',
     label: 'Expired',
     description: 'bookings closed by timeout and waiting for payment release or customer follow-up review.',
@@ -1437,6 +1474,9 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
   const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
   const locationChecks = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
   const backupSelected = bookings.filter((booking) => isBackupSelected(booking));
+  const chatEvidence = bookings.filter((booking) => bookingChatEvidenceNeedsOps(booking, nowMs));
+  const evidenceMissing = bookings.filter((booking) => bookingDecisionEvidenceMissing(booking, nowMs));
+  const refundReview = bookings.filter((booking) => bookingRefundReviewNeedsOps(booking));
   const quietChat = bookings.filter(
     (booking) =>
       booking.chatRoom &&
@@ -1487,6 +1527,30 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
         metric('expired', expiredMatching.length),
         metric('no chat', matchedWithoutChat.length),
         metric('location checks', locationChecks.length),
+        metric('quiet chat', quietChat.length),
+      ],
+    },
+    {
+      title: 'Evidence readiness',
+      status:
+        evidenceMissing.length > 0 ? 'Needs records' : chatEvidence.length > 0 ? 'Review ready' : 'Clear',
+      tone: evidenceMissing.length > 0 ? 'warn' : chatEvidence.length > 0 ? 'info' : 'ok',
+      detail:
+        evidenceMissing.length > 0
+          ? 'Some manual outcome bookings need retained chat, alert, or location context before action.'
+          : chatEvidence.length > 0
+            ? 'Communication evidence is available for bookings that may need operator review.'
+            : 'No booking currently needs a chat evidence decision board review.',
+      href:
+        evidenceMissing.length > 0
+          ? '/bookings?view=evidence-missing'
+          : chatEvidence.length > 0
+            ? '/bookings?view=chat-evidence'
+            : '/bookings?view=manual-decision',
+      metrics: [
+        metric('chat evidence', chatEvidence.length),
+        metric('evidence missing', evidenceMissing.length),
+        metric('refund review', refundReview.length),
         metric('quiet chat', quietChat.length),
       ],
     },
@@ -2253,6 +2317,15 @@ function bookingMatchesView(booking: AdminBooking, view: BookingView, nowMs: num
   if (view === 'chat-repair') {
     return bookingChatRepairNeedsOps(booking);
   }
+  if (view === 'chat-evidence') {
+    return bookingChatEvidenceNeedsOps(booking, nowMs);
+  }
+  if (view === 'evidence-missing') {
+    return bookingDecisionEvidenceMissing(booking, nowMs);
+  }
+  if (view === 'refund-review') {
+    return bookingRefundReviewNeedsOps(booking);
+  }
   if (view === 'expired') {
     return booking.status === 'EXPIRED';
   }
@@ -2866,6 +2939,15 @@ function emptyBookingMessage(view: BookingView) {
   if (view === 'chat-repair') {
     return 'No matched or active booking is missing chat right now.';
   }
+  if (view === 'chat-evidence') {
+    return 'No booking needs chat evidence review. Chat rooms, quiet chats, and manual outcome evidence are clear.';
+  }
+  if (view === 'evidence-missing') {
+    return 'No manual-decision booking is missing retained chat, location, or alert context in this list.';
+  }
+  if (view === 'refund-review') {
+    return 'No booking needs refund review. Cancelled, expired, and no-show payment outcomes are aligned.';
+  }
   if (view === 'expired') {
     return 'No expired bookings need review. Timeout closeout and customer communication are clear.';
   }
@@ -3055,6 +3137,46 @@ function bookingManualDecisionNeedsOps(booking: AdminBooking) {
     bookingCashDebtNeedsOps(booking) ||
     bookingCompletedCloseoutNeedsOps(booking)
   );
+}
+
+function bookingChatEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
+  return (
+    bookingChatRepairNeedsOps(booking) ||
+    bookingChatQuietNeedsOps(booking) ||
+    bookingDecisionEvidenceMissing(booking, nowMs) ||
+    (bookingManualDecisionNeedsOps(booking) && Boolean(booking.chatRoom)) ||
+    (bookingRefundReviewNeedsOps(booking) && Boolean(booking.chatRoom))
+  );
+}
+
+function bookingChatQuietNeedsOps(booking: AdminBooking) {
+  return (
+    Boolean(booking.chatRoom) &&
+    (booking.chatRoom?.messages?.length ?? 0) === 0 &&
+    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
+  );
+}
+
+function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {
+  if (!bookingManualDecisionNeedsOps(booking) && !bookingChatRepairNeedsOps(booking)) {
+    return false;
+  }
+  const hasChatMessage = (booking.chatRoom?.messages?.length ?? 0) > 0;
+  const hasLocation = hasProviderLocation(booking);
+  const hasAlertTrace = bookingBackupAlertTraceSummary(booking, nowMs).totalNotified > 0;
+  return !(hasChatMessage || hasLocation || hasAlertTrace);
+}
+
+function bookingRefundReviewNeedsOps(booking: AdminBooking) {
+  const paymentStatus = booking.payment?.status;
+  const hasRefundRows = (booking.refunds?.length ?? 0) > 0 || (booking.payment?.refunds?.length ?? 0) > 0;
+  if (hasRefundRows && paymentStatus !== 'REFUNDED') {
+    return true;
+  }
+  if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status) && booking.payment) {
+    return !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '');
+  }
+  return false;
 }
 
 function bookingCompletedCloseoutNeedsOps(booking: AdminBooking) {

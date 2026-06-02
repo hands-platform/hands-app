@@ -47,6 +47,9 @@ function readBookingView(value: string | string[] | undefined, statusValue?: str
     view === 'location' ||
     view === 'chat' ||
     view === 'chat-repair' ||
+    view === 'chat-evidence' ||
+    view === 'evidence-missing' ||
+    view === 'refund-review' ||
     view === 'expired' ||
     view === 'no-show' ||
     view === 'all'
