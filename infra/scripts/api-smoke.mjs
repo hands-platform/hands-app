@@ -66,7 +66,11 @@ async function assertOperationalPolicyMetadata(accessToken) {
     'booking.distance_gate_enabled',
     'booking.service_area_required',
     'wallet.negative_balance_gate',
+    'decision.action_evidence_gate_mode',
+    'cash.settlement_clearance_policy',
+    'matching.first_pick_expiry_action_policy',
     'cancellation.after_match_policy',
+    'no_show.evidence_requirement_policy',
     'no_show.partner_report_policy',
     'notification.partner_alert_channel',
   ];
@@ -78,7 +82,11 @@ async function assertOperationalPolicyMetadata(accessToken) {
   const optionPolicyKeys = [
     'matching.backup_open_mode',
     'wallet.negative_balance_gate',
+    'decision.action_evidence_gate_mode',
+    'cash.settlement_clearance_policy',
+    'matching.first_pick_expiry_action_policy',
     'cancellation.after_match_policy',
+    'no_show.evidence_requirement_policy',
     'no_show.partner_report_policy',
     'notification.partner_alert_channel',
   ];
@@ -110,11 +118,7 @@ function applyBookingAttemptLocationDefaults(path, body) {
   if (path !== '/customer/bookings' || !body || typeof body !== 'object' || Array.isArray(body)) {
     return body;
   }
-  if (
-    'currentLat' in body ||
-    'currentLng' in body ||
-    'currentLocationUpdatedAt' in body
-  ) {
+  if ('currentLat' in body || 'currentLng' in body || 'currentLocationUpdatedAt' in body) {
     return body;
   }
   return {
@@ -1347,7 +1351,9 @@ const globalBrowseProviders = await getJson(
   '/customer/providers/nearby?lat=37.5665&lng=126.9780',
   customerAuth.accessToken,
 );
-const globalBrowseProvider = globalBrowseProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
+const globalBrowseProvider = globalBrowseProviders.find(
+  (item) => item.id === providerAuth.user.providerProfile.id,
+);
 if (
   !globalBrowseProvider ||
   typeof globalBrowseProvider.distanceMeters !== 'number' ||
@@ -1514,8 +1520,7 @@ const preferredPartnerDistanceGateAuditLogs = await getJson('/admin/audit-logs',
 if (
   !preferredPartnerDistanceGateAuditLogs.some(
     (log) =>
-      log.action === 'booking.create.rejected' &&
-      log.metadata?.reasonCode === 'PREFERRED_PARTNER_TOO_FAR',
+      log.action === 'booking.create.rejected' && log.metadata?.reasonCode === 'PREFERRED_PARTNER_TOO_FAR',
   )
 ) {
   throw new Error(
@@ -1540,8 +1545,10 @@ const selectedLocationOnlyBookingDetail = await getJson(
 if (
   selectedLocationOnlyBookingDetail.addressSnapshot?.selectedLocationId !== savedSelectedLocation.id ||
   selectedLocationOnlyBookingDetail.addressSnapshot?.addressText !== savedSelectedLocation.addressText ||
-  Number(selectedLocationOnlyBookingDetail.addressSnapshot?.latitude) !== Number(savedSelectedLocation.latitude) ||
-  Number(selectedLocationOnlyBookingDetail.addressSnapshot?.longitude) !== Number(savedSelectedLocation.longitude)
+  Number(selectedLocationOnlyBookingDetail.addressSnapshot?.latitude) !==
+    Number(savedSelectedLocation.latitude) ||
+  Number(selectedLocationOnlyBookingDetail.addressSnapshot?.longitude) !==
+    Number(savedSelectedLocation.longitude)
 ) {
   throw new Error(
     `Selected-location-only booking should create an immutable dispatch snapshot: ${JSON.stringify(

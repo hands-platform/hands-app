@@ -90,6 +90,21 @@ type BookingCreateGateReview = {
     pillClass: string;
   }>;
 };
+type ActionGatePolicyChecklist = {
+  alignedCount: number;
+  totalCount: number;
+  summary: Array<{ label: string; value: string; helper: string }>;
+  cards: Array<{
+    title: string;
+    status: string;
+    current: string;
+    detail: string;
+    operatorAction: string;
+    href: string;
+    className: string;
+    pillClass: string;
+  }>;
+};
 
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 
@@ -128,6 +143,7 @@ export default async function OperationsPolicyPage({
   );
   const policyEnforcementTrace = buildPolicyEnforcementTrace(settings);
   const bookingCreateGateReview = buildBookingCreateGateReview(settings, auditLogs);
+  const actionGatePolicyChecklist = buildActionGatePolicyChecklist(settings);
 
   return (
     <>
@@ -166,6 +182,48 @@ export default async function OperationsPolicyPage({
           </div>
         </section>
       ) : null}
+
+      <section className="card" id="action-gate-policy-checklist" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Action gate policy checklist</h2>
+            <p className="muted">
+              These admin-editable policies explain which evidence operators should check before booking
+              capture, release, cash-fee clearance, first-pick expiry, no-show closeout, and completed
+              closeout actions.
+            </p>
+          </div>
+          <span
+            className={`pill ${
+              actionGatePolicyChecklist.alignedCount === actionGatePolicyChecklist.totalCount
+                ? 'pill-success'
+                : 'pill-warn'
+            }`}
+          >
+            {actionGatePolicyChecklist.alignedCount}/{actionGatePolicyChecklist.totalCount} recommended
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {actionGatePolicyChecklist.summary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {actionGatePolicyChecklist.cards.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+              <span className={`pill ${item.pillClass}`}>{item.status}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <small>Current: {item.current}</small>
+              <small>{item.operatorAction}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -294,8 +352,8 @@ export default async function OperationsPolicyPage({
             <h2>Final partner choice control matrix</h2>
             <p className="muted">
               Current owner choices for the direct booking window, marketplace participation, partner push
-              reach, and the negative wallet final-acceptance gate. This is the screen operators should check before changing
-              the mobile flow.
+              reach, and the negative wallet final-acceptance gate. This is the screen operators should check
+              before changing the mobile flow.
             </p>
           </div>
           <span className={`pill ${acceptanceMatrix.blockingCount ? 'pill-warn' : 'pill-success'}`}>
@@ -400,7 +458,8 @@ export default async function OperationsPolicyPage({
           <div style={{ overflowX: 'auto' }}>
             <h3>Location freshness sensitivity</h3>
             <p className="muted">
-              Shows how strict or loose freshness rules affect marketplace matching without real-time tracking.
+              Shows how strict or loose freshness rules affect marketplace matching without real-time
+              tracking.
             </p>
             <table className="table service-trace">
               <thead>
@@ -486,9 +545,9 @@ export default async function OperationsPolicyPage({
         <div className="ops-task-note" style={{ marginTop: 14 }}>
           <strong>How to use this preview</strong>
           <p className="muted">
-            If a candidate value increases Stage 2 marketplace count without increasing stale/no-supply checks, it
-            may reduce customer waiting anxiety. If it increases overdue or no-supply count, improve partner
-            location freshness, push delivery, or city supply before changing policy.
+            If a candidate value increases Stage 2 marketplace count without increasing stale/no-supply
+            checks, it may reduce customer waiting anxiety. If it increases overdue or no-supply count,
+            improve partner location freshness, push delivery, or city supply before changing policy.
           </p>
         </div>
       </section>
@@ -678,8 +737,8 @@ export default async function OperationsPolicyPage({
               <div>
                 <h3>Eligible partner preview</h3>
                 <p className="muted">
-                  Top nearby online partners inside the current marketplace radius. Stale locations are excluded
-                  from the dispatch count.
+                  Top nearby online partners inside the current marketplace radius. Stale locations are
+                  excluded from the dispatch count.
                 </p>
               </div>
               <span className="pill pill-info">{policySimulation.partnerRows.length} shown</span>
@@ -897,7 +956,8 @@ export default async function OperationsPolicyPage({
             <h2>Operator decisions</h2>
             <p className="muted">
               These are the flow choices HANDS should decide before the mobile screens are redesigned. Saving
-              them creates an audit trail; items marked &quot;planning&quot; are not enforced until that flow is built.
+              them creates an audit trail; items marked &quot;planning&quot; are not enforced until that flow
+              is built.
             </p>
           </div>
           <span className="pill pill-warn">Needs owner choice</span>
@@ -1200,6 +1260,96 @@ function policySettingAnchor(key: string) {
   return `policy-${key.replaceAll('backup', 'marketplace').replaceAll('.', '-').replaceAll('_', '-')}`;
 }
 
+function buildActionGatePolicyChecklist(
+  settings: AdminOperationalPolicySetting[],
+): ActionGatePolicyChecklist {
+  const rows = [
+    {
+      key: 'decision.action_evidence_gate_mode',
+      title: 'Booking action evidence',
+      recommendedValue: 'ADMIN_EVIDENCE_REVIEW',
+      detail:
+        'Capture, release, expiry, no-show, and closeout actions should keep payment, chat, address, wallet, and audit evidence visible before operators decide.',
+      operatorAction:
+        'Use booking detail action gates before pressing irreversible money or closeout buttons.',
+      href: '/bookings?view=manual-decision',
+    },
+    {
+      key: 'cash.settlement_clearance_policy',
+      title: 'Cash fee clearance',
+      recommendedValue: 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED',
+      detail:
+        'Negative wallet from cash jobs can be cleared by verified company deposit or approved settlement offset, with evidence retained.',
+      operatorAction: 'Check cash settlement references before clearing partner final-gate holds.',
+      href: '/cash-settlements',
+    },
+    {
+      key: 'matching.first_pick_expiry_action_policy',
+      title: 'First-pick expiry',
+      recommendedValue: 'OPEN_MARKETPLACE_AND_OPERATOR_REVIEW',
+      detail:
+        'When the first-pick timer passes, marketplace alternatives can stay visible while operators monitor the request. Final partner choice still belongs to the customer.',
+      operatorAction: 'Review first-pick overdue bookings and marketplace supply before expiring a request.',
+      href: '/bookings?view=first-pick',
+    },
+    {
+      key: 'no_show.evidence_requirement_policy',
+      title: 'No-show evidence',
+      recommendedValue: 'CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED',
+      detail:
+        'No-show closeout should be based on retained factual records such as chat, alerts, location snapshot, or operator notes.',
+      operatorAction: 'Keep no-show decisions factual and inspect the booking transcript before closing.',
+      href: '/bookings?view=no-show',
+    },
+  ];
+
+  const cards = rows.map((row) => {
+    const setting = settings.find((item) => item.key === row.key);
+    const value = setting?.value ?? row.recommendedValue;
+    const current = formatSnapshotPolicyValue(settings, row.key, String(value));
+    const aligned = String(value) === row.recommendedValue;
+    return {
+      title: row.title,
+      status: aligned ? 'Recommended' : 'Owner override',
+      current,
+      detail: row.detail,
+      operatorAction: row.operatorAction,
+      href: setting ? `/operations-policy#${policySettingAnchor(row.key)}` : row.href,
+      className: aligned ? 'ops-task-done' : 'ops-task-warning',
+      pillClass: aligned ? 'pill-success' : 'pill-warn',
+    };
+  });
+  const alignedCount = cards.filter((card) => card.status === 'Recommended').length;
+
+  return {
+    alignedCount,
+    totalCount: cards.length,
+    summary: [
+      {
+        label: 'Recommended posture',
+        value: `${alignedCount}/${cards.length}`,
+        helper: 'Policies aligned with current MVP operating rules.',
+      },
+      {
+        label: 'Money actions',
+        value: cards[0]?.status ?? 'Unknown',
+        helper: 'Payment and closeout gates should keep evidence review visible.',
+      },
+      {
+        label: 'Cash fee clearance',
+        value: cards[1]?.status ?? 'Unknown',
+        helper: 'Negative wallet clearance is tied to settlement evidence.',
+      },
+      {
+        label: 'No-show closeout',
+        value: cards[3]?.status ?? 'Unknown',
+        helper: 'No-show remains an admin evidence decision.',
+      },
+    ],
+    cards,
+  };
+}
+
 function DecisionHint({
   title,
   recommendation,
@@ -1391,7 +1541,9 @@ function buildPolicySimulation(
       },
       {
         step: '2',
-        title: immediateBackup ? 'Marketplace list opens immediately' : 'Marketplace list waits unless declined',
+        title: immediateBackup
+          ? 'Marketplace list opens immediately'
+          : 'Marketplace list waits unless declined',
         detail: immediateBackup
           ? `${invitedPartners.length}/${eligiblePartners.length} partner(s) can see or join while the first partner decides under current policy.`
           : `Marketplace partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick partner declines.`,
@@ -1810,8 +1962,7 @@ function policyRecommendationPosture(
       status: looser ? 'Allows older GPS' : 'Fresh GPS required',
       detail:
         'This controls how recent customer current GPS must be before immediate booking can be created.',
-      operatorAction:
-        'Verify mobile permission and current-location capture before loosening freshness.',
+      operatorAction: 'Verify mobile permission and current-location capture before loosening freshness.',
       alignedAction: 'Fresh customer GPS matches the 10 minute booking authority baseline.',
       className: looser ? 'ops-task-pending' : 'ops-task-done',
       pillClass: looser ? 'pill-warn' : 'pill-success',
@@ -2058,7 +2209,8 @@ function buildPolicySupplySensitivity(
     radiusRows: radiusOptions.map((radius) => {
       const insideRadius = candidates.filter((item) => (item.distanceMeters ?? Infinity) <= radius);
       const eligible = insideRadius.filter(
-        (item) => item.online && !item.marketplaceBlocked && (item.ageMinutes ?? Infinity) <= freshnessMinutes,
+        (item) =>
+          item.online && !item.marketplaceBlocked && (item.ageMinutes ?? Infinity) <= freshnessMinutes,
       );
       const fresh = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= freshnessMinutes);
       const finalGateHeld = insideRadius.filter((item) => item.finalGateHeld);
@@ -2124,8 +2276,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
     {
       scope: 'Marketplace join',
       title: `${formatDistance(backupRadiusMeters)} marketplace alert policy`,
-      detail:
-        'Marketplace partners are prioritized by customer distance before alerts and operator review.',
+      detail: 'Marketplace partners are prioritized by customer distance before alerts and operator review.',
       verify: 'Verify from Operations Policy simulator and Partner Controls location freshness records.',
     },
     {
@@ -2153,7 +2304,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
         backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'Marketplace partners can join during the wait'
           : 'Marketplace partners wait until timer or decline',
-      detail: 'This controls whether marketplace partners can participate during the first-pick response window.',
+      detail:
+        'This controls whether marketplace partners can participate during the first-pick response window.',
       verify: 'Verify from partner app open request list while a direct booking is still waiting.',
     },
     {
@@ -2455,7 +2607,8 @@ function buildPartnerAcceptancePolicyImpact(
     {
       label: 'Account/identity held',
       value: providers.filter((provider) => partnerMarketplaceBlocked(provider)).length.toString(),
-      helper: 'Account controls, identity failure, or missing approved bank can hold marketplace eligibility.',
+      helper:
+        'Account controls, identity failure, or missing approved bank can hold marketplace eligibility.',
     },
     {
       label: 'Cash debt gate',
@@ -2512,16 +2665,13 @@ function partnerCanCompleteFinalGateUnderCurrentPolicy(
 
 function partnerMarketplaceBlocked(provider: AdminProvider) {
   return (
-    partnerAccountNeedsFollowUp(provider) ||
-    !partnerIdentityReady(provider) ||
-    !partnerBankReady(provider)
+    partnerAccountNeedsFollowUp(provider) || !partnerIdentityReady(provider) || !partnerBankReady(provider)
   );
 }
 
 function partnerFinalGateHeld(provider: AdminProvider, policy: { hardWalletBlock: boolean }) {
   return (
-    partnerMarketplaceBlocked(provider) ||
-    (policy.hardWalletBlock && partnerWalletBalance(provider) < 0)
+    partnerMarketplaceBlocked(provider) || (policy.hardWalletBlock && partnerWalletBalance(provider) < 0)
   );
 }
 
@@ -3211,7 +3361,8 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
   const activeStatuses = ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'];
   const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const acceptedButNotFinal = openMatching.filter(
-    (booking) => !booking.selectedProviderId && (booking.participants ?? []).some((item) => item.status === 'ACCEPTED'),
+    (booking) =>
+      !booking.selectedProviderId && (booking.participants ?? []).some((item) => item.status === 'ACCEPTED'),
   );
   const marketplaceRows = openMatching.filter(
     (booking) =>
@@ -3231,14 +3382,18 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
   if (key === 'matching.provider_response_window_minutes') {
     return policyRelatedBookingRecordSet({
       title: 'First-pick waiting records',
-      helper: 'Existing open bookings keep their saved expiry; new timer values affect the next booking only.',
+      helper:
+        'Existing open bookings keep their saved expiry; new timer values affect the next booking only.',
       href: '/bookings?view=first-pick',
       emptyText: 'No first-pick waiting booking is currently loaded.',
       bookings: openMatching,
       recordCount: openMatching.length,
       pillBuilder: (booking) => [
         { label: booking.status, className: 'pill-warn' },
-        { label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry', className: 'pill-info' },
+        {
+          label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry',
+          className: 'pill-info',
+        },
         { label: `${booking.participants?.length ?? 0} joined`, className: 'pill-neutral' },
       ],
     });
@@ -3290,7 +3445,8 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
   if (key === 'wallet.negative_balance_gate') {
     return policyRelatedBookingRecordSet({
       title: 'Cash-fee debt records',
-      helper: 'Negative wallet records can hold final acceptance, customer selection, service start, or payout release.',
+      helper:
+        'Negative wallet records can hold final acceptance, customer selection, service start, or payout release.',
       href: '/cash-settlements',
       emptyText: 'No negative wallet booking record is currently loaded.',
       bookings: walletRows,
@@ -3306,7 +3462,8 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
   if (key === 'cancellation.after_match_policy') {
     return policyRelatedBookingRecordSet({
       title: 'Cancellation closeout records',
-      helper: 'Use these records to compare payment release, refund, chat evidence, and closeout reason handling.',
+      helper:
+        'Use these records to compare payment release, refund, chat evidence, and closeout reason handling.',
       href: '/bookings?view=closeout',
       emptyText: 'No cancelled booking record is currently loaded.',
       bookings: cancellationRows,
@@ -3329,7 +3486,10 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
       recordCount: noShowRows.length,
       pillBuilder: (booking) => [
         { label: booking.status, className: 'pill-warn' },
-        { label: booking.chatRoom?.id ? 'chat retained' : 'chat missing', className: booking.chatRoom?.id ? 'pill-success' : 'pill-danger' },
+        {
+          label: booking.chatRoom?.id ? 'chat retained' : 'chat missing',
+          className: booking.chatRoom?.id ? 'pill-success' : 'pill-danger',
+        },
         { label: booking.closedReason ?? 'evidence review', className: 'pill-info' },
       ],
     });
@@ -3345,7 +3505,10 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
       recordCount: activeRows.length,
       pillBuilder: (booking) => [
         { label: booking.status, className: 'pill-info' },
-        { label: booking.chatRoom?.id ? 'chat room' : 'no chat yet', className: booking.chatRoom?.id ? 'pill-success' : 'pill-neutral' },
+        {
+          label: booking.chatRoom?.id ? 'chat room' : 'no chat yet',
+          className: booking.chatRoom?.id ? 'pill-success' : 'pill-neutral',
+        },
         { label: bookingPartnerLabel(booking), className: 'pill-neutral' },
       ],
     });
@@ -3361,7 +3524,10 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
     pillBuilder: (booking) => [
       { label: booking.status, className: 'pill-info' },
       { label: bookingPartnerLabel(booking), className: 'pill-neutral' },
-      { label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry', className: 'pill-info' },
+      {
+        label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry',
+        className: 'pill-info',
+      },
     ],
   });
 }
@@ -3381,16 +3547,21 @@ function policyRelatedBookingRecordSet(input: {
     href: input.href,
     emptyText: input.emptyText,
     recordCount: `${input.recordCount} record(s)`,
-    rows: input.bookings.sort(byNewestBooking).slice(0, 3).map<PolicyRelatedBookingRecord>((booking) => ({
-      id: booking.id,
-      href: `/bookings/${booking.id}`,
-      title: displayOperationalWording(`${bookingServiceLabel(booking)} / ${shortId(booking.id)}`),
-      subtitle: displayOperationalWording(`${bookingCustomerLabel(booking)} / ${bookingPartnerLabel(booking)}`),
-      pills: input.pillBuilder(booking).map((pill) => ({
-        ...pill,
-        label: displayOperationalWording(pill.label),
+    rows: input.bookings
+      .sort(byNewestBooking)
+      .slice(0, 3)
+      .map<PolicyRelatedBookingRecord>((booking) => ({
+        id: booking.id,
+        href: `/bookings/${booking.id}`,
+        title: displayOperationalWording(`${bookingServiceLabel(booking)} / ${shortId(booking.id)}`),
+        subtitle: displayOperationalWording(
+          `${bookingCustomerLabel(booking)} / ${bookingPartnerLabel(booking)}`,
+        ),
+        pills: input.pillBuilder(booking).map((pill) => ({
+          ...pill,
+          label: displayOperationalWording(pill.label),
+        })),
       })),
-    })),
   };
 }
 
@@ -3904,7 +4075,8 @@ function operationsOwnerDecisionBacklog() {
         },
         {
           label: 'Auto fee',
-          tradeoff: 'Faster and more consistent, but mistakes can quickly damage customer and partner confidence.',
+          tradeoff:
+            'Faster and more consistent, but mistakes can quickly damage customer and partner confidence.',
         },
       ],
       recommendation:
@@ -3930,7 +4102,8 @@ function operationsOwnerDecisionBacklog() {
         },
         {
           label: 'Evidence checklist',
-          tradeoff: 'Keeps decisions factual and repeatable, but requires reliable location, chat, and timestamp capture.',
+          tradeoff:
+            'Keeps decisions factual and repeatable, but requires reliable location, chat, and timestamp capture.',
         },
       ],
       recommendation:
@@ -3956,8 +4129,7 @@ function operationsOwnerDecisionBacklog() {
         },
         {
           label: 'OneSignal required',
-          tradeoff:
-            'Better booking reach, but depends on production credentials and delivery monitoring.',
+          tradeoff: 'Better booking reach, but depends on production credentials and delivery monitoring.',
         },
       ],
       recommendation:
@@ -4084,7 +4256,8 @@ function formatPolicyValue(value: unknown, unit?: string | null) {
 function policyDisplayValue(setting: AdminOperationalPolicySetting, recommended = false) {
   const value = String(recommended ? setting.recommendedValue : setting.value);
   return displayOperationalWording(
-    setting.options?.find((option) => option.value === value)?.label ?? formatPolicyValue(value, setting.unit),
+    setting.options?.find((option) => option.value === value)?.label ??
+      formatPolicyValue(value, setting.unit),
   );
 }
 
@@ -4205,12 +4378,14 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       saveChecks: [
         {
           label: 'Customer GPS rejects',
-          detail: 'Review rejected booking attempts where customer current location was too far from the booking address.',
+          detail:
+            'Review rejected booking attempts where customer current location was too far from the booking address.',
           href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
         },
         {
           label: 'Customer support queue',
-          detail: 'Check whether customers are selecting distant addresses because GPS failed or address search was unclear.',
+          detail:
+            'Check whether customers are selecting distant addresses because GPS failed or address search was unclear.',
           href: '/customers',
         },
       ],
@@ -4223,7 +4398,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       saveChecks: [
         {
           label: 'First-pick distance rejects',
-          detail: 'Review rejected booking attempts where the selected first-pick partner was too far from the booking address.',
+          detail:
+            'Review rejected booking attempts where the selected first-pick partner was too far from the booking address.',
           href: '/audit-log?query=PREFERRED_PARTNER_TOO_FAR',
         },
         {
@@ -4246,7 +4422,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'Mobile setup',
-          detail: 'Confirm customer app location permission and address search flows work before changing this threshold.',
+          detail:
+            'Confirm customer app location permission and address search flows work before changing this threshold.',
           href: '/setup',
         },
       ],
@@ -4350,7 +4527,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       saveChecks: [
         {
           label: 'Open matching timeline',
-          detail: 'Check whether delayed marketplace visibility would increase waiting anxiety on current bookings.',
+          detail:
+            'Check whether delayed marketplace visibility would increase waiting anxiety on current bookings.',
           href: '/bookings?view=matching',
         },
         {
@@ -4368,13 +4546,70 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       saveChecks: [
         {
           label: 'Cash debt queue',
-          detail: 'Review partners held at final gates by unpaid HANDS cash fees before changing settlement gates.',
+          detail:
+            'Review partners held at final gates by unpaid HANDS cash fees before changing settlement gates.',
           href: '/partners?review=cash-debt',
         },
         {
           label: 'Settlement command queue',
           detail: 'Check pending repayments and manual offsets before relaxing debt enforcement.',
           href: '/cash-settlements',
+        },
+      ],
+    },
+    'decision.action_evidence_gate_mode': {
+      area: 'Action gates',
+      title: 'Controls booking action evidence posture',
+      detail:
+        'Operators use this policy before payment capture, release, cash-fee settlement, expiry, no-show, and completed closeout actions. It keeps decisions tied to retained booking evidence instead of informal judgment.',
+      saveChecks: [
+        {
+          label: 'Manual decision queue',
+          detail:
+            'Review bookings that need payment or closeout decisions before tightening the evidence requirement.',
+          href: '/bookings?view=manual-decision',
+        },
+        {
+          label: 'Closeout checklist',
+          detail: 'Confirm completed, cancelled, expired, and no-show closeout evidence is visible.',
+          href: '/bookings?view=closeout',
+        },
+      ],
+    },
+    'cash.settlement_clearance_policy': {
+      area: 'Cash settlement',
+      title: 'Controls negative wallet clearance evidence',
+      detail:
+        'Cash jobs create company fee debt because the partner receives cash directly. This policy defines whether operators need deposit evidence, admin offset approval, or both before clearing a negative wallet hold.',
+      saveChecks: [
+        {
+          label: 'Cash settlement queue',
+          detail:
+            'Review open cash fee debts, deposit references, and manual offsets before changing clearance rules.',
+          href: '/cash-settlements',
+        },
+        {
+          label: 'Partner cash holds',
+          detail: 'Check partners blocked at final gates by unpaid platform fees.',
+          href: '/partners?review=cash-debt',
+        },
+      ],
+    },
+    'matching.first_pick_expiry_action_policy': {
+      area: 'First-pick expiry',
+      title: 'Controls operator handling after the first-pick timer',
+      detail:
+        'When the preferred partner does not respond within the response window, the marketplace can remain open for nearby partner participation. The policy must never assign a final partner automatically.',
+      saveChecks: [
+        {
+          label: 'First-pick overdue queue',
+          detail: 'Review bookings waiting on the preferred partner before changing expiry handling.',
+          href: '/bookings?view=first-pick',
+        },
+        {
+          label: 'Marketplace alternatives',
+          detail: 'Confirm nearby partners are available before choosing a stricter expiry posture.',
+          href: '/bookings?view=marketplace',
         },
       ],
     },
@@ -4394,6 +4629,24 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
           label: 'Refund command board',
           detail: 'Check manual refund workload before holding more matched cancellations.',
           href: '/refunds',
+        },
+      ],
+    },
+    'no_show.evidence_requirement_policy': {
+      area: 'No-show evidence',
+      title: 'Controls minimum records before no-show closeout',
+      detail:
+        'No-show remains a factual admin closeout. This policy defines which retained records operators should inspect before marking a booking no-show and deciding payment handling.',
+      saveChecks: [
+        {
+          label: 'No-show board',
+          detail: 'Review no-show candidates with chat, location, notification, and note evidence visible.',
+          href: '/bookings?view=no-show',
+        },
+        {
+          label: 'Chat archive repair',
+          detail: 'Check missing chat rooms before using chat as a required evidence source.',
+          href: '/chat-archive?status=missing-room',
         },
       ],
     },

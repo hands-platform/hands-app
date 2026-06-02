@@ -14,14 +14,11 @@ export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 export const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
-export const MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY =
-  'matching.backup_provider_invitation_limit';
+export const MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY = 'matching.backup_provider_invitation_limit';
 export const BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM_KEY =
   'booking.max_customer_current_to_booking_address_km';
-export const BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM_KEY =
-  'booking.max_preferred_partner_distance_km';
-export const BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY =
-  'booking.current_location_freshness_minutes';
+export const BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM_KEY = 'booking.max_preferred_partner_distance_km';
+export const BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY = 'booking.current_location_freshness_minutes';
 export const BOOKING_DISTANCE_GATE_ENABLED_KEY = 'booking.distance_gate_enabled';
 export const BOOKING_SERVICE_AREA_REQUIRED_KEY = 'booking.service_area_required';
 export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
@@ -40,6 +37,20 @@ export const PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKI
 export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';
 export const WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
 export const WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
+export const DECISION_ACTION_EVIDENCE_GATE_MODE_KEY = 'decision.action_evidence_gate_mode';
+export const ACTION_EVIDENCE_ADMIN_REVIEW = 'ADMIN_EVIDENCE_REVIEW';
+export const ACTION_EVIDENCE_STRICT_REQUIRED = 'STRICT_EVIDENCE_REQUIRED';
+export const CASH_SETTLEMENT_CLEARANCE_POLICY_KEY = 'cash.settlement_clearance_policy';
+export const CASH_CLEAR_DEPOSIT_OR_OFFSET_REQUIRED = 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED';
+export const CASH_CLEAR_ADMIN_OFFSET_ONLY = 'ADMIN_OFFSET_ONLY';
+export const CASH_CLEAR_DEPOSIT_REFERENCE_REQUIRED = 'DEPOSIT_REFERENCE_REQUIRED';
+export const MATCHING_FIRST_PICK_EXPIRY_ACTION_POLICY_KEY = 'matching.first_pick_expiry_action_policy';
+export const FIRST_PICK_OPEN_MARKETPLACE_REVIEW = 'OPEN_MARKETPLACE_AND_OPERATOR_REVIEW';
+export const FIRST_PICK_EXPIRE_ONLY_AFTER_REVIEW = 'EXPIRE_ONLY_AFTER_OPERATOR_REVIEW';
+export const NO_SHOW_EVIDENCE_REQUIREMENT_POLICY_KEY = 'no_show.evidence_requirement_policy';
+export const NO_SHOW_CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED = 'CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED';
+export const NO_SHOW_CHAT_AND_OPERATOR_NOTE_REQUIRED = 'CHAT_AND_OPERATOR_NOTE_REQUIRED';
+export const NO_SHOW_ADMIN_NOTE_ONLY = 'ADMIN_NOTE_ONLY';
 export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 
 export type PreferredAcceptMode = typeof PREFERRED_ACCEPT_CUSTOMER_CONFIRM;
@@ -169,8 +180,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     key: BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY,
     category: 'Booking',
     label: 'Customer current location freshness',
-    description:
-      'Maximum age of the customer current GPS snapshot accepted at booking confirmation.',
+    description: 'Maximum age of the customer current GPS snapshot accepted at booking confirmation.',
     value: DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
     recommendedValue: DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
     unit: 'minutes',
@@ -192,8 +202,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     key: BOOKING_SERVICE_AREA_REQUIRED_KEY,
     category: 'Booking',
     label: 'Vietnam service area required',
-    description:
-      'When enabled, booking address snapshots must be inside the enabled Vietnam service area.',
+    description: 'When enabled, booking address snapshots must be inside the enabled Vietnam service area.',
     value: true,
     recommendedValue: true,
     enforced: true,
@@ -263,6 +272,83 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
   {
+    key: DECISION_ACTION_EVIDENCE_GATE_MODE_KEY,
+    category: 'Decision',
+    label: 'Booking action evidence gate',
+    description:
+      'Controls the evidence posture operators should use before capture, release, cash-fee settlement, expiry, no-show, or closeout actions.',
+    value: ACTION_EVIDENCE_ADMIN_REVIEW,
+    recommendedValue: ACTION_EVIDENCE_ADMIN_REVIEW,
+    options: [
+      {
+        value: ACTION_EVIDENCE_ADMIN_REVIEW,
+        label: 'Admin evidence review',
+        tradeoff:
+          'Best MVP posture. Operators review retained payment, chat, address, wallet, and audit evidence before manual actions.',
+      },
+      {
+        value: ACTION_EVIDENCE_STRICT_REQUIRED,
+        label: 'Strict evidence required',
+        tradeoff:
+          'Safer for scale, but should wait until every mobile and admin evidence upload path is mature.',
+      },
+    ],
+    enforced: true,
+  },
+  {
+    key: CASH_SETTLEMENT_CLEARANCE_POLICY_KEY,
+    category: 'Decision',
+    label: 'Cash fee settlement clearance',
+    description:
+      'Controls what operators need before clearing a negative wallet caused by cash-service platform fees.',
+    value: CASH_CLEAR_DEPOSIT_OR_OFFSET_REQUIRED,
+    recommendedValue: CASH_CLEAR_DEPOSIT_OR_OFFSET_REQUIRED,
+    options: [
+      {
+        value: CASH_CLEAR_DEPOSIT_OR_OFFSET_REQUIRED,
+        label: 'Deposit or admin offset required',
+        tradeoff:
+          'Allows either verified company deposit or approved offset from future settlement while keeping evidence attached.',
+      },
+      {
+        value: CASH_CLEAR_ADMIN_OFFSET_ONLY,
+        label: 'Admin offset only',
+        tradeoff:
+          'Simpler for operators, but keeps company cash repayment slower when partners deposit directly.',
+      },
+      {
+        value: CASH_CLEAR_DEPOSIT_REFERENCE_REQUIRED,
+        label: 'Deposit reference required',
+        tradeoff:
+          'Strongest cash evidence, but creates more manual support when partners cannot upload clean references.',
+      },
+    ],
+    enforced: true,
+  },
+  {
+    key: MATCHING_FIRST_PICK_EXPIRY_ACTION_POLICY_KEY,
+    category: 'Decision',
+    label: 'First-pick expiry handling',
+    description:
+      'Controls the operator posture when the first-pick partner response window passes. No policy can automatically assign the final partner.',
+    value: FIRST_PICK_OPEN_MARKETPLACE_REVIEW,
+    recommendedValue: FIRST_PICK_OPEN_MARKETPLACE_REVIEW,
+    options: [
+      {
+        value: FIRST_PICK_OPEN_MARKETPLACE_REVIEW,
+        label: 'Open marketplace and review',
+        tradeoff:
+          'Keeps the customer choice model alive by exposing nearby alternatives while operators monitor overdue requests.',
+      },
+      {
+        value: FIRST_PICK_EXPIRE_ONLY_AFTER_REVIEW,
+        label: 'Expire only after review',
+        tradeoff: 'More conservative, but can increase customer waiting when nearby partners are available.',
+      },
+    ],
+    enforced: true,
+  },
+  {
     key: CANCELLATION_AFTER_MATCH_POLICY_KEY,
     category: 'Decision',
     label: 'Customer cancellation after match',
@@ -301,6 +387,34 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         value: NO_SHOW_AUTO_AFTER_EVIDENCE,
         label: 'Auto no-show after evidence',
         tradeoff: 'Faster operations, but requires strong evidence upload and dispute flows.',
+      },
+    ],
+    enforced: true,
+  },
+  {
+    key: NO_SHOW_EVIDENCE_REQUIREMENT_POLICY_KEY,
+    category: 'Decision',
+    label: 'No-show evidence requirement',
+    description:
+      'Defines the minimum retained evidence operators should review before closing a booking as no-show.',
+    value: NO_SHOW_CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED,
+    recommendedValue: NO_SHOW_CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED,
+    options: [
+      {
+        value: NO_SHOW_CHAT_ALERT_LOCATION_OR_NOTE_REQUIRED,
+        label: 'Chat, alert, location, or note required',
+        tradeoff:
+          'Balanced MVP standard that keeps the decision factual without requiring every evidence source at once.',
+      },
+      {
+        value: NO_SHOW_CHAT_AND_OPERATOR_NOTE_REQUIRED,
+        label: 'Chat and operator note required',
+        tradeoff: 'Stronger internal review, but can slow closeout when chat is missing or archived late.',
+      },
+      {
+        value: NO_SHOW_ADMIN_NOTE_ONLY,
+        label: 'Admin note only',
+        tradeoff: 'Fastest manual handling, but weak for disputes unless paired with strong audit habits.',
       },
     ],
     enforced: true,
@@ -409,14 +523,8 @@ export function resolveMatchingPolicy(
       1,
       60,
     ),
-    bookingDistanceGateEnabled: readPolicyBoolean(
-      settings[BOOKING_DISTANCE_GATE_ENABLED_KEY],
-      true,
-    ),
-    bookingServiceAreaRequired: readPolicyBoolean(
-      settings[BOOKING_SERVICE_AREA_REQUIRED_KEY],
-      true,
-    ),
+    bookingDistanceGateEnabled: readPolicyBoolean(settings[BOOKING_DISTANCE_GATE_ENABLED_KEY], true),
+    bookingServiceAreaRequired: readPolicyBoolean(settings[BOOKING_SERVICE_AREA_REQUIRED_KEY], true),
     preferredAcceptMode: readPreferredAcceptMode(settings[MATCHING_PREFERRED_ACCEPT_MODE_KEY]),
     backupOpenMode:
       settings[MATCHING_BACKUP_OPEN_MODE_KEY] === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY
