@@ -410,13 +410,13 @@ function buildSessionCommandCards(
       tone: disabledPushUsers.length ? 'ops-task-pending' : 'ops-task-done',
     },
     {
-      title: 'Shared device safety',
+      title: 'Shared device records',
       value: `${sharedDeviceChecks} device(s)`,
       status: sharedDeviceChecks ? 'REVIEW' : 'CLEAR',
-      detail: 'Multiple accounts on one device can indicate family phones, staff testing, or shared-device handling.',
+      detail: 'Multiple accounts are recorded on the same device. Use the rows as factual device history.',
       action: sharedDeviceChecks
-        ? 'Review account/device notes before dispatching'
-        : 'No duplicate device check visible',
+        ? 'Open account and device notes before making an operations decision'
+        : 'No shared device record visible',
       tone: sharedDeviceChecks ? 'ops-task-blocked' : 'ops-task-done',
     },
     {
