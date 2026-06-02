@@ -863,7 +863,7 @@ export default async function OperationsPolicyPage({
               </p>
             </div>
             <span className={`pill ${ownerDecisionPressure.alertCount ? 'pill-warn' : 'pill-success'}`}>
-              {ownerDecisionPressure.alertCount} active signal(s)
+              {ownerDecisionPressure.alertCount} active record(s)
             </span>
           </div>
           <div className="service-trace-summary" style={{ marginTop: 12 }}>
@@ -3116,7 +3116,7 @@ function buildOwnerDecisionPressure(
     {
       title: 'Wallet and final-gate holds',
       status: finalGatePressure ? 'Gate active' : 'Clear',
-      detail: `${finalGatePressure} partner final-gate signal(s) may require settlement, identity, bank, or account review.`,
+      detail: `${finalGatePressure} partner final-gate record(s) may require settlement, identity, bank, or account review.`,
       operatorAction: finalGatePressure
         ? 'Keep marketplace visibility open while finance and partner controls clear final-gate holds.'
         : 'No current sample pressure to relax final acceptance gates.',
@@ -3159,7 +3159,7 @@ function buildOwnerDecisionPressure(
         label: 'Final-gate holds',
         value: String(finalGatePressure),
         helper:
-          'Wallet, identity, bank, or account-control signals that change final confirmation readiness.',
+          'Wallet, identity, bank, or account-control records that change final confirmation readiness.',
       },
     ],
     cards,

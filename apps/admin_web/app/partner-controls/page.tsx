@@ -357,7 +357,7 @@ export default async function PartnerControlsPage({
             </p>
           </div>
           <span className={`pill ${operatingBlocks.length ? 'pill-warn' : 'pill-success'}`}>
-            {operatingBlocks.length ? `${operatingBlocks.length} block signal(s)` : 'No block signal'}
+            {operatingBlocks.length ? `${operatingBlocks.length} block record(s)` : 'No block record'}
           </span>
         </div>
         {operatingBlocks.length ? (
@@ -387,7 +387,7 @@ export default async function PartnerControlsPage({
           </div>
         ) : (
           <p className="muted" style={{ marginTop: 12 }}>
-            No partner currently has a control signal that should block operations.
+            No partner currently has a control record that should block operations.
           </p>
         )}
       </section>
