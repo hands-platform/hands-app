@@ -506,7 +506,7 @@ export default async function OperationsPolicyPage({
         </div>
         <div className="grid">
           {matchingSettings.map((setting) => (
-            <PolicyForm key={setting.key} setting={setting} />
+            <PolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
           {matchingSettings.length === 0 ? (
             <div className="card" style={{ margin: 0 }}>
@@ -581,7 +581,7 @@ export default async function OperationsPolicyPage({
                 <div className="ops-row" key={partner.id}>
                   <div>
                     <a className="text-link" href={`/partners/${partner.id}`}>
-                      {partner.name}
+                      {displayOperationalWording(partner.name)}
                     </a>
                     <p className="muted">
                       {partner.distanceLabel} / location {partner.locationAgeLabel}
@@ -796,7 +796,7 @@ export default async function OperationsPolicyPage({
         </div>
         <div className="grid">
           {decisionSettings.map((setting) => (
-            <PolicyForm key={setting.key} setting={setting} />
+            <PolicyForm key={setting.key} setting={setting} bookings={bookings} />
           ))}
         </div>
       </section>
@@ -918,11 +918,18 @@ export default async function OperationsPolicyPage({
   );
 }
 
-function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
+function PolicyForm({
+  setting,
+  bookings,
+}: {
+  setting: AdminOperationalPolicySetting;
+  bookings: AdminBooking[];
+}) {
   const valueType = typeof setting.value;
   const isNumber = valueType === 'number';
   const recommended = policyDisplayValue(setting, true);
   const impact = policyImpactDetails(setting.key);
+  const relatedBookings = policyRelatedBookingRecords(setting.key, bookings);
   return (
     <form
       action={updateOperationalPolicy}
@@ -954,6 +961,10 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
           <span>Impact</span>
           <strong>{impact.area}</strong>
         </div>
+        <div>
+          <span>Related booking records</span>
+          <strong>{relatedBookings.recordCount}</strong>
+        </div>
       </div>
       <div className="ops-task-note" style={{ marginTop: 12 }}>
         <div className="ops-row">
@@ -964,6 +975,38 @@ function PolicyForm({ setting }: { setting: AdminOperationalPolicySetting }) {
           <span className={`pill ${setting.enforced ? 'pill-success' : 'pill-warn'}`}>
             {setting.enforced ? 'Live behavior' : 'Decision log'}
           </span>
+        </div>
+      </div>
+      <div className="ops-task-note" style={{ marginTop: 12 }}>
+        <div className="ops-row">
+          <div>
+            <strong>{relatedBookings.title}</strong>
+            <p className="muted">{relatedBookings.helper}</p>
+          </div>
+          <Link className="text-link" href={relatedBookings.href}>
+            Open records
+          </Link>
+        </div>
+        <div className="booking-radar" style={{ marginTop: 12 }}>
+          {relatedBookings.rows.map((row) => (
+            <Link className="insight-card" href={row.href} key={`${setting.key}-${row.id}`}>
+              <strong>{row.title}</strong>
+              <p className="muted">{row.subtitle}</p>
+              <div className="participant-list">
+                {row.pills.map((pill) => (
+                  <span className={`pill ${pill.className}`} key={`${row.id}-${pill.label}`}>
+                    {pill.label}
+                  </span>
+                ))}
+              </div>
+            </Link>
+          ))}
+          {relatedBookings.rows.length === 0 ? (
+            <div className="insight-card">
+              <strong>No sampled record</strong>
+              <p className="muted">{relatedBookings.emptyText}</p>
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="ops-task-note" style={{ marginTop: 12 }}>
@@ -1175,7 +1218,7 @@ function buildPolicySimulation(
   const invitedPartners = eligiblePartners.slice(0, backupInvitationLimit);
   const partnerRows: PolicySimulatorPartnerRow[] = invitedPartners.slice(0, 6).map((item) => ({
     id: item.provider.id,
-    name: item.provider.displayName ?? item.provider.user?.fullName ?? 'Partner',
+    name: displayOperationalWording(item.provider.displayName ?? item.provider.user?.fullName ?? 'Partner'),
     status: (item.ageMinutes ?? Infinity) <= backupLocationFreshnessMinutes ? 'Fresh' : 'Stale',
     distanceLabel: formatDistance(item.distanceMeters ?? 0),
     locationAgeLabel: formatLocationAge(item.ageMinutes),
@@ -2855,6 +2898,201 @@ function bookingCustomerLabel(booking: AdminBooking) {
   );
 }
 
+type PolicyRelatedBookingRecord = {
+  id: string;
+  href: string;
+  title: string;
+  subtitle: string;
+  pills: PolicyDrilldownPill[];
+};
+
+function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
+  const activeStatuses = ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'];
+  const openMatching = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const acceptedButNotFinal = openMatching.filter(
+    (booking) => !booking.selectedProviderId && (booking.participants ?? []).some((item) => item.status === 'ACCEPTED'),
+  );
+  const marketplaceRows = openMatching.filter(
+    (booking) =>
+      (booking.participants?.length ?? 0) > 0 ||
+      Boolean(readBookingMatchingPolicySnapshot(booking)) ||
+      Boolean(parseCoordinatePair(booking.lat, booking.lng)),
+  );
+  const walletRows = bookings.filter((booking) => bookingWalletLedgerTotal(booking) < 0);
+  const cancellationRows = bookings.filter(
+    (booking) => booking.status === 'CANCELLED' || booking.closedReason?.toUpperCase().includes('CANCEL'),
+  );
+  const noShowRows = bookings.filter(
+    (booking) => booking.status === 'NO_SHOW' || booking.closedReason?.toUpperCase().includes('NO_SHOW'),
+  );
+  const activeRows = bookings.filter((booking) => activeStatuses.includes(booking.status));
+
+  if (key === 'matching.provider_response_window_minutes') {
+    return policyRelatedBookingRecordSet({
+      title: 'First-pick waiting records',
+      helper: 'Existing open bookings keep their saved expiry; new timer values affect the next booking only.',
+      href: '/bookings?view=first-pick',
+      emptyText: 'No first-pick waiting booking is currently loaded.',
+      bookings: openMatching,
+      recordCount: openMatching.length,
+      pillBuilder: (booking) => [
+        { label: booking.status, className: 'pill-warn' },
+        { label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry', className: 'pill-info' },
+        { label: `${booking.participants?.length ?? 0} joined`, className: 'pill-neutral' },
+      ],
+    });
+  }
+
+  if (
+    [
+      'matching.backup_provider_radius_meters',
+      'matching.backup_provider_location_max_age_minutes',
+      'matching.backup_provider_invitation_limit',
+      'matching.backup_open_mode',
+    ].includes(key)
+  ) {
+    return policyRelatedBookingRecordSet({
+      title: 'Marketplace participation records',
+      helper:
+        'These bookings show the current marketplace lane, participant count, saved policy snapshot, or booking coordinate.',
+      href: '/bookings?view=marketplace',
+      emptyText: 'No marketplace participation booking is currently loaded.',
+      bookings: marketplaceRows,
+      recordCount: marketplaceRows.length,
+      pillBuilder: (booking) => [
+        { label: booking.status, className: booking.status === 'OPEN_MATCHING' ? 'pill-warn' : 'pill-info' },
+        { label: `${booking.participants?.length ?? 0} participant(s)`, className: 'pill-info' },
+        {
+          label: readBookingMatchingPolicySnapshot(booking) ? 'saved policy' : 'live sample',
+          className: readBookingMatchingPolicySnapshot(booking) ? 'pill-success' : 'pill-neutral',
+        },
+      ],
+    });
+  }
+
+  if (key === 'matching.preferred_accept_mode') {
+    return policyRelatedBookingRecordSet({
+      title: 'Customer final-choice records',
+      helper: 'Partner acceptance should still return the final partner choice to the customer.',
+      href: '/bookings?view=customer-choice',
+      emptyText: 'No accepted partner is currently waiting for customer final choice.',
+      bookings: acceptedButNotFinal,
+      recordCount: acceptedButNotFinal.length,
+      pillBuilder: (booking) => [
+        { label: 'customer choice', className: 'pill-success' },
+        { label: `${booking.participants?.length ?? 0} participant(s)`, className: 'pill-info' },
+        { label: booking.status, className: 'pill-warn' },
+      ],
+    });
+  }
+
+  if (key === 'wallet.negative_balance_gate') {
+    return policyRelatedBookingRecordSet({
+      title: 'Cash-fee debt records',
+      helper: 'Negative wallet records can hold final acceptance, customer selection, service start, or payout release.',
+      href: '/cash-settlements',
+      emptyText: 'No negative wallet booking record is currently loaded.',
+      bookings: walletRows,
+      recordCount: walletRows.length,
+      pillBuilder: (booking) => [
+        { label: formatMoney(Math.abs(bookingWalletLedgerTotal(booking))), className: 'pill-danger' },
+        { label: booking.status, className: 'pill-info' },
+        { label: 'final gate check', className: 'pill-warn' },
+      ],
+    });
+  }
+
+  if (key === 'cancellation.after_match_policy') {
+    return policyRelatedBookingRecordSet({
+      title: 'Cancellation closeout records',
+      helper: 'Use these records to compare payment release, refund, chat evidence, and closeout reason handling.',
+      href: '/bookings?view=closeout',
+      emptyText: 'No cancelled booking record is currently loaded.',
+      bookings: cancellationRows,
+      recordCount: cancellationRows.length,
+      pillBuilder: (booking) => [
+        { label: booking.status, className: 'pill-warn' },
+        { label: booking.closedByRole ?? 'no actor', className: 'pill-info' },
+        { label: booking.closedReason ?? 'no reason', className: 'pill-neutral' },
+      ],
+    });
+  }
+
+  if (key === 'no_show.partner_report_policy') {
+    return policyRelatedBookingRecordSet({
+      title: 'No-show evidence records',
+      helper: 'No-show remains an admin evidence review, not an automatic person judgment.',
+      href: '/bookings?view=no-show',
+      emptyText: 'No no-show closeout record is currently loaded.',
+      bookings: noShowRows,
+      recordCount: noShowRows.length,
+      pillBuilder: (booking) => [
+        { label: booking.status, className: 'pill-warn' },
+        { label: booking.chatRoom?.id ? 'chat retained' : 'chat missing', className: booking.chatRoom?.id ? 'pill-success' : 'pill-danger' },
+        { label: booking.closedReason ?? 'evidence review', className: 'pill-info' },
+      ],
+    });
+  }
+
+  if (key === 'notification.partner_alert_channel') {
+    return policyRelatedBookingRecordSet({
+      title: 'Alert-sensitive booking records',
+      helper: 'Open and active bookings are the records most affected by partner alert delivery changes.',
+      href: '/notifications',
+      emptyText: 'No active booking record is currently loaded for alert review.',
+      bookings: activeRows,
+      recordCount: activeRows.length,
+      pillBuilder: (booking) => [
+        { label: booking.status, className: 'pill-info' },
+        { label: booking.chatRoom?.id ? 'chat room' : 'no chat yet', className: booking.chatRoom?.id ? 'pill-success' : 'pill-neutral' },
+        { label: bookingPartnerLabel(booking), className: 'pill-neutral' },
+      ],
+    });
+  }
+
+  return policyRelatedBookingRecordSet({
+    title: 'Active booking records',
+    helper: 'Review active booking state before changing an enforced operating policy.',
+    href: '/bookings',
+    emptyText: 'No active booking record is currently loaded.',
+    bookings: activeRows,
+    recordCount: activeRows.length,
+    pillBuilder: (booking) => [
+      { label: booking.status, className: 'pill-info' },
+      { label: bookingPartnerLabel(booking), className: 'pill-neutral' },
+      { label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry', className: 'pill-info' },
+    ],
+  });
+}
+
+function policyRelatedBookingRecordSet(input: {
+  title: string;
+  helper: string;
+  href: string;
+  emptyText: string;
+  bookings: AdminBooking[];
+  recordCount: number;
+  pillBuilder: (booking: AdminBooking) => PolicyDrilldownPill[];
+}) {
+  return {
+    title: input.title,
+    helper: input.helper,
+    href: input.href,
+    emptyText: input.emptyText,
+    recordCount: `${input.recordCount} record(s)`,
+    rows: input.bookings.sort(byNewestBooking).slice(0, 3).map<PolicyRelatedBookingRecord>((booking) => ({
+      id: booking.id,
+      href: `/bookings/${booking.id}`,
+      title: displayOperationalWording(`${bookingServiceLabel(booking)} / ${shortId(booking.id)}`),
+      subtitle: displayOperationalWording(`${bookingCustomerLabel(booking)} / ${bookingPartnerLabel(booking)}`),
+      pills: input.pillBuilder(booking).map((pill) => ({
+        ...pill,
+        label: displayOperationalWording(pill.label),
+      })),
+    })),
+  };
+}
+
 function shortId(id: string) {
   return id.length > 10 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
 }
@@ -3506,7 +3744,9 @@ function displayOperationalWording(value: string | null | undefined) {
     .replaceAll('customer or partner penalties', 'customer or partner closeout decisions')
     .replaceAll('false penalties', 'incorrect automatic decisions')
     .replaceAll('penalties', 'closeout decisions')
-    .replaceAll('penalty', 'closeout decision');
+    .replaceAll('penalty', 'closeout decision')
+    .replace(/\bProvider\b/g, 'Partner')
+    .replace(/\bprovider\b/g, 'partner');
 }
 
 type PolicySaveCheck = {
