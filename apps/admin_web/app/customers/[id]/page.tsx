@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   AdminAppSession,
+  AdminAuditLog,
   AdminBookingDetail,
   AdminChatMessage,
   AdminCustomerDetail,
@@ -135,6 +136,11 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const filteredAuditLogs = recentAuditLogs.filter((log) =>
     isWithinDetailDateFilter(log.createdAt, dateFilters),
   );
+  const bookingCreateGateAttempts = buildCustomerBookingGateAttemptRows(recentAuditLogs, customer.id);
+  const filteredBookingCreateGateAttempts = buildCustomerBookingGateAttemptRows(
+    filteredAuditLogs,
+    customer.id,
+  );
   const accountFacts = buildCustomerAccountFacts(customer, bookings, addresses);
   const customerOperatorCommandQueue = buildCustomerOperatorCommandQueue({
     customer,
@@ -164,6 +170,15 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         : 'No booking has been created for this customer.',
       href: latestBooking ? `/bookings/${latestBooking.id}` : '#booking-history',
       tone: latestBooking ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Blocked create attempts',
+      value: `${bookingCreateGateAttempts.length} attempt(s)`,
+      detail: bookingCreateGateAttempts[0]
+        ? `${bookingCreateGateAttempts[0].gateLabel} / latest ${formatDate(bookingCreateGateAttempts[0].at)}`
+        : 'No booking create gate attempt is linked to this customer.',
+      href: bookingCreateGateAttempts[0]?.bookingMonitorHref ?? '/bookings?view=blocked-create',
+      tone: bookingCreateGateAttempts.length ? 'pill-warn' : 'pill-neutral',
     },
     {
       label: 'Last completed work',
@@ -245,7 +260,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       detail: latestSession
         ? `${latestSession.platform ?? 'Unknown'} / ${formatDate(latestSession.lastSeenAt)}`
         : 'No app session loaded.',
-      href: customer.user?.id ? `/app-sessions?user=${encodeURIComponent(customer.user.id)}` : '#customer-info',
+      href: customer.user?.id
+        ? `/app-sessions?user=${encodeURIComponent(customer.user.id)}`
+        : '#customer-info',
       tone: latestSession ? 'pill-info' : 'pill-neutral',
     },
     {
@@ -421,8 +438,8 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer operations digest</h2>
             <p className="muted">
-              One-screen factual digest for the customer desk. It keeps completed work, latest work,
-              active booking, chat archive, payment, address, app access, and staff records together.
+              One-screen factual digest for the customer desk. It keeps completed work, latest work, active
+              booking, chat archive, payment, address, app access, and staff records together.
             </p>
           </div>
           <span className="pill pill-info">{customerOperationsDigest.length} lanes</span>
@@ -473,6 +490,73 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" id="customer-booking-create-gates" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer blocked create attempts</h2>
+            <p className="muted">
+              Booking creation attempts stopped before payment and matching. These rows show factual gate
+              evidence for customer support and setup checks.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=blocked-create">
+            Open gate queue
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Loaded attempts</span>
+            <strong>{bookingCreateGateAttempts.length}</strong>
+            <small>All recent customer-linked gate attempts.</small>
+          </div>
+          <div>
+            <span>Filtered attempts</span>
+            <strong>{filteredBookingCreateGateAttempts.length}</strong>
+            <small>Matches current date filter.</small>
+          </div>
+          <div>
+            <span>Latest gate</span>
+            <strong>{bookingCreateGateAttempts[0]?.gateLabel ?? 'None'}</strong>
+            <small>
+              {bookingCreateGateAttempts[0] ? formatDate(bookingCreateGateAttempts[0].at) : 'No gate row'}
+            </small>
+          </div>
+        </div>
+        {filteredBookingCreateGateAttempts.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No booking create gate attempt matched this date filter.
+          </p>
+        ) : (
+          <div className="setup-stage-list" style={{ marginTop: 14 }}>
+            {filteredBookingCreateGateAttempts.slice(0, 12).map((attempt) => (
+              <div className="setup-stage-item" key={attempt.id}>
+                <span>{attempt.gateLabel}</span>
+                <div>
+                  <Link className="text-link" href={attempt.bookingMonitorHref}>
+                    <strong>{attempt.reasonLabel}</strong>
+                  </Link>
+                  <p className="muted">{attempt.detail}</p>
+                  <div className="participant-list" style={{ marginTop: 8 }}>
+                    <span className={`pill ${attempt.tone}`}>{attempt.gateLabel}</span>
+                    <span className="pill pill-neutral">{attempt.addressLabel}</span>
+                    <span className="pill pill-neutral">{attempt.distanceLabel}</span>
+                  </div>
+                  <div className="participant-list" style={{ marginTop: 8 }}>
+                    <Link className="text-link" href={attempt.bookingMonitorHref}>
+                      Booking gate queue
+                    </Link>
+                    <Link className="text-link" href={attempt.auditHref}>
+                      Audit evidence
+                    </Link>
+                  </div>
+                </div>
+                <small>{formatDate(attempt.at)}</small>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="card" id="customer-booking-evidence-bundles" style={{ marginBottom: 16 }}>
@@ -1436,6 +1520,20 @@ type CustomerOperationsDigestRow = {
   evidence: string[];
 };
 
+type CustomerBookingGateAttemptRow = {
+  id: string;
+  at: string;
+  gate: string;
+  gateLabel: string;
+  reasonLabel: string;
+  detail: string;
+  addressLabel: string;
+  distanceLabel: string;
+  bookingMonitorHref: string;
+  auditHref: string;
+  tone: string;
+};
+
 function CustomerOperatorCommandAction({
   customerId,
   command,
@@ -2082,9 +2180,7 @@ function buildCustomerOperationsDigest({
       detail: latestChatMessage
         ? `Latest message: ${compactText(latestChatMessage.body, 90)}`
         : 'No retained chat message appears in this filter.',
-      href: latestChatMessage?.bookingId
-        ? `/bookings/${latestChatMessage.bookingId}#chat`
-        : '#chat-history',
+      href: latestChatMessage?.bookingId ? `/bookings/${latestChatMessage.bookingId}#chat` : '#chat-history',
       latestAt: latestChatMessage?.createdAt,
       evidence: ['Admin retained', 'Hidden in apps after completion', `${chatMessages.length} message(s)`],
     },
@@ -2542,13 +2638,19 @@ function buildCustomerActivityRecords(
   }
 
   for (const log of customer.auditLogs ?? []) {
+    const bookingGateAttempt =
+      log.action === 'booking.create.rejected'
+        ? buildCustomerBookingGateAttemptRows([log], customer.id)[0]
+        : null;
     records.push({
       id: log.id,
       type: 'AUDIT',
       at: log.createdAt,
-      title: log.action,
-      detail: `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${compactJson(log.metadata)}`,
-      href: '/audit-log',
+      title: bookingGateAttempt ? `Booking create stopped: ${bookingGateAttempt.reasonLabel}` : log.action,
+      detail: bookingGateAttempt
+        ? `${bookingGateAttempt.gateLabel} / ${bookingGateAttempt.detail}`
+        : `${log.actor?.fullName ?? log.actor?.phone ?? 'System'} / ${compactJson(log.metadata)}`,
+      href: bookingGateAttempt?.bookingMonitorHref ?? '/audit-log',
     });
   }
 
@@ -2625,6 +2727,109 @@ function buildCustomerDailyActivityDigest(records: CustomerActivityRecord[]): Cu
         highlights: sortedRecords.slice(0, 4),
       };
     });
+}
+
+function buildCustomerBookingGateAttemptRows(
+  auditLogs: AdminAuditLog[],
+  customerId: string,
+): CustomerBookingGateAttemptRow[] {
+  return auditLogs
+    .filter((log) => log.action === 'booking.create.rejected')
+    .map((log) => {
+      const metadata = readMetadataObject(log.metadata);
+      const reasonCode = readString(metadata.reasonCode) ?? 'UNKNOWN';
+      const gate = customerBookingGateFilter(reasonCode);
+      const bookingAddress = readMetadataObject(metadata.bookingAddress);
+      const addressText = readString(bookingAddress.addressText);
+      const customerDistance = readNumber(metadata.customerDistanceMeters);
+      const customerDistanceLimit = readNumber(metadata.customerDistanceLimitMeters);
+      const partnerDistance = readNumber(metadata.preferredProviderDistanceMeters);
+      const partnerDistanceLimit = readNumber(metadata.preferredProviderDistanceLimitMeters);
+      const currentLocationRecordedAt = readString(metadata.currentLocationRecordedAt);
+      const preferredProviderId = readString(metadata.preferredProviderId);
+      const serviceId = readString(metadata.serviceId);
+      const distanceParts = [
+        customerDistance !== null
+          ? `Customer GPS ${formatDistance(customerDistance)} / limit ${formatDistance(customerDistanceLimit ?? 0)}`
+          : null,
+        partnerDistance !== null
+          ? `First-pick ${formatDistance(partnerDistance)} / limit ${formatDistance(partnerDistanceLimit ?? 0)}`
+          : null,
+      ].filter(Boolean);
+      const detailParts = [
+        addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing',
+        currentLocationRecordedAt
+          ? `GPS proof: ${formatDate(currentLocationRecordedAt)}`
+          : 'No current GPS timestamp',
+        serviceId ? `Service ${shortId(serviceId)}` : null,
+        preferredProviderId ? `First-pick partner ${shortId(preferredProviderId)}` : null,
+      ].filter(Boolean);
+
+      return {
+        id: log.id,
+        at: log.createdAt,
+        gate,
+        gateLabel: customerBookingGateLabel(gate),
+        reasonLabel: customerBookingGateReasonLabel(reasonCode),
+        detail: detailParts.join(' / '),
+        addressLabel: addressText ? compactText(addressText, 72) : 'No address metadata',
+        distanceLabel: distanceParts.length ? distanceParts.join(' / ') : 'No distance value',
+        bookingMonitorHref: `/bookings?view=blocked-create&gate=${gate}`,
+        auditHref: `/audit-log?query=booking.create.rejected&target=${encodeURIComponent(
+          `customer:${customerId}`,
+        )}`,
+        tone: gate === 'unknown' ? 'pill-warn' : 'pill-info',
+      };
+    })
+    .sort((left, right) => dateMs(right.at) - dateMs(left.at));
+}
+
+function customerBookingGateFilter(reasonCode: string) {
+  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') return 'service-area';
+  if (
+    reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING' ||
+    reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE' ||
+    reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING' ||
+    reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID'
+  ) {
+    return 'customer-gps';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') return 'customer-distance';
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') return 'first-pick-distance';
+  return 'unknown';
+}
+
+function customerBookingGateLabel(gate: string) {
+  if (gate === 'service-area') return 'Service area';
+  if (gate === 'customer-gps') return 'Customer GPS proof';
+  if (gate === 'customer-distance') return 'Customer distance';
+  if (gate === 'first-pick-distance') return 'First-pick distance';
+  return 'Unknown gate';
+}
+
+function customerBookingGateReasonLabel(reasonCode: string) {
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
+    return 'Customer GPS is too far from selected service address';
+  }
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
+    return 'First-pick partner is outside the service address radius';
+  }
+  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
+    return 'Selected service address is outside enabled service area';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
+    return 'Customer current-location proof is stale';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
+    return 'Customer current-location proof is missing';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
+    return 'Customer GPS timestamp is missing';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
+    return 'Customer GPS timestamp is invalid';
+  }
+  return reasonCode.replace(/_/g, ' ').toLowerCase();
 }
 
 function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): CustomerBookingEvidenceRow[] {
@@ -2941,6 +3146,25 @@ function compactJson(value: unknown) {
   return text.length > 160 ? `${text.slice(0, 157)}...` : text;
 }
 
+function readMetadataObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readString(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function readNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
 function compactText(value: string, maxLength: number) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
@@ -2976,6 +3200,12 @@ function formatDate(value?: string | null) {
     timeStyle: 'short',
     timeZone: 'Asia/Bangkok',
   }).format(new Date(value));
+}
+
+function formatDistance(value: number) {
+  if (!Number.isFinite(value)) return '?';
+  if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(1)} km`;
+  return `${Math.round(value)} m`;
 }
 
 function formatMoney(value: number, currency = 'VND') {
