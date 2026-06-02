@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {
+  AdminBooking,
   AdminProvider,
   AdminOperationalPolicySetting,
   adminGet,
@@ -169,6 +170,7 @@ type ProviderFilters = {
   location: string;
   security: string;
   readiness: string;
+  bookingFlow: string;
   review: string;
   sort: string;
 };
@@ -364,6 +366,20 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="needs-review">Needs review</option>
               <option value="approved-offline">Approved but offline</option>
               <option value="push-missing">Push missing</option>
+            </select>
+          </label>
+          <label>
+            Booking flow
+            <select name="bookingFlow" defaultValue={filters.bookingFlow}>
+              <option value="">All</option>
+              <option value="active-booking">Has active booking</option>
+              <option value="first-pick">First-pick booking</option>
+              <option value="marketplace-joined">Marketplace joined</option>
+              <option value="final-partner">Customer final choice</option>
+              <option value="chat-live">Chat room opened</option>
+              <option value="chat-missing">Matched but chat missing</option>
+              <option value="completed-work">Completed work</option>
+              <option value="no-work">No completed work</option>
             </select>
           </label>
           <label>
@@ -1945,6 +1961,23 @@ function providerBookingRows(provider: AdminProvider) {
     if (participant.booking) records.set(participant.booking.id, participant.booking);
   }
   return [...records.values()];
+}
+
+function isActivePartnerBooking(booking: AdminBooking) {
+  return [
+    'CREATED',
+    'OPEN_MATCHING',
+    'MATCHED',
+    'PROVIDER_ON_THE_WAY',
+    'ARRIVED',
+    'IN_SERVICE',
+  ].includes(booking.status);
+}
+
+function shouldHavePartnerChatRoom(booking: AdminBooking) {
+  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
+    booking.status,
+  );
 }
 
 function partnerInitials(value: string) {
@@ -4227,6 +4260,7 @@ function buildProviderFilters(params: Record<string, string | string[] | undefin
     location: readParam(params.location),
     security: normalizeProviderSecurityFilter(readParam(params.security)),
     readiness: readParam(params.readiness),
+    bookingFlow: normalizePartnerBookingFlowFilter(readParam(params.bookingFlow)),
     review: normalizePartnerReviewFilter(readParam(params.review)),
     sort: readPartnerSort(readParam(params.sort)),
   };
@@ -4290,6 +4324,14 @@ function buildProviderActiveFilters(filters: ProviderFilters) {
           description: providerFilterDescription('readiness', filters.readiness),
         }
       : null,
+    filters.bookingFlow
+      ? {
+          kind: 'bookingFlow',
+          value: filters.bookingFlow,
+          label: `Booking flow: ${partnerBookingFlowFilterLabel(filters.bookingFlow)}`,
+          description: providerFilterDescription('bookingFlow', filters.bookingFlow),
+        }
+      : null,
     filters.review
       ? {
           kind: 'review',
@@ -4333,6 +4375,30 @@ function providerFilterDescription(kind: string, value: string) {
   }
   if (kind === 'readiness') {
     return 'Readiness shows whether a partner can safely appear in customer discovery and dispatch.';
+  }
+  if (kind === 'bookingFlow' && value === 'active-booking') {
+    return 'Booking flow is narrowed to partners with live or in-progress booking records.';
+  }
+  if (kind === 'bookingFlow' && value === 'first-pick') {
+    return 'Booking flow is narrowed to partners that were the preferred first-pick partner.';
+  }
+  if (kind === 'bookingFlow' && value === 'marketplace-joined') {
+    return 'Booking flow is narrowed to partners that joined an open matching request.';
+  }
+  if (kind === 'bookingFlow' && value === 'final-partner') {
+    return 'Booking flow is narrowed to partners selected by the customer as final partner.';
+  }
+  if (kind === 'bookingFlow' && value === 'chat-live') {
+    return 'Booking flow is narrowed to partners with retained booking chat rooms.';
+  }
+  if (kind === 'bookingFlow' && value === 'chat-missing') {
+    return 'Booking flow is narrowed to matched or service-stage rows where chat room evidence is missing.';
+  }
+  if (kind === 'bookingFlow' && value === 'completed-work') {
+    return 'Booking flow is narrowed to partners with completed work records.';
+  }
+  if (kind === 'bookingFlow' && value === 'no-work') {
+    return 'Booking flow is narrowed to partners with no completed work yet.';
   }
   if (kind === 'review' && value === 'push') {
     return 'Push readiness highlights partners whose devices cannot reliably receive booking alerts.';
@@ -4390,6 +4456,20 @@ function normalizeProviderSecurityFilter(value: string) {
   return value;
 }
 
+function normalizePartnerBookingFlowFilter(value: string) {
+  const allowed = [
+    'active-booking',
+    'first-pick',
+    'marketplace-joined',
+    'final-partner',
+    'chat-live',
+    'chat-missing',
+    'completed-work',
+    'no-work',
+  ];
+  return allowed.includes(value) ? value : '';
+}
+
 function readPartnerSort(value: string) {
   return [
     'ops-priority',
@@ -4444,6 +4524,20 @@ function partnerReviewFilterLabel(review: string) {
   return labels[review] ?? review;
 }
 
+function partnerBookingFlowFilterLabel(flow: string) {
+  const labels: Record<string, string> = {
+    'active-booking': 'Has active booking',
+    'first-pick': 'First-pick booking',
+    'marketplace-joined': 'Marketplace joined',
+    'final-partner': 'Customer final choice',
+    'chat-live': 'Chat room opened',
+    'chat-missing': 'Matched but chat missing',
+    'completed-work': 'Completed work',
+    'no-work': 'No completed work',
+  };
+  return labels[flow] ?? flow;
+}
+
 function filterProviders(
   providers: AdminProvider[],
   filters: ProviderFilters,
@@ -4475,11 +4569,43 @@ function filterProviders(
     if (filters.readiness && providerReadiness(provider, opsPolicy) !== filters.readiness) {
       return false;
     }
+    if (filters.bookingFlow && !providerMatchesBookingFlow(provider, filters.bookingFlow)) {
+      return false;
+    }
     if (filters.review && !providerMatchesReviewQueue(provider, filters.review, opsPolicy)) {
       return false;
     }
     return true;
   });
+}
+
+function providerMatchesBookingFlow(provider: AdminProvider, flow: string) {
+  const bookingRows = providerBookingRows(provider);
+  if (flow === 'active-booking') {
+    return bookingRows.some((booking) => isActivePartnerBooking(booking));
+  }
+  if (flow === 'first-pick') {
+    return (provider.preferredBookings ?? []).length > 0;
+  }
+  if (flow === 'marketplace-joined') {
+    return (provider.participants ?? []).some((participant) => Boolean(participant.booking));
+  }
+  if (flow === 'final-partner') {
+    return (provider.selectedBookings ?? []).length > 0;
+  }
+  if (flow === 'chat-live') {
+    return bookingRows.some((booking) => Boolean(booking.chatRoom));
+  }
+  if (flow === 'chat-missing') {
+    return bookingRows.some((booking) => shouldHavePartnerChatRoom(booking) && !booking.chatRoom);
+  }
+  if (flow === 'completed-work') {
+    return providerCompletedWorkCount(provider) > 0;
+  }
+  if (flow === 'no-work') {
+    return providerCompletedWorkCount(provider) === 0;
+  }
+  return true;
 }
 
 function providerMatchesReviewQueue(

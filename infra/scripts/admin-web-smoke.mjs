@@ -380,6 +380,7 @@ const pages = [
       'Revenue',
       'Payout',
       'Account',
+      'Booking flow',
       'Partner checklist work queue',
       'List-first partner control view',
       'completed work',
@@ -402,6 +403,18 @@ const pages = [
   { path: '/partners?review=marketplace-ready', markers: ['Partners', 'Marketplace ready'] },
   { path: '/partners?review=marketplace-blocked', markers: ['Partners', 'Marketplace blocked'] },
   { path: '/partners?review=reports', markers: ['Partners', 'Reports/controls'] },
+  {
+    path: '/partners?bookingFlow=first-pick',
+    markers: ['Partners', 'Booking flow: First-pick booking', 'First-pick booking'],
+  },
+  {
+    path: '/partners?bookingFlow=chat-missing',
+    markers: ['Partners', 'Booking flow: Matched but chat missing', 'Matched but chat missing'],
+  },
+  {
+    path: '/partners?bookingFlow=completed-work',
+    markers: ['Partners', 'Booking flow: Completed work', 'Completed work'],
+  },
   { path: '/partners?sort=last-work', markers: ['Partners', 'Sort: last completed work'] },
   { path: '/partners?sort=booking-count', markers: ['Partners', 'Sort: booking count'] },
   { path: '/partners?sort=gross-revenue', markers: ['Partners', 'Sort: gross revenue'] },
