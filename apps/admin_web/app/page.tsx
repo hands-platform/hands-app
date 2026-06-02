@@ -187,6 +187,12 @@ type BookingEvidenceCommandQueueItem = {
   owner: 'Dispatch' | 'Finance' | 'Support';
   tone: 'ok' | 'info' | 'warn' | 'danger';
   checks: string[];
+  operatorAction: string;
+  sample?: {
+    label: string;
+    detail: string;
+    href: string;
+  };
 };
 
 type DashboardPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -835,6 +841,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <h3>{item.lane}</h3>
               <strong>{item.value}</strong>
               <p>{item.detail}</p>
+              <span className="ops-task-card-action">{item.operatorAction}</span>
+              {item.sample ? (
+                <div className="ops-task-note" style={{ marginTop: 10 }}>
+                  <strong>{item.sample.label}</strong>
+                  <p className="muted">{item.sample.detail}</p>
+                </div>
+              ) : null}
               <div className="participant-list" style={{ marginTop: 10 }}>
                 {item.checks.map((check) => (
                   <span className="pill pill-neutral" key={check}>
@@ -3412,18 +3425,25 @@ function buildBookingEvidenceCommandQueue(input: {
   cashSettlementSummary: AdminCashSettlementSummary;
   failedNotifications: AdminNotification[];
 }): BookingEvidenceCommandQueueItem[] {
-  const addressChecks = input.bookings.filter((booking) => !booking.addressSnapshot).length;
-  const partnerChoiceChecks = input.bookings.filter(dashboardBookingPartnerChoiceNeedsEvidence).length;
+  const addressRows = input.bookings.filter((booking) => !booking.addressSnapshot);
+  const partnerChoiceRows = input.bookings.filter(dashboardBookingPartnerChoiceNeedsEvidence);
+  const chatRows = input.bookings.filter(dashboardBookingChatNeedsEvidence);
+  const moneyRows = input.bookings.filter(dashboardBookingMoneyNeedsEvidence);
+  const locationRows = input.bookings.filter(dashboardBookingLocationNeedsEvidence);
+  const alertRows = input.bookings.filter(dashboardBookingAlertNeedsEvidence);
+  const closeoutRows = input.bookings.filter(dashboardBookingCloseoutNeedsEvidence);
+  const addressChecks = addressRows.length;
+  const partnerChoiceChecks = partnerChoiceRows.length;
   const chatChecks = input.bookingDeepDive.matchedWithoutChat + input.bookingDeepDive.quietActiveChats;
   const moneyChecks =
     input.bookingDeepDive.releaseChecks +
     input.bookingDeepDive.captureChecks +
     input.bookingDeepDive.manualCloseout +
     input.cashSettlementSummary.rowCount;
-  const locationChecks = input.bookings.filter(dashboardBookingLocationNeedsEvidence).length;
+  const locationChecks = locationRows.length;
   const alertChecks =
-    input.failedNotifications.length + input.bookings.filter(dashboardBookingAlertNeedsEvidence).length;
-  const closeoutChecks = input.bookings.filter(dashboardBookingCloseoutNeedsEvidence).length;
+    input.failedNotifications.length + alertRows.length;
+  const closeoutChecks = closeoutRows.length;
 
   const items: BookingEvidenceCommandQueueItem[] = [
     {
@@ -3438,6 +3458,8 @@ function buildBookingEvidenceCommandQueue(input: {
       href: '/bookings?view=all&evidence=address',
       tone: evidenceTone(addressChecks, 1, 3),
       checks: ['BookingAddressSnapshot', 'Customer pin', 'Address text'],
+      operatorAction: addressChecks > 0 ? 'Open address snapshot queue' : 'Keep address snapshot monitor',
+      sample: bookingEvidenceSample(addressRows, 'Address sample'),
     },
     {
       lane: 'Partner choice evidence',
@@ -3451,6 +3473,9 @@ function buildBookingEvidenceCommandQueue(input: {
       href: '/bookings?view=matching&evidence=partner',
       tone: evidenceTone(partnerChoiceChecks, 2, 6),
       checks: ['First-pick window', '10km marketplace', 'Customer final choice'],
+      operatorAction:
+        partnerChoiceChecks > 0 ? 'Check customer final-choice readiness' : 'Watch first-pick flow',
+      sample: bookingEvidenceSample(partnerChoiceRows, 'Partner choice sample'),
     },
     {
       lane: 'Chat archive evidence',
@@ -3464,6 +3489,8 @@ function buildBookingEvidenceCommandQueue(input: {
       href: '/bookings?view=all&evidence=chat',
       tone: evidenceTone(chatChecks, 1, 4),
       checks: ['Room exists', 'Message archive', 'Admin retained'],
+      operatorAction: chatChecks > 0 ? 'Open chat evidence queue' : 'Keep chat archive monitor',
+      sample: bookingEvidenceSample(chatRows, 'Chat sample'),
     },
     {
       lane: 'Payment and wallet evidence',
@@ -3477,6 +3504,8 @@ function buildBookingEvidenceCommandQueue(input: {
       href: '/bookings?view=all&evidence=money',
       tone: evidenceTone(moneyChecks, 1, 5),
       checks: ['Payment status', 'Cash fee', 'Wallet ledger'],
+      operatorAction: moneyChecks > 0 ? 'Open finance evidence queue' : 'Keep finance evidence monitor',
+      sample: bookingEvidenceSample(moneyRows, 'Money sample'),
     },
     {
       lane: 'Location evidence',
@@ -3490,6 +3519,8 @@ function buildBookingEvidenceCommandQueue(input: {
       href: '/bookings?view=all&evidence=location',
       tone: evidenceTone(locationChecks, 1, 5),
       checks: ['Booking address', 'Partner pin', 'Freshness window'],
+      operatorAction: locationChecks > 0 ? 'Open location evidence queue' : 'Keep location evidence monitor',
+      sample: bookingEvidenceSample(locationRows, 'Location sample'),
     },
     {
       lane: 'Alert evidence',
@@ -3503,6 +3534,8 @@ function buildBookingEvidenceCommandQueue(input: {
       href: '/bookings?view=all&evidence=alerts',
       tone: evidenceTone(alertChecks, 1, 4),
       checks: ['Delivery state', 'Retry log', 'Invite trace'],
+      operatorAction: alertChecks > 0 ? 'Open alert delivery queue' : 'Keep alert evidence monitor',
+      sample: bookingEvidenceSample(alertRows, 'Alert sample'),
     },
     {
       lane: 'Closeout evidence',
@@ -3516,6 +3549,8 @@ function buildBookingEvidenceCommandQueue(input: {
       href: '/bookings?view=all&evidence=closeout',
       tone: evidenceTone(closeoutChecks, 1, 5),
       checks: ['Final status', 'Chat proof', 'Finance trace'],
+      operatorAction: closeoutChecks > 0 ? 'Open closeout evidence queue' : 'Keep closeout monitor',
+      sample: bookingEvidenceSample(closeoutRows, 'Closeout sample'),
     },
   ];
 
@@ -3530,6 +3565,64 @@ function buildBookingEvidenceCommandQueue(input: {
     if (toneDelta !== 0) return toneDelta;
     return Number.parseInt(right.value, 10) - Number.parseInt(left.value, 10);
   });
+}
+
+function bookingEvidenceSample(bookings: AdminBooking[], label: string): BookingEvidenceCommandQueueItem['sample'] {
+  const booking = bookings.sort(bookingEvidencePrioritySort)[0];
+  if (!booking) {
+    return undefined;
+  }
+  return {
+    label: `${label}: ${shortId(booking.id)}`,
+    detail: `${booking.status} / ${bookingServiceLabel(booking)} / opened ${dashboardDateLabel(
+      booking.createdAt ?? booking.scheduledStartAt,
+    )}`,
+    href: `/bookings/${booking.id}`,
+  };
+}
+
+function bookingEvidencePrioritySort(left: AdminBooking, right: AdminBooking) {
+  const leftRank = bookingEvidenceStatusRank(left.status);
+  const rightRank = bookingEvidenceStatusRank(right.status);
+  if (leftRank !== rightRank) {
+    return rightRank - leftRank;
+  }
+  return dashboardDateValue(right.updatedAt ?? right.createdAt ?? right.scheduledStartAt) -
+    dashboardDateValue(left.updatedAt ?? left.createdAt ?? left.scheduledStartAt);
+}
+
+function bookingEvidenceStatusRank(status?: string | null) {
+  if (status === 'OPEN_MATCHING') return 5;
+  if (status === 'MATCHED') return 4;
+  if (['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status ?? '')) return 3;
+  if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(status ?? '')) return 2;
+  if (status === 'COMPLETED') return 1;
+  return 0;
+}
+
+function dashboardDateLabel(value?: string | null) {
+  if (!value) {
+    return 'unknown';
+  }
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) {
+    return 'unknown';
+  }
+  return dashboardDateTimeFormatter.format(new Date(timestamp));
+}
+
+const dashboardDateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'Asia/Bangkok',
+});
+
+function dashboardDateValue(value?: string | null) {
+  if (!value) {
+    return 0;
+  }
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
 function dashboardBookingPartnerChoiceNeedsEvidence(booking: AdminBooking) {
@@ -3552,6 +3645,24 @@ function dashboardBookingLocationNeedsEvidence(booking: AdminBooking) {
   }
   const age = locationAgeMinutes(partner.currentLocationUpdatedAt);
   return age === null || age > 30;
+}
+
+function dashboardBookingChatNeedsEvidence(booking: AdminBooking) {
+  return (
+    (booking.status === 'MATCHED' && !booking.chatRoom) ||
+    (Boolean(booking.chatRoom) &&
+      (booking.chatRoom?.messages?.length ?? 0) === 0 &&
+      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status))
+  );
+}
+
+function dashboardBookingMoneyNeedsEvidence(booking: AdminBooking) {
+  return (
+    completedCloseoutNeedsOps(booking) ||
+    isNoShowSignal(booking) ||
+    unresolvedReleasePayment(booking) ||
+    (booking.payment?.status === 'AUTHORIZED' && booking.status === 'COMPLETED')
+  );
 }
 
 function dashboardBookingAlertNeedsEvidence(booking: AdminBooking) {
