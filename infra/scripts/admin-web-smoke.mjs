@@ -644,6 +644,8 @@ if (providerLinkMatch) {
       'Partner operating ledger',
       'Partner operating checklist',
       'Factual work-control checklist',
+      'Partner chat retention ledger',
+      'Customer final selection creates the partner chat',
       'Booking and chat records',
       'All partner chats',
       'Recent app and operations activity',

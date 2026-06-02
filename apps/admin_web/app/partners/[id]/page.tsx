@@ -331,6 +331,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     filteredPartnerBookingArchive,
     dispatchPolicy,
   );
+  const partnerChatRetentionRows = buildPartnerChatRetentionRows(filteredPartnerBookingArchive);
+  const partnerChatRetentionSummary = buildPartnerChatRetentionSummary(partnerChatRetentionRows);
   const partnerBookingGateAttempts = buildPartnerBookingGateAttemptRows(
     provider.auditLogs ?? [],
     provider.id,
@@ -1131,6 +1133,89 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <small>Total factual activity before this filter.</small>
           </div>
         </div>
+      </div>
+
+      <div className="card" id="partner-chat-retention-ledger" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner chat retention ledger</h2>
+            <p className="muted">
+              Customer final selection creates the partner chat. Mobile apps can hide completed-service chats,
+              while admin keeps the retained transcript for cancellation, no-show, payment, and service
+              evidence review.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerChatRetentionRows.length} booking row(s)</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {partnerChatRetentionSummary.map((item) => (
+            <div key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
+            </div>
+          ))}
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Booking</th>
+              <th>Partner role</th>
+              <th>Room state</th>
+              <th>Latest message</th>
+              <th>Mobile visibility</th>
+              <th>Admin archive</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {partnerChatRetentionRows.map((row) => (
+              <tr key={`${row.id}-${row.relation}`}>
+                <td>
+                  <strong>{row.bookingLabel}</strong>
+                  <p className="muted">{row.serviceLabel}</p>
+                  <span className={`pill ${partnerBookingStatusPillClass(row.status)}`}>{row.status}</span>
+                </td>
+                <td>
+                  <strong>{row.relation}</strong>
+                  <p className="muted">{row.roleDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.roomStatus}</strong>
+                  <p className="muted">{row.roomDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.latestSender}</strong>
+                  <p className="muted">{row.latestMessage}</p>
+                  <small>{row.latestMessageAt ? formatDate(row.latestMessageAt) : 'No message date'}</small>
+                </td>
+                <td>
+                  <strong>{row.mobileVisibility}</strong>
+                  <p className="muted">{row.mobileVisibilityDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.adminRetention}</strong>
+                  <p className="muted">{row.adminRetentionDetail}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={row.bookingHref}>
+                    Booking
+                  </Link>
+                  {row.chatHref ? (
+                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      Archive
+                    </Link>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {partnerChatRetentionRows.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No partner chat retention row matched this date filter.
+          </p>
+        ) : null}
       </div>
 
       <div className="card" id="booking-chat-records" style={{ marginBottom: 16 }}>
@@ -2725,6 +2810,29 @@ type PartnerBookingJourneyRow = {
     label: string;
     href: string;
   }>;
+};
+type PartnerChatRetentionRow = {
+  id: string;
+  relation: string;
+  bookingLabel: string;
+  serviceLabel: string;
+  status: string;
+  roleDetail: string;
+  roomStatus: string;
+  roomDetail: string;
+  latestSender: string;
+  latestMessage: string;
+  latestMessageAt?: string;
+  mobileVisibility: string;
+  mobileVisibilityDetail: string;
+  adminRetention: string;
+  adminRetentionDetail: string;
+  bookingHref: string;
+  chatHref?: string;
+  hasRoom: boolean;
+  requiresRoom: boolean;
+  messageCount: number;
+  mobileHidden: boolean;
 };
 type PartnerBookingGateAttemptRow = {
   id: string;
@@ -4590,6 +4698,117 @@ function readPartnerChatMessages(booking: PartnerDetailBooking) {
   return [...(booking.chatRoom?.messages ?? [])].sort((left, right) => {
     return dateValue(left.createdAt) - dateValue(right.createdAt);
   });
+}
+
+function buildPartnerChatRetentionRows(records: PartnerBookingArchiveRecord[]): PartnerChatRetentionRow[] {
+  return records.slice(0, 40).map((record) => {
+    const booking = record.booking;
+    const messages = readPartnerChatMessages(booking);
+    const latestMessage = messages[messages.length - 1];
+    const requiresRoom = partnerBookingRequiresRetainedChat(booking);
+    const mobileHidden = partnerBookingChatHiddenInMobile(booking);
+    const latestSender = latestMessage ? chatSenderLabel(latestMessage) : 'No message';
+
+    return {
+      id: booking.id,
+      relation: record.relation,
+      bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
+        booking.scheduledStartAt ?? booking.createdAt,
+      )}`,
+      serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
+      status: booking.status ?? 'UNKNOWN',
+      roleDetail: partnerRoleRetentionDetail(record),
+      roomStatus: booking.chatRoom
+        ? `${messages.length} retained message(s)`
+        : requiresRoom
+          ? 'Matched booking without room'
+          : 'No room required yet',
+      roomDetail: booking.chatRoom
+        ? `Room ${shortRecordId(booking.chatRoom.id)} / ${partnerBookingChatEvidenceLabel(booking)}`
+        : requiresRoom
+          ? 'Matched or service-stage booking should have a retained chat room.'
+          : 'Pre-match bookings do not open customer-partner chat yet.',
+      latestSender,
+      latestMessage: latestMessage ? trimText(latestMessage.body, 120) : 'No retained message loaded',
+      latestMessageAt: latestMessage?.createdAt,
+      mobileVisibility: mobileHidden
+        ? 'Hidden in mobile after closeout'
+        : booking.chatRoom
+          ? 'Visible while service is active'
+          : 'Not visible yet',
+      mobileVisibilityDetail: mobileHidden
+        ? 'Customer and partner apps may hide completed or closed chats, but admin keeps the archive.'
+        : booking.chatRoom
+          ? 'Room should remain visible until the service is completed or closed.'
+          : 'Chat opens after customer final partner selection.',
+      adminRetention: booking.chatRoom
+        ? 'Admin archive retained'
+        : requiresRoom
+          ? 'Admin repair needed'
+          : 'Waiting for match',
+      adminRetentionDetail: booking.chatRoom
+        ? 'Use the archive link for full message evidence.'
+        : requiresRoom
+          ? 'Open the booking detail to repair or investigate the missing room.'
+          : 'No customer-partner chat evidence is expected before matching.',
+      bookingHref: `/bookings/${booking.id}`,
+      chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
+      hasRoom: Boolean(booking.chatRoom),
+      requiresRoom,
+      messageCount: messages.length,
+      mobileHidden,
+    };
+  });
+}
+
+function buildPartnerChatRetentionSummary(rows: PartnerChatRetentionRow[]) {
+  const retainedRooms = rows.filter((row) => row.hasRoom).length;
+  const retainedMessages = rows.reduce((sum, row) => sum + row.messageCount, 0);
+  const matchedWithoutRoom = rows.filter((row) => row.requiresRoom && !row.hasRoom).length;
+  const mobileHidden = rows.filter((row) => row.mobileHidden && row.hasRoom).length;
+
+  return [
+    {
+      label: 'Retained rooms',
+      value: retainedRooms.toString(),
+      helper: 'Partner chat rooms saved for admin evidence.',
+    },
+    {
+      label: 'Retained messages',
+      value: retainedMessages.toString(),
+      helper: 'Loaded messages across this partner date filter.',
+    },
+    {
+      label: 'Matched without room',
+      value: matchedWithoutRoom.toString(),
+      helper: 'Matched/service-stage bookings that need chat-room repair.',
+    },
+    {
+      label: 'Hidden in mobile',
+      value: mobileHidden.toString(),
+      helper: 'Completed or closed chats still retained by admin.',
+    },
+  ];
+}
+
+function partnerRoleRetentionDetail(record: PartnerBookingArchiveRecord) {
+  if (record.relation === 'Selected') {
+    return 'Customer selected this partner for final service handoff.';
+  }
+  if (record.relation === 'Preferred') {
+    return 'Customer first picked this partner before marketplace participation.';
+  }
+  return 'Partner joined the marketplace shortlist for customer final choice.';
+}
+
+function partnerBookingRequiresRetainedChat(booking: PartnerDetailBooking) {
+  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
+    booking.status ?? '',
+  );
+}
+
+function partnerBookingChatHiddenInMobile(booking: PartnerDetailBooking) {
+  return ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(booking.status ?? '');
 }
 
 function chatSenderLabel(message: PartnerDetailChatMessage) {
