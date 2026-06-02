@@ -58,6 +58,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
   });
   const closeoutTasks = buildCloseoutTasks(reconciliation);
   const evidenceChecklist = buildFinanceCloseoutEvidenceChecklist(reconciliation);
+  const shiftCloseActionMap = buildShiftCloseActionMap(reconciliation);
   const handoffRows = buildHandoffRows(reconciliation);
 
   return (
@@ -238,6 +239,33 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
         </div>
       </section>
 
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Shift close action map</h2>
+            <p className="muted">
+              Final finance pass before handoff. Each row points to the source queue and states what keeps the
+              shift open.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-handoff">
+            Open handoff
+          </Link>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {shiftCloseActionMap.map((item) => (
+            <Link className="setup-stage-item" href={item.href} key={item.action}>
+              <span className={`pill ${item.pillClass}`}>{item.status}</span>
+              <div>
+                <strong>{item.action}</strong>
+                <p className="muted">{item.reason}</p>
+                <small>{item.operatorRule}</small>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <section className="card" style={{ overflowX: 'auto' }}>
         <div className="risk-watch-header">
           <div>
@@ -291,6 +319,15 @@ type ReconciliationInput = {
   cashSummary: AdminCashSettlementSummary | null;
   currency: string;
   range: AdminDateRange;
+};
+
+type ShiftCloseActionMapItem = {
+  action: string;
+  status: string;
+  reason: string;
+  operatorRule: string;
+  href: string;
+  pillClass: string;
 };
 
 function buildReconciliation(input: ReconciliationInput) {
@@ -447,6 +484,89 @@ function buildFinanceCloseoutEvidenceChecklist(reconciliation: ReturnType<typeof
       href: '/payouts',
       className: referencesComplete ? 'ops-task-done' : 'ops-task-pending',
       pillClass: referencesComplete ? 'pill-success' : 'pill-warn',
+    },
+  ];
+}
+
+function buildShiftCloseActionMap(
+  reconciliation: ReturnType<typeof buildReconciliation>,
+): ShiftCloseActionMapItem[] {
+  const openPayments = reconciliation.authorizedPayments.length + reconciliation.cashPending.length;
+  const openRefunds = reconciliation.openRefunds.length;
+  const cashDebt = reconciliation.cashDebtAmount;
+  const openPayouts = reconciliation.openPayouts.length;
+  const missingRefs = reconciliation.missingReferenceCount;
+  const taxRows = reconciliation.earningsWithoutTaxLogs.length;
+  const allClear =
+    openPayments === 0 &&
+    openRefunds === 0 &&
+    cashDebt <= 0 &&
+    openPayouts === 0 &&
+    missingRefs === 0 &&
+    taxRows === 0;
+
+  return [
+    {
+      action: 'Payment close',
+      status: openPayments ? `${openPayments} open` : 'Clear',
+      reason: openPayments
+        ? `${reconciliation.authorizedPayments.length} authorization hold(s), ${reconciliation.cashPending.length} cash pending row(s).`
+        : 'No open payment hold or pending cash collection is visible.',
+      operatorRule: 'Capture, release, refund, or record cash settlement evidence before shift handoff.',
+      href: '/payments?review=needs-action',
+      pillClass: openPayments ? 'pill-warn' : 'pill-success',
+    },
+    {
+      action: 'Refund close',
+      status: openRefunds ? `${openRefunds} open` : 'Clear',
+      reason: openRefunds
+        ? 'Refund rows still need payment, booking, and customer message alignment.'
+        : 'No open refund row is visible.',
+      operatorRule:
+        'Refund closeout requires booking, payment, customer message, and admin evidence alignment.',
+      href: '/refunds?review=open',
+      pillClass: openRefunds ? 'pill-danger' : 'pill-success',
+    },
+    {
+      action: 'Cash debt close',
+      status: cashDebt > 0 ? formatMoney(cashDebt, reconciliation.currency) : 'Clear',
+      reason:
+        cashDebt > 0 ? 'Partner cash collection debt remains open.' : 'No open cash wallet debt is visible.',
+      operatorRule:
+        'Keep negative wallet rows visible until deposit reference or approved offset is recorded.',
+      href: '/cash-settlements',
+      pillClass: cashDebt > 0 ? 'pill-warn' : 'pill-success',
+    },
+    {
+      action: 'Payout release close',
+      status: openPayouts ? `${openPayouts} batch(es)` : 'Clear',
+      reason: openPayouts
+        ? 'Open payout batches still need transfer reference, earning trace, or blocker review.'
+        : 'No open payout batch is visible.',
+      operatorRule: 'Paid status requires bank reference, earning trace, tax logs, and no payout blocker.',
+      href: '/payouts',
+      pillClass: openPayouts ? 'pill-warn' : 'pill-success',
+    },
+    {
+      action: 'Reference and tax trace',
+      status: missingRefs || taxRows ? `${missingRefs + taxRows} check(s)` : 'Clear',
+      reason:
+        missingRefs || taxRows
+          ? `${missingRefs} missing reference(s), ${taxRows} earning row(s) without tax log.`
+          : 'References and tax traces look complete for visible records.',
+      operatorRule: 'Shift closeout keeps historical tax and bank references stable for later audit.',
+      href: '/audit-log?bucket=Finance%2FCloseout',
+      pillClass: missingRefs || taxRows ? 'pill-warn' : 'pill-success',
+    },
+    {
+      action: 'Handoff note',
+      status: allClear ? 'Ready' : 'Needs note',
+      reason: allClear
+        ? 'Finance queues are ready for clean handoff.'
+        : 'Leave a handoff note for open finance queues.',
+      operatorRule: 'The handoff should be factual: queue, amount, record link, and next operator action.',
+      href: '/operations-handoff',
+      pillClass: allClear ? 'pill-success' : 'pill-info',
     },
   ];
 }

@@ -305,6 +305,7 @@ const pages = [
       'Closeout reconciliation board',
       'Payment-to-earning checks',
       'Cash debt handoff',
+      'Shift close action map',
       'Payout release checks',
     ],
   },
