@@ -34,8 +34,8 @@ String customerBookingErrorMessage(Object exception) {
   }
   if (normalized.contains('partner verification is not approved') ||
       normalized.contains('partner is not available') ||
-      normalized.contains('provider verification is not approved') ||
-      normalized.contains('provider is not available')) {
+      normalized.contains('verification is not approved') ||
+      normalized.contains('is not available')) {
     return 'This partner is not available for booking right now. Please choose another partner.';
   }
 
