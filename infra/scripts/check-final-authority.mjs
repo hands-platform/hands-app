@@ -301,6 +301,8 @@ function checkLegacyRiskRoutesAreRedirectOnly() {
     "source: '/provider-risk'",
     "source: '/partner-risk'",
     "destination: '/partner-controls'",
+    "source: '/providers/:path*'",
+    "destination: '/partners/:path*'",
   ]);
 
   for (const dir of ['apps/admin_web/app/provider-risk', 'apps/admin_web/app/partner-risk']) {
@@ -308,6 +310,15 @@ function checkLegacyRiskRoutesAreRedirectOnly() {
       fail(file, 'Legacy risk route must stay redirect-only. Use /partner-controls or /partners for admin work.');
     }
   }
+
+  requireMarkers('apps/admin_web/app/providers/page.tsx', read('apps/admin_web/app/providers/page.tsx'), [
+    "redirect(`/partners${buildQueryString(searchParams ? await searchParams : {})}`);",
+  ]);
+  requireMarkers(
+    'apps/admin_web/app/providers/[id]/page.tsx',
+    read('apps/admin_web/app/providers/[id]/page.tsx'),
+    ['redirect(`/partners/${id}`);'],
+  );
 }
 
 function checkMobileVisibleCopyGuardIsStrict() {
