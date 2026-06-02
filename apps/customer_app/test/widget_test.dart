@@ -253,4 +253,33 @@ void main() {
     expect(customerBookingNextAction(completedBooking),
         'Service complete. Review when ready.');
   });
+
+  test('customer direct cancel is only available before partner commitment',
+      () {
+    expect(canCustomerDirectlyCancelBooking({
+      'status': 'OPEN_MATCHING',
+      'participants': [],
+    }), isTrue);
+
+    expect(canCustomerDirectlyCancelBooking({
+      'status': 'OPEN_MATCHING',
+      'participants': [
+        {'providerProfileId': 'partner-1', 'status': 'JOINED'},
+      ],
+    }), isTrue);
+
+    expect(canCustomerDirectlyCancelBooking({
+      'status': 'OPEN_MATCHING',
+      'participants': [
+        {'providerProfileId': 'partner-1', 'status': 'ACCEPTED'},
+      ],
+    }), isFalse);
+
+    expect(canCustomerDirectlyCancelBooking({
+      'status': 'MATCHED',
+      'selectedProvider': {'id': 'partner-1'},
+    }), isFalse);
+    expect(customerCancellationNeedsOpsReview('MATCHED'), isTrue);
+    expect(customerCancellationNeedsOpsReview('COMPLETED'), isFalse);
+  });
 }

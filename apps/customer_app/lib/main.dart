@@ -2646,6 +2646,8 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     final service =
         currentBooking == null ? null : firstBookingService(currentBooking);
     final status = currentBooking?['status'] as String? ?? 'OPEN_MATCHING';
+    final canDirectCancel = canCustomerDirectlyCancelBooking(currentBooking);
+    final needsOpsReview = customerCancellationNeedsOpsReview(status);
     final preferredProvider =
         status == 'OPEN_MATCHING' ? preferredProviderData : null;
     final finalizedProvider =
@@ -2715,14 +2717,33 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                   Positioned(
                     top: 18,
                     right: 18,
-                    child: FilledButton(
-                      onPressed: loading ? null : cancelBooking,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFE84B4B),
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Cancel request'),
-                    ),
+                    child: canDirectCancel
+                        ? FilledButton(
+                            onPressed: loading ? null : cancelBooking,
+                            style: FilledButton.styleFrom(
+                              backgroundColor: const Color(0xFFE84B4B),
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text('Cancel request'),
+                          )
+                        : needsOpsReview
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(999),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x22000000),
+                                      blurRadius: 12,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: const Text('Chat evidence'),
+                              )
+                            : const SizedBox.shrink(),
                   ),
                   Positioned(
                     left: 0,
@@ -4913,6 +4934,29 @@ bool isCustomerAppChatVisible(Map<String, dynamic>? booking) {
   }
   return asMap(booking['chatRoom']) != null &&
       !isCustomerClosedBooking(booking);
+}
+
+bool canCustomerDirectlyCancelBooking(Map<String, dynamic>? booking) {
+  if (booking == null || booking['status'] != 'OPEN_MATCHING') {
+    return false;
+  }
+  if (asMap(booking['selectedProvider']) != null) {
+    return false;
+  }
+  final participants = asList(booking['participants']);
+  return !participants.whereType<Map<String, dynamic>>().any((participant) {
+    return participant['status'] == 'ACCEPTED' ||
+        participant['status'] == 'SELECTED';
+  });
+}
+
+bool customerCancellationNeedsOpsReview(String status) {
+  return const {
+    'MATCHED',
+    'PROVIDER_ON_THE_WAY',
+    'ARRIVED',
+    'IN_SERVICE',
+  }.contains(status);
 }
 
 String formatCustomerRequestOpenedMoment(dynamic value) {
