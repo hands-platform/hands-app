@@ -215,7 +215,7 @@ const bookingGateFilterOptions: Array<{ value: BookingGateFilter; label: string;
   },
   {
     value: 'customer-gps',
-    label: 'Legacy GPS evidence',
+    label: 'Customer GPS proof',
     operatorHint:
       'Historical customer GPS evidence rows are retained as support context. New booking creation is address based.',
   },
@@ -2647,7 +2647,7 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
       { label: 'Legacy GPS evidence', value: customerTooFar.length.toString() },
       { label: 'First-pick distance', value: partnerTooFar.length.toString() },
       { label: 'Service area', value: serviceArea.length.toString() },
-      { label: 'GPS proof', value: locationProof.length.toString() },
+      { label: 'Customer GPS proof', value: locationProof.length.toString() },
       { label: 'Latest', value: latestAge },
     ],
   };
