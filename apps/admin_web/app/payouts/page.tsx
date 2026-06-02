@@ -10,8 +10,12 @@ type PayoutsPageProps = {
 
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const filters = buildPayoutFilters(searchParams ? await searchParams : {});
-  const allBatches = await adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []);
+  const [allBatches, allEarnings] = await Promise.all([
+    adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
+    adminGet<AdminEarning[]>('/admin/earnings', []),
+  ]);
   const batches = sortBatches(allBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range)));
+  const earnings = allEarnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
   const summary = buildSummary(batches);
   const commandSignals = buildPayoutCommandSignals(batches);
   const payoutLanes = buildPayoutLanes(batches);
@@ -19,6 +23,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const moneyFlowCards = buildPayoutMoneyFlowCards(summary, serviceEvidence);
   const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
   const releaseQueue = buildPayoutReleaseQueue(batches);
+  const inclusionAudit = buildPayoutInclusionAudit(earnings, batches);
 
   return (
     <>
@@ -144,6 +149,55 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               <small>{signal.action}</small>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payout inclusion audit</h2>
+            <p className="muted">
+              Unbatched earning review before finance creates the next weekly, monthly, or admin-selected
+              partner settlement batch.
+            </p>
+          </div>
+          <span className={`pill ${inclusionAudit.blockedCount ? 'pill-warn' : 'pill-success'}`}>
+            {inclusionAudit.readyCount} ready / {inclusionAudit.blockedCount} held
+          </span>
+        </div>
+        <div className="service-trace-summary">
+          {inclusionAudit.cards.map((card) => (
+            <div key={card.label}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <small>{card.helper}</small>
+            </div>
+          ))}
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 14 }}>
+          {inclusionAudit.rows.map((row) => (
+            <div className="setup-stage-item" key={row.id}>
+              <span>{row.status}</span>
+              <div>
+                <strong>{row.title}</strong>
+                <p className="muted">{row.detail}</p>
+                <p className="muted">{row.operatorRule}</p>
+              </div>
+              <a className="text-link" href={row.href}>
+                Open
+              </a>
+            </div>
+          ))}
+          {inclusionAudit.rows.length === 0 ? (
+            <div className="setup-stage-item">
+              <span>OK</span>
+              <div>
+                <strong>No unbatched earning in this range</strong>
+                <p className="muted">All visible earning rows are already batched, paid, cancelled, or absent.</p>
+              </div>
+              <small>Clear</small>
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -680,6 +734,15 @@ type PayoutReleaseQueueItem = {
   severity: 'Block' | 'Check';
 };
 
+type PayoutInclusionAuditRow = {
+  id: string;
+  status: 'Ready' | 'Hold' | 'Batched';
+  title: string;
+  detail: string;
+  operatorRule: string;
+  href: string;
+};
+
 type PayoutServiceEvidenceItem = {
   key: string;
   label: string;
@@ -841,6 +904,93 @@ function sumPayoutServiceEvidence(
   >,
 ) {
   return serviceEvidence.reduce((sum, item) => sum + item[field], 0);
+}
+
+function buildPayoutInclusionAudit(earnings: AdminEarning[], batches: AdminPayoutBatch[]) {
+  const currency = earnings[0]?.currency ?? batches[0]?.currency ?? 'VND';
+  const batchedIds = new Set(
+    batches.flatMap((batch) => (batch.earnings ?? []).map((earning) => earning.id)),
+  );
+  const unbatched = earnings.filter((earning) => !earning.payoutBatchId && !batchedIds.has(earning.id));
+  const ready = unbatched.filter((earning) => isEarningBatchReady(earning));
+  const cashDebt = unbatched.filter((earning) => earning.netAmount < 0);
+  const closeoutReview = unbatched.filter(
+    (earning) => !isEarningBatchReady(earning) && earning.netAmount >= 0 && earning.status !== 'CANCELLED',
+  );
+  const alreadyBatched = earnings.filter((earning) => earning.payoutBatchId || batchedIds.has(earning.id));
+  const rows = [
+    ...ready.slice(0, 4).map((earning) => payoutInclusionRow(earning, 'Ready')),
+    ...cashDebt.slice(0, 3).map((earning) => payoutInclusionRow(earning, 'Hold')),
+    ...closeoutReview.slice(0, 3).map((earning) => payoutInclusionRow(earning, 'Hold')),
+  ];
+
+  return {
+    readyCount: ready.length,
+    blockedCount: cashDebt.length + closeoutReview.length,
+    cards: [
+      {
+        label: 'Ready unbatched',
+        value: `${ready.length}`,
+        helper: `${formatMoney(sumEarnings(ready, 'netAmount'), currency)} can move into the next batch.`,
+      },
+      {
+        label: 'Cash debt held',
+        value: `${cashDebt.length}`,
+        helper: `${formatMoney(Math.abs(sumEarnings(cashDebt, 'netAmount')), currency)} company-fee debt stays out.`,
+      },
+      {
+        label: 'Closeout review',
+        value: `${closeoutReview.length}`,
+        helper: 'Needs booking, payment, or earning status review before batching.',
+      },
+      {
+        label: 'Already batched',
+        value: `${alreadyBatched.length}`,
+        helper: `${formatMoney(sumEarnings(alreadyBatched, 'netAmount'), currency)} already attached to batches.`,
+      },
+    ],
+    rows,
+  };
+}
+
+function isEarningBatchReady(earning: AdminEarning) {
+  return (
+    !earning.payoutBatchId &&
+    earning.netAmount > 0 &&
+    !['PAID', 'CANCELLED'].includes(earning.status) &&
+    earning.booking?.status === 'COMPLETED'
+  );
+}
+
+function payoutInclusionRow(earning: AdminEarning, status: PayoutInclusionAuditRow['status']) {
+  const service = earning.booking?.services?.[0]?.service;
+  const serviceLabel = service
+    ? `${service.name} / ${service.durationMin} min`
+    : `Booking ${shortId(earning.bookingId)}`;
+  const providerLabel =
+    earning.providerProfile?.displayName ?? earning.providerProfile?.user?.phone ?? 'Unknown partner';
+  const holdReason =
+    earning.netAmount < 0
+      ? 'Cash booking created company-fee debt. Keep it out of partner payout until deposit or admin offset is verified.'
+      : earning.booking?.status !== 'COMPLETED'
+        ? `Booking status is ${earning.booking?.status ?? 'missing'}, so it is not payout-ready.`
+        : `Earning status is ${earning.status}; review closeout before batching.`;
+
+  return {
+    id: earning.id,
+    status,
+    title: `${providerLabel} / ${formatMoney(earning.netAmount, earning.currency)}`,
+    detail: `${serviceLabel} / ${earning.status} / created ${earning.createdAt ? relativeTime(earning.createdAt) : 'unknown time'}`,
+    operatorRule:
+      status === 'Ready'
+        ? 'Positive completed earning can be included in the next configured payout batch.'
+        : holdReason,
+    href: `/bookings/${earning.bookingId}`,
+  };
+}
+
+function sumEarnings(earnings: AdminEarning[], field: 'grossAmount' | 'platformFee' | 'withholdingAmount' | 'netAmount') {
+  return earnings.reduce((sum, earning) => sum + Number(earning[field] ?? 0), 0);
 }
 
 function buildPayoutReleaseQueue(batches: AdminPayoutBatch[]): PayoutReleaseQueueItem[] {

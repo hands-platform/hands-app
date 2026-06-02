@@ -361,7 +361,13 @@ const pages = [
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
   {
     path: '/payouts',
-    markers: ['Partner Payouts', 'Payout date range', 'Payout command queue', 'Payout action execution map'],
+    markers: [
+      'Partner Payouts',
+      'Payout date range',
+      'Payout command queue',
+      'Payout inclusion audit',
+      'Payout action execution map',
+    ],
   },
   {
     path: '/payouts?range=7d',
