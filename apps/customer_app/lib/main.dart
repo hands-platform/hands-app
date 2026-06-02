@@ -4826,7 +4826,7 @@ class CustomerBookingHistoryCard extends StatelessWidget {
               children: [
                 BookingHistoryPill(
                     label:
-                        'Opened ${formatCustomerScheduleMoment(booking['createdAt'] ?? booking['scheduledStartAt'])}'),
+                        'Opened ${formatCustomerRequestOpenedMoment(booking['createdAt'] ?? booking['scheduledStartAt'])}'),
                 BookingHistoryPill(
                     label: customerServiceOptionPriceLabel(
                   service,
@@ -4915,7 +4915,7 @@ bool isCustomerAppChatVisible(Map<String, dynamic>? booking) {
       !isCustomerClosedBooking(booking);
 }
 
-String formatCustomerScheduleMoment(dynamic value) {
+String formatCustomerRequestOpenedMoment(dynamic value) {
   final raw = value?.toString();
   if (raw == null || raw.isEmpty) {
     return 'Soon';

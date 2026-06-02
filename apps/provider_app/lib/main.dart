@@ -976,7 +976,7 @@ class PartnerJobsCard extends StatelessWidget {
               children: [
                 ProviderRequestTag(
                     label:
-                        'Opened ${formatScheduleMoment(booking['createdAt'] ?? booking['scheduledStartAt'])}'),
+                        'Opened ${formatRequestOpenedMoment(booking['createdAt'] ?? booking['scheduledStartAt'])}'),
                 ProviderRequestTag(
                     label: providerServiceDurationLabel(service)),
                 ProviderRequestTag(label: '${formatCurrency(amount)} VND'),
@@ -1131,7 +1131,7 @@ String formatNextLocationRefresh(DateTime? value) {
   return 'Next refresh in ${diff.inMinutes}m.';
 }
 
-String formatScheduleMoment(dynamic value) {
+String formatRequestOpenedMoment(dynamic value) {
   final raw = value?.toString();
   if (raw == null || raw.isEmpty) {
     return 'Soon';
@@ -1618,7 +1618,7 @@ class OpenBookingCard extends StatelessWidget {
         bookingId.length <= 8 ? bookingId : bookingId.substring(0, 8);
     final updatedLabel =
         formatRelativeMoment(booking['updatedAt'] ?? booking['createdAt']);
-    final scheduledLabel = formatScheduleMoment(
+    final openedLabel = formatRequestOpenedMoment(
         booking['createdAt'] ?? booking['scheduledStartAt']);
     final guidance = providerRequestGuidance(
       booking: booking,
@@ -1705,7 +1705,7 @@ class OpenBookingCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text('Opened: $scheduledLabel'),
+            Text('Opened: $openedLabel'),
             if (customerAddress != null) ...[
               const SizedBox(height: 4),
               Text(
