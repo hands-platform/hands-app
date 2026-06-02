@@ -1010,7 +1010,7 @@ export function BookingMonitor({
                     </div>
                     <div className="stack" style={{ marginTop: 10 }}>
                       <span className="muted">Address: {evidence.addressText}</span>
-                      <span className="muted">Customer GPS: {evidence.currentLocationLabel}</span>
+                      <span className="muted">Optional customer GPS: {evidence.currentLocationLabel}</span>
                       <span className="muted">Booking pin: {evidence.bookingAddressLabel}</span>
                     </div>
                     <div className="actions" style={{ marginTop: 12 }}>
@@ -2773,7 +2773,7 @@ function bookingGateRejectionInfo(log: AdminAuditLog) {
     coordinatePairLabel(
       currentLocation?.latitude ?? currentLocation?.lat ?? metadata.currentLatitude,
       currentLocation?.longitude ?? currentLocation?.lng ?? metadata.currentLongitude,
-    ) ?? 'current GPS not recorded';
+    ) ?? 'optional GPS not recorded';
   const recordedAt =
     readOptionalString(metadata.currentLocationRecordedAt) ??
     readOptionalString(currentLocation?.updatedAt) ??
@@ -2788,7 +2788,7 @@ function bookingGateRejectionInfo(log: AdminAuditLog) {
       readOptionalString(metadata.addressText) ??
       readOptionalString(metadata.bookingAddressText) ??
       'Address not recorded',
-    customerDistanceLabel: formatGateDistance('Customer GPS', customerDistance, customerDistanceLimit),
+    customerDistanceLabel: formatGateDistance('Optional customer GPS', customerDistance, customerDistanceLimit),
     preferredPartnerDistanceLabel: formatGateDistance(
       'First-pick partner',
       preferredPartnerDistance,
@@ -2819,10 +2819,10 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'Legacy customer GPS missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Customer GPS timestamp missing';
+    return 'Optional customer GPS timestamp missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Customer GPS timestamp invalid';
+    return 'Optional customer GPS timestamp invalid';
   }
   return reasonCode.replaceAll('_', ' ').toLowerCase();
 }

@@ -2976,7 +2976,7 @@ function buildCustomerBookingGateAttemptRows(
       const serviceId = readString(metadata.serviceId);
       const distanceParts = [
         customerDistance !== null
-          ? `Customer GPS ${formatDistance(customerDistance)} / limit ${formatDistance(customerDistanceLimit ?? 0)}`
+          ? `Optional customer GPS ${formatDistance(customerDistance)} / limit ${formatDistance(customerDistanceLimit ?? 0)}`
           : null,
         partnerDistance !== null
           ? `First-pick ${formatDistance(partnerDistance)} / limit ${formatDistance(partnerDistanceLimit ?? 0)}`
@@ -2986,7 +2986,7 @@ function buildCustomerBookingGateAttemptRows(
         addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing',
         currentLocationRecordedAt
           ? `GPS proof: ${formatDate(currentLocationRecordedAt)}`
-          : 'No current GPS timestamp',
+          : 'No optional GPS timestamp',
         serviceId ? `Service ${shortId(serviceId)}` : null,
         preferredProviderId ? `First-pick partner ${shortId(preferredProviderId)}` : null,
       ].filter(Boolean);

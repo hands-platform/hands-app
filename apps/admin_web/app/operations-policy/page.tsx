@@ -1688,7 +1688,7 @@ function buildBookingCreateGateReview(
     currentPolicyLabel: distanceGateEnabled ? 'Distance gates active' : 'Distance gates disabled',
     summary: [
       {
-        label: 'Customer GPS evidence',
+        label: 'Optional customer GPS evidence',
         value: `${customerDistanceKm} km`,
         helper: 'Optional evidence only. Booking authority comes from the confirmed service address.',
       },
@@ -1735,7 +1735,7 @@ function buildBookingCreateGateReview(
       },
       {
         key: 'booking.max_customer_current_to_booking_address_km',
-        gate: 'Customer GPS evidence',
+        gate: 'Optional customer GPS evidence',
         current: `${customerDistanceKm} km`,
         defaultValue: '20 km',
         operatorMeaning:
@@ -4396,7 +4396,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         {
           label: 'Legacy GPS rows',
           detail:
-            'Review historical rejected booking attempts where customer current location was recorded too far from the booking address.',
+            'Review historical rejected booking attempts where optional customer GPS evidence looked far from the booking address.',
           href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
         },
         {

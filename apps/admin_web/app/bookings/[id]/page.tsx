@@ -7060,7 +7060,7 @@ function bookingAddressRadiusContract(
           : 'Snapshot and legacy coordinates differ.',
       },
       {
-        label: 'Customer GPS evidence',
+        label: 'Optional customer GPS evidence',
         value: bookingGate.customerDistanceLabel,
         helper: bookingGate.customerDistanceHelper,
       },
@@ -7107,7 +7107,7 @@ function bookingAddressRadiusContract(
         title: 'Booking creation gate',
         status: bookingGate.gatePassed ? 'Gate passed' : 'Needs evidence',
         detail:
-          'Booking creation records customer current GPS, service address, and preferred partner distance before payment and matching open.',
+          'Booking creation records the service address snapshot, optional customer GPS evidence, and preferred partner distance before payment and matching open.',
         action: bookingGate.summary,
         className: bookingGate.gatePassed ? 'ops-task-done' : 'ops-task-warning',
         pillClass: bookingGate.gatePassed ? 'pill-success' : 'pill-warn',
@@ -8172,7 +8172,7 @@ function readBookingGateSnapshot(booking: AdminBookingDetail) {
     customerDistanceLabel,
     customerDistanceHelper: customerRecordedAt
       ? `Optional customer GPS evidence was captured at ${formatDate(customerRecordedAt)} before booking opened.`
-      : 'Address-based bookings may not have customer current GPS metadata.',
+      : 'Address-based bookings may not have optional customer GPS metadata.',
     preferredPartnerDistanceLabel,
     preferredPartnerDistanceHelper:
       preferredDistance === null

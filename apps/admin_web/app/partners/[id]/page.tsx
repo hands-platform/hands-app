@@ -4108,7 +4108,7 @@ function buildPartnerBookingGateAttemptRows(
             )}`
           : null,
         customerDistance !== null
-          ? `Customer GPS ${formatDistance(customerDistance)} / limit ${formatDistance(
+          ? `Optional customer GPS ${formatDistance(customerDistance)} / limit ${formatDistance(
               customerDistanceLimit ?? 0,
             )}`
           : null,
@@ -4116,8 +4116,8 @@ function buildPartnerBookingGateAttemptRows(
       const detailParts = [
         addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing',
         currentLocationRecordedAt
-          ? `Customer GPS proof: ${formatDate(currentLocationRecordedAt)}`
-          : 'No current GPS timestamp',
+          ? `Optional customer GPS proof: ${formatDate(currentLocationRecordedAt)}`
+          : 'No optional GPS timestamp',
         serviceId ? `Service ${shortRecordId(serviceId)}` : null,
         customerProfileId ? `Customer ${shortRecordId(customerProfileId)}` : null,
       ].filter(Boolean);
