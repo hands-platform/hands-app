@@ -251,6 +251,7 @@ const pages = [
       'Handoff date range',
       'Immediate action queue',
       'Unified activity stream',
+      'Export activity CSV',
       'Shift brief',
       'Save handoff note',
       'Latest operator notes',

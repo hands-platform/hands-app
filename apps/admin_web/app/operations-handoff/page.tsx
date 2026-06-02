@@ -12,6 +12,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import { buildCsvDataHref } from '../../lib/csv-export';
 import { addOperationsHandoffNote } from './actions';
 
 const activeBookingStatuses = new Set([
@@ -105,6 +106,18 @@ export default async function OperationsHandoffPage({
       financeRows,
     }),
     filters.range,
+  );
+  const activityStreamCsvHref = buildCsvDataHref(
+    activityStream.map((item) => ({
+      created_at: item.createdAt,
+      relative_time: relativeTime(item.createdAt),
+      area: item.area,
+      source: item.source,
+      record: item.record,
+      summary: item.summary,
+      href: item.href,
+    })),
+    ['created_at', 'relative_time', 'area', 'source', 'record', 'summary', 'href'],
   );
   const handoffChecklist = buildHandoffReadinessChecklist({
     bookings,
@@ -319,6 +332,9 @@ export default async function OperationsHandoffPage({
             </p>
           </div>
           <div className="actions">
+            <a className="text-link" download="hands-operations-handoff-activity.csv" href={activityStreamCsvHref}>
+              Export activity CSV
+            </a>
             <Link className="text-link" href="/audit-log">
               Audit trail
             </Link>
