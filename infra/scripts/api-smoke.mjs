@@ -3155,6 +3155,8 @@ console.log({
   savedSelectedLocationId: savedSelectedLocation.id,
   nearbyProviderDistanceMeters: nearbyProvider.distanceMeters,
   nearbyProviderRecent: nearbyProvider.isRecentLocation,
+  globalBrowsePartnerDistanceMeters: globalBrowseProvider.distanceMeters,
+  globalBrowseKeepsPartnerDiscoveryOpen: true,
   providerProfileImageReady: Boolean(customerProviderDetail.profileImageUrl),
   providerGalleryImageCount: customerProviderDetail.galleryImageUrls.length,
   providerPublicMediaApproved: true,

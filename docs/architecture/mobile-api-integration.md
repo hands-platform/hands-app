@@ -10,6 +10,8 @@ The customer Flutter app now includes:
 - Socket.IO client using JWT handshake auth
 - Service catalog loading from `GET /api/services`
 - Nearby partner loading from `GET /api/customer/partners/nearby`
+- Global app access: when the customer is outside Vietnam or GPS is unavailable, discovery uses a Vietnam service-area browse pin so partner lists remain visible.
+- Booking creation still requires the customer to confirm an exact Vietnam service address pin, which the API stores as an immutable `BookingAddressSnapshot`.
 - Booking creation through `POST /api/customer/bookings`
 - Booking room join after booking creation
 - Realtime UI updates for `provider.joined`, `booking.matched`, `booking.expired`, and `provider.location.updated`
