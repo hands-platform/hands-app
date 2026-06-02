@@ -360,6 +360,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
       tone: bookingCashDebtNeedsSettlement(booking) ? 'pill-danger' : 'pill-success',
     },
   ];
+  const bookingEvidenceBundleRows = buildBookingEvidenceBundleRows({
+    booking,
+    messages,
+    latestLocation,
+    notificationTrace,
+    financeTrace,
+    refundLedgerRows,
+    operatorNoteLines,
+    bookingActivityRecords,
+  });
 
   return (
     <>
@@ -545,6 +555,50 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" id="booking-full-evidence-bundle" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking full evidence bundle</h2>
+            <p className="muted">
+              Single booking command view that ties the customer, partner, address snapshot, chat archive,
+              payment, earning, wallet, location, alerts, and operator notes into one factual bundle.
+            </p>
+          </div>
+          <span className="pill pill-info">{bookingEvidenceBundleRows.length} evidence lane(s)</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Lane</th>
+              <th>Current state</th>
+              <th>Evidence</th>
+              <th>Operator use</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookingEvidenceBundleRows.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                  <p className="muted">{row.recordLabel}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.operatorUse}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" id="connected-operations-records" style={{ marginBottom: 16 }}>
@@ -2714,6 +2768,136 @@ function bookingEvidencePacket({
       },
     ],
   };
+}
+
+function buildBookingEvidenceBundleRows({
+  booking,
+  messages,
+  latestLocation,
+  notificationTrace,
+  financeTrace,
+  refundLedgerRows,
+  operatorNoteLines,
+  bookingActivityRecords,
+}: {
+  booking: AdminBookingDetail;
+  messages: AdminChatMessage[];
+  latestLocation?: AdminLocationSnapshot | null;
+  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
+  financeTrace: ReturnType<typeof bookingFinanceTrace>;
+  refundLedgerRows: BookingRefundLedgerRow[];
+  operatorNoteLines: string[];
+  bookingActivityRecords: BookingActivityRecord[];
+}) {
+  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const acceptedParticipants =
+    booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+      .length ?? 0;
+  const failedAlerts = notificationTrace.rows.filter((row) => row.deliveryStatuses.includes('FAILED')).length;
+  const latestActivity = bookingActivityRecords[0];
+  const addressReady = Boolean(booking.addressSnapshot);
+  const chatReady = Boolean(booking.chatRoom);
+  const hasMoneyTrace = Boolean(booking.payment || booking.earning || refundLedgerRows.length);
+  const hasLocationTrace = Boolean(latestLocation || locationTrail(booking).length);
+
+  return [
+    {
+      lane: 'Customer',
+      recordLabel: booking.customerProfile?.id ? shortId(booking.customerProfile.id) : 'Profile missing',
+      status: booking.customerProfile?.id ? 'Linked' : 'Missing',
+      tone: booking.customerProfile?.id ? 'pill-success' : 'pill-warn',
+      evidence: `${booking.customerProfile?.user?.fullName ?? 'Customer'} / ${
+        booking.customerProfile?.user?.phone ?? 'No phone'
+      }`,
+      operatorUse: 'Open the customer record to review bookings, wallet, addresses, and retained chat history.',
+      href: booking.customerProfile?.id ? `/customers/${booking.customerProfile.id}` : '#customer',
+    },
+    {
+      lane: 'Address',
+      recordLabel: addressReady ? 'BookingAddressSnapshot' : 'Snapshot missing',
+      status: addressReady ? 'Locked' : 'Repair needed',
+      tone: addressReady ? 'pill-success' : 'pill-danger',
+      evidence: `${bookingAddressSnapshotLabel(booking)} / ${bookingDispatchPin(booking).source}`,
+      operatorUse: 'Use this immutable address snapshot for partner radius checks and service evidence.',
+      href: '#address-radius-contract',
+    },
+    {
+      lane: 'Partner',
+      recordLabel: finalPartner?.id ? shortId(finalPartner.id) : 'Selection pending',
+      status: finalPartner?.id ? 'Selected' : `${acceptedParticipants} ready`,
+      tone: finalPartner?.id ? 'pill-success' : acceptedParticipants ? 'pill-warn' : 'pill-info',
+      evidence: finalPartner
+        ? `${providerName(finalPartner)} / ${providerLocationMetricValue(booking)}`
+        : `${booking.participants?.length ?? 0} participant row(s), ${acceptedParticipants} accepted row(s)`,
+      operatorUse: 'Confirm the customer final partner selection and final-gate settlement requirements.',
+      href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
+    },
+    {
+      lane: 'Chat',
+      recordLabel: booking.chatRoom ? shortId(booking.chatRoom.id) : 'No room',
+      status: chatReady ? 'Archived' : 'Missing',
+      tone: chatReady ? 'pill-success' : 'pill-warn',
+      evidence: chatReady
+        ? `${messages.length} retained message(s), latest ${
+            messages[messages.length - 1]?.createdAt ? formatDate(messages[messages.length - 1].createdAt) : 'none'
+          }`
+        : bookingChatRepairNeedsOps(booking)
+          ? 'Matched booking should have a retained chat archive.'
+          : 'Chat opens after customer final partner selection.',
+      operatorUse: 'Use the transcript for service handoff, cancellation, no-show, and refund context.',
+      href: chatReady ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : '#chat',
+    },
+    {
+      lane: 'Money',
+      recordLabel: booking.payment?.id ? shortId(booking.payment.id) : 'No payment row',
+      status: hasMoneyTrace ? booking.payment?.status ?? booking.earning?.status ?? 'Trace loaded' : 'Missing',
+      tone: hasMoneyTrace ? 'pill-info' : 'pill-warn',
+      evidence: `${booking.payment?.method ?? 'NONE'} / customer ${financeTrace.customerPrice} / partner ${
+        financeTrace.providerPayout
+      } / wallet ${financeTrace.walletLedger}`,
+      operatorUse: 'Check payment, earning, tax, fee, refund, payout, and cash settlement records together.',
+      href: '#finance',
+    },
+    {
+      lane: 'Location',
+      recordLabel: latestLocation ? shortId(latestLocation.id) : 'No latest pin',
+      status: hasLocationTrace ? providerLocationMetricValue(booking) : 'Missing',
+      tone: hasLocationTrace ? 'pill-info' : 'pill-neutral',
+      evidence: latestLocation
+        ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
+        : `Customer pin ${bookingDispatchPin(booking).label}`,
+      operatorUse: 'Use location rows only as operational history; routing and live tracking are not required for MVP.',
+      href: '#location',
+    },
+    {
+      lane: 'Alerts',
+      recordLabel: `${notificationTrace.rows.length} notification row(s)`,
+      status: failedAlerts ? `${failedAlerts} failed` : 'Loaded',
+      tone: failedAlerts ? 'pill-warn' : notificationTrace.rows.length ? 'pill-info' : 'pill-neutral',
+      evidence: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} partner alert(s), ${
+        notificationTrace.backupBatches.length
+      } marketplace batch(es)`,
+      operatorUse: 'Check whether customer and partner app notifications were created, delivered, read, or retried.',
+      href: `/notifications?booking=${encodeURIComponent(booking.id)}`,
+    },
+    {
+      lane: 'Operator trail',
+      recordLabel: `${bookingActivityRecords.length} event(s)`,
+      status: operatorNoteLines.length || latestActivity ? 'Retained' : 'Empty',
+      tone: operatorNoteLines.length || latestActivity ? 'pill-success' : 'pill-neutral',
+      evidence: latestActivity
+        ? `${latestActivity.title} / ${formatDate(latestActivity.at)}`
+        : operatorNoteLines[operatorNoteLines.length - 1] ?? 'No operator trail loaded',
+      operatorUse: 'Use notes and audit rows before manual closeout, no-show, refund, or settlement actions.',
+      href: '#booking-activity',
+    },
+  ];
+}
+
+function bookingChatRepairNeedsOps(booking: AdminBookingDetail) {
+  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
+    booking.status,
+  ) && !booking.chatRoom;
 }
 
 function bookingHandoffChecklist(

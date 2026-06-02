@@ -686,6 +686,7 @@ if (bookingLinkMatch) {
     'Operator action availability',
     'Booking recent operations timeline',
     'Evidence packet for admin decision',
+    'Booking full evidence bundle',
     'Connected operations records',
     'Chat evidence',
     'Location evidence',
