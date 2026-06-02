@@ -37,6 +37,11 @@ const ACTIVE_STATUSES = [
   'IN_SERVICE',
 ];
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
+const DETAIL_ACTIVITY_ORDER_OPTIONS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+] as const;
+type DetailActivityOrder = (typeof DETAIL_ACTIVITY_ORDER_OPTIONS)[number]['value'];
 
 const CUSTOMER_ACTIVITY_TYPE_OPTIONS = [
   { value: 'all', label: 'All event types', types: [] },
@@ -60,6 +65,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const detailSearchParams = searchParams ? await searchParams : {};
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, CUSTOMER_ACTIVITY_TYPE_OPTIONS);
+  const activityOrder = readDetailActivityOrder(detailSearchParams);
   const customer = await adminGet<AdminCustomerDetail | null>(`/admin/customers/${id}`, null);
 
   if (!customer) {
@@ -110,15 +116,21 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       readChatMessages(booking).some((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
     );
   });
-  const filteredCustomerActivityRecords = customerActivityRecords.filter(
-    (record) =>
-      isWithinDetailDateFilter(record.at, dateFilters) &&
-      isWithinDetailActivityType(record.type, activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS),
+  const filteredCustomerActivityRecords = orderCustomerActivityRecords(
+    customerActivityRecords.filter(
+      (record) =>
+        isWithinDetailDateFilter(record.at, dateFilters) &&
+        isWithinDetailActivityType(record.type, activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS),
+    ),
+    activityOrder,
   );
   const customerBookingEvidenceRows = buildCustomerBookingEvidenceRows(filteredBookings);
   const customerBookingJourneyRows = buildCustomerBookingJourneyRows(filteredBookings);
   const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
-  const customerDailyActivityDigest = buildCustomerDailyActivityDigest(filteredCustomerActivityRecords);
+  const customerDailyActivityDigest = buildCustomerDailyActivityDigest(
+    filteredCustomerActivityRecords,
+    activityOrder,
+  );
   const filteredNotifications = notifications.filter((notification) =>
     isWithinDetailDateFilter(notification.createdAt, dateFilters),
   );
@@ -824,6 +836,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             <span className="pill pill-neutral">
               {detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}
             </span>
+            <span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>
           </div>
         </div>
         <form className="form-grid" action={`/customers/${customer.id}`} style={{ marginTop: 14 }}>
@@ -841,6 +854,16 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             Record type
             <select name="type" defaultValue={activityType}>
               {CUSTOMER_ACTIVITY_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Sort order
+            <select name="order" defaultValue={activityOrder}>
+              {DETAIL_ACTIVITY_ORDER_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -1533,6 +1556,24 @@ type CustomerBookingGateAttemptRow = {
   auditHref: string;
   tone: string;
 };
+
+function readDetailActivityOrder(params: Record<string, string | string[] | undefined>): DetailActivityOrder {
+  const value = Array.isArray(params.order) ? params.order[0] : params.order;
+  return value === 'oldest' ? 'oldest' : 'newest';
+}
+
+function activityOrderLabel(order: DetailActivityOrder) {
+  return DETAIL_ACTIVITY_ORDER_OPTIONS.find((option) => option.value === order)?.label ?? 'Newest first';
+}
+
+function orderCustomerActivityRecords<T extends { at?: string | null }>(
+  records: T[],
+  order: DetailActivityOrder,
+) {
+  return [...records].sort((left, right) =>
+    order === 'oldest' ? dateMs(left.at) - dateMs(right.at) : dateMs(right.at) - dateMs(left.at),
+  );
+}
 
 function CustomerOperatorCommandAction({
   customerId,
@@ -2663,8 +2704,8 @@ function buildCustomerActivitySummary(
   records: Array<{ id: string; type: string; at: string; title: string; detail: string }>,
 ) {
   const count = (types: string[]) => records.filter((record) => types.includes(record.type)).length;
-  const latestAt = records[0]?.at;
-  const oldestAt = records[records.length - 1]?.at;
+  const latestAt = orderCustomerActivityRecords(records, 'newest')[0]?.at;
+  const oldestAt = orderCustomerActivityRecords(records, 'oldest')[0]?.at;
 
   return [
     {
@@ -2700,7 +2741,10 @@ function buildCustomerActivitySummary(
   ];
 }
 
-function buildCustomerDailyActivityDigest(records: CustomerActivityRecord[]): CustomerDailyActivityDigest[] {
+function buildCustomerDailyActivityDigest(
+  records: CustomerActivityRecord[],
+  order: DetailActivityOrder = 'newest',
+): CustomerDailyActivityDigest[] {
   const grouped = new Map<string, CustomerActivityRecord[]>();
 
   for (const record of records) {
@@ -2710,19 +2754,20 @@ function buildCustomerDailyActivityDigest(records: CustomerActivityRecord[]): Cu
   }
 
   return [...grouped.entries()]
-    .sort(([left], [right]) => right.localeCompare(left))
+    .sort(([left], [right]) => (order === 'oldest' ? left.localeCompare(right) : right.localeCompare(left)))
     .slice(0, 14)
     .map(([key, dayRecords]) => {
       const typeCounts = [...countActivityTypes(dayRecords).entries()]
         .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
         .map(([type, count]) => ({ type, count }));
-      const sortedRecords = [...dayRecords].sort((left, right) => dateMs(right.at) - dateMs(left.at));
+      const newestRecords = orderCustomerActivityRecords(dayRecords, 'newest');
+      const sortedRecords = orderCustomerActivityRecords(dayRecords, order);
 
       return {
         key,
         label: formatActivityDateLabel(key),
         total: dayRecords.length,
-        latestAt: sortedRecords[0]?.at,
+        latestAt: newestRecords[0]?.at,
         typeCounts,
         highlights: sortedRecords.slice(0, 4),
       };

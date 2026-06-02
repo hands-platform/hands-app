@@ -135,6 +135,11 @@ const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
+const DETAIL_ACTIVITY_ORDER_OPTIONS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+] as const;
+type DetailActivityOrder = (typeof DETAIL_ACTIVITY_ORDER_OPTIONS)[number]['value'];
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10_000,
@@ -222,6 +227,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const detailSearchParams = searchParams ? await searchParams : {};
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, PARTNER_ACTIVITY_TYPE_OPTIONS);
+  const activityOrder = readDetailActivityOrder(detailSearchParams);
   const [provider, operationalPolicies] = await Promise.all([
     adminGet<ProviderDetail | null>(`/admin/partners/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
@@ -267,17 +273,26 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
   const partnerBookingArchive = buildPartnerBookingArchive(provider);
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
-  const filteredPartnerBookingArchive = partnerBookingArchive.filter((record) =>
-    isWithinDetailDateFilter(record.booking.scheduledStartAt ?? record.booking.createdAt, dateFilters),
+  const filteredPartnerBookingArchive = orderPartnerBookingArchive(
+    partnerBookingArchive.filter((record) =>
+      isWithinDetailDateFilter(record.booking.scheduledStartAt ?? record.booking.createdAt, dateFilters),
+    ),
+    activityOrder,
   );
   const partnerBookingEvidenceRows = buildPartnerBookingEvidenceRows(provider, filteredPartnerBookingArchive);
-  const filteredPartnerActivityRecords = partnerActivityRecords.filter(
-    (record) =>
-      isWithinDetailDateFilter(record.at, dateFilters) &&
-      isWithinDetailActivityType(record.type, activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
+  const filteredPartnerActivityRecords = orderPartnerActivityRecords(
+    partnerActivityRecords.filter(
+      (record) =>
+        isWithinDetailDateFilter(record.at, dateFilters) &&
+        isWithinDetailActivityType(record.type, activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
+    ),
+    activityOrder,
   );
   const partnerActivitySummary = buildPartnerActivitySummary(filteredPartnerActivityRecords);
-  const partnerDailyActivityDigest = buildPartnerDailyActivityDigest(filteredPartnerActivityRecords);
+  const partnerDailyActivityDigest = buildPartnerDailyActivityDigest(
+    filteredPartnerActivityRecords,
+    activityOrder,
+  );
   const partnerMasterFacts = buildPartnerMasterFacts(
     provider,
     partnerBookingArchive,
@@ -1036,6 +1051,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <span className="pill pill-neutral">
               {detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS)}
             </span>
+            <span className="pill pill-neutral">{activityOrderLabel(activityOrder)}</span>
           </div>
         </div>
         <form className="form-grid" action={`/partners/${provider.id}`} style={{ marginTop: 14 }}>
@@ -1053,6 +1069,16 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             Record type
             <select name="type" defaultValue={activityType}>
               {PARTNER_ACTIVITY_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Sort order
+            <select name="order" defaultValue={activityOrder}>
+              {DETAIL_ACTIVITY_ORDER_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
@@ -2768,6 +2794,34 @@ type PartnerOperatorCommand = {
     | { type: 'approve-tax'; label: string };
 };
 
+function readDetailActivityOrder(params: Record<string, string | string[] | undefined>): DetailActivityOrder {
+  const value = Array.isArray(params.order) ? params.order[0] : params.order;
+  return value === 'oldest' ? 'oldest' : 'newest';
+}
+
+function activityOrderLabel(order: DetailActivityOrder) {
+  return DETAIL_ACTIVITY_ORDER_OPTIONS.find((option) => option.value === order)?.label ?? 'Newest first';
+}
+
+function orderPartnerActivityRecords<T extends { at?: string | null }>(
+  records: T[],
+  order: DetailActivityOrder,
+) {
+  return [...records].sort((left, right) =>
+    order === 'oldest' ? dateValue(left.at) - dateValue(right.at) : dateValue(right.at) - dateValue(left.at),
+  );
+}
+
+function orderPartnerBookingArchive(records: PartnerBookingArchiveRecord[], order: DetailActivityOrder) {
+  return [...records].sort((left, right) => {
+    const leftAt = left.booking.scheduledStartAt ?? left.booking.createdAt;
+    const rightAt = right.booking.scheduledStartAt ?? right.booking.createdAt;
+    return order === 'oldest'
+      ? dateValue(leftAt) - dateValue(rightAt)
+      : dateValue(rightAt) - dateValue(leftAt);
+  });
+}
+
 function partnerActivityRecordHref(record: PartnerActivityRecord) {
   if (['BOOKING', 'CHAT'].includes(record.type)) return '#booking-chat-records';
   if (['EARNING', 'PAYOUT'].includes(record.type)) return '#payout';
@@ -3710,8 +3764,8 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     'OPS',
   ]);
   const count = (predicate: (record: PartnerActivityRecord) => boolean) => records.filter(predicate).length;
-  const latestAt = records[0]?.at;
-  const oldestAt = records[records.length - 1]?.at;
+  const latestAt = orderPartnerActivityRecords(records, 'newest')[0]?.at;
+  const oldestAt = orderPartnerActivityRecords(records, 'oldest')[0]?.at;
 
   return [
     {
@@ -3752,7 +3806,10 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
   ];
 }
 
-function buildPartnerDailyActivityDigest(records: PartnerActivityRecord[]): PartnerDailyActivityDigest[] {
+function buildPartnerDailyActivityDigest(
+  records: PartnerActivityRecord[],
+  order: DetailActivityOrder = 'newest',
+): PartnerDailyActivityDigest[] {
   const grouped = new Map<string, PartnerActivityRecord[]>();
 
   for (const record of records) {
@@ -3762,19 +3819,20 @@ function buildPartnerDailyActivityDigest(records: PartnerActivityRecord[]): Part
   }
 
   return [...grouped.entries()]
-    .sort(([left], [right]) => right.localeCompare(left))
+    .sort(([left], [right]) => (order === 'oldest' ? left.localeCompare(right) : right.localeCompare(left)))
     .slice(0, 14)
     .map(([key, dayRecords]) => {
       const typeCounts = [...countPartnerActivityTypes(dayRecords).entries()]
         .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
         .map(([type, count]) => ({ type, count }));
-      const sortedRecords = [...dayRecords].sort((left, right) => dateValue(right.at) - dateValue(left.at));
+      const newestRecords = orderPartnerActivityRecords(dayRecords, 'newest');
+      const sortedRecords = orderPartnerActivityRecords(dayRecords, order);
 
       return {
         key,
         label: formatPartnerActivityDateLabel(key),
         total: dayRecords.length,
-        latestAt: sortedRecords[0]?.at,
+        latestAt: newestRecords[0]?.at,
         typeCounts,
         highlights: sortedRecords.slice(0, 4),
       };
