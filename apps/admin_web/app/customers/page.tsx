@@ -72,6 +72,10 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       in_app_now: row.isLive,
       chat_room_count: row.chatRooms,
       payment_issue_count: row.paymentIssues,
+      latest_session_device: row.latestSessionDevice,
+      latest_session_platform: row.latestSessionPlatform,
+      latest_session_ip: row.latestSessionIp,
+      latest_session_app_version: row.latestSessionAppVersion,
       frequent_service: row.commonService,
       frequent_area: row.commonArea,
       repeated_partner: row.commonPartner,
@@ -110,6 +114,10 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       'in_app_now',
       'chat_room_count',
       'payment_issue_count',
+      'latest_session_device',
+      'latest_session_platform',
+      'latest_session_ip',
+      'latest_session_app_version',
       'frequent_service',
       'frequent_area',
       'repeated_partner',
@@ -466,6 +474,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
                 <th>Repeated partner</th>
                 <th>Closed / no-show</th>
                 <th>Total paid</th>
+                <th>Device / IP</th>
                 <th>Ops trail</th>
                 <th>Memo</th>
                 <th>Addresses</th>
@@ -529,6 +538,10 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
                     <p className="muted">{formatMoney(row.refundAmount)} refunded</p>
                   </td>
                   <td>
+                    <strong>{row.latestSessionDevice}</strong>
+                    <p className="muted">{row.latestSessionIp}</p>
+                  </td>
+                  <td>
                     <strong>{row.chatRooms} chat room(s)</strong>
                     <p className="muted">
                       {row.paymentIssues} payment follow-up / {row.memoCount} memo(s)
@@ -548,7 +561,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
               ))}
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={16}>
+                  <td colSpan={17}>
                     <strong>No customers found</strong>
                     <p className="muted">Change the filters or clear search to view customer records.</p>
                   </td>
@@ -842,7 +855,8 @@ function buildCustomerRow(customer: AdminCustomer) {
       .filter((label) => label !== 'No address'),
   );
   const commonPartner = mostCommonLabel(bookings.map((booking) => bookingPartnerLabel(booking)));
-  const lastSeenAt = customer.user?.appSessions?.[0]?.lastSeenAt;
+  const latestSession = customer.user?.appSessions?.[0];
+  const lastSeenAt = latestSession?.lastSeenAt;
   const isLive = Boolean(lastSeenAt && Date.now() - dateMs(lastSeenAt) <= 30 * 60_000);
   const pushReachable = Boolean(customer.user?.pushDevices?.some((device) => device.enabled));
   const latestMemo = [...(customer.auditLogs ?? [])].sort(
@@ -894,6 +908,10 @@ function buildCustomerRow(customer: AdminCustomer) {
     commonArea: commonArea ?? 'No repeated area',
     commonPartner: commonPartner ?? 'Not enough bookings',
     lastSeenAt,
+    latestSessionDevice: sessionDeviceLabel(latestSession),
+    latestSessionPlatform: latestSession?.platform ?? 'Unknown platform',
+    latestSessionIp: latestSession?.ipAddress ?? 'No IP recorded',
+    latestSessionAppVersion: latestSession?.appVersion ?? 'No app version',
     isLive,
     pushReachable,
     paymentIssues,
@@ -1014,6 +1032,13 @@ function bookingAddressLabel(booking: NonNullable<AdminCustomer['bookings']>[num
     stringifyAddress(booking.address) ??
     'No address'
   );
+}
+
+function sessionDeviceLabel(session?: NonNullable<NonNullable<AdminCustomer['user']>['appSessions']>[number]) {
+  if (!session) return 'No session';
+  const platform = session.platform ?? 'Unknown platform';
+  const appVersion = session.appVersion ? `v${session.appVersion}` : 'No app version';
+  return `${platform} / ${appVersion} / ${compactText(session.deviceId, 18)}`;
 }
 
 function mostCommonLabel(values: string[]) {
