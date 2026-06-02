@@ -22,6 +22,10 @@ const REQUIRED_PUBLIC_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_BACK,
   ProviderDocumentType.SELFIE,
 ];
+const DEFAULT_BROWSE_COORDINATE = {
+  lat: 10.7769,
+  lng: 106.7009,
+};
 
 @Injectable()
 export class ProvidersService {
@@ -32,7 +36,7 @@ export class ProvidersService {
   ) {}
 
   async findNearby(lat: number, lng: number) {
-    assertCoordinate(lat, lng, 'lat and lng query params are required');
+    const origin = normalizeBrowseCoordinate(lat, lng);
 
     const staleAfterMinutes = Number(this.config.get<string>('PROVIDER_STALE_AFTER_MINUTES') ?? 30);
     const hideAfterHours = Number(this.config.get<string>('PROVIDER_HIDE_AFTER_HOURS') ?? 24);
@@ -108,7 +112,12 @@ export class ProvidersService {
     return providers
       .map((provider) => {
         const distanceMeters = roundTo100Meters(
-          haversineMeters(lat, lng, Number(provider.currentLat), Number(provider.currentLng)),
+          haversineMeters(
+            origin.lat,
+            origin.lng,
+            Number(provider.currentLat),
+            Number(provider.currentLng),
+          ),
         );
         const currentLocationUpdatedAt = provider.currentLocationUpdatedAt?.toISOString() ?? null;
         const bookableSummary = providerPublicBookableServiceSummary(provider.services);
@@ -512,10 +521,21 @@ function assertVietnamCoordinate(lat: number, lng: number, message: string) {
   }
 }
 
+function normalizeBrowseCoordinate(lat: number, lng: number) {
+  if (isValidCoordinate(lat, lng)) {
+    return { lat, lng };
+  }
+  return DEFAULT_BROWSE_COORDINATE;
+}
+
 function assertCoordinate(lat: number, lng: number, message: string) {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+  if (!isValidCoordinate(lat, lng)) {
     throw new BadRequestException(message);
   }
+}
+
+function isValidCoordinate(lat: number, lng: number) {
+  return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 }
 
 function assertProviderNotBlocked(provider: { blockedAt: Date | null; blockedReason: string | null }) {

@@ -1312,12 +1312,16 @@ const nearbyPartners = await getJson(
   '/customer/partners/nearby?lat=10.7769&lng=106.7009',
   customerAuth.accessToken,
 );
+const noCoordinateBrowseProviders = await getJson('/customer/partners/nearby', customerAuth.accessToken);
 const nearbyProvider = nearbyProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
 if (!nearbyProvider?.currentLocationUpdatedAt || nearbyProvider.isRecentLocation !== true) {
   throw new Error(`Nearby provider payload is missing freshness metadata: ${JSON.stringify(nearbyProvider)}`);
 }
 if (!nearbyPartners.some((item) => item.id === providerAuth.user.providerProfile.id)) {
   throw new Error(`Customer partner alias nearby search did not include the expected partner.`);
+}
+if (!noCoordinateBrowseProviders.some((item) => item.id === providerAuth.user.providerProfile.id)) {
+  throw new Error(`Customer partner browse without GPS coordinates should use the default browse origin.`);
 }
 if (
   !nearbyProvider.profileImageUrl ||
