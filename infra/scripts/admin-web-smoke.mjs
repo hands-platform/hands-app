@@ -761,6 +761,8 @@ if (bookingLinkMatch) {
     'Evidence packet for admin decision',
     'Chat evidence decision board',
     'Retained chat evidence is the first place operators should look',
+    'Manual outcome decision readiness',
+    'Decision note presets',
     'Booking full evidence bundle',
     'Connected operations records',
     'Chat evidence',
