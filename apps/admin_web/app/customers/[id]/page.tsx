@@ -118,6 +118,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   });
   const customerChatRetentionRows = buildCustomerChatRetentionRows(filteredBookings);
   const customerChatRetentionSummary = buildCustomerChatRetentionSummary(customerChatRetentionRows);
+  const customerBookingOpsLedgerRows = buildCustomerBookingOpsLedgerRows(filteredBookings);
   const filteredCustomerActivityRecords = orderCustomerActivityRecords(
     customerActivityRecords.filter(
       (record) =>
@@ -1262,6 +1263,70 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         ) : null}
       </section>
 
+      <section className="card" id="customer-booking-ops-ledger" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operations note ledger</h2>
+            <p className="muted">
+              Booking-level notes, manual closeout context, and staff tasks linked to this customer. This is
+              factual operator history for support follow-up and evidence review.
+            </p>
+          </div>
+          <span className="pill pill-info">{customerBookingOpsLedgerRows.length} booking note row(s)</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Booking</th>
+              <th>Partner</th>
+              <th>Manual notes</th>
+              <th>Staff tasks</th>
+              <th>Closeout context</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customerBookingOpsLedgerRows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.bookingLabel}</strong>
+                  <p className="muted">{row.serviceLabel}</p>
+                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
+                </td>
+                <td>{row.partnerLabel}</td>
+                <td>
+                  <strong>{row.noteStatus}</strong>
+                  <p className="muted">{row.noteDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.taskStatus}</strong>
+                  <p className="muted">{row.taskDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.closeoutStatus}</strong>
+                  <p className="muted">{row.closeoutDetail}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={row.bookingHref}>
+                    Booking
+                  </Link>
+                  {row.chatHref ? (
+                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      Chat
+                    </Link>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {customerBookingOpsLedgerRows.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No booking-level operation notes or staff tasks matched this customer date filter.
+          </p>
+        ) : null}
+      </section>
+
       <section className="card" id="chat-history" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
@@ -1626,6 +1691,21 @@ type CustomerChatRetentionRow = {
   requiresRoom: boolean;
   messageCount: number;
   mobileHidden: boolean;
+};
+type CustomerBookingOpsLedgerRow = {
+  id: string;
+  bookingLabel: string;
+  serviceLabel: string;
+  status: string;
+  partnerLabel: string;
+  noteStatus: string;
+  noteDetail: string;
+  taskStatus: string;
+  taskDetail: string;
+  closeoutStatus: string;
+  closeoutDetail: string;
+  bookingHref: string;
+  chatHref?: string;
 };
 
 type CustomerOperatingLedgerRow = {
@@ -3137,6 +3217,59 @@ function buildCustomerBookingJourneyRows(bookings: AdminBookingDetail[]): Custom
       ],
     };
   });
+}
+
+function buildCustomerBookingOpsLedgerRows(bookings: AdminBookingDetail[]): CustomerBookingOpsLedgerRow[] {
+  return bookings
+    .filter((booking) => {
+      return (
+        Boolean(booking.notes?.trim()) ||
+        (booking.opsTasks?.length ?? 0) > 0 ||
+        Boolean(booking.closedAt || booking.closedReason || booking.closedNote)
+      );
+    })
+    .slice(0, 40)
+    .map((booking) => {
+      const tasks = [...(booking.opsTasks ?? [])].sort(
+        (left, right) => dateMs(right.updatedAt) - dateMs(left.updatedAt),
+      );
+      const latestTask = tasks[0];
+      const latestNote = latestCustomerBookingManualNote(booking.notes);
+
+      return {
+        id: booking.id,
+        bookingLabel: `${shortId(booking.id)} / ${formatDate(
+          booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt,
+        )}`,
+        serviceLabel: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
+        status: booking.status,
+        partnerLabel: bookingPartnerDisplayName(booking),
+        noteStatus: latestNote ? 'Manual note saved' : 'No manual note',
+        noteDetail: latestNote ?? 'No booking-level staff note has been saved for this reservation.',
+        taskStatus: tasks.length ? `${tasks.length} task row(s)` : 'No staff task',
+        taskDetail: latestTask
+          ? `${latestTask.status} ${latestTask.type} / ${latestTask.note ?? 'No task note'} / ${
+              latestTask.actor?.fullName ?? latestTask.actor?.phone ?? 'System'
+            }`
+          : 'No linked booking operation task is loaded.',
+        closeoutStatus: booking.closedAt ? 'Closed by operator flow' : 'Not closed',
+        closeoutDetail: booking.closedAt
+          ? `${formatDate(booking.closedAt)} / ${bookingClosureLabel(booking)}`
+          : 'No cancellation, no-show, refund, or closeout decision is saved.',
+        bookingHref: `/bookings/${booking.id}`,
+        chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
+      };
+    });
+}
+
+function latestCustomerBookingManualNote(notes?: string | null) {
+  if (!notes?.trim()) return null;
+  const lines = notes
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const latest = lines[lines.length - 1];
+  return latest ? compactText(latest, 180) : null;
 }
 
 function buildCustomerChatRetentionRows(bookings: AdminBookingDetail[]): CustomerChatRetentionRow[] {
