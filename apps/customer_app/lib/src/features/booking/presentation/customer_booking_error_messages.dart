@@ -1,0 +1,63 @@
+import '../../../core/api_client.dart';
+
+String customerBookingErrorMessage(Object exception) {
+  final message = _apiMessage(exception);
+  final normalized = message.toLowerCase();
+
+  if (normalized.contains('booking address must be inside vietnam')) {
+    return 'This address is outside the current HANDS service area. You can browse partners from anywhere, but booking must use a Vietnam service address.';
+  }
+  if (normalized.contains('recent customer current location is required') ||
+      normalized.contains('current location timestamp is required')) {
+    return 'Please refresh your current GPS before booking. You can still browse partners from anywhere.';
+  }
+  if (normalized.contains('current location timestamp is invalid')) {
+    return 'Please refresh your current GPS again before booking.';
+  }
+  if (normalized.contains('current location must be refreshed within')) {
+    return 'Your GPS check is too old. Refresh your current location, then try booking again.';
+  }
+  if (normalized.contains('customer current location must be within')) {
+    return 'Your current GPS is too far from the service address. Move the service pin closer to where you are, or refresh GPS at the service address.';
+  }
+  if (normalized.contains('preferred partner must be within')) {
+    return 'This partner is too far from the service address for first-pick booking. Choose a closer partner or adjust the service address.';
+  }
+  if (normalized.contains('booking address text is required')) {
+    return 'Please enter or confirm the service address before booking.';
+  }
+  if (normalized.contains('selected customer location was not found')) {
+    return 'Please choose the service location again before booking.';
+  }
+  if (normalized.contains('partner does not offer this service')) {
+    return 'This partner does not currently offer the selected service. Choose another service or partner.';
+  }
+  if (normalized.contains('partner verification is not approved') ||
+      normalized.contains('partner is not available') ||
+      normalized.contains('provider verification is not approved') ||
+      normalized.contains('provider is not available')) {
+    return 'This partner is not available for booking right now. Please choose another partner.';
+  }
+
+  if (message.isNotEmpty && !message.startsWith('ApiException(')) {
+    return message;
+  }
+  return 'Booking could not be created. Please check the address and try again.';
+}
+
+String _apiMessage(Object exception) {
+  if (exception is ApiException) {
+    final message = exception.body['message'];
+    if (message is String) {
+      return message;
+    }
+    if (message is List) {
+      return message.whereType<String>().join(' ');
+    }
+    final error = exception.body['error'];
+    if (error is String) {
+      return error;
+    }
+  }
+  return exception.toString();
+}

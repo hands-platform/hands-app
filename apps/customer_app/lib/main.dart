@@ -7,6 +7,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'src/app_state.dart';
 import 'src/core/app_config.dart';
 import 'src/core/realtime_socket.dart';
+import 'src/features/booking/presentation/customer_booking_error_messages.dart';
 
 void main() {
   runApp(const ProviderScope(child: CustomerApp()));
@@ -1871,7 +1872,7 @@ class _BookingConfirmationPageState
         Navigator.of(context).pop(booking);
       }
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = customerBookingErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => submitting = false);
