@@ -54,7 +54,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
                 : 'pill-success'
             }`}
           >
-            {commandBoard.reduce((sum, item) => sum + item.refunds.length, 0)} refund signal(s)
+            {commandBoard.reduce((sum, item) => sum + item.refunds.length, 0)} refund record(s)
           </span>
         </div>
         <div className="ops-task-grid">

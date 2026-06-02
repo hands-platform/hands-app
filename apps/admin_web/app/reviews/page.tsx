@@ -51,7 +51,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
                 : 'pill-success'
             }`}
           >
-            {commandBoard.reduce((sum, item) => sum + item.reviews.length, 0)} feedback signal(s)
+            {commandBoard.reduce((sum, item) => sum + item.reviews.length, 0)} feedback record(s)
           </span>
         </div>
         <div className="ops-task-grid">
@@ -84,7 +84,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
           <div>
             <h2>Feedback operation filters</h2>
             <p className="muted">
-              Moderation board for guest feedback, dispute signals, and service recovery records.
+              Moderation board for guest feedback, dispute records, and service recovery records.
             </p>
             {activeFilter?.review ? (
               <p className="muted">
@@ -121,7 +121,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
               <th>Partner</th>
               <th>Customer</th>
               <th>Status</th>
-              <th>Ops signal</th>
+              <th>Ops record</th>
               <th>Comment</th>
               <th>Action</th>
             </tr>

@@ -72,7 +72,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                 : 'pill-success'
             }`}
           >
-            {commandBoard.reduce((sum, item) => sum + item.logs.length, 0)} audit signal(s)
+            {commandBoard.reduce((sum, item) => sum + item.logs.length, 0)} audit record(s)
           </span>
         </div>
         <div className="ops-task-grid">
@@ -174,7 +174,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
               <th>Actor</th>
               <th>Target</th>
               <th>Related board</th>
-              <th>Ops signal</th>
+              <th>Ops record</th>
               <th>Metadata</th>
             </tr>
           </thead>

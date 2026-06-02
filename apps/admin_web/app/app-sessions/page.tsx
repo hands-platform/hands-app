@@ -380,7 +380,7 @@ function buildSessionCommandCards(
 
   return [
     {
-      title: 'Customer demand signal',
+      title: 'Customer demand records',
       value: `${liveCustomers.length} live`,
       status: liveCustomers.length ? 'ACTIVE' : 'QUIET',
       detail: `${recentCustomers.length} customer session(s) were seen recently but are not live now.`,
@@ -390,7 +390,7 @@ function buildSessionCommandCards(
       tone: liveCustomers.length ? 'ops-task-pending' : 'ops-task-done',
     },
     {
-      title: 'Partner supply signal',
+      title: 'Partner supply records',
       value: `${livePartners.length} live`,
       status: livePartners.length ? 'AVAILABLE' : 'LOW SUPPLY',
       detail: `${recentPartners.length} partner session(s) were recently active but not live now.`,
