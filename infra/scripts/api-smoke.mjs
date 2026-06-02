@@ -1316,11 +1316,22 @@ if (customerPartnerDetail.id !== customerProviderDetail.id) {
   throw new Error(`Customer partner alias detail returned a different partner.`);
 }
 
-await expectRequestFailure(
-  'Out-of-country provider search',
-  () => getJson('/customer/providers/nearby?lat=0&lng=0', customerAuth.accessToken),
-  400,
+const globalBrowseProviders = await getJson(
+  '/customer/providers/nearby?lat=37.5665&lng=126.9780',
+  customerAuth.accessToken,
 );
+const globalBrowseProvider = globalBrowseProviders.find((item) => item.id === providerAuth.user.providerProfile.id);
+if (
+  !globalBrowseProvider ||
+  typeof globalBrowseProvider.distanceMeters !== 'number' ||
+  globalBrowseProvider.distanceMeters < 1_000_000
+) {
+  throw new Error(
+    `Customer should be able to browse partners globally with long distance metadata: ${JSON.stringify(
+      globalBrowseProvider,
+    )}`,
+  );
+}
 
 await expectRequestFailure(
   'Booking address text is required for immutable dispatch snapshot',

@@ -32,9 +32,8 @@ export class ProvidersService {
   ) {}
 
   async findNearby(lat: number, lng: number) {
-    assertVietnamCoordinate(lat, lng, 'lat and lng query params are required');
+    assertCoordinate(lat, lng, 'lat and lng query params are required');
 
-    const radiusMeters = Number(this.config.get<string>('PROVIDER_SEARCH_RADIUS_METERS') ?? 10000);
     const staleAfterMinutes = Number(this.config.get<string>('PROVIDER_STALE_AFTER_MINUTES') ?? 30);
     const hideAfterHours = Number(this.config.get<string>('PROVIDER_HIDE_AFTER_HOURS') ?? 24);
     const hideBefore = new Date(Date.now() - hideAfterHours * 60 * 60_000);
@@ -126,7 +125,6 @@ export class ProvidersService {
             : false,
         };
       })
-      .filter((provider) => provider.distanceMeters <= radiusMeters)
       .sort((a, b) => a.distanceMeters - b.distanceMeters || a.status.localeCompare(b.status));
   }
 
@@ -508,7 +506,14 @@ export class ProvidersService {
 }
 
 function assertVietnamCoordinate(lat: number, lng: number, message: string) {
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !isVietnamCoordinate(lat, lng)) {
+  assertCoordinate(lat, lng, message);
+  if (!isVietnamCoordinate(lat, lng)) {
+    throw new BadRequestException(message);
+  }
+}
+
+function assertCoordinate(lat: number, lng: number, message: string) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     throw new BadRequestException(message);
   }
 }
