@@ -85,4 +85,4 @@ node .\infra\scripts\check-secret-leaks.mjs
 git diff --check
 ```
 
-The admin smoke test includes markers for the required dashboard KPIs so accidental removal of key operating signals is caught early.
+The admin smoke test includes markers for the required dashboard KPIs so accidental removal of key operating records is caught early.
