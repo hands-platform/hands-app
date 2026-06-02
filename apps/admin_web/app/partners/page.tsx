@@ -218,6 +218,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const dailyActionQueue = buildPartnerDailyActionQueue(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
   const filterSummary = buildPartnerFilterSummary(providers, allProviders, opsPolicy, activeFilters.length);
+  const partnerExportFilterLabel =
+    activeFilters.length > 0 ? activeFilters.map((filter) => filter.label).join(' | ') : 'All partners';
+  const partnerExportFileSlug = buildPartnerExportSlug(filters);
   const partnerOperationRows = visibleProviders.map((provider) =>
     buildPartnerOperationRow(provider, opsPolicy),
   );
@@ -226,6 +229,12 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     const master = buildPartnerMasterRow(provider, opsPolicy);
     const operations = buildPartnerOperationRow(provider, opsPolicy);
     return {
+      export_filter: partnerExportFilterLabel,
+      export_sort: partnerSortLabel(filters.sort),
+      search_filter: filters.q ? 'Applied' : 'None',
+      booking_flow_filter: filters.bookingFlow ? partnerBookingFlowFilterLabel(filters.bookingFlow) : 'All',
+      review_filter: filters.review ? partnerReviewFilterLabel(filters.review) : 'All',
+      readiness_filter: filters.readiness || 'All',
       partner_id: provider.id,
       display_name: master.displayName,
       legal_name: master.legalName,
@@ -265,6 +274,12 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     };
   });
   const partnerListCsvHref = buildCsvDataHref(partnerExportRows, [
+    'export_filter',
+    'export_sort',
+    'search_filter',
+    'booking_flow_filter',
+    'review_filter',
+    'readiness_filter',
     'partner_id',
     'display_name',
     'legal_name',
@@ -276,6 +291,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     'verification_status',
     'joined_at',
     'recent_access_at',
+    'latest_session_device',
+    'latest_session_platform',
+    'latest_session_ip',
+    'latest_session_app_version',
     'location_state',
     'location_updated_at',
     'booking_count',
@@ -431,7 +450,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             </Link>
             <a
               className="text-link"
-              download={`hands-partners-${filters.sort}.csv`}
+              download={`hands-partners-${partnerExportFileSlug}.csv`}
               href={partnerListCsvHref}
             >
               Export CSV
@@ -4570,6 +4589,27 @@ function partnerBookingFlowFilterLabel(flow: string) {
     'no-work': 'No completed work',
   };
   return labels[flow] ?? flow;
+}
+
+function buildPartnerExportSlug(filters: ProviderFilters) {
+  const parts = [
+    filters.q ? 'search' : '',
+    filters.bookingFlow ? `flow-${filters.bookingFlow}` : '',
+    filters.review ? `review-${filters.review}` : '',
+    filters.providerStatus ? `status-${filters.providerStatus.toLowerCase()}` : '',
+    filters.verification ? `verification-${filters.verification.toLowerCase()}` : '',
+    filters.kyc ? `kyc-${filters.kyc.toLowerCase()}` : '',
+    filters.location ? `location-${filters.location}` : '',
+    filters.security ? `device-${filters.security}` : '',
+    filters.readiness ? `readiness-${filters.readiness}` : '',
+    filters.sort ? `sort-${filters.sort}` : '',
+  ].filter(Boolean);
+
+  return (parts.length > 0 ? parts.join('-') : 'all')
+    .replace(/[^a-z0-9-]+/gi, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
 }
 
 function filterProviders(
