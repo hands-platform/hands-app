@@ -339,6 +339,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     closeoutReadiness,
   });
+  const decisionEvidenceGuardrails = bookingDecisionEvidenceGuardrails({
+    booking,
+    messages,
+    latestLocation,
+    notificationTrace,
+    financeTrace,
+    refundLedgerRows,
+    operatorNoteLines,
+    closeoutReadiness,
+  });
   const connectedRecordLinks = [
     {
       label: 'Customer record',
@@ -658,6 +668,50 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" id="booking-decision-evidence-guardrails" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Decision evidence guardrails</h2>
+            <p className="muted">
+              Required, supporting, and finance records for admin-only outcome work. Use this before
+              cancellation, no-show, refund, release, cash settlement, or completed-service closeout.
+            </p>
+          </div>
+          <span className="pill pill-info">{decisionEvidenceGuardrails.length} guardrail row(s)</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Guardrail</th>
+              <th>Status</th>
+              <th>Loaded record</th>
+              <th>Next operator step</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {decisionEvidenceGuardrails.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.title}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.evidence}</td>
+                <td>{row.nextStep}</td>
+                <td>
+                  <Link className="text-link" href={row.href}>
+                    Open
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" id="booking-evidence-packet" style={{ marginBottom: 16 }}>
@@ -3185,6 +3239,189 @@ function bookingEvidencePacket({
       },
     ],
   };
+}
+
+function bookingDecisionEvidenceGuardrails({
+  booking,
+  messages,
+  latestLocation,
+  notificationTrace,
+  financeTrace,
+  refundLedgerRows,
+  operatorNoteLines,
+  closeoutReadiness,
+}: {
+  booking: AdminBookingDetail;
+  messages: AdminChatMessage[];
+  latestLocation?: AdminLocationSnapshot | null;
+  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
+  financeTrace: ReturnType<typeof bookingFinanceTrace>;
+  refundLedgerRows: BookingRefundLedgerRow[];
+  operatorNoteLines: string[];
+  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
+}) {
+  const chatRequired = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
+    booking.status,
+  );
+  const hasAddress = Boolean(booking.addressSnapshot);
+  const hasFinalPartner = Boolean(booking.selectedProvider);
+  const hasChatRoom = Boolean(booking.chatRoom);
+  const hasChatContext = messages.length > 0;
+  const hasMovementContext = Boolean(latestLocation);
+  const hasAlertContext = notificationTrace.rows.length > 0;
+  const hasNoteContext = operatorNoteLines.length > 0;
+  const hasOpsTrail = (booking.opsTasks?.length ?? 0) > 0 || (booking.auditLogs?.length ?? 0) > 0;
+  const hasPayment = Boolean(booking.payment);
+  const hasCloseoutBlockers = closeoutReadiness.openItems.length > 0;
+  const cashDebt = bookingCashDebtNeedsSettlement(booking);
+  const financeRows =
+    (booking.platformFeeLogs?.length ?? 0) +
+    (booking.taxLogs?.length ?? 0) +
+    (booking.walletLedgerEntries?.length ?? 0) +
+    (booking.earning?.platformFeeLogs?.length ?? 0) +
+    (booking.earning?.taxLogs?.length ?? 0) +
+    (booking.earning?.walletLedgerEntries?.length ?? 0);
+
+  return [
+    {
+      id: 'required-address',
+      title: 'Required: address snapshot',
+      scope: 'Booking address is the source of truth for marketplace distance and support review.',
+      status: hasAddress ? 'Ready' : 'Needs repair',
+      tone: hasAddress ? 'pill-success' : 'pill-danger',
+      evidence: hasAddress
+        ? `${bookingAddressSnapshotLabel(booking)} / ${coordinateLabel(
+            booking.addressSnapshot?.latitude,
+            booking.addressSnapshot?.longitude,
+          )}`
+        : 'No BookingAddressSnapshot is attached.',
+      nextStep: hasAddress
+        ? 'Use this address for partner radius, support, and settlement review.'
+        : 'Repair or attach address evidence before relying on distance or closeout decisions.',
+      href: '#address-radius-contract',
+    },
+    {
+      id: 'required-final-partner',
+      title: 'Required: customer final partner choice',
+      scope: 'HANDS does not auto-assign; customer choice creates the final handoff.',
+      status: hasFinalPartner ? 'Final partner saved' : 'Customer choice pending',
+      tone: hasFinalPartner ? 'pill-success' : booking.status === 'OPEN_MATCHING' ? 'pill-info' : 'pill-warn',
+      evidence: hasFinalPartner
+        ? providerName(booking.selectedProvider)
+        : `${booking.participants?.length ?? 0} shortlist participant(s) / preferred ${providerName(
+            booking.preferredProvider,
+          )}`,
+      nextStep: hasFinalPartner
+        ? 'Confirm chat, location, and payment handoff.'
+        : 'Keep the customer selection state visible; do not auto-select a partner.',
+      href: '#participants',
+    },
+    {
+      id: 'required-chat',
+      title: 'Required after match: retained chat',
+      scope: 'Matched bookings need customer-partner chat; admin keeps the archive after mobile closeout.',
+      status: hasChatRoom ? 'Archived' : chatRequired ? 'Repair needed' : 'Locked until match',
+      tone: hasChatRoom ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-info',
+      evidence: hasChatRoom
+        ? `Room ${shortId(booking.chatRoom?.id ?? '')} / ${messages.length} message(s)`
+        : chatRequired
+          ? 'Matched or service-stage booking has no retained room.'
+          : 'Chat opens only after final partner selection.',
+      nextStep: hasChatRoom
+        ? 'Use the retained transcript for support and outcome review.'
+        : chatRequired
+          ? 'Repair the chat handoff before service coordination or money actions.'
+          : 'Wait for customer final partner selection.',
+      href: '#chat',
+    },
+    {
+      id: 'supporting-context',
+      title: 'Supporting: communication and movement context',
+      scope:
+        'Chat messages, partner pin, alerts, and notes explain what happened without judging either side.',
+      status:
+        hasChatContext || hasMovementContext || hasAlertContext || hasNoteContext
+          ? 'Context loaded'
+          : 'Needs factual note',
+      tone:
+        hasChatContext || hasMovementContext || hasAlertContext || hasNoteContext
+          ? 'pill-success'
+          : 'pill-warn',
+      evidence: [
+        `${messages.length} message(s)`,
+        latestLocation ? `location ${formatDate(latestLocation.recordedAt)}` : 'no partner pin',
+        `${notificationTrace.rows.length} alert row(s)`,
+        `${operatorNoteLines.length} note(s)`,
+      ].join(' / '),
+      nextStep:
+        hasChatContext || hasMovementContext || hasAlertContext || hasNoteContext
+          ? 'Review the factual context before outcome changes.'
+          : 'Add a factual operator note before no-show, refund, or closure handling.',
+      href: '#booking-chat-evidence-decision-board',
+    },
+    {
+      id: 'finance-payment',
+      title: 'Finance: payment and refund path',
+      scope: 'Payment, refund, release, and capture actions must match the booking outcome state.',
+      status: hasPayment ? (booking.payment?.status ?? 'Payment row') : 'No payment row',
+      tone: hasPayment ? 'pill-info' : 'pill-warn',
+      evidence: hasPayment
+        ? `${booking.payment?.method ?? 'UNKNOWN'} / ${money(booking.payment?.amount, booking.payment?.currency)} / ${
+            refundLedgerRows.length
+          } refund row(s)`
+        : 'No payment record is attached.',
+      nextStep: hasPayment
+        ? 'Use payment status with chat, notes, and closeout state before money actions.'
+        : 'Create or inspect payment state before finance closeout.',
+      href: '#payment',
+    },
+    {
+      id: 'finance-cash-debt',
+      title: 'Finance: cash fee debt gate',
+      scope:
+        'Cash bookings can create partner fee debt; negative wallet blocks final acceptance and payout release.',
+      status: cashDebt
+        ? 'Settlement required'
+        : booking.payment?.method === 'CASH'
+          ? 'Cash clear'
+          : 'Not cash',
+      tone: cashDebt ? 'pill-danger' : booking.payment?.method === 'CASH' ? 'pill-success' : 'pill-neutral',
+      evidence:
+        booking.payment?.method === 'CASH'
+          ? `${financeTrace.platformFee} HANDS fee / ${financeTrace.withholding} withholding / ${financeTrace.walletLedger}`
+          : `${booking.payment?.method ?? 'No method'} payment path`,
+      nextStep: cashDebt
+        ? 'Record verified company deposit or approved admin offset before clearing the block.'
+        : 'No cash-fee settlement action is needed from this booking state.',
+      href: cashDebt ? '/cash-settlements' : '#finance',
+    },
+    {
+      id: 'finance-closeout',
+      title: 'Finance: completion closeout ledger',
+      scope: 'Completed service closeout should align earning, fee, tax, wallet, and payment rows.',
+      status: hasCloseoutBlockers ? `${closeoutReadiness.openItems.length} item(s) open` : 'Aligned',
+      tone: hasCloseoutBlockers ? 'pill-warn' : 'pill-success',
+      evidence: hasCloseoutBlockers
+        ? closeoutReadiness.openItems.map((item) => item.label).join(', ')
+        : `${financeRows} finance ledger row(s) / ${financeTrace.providerPayout} partner payout`,
+      nextStep: hasCloseoutBlockers
+        ? 'Clear the listed records before completed-service closeout.'
+        : 'Finance records are aligned for this booking stage.',
+      href: '#completed-closeout',
+    },
+    {
+      id: 'ops-trail',
+      title: 'Operations: task and audit trail',
+      scope: 'Structured tasks and audit rows preserve who changed what and why.',
+      status: hasOpsTrail ? 'Trail retained' : 'No ops trail',
+      tone: hasOpsTrail ? 'pill-success' : 'pill-warn',
+      evidence: `${booking.opsTasks?.length ?? 0} task row(s) / ${booking.auditLogs?.length ?? 0} audit row(s)`,
+      nextStep: hasOpsTrail
+        ? 'Use the trail to explain the current booking state.'
+        : 'Add a task or note before manual outcome handling.',
+      href: '#booking-activity',
+    },
+  ];
 }
 
 function bookingChatEvidenceDecisionBoard({
