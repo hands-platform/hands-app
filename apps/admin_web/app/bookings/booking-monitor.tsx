@@ -142,6 +142,16 @@ type BookingListActionChip = {
   href: string;
 };
 
+type BookingMatchingRuleSnapshot = {
+  sourceLabel: string;
+  sourceTone: string;
+  windowLabel: string;
+  radiusLabel: string;
+  supplyLabel: string;
+  customerChoiceLabel: string;
+  operatorAction: string;
+};
+
 export type BookingEvidenceFilter =
   | 'all'
   | 'address'
@@ -1032,6 +1042,7 @@ export function BookingMonitor({
               const chatState = bookingChatListState(booking);
               const closureState = bookingClosureListSignal(booking);
               const actionChips = bookingListActionChips(booking, currentTimeMs);
+              const matchingRuleSnapshot = bookingMatchingRuleSnapshot(booking, currentTimeMs);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -1116,6 +1127,17 @@ export function BookingMonitor({
                       <span className={`pill ${bookingBackupAlertTraceTone(booking)}`}>
                         {bookingBackupAlertTracePill(booking)}
                       </span>
+                    </div>
+                    <div className="stack" style={{ marginTop: 10 }}>
+                      <span className="muted">Matching rule snapshot</span>
+                      <span className={`pill ${matchingRuleSnapshot.sourceTone}`}>
+                        {matchingRuleSnapshot.sourceLabel}
+                      </span>
+                      <span className="muted">{matchingRuleSnapshot.windowLabel}</span>
+                      <span className="muted">{matchingRuleSnapshot.radiusLabel}</span>
+                      <span className="muted">{matchingRuleSnapshot.supplyLabel}</span>
+                      <span className="muted">{matchingRuleSnapshot.customerChoiceLabel}</span>
+                      <small>{matchingRuleSnapshot.operatorAction}</small>
                     </div>
                     <div className="participant-list" style={{ marginTop: 8 }}>
                       {booking.preferredProvider && (
@@ -3416,6 +3438,69 @@ function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | nu
         ? 'legacy auto ignored'
         : 'accept ?';
   return `Saved policy: ${timer} / ${radius} / ${freshness} / ${inviteLimit} / ${backupMode} / ${acceptMode}`;
+}
+
+function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): BookingMatchingRuleSnapshot {
+  const policy = bookingMatchingPolicySnapshot(booking);
+  const marketplaceCount = marketplaceParticipants(booking).length;
+  const acceptedCount = acceptedParticipants(booking).length;
+  const responseWindow = policy?.providerResponseWindowMinutes ?? 10;
+  const marketplaceRadius = policy?.backupProviderRadiusMeters ?? 10_000;
+  const alertSummary = bookingBackupAlertTraceSummary(booking, nowMs);
+  const windowState =
+    booking.status === 'OPEN_MATCHING'
+      ? bookingMatchingWindowLabel(booking, nowMs)
+      : terminalBookingStatuses.has(booking.status)
+        ? 'closed'
+        : booking.selectedProvider
+          ? 'final partner selected'
+          : 'not in open matching';
+  const customerChoice = booking.selectedProvider
+    ? `Customer final choice: ${partnerDisplayName(booking.selectedProvider)}`
+    : acceptedCount > 0
+      ? `Customer final choice: waiting, ${acceptedCount} accepted partner(s)`
+      : 'Customer final choice: not ready yet';
+
+  return {
+    sourceLabel: policy ? 'Saved matching snapshot' : 'Default MVP rule',
+    sourceTone: policy ? 'pill-info' : 'pill-warn',
+    windowLabel: `First-pick window: ${responseWindow}m / ${windowState}`,
+    radiusLabel: `Marketplace radius: ${formatMeters(marketplaceRadius)} from booking address`,
+    supplyLabel: `Marketplace supply: ${marketplaceCount} joined / ${acceptedCount} accepted / ${alertSummary.totalNotified} notified`,
+    customerChoiceLabel: `${customerChoice}; no automatic assignment`,
+    operatorAction: bookingMatchingRuleOperatorAction(
+      booking,
+      marketplaceCount,
+      acceptedCount,
+      alertSummary.totalNotified,
+    ),
+  };
+}
+
+function bookingMatchingRuleOperatorAction(
+  booking: AdminBooking,
+  marketplaceCount: number,
+  acceptedCount: number,
+  notifiedCount: number,
+) {
+  if (booking.selectedProvider) {
+    return booking.chatRoom
+      ? 'Chat is ready. Continue service handoff and closeout from booking detail.'
+      : 'Final partner exists. Repair or create chat before service movement continues.';
+  }
+  if (booking.status !== 'OPEN_MATCHING') {
+    return 'Open booking detail and continue from the latest factual status.';
+  }
+  if (acceptedCount > 0) {
+    return 'Customer must select the final partner; do not auto-assign.';
+  }
+  if (marketplaceCount > 0) {
+    return 'Marketplace partners are visible. Monitor customer shortlist and partner response evidence.';
+  }
+  if (notifiedCount > 0) {
+    return 'Push invitations were sent. Watch for partner joins before the first-pick window closes.';
+  }
+  return 'No marketplace supply is visible yet. Check partner radius, location freshness, and notification trace.';
 }
 
 function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPolicySnapshot | null {

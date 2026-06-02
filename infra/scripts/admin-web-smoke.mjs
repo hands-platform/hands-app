@@ -108,6 +108,7 @@ const pages = [
       'Address / customer',
       'Payment / wallet',
       'Action status strip',
+      'Matching rule snapshot',
       'Stage 3 choice',
     ],
   },
