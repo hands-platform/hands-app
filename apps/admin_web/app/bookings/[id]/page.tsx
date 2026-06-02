@@ -5700,6 +5700,7 @@ function bookingAddressRadiusContract(
   backupSupply: ReturnType<typeof bookingBackupPartnerSupply>,
 ) {
   const pin = backupSupply.policyPin;
+  const bookingGate = readBookingGateSnapshot(booking);
   const snapshotLocked = Boolean(booking.addressSnapshot && pin.source === 'BookingAddressSnapshot');
   const driftMeters = pin.legacyDriftMeters;
   const driftLabel = driftMeters === null ? 'No legacy comparison' : distanceLabel(Math.round(driftMeters));
@@ -5734,6 +5735,16 @@ function bookingAddressRadiusContract(
           ? 'Snapshot and legacy coordinates are aligned.'
           : 'Snapshot and legacy coordinates differ.',
       },
+      {
+        label: 'Customer GPS gate',
+        value: bookingGate.customerDistanceLabel,
+        helper: bookingGate.customerDistanceHelper,
+      },
+      {
+        label: 'First-pick distance gate',
+        value: bookingGate.preferredPartnerDistanceLabel,
+        helper: bookingGate.preferredPartnerDistanceHelper,
+      },
     ],
     cards: [
       {
@@ -5767,6 +5778,15 @@ function bookingAddressRadiusContract(
         action: `Drift ${driftLabel}`,
         className: driftOk ? 'ops-task-done' : 'ops-task-warning',
         pillClass: driftOk ? 'pill-success' : 'pill-warn',
+      },
+      {
+        title: 'Booking creation gate',
+        status: bookingGate.gatePassed ? 'Gate passed' : 'Needs evidence',
+        detail:
+          'Booking creation records customer current GPS, service address, and preferred partner distance before payment and matching open.',
+        action: bookingGate.summary,
+        className: bookingGate.gatePassed ? 'ops-task-done' : 'ops-task-warning',
+        pillClass: bookingGate.gatePassed ? 'pill-success' : 'pill-warn',
       },
     ],
   };
@@ -6635,9 +6655,49 @@ function readBookingMatchingPolicySnapshot(booking: AdminBookingDetail) {
     backupProviderRadiusMeters: readOptionalNumber(policy?.backupProviderRadiusMeters),
     backupProviderLocationMaxAgeMinutes: readOptionalNumber(policy?.backupProviderLocationMaxAgeMinutes),
     backupProviderInvitationLimit: readOptionalNumber(policy?.backupProviderInvitationLimit),
+    bookingMaxCustomerCurrentToAddressKm: readOptionalNumber(policy?.bookingMaxCustomerCurrentToAddressKm),
+    bookingMaxPreferredProviderDistanceKm: readOptionalNumber(policy?.bookingMaxPreferredProviderDistanceKm),
+    bookingCurrentLocationFreshnessMinutes: readOptionalNumber(policy?.bookingCurrentLocationFreshnessMinutes),
     preferredAcceptMode: readOptionalString(policy?.preferredAcceptMode),
     backupOpenMode: readOptionalString(policy?.backupOpenMode),
     travelBufferMinutes: readOptionalNumber(policy?.travelBufferMinutes),
+  };
+}
+
+function readBookingGateSnapshot(booking: AdminBookingDetail) {
+  const metadata = readPlainRecord(booking.metadata);
+  const gate = readPlainRecord(metadata?.bookingGate);
+  const customerDistance = readOptionalNumber(gate?.customerToBookingAddressDistanceMeters);
+  const customerLimit = readOptionalNumber(gate?.customerDistanceLimitMeters);
+  const preferredDistance = readOptionalNumber(gate?.preferredProviderDistanceMeters);
+  const preferredLimit = readOptionalNumber(gate?.preferredProviderDistanceLimitMeters);
+  const customerCurrentLocation = readPlainRecord(gate?.customerCurrentLocation);
+  const customerRecordedAt = readOptionalString(customerCurrentLocation?.recordedAt);
+  const gatePassed = gate?.gatePassed === true;
+
+  const customerDistanceLabel =
+    customerDistance === null
+      ? 'No current GPS snapshot'
+      : `${distanceLabel(Math.round(customerDistance))} / limit ${distanceLabel(Math.round(customerLimit ?? 0))}`;
+  const preferredPartnerDistanceLabel =
+    preferredDistance === null
+      ? 'No preferred partner distance'
+      : `${distanceLabel(Math.round(preferredDistance))} / limit ${distanceLabel(Math.round(preferredLimit ?? 0))}`;
+
+  return {
+    gatePassed,
+    customerDistanceLabel,
+    customerDistanceHelper: customerRecordedAt
+      ? `Customer GPS was captured at ${formatDate(customerRecordedAt)} before booking opened.`
+      : 'Older bookings may not have customer current GPS metadata.',
+    preferredPartnerDistanceLabel,
+    preferredPartnerDistanceHelper:
+      preferredDistance === null
+        ? 'Marketplace-only bookings or older bookings may not have a first-pick partner distance.'
+        : 'Preferred partner distance is measured from the immutable booking address.',
+    summary: gatePassed
+      ? `${customerDistanceLabel}; ${preferredPartnerDistanceLabel}`
+      : 'Booking gate metadata is missing or older than this policy.',
   };
 }
 
