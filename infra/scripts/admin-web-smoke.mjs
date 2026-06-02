@@ -269,6 +269,7 @@ const pages = [
       'Operations Handoff',
       'Handoff date range',
       'Immediate action queue',
+      'Finance handoff action map',
       'Unified activity stream',
       'Export activity CSV',
       'Shift brief',

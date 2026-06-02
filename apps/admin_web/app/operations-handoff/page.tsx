@@ -8,7 +8,10 @@ import {
   AdminCustomer,
   AdminEarning,
   AdminNotification,
+  AdminPayment,
+  AdminPayoutBatch,
   AdminProvider,
+  AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
@@ -60,27 +63,55 @@ export default async function OperationsHandoffPage({
   searchParams?: OperationsHandoffSearchParams;
 }) {
   const filters = buildOperationsHandoffFilters(searchParams ? await searchParams : {});
-  const [bookings, customers, partners, earnings, notifications, sessions, auditLogs, cashSummary, chatArchive] =
-    await Promise.all([
-      adminGet<AdminBooking[]>('/admin/bookings', []),
-      adminGet<AdminCustomer[]>('/admin/customers', []),
-      adminGet<AdminProvider[]>('/admin/partners', []),
-      adminGet<AdminEarning[]>('/admin/earnings', []),
-      adminGet<AdminNotification[]>('/admin/notifications', []),
-      adminGet<AdminAppSession[]>('/admin/app-sessions', []),
-      adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
-      adminGet<AdminCashSettlementSummary>('/admin/cash-settlement-summary', emptyCashSettlementSummary()),
-      adminGet<AdminBookingDetail[]>('/admin/chat-archive', []),
-    ]);
+  const [
+    bookings,
+    customers,
+    partners,
+    earnings,
+    payments,
+    refunds,
+    payouts,
+    notifications,
+    sessions,
+    auditLogs,
+    cashSummary,
+    chatArchive,
+  ] = await Promise.all([
+    adminGet<AdminBooking[]>('/admin/bookings', []),
+    adminGet<AdminCustomer[]>('/admin/customers', []),
+    adminGet<AdminProvider[]>('/admin/partners', []),
+    adminGet<AdminEarning[]>('/admin/earnings', []),
+    adminGet<AdminPayment[]>('/admin/payments', []),
+    adminGet<AdminRefund[]>('/admin/refunds', []),
+    adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
+    adminGet<AdminNotification[]>('/admin/notifications', []),
+    adminGet<AdminAppSession[]>('/admin/app-sessions', []),
+    adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
+    adminGet<AdminCashSettlementSummary>('/admin/cash-settlement-summary', emptyCashSettlementSummary()),
+    adminGet<AdminBookingDetail[]>('/admin/chat-archive', []),
+  ]);
 
   const activeBookings = bookings.filter((booking) => activeBookingStatuses.has(booking.status));
   const matchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const inServiceBookings = bookings.filter((booking) => booking.status === 'IN_SERVICE');
   const bookingQueue = buildBookingHandoffQueue(bookings);
+  const rangePayments = payments.filter((payment) =>
+    isInDateRange(payment.booking?.createdAt, filters.range),
+  );
+  const rangeRefunds = refunds.filter((refund) => isInDateRange(refund.createdAt, filters.range));
+  const rangePayouts = payouts.filter((payout) => isInDateRange(payout.createdAt, filters.range));
+  const rangeEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
   const rangeAuditLogs = auditLogs.filter((log) => isInDateRange(log.createdAt, filters.range));
   const operatorNotes = buildOperatorNotes(rangeAuditLogs);
   const chatSignals = buildChatSignals(bookings);
-  const financeRows = buildFinanceRows(earnings);
+  const financeRows = buildFinanceRows(rangeEarnings);
+  const financeHandoffActions = buildFinanceHandoffActionMap({
+    payments: rangePayments,
+    refunds: rangeRefunds,
+    payouts: rangePayouts,
+    earnings: rangeEarnings,
+    cashSummary,
+  });
   const presence = buildPresence(sessions);
   const customerSignals = buildCustomerSignals(customers);
   const partnerSignals = buildPartnerSignals(partners, cashSummary);
@@ -165,14 +196,54 @@ export default async function OperationsHandoffPage({
       </section>
 
       <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
-        <MetricCard label="Active bookings" value={activeBookings.length} helper="Matching, on the way, arrived, or in service" href="/bookings?view=attention" />
-        <MetricCard label="Matching wait" value={matchingBookings.length} helper="Customer can still receive partner candidates" href="/bookings?view=matching" />
-        <MetricCard label="In service" value={inServiceBookings.length} helper="Chat should be live until partner completion" href="/bookings?view=closeout" />
-        <MetricCard label="Cash fee debt" value={cashSummary.providerCount} helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across partner wallet gates`} href="/cash-settlements" />
-        <MetricCard label="Customer app online" value={presence.customerLive} helper={`${presence.customerRecent} customer session(s) seen recently`} href="/app-sessions?role=CUSTOMER&state=live" />
-        <MetricCard label="Partner app online" value={presence.partnerLive} helper={`${presence.partnerRecent} partner session(s) seen recently`} href="/app-sessions?role=PROVIDER&state=live" />
-        <MetricCard label="Chat rooms" value={chatSignals.roomCount} helper={`${chatSignals.recentMessageCount} recent message(s) visible to admin`} href="/chat-archive" />
-        <MetricCard label="Failed notifications" value={failedNotifications.length} helper="Push/SMS/app delivery rows needing retry or device check" href="/notifications?review=failed" />
+        <MetricCard
+          label="Active bookings"
+          value={activeBookings.length}
+          helper="Matching, on the way, arrived, or in service"
+          href="/bookings?view=attention"
+        />
+        <MetricCard
+          label="Matching wait"
+          value={matchingBookings.length}
+          helper="Customer can still receive partner candidates"
+          href="/bookings?view=matching"
+        />
+        <MetricCard
+          label="In service"
+          value={inServiceBookings.length}
+          helper="Chat should be live until partner completion"
+          href="/bookings?view=closeout"
+        />
+        <MetricCard
+          label="Cash fee debt"
+          value={cashSummary.providerCount}
+          helper={`${formatMoney(cashSummary.totalDebtAmount, cashSummary.currency)} across partner wallet gates`}
+          href="/cash-settlements"
+        />
+        <MetricCard
+          label="Customer app online"
+          value={presence.customerLive}
+          helper={`${presence.customerRecent} customer session(s) seen recently`}
+          href="/app-sessions?role=CUSTOMER&state=live"
+        />
+        <MetricCard
+          label="Partner app online"
+          value={presence.partnerLive}
+          helper={`${presence.partnerRecent} partner session(s) seen recently`}
+          href="/app-sessions?role=PROVIDER&state=live"
+        />
+        <MetricCard
+          label="Chat rooms"
+          value={chatSignals.roomCount}
+          helper={`${chatSignals.recentMessageCount} recent message(s) visible to admin`}
+          href="/chat-archive"
+        />
+        <MetricCard
+          label="Failed notifications"
+          value={failedNotifications.length}
+          helper="Push/SMS/app delivery rows needing retry or device check"
+          href="/notifications?review=failed"
+        />
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -180,8 +251,8 @@ export default async function OperationsHandoffPage({
           <div>
             <h2>Shift handoff checklist</h2>
             <p className="muted">
-              A factual close-of-shift list for the next operator: live bookings, chat continuity,
-              cash settlement, alerts, app presence, customer context, and written notes.
+              A factual close-of-shift list for the next operator: live bookings, chat continuity, cash
+              settlement, alerts, app presence, customer context, and written notes.
             </p>
           </div>
           <span className={checklistNeedsReview ? 'pill pill-warn' : 'pill pill-success'}>
@@ -224,6 +295,35 @@ export default async function OperationsHandoffPage({
               <div className="participant-list">
                 <span className="pill">{item.countLabel}</span>
                 <span className={item.statusClass}>{item.status}</span>
+              </div>
+              <small>{item.nextAction}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="toolbar">
+          <div>
+            <h2>Finance handoff action map</h2>
+            <p className="muted">
+              Money-flow lanes the next operator should verify before continuing the shift: payment state,
+              refund rows, cash wallet debt, payout release, and tax/reference trace.
+            </p>
+          </div>
+          <Link className="text-link" href="/finance-closeout">
+            Open Finance Closeout
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {financeHandoffActions.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={item.id}>
+              <span className={item.className}>{item.owner}</span>
+              <h3>{item.title}</h3>
+              <p>{item.detail}</p>
+              <div className="participant-list">
+                <span className={item.statusClass}>{item.status}</span>
+                <span className="pill">{item.countLabel}</span>
               </div>
               <small>{item.nextAction}</small>
             </Link>
@@ -303,7 +403,10 @@ export default async function OperationsHandoffPage({
             </div>
             <label>
               Shift note
-              <textarea name="note" placeholder="Write the factual shift handoff note for the next operator." />
+              <textarea
+                name="note"
+                placeholder="Write the factual shift handoff note for the next operator."
+              />
             </label>
             <button type="submit">Save handoff note</button>
           </form>
@@ -317,7 +420,9 @@ export default async function OperationsHandoffPage({
                 </small>
               </Link>
             ))}
-            {operatorNotes.length === 0 ? <p className="muted">No operator note has been written yet.</p> : null}
+            {operatorNotes.length === 0 ? (
+              <p className="muted">No operator note has been written yet.</p>
+            ) : null}
           </div>
         </div>
       </section>
@@ -332,7 +437,11 @@ export default async function OperationsHandoffPage({
             </p>
           </div>
           <div className="actions">
-            <a className="text-link" download="hands-operations-handoff-activity.csv" href={activityStreamCsvHref}>
+            <a
+              className="text-link"
+              download="hands-operations-handoff-activity.csv"
+              href={activityStreamCsvHref}
+            >
               Export activity CSV
             </a>
             <Link className="text-link" href="/audit-log">
@@ -388,7 +497,9 @@ export default async function OperationsHandoffPage({
         <div className="toolbar">
           <div>
             <h2>Booking handoff queue</h2>
-            <p className="muted">Open and recently changed bookings with payment, chat, partner, and next action.</p>
+            <p className="muted">
+              Open and recently changed bookings with payment, chat, partner, and next action.
+            </p>
           </div>
           <div className="actions">
             <Link className="text-link" href="/bookings?view=attention">
@@ -576,8 +687,7 @@ function buildHandoffReadinessChecklist(input: {
   );
   const completedWithoutEvidence = input.bookings.filter(
     (booking) =>
-      booking.status === 'COMPLETED' &&
-      (!booking.payment || !booking.earning || !booking.chatRoom?.id),
+      booking.status === 'COMPLETED' && (!booking.payment || !booking.earning || !booking.chatRoom?.id),
   );
   const latestNote = input.operatorNotes[0] ?? null;
   const hasFreshHandoffNote = Boolean(latestNote && recentlyChanged(latestNote.createdAt, 480));
@@ -672,7 +782,8 @@ function buildHandoffReadinessChecklist(input: {
       id: 'customer-context-reviewed',
       owner: 'Support',
       title: 'Customer context reviewed',
-      detail: 'Customer records show booking, payment/refund, chat archive, saved address, session, and notes.',
+      detail:
+        'Customer records show booking, payment/refund, chat archive, saved address, session, and notes.',
       href: '/customers',
       count: input.customerSignals.length,
       countLabel: `${input.customerSignals.length} record(s)`,
@@ -735,8 +846,7 @@ function buildImmediateActionQueue(input: {
   );
   const closeoutRows = input.bookings.filter(
     (booking) =>
-      booking.status === 'COMPLETED' &&
-      (!booking.payment || !booking.earning || !booking.chatRoom?.id),
+      booking.status === 'COMPLETED' && (!booking.payment || !booking.earning || !booking.chatRoom?.id),
   );
   const recentNotes = input.operatorNotes.filter((note) => recentlyChanged(note.createdAt, 240));
 
@@ -751,7 +861,8 @@ function buildImmediateActionQueue(input: {
       count: input.matchingBookings.length,
       countLabel: `${input.matchingBookings.length} booking(s)`,
       status: input.matchingBookings.length ? 'Monitor now' : 'Clear',
-      nextAction: 'Open the matching board and check partner response, participant list, and customer choice.',
+      nextAction:
+        'Open the matching board and check partner response, participant list, and customer choice.',
       className: input.matchingBookings.length ? 'signal signal-warn' : 'signal signal-ok',
       statusClass: input.matchingBookings.length ? 'pill pill-warn' : 'pill pill-success',
     },
@@ -785,7 +896,8 @@ function buildImmediateActionQueue(input: {
       id: 'cash-fee-debt',
       owner: 'Finance',
       title: 'Cash fee wallet gate',
-      detail: 'Partners with negative wallet from cash bookings can stay visible, but final acceptance waits for settlement.',
+      detail:
+        'Partners with negative wallet from cash bookings can stay visible, but final acceptance waits for settlement.',
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,
@@ -850,7 +962,150 @@ function buildImmediateActionQueue(input: {
 
   return rows.sort((a, b) => {
     const classWeight = (item: (typeof rows)[number]) =>
-      item.statusClass.includes('danger') ? 4 : item.statusClass.includes('warn') ? 3 : item.statusClass.includes('info') ? 2 : 1;
+      item.statusClass.includes('danger')
+        ? 4
+        : item.statusClass.includes('warn')
+          ? 3
+          : item.statusClass.includes('info')
+            ? 2
+            : 1;
+    return classWeight(b) - classWeight(a) || b.count - a.count;
+  });
+}
+
+function buildFinanceHandoffActionMap(input: {
+  payments: AdminPayment[];
+  refunds: AdminRefund[];
+  payouts: AdminPayoutBatch[];
+  earnings: AdminEarning[];
+  cashSummary: AdminCashSettlementSummary;
+}) {
+  const openPaymentRows = input.payments.filter(
+    (payment) =>
+      payment.status === 'AUTHORIZED' || (payment.method === 'CASH' && payment.status === 'PENDING'),
+  );
+  const missingPaymentRefs = input.payments.filter(
+    (payment) =>
+      ['AUTHORIZED', 'PENDING'].includes(payment.status) && payment.method !== 'CASH' && !payment.providerRef,
+  );
+  const openRefundRows = input.refunds.filter((refund) => refund.status !== 'COMPLETED');
+  const openPayoutRows = input.payouts.filter((payout) => !['PAID', 'CANCELLED'].includes(payout.status));
+  const payoutMissingRefs = input.payouts.filter(
+    (payout) => ['PROCESSING', 'PAID'].includes(payout.status) && !payout.transferRef,
+  );
+  const earningsWithoutTaxLogs = input.earnings.filter((earning) => (earning.taxLogs?.length ?? 0) === 0);
+  const pendingEarnings = input.earnings.filter(
+    (earning) => earning.status === 'PENDING' || earning.status === 'AVAILABLE',
+  );
+  const totalOpenPaymentAmount = openPaymentRows.reduce((sum, payment) => sum + payment.amount, 0);
+  const totalOpenRefundAmount = openRefundRows.reduce((sum, refund) => sum + refund.amount, 0);
+  const totalOpenPayoutAmount = openPayoutRows.reduce((sum, payout) => sum + payout.totalNetAmount, 0);
+  const currency =
+    input.cashSummary.currency ||
+    input.payments[0]?.currency ||
+    input.refunds[0]?.payment?.currency ||
+    input.payouts[0]?.currency ||
+    'VND';
+
+  const rows = [
+    {
+      id: 'finance-payment-state',
+      owner: 'Finance',
+      title: 'Payment state handoff',
+      detail: `${formatMoney(totalOpenPaymentAmount, currency)} in visible open payment state for this range.`,
+      href: '/payments?review=needs-action',
+      count: openPaymentRows.length,
+      countLabel: `${openPaymentRows.length} row(s)`,
+      status: openPaymentRows.length ? 'Open' : 'Clear',
+      nextAction: 'Capture, release, refund, or record cash collection evidence before handoff closes.',
+      className: openPaymentRows.length ? 'signal signal-warn' : 'signal signal-ok',
+      statusClass: openPaymentRows.length ? 'pill pill-warn' : 'pill pill-success',
+    },
+    {
+      id: 'finance-refund-state',
+      owner: 'Finance',
+      title: 'Refund state handoff',
+      detail: `${formatMoney(totalOpenRefundAmount, currency)} in refund rows still needing final evidence.`,
+      href: '/refunds?review=open',
+      count: openRefundRows.length,
+      countLabel: `${openRefundRows.length} row(s)`,
+      status: openRefundRows.length ? 'Open' : 'Clear',
+      nextAction: 'Keep refund state aligned with booking, payment ledger, and customer message history.',
+      className: openRefundRows.length ? 'signal signal-danger' : 'signal signal-ok',
+      statusClass: openRefundRows.length ? 'pill pill-danger' : 'pill pill-success',
+    },
+    {
+      id: 'finance-cash-debt',
+      owner: 'Finance',
+      title: 'Cash wallet debt handoff',
+      detail: `${formatMoney(input.cashSummary.totalDebtAmount, input.cashSummary.currency)} open HANDS fee debt from cash bookings.`,
+      href: '/cash-settlements',
+      count: input.cashSummary.providerCount,
+      countLabel: `${input.cashSummary.providerCount} partner(s)`,
+      status: input.cashSummary.providerCount ? 'Settle' : 'Clear',
+      nextAction: 'Record deposit reference or approved offset before final acceptance gates are reopened.',
+      className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
+      statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
+    },
+    {
+      id: 'finance-payout-release',
+      owner: 'Finance',
+      title: 'Payout release handoff',
+      detail: `${formatMoney(totalOpenPayoutAmount, currency)} in open payout batch amount for the selected window.`,
+      href: '/payouts',
+      count: openPayoutRows.length,
+      countLabel: `${openPayoutRows.length} batch(es)`,
+      status: openPayoutRows.length ? 'Review' : 'Clear',
+      nextAction: 'Paid status needs bank reference, earning trace, tax logs, and no payout blocker.',
+      className: openPayoutRows.length ? 'signal signal-warn' : 'signal signal-ok',
+      statusClass: openPayoutRows.length ? 'pill pill-warn' : 'pill pill-success',
+    },
+    {
+      id: 'finance-reference-trace',
+      owner: 'Finance',
+      title: 'Reference and tax trace',
+      detail: `${missingPaymentRefs.length + payoutMissingRefs.length} missing reference check(s), ${earningsWithoutTaxLogs.length} earning row(s) without tax log.`,
+      href: '/finance-closeout',
+      count: missingPaymentRefs.length + payoutMissingRefs.length + earningsWithoutTaxLogs.length,
+      countLabel: `${missingPaymentRefs.length + payoutMissingRefs.length + earningsWithoutTaxLogs.length} check(s)`,
+      status:
+        missingPaymentRefs.length || payoutMissingRefs.length || earningsWithoutTaxLogs.length
+          ? 'Check'
+          : 'Ready',
+      nextAction: 'Open Finance Closeout and keep historical payment, bank, and tax snapshots stable.',
+      className:
+        missingPaymentRefs.length || payoutMissingRefs.length || earningsWithoutTaxLogs.length
+          ? 'signal signal-warn'
+          : 'signal signal-ok',
+      statusClass:
+        missingPaymentRefs.length || payoutMissingRefs.length || earningsWithoutTaxLogs.length
+          ? 'pill pill-warn'
+          : 'pill pill-success',
+    },
+    {
+      id: 'finance-earning-release',
+      owner: 'Finance',
+      title: 'Earning release handoff',
+      detail: `${pendingEarnings.length} earning row(s) are pending or available for batch review.`,
+      href: '/earnings',
+      count: pendingEarnings.length,
+      countLabel: `${pendingEarnings.length} row(s)`,
+      status: pendingEarnings.length ? 'Review' : 'Clear',
+      nextAction: 'Use earnings as the source record before payout batch movement.',
+      className: pendingEarnings.length ? 'signal signal-info' : 'signal signal-ok',
+      statusClass: pendingEarnings.length ? 'pill pill-info' : 'pill pill-success',
+    },
+  ];
+
+  return rows.sort((a, b) => {
+    const classWeight = (item: (typeof rows)[number]) =>
+      item.statusClass.includes('danger')
+        ? 4
+        : item.statusClass.includes('warn')
+          ? 3
+          : item.statusClass.includes('info')
+            ? 2
+            : 1;
     return classWeight(b) - classWeight(a) || b.count - a.count;
   });
 }
@@ -874,7 +1129,18 @@ function buildUnifiedActivityStream(input: {
   }));
 
   const chatRows = input.chatArchive.flatMap((booking) =>
-    ((booking.chatRoom as { messages?: Array<{ id: string; body: string; createdAt: string; sender?: { fullName?: string | null; phone?: string | null; roles?: string[] } }> } | null)?.messages ?? [])
+    (
+      (
+        booking.chatRoom as {
+          messages?: Array<{
+            id: string;
+            body: string;
+            createdAt: string;
+            sender?: { fullName?: string | null; phone?: string | null; roles?: string[] };
+          }>;
+        } | null
+      )?.messages ?? []
+    )
       .slice(-5)
       .map((message) => ({
         id: `chat-${message.id}`,
@@ -902,7 +1168,9 @@ function buildUnifiedActivityStream(input: {
   }));
 
   const notificationRows = input.notifications
-    .filter((notification) => (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'))
+    .filter((notification) =>
+      (notification.deliveries ?? []).some((delivery) => delivery.status === 'FAILED'),
+    )
     .slice(0, 20)
     .map((notification) => ({
       id: `notification-${notification.id}`,
@@ -943,7 +1211,8 @@ function filterActivityStreamByRange(
 }
 
 function bookingActivitySummary(booking: AdminBooking) {
-  const customer = booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
+  const customer =
+    booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer';
   const partner =
     booking.selectedProvider?.displayName ??
     booking.preferredProvider?.displayName ??
@@ -998,13 +1267,19 @@ function MetricCard({
 
 function buildBookingHandoffQueue(bookings: AdminBooking[]) {
   return bookings
-    .filter((booking) => activeBookingStatuses.has(booking.status) || recentlyChanged(booking.updatedAt ?? booking.createdAt))
+    .filter(
+      (booking) =>
+        activeBookingStatuses.has(booking.status) || recentlyChanged(booking.updatedAt ?? booking.createdAt),
+    )
     .slice(0, 18)
     .map((booking) => {
       const selectedPartner = booking.selectedProvider ?? null;
       const preferredPartner = booking.preferredProvider ?? null;
       const partnerName =
-        selectedPartner?.displayName ?? preferredPartner?.displayName ?? participantNames(booking).join(', ') ?? 'No partner yet';
+        selectedPartner?.displayName ??
+        preferredPartner?.displayName ??
+        participantNames(booking).join(', ') ??
+        'No partner yet';
       const participantCount = booking.participants?.length ?? 0;
       const walletAmount = booking.earning?.netAmount ?? 0;
       const chatReady = Boolean(booking.chatRoom?.id);
@@ -1040,17 +1315,20 @@ function buildOperatorNotes(logs: AdminAuditLog[]) {
     .filter((log) => log.action.endsWith('.ops_note.add') || log.action === 'operations.handoff_note.add')
     .map((log) => {
       const metadata = asRecord(log.metadata);
-      const area = log.action === 'operations.handoff_note.add'
-        ? 'Shift'
-        : log.action.startsWith('booking')
-        ? 'Booking'
-        : log.action.startsWith('customer')
-          ? 'Customer'
-          : 'Partner';
+      const area =
+        log.action === 'operations.handoff_note.add'
+          ? 'Shift'
+          : log.action.startsWith('booking')
+            ? 'Booking'
+            : log.action.startsWith('customer')
+              ? 'Customer'
+              : 'Partner';
       return {
         id: log.id,
         area,
-        note: operatorDisplayText(stringValue(metadata.note) ?? stringValue(metadata.preset) ?? humanizeAction(log.action)),
+        note: operatorDisplayText(
+          stringValue(metadata.note) ?? stringValue(metadata.preset) ?? humanizeAction(log.action),
+        ),
         href: relatedHref(log),
         actor: log.actor?.fullName ?? log.actor?.phone ?? 'System',
         createdAt: log.createdAt,
@@ -1094,7 +1372,8 @@ function buildShiftBriefItems(input: {
     {
       owner: 'Support',
       title: `${input.customerSignalCount} recent customer record(s)`,
-      detail: 'Customer pages retain profile, bookings, chat archive, wallet-like payments, addresses, and notes.',
+      detail:
+        'Customer pages retain profile, bookings, chat archive, wallet-like payments, addresses, and notes.',
       action: 'Open customer list when a customer asks about a booking.',
       href: '/customers',
       className: 'signal signal-info',
@@ -1115,8 +1394,8 @@ function buildChatSignals(bookings: AdminBooking[]) {
   const recentMessageCount = withRooms.reduce(
     (sum, booking) =>
       sum +
-      ((booking.chatRoom as { messages?: Array<{ createdAt?: string }> } | null)?.messages ?? []).filter((message) =>
-        recentlyChanged(message.createdAt),
+      ((booking.chatRoom as { messages?: Array<{ createdAt?: string }> } | null)?.messages ?? []).filter(
+        (message) => recentlyChanged(message.createdAt),
       ).length,
     0,
   );
@@ -1141,13 +1420,20 @@ function buildFinanceRows(earnings: AdminEarning[]) {
       currency: earning.currency,
       status: earning.status,
       createdAt: earning.createdAt,
-      statusClass: earning.netAmount < 0 ? 'pill pill-danger' : earning.status === 'AVAILABLE' ? 'pill pill-info' : 'pill pill-warn',
+      statusClass:
+        earning.netAmount < 0
+          ? 'pill pill-danger'
+          : earning.status === 'AVAILABLE'
+            ? 'pill pill-info'
+            : 'pill pill-warn',
     }));
 }
 
 function buildPresence(sessions: AdminAppSession[]) {
   const customerSessions = sessions.filter((session) => session.role === 'CUSTOMER');
-  const partnerSessions = sessions.filter((session) => session.role === 'PROVIDER' || session.role === 'PARTNER');
+  const partnerSessions = sessions.filter(
+    (session) => session.role === 'PROVIDER' || session.role === 'PARTNER',
+  );
   return {
     customerLive: customerSessions.filter((session) => session.active).length,
     partnerLive: partnerSessions.filter((session) => session.active).length,
@@ -1170,8 +1456,12 @@ function buildCustomerSignals(customers: AdminCustomer[]) {
         detail: `${bookings.length} booking(s), ${formatMoney(paidAmount, 'VND')} payment total, ${
           customer.selectedLocations?.length ?? 0
         } saved location(s).`,
-        lastWorkLabel: lastWork ? `Last booking ${shortId(lastWork.id)} / ${relativeTime(lastWork.updatedAt ?? lastWork.createdAt)}` : 'No booking yet',
-        sortTime: dateValue(lastWork?.updatedAt ?? lastWork?.createdAt ?? customer.user?.updatedAt ?? customer.user?.createdAt),
+        lastWorkLabel: lastWork
+          ? `Last booking ${shortId(lastWork.id)} / ${relativeTime(lastWork.updatedAt ?? lastWork.createdAt)}`
+          : 'No booking yet',
+        sortTime: dateValue(
+          lastWork?.updatedAt ?? lastWork?.createdAt ?? customer.user?.updatedAt ?? customer.user?.createdAt,
+        ),
       };
     })
     .sort((a, b) => b.sortTime - a.sortTime);
@@ -1183,9 +1473,13 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
     .map((partner) => {
       const hasCashDebt = cashDebtPartnerIds.has(partner.id);
       const hasKycPending = ['pending', 'PENDING', 'SUBMITTED'].includes(partner.kyc?.status ?? '');
-      const hasBankPending = (partner.bankAccounts ?? []).some((account) => ['pending', 'PENDING', 'SUBMITTED'].includes(account.status));
+      const hasBankPending = (partner.bankAccounts ?? []).some((account) =>
+        ['pending', 'PENDING', 'SUBMITTED'].includes(account.status),
+      );
       const hasFreshLocation = recentlyChanged(partner.currentLocationUpdatedAt, 30);
-      const completed = (partner.selectedBookings ?? []).filter((booking) => booking.status === 'COMPLETED').length;
+      const completed = (partner.selectedBookings ?? []).filter(
+        (booking) => booking.status === 'COMPLETED',
+      ).length;
       const status = hasCashDebt
         ? 'Cash settlement'
         : hasKycPending
@@ -1197,7 +1491,9 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
               : 'Location stale';
       return {
         id: partner.id,
-        name: operatorDisplayText(partner.displayName ?? partner.legalName ?? partner.user?.fullName ?? 'Partner'),
+        name: operatorDisplayText(
+          partner.displayName ?? partner.legalName ?? partner.user?.fullName ?? 'Partner',
+        ),
         status,
         detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
         action: hasCashDebt
@@ -1207,7 +1503,11 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
             : hasBankPending
               ? 'Open payout account review.'
               : 'Continue normal operational watch.',
-        className: hasCashDebt ? 'pill pill-danger' : hasKycPending || hasBankPending ? 'pill pill-warn' : 'pill pill-success',
+        className: hasCashDebt
+          ? 'pill pill-danger'
+          : hasKycPending || hasBankPending
+            ? 'pill pill-warn'
+            : 'pill pill-success',
         attention: hasCashDebt || hasKycPending || hasBankPending || !hasFreshLocation,
         sortPriority:
           (hasCashDebt ? 5 : 0) +
@@ -1223,17 +1523,22 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
 function participantNames(booking: AdminBooking) {
   return (booking.participants ?? [])
     .map((participant) =>
-      operatorDisplayText(participant.providerProfile?.displayName ?? participant.providerProfile?.user?.fullName),
+      operatorDisplayText(
+        participant.providerProfile?.displayName ?? participant.providerProfile?.user?.fullName,
+      ),
     )
     .filter(Boolean) as string[];
 }
 
 function bookingNextAction(booking: AdminBooking) {
   if (booking.status === 'OPEN_MATCHING') return 'Monitor partner response window and customer shortlist.';
-  if (booking.status === 'MATCHED') return 'Confirm partner starts service when ready; chat should be available.';
+  if (booking.status === 'MATCHED')
+    return 'Confirm partner starts service when ready; chat should be available.';
   if (booking.status === 'IN_SERVICE') return 'Keep chat visible until partner completion.';
-  if (booking.status === 'COMPLETED') return 'Check payment, earning, tax, wallet, and chat archive closeout.';
-  if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED') return 'Check payment release, refund, and customer notice.';
+  if (booking.status === 'COMPLETED')
+    return 'Check payment, earning, tax, wallet, and chat archive closeout.';
+  if (booking.status === 'CANCELLED' || booking.status === 'EXPIRED')
+    return 'Check payment release, refund, and customer notice.';
   return 'Open booking detail for the latest factual state.';
 }
 
@@ -1250,7 +1555,9 @@ function relatedHref(log: AdminAuditLog) {
   const bookingId = stringValue(metadata.bookingId);
   const customerId = stringValue(metadata.customerProfileId);
   const providerId =
-    stringValue(metadata.providerProfileId) ?? stringValue(metadata.partnerProfileId) ?? stringValue(metadata.providerId);
+    stringValue(metadata.providerProfileId) ??
+    stringValue(metadata.partnerProfileId) ??
+    stringValue(metadata.providerId);
   if (bookingId) return `/bookings/${bookingId}`;
   if (customerId) return `/customers/${customerId}`;
   if (providerId) return `/partners/${providerId}`;
@@ -1262,7 +1569,9 @@ function relatedHref(log: AdminAuditLog) {
 }
 
 function asRecord(value: unknown) {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function stringValue(value: unknown) {
