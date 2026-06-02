@@ -17,6 +17,7 @@ type CustomersPageSearchParams = Promise<Record<string, string | string[] | unde
 type CustomerFilters = {
   q: string;
   booking: string;
+  bookingFlow: string;
   reachability: string;
   address: string;
   payment: string;
@@ -52,6 +53,11 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       last_booking_at: row.lastBookingAt ?? '',
       booking_count: row.bookingCount,
       active_booking_count: row.activeBookings,
+      open_matching_count: row.openMatchingBookings,
+      first_pick_count: row.firstPickBookings,
+      customer_choice_count: row.customerChoiceBookings,
+      chat_missing_count: row.chatMissingBookings,
+      address_snapshot_count: row.addressSnapshotBookings,
       completed_work_count: row.completedBookings,
       closed_booking_count: row.cancelledBookings,
       customer_closed_count: row.customerClosedBookings,
@@ -85,6 +91,11 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       'last_booking_at',
       'booking_count',
       'active_booking_count',
+      'open_matching_count',
+      'first_pick_count',
+      'customer_choice_count',
+      'chat_missing_count',
+      'address_snapshot_count',
       'completed_work_count',
       'closed_booking_count',
       'customer_closed_count',
@@ -144,6 +155,21 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
               <option value="completed">Completed work</option>
               <option value="closed">Closed booking</option>
               <option value="no-booking">No booking yet</option>
+            </select>
+          </label>
+          <label>
+            Booking flow
+            <select name="bookingFlow" defaultValue={filters.bookingFlow}>
+              <option value="">All</option>
+              <option value="open-matching">Open matching wait</option>
+              <option value="first-pick">First-pick pending</option>
+              <option value="customer-choice">Customer final choice</option>
+              <option value="chat-live">Chat room opened</option>
+              <option value="chat-missing">Matched but chat missing</option>
+              <option value="service-live">Service in progress</option>
+              <option value="completed-work">Completed work</option>
+              <option value="closed-record">Closed or no-show record</option>
+              <option value="address-snapshot">Address snapshot saved</option>
             </select>
           </label>
           <label>
@@ -550,6 +576,7 @@ function buildCustomerFilters(params: Record<string, string | string[] | undefin
   return {
     q: readSearchParam(params.q),
     booking: readSearchParam(params.booking),
+    bookingFlow: normalizeCustomerBookingFlowFilter(readSearchParam(params.bookingFlow)),
     reachability: readSearchParam(params.reachability),
     address: readSearchParam(params.address),
     payment: readSearchParam(params.payment),
@@ -594,6 +621,36 @@ function readPositiveNumber(value: string | string[] | undefined) {
   return Math.floor(parsed);
 }
 
+function normalizeCustomerBookingFlowFilter(value: string) {
+  const allowed = [
+    'open-matching',
+    'first-pick',
+    'customer-choice',
+    'chat-live',
+    'chat-missing',
+    'service-live',
+    'completed-work',
+    'closed-record',
+    'address-snapshot',
+  ];
+  return allowed.includes(value) ? value : '';
+}
+
+function customerBookingFlowFilterLabel(flow: string) {
+  const labels: Record<string, string> = {
+    'open-matching': 'Open matching wait',
+    'first-pick': 'First-pick pending',
+    'customer-choice': 'Customer final choice',
+    'chat-live': 'Chat room opened',
+    'chat-missing': 'Matched but chat missing',
+    'service-live': 'Service in progress',
+    'completed-work': 'Completed work',
+    'closed-record': 'Closed or no-show record',
+    'address-snapshot': 'Address snapshot saved',
+  };
+  return labels[flow] ?? flow;
+}
+
 function customerSortLabel(sort: string) {
   if (sort === 'last-work') return 'last completed work';
   if (sort === 'booking-count') return 'booking count';
@@ -628,6 +685,15 @@ function filterCustomerRows(rows: ReturnType<typeof buildCustomerRow>[], filters
     if (filters.booking === 'completed' && row.completedBookings === 0) return false;
     if (filters.booking === 'closed' && row.cancelledBookings === 0) return false;
     if (filters.booking === 'no-booking' && row.bookingCount > 0) return false;
+    if (filters.bookingFlow === 'open-matching' && row.openMatchingBookings === 0) return false;
+    if (filters.bookingFlow === 'first-pick' && row.firstPickBookings === 0) return false;
+    if (filters.bookingFlow === 'customer-choice' && row.customerChoiceBookings === 0) return false;
+    if (filters.bookingFlow === 'chat-live' && row.chatRooms === 0) return false;
+    if (filters.bookingFlow === 'chat-missing' && row.chatMissingBookings === 0) return false;
+    if (filters.bookingFlow === 'service-live' && row.serviceLiveBookings === 0) return false;
+    if (filters.bookingFlow === 'completed-work' && row.completedBookings === 0) return false;
+    if (filters.bookingFlow === 'closed-record' && row.cancelledBookings === 0) return false;
+    if (filters.bookingFlow === 'address-snapshot' && row.addressSnapshotBookings === 0) return false;
     if (filters.reachability === 'in-app' && !row.isLive) return false;
     if (filters.reachability === 'push-ready' && !row.pushReachable) return false;
     if (filters.reachability === 'no-push' && row.pushReachable) return false;
@@ -696,6 +762,7 @@ function buildCustomerActiveFilters(filters: CustomerFilters) {
   const labels: string[] = [];
   if (filters.q) labels.push(`Search: ${filters.q}`);
   if (filters.booking) labels.push(`Booking: ${filters.booking}`);
+  if (filters.bookingFlow) labels.push(`Booking flow: ${customerBookingFlowFilterLabel(filters.bookingFlow)}`);
   if (filters.reachability) labels.push(`Reachability: ${filters.reachability}`);
   if (filters.address) labels.push(`Address: ${filters.address}`);
   if (filters.payment) labels.push(`Payment: ${filters.payment}`);
@@ -733,6 +800,18 @@ function buildCustomerRow(customer: AdminCustomer) {
   const partnerClosedBookings = closedBookings.filter((booking) => booking.closedByRole === 'PROVIDER').length;
   const noShowBookings = bookings.filter((booking) => booking.status === 'NO_SHOW').length;
   const completedBookings = bookings.filter((booking) => booking.status === 'COMPLETED').length;
+  const openMatchingBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
+  const firstPickBookings = bookings.filter(
+    (booking) => booking.preferredProviderId && !booking.selectedProviderId,
+  ).length;
+  const customerChoiceBookings = bookings.filter((booking) => Boolean(booking.selectedProviderId)).length;
+  const serviceLiveBookings = bookings.filter((booking) =>
+    ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  ).length;
+  const chatMissingBookings = bookings.filter(
+    (booking) => shouldHaveCustomerChatRoom(booking) && !booking.chatRoom,
+  ).length;
+  const addressSnapshotBookings = bookings.filter((booking) => Boolean(booking.addressSnapshot)).length;
   const paymentIssues = payments.filter(
     (payment) => payment && !['AUTHORIZED', 'CAPTURED'].includes(payment.status),
   ).length;
@@ -787,6 +866,12 @@ function buildCustomerRow(customer: AdminCustomer) {
     joinedAt: customer.user?.createdAt,
     bookingCount: bookings.length,
     activeBookings,
+    openMatchingBookings,
+    firstPickBookings,
+    customerChoiceBookings,
+    serviceLiveBookings,
+    chatMissingBookings,
+    addressSnapshotBookings,
     completedBookings,
     cancelledBookings,
     customerClosedBookings,
@@ -848,6 +933,12 @@ function buildCustomerSummary(rows: ReturnType<typeof buildCustomerRow>[]) {
       .filter(Boolean)
       .sort((left, right) => dateMs(right) - dateMs(left))[0],
   };
+}
+
+function shouldHaveCustomerChatRoom(booking: NonNullable<AdminCustomer['bookings']>[number]) {
+  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
+    booking.status,
+  );
 }
 
 function buildCustomerFilterSummary(

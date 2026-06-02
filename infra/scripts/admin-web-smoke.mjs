@@ -158,6 +158,7 @@ const pages = [
       'All customers',
       'Customer ID',
       'Phone / email',
+      'Booking flow',
       'Joined',
       'Recent access',
       'Last work',
@@ -210,6 +211,18 @@ const pages = [
   {
     path: '/customers?sort=last-seen',
     markers: ['Customer Management', 'Sort: last app session', 'All customers'],
+  },
+  {
+    path: '/customers?bookingFlow=first-pick',
+    markers: ['Customer Management', 'Booking flow: First-pick pending', 'First-pick pending'],
+  },
+  {
+    path: '/customers?bookingFlow=chat-missing',
+    markers: ['Customer Management', 'Booking flow: Matched but chat missing', 'Matched but chat missing'],
+  },
+  {
+    path: '/customers?bookingFlow=address-snapshot',
+    markers: ['Customer Management', 'Booking flow: Address snapshot saved', 'Address snapshot saved'],
   },
   {
     path: '/operations-policy',
