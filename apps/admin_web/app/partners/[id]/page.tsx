@@ -310,6 +310,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     dispatchPolicy,
     activityRecords: filteredPartnerActivityRecords,
   });
+  const partnerBookingJourneyRows = buildPartnerBookingJourneyRows(
+    provider,
+    filteredPartnerBookingArchive,
+    dispatchPolicy,
+  );
   const partnerOperatorCommandQueue = buildPartnerOperatorCommandQueue({
     provider,
     primaryBank,
@@ -545,6 +550,58 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="card" id="partner-booking-journey" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner booking journey</h2>
+            <p className="muted">
+              Booking-by-booking factual journey for this partner: first-pick window, 10 km marketplace
+              participation, customer final selection, retained chat, money rows, and staff records.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerBookingJourneyRows.length} journey row(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {partnerBookingJourneyRows.length ? (
+            partnerBookingJourneyRows.map((row) => (
+              <div className="setup-stage-item" key={`partner-journey-${row.id}-${row.relation}`}>
+                <span>{row.relation}</span>
+                <div>
+                  <Link className="text-link" href={`/bookings/${row.id}`}>
+                    <strong>{row.heading}</strong>
+                  </Link>
+                  <p className="muted">{row.detail}</p>
+                  <div className="participant-list" style={{ marginTop: 8 }}>
+                    {row.steps.map((step) => (
+                      <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
+                        {step.label}: {step.value}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="participant-list" style={{ marginTop: 8 }}>
+                    {row.links.map((link) => (
+                      <Link className="text-link" href={link.href} key={link.label}>
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No partner booking journey matched this filter</strong>
+                <p className="muted">Use a wider date range to show older booking rows.</p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
         </div>
       </div>
 
@@ -2524,6 +2581,22 @@ type PartnerOperationsDigestRow = {
   tone: string;
   evidence: string[];
 };
+type PartnerBookingJourneyRow = {
+  id: string;
+  relation: string;
+  heading: string;
+  detail: string;
+  latestAt?: string;
+  steps: Array<{
+    label: string;
+    value: string;
+    tone: string;
+  }>;
+  links: Array<{
+    label: string;
+    href: string;
+  }>;
+};
 
 type PartnerAcceptanceRepairCommand = {
   status: string;
@@ -3123,6 +3196,119 @@ function buildPartnerBookingEvidenceRows(
           ? 'Records linked'
           : 'Minimal records',
       opsDetail: opsParts.join(' / '),
+    };
+  });
+}
+
+function buildPartnerBookingJourneyRows(
+  provider: ProviderDetail,
+  bookingArchive: PartnerBookingArchiveRecord[],
+  dispatchPolicy: PartnerDispatchPolicy,
+): PartnerBookingJourneyRow[] {
+  return bookingArchive.slice(0, 20).map((record) => {
+    const booking = record.booking;
+    const participant = (booking.participants ?? []).find(
+      (item) => item.providerProfileId === provider.id,
+    );
+    const chatMessages = readPartnerChatMessages(booking);
+    const latestMessage = chatMessages[chatMessages.length - 1];
+    const earning = (provider.earnings ?? []).find((item) => item.bookingId === booking.id);
+    const walletRows = earning?.walletLedgerEntries ?? [];
+    const isFinalPartner = record.relation === 'Selected';
+    const hasChat = Boolean(booking.chatRoom);
+    const shouldHaveChat = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
+      booking.status ?? '',
+    );
+    const firstPickValue =
+      record.relation === 'Preferred'
+        ? `${dispatchPolicy.responseWindowMinutes} min first-pick`
+        : isFinalPartner
+          ? 'Customer selected'
+          : 'Marketplace join';
+    const marketplaceValue =
+      record.relation === 'Joined'
+        ? `Within ${formatDistance(dispatchPolicy.backupRadiusMeters)} policy`
+        : `${booking.participants?.length ?? 0} participant(s)`;
+    const moneyValue = earning
+      ? `earning ${earning.status}`
+      : booking.payment
+        ? `${booking.payment.status ?? 'UNKNOWN'} ${booking.payment.method ?? 'UNKNOWN'}`
+        : 'No money row';
+    const latestAt = newestDateValue([
+      latestMessage?.createdAt,
+      participant?.respondedAt,
+      participant?.joinedAt,
+      booking.closedAt,
+      earning?.paidAt,
+      earning?.availableAt,
+      earning?.createdAt,
+      booking.scheduledStartAt,
+      booking.createdAt,
+    ]);
+
+    return {
+      id: booking.id,
+      relation: record.relation,
+      heading: `${bookingServiceLabel(booking)} / ${shortRecordId(booking.id)} / ${booking.status ?? 'UNKNOWN'}`,
+      detail: `${formatCurrency(bookingTotal(booking))} / ${partnerBookingAddressEvidenceLabel(booking)} / customer ${partnerBookingCustomer(
+        booking,
+      )}`,
+      latestAt,
+      steps: [
+        {
+          label: 'Address',
+          value: booking.addressSnapshot ? 'Snapshot saved' : 'Review',
+          tone: booking.addressSnapshot ? 'pill-success' : 'pill-warn',
+        },
+        {
+          label: 'First-pick',
+          value: firstPickValue,
+          tone: record.relation === 'Preferred' || isFinalPartner ? 'pill-info' : 'pill-neutral',
+        },
+        {
+          label: 'Open matching',
+          value: marketplaceValue,
+          tone: record.relation === 'Joined' ? 'pill-info' : 'pill-neutral',
+        },
+        {
+          label: 'Customer choice',
+          value: isFinalPartner ? 'Final partner' : 'Not final on this row',
+          tone: isFinalPartner ? 'pill-success' : 'pill-neutral',
+        },
+        {
+          label: 'Response',
+          value: participant?.respondedAt
+            ? `${participant.status} ${formatDate(participant.respondedAt)}`
+            : participant?.joinedAt
+              ? `${participant.status} joined`
+              : 'No response row',
+          tone: participant?.respondedAt ? 'pill-success' : participant?.joinedAt ? 'pill-info' : 'pill-neutral',
+        },
+        {
+          label: 'Chat',
+          value: hasChat ? `${chatMessages.length} retained` : partnerBookingChatEvidenceLabel(booking),
+          tone: hasChat ? 'pill-success' : shouldHaveChat ? 'pill-warn' : 'pill-neutral',
+        },
+        {
+          label: 'Money',
+          value: moneyValue,
+          tone: earning ? 'pill-success' : booking.payment ? 'pill-info' : 'pill-neutral',
+        },
+        {
+          label: 'Wallet',
+          value: walletRows.length ? `${walletRows.length} row(s)` : 'No row',
+          tone: walletRows.length ? 'pill-info' : 'pill-neutral',
+        },
+      ],
+      links: [
+        { label: 'Open booking', href: `/bookings/${booking.id}` },
+        ...(booking.customerProfileId
+          ? [{ label: 'Open customer', href: `/customers/${booking.customerProfileId}` }]
+          : []),
+        ...(booking.chatRoom
+          ? [{ label: 'Open chat archive', href: `/chat-archive?q=${encodeURIComponent(booking.id)}` }]
+          : []),
+      ],
     };
   });
 }
@@ -4234,6 +4420,12 @@ function auditLogNoteText(log: AdminAuditLog) {
 function dateValue(value?: string | null) {
   if (!value) return Number.NaN;
   return Date.parse(value);
+}
+
+function newestDateValue(values: Array<string | null | undefined>) {
+  return values
+    .filter((value): value is string => Boolean(value) && !Number.isNaN(dateValue(value)))
+    .sort((left, right) => dateValue(right) - dateValue(left))[0];
 }
 
 function buildProviderBookingAcceptance(
