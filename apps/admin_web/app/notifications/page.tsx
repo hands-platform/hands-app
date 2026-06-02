@@ -204,7 +204,7 @@ export default async function NotificationsPage({
               <th>User</th>
               <th>Type</th>
               <th>Title</th>
-              <th>Ops signal</th>
+              <th>Ops record</th>
               <th>Delivery</th>
               <th>Action</th>
             </tr>

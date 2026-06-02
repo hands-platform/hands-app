@@ -359,7 +359,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           </div>
           <div className="participant-list">
             <span className="pill pill-success">Newest active first</span>
-            <span className="pill pill-info">Payout signal</span>
+            <span className="pill pill-info">Payout record</span>
             <span className="pill pill-warn">Reconciliation</span>
             <a className="pill" href="/earnings">
               Review earnings
@@ -373,7 +373,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               <th>Batch</th>
               <th>Partner</th>
               <th>Status</th>
-              <th>Ops signal</th>
+              <th>Ops record</th>
               <th>Blocking reasons</th>
               <th>Transfer ref</th>
               <th>Earnings</th>
