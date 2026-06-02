@@ -774,6 +774,7 @@ if (bookingLinkMatch) {
     'Service pricing snapshot',
     'Open customer record',
     'Preferred, final, and marketplace shortlist.',
+    'Matching rule snapshot',
     'Booking stage snapshot',
     'Applied operations policy',
     'Action evidence gate',
