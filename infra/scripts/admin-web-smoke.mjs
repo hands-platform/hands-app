@@ -643,6 +643,7 @@ if (customerLinkMatch) {
     'Customer booking evidence bundles',
     'Customer operator command queue',
     'Customer full record index',
+    'Customer operations digest',
     'Customer operating ledger',
     'Customer activity action panel',
     'Customer information',
