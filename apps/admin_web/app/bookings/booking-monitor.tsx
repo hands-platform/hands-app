@@ -341,7 +341,7 @@ export function BookingMonitor({ bookings, initialView, initialEvidenceFilter = 
     {
       label: 'Dispatch pressure',
       value: dispatchCommandLane?.status ?? 'Stable',
-      detail: dispatchCommandLane?.detail ?? 'Booking demand and partner supply signals are loaded.',
+      detail: dispatchCommandLane?.detail ?? 'Booking demand and partner supply records are loaded.',
       href: dispatchCommandLane?.href ?? '/bookings?view=matching',
     },
     {
@@ -1147,7 +1147,7 @@ const bookingViewOptions: Array<{
   {
     view: 'location',
     label: 'Location ops',
-    description: 'on-the-way or in-service bookings with missing or stale partner location signals.',
+    description: 'on-the-way or in-service bookings with missing or stale partner location records.',
     operatorHint:
       'Use this only for live service states. The MVP tracks last-known location, not live route streaming.',
   },
@@ -1220,7 +1220,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
       detail:
         noSupply.length > 0
           ? 'Open matching has customer demand without partner supply.'
-          : 'Active booking demand has enough current operating signal.',
+          : 'Active booking demand has enough current operating data.',
       href:
         noSupply.length > 0 || expiredMatching.length > 0
           ? noSupply.length > 0
@@ -1281,7 +1281,7 @@ function buildBookingCommandCenter(bookings: AdminBooking[], nowMs: number): Boo
             ? 'Some bookings need capture, release, refund, cash debt, or missing reference review.'
             : noShow.length > 0
               ? 'No-show bookings need a clear payment and customer communication outcome.'
-              : 'Payment and service pricing policy signals are aligned.',
+              : 'Payment and service pricing policy records are aligned.',
       href:
         closeoutChecks.length > 0
           ? '/bookings?view=closeout'
@@ -2352,7 +2352,7 @@ function emptyBookingMessage(view: BookingView) {
     return 'No pricing-check bookings match this queue. Booking prices match active service payout rules.';
   }
   if (view === 'location') {
-    return 'No location-check bookings match this queue. Live service location signals look acceptable.';
+    return 'No location-check bookings match this queue. Live service location records look acceptable.';
   }
   if (view === 'chat') {
     return 'No chat-live bookings match this queue. No active customer/partner conversation needs review.';
@@ -2488,7 +2488,7 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
     flags.push({ severity: 'high', title: 'Matched without chat' });
   }
   if (locationRequiredStatuses.has(booking.status) && !hasProviderLocation(booking)) {
-    flags.push({ severity: 'medium', title: 'No partner location signal' });
+    flags.push({ severity: 'medium', title: 'No partner location record' });
   }
   if (
     locationRequiredStatuses.has(booking.status) &&

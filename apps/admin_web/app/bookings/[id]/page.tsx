@@ -2565,7 +2565,7 @@ function bookingOperatorPriorityBriefing({
         helper: `${messageCount} retained message(s). Admin keeps chat history after service closeout.`,
       },
       {
-        label: 'Location signal',
+        label: 'Location record',
         value: locationLabel,
         helper: latestLocation
           ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
@@ -3839,7 +3839,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
   if (['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
     return {
       title: 'Track handoff and service progress',
-      detail: 'Confirm chat, partner location signal, arrival state, and service lifecycle events.',
+      detail: 'Confirm chat, partner location record, arrival state, and service lifecycle events.',
       href: '#location',
       hrefLabel: 'Open location',
     };
@@ -4527,7 +4527,7 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
   if (activeWithLocationNeed && !latestProviderLocation(booking)) {
     flags.push({
       severity: 'medium',
-      title: 'No partner location signal',
+      title: 'No partner location record',
       detail: `Booking is ${status}, but the partner has not shared a live pin.`,
       action: 'Ask the partner to share current location from the Partner app.',
     });
