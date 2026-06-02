@@ -702,6 +702,8 @@ if (customerLinkMatch) {
     'Customer wallet',
     'Saved addresses',
     'Booking and cancellation history',
+    'Customer chat retention ledger',
+    'Matched bookings must create a chat room',
     'Chat history',
     'All customer chats',
     'Admin archive for every matched booking',
