@@ -644,6 +644,7 @@ if (customerLinkMatch) {
     'Customer operator command queue',
     'Customer full record index',
     'Customer operations digest',
+    'Customer booking journey',
     'Customer operating ledger',
     'Customer activity action panel',
     'Customer information',

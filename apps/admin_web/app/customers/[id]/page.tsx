@@ -102,6 +102,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       isWithinDetailActivityType(record.type, activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS),
   );
   const customerBookingEvidenceRows = buildCustomerBookingEvidenceRows(filteredBookings);
+  const customerBookingJourneyRows = buildCustomerBookingJourneyRows(filteredBookings);
   const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
   const customerDailyActivityDigest = buildCustomerDailyActivityDigest(filteredCustomerActivityRecords);
   const filteredNotifications = notifications.filter((notification) =>
@@ -513,6 +514,58 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="card" id="customer-booking-journey" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer booking journey</h2>
+            <p className="muted">
+              Reservation-by-reservation journey for support review: service address, partner handoff,
+              retained chat, payment rows, and staff records are grouped as factual records only.
+            </p>
+          </div>
+          <span className="pill pill-info">{customerBookingJourneyRows.length} journey row(s)</span>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 14 }}>
+          {customerBookingJourneyRows.length > 0 ? (
+            customerBookingJourneyRows.map((row) => (
+              <div className="setup-stage-item" key={`journey-${row.id}`}>
+                <span>{row.status}</span>
+                <div>
+                  <Link className="text-link" href={`/bookings/${row.id}`}>
+                    <strong>{row.heading}</strong>
+                  </Link>
+                  <p className="muted">{row.detail}</p>
+                  <div className="participant-list" style={{ marginTop: 8 }}>
+                    {row.steps.map((step) => (
+                      <span className={`pill ${step.tone}`} key={`${row.id}-${step.label}`}>
+                        {step.label}: {step.value}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="participant-list" style={{ marginTop: 8 }}>
+                    {row.links.map((link) => (
+                      <Link className="text-link" href={link.href} key={link.label}>
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+                <small>{row.latestAt ? formatDate(row.latestAt) : 'No date'}</small>
+              </div>
+            ))
+          ) : (
+            <div className="setup-stage-item">
+              <span>NONE</span>
+              <div>
+                <strong>No booking journey matched this filter</strong>
+                <p className="muted">Use a wider date range to show older reservation rows.</p>
+              </div>
+              <small>0</small>
+            </div>
+          )}
         </div>
       </section>
 
@@ -1285,6 +1338,16 @@ type CustomerBookingEvidenceRow = {
   moneyDetail: string;
   opsStatus: string;
   opsDetail: string;
+};
+
+type CustomerBookingJourneyRow = {
+  id: string;
+  status: string;
+  heading: string;
+  detail: string;
+  latestAt?: string;
+  steps: Array<{ label: string; value: string; tone: string }>;
+  links: Array<{ label: string; href: string }>;
 };
 
 type CustomerOperatingLedgerRow = {
@@ -2551,6 +2614,106 @@ function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): Custo
           ? 'Operator records'
           : 'No operator rows',
       opsDetail: opsParts.join(' / '),
+    };
+  });
+}
+
+function buildCustomerBookingJourneyRows(bookings: AdminBookingDetail[]): CustomerBookingJourneyRow[] {
+  return bookings.slice(0, 20).map((booking) => {
+    const chatMessages = readChatMessages(booking);
+    const latestMessage = chatMessages[chatMessages.length - 1];
+    const refunds = [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])];
+    const participantCount = booking.participants?.length ?? 0;
+    const selectedPartner = booking.selectedProviderId ? bookingPartnerDisplayName(booking) : null;
+    const hasAddressSnapshot = Boolean(booking.addressSnapshot);
+    const hasMoneyCloseout =
+      Boolean(booking.earning) ||
+      (booking.platformFeeLogs?.length ?? 0) > 0 ||
+      (booking.taxLogs?.length ?? 0) > 0 ||
+      (booking.walletLedgerEntries?.length ?? 0) > 0;
+    const latestAt =
+      latestMessage?.createdAt ??
+      booking.updatedAt ??
+      booking.closedAt ??
+      booking.scheduledStartAt ??
+      booking.createdAt;
+    const moneyValue = booking.payment
+      ? `${booking.payment.status} ${formatMoney(
+          Number(booking.payment.amount ?? 0),
+          booking.payment.currency ?? 'VND',
+        )}`
+      : hasMoneyCloseout
+        ? 'Closeout rows'
+        : 'No row';
+    const partnerValue = selectedPartner
+      ? selectedPartner
+      : booking.preferredProviderId
+        ? participantCount
+          ? `First-pick plus ${participantCount} participant(s)`
+          : 'First-pick waiting'
+        : participantCount
+          ? `${participantCount} participant(s)`
+          : 'No participant';
+    const chatValue = booking.chatRoom
+      ? `${chatMessages.length} retained`
+      : ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status)
+        ? 'Needs room check'
+        : 'Not opened';
+
+    return {
+      id: booking.id,
+      status: booking.status,
+      heading: `${bookingServiceLabel(booking)} / ${shortId(booking.id)}`,
+      detail: `${formatMoney(bookingTotal(booking))} / ${bookingAddressEvidenceLabel(booking)}`,
+      latestAt,
+      steps: [
+        {
+          label: 'Address',
+          value: hasAddressSnapshot ? 'Snapshot saved' : 'Review',
+          tone: hasAddressSnapshot ? 'pill-success' : 'pill-warn',
+        },
+        {
+          label: 'Partner',
+          value: partnerValue,
+          tone: selectedPartner ? 'pill-success' : participantCount ? 'pill-info' : 'pill-neutral',
+        },
+        {
+          label: 'Chat',
+          value: chatValue,
+          tone: booking.chatRoom
+            ? 'pill-success'
+            : ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
+                  booking.status,
+                )
+              ? 'pill-warn'
+              : 'pill-neutral',
+        },
+        {
+          label: 'Payment',
+          value: moneyValue,
+          tone: booking.payment ? 'pill-info' : hasMoneyCloseout ? 'pill-success' : 'pill-neutral',
+        },
+        {
+          label: 'Refund',
+          value: refunds.length ? `${refunds.length} row(s)` : 'None',
+          tone: refunds.length ? 'pill-warn' : 'pill-neutral',
+        },
+        {
+          label: 'Staff',
+          value: `${booking.opsTasks?.length ?? 0} task(s) / ${booking.auditLogs?.length ?? 0} log(s)`,
+          tone:
+            (booking.opsTasks?.length ?? 0) > 0 || (booking.auditLogs?.length ?? 0) > 0
+              ? 'pill-info'
+              : 'pill-neutral',
+        },
+      ],
+      links: [
+        { label: 'Open booking', href: `/bookings/${booking.id}` },
+        ...(booking.chatRoom
+          ? [{ label: 'Open chat archive', href: `/chat-archive?q=${encodeURIComponent(booking.id)}` }]
+          : []),
+        ...(booking.payment ? [{ label: 'Open payments', href: '/payments' }] : []),
+      ],
     };
   });
 }
