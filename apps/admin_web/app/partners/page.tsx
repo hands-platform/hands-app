@@ -674,6 +674,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <th>Partner</th>
                 <th>Basic checklist</th>
                 <th>Final gates</th>
+                <th>Matching flow</th>
                 <th>Work history</th>
                 <th>Money</th>
                 <th>App/location</th>
@@ -709,6 +710,21 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </span>
                     <p className="muted" style={{ marginTop: 8 }}>
                       {row.acceptanceDetail}
+                    </p>
+                  </td>
+                  <td>
+                    <div className="participant-list">
+                      {row.matchingFlow.map((item) => (
+                        <span
+                          className={`pill ${partnerOperationPillClass(item.tone)}`}
+                          key={item.label}
+                        >
+                          {item.label}: {item.status}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="muted" style={{ marginTop: 8 }}>
+                      {row.matchingFlowDetail}
                     </p>
                   </td>
                   <td>
@@ -753,7 +769,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               ))}
               {partnerOperationRows.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <strong>No partners found</strong>
                     <p className="muted">Change the filters or clear search to view partner records.</p>
                   </td>
@@ -761,7 +777,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               ) : null}
               {hiddenProviderCount > 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <p className="muted">
                       {hiddenProviderCount} more partner row(s) are hidden for page speed. Use search or
                       filters to narrow this list.
@@ -1763,6 +1779,8 @@ type PartnerOperationRow = {
   name: string;
   phone: string;
   checklist: PartnerOperationChecklistItem[];
+  matchingFlow: PartnerOperationChecklistItem[];
+  matchingFlowDetail: string;
   acceptanceLabel: string;
   acceptanceDetail: string;
   acceptanceTone: ProviderCommandLane['tone'];
@@ -1866,6 +1884,7 @@ function buildPartnerOperationRow(
   const firstRevenue = providerHasFirstRevenueSignal(provider);
   const taxStatus = provider.taxProfile?.status ?? (firstRevenue ? 'MISSING' : 'deferred');
   const nextAction = nextProviderListAction(provider, opsPolicy);
+  const matchingFlow = buildPartnerMatchingFlow(provider, opsPolicy);
 
   return {
     provider,
@@ -1924,6 +1943,8 @@ function buildPartnerOperationRow(
         tone: partnerHasAppActivity(provider) ? 'ok' : 'neutral',
       },
     ],
+    matchingFlow: matchingFlow.items,
+    matchingFlowDetail: matchingFlow.detail,
     acceptanceLabel: canAccept ? 'Final gate clear' : 'Final gate on hold',
     acceptanceDetail: canAccept
       ? backupEligibility.eligible
@@ -1937,6 +1958,58 @@ function buildPartnerOperationRow(
     locationState,
     lastActivityAt: partnerLastActivityAt(provider),
     nextAction,
+  };
+}
+
+function buildPartnerMatchingFlow(
+  provider: AdminProvider,
+  opsPolicy: ProviderOpsPolicy,
+): { items: PartnerOperationChecklistItem[]; detail: string } {
+  const bookingRows = providerBookingRows(provider);
+  const preferredCount = provider.preferredBookings?.length ?? 0;
+  const marketplaceCount = (provider.participants ?? []).filter((participant) =>
+    Boolean(participant.booking),
+  ).length;
+  const selectedCount = provider.selectedBookings?.length ?? 0;
+  const chatCount = bookingRows.filter((booking) => Boolean(booking.chatRoom)).length;
+  const activeBookingRows = bookingRows.filter((booking) => isActivePartnerBooking(booking));
+  const latestBooking = latestPartnerBookingRecord(bookingRows);
+  const marketplaceEligibility = partnerBackupMatchingEligibility(provider, opsPolicy);
+
+  return {
+    items: [
+      {
+        label: 'First-pick',
+        status: preferredCount ? `${preferredCount} record(s)` : 'none',
+        tone: preferredCount ? 'info' : 'neutral',
+      },
+      {
+        label: 'Marketplace',
+        status: marketplaceCount
+          ? `${marketplaceCount} joined`
+          : marketplaceEligibility.eligible
+            ? 'ready'
+            : 'blocked',
+        tone: marketplaceCount || marketplaceEligibility.eligible ? 'ok' : 'warn',
+      },
+      {
+        label: 'Customer choice',
+        status: selectedCount ? `${selectedCount} selected` : 'none',
+        tone: selectedCount ? 'ok' : 'neutral',
+      },
+      {
+        label: 'Chat',
+        status: chatCount ? `${chatCount} room(s)` : 'none',
+        tone: chatCount ? 'ok' : activeBookingRows.some((booking) => shouldHavePartnerChatRoom(booking)) ? 'warn' : 'neutral',
+      },
+    ],
+    detail: latestBooking
+      ? `Latest booking ${partnerShortId(latestBooking.id)} / ${latestBooking.status}. ${opsPolicy.responseWindowMinutes}m first-pick and ${formatDistanceMeters(
+          opsPolicy.backupRadiusMeters,
+        )} marketplace are governed by Operations Policy.`
+      : `No booking record loaded. ${opsPolicy.responseWindowMinutes}m first-pick and ${formatDistanceMeters(
+          opsPolicy.backupRadiusMeters,
+        )} marketplace checks still apply to new booking addresses.`,
   };
 }
 
@@ -2014,6 +2087,18 @@ function providerBookingRows(provider: AdminProvider) {
     if (participant.booking) records.set(participant.booking.id, participant.booking);
   }
   return [...records.values()];
+}
+
+function latestPartnerBookingRecord(bookings: AdminBooking[]) {
+  return [...bookings].sort((left, right) => {
+    const rightTime = Date.parse(right.updatedAt ?? right.createdAt ?? right.scheduledStartAt ?? '');
+    const leftTime = Date.parse(left.updatedAt ?? left.createdAt ?? left.scheduledStartAt ?? '');
+    return (Number.isFinite(rightTime) ? rightTime : 0) - (Number.isFinite(leftTime) ? leftTime : 0);
+  })[0];
+}
+
+function partnerShortId(id: string) {
+  return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
 }
 
 function isActivePartnerBooking(booking: AdminBooking) {
