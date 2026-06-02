@@ -389,8 +389,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               const checklist = payoutChecklist(batch);
               const payoutHold = activePayoutHold(batch);
               const blockingReasons = payoutBlockingReasons(batch);
-              const paidBlockedByMissingRef =
-                batch.status !== 'PAID' && batch.status !== 'CANCELLED' && !batch.transferRef;
+              const paidBlockedByReleaseCheck =
+                batch.status !== 'PAID' && batch.status !== 'CANCELLED' && blockingReasons.length > 0;
               return (
                 <tr id={batch.id} key={batch.id}>
                   <td>
@@ -487,6 +487,21 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                     </div>
                   </td>
                   <td>
+                    <div className="ops-task-note" style={{ marginBottom: 10 }}>
+                      <strong>Payout action execution map</strong>
+                      <div className="setup-stage-list" style={{ marginTop: 8 }}>
+                        {payoutActionExecutionMap(batch).map((item) => (
+                          <div className="setup-stage-item" key={`${batch.id}-${item.action}`}>
+                            <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                            <div>
+                              <strong>{item.action}</strong>
+                              <p className="muted">{item.reason}</p>
+                              <small>{item.operatorRule}</small>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                     <form className="actions" action={updatePayoutTransferRef}>
                       <input type="hidden" name="payoutBatchId" value={batch.id} />
                       <input
@@ -516,7 +531,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                         <PayoutStatusForm
                           action={markPayoutPaid}
                           batch={batch}
-                          disabled={Boolean(payoutHold) || paidBlockedByMissingRef}
+                          disabled={paidBlockedByReleaseCheck}
                           label="Paid"
                         />
                       )}
@@ -528,8 +543,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                           Open partner checks
                         </a>
                       )}
-                      {paidBlockedByMissingRef && (
-                        <span className="pill pill-warn">Save bank ref before paid</span>
+                      {paidBlockedByReleaseCheck && (
+                        <span className="pill pill-warn">Resolve blockers before paid</span>
                       )}
                       {(batch.status === 'PAID' || batch.status === 'CANCELLED') && (
                         <span className="muted">No status action</span>
@@ -647,6 +662,14 @@ type PayoutBlockingReason = {
   label: string;
   detail: string;
   action: string;
+  pillClass: string;
+};
+
+type PayoutActionExecutionItem = {
+  action: string;
+  status: string;
+  reason: string;
+  operatorRule: string;
   pillClass: string;
 };
 
@@ -845,6 +868,87 @@ function buildPayoutReleaseQueue(batches: AdminPayoutBatch[]): PayoutReleaseQueu
       return Date.parse(right.batch.createdAt) - Date.parse(left.batch.createdAt);
     })
     .slice(0, 6);
+}
+
+function payoutActionExecutionMap(batch: AdminPayoutBatch): PayoutActionExecutionItem[] {
+  const blockingReasons = payoutBlockingReasons(batch);
+  const payoutHold = activePayoutHold(batch);
+  const earnings = batch.earnings ?? [];
+  const withholdingAmount = batchWithholdingAmount(batch);
+  const withholdingLogs = batch.withholdingLogs ?? [];
+  const canMoveToProcessing = batch.status === 'DRAFT' && !payoutHold;
+  const canMarkPaid = batch.status !== 'PAID' && batch.status !== 'CANCELLED' && blockingReasons.length === 0;
+  const canMarkFailed = batch.status === 'PROCESSING';
+  const hasTransferReference = Boolean(batch.transferRef);
+
+  return [
+    {
+      action: 'Save bank reference',
+      status: hasTransferReference ? 'Saved' : 'Needed before paid',
+      reason: hasTransferReference
+        ? `Bank transfer reference ${batch.transferRef} is saved.`
+        : 'No bank transfer reference is saved for this payout batch.',
+      operatorRule: 'Save the bank reference and notes before marking the payout as paid.',
+      pillClass: hasTransferReference ? 'pill-success' : 'pill-warn',
+    },
+    {
+      action: 'Start processing',
+      status: canMoveToProcessing ? 'Available' : batch.status === 'DRAFT' ? 'Blocked' : 'Not draft',
+      reason: canMoveToProcessing
+        ? 'Draft batch has no active payout hold, so finance can start the transfer workflow.'
+        : payoutHold
+          ? `Partner payout hold is active: ${payoutHold.reason}.`
+          : `Batch status is ${batch.status}.`,
+      operatorRule: 'Move to processing only after earnings and partner payout facts are reviewed.',
+      pillClass: canMoveToProcessing
+        ? 'pill-success'
+        : batch.status === 'DRAFT'
+          ? 'pill-danger'
+          : 'pill-neutral',
+    },
+    {
+      action: 'Mark paid',
+      status: canMarkPaid ? 'Available' : 'Blocked',
+      reason: canMarkPaid
+        ? 'No release blocker is currently preventing paid status.'
+        : blockingReasons.map((reason) => `${reason.label}: ${reason.detail}`).join(' '),
+      operatorRule:
+        'Paid status requires clean earnings, tax logs, bank reference, no payout hold, and no cash debt leakage.',
+      pillClass: canMarkPaid ? 'pill-success' : 'pill-danger',
+    },
+    {
+      action: 'Mark failed',
+      status: canMarkFailed ? 'Available' : 'Only processing',
+      reason: canMarkFailed
+        ? 'Batch is in processing and can be moved to failed if the bank transfer did not complete.'
+        : `Batch status is ${batch.status}.`,
+      operatorRule: 'Use failed only to preserve the failed transfer state before retry or rebuild.',
+      pillClass: canMarkFailed ? 'pill-warn' : 'pill-neutral',
+    },
+    {
+      action: 'Reconcile earnings and tax',
+      status:
+        earnings.length && (!withholdingAmount || withholdingLogs.length)
+          ? 'Trace ready'
+          : earnings.length
+            ? 'Tax check'
+            : 'No earnings',
+      reason:
+        earnings.length && (!withholdingAmount || withholdingLogs.length)
+          ? `${earnings.length} earning row(s) and ${withholdingLogs.length} tax log(s) are attached.`
+          : earnings.length
+            ? `${formatMoney(withholdingAmount, batch.currency)} withholding exists without a linked tax log.`
+            : 'This payout batch has no earning rows attached.',
+      operatorRule:
+        'Finance closeout should reconcile booking, earning, tax, wallet, and payout records together.',
+      pillClass:
+        earnings.length && (!withholdingAmount || withholdingLogs.length)
+          ? 'pill-success'
+          : earnings.length
+            ? 'pill-warn'
+            : 'pill-danger',
+    },
+  ];
 }
 
 function batchServiceEvidence(batch: AdminPayoutBatch | AdminPayoutBatch[]): PayoutServiceEvidenceItem[] {

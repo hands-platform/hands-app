@@ -344,7 +344,10 @@ const pages = [
     markers: ['Notifications', 'Failed sends', 'Delivery operations queue'],
   },
   { path: '/notifications?review=no-show', markers: ['Notifications', 'No-show'] },
-  { path: '/payouts', markers: ['Partner Payouts', 'Payout date range', 'Payout command queue'] },
+  {
+    path: '/payouts',
+    markers: ['Partner Payouts', 'Payout date range', 'Payout command queue', 'Payout action execution map'],
+  },
   {
     path: '/payouts?range=7d',
     markers: ['Partner Payouts', 'Payout date range', 'Last 7 days', 'Payout command queue'],
