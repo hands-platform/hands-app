@@ -2163,6 +2163,29 @@ await postJson(
   walletDebtProviderAuth.accessToken,
 );
 
+const walletDebtServiceStartGateBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  providerId: walletDebtProviderAuth.user.providerProfile.id,
+  scheduledStartAt: new Date(Date.now() + 132 * 60_000).toISOString(),
+  address: { line1: 'Negative wallet service start smoke flow' },
+  lat: 10.7783,
+  lng: 106.6994,
+  paymentMethod: 'MOMO',
+});
+const acceptedWalletDebtServiceStartGateBooking = await postJson(
+  `/provider/bookings/${walletDebtServiceStartGateBooking.id}/accept`,
+  walletDebtProviderAuth.accessToken,
+);
+if (acceptedWalletDebtServiceStartGateBooking.status !== 'MATCHED') {
+  await postJson(
+    `/customer/bookings/${walletDebtServiceStartGateBooking.id}/select-provider`,
+    customerAuth.accessToken,
+    {
+      providerId: walletDebtProviderAuth.user.providerProfile.id,
+    },
+  );
+}
+
 const walletDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: walletDebtProviderAuth.user.providerProfile.id,
@@ -2291,9 +2314,19 @@ const customerSelectionWalletBlockError = await expectRequestFailure(
     ),
   400,
 );
+const serviceStartWalletBlockError = await expectRequestFailure(
+  'Negative provider wallet blocks service start',
+  () =>
+    postJson(
+      `/provider/bookings/${walletDebtServiceStartGateBooking.id}/start`,
+      walletDebtProviderAuth.accessToken,
+    ),
+  400,
+);
 for (const [label, message] of [
   ['direct final acceptance', directWalletBlockError],
   ['customer final selection', customerSelectionWalletBlockError],
+  ['service start', serviceStartWalletBlockError],
 ]) {
   if (!message.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
     throw new Error(`Negative wallet ${label} response is missing wallet block code: ${message}`);

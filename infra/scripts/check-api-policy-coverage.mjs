@@ -142,6 +142,7 @@ const requiredCoverage = [
       'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
       'Negative provider wallet holds direct final acceptance',
       'Negative provider wallet blocks customer final selection',
+      'Negative provider wallet blocks service start',
       'Negative provider wallet should allow marketplace join intent before final acceptance',
       'Negative provider wallet holds payout batch creation',
     ],
@@ -152,6 +153,7 @@ const requiredCoverage = [
       'wallet.negative_balance_gate',
       'Negative provider wallet blocks customer final selection',
       'Negative provider wallet blocks customer final partner selection',
+      'Negative provider wallet blocks service start',
     ],
   },
   {

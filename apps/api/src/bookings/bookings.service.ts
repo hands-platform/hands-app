@@ -1323,6 +1323,7 @@ export class BookingsService {
     const provider = await this.requireProvider(providerUserId);
     await this.requireSelectedProvider(bookingId, provider.id);
     if (status === BookingStatus.IN_SERVICE) {
+      await this.ensureProviderWalletCanAccept(provider.id);
       const updated = await this.prisma.booking.update({
         where: { id: bookingId },
         data: {
