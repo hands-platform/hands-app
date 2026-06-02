@@ -4,57 +4,65 @@ import Link from 'next/link';
 
 const navSections = [
   {
-    label: 'Command',
+    label: 'Live Operations',
     links: [
-      ['/', 'Operations Dashboard'],
-      ['/operations-handoff', 'Operations Handoff'],
-      ['/bookings', 'Booking Monitor'],
-      ['/bookings?view=matching', 'Matching Queue'],
+      ['/', 'Command Dashboard'],
+      ['/operations-handoff', 'Shift Handoff'],
+      ['/bookings?view=attention', 'Attention Queue'],
+      ['/bookings?view=matching', 'Live Matching'],
+      ['/app-sessions', 'App Presence'],
+      ['/notifications?review=failed', 'Failed Alerts'],
+    ],
+  },
+  {
+    label: 'Booking Operations',
+    links: [
+      ['/bookings', 'All Bookings'],
       ['/bookings?view=customer-choice', 'Customer Choice'],
+      ['/bookings?view=marketplace', '10km Marketplace'],
       ['/bookings?view=chat-repair', 'Chat Repair'],
-      ['/operations-policy', 'Operations Policy'],
+      ['/bookings?view=no-show', 'No-show Evidence'],
     ],
   },
   {
-    label: 'Customers',
+    label: 'People Operations',
     links: [
-      ['/customers', 'Customer List'],
-      ['/chat-archive', 'Chat Archive'],
-      ['/reviews', 'Reviews'],
-      ['/coupons', 'Coupons'],
-      ['/notifications', 'Notifications'],
-      ['/notifications?review=failed', 'Failed Notifications'],
-    ],
-  },
-  {
-    label: 'Partners',
-    links: [
-      ['/partners', 'Partner List'],
+      ['/customers', 'Customers'],
+      ['/partners', 'Partners'],
       ['/partners?review=kyc', 'KYC Review'],
       ['/partners?review=acceptance-blocked', 'Acceptance Blocked'],
       ['/partners?review=marketplace-ready', 'Marketplace Ready'],
       ['/partner-controls', 'Partner Controls'],
-      ['/app-sessions', 'App Sessions'],
     ],
   },
   {
-    label: 'Finance',
+    label: 'Money Operations',
     links: [
       ['/finance-closeout', 'Finance Closeout'],
       ['/payments', 'Payments'],
-      ['/refunds', 'Refunds'],
       ['/earnings', 'Earnings'],
       ['/cash-settlements', 'Cash Settlements'],
       ['/payouts', 'Payouts'],
-      ['/tax-policy', 'Tax Policy'],
+      ['/refunds', 'Refunds'],
     ],
   },
   {
-    label: 'Catalog and System',
+    label: 'Policy and Setup',
     links: [
+      ['/operations-policy', 'Operations Policy'],
       ['/services', 'Service Catalog'],
-      ['/audit-log', 'Audit Log'],
+      ['/tax-policy', 'Tax Policy'],
       ['/setup', 'Setup'],
+    ],
+  },
+  {
+    label: 'Evidence and Audit',
+    links: [
+      ['/chat-archive', 'Chat Archive'],
+      ['/notifications', 'Notifications'],
+      ['/reviews', 'Reviews'],
+      ['/coupons', 'Coupons'],
+      ['/audit-log', 'Audit Log'],
     ],
   },
 ];
@@ -67,7 +75,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <aside className="sidebar">
             <div className="brand-block">
               <strong>HANDS Admin</strong>
-              <span>Vietnam operations console</span>
+              <span>Operations Command Center</span>
             </div>
             <nav className="nav">
               {navSections.map((section) => (
