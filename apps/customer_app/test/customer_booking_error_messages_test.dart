@@ -12,7 +12,9 @@ void main() {
     expect(message, contains('browse partners from anywhere'));
   });
 
-  test('maps missing current GPS booking gate errors', () {
+  test(
+      'maps legacy missing current GPS errors as address confirmation guidance',
+      () {
     final message = customerBookingErrorMessage(
       ApiException(
         400,
@@ -23,10 +25,12 @@ void main() {
       ),
     );
 
-    expect(message, contains('refresh your current GPS'));
+    expect(message, contains('Current GPS is optional'));
+    expect(message, contains('booking address must be clear'));
   });
 
-  test('maps stale current GPS booking gate errors', () {
+  test('maps legacy stale current GPS errors as optional evidence guidance',
+      () {
     final message = customerBookingErrorMessage(
       ApiException(
         400,
@@ -37,11 +41,11 @@ void main() {
       ),
     );
 
-    expect(message, contains('too old'));
-    expect(message, contains('Refresh your current location'));
+    expect(message, contains('optional GPS evidence is old'));
+    expect(message, contains('confirmed Vietnam service address'));
   });
 
-  test('maps customer distance booking gate errors', () {
+  test('maps legacy customer distance errors as service pin guidance', () {
     final message = customerBookingErrorMessage(
       ApiException(
         400,
@@ -52,7 +56,7 @@ void main() {
       ),
     );
 
-    expect(message, contains('too far from the service address'));
+    expect(message, contains('optional GPS evidence do not match'));
     expect(message, contains('service pin'));
   });
 

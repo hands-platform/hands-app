@@ -1404,91 +1404,72 @@ if (
     )}`,
   );
 }
-await expectRequestFailure(
-  'Booking requires a recent customer current location before payment and matching',
-  () =>
-    request('/customer/bookings', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${customerAuth.accessToken}` },
-      body: JSON.stringify({
-        serviceId: service.id,
-        address: { line1: 'District 1, Ho Chi Minh City' },
-        lat: 10.7769,
-        lng: 106.7009,
-        paymentMethod: 'CASH',
-      }),
-    }),
-  400,
+const noCurrentLocationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  address: { line1: 'District 1, Ho Chi Minh City' },
+  lat: 10.7769,
+  lng: 106.7009,
+  paymentMethod: 'CASH',
+});
+const noCurrentLocationBookingDetail = await getJson(
+  `/customer/bookings/${noCurrentLocationBooking.id}`,
+  customerAuth.accessToken,
 );
-const missingCurrentLocationGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
 if (
-  !missingCurrentLocationGateAuditLogs.some(
-    (log) =>
-      log.action === 'booking.create.rejected' &&
-      log.metadata?.reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING',
-  )
+  noCurrentLocationBookingDetail.status !== 'OPEN_MATCHING' ||
+  noCurrentLocationBookingDetail.addressSnapshot?.addressText !== 'District 1, Ho Chi Minh City'
 ) {
   throw new Error(
-    `Missing customer current location gate should create an operations audit log: ${JSON.stringify(
-      missingCurrentLocationGateAuditLogs.slice(0, 5),
+    `Booking should open from the confirmed service address without requiring customer GPS: ${JSON.stringify(
+      noCurrentLocationBookingDetail,
     )}`,
   );
 }
-await expectRequestFailure(
-  'Booking rejects stale customer current location snapshots',
-  () =>
-    postJson('/customer/bookings', customerAuth.accessToken, {
-      serviceId: service.id,
-      address: { line1: 'District 1, Ho Chi Minh City' },
-      lat: 10.7769,
-      lng: 106.7009,
-      currentLat: 10.7769,
-      currentLng: 106.7009,
-      currentLocationUpdatedAt: new Date(Date.now() - 20 * 60_000).toISOString(),
-      paymentMethod: 'CASH',
-    }),
-  400,
+const staleCurrentLocationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  address: { line1: 'District 1, Ho Chi Minh City stale optional GPS' },
+  lat: 10.7769,
+  lng: 106.7009,
+  currentLat: 10.7769,
+  currentLng: 106.7009,
+  currentLocationUpdatedAt: new Date(Date.now() - 20 * 60_000).toISOString(),
+  paymentMethod: 'CASH',
+});
+const staleCurrentLocationBookingDetail = await getJson(
+  `/customer/bookings/${staleCurrentLocationBooking.id}`,
+  customerAuth.accessToken,
 );
-const staleCurrentLocationGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
 if (
-  !staleCurrentLocationGateAuditLogs.some(
-    (log) =>
-      log.action === 'booking.create.rejected' &&
-      log.metadata?.reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE',
-  )
+  staleCurrentLocationBookingDetail.status !== 'OPEN_MATCHING' ||
+  staleCurrentLocationBookingDetail.metadata?.customerCurrentLocation != null
 ) {
   throw new Error(
-    `Stale customer current location gate should create an operations audit log: ${JSON.stringify(
-      staleCurrentLocationGateAuditLogs.slice(0, 5),
+    `Stale customer GPS should be ignored as optional evidence, not block address-based booking: ${JSON.stringify(
+      staleCurrentLocationBookingDetail,
     )}`,
   );
 }
-await expectRequestFailure(
-  'Booking rejects service addresses too far from the customer current location',
-  () =>
-    postJson('/customer/bookings', customerAuth.accessToken, {
-      serviceId: service.id,
-      address: { line1: 'Da Nang city center' },
-      lat: 16.0471,
-      lng: 108.2068,
-      currentLat: 10.7769,
-      currentLng: 106.7009,
-      currentLocationUpdatedAt: new Date().toISOString(),
-      paymentMethod: 'CASH',
-    }),
-  400,
+const farCurrentLocationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
+  serviceId: service.id,
+  address: { line1: 'Da Nang city center' },
+  lat: 16.0471,
+  lng: 108.2068,
+  currentLat: 10.7769,
+  currentLng: 106.7009,
+  currentLocationUpdatedAt: new Date().toISOString(),
+  paymentMethod: 'CASH',
+});
+const farCurrentLocationBookingDetail = await getJson(
+  `/customer/bookings/${farCurrentLocationBooking.id}`,
+  customerAuth.accessToken,
 );
-const customerDistanceGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
 if (
-  !customerDistanceGateAuditLogs.some(
-    (log) =>
-      log.action === 'booking.create.rejected' &&
-      log.metadata?.reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
-  )
+  farCurrentLocationBookingDetail.status !== 'OPEN_MATCHING' ||
+  farCurrentLocationBookingDetail.addressSnapshot?.addressText !== 'Da Nang city center'
 ) {
   throw new Error(
-    `Customer distance gate rejection should create an operations audit log: ${JSON.stringify(
-      customerDistanceGateAuditLogs.slice(0, 5),
+    `Customer GPS distance should not block booking when the Vietnam service address is confirmed: ${JSON.stringify(
+      farCurrentLocationBookingDetail,
     )}`,
   );
 }

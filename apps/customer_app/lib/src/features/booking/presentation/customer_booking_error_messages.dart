@@ -9,16 +9,16 @@ String customerBookingErrorMessage(Object exception) {
   }
   if (normalized.contains('recent customer current location is required') ||
       normalized.contains('current location timestamp is required')) {
-    return 'Please refresh your current GPS before booking. You can still browse partners from anywhere.';
+    return 'Please confirm the service address again. Current GPS is optional, but the booking address must be clear.';
   }
   if (normalized.contains('current location timestamp is invalid')) {
-    return 'Please refresh your current GPS again before booking.';
+    return 'The optional GPS evidence was invalid. Confirm the service address again and retry.';
   }
   if (normalized.contains('current location must be refreshed within')) {
-    return 'Your GPS check is too old. Refresh your current location, then try booking again.';
+    return 'The optional GPS evidence is old. You can still book from a confirmed Vietnam service address.';
   }
   if (normalized.contains('customer current location must be within')) {
-    return 'Your current GPS is too far from the service address. Move the service pin closer to where you are, or refresh GPS at the service address.';
+    return 'The service address and optional GPS evidence do not match. Confirm the service pin before booking.';
   }
   if (normalized.contains('preferred partner must be within')) {
     return 'This partner is too far from the service address for first-pick booking. Choose a closer partner or adjust the service address.';

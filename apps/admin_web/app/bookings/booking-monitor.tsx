@@ -215,13 +215,15 @@ const bookingGateFilterOptions: Array<{ value: BookingGateFilter; label: string;
   },
   {
     value: 'customer-gps',
-    label: 'Customer GPS proof',
-    operatorHint: 'Customer current-location proof is missing, stale, invalid, or not timestamped.',
+    label: 'Legacy GPS evidence',
+    operatorHint:
+      'Historical customer GPS evidence rows are retained as support context. New booking creation is address based.',
   },
   {
     value: 'customer-distance',
-    label: 'Customer distance',
-    operatorHint: 'Customer current GPS is too far from the booking address snapshot.',
+    label: 'Legacy GPS distance',
+    operatorHint:
+      'Historical customer GPS distance rows are retained only as support evidence, not current booking authority.',
   },
   {
     value: 'first-pick-distance',
@@ -2642,7 +2644,7 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
         : 'No booking create request has been blocked by the local booking gates.',
     href: '/bookings?view=blocked-create',
     metrics: [
-      { label: 'Customer GPS gate', value: customerTooFar.length.toString() },
+      { label: 'Legacy GPS evidence', value: customerTooFar.length.toString() },
       { label: 'First-pick distance', value: partnerTooFar.length.toString() },
       { label: 'Service area', value: serviceArea.length.toString() },
       { label: 'GPS proof', value: locationProof.length.toString() },
@@ -2802,7 +2804,7 @@ function bookingGateRejectionInfo(log: AdminAuditLog) {
 
 function bookingGateReasonLabel(reasonCode: string) {
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Customer current location too far';
+    return 'Legacy customer GPS distance';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
     return 'First-pick partner too far';
@@ -2811,10 +2813,10 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'Address outside service area';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Customer GPS stale';
+    return 'Legacy customer GPS stale';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Customer GPS missing';
+    return 'Legacy customer GPS missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
     return 'Customer GPS timestamp missing';
@@ -2827,7 +2829,7 @@ function bookingGateReasonLabel(reasonCode: string) {
 
 function bookingGateOperatorAction(reasonCode: string) {
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Ask the customer to refresh GPS near the service address or choose a service address closer to their current location. Payment and matching did not start.';
+    return 'Treat this as historical support evidence. Current booking creation should rely on the confirmed service address snapshot, not customer GPS distance.';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
     return 'Ask the customer to choose a closer first-pick partner or correct the service address. Payment and matching did not start.';
@@ -2836,16 +2838,16 @@ function bookingGateOperatorAction(reasonCode: string) {
     return 'Confirm the requested address is inside an enabled Vietnam service area before booking can start.';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Ask the customer to refresh current location before booking. The saved GPS snapshot was too old.';
+    return 'Treat this as historical optional GPS evidence. Current booking creation should continue from a confirmed Vietnam service address.';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Ask the customer to allow GPS or use current location before booking. Address search stays available, but payment and matching did not start.';
+    return 'Treat this as historical optional GPS evidence. Current booking creation should not require customer GPS when the service address is confirmed.';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Ask the customer app to refresh current location with a timestamp before booking. Payment and matching did not start.';
+    return 'Treat this as historical optional GPS evidence. Confirm the booking address snapshot before support follow-up.';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Ask the customer to refresh current location again. The timestamp looked invalid, so payment and matching did not start.';
+    return 'Treat this as historical optional GPS evidence. Confirm the booking address snapshot before support follow-up.';
   }
   return 'Review the audit metadata and customer address before support follow-up.';
 }

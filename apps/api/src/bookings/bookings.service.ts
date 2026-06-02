@@ -207,26 +207,6 @@ export class BookingsService {
     const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
     const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
     const finalAmount = Math.max(0, customerPrice - discountAmount);
-    const currentLocationGateError = bookingAttemptCurrentLocationGateError(input, matchingPolicy);
-    if (currentLocationGateError) {
-      await this.recordBookingGateRejection({
-        actorId: userId,
-        customerProfileId: customer.id,
-        serviceId: service.id,
-        preferredProviderId: preferredProvider?.id,
-        reasonCode: currentLocationGateError.reasonCode,
-        reason: currentLocationGateError.message,
-        bookingLat,
-        bookingLng,
-        addressText,
-        customerDistanceMeters: null,
-        preferredProviderDistanceMeters: null,
-        customerDistanceLimitMeters: matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
-        preferredProviderDistanceLimitMeters: matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
-        currentLocationRecordedAt: currentLocationGateError.recordedAt,
-      });
-      throw new BadRequestException(currentLocationGateError.message);
-    }
     const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);
     const customerToBookingDistanceMeters = customerCurrentLocation
       ? calculateDistanceMeters(
@@ -236,29 +216,6 @@ export class BookingsService {
           bookingLng,
         )
       : null;
-    const customerDistanceGateError = customerBookingDistanceGateError(
-      customerToBookingDistanceMeters,
-      matchingPolicy,
-    );
-    if (customerDistanceGateError) {
-      await this.recordBookingGateRejection({
-        actorId: userId,
-        customerProfileId: customer.id,
-        serviceId: service.id,
-        preferredProviderId: preferredProvider?.id,
-        reasonCode: 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
-        reason: customerDistanceGateError.message,
-        bookingLat,
-        bookingLng,
-        addressText,
-        customerDistanceMeters: customerToBookingDistanceMeters,
-        preferredProviderDistanceMeters: null,
-        customerDistanceLimitMeters: customerDistanceGateError.limitMeters,
-        preferredProviderDistanceLimitMeters: matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
-        currentLocationRecordedAt: customerCurrentLocation?.recordedAt,
-      });
-      throw new BadRequestException(customerDistanceGateError.message);
-    }
     const preferredProviderDistanceMeters = preferredProvider
       ? calculateDistanceMeters(
           bookingLat,
@@ -1154,9 +1111,7 @@ export class BookingsService {
     }
 
     const policy = input.policy ?? (await this.matching.getPolicy());
-    const freshLocationAfter = new Date(
-      Date.now() - policy.backupProviderLocationMaxAgeMinutes * 60_000,
-    );
+    const freshLocationAfter = new Date(Date.now() - policy.backupProviderLocationMaxAgeMinutes * 60_000);
     const providers = await this.prisma.providerProfile.findMany({
       where: {
         id: input.preferredProviderId ? { not: input.preferredProviderId } : undefined,
@@ -1245,7 +1200,10 @@ export class BookingsService {
       return false;
     }
     return (
-      providerLocationFreshEnough(provider.currentLocationUpdatedAt, policy.backupProviderLocationMaxAgeMinutes) &&
+      providerLocationFreshEnough(
+        provider.currentLocationUpdatedAt,
+        policy.backupProviderLocationMaxAgeMinutes,
+      ) &&
       typeof booking.distanceMeters === 'number' &&
       booking.distanceMeters <= policy.backupProviderRadiusMeters
     );
@@ -1279,12 +1237,19 @@ export class BookingsService {
       return distanceMeters;
     }
     if (!this.isBackupWindowOpen(booking, policy)) {
-      throw new BadRequestException('Marketplace partners can join after the first-pick response window opens');
+      throw new BadRequestException(
+        'Marketplace partners can join after the first-pick response window opens',
+      );
     }
     if (distanceMeters === null) {
       throw new BadRequestException('Partner location is required before joining this booking');
     }
-    if (!providerLocationFreshEnough(provider.currentLocationUpdatedAt, policy.backupProviderLocationMaxAgeMinutes)) {
+    if (
+      !providerLocationFreshEnough(
+        provider.currentLocationUpdatedAt,
+        policy.backupProviderLocationMaxAgeMinutes,
+      )
+    ) {
       throw new BadRequestException(
         `Partner location must be refreshed within ${policy.backupProviderLocationMaxAgeMinutes} minutes before joining marketplace bookings`,
       );
@@ -1523,10 +1488,7 @@ function addProviderMatchingDistance<
     lng: unknown;
     addressSnapshot?: { latitude: unknown; longitude: unknown } | null;
   },
->(
-  booking: T,
-  provider: { currentLat: unknown; currentLng: unknown },
-) {
+>(booking: T, provider: { currentLat: unknown; currentLng: unknown }) {
   const dispatchPin = bookingDispatchCoordinates(booking);
   return {
     ...booking,
@@ -1727,49 +1689,6 @@ function isWorldBookingCoordinate(lat: number, lng: number) {
   return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
 }
 
-function bookingAttemptCurrentLocationGateError(
-  input: { currentLat?: number; currentLng?: number; currentLocationUpdatedAt?: string },
-  policy: MatchingPolicy,
-) {
-  if (!policy.bookingDistanceGateEnabled) {
-    return null;
-  }
-  const lat = Number(input.currentLat);
-  const lng = Number(input.currentLng);
-  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !isWorldBookingCoordinate(lat, lng)) {
-    return {
-      reasonCode: 'CUSTOMER_CURRENT_LOCATION_MISSING',
-      message: 'Recent customer current location is required before booking',
-      recordedAt: null,
-    };
-  }
-  const recordedAt = input.currentLocationUpdatedAt ? new Date(input.currentLocationUpdatedAt) : null;
-  if (!recordedAt || Number.isNaN(recordedAt.getTime())) {
-    return {
-      reasonCode: 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING',
-      message: 'Recent customer current location timestamp is required before booking',
-      recordedAt: null,
-    };
-  }
-  const now = Date.now();
-  if (recordedAt.getTime() > now + 60_000) {
-    return {
-      reasonCode: 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID',
-      message: 'Customer current location timestamp is invalid',
-      recordedAt,
-    };
-  }
-  const ageMinutes = Math.max(0, (now - recordedAt.getTime()) / 60_000);
-  if (ageMinutes > policy.bookingCurrentLocationFreshnessMinutes) {
-    return {
-      reasonCode: 'CUSTOMER_CURRENT_LOCATION_STALE',
-      message: `Customer current location must be refreshed within ${policy.bookingCurrentLocationFreshnessMinutes} minutes before booking`,
-      recordedAt,
-    };
-  }
-  return null;
-}
-
 function normalizeBookingAttemptCurrentLocation(
   input: { currentLat?: number; currentLng?: number; currentLocationUpdatedAt?: string },
   policy: MatchingPolicy,
@@ -1777,43 +1696,29 @@ function normalizeBookingAttemptCurrentLocation(
   if (!policy.bookingDistanceGateEnabled) {
     return null;
   }
+  const hasAnyCurrentLocationInput =
+    input.currentLat != null || input.currentLng != null || input.currentLocationUpdatedAt != null;
+  if (!hasAnyCurrentLocationInput) {
+    return null;
+  }
   const lat = Number(input.currentLat);
   const lng = Number(input.currentLng);
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
-    throw new BadRequestException('Recent customer current location is required before booking');
+    return null;
   }
   const recordedAt = input.currentLocationUpdatedAt ? new Date(input.currentLocationUpdatedAt) : null;
   if (!recordedAt || Number.isNaN(recordedAt.getTime())) {
-    throw new BadRequestException('Recent customer current location timestamp is required before booking');
+    return null;
   }
   const now = Date.now();
   if (recordedAt.getTime() > now + 60_000) {
-    throw new BadRequestException('Customer current location timestamp is invalid');
+    return null;
   }
   const ageMinutes = Math.max(0, (now - recordedAt.getTime()) / 60_000);
   if (ageMinutes > policy.bookingCurrentLocationFreshnessMinutes) {
-    throw new BadRequestException(
-      `Customer current location must be refreshed within ${policy.bookingCurrentLocationFreshnessMinutes} minutes before booking`,
-    );
-  }
-  return { lat, lng, recordedAt, ageMinutes };
-}
-
-function customerBookingDistanceGateError(
-  distanceMeters: number | null,
-  policy: MatchingPolicy,
-) {
-  if (!policy.bookingDistanceGateEnabled) {
     return null;
   }
-  const limitMeters = policy.bookingMaxCustomerCurrentToAddressKm * 1000;
-  if (distanceMeters === null || distanceMeters > limitMeters) {
-    return {
-      limitMeters,
-      message: `Customer current location must be within ${policy.bookingMaxCustomerCurrentToAddressKm}km of the booking address`,
-    };
-  }
-  return null;
+  return { lat, lng, recordedAt, ageMinutes };
 }
 
 function preferredProviderBookingDistanceGateError(
@@ -1841,7 +1746,12 @@ function bookingDistanceGateSnapshot(input: {
   addressText: string;
   customerCurrentLocation: ReturnType<typeof normalizeBookingAttemptCurrentLocation>;
   customerToBookingDistanceMeters: number | null;
-  preferredProvider: { id: string; currentLat?: unknown; currentLng?: unknown; currentLocationUpdatedAt?: Date | null } | null;
+  preferredProvider: {
+    id: string;
+    currentLat?: unknown;
+    currentLng?: unknown;
+    currentLocationUpdatedAt?: Date | null;
+  } | null;
   preferredProviderDistanceMeters: number | null;
 }) {
   return {
@@ -1867,8 +1777,10 @@ function bookingDistanceGateSnapshot(input: {
     preferredProviderId: input.preferredProvider?.id ?? null,
     preferredProviderLocation: input.preferredProvider
       ? {
-          lat: input.preferredProvider.currentLat === null ? null : Number(input.preferredProvider.currentLat),
-          lng: input.preferredProvider.currentLng === null ? null : Number(input.preferredProvider.currentLng),
+          lat:
+            input.preferredProvider.currentLat === null ? null : Number(input.preferredProvider.currentLat),
+          lng:
+            input.preferredProvider.currentLng === null ? null : Number(input.preferredProvider.currentLng),
           updatedAt: input.preferredProvider.currentLocationUpdatedAt?.toISOString() ?? null,
         }
       : null,

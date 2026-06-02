@@ -153,9 +153,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM_KEY,
     category: 'Booking',
-    label: 'Customer current-to-service address gate',
+    label: 'Customer current-to-service address evidence',
     description:
-      'Maximum allowed distance between the customer current GPS and the confirmed service address before payment and matching open.',
+      'Optional operations evidence comparing the customer current GPS with the confirmed service address. It does not block address-based booking creation.',
     value: DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
     recommendedValue: DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
     unit: 'km',
@@ -179,8 +179,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY,
     category: 'Booking',
-    label: 'Customer current location freshness',
-    description: 'Maximum age of the customer current GPS snapshot accepted at booking confirmation.',
+    label: 'Customer current location evidence freshness',
+    description:
+      'Maximum age of the optional customer current GPS snapshot stored as booking evidence when the app can provide it.',
     value: DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
     recommendedValue: DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
     unit: 'minutes',
@@ -193,7 +194,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Booking',
     label: 'Booking distance gate',
     description:
-      'When enabled, bookings are rejected before payment if customer GPS or first-pick partner distance gates fail.',
+      'When enabled, preferred first-pick partner distance is checked against the booking address. Customer GPS stays optional evidence.',
     value: true,
     recommendedValue: true,
     enforced: true,

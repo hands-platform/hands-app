@@ -446,7 +446,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Blocked create attempts',
       rangeBookingCreateRejections.length.toString(),
-      `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerGpsGate} customer GPS, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
+      `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerGpsGate} legacy GPS evidence, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
     ],
     [
       'Online partners',
@@ -658,8 +658,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Core operating counters</h2>
             <p className="muted">
-              Booking volume, matching wait, completed and cancelled work, live app presence, partner
-              supply, payment holds, and cash debt in one operator scan.
+              Booking volume, matching wait, completed and cancelled work, live app presence, partner supply,
+              payment holds, and cash debt in one operator scan.
             </p>
           </div>
           <Link className="text-link" href="/bookings">
@@ -696,8 +696,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Operations command board</h2>
             <p className="muted">
-              One-screen command order for live bookings, first-pick wait, 10km partner
-              marketplace, customer choice, chat handoff, settlement gates, notifications, and setup.
+              One-screen command order for live bookings, first-pick wait, 10km partner marketplace, customer
+              choice, chat handoff, settlement gates, notifications, and setup.
             </p>
           </div>
           <Link className="text-link" href={operationsCommandBoard[0]?.href ?? '/bookings'}>
@@ -747,7 +747,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <strong>{bookingCreateRejections.length}</strong>
             <small>
               <Link className="text-link" href="/bookings?view=blocked-create">
-                {bookingCreateGateSummary.customerGpsGate} customer GPS,{' '}
+                {bookingCreateGateSummary.customerGpsGate} legacy GPS evidence,{' '}
                 {bookingCreateGateSummary.firstPickDistanceGate} first-pick distance
               </Link>
             </small>
@@ -815,8 +815,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <h2>Booking evidence command queue</h2>
             <p className="muted">
               Direct routes into the booking monitor evidence filters. Use these when staff need the exact
-              booking list behind address, partner choice, chat archive, payment, wallet, location, alert,
-              or closeout evidence.
+              booking list behind address, partner choice, chat archive, payment, wallet, location, alert, or
+              closeout evidence.
             </p>
           </div>
           <Link className="text-link" href={bookingEvidenceCommandQueue[0]?.href ?? '/bookings'}>
@@ -894,8 +894,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Live operations radar</h2>
             <p className="muted">
-              Current-shift radar for customer wait, first-pick, 10km marketplace, final partner
-              choice, chat handoff, partner supply, cash fee gates, payout batches, and setup readiness.
+              Current-shift radar for customer wait, first-pick, 10km marketplace, final partner choice, chat
+              handoff, partner supply, cash fee gates, payout batches, and setup readiness.
             </p>
           </div>
           <Link className="text-link" href={liveOperationsRadar[0]?.href ?? '/bookings'}>
@@ -1829,8 +1829,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Partner dispatch control</h2>
             <p className="muted">
-              Partner checklist queue for final-gate blockers, location readiness, first-revenue
-              payout requirements, and app contactability.
+              Partner checklist queue for final-gate blockers, location readiness, first-revenue payout
+              requirements, and app contactability.
             </p>
           </div>
           <Link className="text-link" href="/partners">
@@ -3207,7 +3207,11 @@ function buildShiftOperatingRoute(input: {
           ? `${input.partnerSupply.staleLocation} stale location pin(s); use partner list for factual status checks.`
           : 'No online available partner is visible; check app sessions, location freshness, and onboarding readiness.',
       href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
-      tone: input.partnerSupply.onlineAvailable ? (input.partnerSupply.staleLocation ? 'warn' : 'ok') : 'warn',
+      tone: input.partnerSupply.onlineAvailable
+        ? input.partnerSupply.staleLocation
+          ? 'warn'
+          : 'ok'
+        : 'warn',
     },
     {
       lane: 'Alert and payout route',
@@ -3265,7 +3269,7 @@ function buildOperationsCommandBoard(input: {
     input.activePayoutBatches.length;
   const setupOpen =
     input.externalReadiness.currentStageOk === false
-      ? input.externalReadiness.blockingCategories?.length ?? 0
+      ? (input.externalReadiness.blockingCategories?.length ?? 0)
       : 0;
 
   return [
@@ -3346,7 +3350,11 @@ function buildOperationsCommandBoard(input: {
           ? `${input.partnerSupply.staleLocation} partner location pin(s) are older than the freshness window.`
           : 'No online available partner is visible; check app sessions, location update, and onboarding readiness.',
       href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
-      tone: input.partnerSupply.onlineAvailable ? (input.partnerSupply.staleLocation ? 'warn' : 'ok') : 'warn',
+      tone: input.partnerSupply.onlineAvailable
+        ? input.partnerSupply.staleLocation
+          ? 'warn'
+          : 'ok'
+        : 'warn',
       checks: [
         `${input.partnerSupply.liveSessions} app session(s)`,
         `${input.partnerSupply.noLocation} missing pin`,
@@ -3573,7 +3581,11 @@ function evidenceStatus(count: number) {
   return count > 0 ? 'Review' : 'Clear';
 }
 
-function evidenceTone(count: number, warnAt: number, dangerAt: number): BookingEvidenceCommandQueueItem['tone'] {
+function evidenceTone(
+  count: number,
+  warnAt: number,
+  dangerAt: number,
+): BookingEvidenceCommandQueueItem['tone'] {
   if (count >= dangerAt) return 'danger';
   if (count >= warnAt) return 'warn';
   return 'ok';
@@ -3599,7 +3611,9 @@ function buildLiveOperationsRadar(input: {
   const marketplaceRows = input.matchingControl.openRows.filter((row) =>
     row.backupState.toLowerCase().includes('marketplace'),
   ).length;
-  const noFreshSupplyRows = input.matchingControl.openRows.filter((row) => row.freshEligibleCount === 0).length;
+  const noFreshSupplyRows = input.matchingControl.openRows.filter(
+    (row) => row.freshEligibleCount === 0,
+  ).length;
   const customerChoiceRows = input.matchingControl.openRows.filter((row) =>
     row.customerState.toLowerCase().includes('choose'),
   ).length;
@@ -3636,7 +3650,11 @@ function buildLiveOperationsRadar(input: {
         firstPickRows + marketplaceRows > 0
           ? 'Preferred partner has the first window while 10km marketplace candidates stay visible for customer choice.'
           : 'No active first-pick or marketplace lane is visible in the current booking sample.',
-      href: noFreshSupplyRows ? '/bookings?view=no-supply' : firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
+      href: noFreshSupplyRows
+        ? '/bookings?view=no-supply'
+        : firstPickRows
+          ? '/bookings?view=first-pick'
+          : '/bookings?view=marketplace',
       tone: noFreshSupplyRows ? 'danger' : firstPickRows + marketplaceRows ? 'info' : 'ok',
       checks: [
         `${noFreshSupplyRows} no fresh supply`,
@@ -3709,7 +3727,11 @@ function buildLiveOperationsRadar(input: {
           ? `${input.partnerSupply.staleLocation} partner location pin(s) are older than the freshness window.`
           : 'No online available partner is visible; check app sessions, location update, and onboarding readiness.',
       href: input.partnerSupply.staleLocation > 0 ? '/partners?review=location' : '/partners',
-      tone: input.partnerSupply.onlineAvailable ? (input.partnerSupply.staleLocation ? 'warn' : 'ok') : 'warn',
+      tone: input.partnerSupply.onlineAvailable
+        ? input.partnerSupply.staleLocation
+          ? 'warn'
+          : 'ok'
+        : 'warn',
       checks: [
         `${input.partnerSupply.liveSessions} app session(s)`,
         `${input.partnerSupply.noLocation} missing pin`,
@@ -3721,7 +3743,11 @@ function buildLiveOperationsRadar(input: {
       owner: input.failedNotifications.length ? 'Support' : 'Finance',
       title: 'Close failed delivery and payout batch loops',
       value: `${input.failedNotifications.length} alert / ${input.activePayoutBatches.length} payout`,
-      status: input.failedNotifications.length ? 'Retry' : input.activePayoutBatches.length ? 'Batch' : 'Clear',
+      status: input.failedNotifications.length
+        ? 'Retry'
+        : input.activePayoutBatches.length
+          ? 'Batch'
+          : 'Clear',
       detail:
         input.failedNotifications.length > 0
           ? 'Failed notification rows should be retried or marked so operators know whether push actually arrived.'
@@ -4170,7 +4196,8 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       step: '1',
       owner: 'Finance',
       title: 'Clear cash fee debt',
-      detail: 'Negative wallet partners are blocked only at configured final acceptance or service-start gates.',
+      detail:
+        'Negative wallet partners are blocked only at configured final acceptance or service-start gates.',
       metricLabel: 'Debt partners',
       metricValue: input.cashSettlementSummary.providerCount.toString(),
       action: 'Open cash settlements',
@@ -5112,8 +5139,9 @@ function buildOpsQueue(input: {
       area: 'Booking',
       href: '/bookings?view=blocked-create',
       label: 'Booking create attempts blocked',
-      detail: `${input.bookingCreateRejections.length} stopped before payment: ${createGateSummary.customerGpsGate} customer GPS gate, ${createGateSummary.firstPickDistanceGate} first-pick distance gate.`,
-      severity: createGateSummary.customerGpsGate || createGateSummary.firstPickDistanceGate ? 'medium' : 'low',
+      detail: `${input.bookingCreateRejections.length} stopped before payment: ${createGateSummary.customerGpsGate} legacy GPS evidence row(s), ${createGateSummary.firstPickDistanceGate} first-pick distance gate.`,
+      severity:
+        createGateSummary.customerGpsGate || createGateSummary.firstPickDistanceGate ? 'medium' : 'low',
       owner: 'Support',
       priority: 64,
       recommendedAction:
@@ -5189,7 +5217,8 @@ function buildOpsQueue(input: {
       severity: 'high',
       owner: 'Finance',
       priority: 98,
-      recommendedAction: 'Collect the company fee deposit or offset it before this partner completes final acceptance.',
+      recommendedAction:
+        'Collect the company fee deposit or offset it before this partner completes final acceptance.',
     });
   }
 

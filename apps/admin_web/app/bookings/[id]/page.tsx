@@ -7060,7 +7060,7 @@ function bookingAddressRadiusContract(
           : 'Snapshot and legacy coordinates differ.',
       },
       {
-        label: 'Customer GPS gate',
+        label: 'Customer GPS evidence',
         value: bookingGate.customerDistanceLabel,
         helper: bookingGate.customerDistanceHelper,
       },
@@ -8160,8 +8160,8 @@ function readBookingGateSnapshot(booking: AdminBookingDetail) {
 
   const customerDistanceLabel =
     customerDistance === null
-      ? 'No current GPS snapshot'
-      : `${distanceLabel(Math.round(customerDistance))} / limit ${distanceLabel(Math.round(customerLimit ?? 0))}`;
+      ? 'No optional GPS snapshot'
+      : `${distanceLabel(Math.round(customerDistance))} / legacy limit ${distanceLabel(Math.round(customerLimit ?? 0))}`;
   const preferredPartnerDistanceLabel =
     preferredDistance === null
       ? 'No preferred partner distance'
@@ -8171,8 +8171,8 @@ function readBookingGateSnapshot(booking: AdminBookingDetail) {
     gatePassed,
     customerDistanceLabel,
     customerDistanceHelper: customerRecordedAt
-      ? `Customer GPS was captured at ${formatDate(customerRecordedAt)} before booking opened.`
-      : 'Older bookings may not have customer current GPS metadata.',
+      ? `Optional customer GPS evidence was captured at ${formatDate(customerRecordedAt)} before booking opened.`
+      : 'Address-based bookings may not have customer current GPS metadata.',
     preferredPartnerDistanceLabel,
     preferredPartnerDistanceHelper:
       preferredDistance === null

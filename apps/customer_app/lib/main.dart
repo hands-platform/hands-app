@@ -1833,15 +1833,6 @@ class _BookingConfirmationPageState
       });
       return;
     }
-    if (currentGpsLat == null ||
-        currentGpsLng == null ||
-        currentGpsUpdatedAt == null) {
-      setState(() {
-        error =
-            'Please refresh your current GPS before booking. You can still browse partners from anywhere.';
-      });
-      return;
-    }
     setState(() {
       submitting = true;
       error = null;

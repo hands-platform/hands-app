@@ -656,9 +656,7 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
 
 function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const metadata = readMetadataObject(log.metadata);
-  const highlights: MetadataHighlight[] = [
-    { label: 'Booking gate rejected', className: 'pill pill-warn' },
-  ];
+  const highlights: MetadataHighlight[] = [{ label: 'Booking gate rejected', className: 'pill pill-warn' }];
   const reasonCode = readString(metadata.reasonCode);
   const customerDistance = readNumber(metadata.customerDistanceMeters);
   const customerLimit = readNumber(metadata.customerDistanceLimitMeters);
@@ -686,7 +684,7 @@ function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[]
 
 function bookingGateReasonLabel(reasonCode: string) {
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'customer GPS too far';
+    return 'legacy customer GPS distance';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
     return 'first-pick partner too far';
@@ -695,16 +693,16 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'address outside service area';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'customer GPS stale';
+    return 'legacy customer GPS stale';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'customer GPS missing';
+    return 'legacy customer GPS missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'GPS timestamp missing';
+    return 'legacy GPS timestamp missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'GPS timestamp invalid';
+    return 'legacy GPS timestamp invalid';
   }
   return reasonCode.replace(/_/g, ' ').toLowerCase();
 }

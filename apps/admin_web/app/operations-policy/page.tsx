@@ -231,8 +231,8 @@ export default async function OperationsPolicyPage({
             <h2>Booking create gate controls</h2>
             <p className="muted">
               These policies stop unsafe bookings before payment authorization and matching. Customers can
-              browse globally, but immediate booking must pass the selected address, current GPS, service
-              area, and first-pick partner distance checks.
+              browse globally, but immediate booking must pass the selected address, Vietnam service area, and
+              first-pick partner distance checks. Customer GPS is optional evidence only.
             </p>
           </div>
           <span className="pill pill-info">{bookingCreateGateReview.currentPolicyLabel}</span>
@@ -1688,9 +1688,9 @@ function buildBookingCreateGateReview(
     currentPolicyLabel: distanceGateEnabled ? 'Distance gates active' : 'Distance gates disabled',
     summary: [
       {
-        label: 'Customer GPS gate',
+        label: 'Customer GPS evidence',
         value: `${customerDistanceKm} km`,
-        helper: 'Current app location must be near the selected booking address.',
+        helper: 'Optional evidence only. Booking authority comes from the confirmed service address.',
       },
       {
         label: 'First-pick partner gate',
@@ -1700,7 +1700,7 @@ function buildBookingCreateGateReview(
       {
         label: 'Location freshness',
         value: `${freshnessMinutes} min`,
-        helper: 'Customer current GPS must be recent enough for local booking authority.',
+        helper: 'Optional GPS evidence freshness when the app can provide it.',
       },
       {
         label: 'Blocked attempts',
@@ -1715,8 +1715,8 @@ function buildBookingCreateGateReview(
         current: distanceGateEnabled ? 'Enabled' : 'Disabled',
         defaultValue: 'Enabled',
         operatorMeaning: distanceGateEnabled
-          ? 'Local booking uses customer GPS and partner distance checks.'
-          : 'Customers may create bookings without distance protection. Keep this only for controlled tests.',
+          ? 'First-pick partner distance is checked from the booking address. Customer GPS stays optional evidence.'
+          : 'Partner distance gate is disabled. Keep this only for controlled tests.',
         evidence: 'Blocked attempts',
         href: '/bookings?view=blocked-create',
         pillClass: distanceGateEnabled ? 'pill-success' : 'pill-danger',
@@ -1735,12 +1735,12 @@ function buildBookingCreateGateReview(
       },
       {
         key: 'booking.max_customer_current_to_booking_address_km',
-        gate: 'Customer GPS',
+        gate: 'Customer GPS evidence',
         current: `${customerDistanceKm} km`,
         defaultValue: '20 km',
         operatorMeaning:
-          'A customer can browse globally, but immediate booking requires their current GPS to be near the selected address.',
-        evidence: `${reasonCounts.get('CUSTOMER_CURRENT_LOCATION_TOO_FAR') ?? 0} reject(s)`,
+          'A customer can browse globally and book from a confirmed Vietnam service address. GPS distance is retained only as optional evidence.',
+        evidence: `${reasonCounts.get('CUSTOMER_CURRENT_LOCATION_TOO_FAR') ?? 0} legacy row(s)`,
         href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
         pillClass: customerDistanceKm === 20 ? 'pill-success' : 'pill-warn',
       },
@@ -1927,12 +1927,13 @@ function policyRecommendationPosture(
       Number.isFinite(numericRecommended) &&
       numericValue > numericRecommended;
     return {
-      status: looser ? 'Loose customer GPS gate' : 'Strict customer GPS gate',
+      status: looser ? 'Wide GPS evidence range' : 'Baseline GPS evidence range',
       detail:
-        'This controls how far the customer current GPS can be from the selected service address before booking creation is blocked.',
+        'This records the legacy customer GPS evidence threshold. Current booking creation is address based and should not be blocked by customer GPS distance.',
       operatorAction:
-        'Review customer GPS rejection logs and address-search UX before changing this threshold.',
-      alignedAction: 'Customer local proof matches the 20 km baseline while global browsing stays open.',
+        'Review historical customer GPS rows only as support context. Keep booking decisions tied to the immutable address snapshot.',
+      alignedAction:
+        'Customer GPS evidence is optional while global browsing and address-based booking stay open.',
       className: looser ? 'ops-task-pending' : 'ops-task-done',
       pillClass: looser ? 'pill-warn' : 'pill-success',
     };
@@ -1961,11 +1962,12 @@ function policyRecommendationPosture(
       Number.isFinite(numericRecommended) &&
       numericValue > numericRecommended;
     return {
-      status: looser ? 'Allows older GPS' : 'Fresh GPS required',
+      status: looser ? 'Allows older GPS evidence' : 'Fresh GPS evidence baseline',
       detail:
-        'This controls how recent customer current GPS must be before immediate booking can be created.',
-      operatorAction: 'Verify mobile permission and current-location capture before loosening freshness.',
-      alignedAction: 'Fresh customer GPS matches the 10 minute booking authority baseline.',
+        'This controls how recent optional customer GPS evidence is retained when the app can provide it.',
+      operatorAction:
+        'Verify mobile permission and current-location capture before changing evidence freshness.',
+      alignedAction: 'Fresh customer GPS evidence matches the 10 minute support-evidence baseline.',
       className: looser ? 'ops-task-pending' : 'ops-task-done',
       pillClass: looser ? 'pill-warn' : 'pill-success',
     };
@@ -3625,7 +3627,7 @@ function bookingGateReasonCounts(logs: AdminAuditLog[]) {
 
 function bookingGateReasonLabel(reasonCode: string) {
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Customer GPS too far';
+    return 'Legacy customer GPS distance';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
     return 'First-pick partner too far';
@@ -3634,16 +3636,16 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'Outside service area';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Stale customer GPS';
+    return 'Legacy stale customer GPS';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Missing customer GPS';
+    return 'Legacy missing customer GPS';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Missing GPS timestamp';
+    return 'Legacy missing GPS timestamp';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Invalid GPS timestamp';
+    return 'Legacy invalid GPS timestamp';
   }
   return displayOperationalWording(reasonCode.replace(/_/g, ' ').toLowerCase());
 }
@@ -4352,7 +4354,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Booking create gate',
       title: 'Controls whether local booking distance checks are enforced',
       detail:
-        'When enabled, booking creation checks customer current GPS against the selected service address and checks the preferred partner distance before payment authorization.',
+        'When enabled, booking creation checks the preferred partner distance against the selected service address before payment authorization. Customer GPS is optional evidence only.',
       saveChecks: [
         {
           label: 'Blocked create attempts',
@@ -4387,14 +4389,14 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'booking.max_customer_current_to_booking_address_km': {
       area: 'Booking create gate',
-      title: 'Controls customer GPS-to-service-address distance',
+      title: 'Records legacy customer GPS-to-service-address evidence',
       detail:
-        'Booking creation is blocked before payment if the customer current GPS is farther than this value from the selected service address. This protects local on-demand dispatch while allowing global browsing.',
+        'Historical customer GPS distance threshold. Current booking creation is address based, so this row is support context only.',
       saveChecks: [
         {
-          label: 'Customer GPS rejects',
+          label: 'Legacy GPS rows',
           detail:
-            'Review rejected booking attempts where customer current location was too far from the booking address.',
+            'Review historical rejected booking attempts where customer current location was recorded too far from the booking address.',
           href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
         },
         {
