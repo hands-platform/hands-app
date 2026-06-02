@@ -572,6 +572,10 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
     return operationalPolicyHighlights(log);
   }
 
+  if (log.action === 'booking.create.rejected') {
+    return bookingGateRejectionHighlights(log);
+  }
+
   if (!isServicePricingAction(log.action)) {
     return [];
   }
@@ -650,6 +654,36 @@ function metadataHighlights(log: AdminAuditLog): MetadataHighlight[] {
   return highlights.slice(0, 6);
 }
 
+function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[] {
+  const metadata = readMetadataObject(log.metadata);
+  const highlights: MetadataHighlight[] = [
+    { label: 'Booking gate rejected', className: 'pill pill-warn' },
+  ];
+  const reasonCode = readString(metadata.reasonCode);
+  const customerDistance = readNumber(metadata.customerDistanceMeters);
+  const customerLimit = readNumber(metadata.customerDistanceLimitMeters);
+  const preferredDistance = readNumber(metadata.preferredProviderDistanceMeters);
+  const preferredLimit = readNumber(metadata.preferredProviderDistanceLimitMeters);
+
+  if (reasonCode) {
+    highlights.push({ label: reasonCode.replace(/_/g, ' ').toLowerCase(), className: 'pill pill-info' });
+  }
+  if (customerDistance !== null) {
+    highlights.push({
+      label: `Customer ${formatDistance(customerDistance)} / limit ${formatDistance(customerLimit ?? 0)}`,
+      className: 'pill pill-info',
+    });
+  }
+  if (preferredDistance !== null) {
+    highlights.push({
+      label: `Partner ${formatDistance(preferredDistance)} / limit ${formatDistance(preferredLimit ?? 0)}`,
+      className: 'pill pill-info',
+    });
+  }
+
+  return highlights.slice(0, 6);
+}
+
 function operationalPolicyHighlights(log: AdminAuditLog): MetadataHighlight[] {
   const metadata = readMetadataObject(log.metadata);
   const highlights: MetadataHighlight[] = [];
@@ -712,6 +746,15 @@ function compactAuditValue(value: unknown) {
 function relatedBoardHref(log: AdminAuditLog) {
   const targetId = log.target?.split(':')[1];
   const metadata = readMetadataObject(log.metadata);
+  if (log.action === 'booking.create.rejected') {
+    const customerProfileId =
+      typeof metadata.customerProfileId === 'string'
+        ? metadata.customerProfileId
+        : log.target?.startsWith('customer:')
+          ? targetId
+          : null;
+    return customerProfileId ? `/customers/${customerProfileId}` : '/customers';
+  }
   if (log.action.startsWith('booking.')) {
     return targetId ? `/bookings/${targetId}` : '/bookings';
   }
@@ -837,6 +880,16 @@ function formatBps(value: number | null) {
     return '-';
   }
   return `${(value / 100).toFixed(2).replace(/\.00$/, '')}%`;
+}
+
+function formatDistance(value: number) {
+  if (!Number.isFinite(value)) {
+    return '-';
+  }
+  if (Math.abs(value) >= 1000) {
+    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`;
+  }
+  return `${Math.round(value).toLocaleString('en')}m`;
 }
 
 function reviewPriorityLabel(action: string) {

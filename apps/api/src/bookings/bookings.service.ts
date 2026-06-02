@@ -49,6 +49,48 @@ export class BookingsService {
     private readonly earnings: EarningsService,
   ) {}
 
+  private async recordBookingGateRejection(input: {
+    actorId: string;
+    customerProfileId: string;
+    serviceId: string;
+    preferredProviderId?: string | null;
+    reasonCode: string;
+    reason: string;
+    bookingLat: number;
+    bookingLng: number;
+    addressText: string;
+    customerDistanceMeters?: number | null;
+    preferredProviderDistanceMeters?: number | null;
+    customerDistanceLimitMeters: number;
+    preferredProviderDistanceLimitMeters: number;
+    currentLocationRecordedAt?: Date | null;
+  }) {
+    await this.prisma.adminAuditLog.create({
+      data: {
+        actorId: input.actorId,
+        action: 'booking.create.rejected',
+        target: `customer:${input.customerProfileId}`,
+        metadata: {
+          reasonCode: input.reasonCode,
+          reason: input.reason,
+          customerProfileId: input.customerProfileId,
+          serviceId: input.serviceId,
+          preferredProviderId: input.preferredProviderId ?? null,
+          bookingAddress: {
+            lat: input.bookingLat,
+            lng: input.bookingLng,
+            addressText: input.addressText,
+          },
+          customerDistanceMeters: input.customerDistanceMeters ?? null,
+          preferredProviderDistanceMeters: input.preferredProviderDistanceMeters ?? null,
+          customerDistanceLimitMeters: input.customerDistanceLimitMeters,
+          preferredProviderDistanceLimitMeters: input.preferredProviderDistanceLimitMeters,
+          currentLocationRecordedAt: input.currentLocationRecordedAt?.toISOString() ?? null,
+        },
+      },
+    });
+  }
+
   async createOpenMatchingBooking(
     userId: string | undefined,
     input: {
@@ -153,7 +195,29 @@ export class BookingsService {
           bookingLng,
         )
       : null;
-    assertCustomerBookingDistanceGate(customerToBookingDistanceMeters, matchingPolicy);
+    const customerDistanceGateError = customerBookingDistanceGateError(
+      customerToBookingDistanceMeters,
+      matchingPolicy,
+    );
+    if (customerDistanceGateError) {
+      await this.recordBookingGateRejection({
+        actorId: userId,
+        customerProfileId: customer.id,
+        serviceId: service.id,
+        preferredProviderId: preferredProvider?.id,
+        reasonCode: 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+        reason: customerDistanceGateError.message,
+        bookingLat,
+        bookingLng,
+        addressText,
+        customerDistanceMeters: customerToBookingDistanceMeters,
+        preferredProviderDistanceMeters: null,
+        customerDistanceLimitMeters: customerDistanceGateError.limitMeters,
+        preferredProviderDistanceLimitMeters: matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
+        currentLocationRecordedAt: customerCurrentLocation?.recordedAt,
+      });
+      throw new BadRequestException(customerDistanceGateError.message);
+    }
     const preferredProviderDistanceMeters = preferredProvider
       ? calculateDistanceMeters(
           bookingLat,
@@ -162,7 +226,30 @@ export class BookingsService {
           preferredProvider.currentLng,
         )
       : null;
-    assertPreferredProviderDistanceGate(preferredProvider, preferredProviderDistanceMeters, matchingPolicy);
+    const preferredProviderDistanceGateError = preferredProviderBookingDistanceGateError(
+      preferredProvider,
+      preferredProviderDistanceMeters,
+      matchingPolicy,
+    );
+    if (preferredProviderDistanceGateError) {
+      await this.recordBookingGateRejection({
+        actorId: userId,
+        customerProfileId: customer.id,
+        serviceId: service.id,
+        preferredProviderId: preferredProvider?.id,
+        reasonCode: 'PREFERRED_PARTNER_TOO_FAR',
+        reason: preferredProviderDistanceGateError.message,
+        bookingLat,
+        bookingLng,
+        addressText,
+        customerDistanceMeters: customerToBookingDistanceMeters,
+        preferredProviderDistanceMeters,
+        customerDistanceLimitMeters: matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
+        preferredProviderDistanceLimitMeters: preferredProviderDistanceGateError.limitMeters,
+        currentLocationRecordedAt: customerCurrentLocation?.recordedAt,
+      });
+      throw new BadRequestException(preferredProviderDistanceGateError.message);
+    }
     const bookingGateSnapshot = bookingDistanceGateSnapshot({
       matchingPolicy,
       bookingLat,
@@ -1614,35 +1701,39 @@ function normalizeBookingAttemptCurrentLocation(
   return { lat, lng, recordedAt, ageMinutes };
 }
 
-function assertCustomerBookingDistanceGate(
+function customerBookingDistanceGateError(
   distanceMeters: number | null,
   policy: MatchingPolicy,
 ) {
   if (!policy.bookingDistanceGateEnabled) {
-    return;
+    return null;
   }
   const limitMeters = policy.bookingMaxCustomerCurrentToAddressKm * 1000;
   if (distanceMeters === null || distanceMeters > limitMeters) {
-    throw new BadRequestException(
-      `Customer current location must be within ${policy.bookingMaxCustomerCurrentToAddressKm}km of the booking address`,
-    );
+    return {
+      limitMeters,
+      message: `Customer current location must be within ${policy.bookingMaxCustomerCurrentToAddressKm}km of the booking address`,
+    };
   }
+  return null;
 }
 
-function assertPreferredProviderDistanceGate(
+function preferredProviderBookingDistanceGateError(
   preferredProvider: { id: string } | null,
   distanceMeters: number | null,
   policy: MatchingPolicy,
 ) {
   if (!policy.bookingDistanceGateEnabled || !preferredProvider) {
-    return;
+    return null;
   }
   const limitMeters = policy.bookingMaxPreferredProviderDistanceKm * 1000;
   if (distanceMeters === null || distanceMeters > limitMeters) {
-    throw new BadRequestException(
-      `Preferred partner must be within ${policy.bookingMaxPreferredProviderDistanceKm}km of the booking address`,
-    );
+    return {
+      limitMeters,
+      message: `Preferred partner must be within ${policy.bookingMaxPreferredProviderDistanceKm}km of the booking address`,
+    };
   }
+  return null;
 }
 
 function bookingDistanceGateSnapshot(input: {

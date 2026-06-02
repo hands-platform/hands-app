@@ -1430,6 +1430,20 @@ await expectRequestFailure(
     }),
   400,
 );
+const customerDistanceGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
+if (
+  !customerDistanceGateAuditLogs.some(
+    (log) =>
+      log.action === 'booking.create.rejected' &&
+      log.metadata?.reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR',
+  )
+) {
+  throw new Error(
+    `Customer distance gate rejection should create an operations audit log: ${JSON.stringify(
+      customerDistanceGateAuditLogs.slice(0, 5),
+    )}`,
+  );
+}
 await postJson('/provider/location', providerAuth.accessToken, {
   lat: 16.0471,
   lng: 108.2068,
@@ -1454,6 +1468,20 @@ await postJson('/provider/location', providerAuth.accessToken, {
   lat: 10.7769,
   lng: 106.7009,
 });
+const preferredPartnerDistanceGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
+if (
+  !preferredPartnerDistanceGateAuditLogs.some(
+    (log) =>
+      log.action === 'booking.create.rejected' &&
+      log.metadata?.reasonCode === 'PREFERRED_PARTNER_TOO_FAR',
+  )
+) {
+  throw new Error(
+    `Preferred partner distance gate rejection should create an operations audit log: ${JSON.stringify(
+      preferredPartnerDistanceGateAuditLogs.slice(0, 5),
+    )}`,
+  );
+}
 
 const selectedLocationOnlyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
