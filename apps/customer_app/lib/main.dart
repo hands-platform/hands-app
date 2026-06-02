@@ -5855,7 +5855,16 @@ Future<CustomerLocationSnapshot> resolveDiscoveryLocation(WidgetRef ref) async {
   if (selected != null) {
     return discoveryLocationFromSelected(selected);
   }
-  return resolveCustomerLocation(ref);
+  return defaultVietnamDiscoveryLocation();
+}
+
+CustomerLocationSnapshot defaultVietnamDiscoveryLocation() {
+  return const CustomerLocationSnapshot(
+    latitude: demoCustomerLat,
+    longitude: demoCustomerLng,
+    addressText: demoCustomerAddress,
+    isDemoLocation: true,
+  );
 }
 
 CustomerLocationSnapshot discoveryLocationFromSelected(
@@ -5868,12 +5877,7 @@ CustomerLocationSnapshot discoveryLocationFromSelected(
       addressText: selected.addressText,
     );
   }
-  return const CustomerLocationSnapshot(
-    latitude: demoCustomerLat,
-    longitude: demoCustomerLng,
-    addressText: demoCustomerAddress,
-    isDemoLocation: true,
-  );
+  return defaultVietnamDiscoveryLocation();
 }
 
 String locationTitle(String addressText, bool isDemoLocation) {

@@ -257,6 +257,10 @@ void main() {
 
   test('customer discovery falls back to Vietnam when selected pin is overseas',
       () {
+    final fallback = defaultVietnamDiscoveryLocation();
+    expect(fallback.isDemoLocation, isTrue);
+    expect(fallback.addressText, contains('Vietnam'));
+
     final vietnam = discoveryLocationFromSelected(
       const SelectedCustomerLocation(
         latitude: 10.7769,
