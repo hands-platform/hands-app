@@ -802,6 +802,7 @@ if (bookingLinkMatch) {
     'Cash fee clearance',
     'First-pick expiry',
     'No-show evidence requirement',
+    'Payout batch cycle',
     'Booking address radius contract',
     'Policy pin source',
     '10km participation rule',

@@ -7930,6 +7930,7 @@ function bookingOperationalPolicySnapshot(
   const noShowEvidenceRequirementPolicy = byKey.get('no_show.evidence_requirement_policy');
   const noShowPolicy = byKey.get('no_show.partner_report_policy');
   const partnerAlertPolicy = byKey.get('notification.partner_alert_channel');
+  const payoutBatchCyclePolicy = byKey.get('payout.batch_cycle_policy');
   const expiresAt = booking.expiresAt ? new Date(booking.expiresAt).getTime() : null;
   const minutesLeft =
     expiresAt === null || Number.isNaN(expiresAt)
@@ -8052,6 +8053,18 @@ function bookingOperationalPolicySnapshot(
           String(partnerAlertPolicy?.value) === 'ONESIGNAL_FOR_ALL_BOOKINGS'
             ? 'Booking and marketplace alerts should create OneSignal delivery logs.'
             : 'Partner alerts are kept in the app inbox until production push is ready.',
+        enforced: false,
+      }),
+      bookingPolicyDecisionCard({
+        setting: payoutBatchCyclePolicy,
+        key: 'payout.batch_cycle_policy',
+        label: 'Payout batch cycle',
+        helper:
+          String(payoutBatchCyclePolicy?.value) === 'ADMIN_SELECTED_DAY_BATCH'
+            ? 'Positive partner earnings remain pending until the admin-selected payout day batch is released.'
+            : String(payoutBatchCyclePolicy?.value) === 'HYBRID_ADMIN_REVIEW'
+              ? 'Positive partner earnings are grouped into scheduled batches with admin exception review before release.'
+              : 'Positive partner earnings are settled through weekly or monthly payout batches, not booking-by-booking release.',
         enforced: false,
       }),
     ],
