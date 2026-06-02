@@ -57,6 +57,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
     range: filters.range,
   });
   const closeoutTasks = buildCloseoutTasks(reconciliation);
+  const evidenceChecklist = buildFinanceCloseoutEvidenceChecklist(reconciliation);
   const handoffRows = buildHandoffRows(reconciliation);
 
   return (
@@ -207,6 +208,33 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
             label="Oldest open"
             value={cashSummary?.oldestOpenAt ? relativeTime(cashSummary.oldestOpenAt) : '-'}
           />
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Finance closeout evidence checklist</h2>
+            <p className="muted">
+              Final operator pass before the shift is handed off. Every item links to the queue where the
+              source record can be checked.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-handoff">
+            Open handoff
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {evidenceChecklist.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+              <div>
+                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <h3>{item.title}</h3>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.operatorRule}</small>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -377,6 +405,52 @@ function buildCloseoutTasks(reconciliation: ReturnType<typeof buildReconciliatio
   ];
 }
 
+function buildFinanceCloseoutEvidenceChecklist(reconciliation: ReturnType<typeof buildReconciliation>) {
+  const openPayments = reconciliation.authorizedPayments.length + reconciliation.cashPending.length;
+  const referencesComplete = reconciliation.missingReferenceCount === 0;
+
+  return [
+    {
+      title: 'Payment state',
+      status: `${openPayments} open`,
+      detail: 'Holds, cash pending rows, captures, releases, and refunds must match booking outcomes.',
+      operatorRule: 'Do not close the shift while an unexplained payment state remains open.',
+      href: '/payments',
+      className: openPayments ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: openPayments ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Refund queue',
+      status: `${reconciliation.openRefunds.length} open`,
+      detail: 'Open refund rows need customer update, payment ledger alignment, and booking evidence.',
+      operatorRule: 'Refund outcomes should be closed before finance handoff whenever possible.',
+      href: '/refunds?review=open',
+      className: reconciliation.openRefunds.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: reconciliation.openRefunds.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Cash debt',
+      status: formatMoney(reconciliation.cashDebtAmount, reconciliation.currency),
+      detail: 'Cash collected by a Partner must leave company-fee deposit or approved offset evidence.',
+      operatorRule: 'Negative wallet rows remain visible until settlement evidence is recorded.',
+      href: '/cash-settlements',
+      className: reconciliation.cashDebtAmount > 0 ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: reconciliation.cashDebtAmount > 0 ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Batch payout release',
+      status: `${reconciliation.openPayouts.length} batch(es)`,
+      detail: 'Payout release should run as weekly, monthly, or admin-date batch with transfer references.',
+      operatorRule: referencesComplete
+        ? 'References look complete for visible records.'
+        : 'Fill missing payment or payout references before release.',
+      href: '/payouts',
+      className: referencesComplete ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: referencesComplete ? 'pill-success' : 'pill-warn',
+    },
+  ];
+}
+
 function buildHandoffRows(reconciliation: ReturnType<typeof buildReconciliation>) {
   return [
     {
@@ -403,7 +477,8 @@ function buildHandoffRows(reconciliation: ReturnType<typeof buildReconciliation>
       label: 'Cash wallet debt',
       count: reconciliation.cashPending.length,
       amount: formatMoney(reconciliation.cashDebtAmount, reconciliation.currency),
-      nextAction: 'Collect partner deposit or approve documented offset before final acceptance or customer selection.',
+      nextAction:
+        'Collect partner deposit or approve documented offset before final acceptance or customer selection.',
       href: '/cash-settlements',
     },
     {

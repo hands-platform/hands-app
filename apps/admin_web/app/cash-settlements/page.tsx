@@ -20,6 +20,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const summary =
     filters.range === 'all' ? mergeAuthoritativeSummary(visibleSummary, apiSummary) : visibleSummary;
   const commandCards = buildCommandCards(rows, providers, summary);
+  const evidenceChecklist = buildCashSettlementEvidenceChecklist(rows, providers, summary);
 
   return (
     <>
@@ -36,8 +37,8 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           <div>
             <h2>Cash settlement date range</h2>
             <p className="muted">
-              Range: {dateRangeLabel(filters.range)}. All date-filtered totals are calculated from visible cash
-              earning records; all-date totals use the API summary.
+              Range: {dateRangeLabel(filters.range)}. All date-filtered totals are calculated from visible
+              cash earning records; all-date totals use the API summary.
             </p>
           </div>
           <Link className="text-link" href="/finance-closeout">
@@ -121,6 +122,33 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           ))}
         </div>
       </div>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Cash settlement evidence checklist</h2>
+            <p className="muted">
+              Operator checklist for cash bookings where the Partner collected customer cash and HANDS is
+              waiting for a company-fee deposit or approved offset.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=cash-debt">
+            Booking cash debt queue
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {evidenceChecklist.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+              <div>
+                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <h3>{item.title}</h3>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.operatorRule}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -300,6 +328,16 @@ type CommandCard = {
   pillClass: string;
 };
 
+type EvidenceChecklistItem = {
+  title: string;
+  status: string;
+  detail: string;
+  operatorRule: string;
+  href: string;
+  className: string;
+  pillClass: string;
+};
+
 type CashSettlementSummary = {
   providerCount: number;
   rowCount: number;
@@ -342,6 +380,54 @@ function buildCashSettlementRows(earnings: AdminEarning[]): CashSettlementRow[] 
       }
       return Date.parse(left.earning.createdAt ?? '') - Date.parse(right.earning.createdAt ?? '');
     });
+}
+
+function buildCashSettlementEvidenceChecklist(
+  rows: CashSettlementRow[],
+  providers: CashSettlementProviderGroup[],
+  summary: CashSettlementSummary,
+): EvidenceChecklistItem[] {
+  const highDebtProviders = providers.filter((provider) => provider.debtAmount >= 500000);
+  const rowsWithRefs = rows.filter((row) => row.lastLedgerRef);
+
+  return [
+    {
+      title: 'Company-fee evidence',
+      status: `${rows.length} open row(s)`,
+      detail: 'Confirm bank deposit reference or approved offset memo before settling the cash fee debt.',
+      operatorRule: 'The settlement action requires an auditable reference and note.',
+      href: '/cash-settlements',
+      className: rows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: rows.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Wallet final gate',
+      status: `${summary.providerCount} Partner(s)`,
+      detail: 'Negative wallet is allowed for visibility and queue review, but final acceptance stays gated.',
+      operatorRule: 'Reopen the final gate only after settlement or approved offset is recorded.',
+      href: '/partner-controls',
+      className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'High-debt follow-up',
+      status: `${highDebtProviders.length} follow-up`,
+      detail: 'Prioritize the highest debt and oldest open rows for operator handoff.',
+      operatorRule: 'Use Partner detail, booking detail, and finance closeout together.',
+      href: '/finance-closeout',
+      className: highDebtProviders.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: highDebtProviders.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Ledger trace',
+      status: `${rowsWithRefs.length} ref(s)`,
+      detail: 'Existing wallet ledger references should match the booking, payment, and earning row.',
+      operatorRule: 'If a reference is missing, leave the row open until finance has evidence.',
+      href: '/audit-log?bucket=Finance%2FCloseout',
+      className: rowsWithRefs.length === rows.length ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: rowsWithRefs.length === rows.length ? 'pill-success' : 'pill-info',
+    },
+  ];
 }
 
 function buildProviderGroups(rows: CashSettlementRow[]): CashSettlementProviderGroup[] {

@@ -1,5 +1,11 @@
 import { AdminRefund, adminGet } from '../../lib/admin-api';
-import { AdminDateRange, dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import {
+  AdminDateRange,
+  dateRangeLabel,
+  isInDateRange,
+  normalizeDateRange,
+  readSearchParam,
+} from '../../lib/date-range';
 import Link from 'next/link';
 
 type RefundsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -10,6 +16,7 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
   const refunds = filterRefunds(allRefunds, filters);
   const activeFilter = refundFilterLinks().find((item) => item.review === filters.review);
   const commandBoard = buildRefundCommandBoard(allRefunds);
+  const decisionChecklist = buildRefundDecisionChecklist(allRefunds);
 
   return (
     <>
@@ -129,6 +136,32 @@ export default async function RefundsPage({ searchParams }: { searchParams?: Ref
           ))}
         </div>
       </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Refund decision checklist</h2>
+            <p className="muted">
+              Evidence-first checklist for operators before a refund is released, rejected, or handed to
+              finance closeout.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=manual-decision">
+            Manual decision queue
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {decisionChecklist.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+              <div>
+                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <h3>{item.title}</h3>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.operatorRule}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
       <div className="card">
         <table className="table">
           <thead>
@@ -204,6 +237,16 @@ type RefundCommandItem = {
   refunds: AdminRefund[];
 };
 
+type RefundDecisionChecklistItem = {
+  title: string;
+  detail: string;
+  operatorRule: string;
+  href: string;
+  status: string;
+  className: string;
+  pillClass: string;
+};
+
 function sortRefunds(refunds: AdminRefund[]) {
   return [...refunds].sort((left, right) => (right.createdAt || '').localeCompare(left.createdAt || ''));
 }
@@ -256,6 +299,57 @@ function buildRefundCommandBoard(refunds: AdminRefund[]): RefundCommandItem[] {
       href: '/bookings?view=closeout',
       tone: cancelledOrExpired.length > 0 ? 'warn' : 'ok',
       refunds: cancelledOrExpired,
+    },
+  ];
+}
+
+function buildRefundDecisionChecklist(refunds: AdminRefund[]): RefundDecisionChecklistItem[] {
+  const openRefunds = refunds.filter((refund) => refund.status !== 'COMPLETED');
+  const paymentUpdates = refunds.filter(
+    (refund) => refund.status === 'REQUESTED' && refund.payment?.status !== 'REFUNDED',
+  );
+  const outcomeLinked = refunds.filter((refund) =>
+    ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(refund.booking?.status ?? ''),
+  );
+  const settled = refunds.filter((refund) => refund.status === 'COMPLETED');
+
+  return [
+    {
+      title: 'Booking evidence',
+      detail:
+        'Open the booking, chat, location notes, and operator notes before deciding the refund outcome.',
+      operatorRule: 'Decision must be based on saved evidence, not customer or Partner judgement.',
+      href: '/bookings?view=manual-decision',
+      status: `${outcomeLinked.length} outcome-linked`,
+      className: outcomeLinked.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: outcomeLinked.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Payment ledger',
+      detail: 'Check that payment method, hold, refund, or release state matches the refund record.',
+      operatorRule: 'Do not close a refund until payment ledger state and refund status match.',
+      href: '/payments',
+      status: `${paymentUpdates.length} update(s)`,
+      className: paymentUpdates.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: paymentUpdates.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Customer update',
+      detail: 'Confirm the customer-facing message is clear after the operator decision is recorded.',
+      operatorRule: 'Every open refund should have an operator note or customer update path.',
+      href: '/refunds?review=open',
+      status: `${openRefunds.length} open`,
+      className: openRefunds.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: openRefunds.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Finance handoff',
+      detail: 'Settled refunds should align with booking state, payment rows, and audit records.',
+      operatorRule: 'Sample settled cases during closeout so finance can finish the shift cleanly.',
+      href: '/finance-closeout',
+      status: `${settled.length} settled`,
+      className: settled.length ? 'ops-task-done' : 'ops-task-pending',
+      pillClass: settled.length ? 'pill-success' : 'pill-info',
     },
   ];
 }
