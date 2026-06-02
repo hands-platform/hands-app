@@ -653,6 +653,8 @@ export default async function OperationsPolicyPage({
               <span className="pill pill-success">{item.scope}</span>
               <h3>{item.title}</h3>
               <p>{item.detail}</p>
+              <small>{`API route: ${item.api}`}</small>
+              <small>{`Server path: ${item.server}`}</small>
               <small>{item.verify}</small>
             </div>
           ))}
@@ -2270,6 +2272,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       title: `${responseWindowMinutes} minute first-pick timer`,
       detail:
         'New direct bookings store the current response-window policy in booking metadata and expiry time.',
+      api: 'POST /customer/bookings',
+      server: 'BookingsService.createBooking -> MatchingService.openBooking',
       verify:
         'Verify with a new booking, then open the booking detail timeline and matching policy snapshot.',
     },
@@ -2277,6 +2281,9 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       scope: 'Marketplace join',
       title: `${formatDistance(backupRadiusMeters)} marketplace alert policy`,
       detail: 'Marketplace partners are prioritized by customer distance before alerts and operator review.',
+      api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
+      server:
+        'BookingsService.findEligibleBackupProviders -> canProviderSeeOpenBooking -> requireProviderWithinMatchingRadius',
       verify: 'Verify from Operations Policy simulator and Partner Controls location freshness records.',
     },
     {
@@ -2284,6 +2291,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       title: `${backupLocationFreshnessMinutes} minute location freshness`,
       detail:
         'Partners with stale or missing last location are flagged before marketplace participation and shown as dispatch checks.',
+      api: 'POST /provider/location, GET /provider/bookings/open',
+      server: 'BookingsService.findEligibleBackupProviders -> providerLocationFreshEnough',
       verify:
         'Verify by opening App Sessions and Partner Controls after a partner app sends or misses a location heartbeat.',
     },
@@ -2295,6 +2304,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
           : 'Customer final selection is disabled',
       detail:
         'This controls whether preferred partner acceptance returns control to the customer for the final partner choice.',
+      api: 'POST /provider/bookings/:id/accept, POST /customer/bookings/:id/select-provider',
+      server: 'BookingsService.updateParticipant -> BookingsService.selectProvider',
       verify:
         'Verify by creating a direct booking, sending the partner response in the Partner app, then checking the customer waiting screen.',
     },
@@ -2306,6 +2317,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
           : 'Marketplace partners wait until timer or decline',
       detail:
         'This controls whether marketplace partners can participate during the first-pick response window.',
+      api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
+      server: 'BookingsService.isBackupWindowOpen',
       verify: 'Verify from partner app open request list while a direct booking is still waiting.',
     },
     {
@@ -2316,6 +2329,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
           : 'Recovery supervision mode is enabled',
       detail:
         'Cash-service company fee debt is enforced before final acceptance, customer final selection, service start, and payout release.',
+      api: 'POST /provider/bookings/:id/accept, POST /customer/bookings/:id/select-provider, POST /provider/bookings/:id/start, POST /admin/payout-batches',
+      server: 'BookingsService.ensureProviderWalletCanAccept -> EarningsService wallet release guards',
       verify:
         'Verify from Cash Settlements, Partner Controls, and a blocked accept attempt in the partner app.',
     },
