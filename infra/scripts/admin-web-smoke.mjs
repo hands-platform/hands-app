@@ -629,6 +629,7 @@ if (customerLinkMatch) {
     'Customer detail',
     'Customer recent operations timeline',
     'Customer connected operations records',
+    'Customer booking evidence bundles',
     'Customer operator command queue',
     'Customer full record index',
     'Customer operating ledger',

@@ -101,6 +101,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       isWithinDetailDateFilter(record.at, dateFilters) &&
       isWithinDetailActivityType(record.type, activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS),
   );
+  const customerBookingEvidenceRows = buildCustomerBookingEvidenceRows(filteredBookings);
   const customerActivitySummary = buildCustomerActivitySummary(filteredCustomerActivityRecords);
   const customerDailyActivityDigest = buildCustomerDailyActivityDigest(filteredCustomerActivityRecords);
   const filteredNotifications = notifications.filter((notification) =>
@@ -356,6 +357,79 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="card" id="customer-booking-evidence-bundles" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer booking evidence bundles</h2>
+            <p className="muted">
+              Reservation-by-reservation operating bundle for customer desk review. Each row connects the
+              selected address snapshot, partner state, chat archive, payment, refund, earning, wallet, tax,
+              and staff task records as factual history only.
+            </p>
+          </div>
+          <span className="pill pill-info">{customerBookingEvidenceRows.length} booking bundle(s)</span>
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Booking</th>
+              <th>Customer location</th>
+              <th>Partner flow</th>
+              <th>Chat archive</th>
+              <th>Money records</th>
+              <th>Ops evidence</th>
+              <th>Open</th>
+            </tr>
+          </thead>
+          <tbody>
+            {customerBookingEvidenceRows.map((row) => (
+              <tr key={row.id}>
+                <td>
+                  <strong>{row.bookingLabel}</strong>
+                  <p className="muted">{row.serviceLabel}</p>
+                  <span className={`pill ${bookingStatusPillClass(row.status)}`}>{row.status}</span>
+                </td>
+                <td>
+                  <strong>{row.addressStatus}</strong>
+                  <p className="muted">{row.addressDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.partnerStatus}</strong>
+                  <p className="muted">{row.partnerDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.chatStatus}</strong>
+                  <p className="muted">{row.chatDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.moneyStatus}</strong>
+                  <p className="muted">{row.moneyDetail}</p>
+                </td>
+                <td>
+                  <strong>{row.opsStatus}</strong>
+                  <p className="muted">{row.opsDetail}</p>
+                </td>
+                <td>
+                  <Link className="text-link" href={`/bookings/${row.id}`}>
+                    Booking
+                  </Link>
+                  {row.chatHref ? (
+                    <Link className="text-link" href={row.chatHref} style={{ marginLeft: 10 }}>
+                      Chat
+                    </Link>
+                  ) : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {customerBookingEvidenceRows.length === 0 ? (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No booking bundle matched this date filter.
+          </p>
+        ) : null}
       </section>
 
       <section className="card" id="customer-operator-command-queue" style={{ marginBottom: 16 }}>
@@ -1148,6 +1222,24 @@ type CustomerDailyActivityDigest = {
   latestAt?: string;
   typeCounts: Array<{ type: string; count: number }>;
   highlights: CustomerActivityRecord[];
+};
+
+type CustomerBookingEvidenceRow = {
+  id: string;
+  bookingLabel: string;
+  serviceLabel: string;
+  status: string;
+  addressStatus: string;
+  addressDetail: string;
+  partnerStatus: string;
+  partnerDetail: string;
+  chatStatus: string;
+  chatDetail: string;
+  chatHref?: string;
+  moneyStatus: string;
+  moneyDetail: string;
+  opsStatus: string;
+  opsDetail: string;
 };
 
 type CustomerOperatingLedgerRow = {
@@ -2190,6 +2282,67 @@ function buildCustomerDailyActivityDigest(records: CustomerActivityRecord[]): Cu
     });
 }
 
+function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): CustomerBookingEvidenceRow[] {
+  return bookings.slice(0, 30).map((booking) => {
+    const chatMessages = readChatMessages(booking);
+    const refunds = [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])];
+    const participantCount = booking.participants?.length ?? 0;
+    const acceptedParticipants =
+      booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+        .length ?? 0;
+    const hasAddressSnapshot = Boolean(booking.addressSnapshot);
+    const addressText = bookingAddressEvidenceLabel(booking);
+    const moneyParts = [
+      booking.payment
+        ? `${booking.payment.status} ${booking.payment.method} ${formatMoney(
+            Number(booking.payment.amount ?? 0),
+            booking.payment.currency ?? 'VND',
+          )}`
+        : 'No payment row',
+      booking.earning ? `earning ${booking.earning.status}` : 'no earning row',
+      refunds.length ? `${refunds.length} refund row(s)` : 'no refund rows',
+    ];
+    const opsParts = [
+      `${booking.opsTasks?.length ?? 0} ops task(s)`,
+      `${booking.auditLogs?.length ?? 0} audit row(s)`,
+      `${booking.platformFeeLogs?.length ?? 0} platform fee row(s)`,
+      `${booking.taxLogs?.length ?? 0} tax row(s)`,
+      `${booking.walletLedgerEntries?.length ?? 0} wallet row(s)`,
+    ];
+
+    return {
+      id: booking.id,
+      bookingLabel: `${shortId(booking.id)} / ${formatDate(
+        booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt,
+      )}`,
+      serviceLabel: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
+      status: booking.status,
+      addressStatus: hasAddressSnapshot ? 'Snapshot saved' : 'No address snapshot',
+      addressDetail: addressText,
+      partnerStatus: booking.selectedProviderId
+        ? 'Final partner selected'
+        : booking.preferredProviderId
+          ? 'Preferred partner first-pick'
+          : participantCount
+            ? 'Marketplace participation'
+            : 'No partner participation',
+      partnerDetail: `${bookingPartnerDisplayName(booking)} / ${participantCount} participant(s), ${acceptedParticipants} accepted/selected`,
+      chatStatus: booking.chatRoom ? `${chatMessages.length} message(s)` : 'No chat room',
+      chatDetail: booking.chatRoom
+        ? `Room ${shortId(booking.chatRoom.id)} / ${bookingChatArchiveLabel(booking)}`
+        : bookingChatArchiveLabel(booking),
+      chatHref: booking.chatRoom ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : undefined,
+      moneyStatus: booking.payment?.status ?? 'No payment',
+      moneyDetail: moneyParts.join(' / '),
+      opsStatus:
+        (booking.opsTasks?.length ?? 0) > 0 || (booking.auditLogs?.length ?? 0) > 0
+          ? 'Operator records'
+          : 'No operator rows',
+      opsDetail: opsParts.join(' / '),
+    };
+  });
+}
+
 function countActivityTypes(records: Array<{ type: string }>) {
   const counts = new Map<string, number>();
   for (const record of records) {
@@ -2226,6 +2379,19 @@ function bookingServiceLabel(booking: AdminBookingDetail) {
   const first = booking.services?.[0];
   if (!first?.service) return 'No service';
   return `${first.service.name ?? 'Service'} / ${first.service.durationMin ?? '?'} min`;
+}
+
+function bookingAddressEvidenceLabel(booking: AdminBookingDetail) {
+  if (booking.addressSnapshot) {
+    const coordinate =
+      booking.addressSnapshot.latitude != null && booking.addressSnapshot.longitude != null
+        ? ` / ${booking.addressSnapshot.latitude}, ${booking.addressSnapshot.longitude}`
+        : '';
+    return `${booking.addressSnapshot.addressText ?? stringifyAddress(booking.addressSnapshot.address)}${coordinate}`;
+  }
+  if (booking.address) return stringifyAddress(booking.address);
+  if (booking.lat != null && booking.lng != null) return `${booking.lat}, ${booking.lng}`;
+  return 'No booking address evidence loaded';
 }
 
 function mostCommonLabel(values: string[]) {
