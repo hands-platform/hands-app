@@ -666,7 +666,7 @@ function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[]
   const preferredLimit = readNumber(metadata.preferredProviderDistanceLimitMeters);
 
   if (reasonCode) {
-    highlights.push({ label: reasonCode.replace(/_/g, ' ').toLowerCase(), className: 'pill pill-info' });
+    highlights.push({ label: bookingGateReasonLabel(reasonCode), className: 'pill pill-info' });
   }
   if (customerDistance !== null) {
     highlights.push({
@@ -682,6 +682,31 @@ function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[]
   }
 
   return highlights.slice(0, 6);
+}
+
+function bookingGateReasonLabel(reasonCode: string) {
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
+    return 'customer GPS too far';
+  }
+  if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
+    return 'first-pick partner too far';
+  }
+  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
+    return 'address outside service area';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
+    return 'customer GPS stale';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
+    return 'customer GPS missing';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
+    return 'GPS timestamp missing';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
+    return 'GPS timestamp invalid';
+  }
+  return reasonCode.replace(/_/g, ' ').toLowerCase();
 }
 
 function operationalPolicyHighlights(log: AdminAuditLog): MetadataHighlight[] {

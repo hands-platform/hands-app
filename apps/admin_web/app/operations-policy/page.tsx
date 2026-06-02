@@ -1576,8 +1576,8 @@ function buildBookingCreateGateReview(
         operatorMeaning: serviceAreaRequired
           ? 'Booking address must be inside an enabled Vietnam service area.'
           : 'Booking can be created outside configured service areas. Use only before a city launch test.',
-        evidence: `${reasonCounts.get('SERVICE_AREA_REQUIRED') ?? 0} reject(s)`,
-        href: '/audit-log?query=SERVICE_AREA_REQUIRED',
+        evidence: `${reasonCounts.get('BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') ?? 0} reject(s)`,
+        href: '/audit-log?query=BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
         pillClass: serviceAreaRequired ? 'pill-success' : 'pill-warn',
       },
       {
@@ -1609,8 +1609,8 @@ function buildBookingCreateGateReview(
         defaultValue: '10 min',
         operatorMeaning:
           'The customer location proof must be recent. GPS failure still allows browsing and address search, but not unsafe immediate booking.',
-        evidence: `${reasonCounts.get('CURRENT_LOCATION_STALE') ?? 0} reject(s)`,
-        href: '/audit-log?query=CURRENT_LOCATION_STALE',
+        evidence: `${bookingGateCurrentLocationRejectCount(reasonCounts)} reject(s)`,
+        href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION',
         pillClass: freshnessMinutes === 10 ? 'pill-success' : 'pill-warn',
       },
     ],
@@ -3445,11 +3445,20 @@ function bookingGateReasonLabel(reasonCode: string) {
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
     return 'First-pick partner too far';
   }
-  if (reasonCode === 'SERVICE_AREA_REQUIRED') {
+  if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
     return 'Outside service area';
   }
-  if (reasonCode === 'CURRENT_LOCATION_STALE') {
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
     return 'Stale customer GPS';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
+    return 'Missing customer GPS';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
+    return 'Missing GPS timestamp';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
+    return 'Invalid GPS timestamp';
   }
   return displayOperationalWording(reasonCode.replace(/_/g, ' ').toLowerCase());
 }
@@ -3462,6 +3471,15 @@ function bookingGateReasonPill(reasonCode: string) {
     return 'pill-danger';
   }
   return 'pill-info';
+}
+
+function bookingGateCurrentLocationRejectCount(counts: Map<string, number>) {
+  return [
+    'CUSTOMER_CURRENT_LOCATION_MISSING',
+    'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING',
+    'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID',
+    'CUSTOMER_CURRENT_LOCATION_STALE',
+  ].reduce((total, key) => total + (counts.get(key) ?? 0), 0);
 }
 
 function bookingGateAttemptDetail(metadata: Record<string, unknown> | null) {

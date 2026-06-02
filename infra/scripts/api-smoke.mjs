@@ -1384,6 +1384,20 @@ await expectRequestFailure(
     }),
   400,
 );
+const serviceAreaGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
+if (
+  !serviceAreaGateAuditLogs.some(
+    (log) =>
+      log.action === 'booking.create.rejected' &&
+      log.metadata?.reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+  )
+) {
+  throw new Error(
+    `Service area gate rejection should create an operations audit log: ${JSON.stringify(
+      serviceAreaGateAuditLogs.slice(0, 5),
+    )}`,
+  );
+}
 await expectRequestFailure(
   'Booking requires a recent customer current location before payment and matching',
   () =>
@@ -1400,6 +1414,20 @@ await expectRequestFailure(
     }),
   400,
 );
+const missingCurrentLocationGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
+if (
+  !missingCurrentLocationGateAuditLogs.some(
+    (log) =>
+      log.action === 'booking.create.rejected' &&
+      log.metadata?.reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING',
+  )
+) {
+  throw new Error(
+    `Missing customer current location gate should create an operations audit log: ${JSON.stringify(
+      missingCurrentLocationGateAuditLogs.slice(0, 5),
+    )}`,
+  );
+}
 await expectRequestFailure(
   'Booking rejects stale customer current location snapshots',
   () =>
@@ -1415,6 +1443,20 @@ await expectRequestFailure(
     }),
   400,
 );
+const staleCurrentLocationGateAuditLogs = await getJson('/admin/audit-logs', adminAuth.accessToken);
+if (
+  !staleCurrentLocationGateAuditLogs.some(
+    (log) =>
+      log.action === 'booking.create.rejected' &&
+      log.metadata?.reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE',
+  )
+) {
+  throw new Error(
+    `Stale customer current location gate should create an operations audit log: ${JSON.stringify(
+      staleCurrentLocationGateAuditLogs.slice(0, 5),
+    )}`,
+  );
+}
 await expectRequestFailure(
   'Booking rejects service addresses too far from the customer current location',
   () =>
@@ -1486,6 +1528,9 @@ if (
 const selectedLocationOnlyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   selectedLocationId: savedSelectedLocation.id,
+  currentLat: Number(savedSelectedLocation.latitude),
+  currentLng: Number(savedSelectedLocation.longitude),
+  currentLocationUpdatedAt: new Date().toISOString(),
   paymentMethod: 'CASH',
 });
 const selectedLocationOnlyBookingDetail = await getJson(

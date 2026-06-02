@@ -2412,24 +2412,28 @@ function bookingPriority(booking: AdminBooking) {
 function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): BookingCommandLane {
   const customerTooFar = logs.filter((log) => bookingGateReasonCode(log) === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR');
   const partnerTooFar = logs.filter((log) => bookingGateReasonCode(log) === 'PREFERRED_PARTNER_TOO_FAR');
+  const serviceArea = logs.filter((log) => bookingGateReasonCode(log) === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA');
+  const locationProof = logs.filter((log) => bookingGateReasonCode(log).startsWith('CUSTOMER_CURRENT_LOCATION_'));
   const latest = logs[0];
   const latestAge = latest ? relativeTimeLabel(latest.createdAt, nowMs) : 'none';
 
   return {
     title: 'Blocked booking attempts',
     status: logs.length > 0 ? `${logs.length} stopped` : 'Clear',
-    tone: logs.length > 0 ? 'warn' : 'ok',
-    detail:
-      logs.length > 0
-        ? `${customerTooFar.length} customer GPS gate and ${partnerTooFar.length} first-pick distance gate attempt(s). Latest ${latestAge}.`
-        : 'No booking create request has been blocked by the local booking gates.',
-    href: '/bookings?view=blocked-create',
-    metrics: [
-      { label: 'Customer GPS gate', value: customerTooFar.length.toString() },
-      { label: 'First-pick distance', value: partnerTooFar.length.toString() },
-      { label: 'Latest', value: latestAge },
-    ],
-  };
+      tone: logs.length > 0 ? 'warn' : 'ok',
+      detail:
+        logs.length > 0
+          ? `${customerTooFar.length} customer distance, ${partnerTooFar.length} first-pick distance, ${serviceArea.length} service-area, and ${locationProof.length} customer GPS proof attempt(s). Latest ${latestAge}.`
+          : 'No booking create request has been blocked by the local booking gates.',
+      href: '/bookings?view=blocked-create',
+      metrics: [
+        { label: 'Customer GPS gate', value: customerTooFar.length.toString() },
+        { label: 'First-pick distance', value: partnerTooFar.length.toString() },
+        { label: 'Service area', value: serviceArea.length.toString() },
+        { label: 'GPS proof', value: locationProof.length.toString() },
+        { label: 'Latest', value: latestAge },
+      ],
+    };
 }
 
 function bookingGateReasonCode(log: AdminAuditLog) {
@@ -2525,6 +2529,15 @@ function bookingGateReasonLabel(reasonCode: string) {
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
     return 'Customer GPS stale';
   }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
+    return 'Customer GPS missing';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
+    return 'Customer GPS timestamp missing';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
+    return 'Customer GPS timestamp invalid';
+  }
   return reasonCode.replaceAll('_', ' ').toLowerCase();
 }
 
@@ -2540,6 +2553,15 @@ function bookingGateOperatorAction(reasonCode: string) {
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
     return 'Ask the customer to refresh current location before booking. The saved GPS snapshot was too old.';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
+    return 'Ask the customer to allow GPS or use current location before booking. Address search stays available, but payment and matching did not start.';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
+    return 'Ask the customer app to refresh current location with a timestamp before booking. Payment and matching did not start.';
+  }
+  if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
+    return 'Ask the customer to refresh current location again. The timestamp looked invalid, so payment and matching did not start.';
   }
   return 'Review the audit metadata and customer address before support follow-up.';
 }

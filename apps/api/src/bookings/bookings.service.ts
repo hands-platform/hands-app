@@ -173,8 +173,29 @@ export class BookingsService {
     const matchingPolicy = await this.matching.getPolicy();
     const bookingLat = normalizeBookingCoordinate(input.lat ?? selectedLocation?.latitude, 'lat');
     const bookingLng = normalizeBookingCoordinate(input.lng ?? selectedLocation?.longitude, 'lng');
+    const addressTextForAudit =
+      bookingAddressText(input.address) ?? selectedLocation?.addressText?.trim() ?? 'Unknown booking address';
     if (matchingPolicy.bookingServiceAreaRequired) {
-      assertVietnamBookingCoordinate(bookingLat, bookingLng);
+      const serviceAreaError = vietnamBookingCoordinateGateError(bookingLat, bookingLng);
+      if (serviceAreaError) {
+        await this.recordBookingGateRejection({
+          actorId: userId,
+          customerProfileId: customer.id,
+          serviceId: service.id,
+          preferredProviderId: preferredProvider?.id,
+          reasonCode: 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+          reason: serviceAreaError.message,
+          bookingLat,
+          bookingLng,
+          addressText: addressTextForAudit,
+          customerDistanceMeters: null,
+          preferredProviderDistanceMeters: null,
+          customerDistanceLimitMeters: matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
+          preferredProviderDistanceLimitMeters: matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
+          currentLocationRecordedAt: null,
+        });
+        throw new BadRequestException(serviceAreaError.message);
+      }
     } else {
       assertWorldBookingCoordinate(bookingLat, bookingLng);
     }
@@ -186,6 +207,26 @@ export class BookingsService {
     const expiresAt = new Date(Date.now() + matchingPolicy.providerResponseWindowMinutes * 60_000);
     const discountAmount = coupon ? this.calculateCouponDiscount(coupon.discount, customerPrice) : 0;
     const finalAmount = Math.max(0, customerPrice - discountAmount);
+    const currentLocationGateError = bookingAttemptCurrentLocationGateError(input, matchingPolicy);
+    if (currentLocationGateError) {
+      await this.recordBookingGateRejection({
+        actorId: userId,
+        customerProfileId: customer.id,
+        serviceId: service.id,
+        preferredProviderId: preferredProvider?.id,
+        reasonCode: currentLocationGateError.reasonCode,
+        reason: currentLocationGateError.message,
+        bookingLat,
+        bookingLng,
+        addressText,
+        customerDistanceMeters: null,
+        preferredProviderDistanceMeters: null,
+        customerDistanceLimitMeters: matchingPolicy.bookingMaxCustomerCurrentToAddressKm * 1000,
+        preferredProviderDistanceLimitMeters: matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
+        currentLocationRecordedAt: currentLocationGateError.recordedAt,
+      });
+      throw new BadRequestException(currentLocationGateError.message);
+    }
     const customerCurrentLocation = normalizeBookingAttemptCurrentLocation(input, matchingPolicy);
     const customerToBookingDistanceMeters = customerCurrentLocation
       ? calculateDistanceMeters(
@@ -1661,15 +1702,72 @@ function normalizeBookingCoordinate(value: unknown, fieldName: 'lat' | 'lng') {
 }
 
 function assertVietnamBookingCoordinate(lat: number, lng: number) {
-  if (lat < 8 || lat > 24 || lng < 102 || lng > 110) {
-    throw new BadRequestException('Booking address must be inside Vietnam');
+  const gateError = vietnamBookingCoordinateGateError(lat, lng);
+  if (gateError) {
+    throw new BadRequestException(gateError.message);
   }
 }
 
+function vietnamBookingCoordinateGateError(lat: number, lng: number) {
+  if (!isVietnamBookingCoordinate(lat, lng)) {
+    return {
+      message: 'Booking address must be inside Vietnam',
+    };
+  }
+  return null;
+}
+
 function assertWorldBookingCoordinate(lat: number, lng: number) {
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+  if (!isWorldBookingCoordinate(lat, lng)) {
     throw new BadRequestException('Booking address coordinate is invalid');
   }
+}
+
+function isWorldBookingCoordinate(lat: number, lng: number) {
+  return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180;
+}
+
+function bookingAttemptCurrentLocationGateError(
+  input: { currentLat?: number; currentLng?: number; currentLocationUpdatedAt?: string },
+  policy: MatchingPolicy,
+) {
+  if (!policy.bookingDistanceGateEnabled) {
+    return null;
+  }
+  const lat = Number(input.currentLat);
+  const lng = Number(input.currentLng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng) || !isWorldBookingCoordinate(lat, lng)) {
+    return {
+      reasonCode: 'CUSTOMER_CURRENT_LOCATION_MISSING',
+      message: 'Recent customer current location is required before booking',
+      recordedAt: null,
+    };
+  }
+  const recordedAt = input.currentLocationUpdatedAt ? new Date(input.currentLocationUpdatedAt) : null;
+  if (!recordedAt || Number.isNaN(recordedAt.getTime())) {
+    return {
+      reasonCode: 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING',
+      message: 'Recent customer current location timestamp is required before booking',
+      recordedAt: null,
+    };
+  }
+  const now = Date.now();
+  if (recordedAt.getTime() > now + 60_000) {
+    return {
+      reasonCode: 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID',
+      message: 'Customer current location timestamp is invalid',
+      recordedAt,
+    };
+  }
+  const ageMinutes = Math.max(0, (now - recordedAt.getTime()) / 60_000);
+  if (ageMinutes > policy.bookingCurrentLocationFreshnessMinutes) {
+    return {
+      reasonCode: 'CUSTOMER_CURRENT_LOCATION_STALE',
+      message: `Customer current location must be refreshed within ${policy.bookingCurrentLocationFreshnessMinutes} minutes before booking`,
+      recordedAt,
+    };
+  }
+  return null;
 }
 
 function normalizeBookingAttemptCurrentLocation(
