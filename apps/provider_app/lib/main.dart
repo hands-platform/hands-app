@@ -1687,8 +1687,12 @@ class OpenBookingCard extends StatelessWidget {
     final hasPreferredProvider = preferredProvider != null;
     final hasChat = isProviderAppChatVisible(booking);
     final isMatched = booking['status'] == 'MATCHED';
-    final walletBlocksMarketplaceJoin =
-        walletBlocked && !isPreferredRequest && !isMatched && !joined;
+    final walletBlocksMarketplaceJoin = providerWalletBlocksMarketplaceJoin(
+      walletBlocked: walletBlocked,
+      isPreferredRequest: isPreferredRequest,
+      isMatched: isMatched,
+      joined: joined,
+    );
     final isCashBooking = providerBookingIsCash(booking);
     final customerAmount = payment?['amount'] ?? service?['basePrice'];
     final customerAddress = booking['address'] as Map<String, dynamic>?;
@@ -1950,11 +1954,10 @@ class OpenBookingCard extends StatelessWidget {
                 icon: Icon(walletBlocksMarketplaceJoin
                     ? Icons.lock_outline
                     : Icons.add_circle_outline),
-                label: Text(walletBlocksMarketplaceJoin
-                    ? 'Fee settlement required'
-                    : hasPreferredProvider
-                        ? 'Offer marketplace support'
-                        : 'Join open matching'),
+                label: Text(providerMarketplaceJoinButtonLabel(
+                  walletBlocksMarketplaceJoin: walletBlocksMarketplaceJoin,
+                  hasPreferredProvider: hasPreferredProvider,
+                )),
               )
             else ...[
               const InfoCard(
@@ -4865,6 +4868,29 @@ const providerWalletBlockFallbackReasonClean = '수수료를 입금하지 않아
 const providerWalletBlockHintClean =
     'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before joining marketplace requests.';
 
+const providerMarketplaceJoinBlockedButtonLabel = '수수료 정산 필요';
+
+bool providerWalletBlocksMarketplaceJoin({
+  required bool walletBlocked,
+  required bool isPreferredRequest,
+  required bool isMatched,
+  required bool joined,
+}) {
+  return walletBlocked && !isPreferredRequest && !isMatched && !joined;
+}
+
+String providerMarketplaceJoinButtonLabel({
+  required bool walletBlocksMarketplaceJoin,
+  required bool hasPreferredProvider,
+}) {
+  if (walletBlocksMarketplaceJoin) {
+    return providerMarketplaceJoinBlockedButtonLabel;
+  }
+  return hasPreferredProvider
+      ? 'Offer marketplace support'
+      : 'Join open matching';
+}
+
 num providerWalletBalance(Map<String, dynamic> summary) {
   return asNum(summary['walletBalance']) ??
       ((asNum(summary['pendingNetAmount']) ?? 0) +
@@ -5051,8 +5077,12 @@ ProviderRequestGuidance providerRequestGuidance({
       preferredProvider?['displayName']?.toString().trim();
   final hasChat = isProviderAppChatVisible(booking);
   final isMatched = booking['status'] == 'MATCHED';
-  final actionBlockedByWallet =
-      walletBlocked && !isMatched && !isPreferredRequest && !joined;
+  final actionBlockedByWallet = providerWalletBlocksMarketplaceJoin(
+    walletBlocked: walletBlocked,
+    isPreferredRequest: isPreferredRequest,
+    isMatched: isMatched,
+    joined: joined,
+  );
   final responseWindowLabel = providerMatchingWindowText(booking);
   final backupRadiusLabel = providerBackupRadiusText(booking);
 

@@ -222,6 +222,13 @@ void main() {
     expect(guidance.decisionLabel, 'Settlement required');
     expect(guidance.contextMessage, contains('unpaid HANDS fees'));
     expect(
+      providerMarketplaceJoinButtonLabel(
+        walletBlocksMarketplaceJoin: true,
+        hasPreferredProvider: true,
+      ),
+      providerMarketplaceJoinBlockedButtonLabel,
+    );
+    expect(
       providerWalletBlockFallbackReasonClean,
       '수수료를 입금하지 않아 예약에 참여 할수 없습니다.',
     );
@@ -231,6 +238,55 @@ void main() {
     expect(
       providerActionBlockCopy('수수료를 입금하지 않아 예약에 참여 할수 없습니다.')?.detail,
       providerWalletBlockFallbackReasonClean,
+    );
+  });
+
+  test('wallet gate only blocks joining marketplace before participation', () {
+    expect(
+      providerWalletBlocksMarketplaceJoin(
+        walletBlocked: true,
+        isPreferredRequest: false,
+        isMatched: false,
+        joined: false,
+      ),
+      isTrue,
+    );
+    expect(
+      providerWalletBlocksMarketplaceJoin(
+        walletBlocked: true,
+        isPreferredRequest: true,
+        isMatched: false,
+        joined: false,
+      ),
+      isFalse,
+      reason: 'Direct first-pick accept/reject is not marketplace join.',
+    );
+    expect(
+      providerWalletBlocksMarketplaceJoin(
+        walletBlocked: true,
+        isPreferredRequest: false,
+        isMatched: false,
+        joined: true,
+      ),
+      isFalse,
+      reason: 'Already joined participants stay visible for customer choice.',
+    );
+    expect(
+      providerWalletBlocksMarketplaceJoin(
+        walletBlocked: true,
+        isPreferredRequest: false,
+        isMatched: true,
+        joined: false,
+      ),
+      isFalse,
+      reason: 'Already matched bookings are handled by service workflow.',
+    );
+    expect(
+      providerMarketplaceJoinButtonLabel(
+        walletBlocksMarketplaceJoin: false,
+        hasPreferredProvider: true,
+      ),
+      'Offer marketplace support',
     );
   });
 
