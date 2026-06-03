@@ -19,6 +19,7 @@ checkMobileVisibleCopyGuardIsStrict();
 checkAdminPeopleManagementIsFactual();
 checkAdminDashboardOperationsCoverage();
 checkBookingDetailIsSourceOfTruth();
+checkOperationsPolicyControlPlane();
 
 console.log(
   JSON.stringify(
@@ -446,6 +447,56 @@ function checkBookingDetailIsSourceOfTruth() {
 
   requireMarkers('apps/admin_web/app/bookings/[id]/page.tsx', bookingDetail, requiredBookingDetailMarkers);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, requiredBookingDetailMarkers);
+}
+
+function checkOperationsPolicyControlPlane() {
+  const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
+  const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
+  const apiPolicyCoverage = read('infra/scripts/check-api-policy-coverage.mjs');
+  const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
+
+  requireMarkers('apps/api/src/matching/matching.policy.ts', matchingPolicy, [
+    "export const DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES = 10;",
+    'export const DEFAULT_BACKUP_PROVIDER_RADIUS_METERS = 10000;',
+    "export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';",
+    "export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';",
+    "export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';",
+    "export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';",
+    'Automatic matching is disabled for the MVP.',
+    'No policy can automatically assign the final partner.',
+  ]);
+  requireMarkers('apps/admin_web/app/operations-policy/page.tsx', operationsPolicy, [
+    'Final partner choice control matrix',
+    'Current partner acceptance impact',
+    'Matching stage impact preview',
+    'Policy enforcement trace',
+    'policySettingAnchor(setting.key)',
+    "api: 'POST /customer/bookings'",
+    "server: 'BookingsService.createBooking -> MatchingService.openBooking'",
+    "href: '/operations-policy#policy-matching-marketplace-provider-radius-meters'",
+    'id={policySettingAnchor(setting.key)}',
+    'Keep customer final confirmation as the operating rule.',
+    'The preferred partner can accept quickly, marketplace partners can still join the shortlist, and the customer chooses the final partner.',
+  ]);
+  requireMarkers('infra/scripts/check-api-policy-coverage.mjs', apiPolicyCoverage, [
+    'operational policy metadata',
+    "'matching.provider_response_window_minutes'",
+    "'matching.backup_provider_radius_meters'",
+    "'wallet.negative_balance_gate'",
+    'matching policy marketplace window',
+    'marketplace radius join guard',
+    'negative wallet final acceptance policy',
+  ]);
+  requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
+    'Operations Policy',
+    'Final partner choice control matrix',
+    'Current partner acceptance impact',
+    'Matching stage impact preview',
+    'Policy enforcement trace',
+    'id="policy-matching-provider-response-window-minutes"',
+    'id="policy-matching-marketplace-provider-radius-meters"',
+    'id="policy-wallet-negative-balance-gate"',
+  ]);
 }
 
 function requireMarkers(file, source, markers) {
