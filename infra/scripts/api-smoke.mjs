@@ -2362,6 +2362,28 @@ const blockedOpenMatchingBooking = await postJson('/customer/bookings', customer
   lng: 106.6994,
   paymentMethod: 'MOMO',
 });
+const negativeWalletVisibleMarketplaceBookings = await getJson(
+  '/provider/bookings/open',
+  walletDebtProviderAuth.accessToken,
+);
+const negativeWalletVisibleMarketplaceBooking = negativeWalletVisibleMarketplaceBookings.find(
+  (item) => item.id === blockedOpenMatchingBooking.id,
+);
+if (
+  !negativeWalletVisibleMarketplaceBooking ||
+  typeof negativeWalletVisibleMarketplaceBooking.distanceMeters !== 'number' ||
+  negativeWalletVisibleMarketplaceBooking.distanceMeters > 10000
+) {
+  throw new Error(
+    `Negative wallet partner should still see marketplace request before settlement, but cannot join: ${JSON.stringify(
+      {
+        expectedBookingId: blockedOpenMatchingBooking.id,
+        visibleBooking: negativeWalletVisibleMarketplaceBooking,
+        sample: negativeWalletVisibleMarketplaceBookings[0],
+      },
+    )}`,
+  );
+}
 const negativeWalletMarketplaceJoinError = await expectRequestFailure(
   'Negative provider wallet blocks marketplace participation',
   () =>

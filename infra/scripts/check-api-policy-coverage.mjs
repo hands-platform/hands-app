@@ -164,6 +164,7 @@ const requiredCoverage = [
       'Negative provider wallet holds direct final acceptance',
       'Negative provider wallet blocks customer final selection',
       'Negative provider wallet blocks service start',
+      'Negative wallet partner should still see marketplace request before settlement',
       'Negative provider wallet blocks marketplace participation',
       'Negative provider wallet holds payout batch creation',
       'assertNegativeWalletBlockResponse',
@@ -175,6 +176,7 @@ const requiredCoverage = [
     area: 'negative wallet marketplace participation policy',
     markers: [
       'wallet.negative_balance_gate',
+      'Negative wallet partner should still see marketplace request before settlement',
       'Negative provider wallet blocks marketplace participation',
       'Negative provider wallet blocks customer final selection',
       'Negative provider wallet blocks service start',
