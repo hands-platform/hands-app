@@ -133,7 +133,9 @@ Legacy `/admin/providers`, `/admin/provider-reports`, `/admin/provider-sanctions
 - `POST /payments/VNPAY/callback`
 - `POST /payments/CASH/callback`
 
-Callbacks are placeholder parser routes in the MVP. Real MoMo/VNPay signature validation must be added before production.
+MoMo and VNPay callbacks verify provider signatures when the relevant secret is configured.
+Production rejects MoMo/VNPay callback processing if the required provider secret is missing.
+Cash callbacks are internal/admin-operable MVP placeholders.
 
 Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUNDED`, create a `Refund` row, and cancel unpaid partner earnings for that booking.
 

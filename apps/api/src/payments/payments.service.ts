@@ -1,7 +1,9 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { BookingStatus, PaymentMethod, PaymentStatus, Prisma } from '@prisma/client';
 import { Queue } from 'bullmq';
+import { createHmac, timingSafeEqual } from 'crypto';
 import { AdminService } from '../admin/admin.service';
 import { EarningsService } from '../earnings/earnings.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,6 +14,7 @@ import { PaymentAdapter } from './payment-adapter';
 export class PaymentsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
     private readonly admin: AdminService,
     private readonly earnings: EarningsService,
     private readonly momo: MomoPaymentAdapter,
@@ -71,15 +74,39 @@ export class PaymentsService {
   }
 
   async handleCallback(method: PaymentMethod, payload: unknown) {
-    const parsed = this.adapterFor(method).parseCallback(payload);
+    const paymentMethod = this.parsePaymentMethod(method);
+    const verification = this.verifyCallback(paymentMethod, payload);
+    const parsed = this.adapterFor(paymentMethod).parseCallback(payload);
+    if (!parsed.providerRef) {
+      throw new BadRequestException('Payment callback provider reference is required');
+    }
+
+    const existing = await this.prisma.payment.findUnique({ where: { providerRef: parsed.providerRef } });
+    if (!existing) {
+      throw new BadRequestException('Payment callback provider reference is unknown');
+    }
+    this.assertCallbackMatchesPayment(paymentMethod, payload, existing);
+
+    if (isTerminalPaymentStatus(existing.status)) {
+      if (existing.status === parsed.status) {
+        return { ok: true, replay: true, payment: existing };
+      }
+      throw new ConflictException('Payment callback conflicts with a terminal payment status');
+    }
+
     const payment = await this.prisma.payment.update({
-      where: { providerRef: parsed.providerRef },
+      where: { id: existing.id },
       data: {
         status: parsed.status,
-        rawMeta: toJsonOrUndefined(parsed.rawMeta),
+        rawMeta: toJsonOrUndefined({
+          ...parsed.rawMeta,
+          callbackReceivedAt: new Date().toISOString(),
+          callbackSignatureVerified: verification.verified,
+          callbackVerificationMode: verification.mode,
+        }),
       },
     });
-    return { ok: true, payment };
+    return { ok: true, replay: false, payment };
   }
 
   async checkAndSyncStatus(paymentId: string) {
@@ -181,7 +208,105 @@ export class PaymentsService {
     if (method === PaymentMethod.VNPAY) {
       return this.vnpay;
     }
-    return this.cash;
+    if (method === PaymentMethod.CASH) {
+      return this.cash;
+    }
+    throw new BadRequestException('Unsupported payment method');
+  }
+
+  private parsePaymentMethod(method: PaymentMethod | string): PaymentMethod {
+    if (Object.values(PaymentMethod).includes(method as PaymentMethod)) {
+      return method as PaymentMethod;
+    }
+    throw new BadRequestException('Unsupported payment method');
+  }
+
+  private verifyCallback(method: PaymentMethod, payload: unknown) {
+    if (method === PaymentMethod.CASH) {
+      return { verified: true, mode: 'cash-internal' };
+    }
+
+    const body = asJsonObject(payload);
+    if (method === PaymentMethod.MOMO) {
+      return this.verifyMomoCallback(body);
+    }
+    if (method === PaymentMethod.VNPAY) {
+      return this.verifyVnpayCallback(body);
+    }
+    throw new BadRequestException('Unsupported payment method');
+  }
+
+  private verifyMomoCallback(body: Record<string, unknown>) {
+    const secret = this.paymentSecret('MOMO_SECRET_KEY', PaymentMethod.MOMO);
+    if (!secret) {
+      return { verified: false, mode: 'dev-unverified' };
+    }
+
+    const signature = stringValue(body.signature);
+    if (!signature) {
+      throw new BadRequestException('MoMo callback signature is required');
+    }
+
+    const candidates = momoSignatureCandidates(body, this.config.get<string>('MOMO_ACCESS_KEY'));
+    const verified = candidates.some((candidate) => secureEqualHex(hmacHex('sha256', secret, candidate), signature));
+    if (!verified) {
+      throw new BadRequestException('Invalid MoMo callback signature');
+    }
+    return { verified: true, mode: 'momo-hmac-sha256' };
+  }
+
+  private verifyVnpayCallback(body: Record<string, unknown>) {
+    const secret = this.paymentSecret('VNPAY_HASH_SECRET', PaymentMethod.VNPAY);
+    if (!secret) {
+      return { verified: false, mode: 'dev-unverified' };
+    }
+
+    const signature = stringValue(body.vnp_SecureHash);
+    if (!signature) {
+      throw new BadRequestException('VNPay callback secure hash is required');
+    }
+
+    const candidates = vnpaySignatureCandidates(body);
+    const verified = candidates.some((candidate) => secureEqualHex(hmacHex('sha512', secret, candidate), signature));
+    if (!verified) {
+      throw new BadRequestException('Invalid VNPay callback secure hash');
+    }
+    return { verified: true, mode: 'vnpay-hmac-sha512' };
+  }
+
+  private paymentSecret(envKey: string, method: PaymentMethod) {
+    const secret = this.config.get<string>(envKey)?.trim();
+    if (secret) {
+      return secret;
+    }
+    if (this.config.get<string>('NODE_ENV') === 'production') {
+      throw new BadRequestException(`${method} callback secret is not configured`);
+    }
+    return null;
+  }
+
+  private assertCallbackMatchesPayment(method: PaymentMethod, payload: unknown, payment: { amount: number }) {
+    const body = asJsonObject(payload);
+    const callbackAmount = callbackAmountVnd(method, body);
+    if (callbackAmount !== null && callbackAmount !== payment.amount) {
+      throw new BadRequestException('Payment callback amount does not match the stored payment');
+    }
+
+    if (method === PaymentMethod.MOMO) {
+      const expectedPartnerCode = this.config.get<string>('MOMO_PARTNER_CODE')?.trim();
+      const partnerCode = stringValue(body.partnerCode);
+      if (expectedPartnerCode && partnerCode && partnerCode !== expectedPartnerCode) {
+        throw new BadRequestException('MoMo callback partner code does not match');
+      }
+    }
+
+    if (method === PaymentMethod.VNPAY) {
+      const expectedTmnCode = this.config.get<string>('VNPAY_TMN_CODE')?.trim();
+      const tmnCode = stringValue(body.vnp_TmnCode);
+      if (expectedTmnCode && tmnCode && tmnCode !== expectedTmnCode) {
+        throw new BadRequestException('VNPay callback merchant code does not match');
+      }
+    }
   }
 }
 
@@ -201,4 +326,95 @@ function asJsonObject(value: unknown): Record<string, unknown> {
     return {};
   }
   return value as Record<string, unknown>;
+}
+
+function momoSignatureCandidates(body: Record<string, unknown>, accessKey?: string) {
+  const material: Record<string, unknown> = { ...body };
+  delete material.signature;
+  if (accessKey?.trim()) {
+    material.accessKey = accessKey.trim();
+  }
+
+  const sorted = sortedKeyValueString(material);
+  const fixedOrder = [
+    'accessKey',
+    'amount',
+    'extraData',
+    'message',
+    'orderId',
+    'orderInfo',
+    'orderType',
+    'partnerCode',
+    'payType',
+    'requestId',
+    'responseTime',
+    'resultCode',
+    'transId',
+  ];
+  const fixed = fixedOrder
+    .filter((key) => material[key] !== undefined && material[key] !== null)
+    .map((key) => `${key}=${stringValue(material[key])}`)
+    .join('&');
+  return Array.from(new Set([sorted, fixed].filter(Boolean)));
+}
+
+function vnpaySignatureCandidates(body: Record<string, unknown>) {
+  const material = Object.fromEntries(
+    Object.entries(body).filter(([key]) => key !== 'vnp_SecureHash' && key !== 'vnp_SecureHashType'),
+  );
+  const raw = sortedKeyValueString(material);
+  const encoded = Object.keys(material)
+    .sort()
+    .map((key) => `${key}=${phpUrlEncode(stringValue(material[key]))}`)
+    .join('&');
+  return Array.from(new Set([raw, encoded].filter(Boolean)));
+}
+
+function sortedKeyValueString(values: Record<string, unknown>) {
+  return Object.keys(values)
+    .filter((key) => values[key] !== undefined && values[key] !== null)
+    .sort()
+    .map((key) => `${key}=${stringValue(values[key])}`)
+    .join('&');
+}
+
+function callbackAmountVnd(method: PaymentMethod, body: Record<string, unknown>) {
+  if (method === PaymentMethod.MOMO && body.amount !== undefined) {
+    return numberValue(body.amount);
+  }
+  if (method === PaymentMethod.VNPAY && body.vnp_Amount !== undefined) {
+    const rawAmount = numberValue(body.vnp_Amount);
+    return rawAmount === null ? null : Math.round(rawAmount / 100);
+  }
+  return null;
+}
+
+function stringValue(value: unknown) {
+  return value === undefined || value === null ? '' : String(value);
+}
+
+function numberValue(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string' && value.trim() && Number.isFinite(Number(value))) {
+    return Number(value);
+  }
+  return null;
+}
+
+function hmacHex(algorithm: 'sha256' | 'sha512', secret: string, data: string) {
+  return createHmac(algorithm, secret).update(Buffer.from(data, 'utf8')).digest('hex');
+}
+
+function secureEqualHex(expected: string, actual: string) {
+  const normalizedActual = actual.toLowerCase();
+  if (!/^[a-f0-9]+$/i.test(normalizedActual) || expected.length !== normalizedActual.length) {
+    return false;
+  }
+  return timingSafeEqual(Buffer.from(expected, 'hex'), Buffer.from(normalizedActual, 'hex'));
+}
+
+function phpUrlEncode(value: string) {
+  return encodeURIComponent(value).replace(/%20/g, '+');
 }

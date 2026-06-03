@@ -23,7 +23,7 @@ abstract class PlaceholderRedirectAdapter implements PaymentAdapter {
     const body = isRecord(payload) ? payload : {};
     return {
       providerRef: String(body.providerRef ?? body.orderId ?? body.vnp_TxnRef ?? ''),
-      status: normalizeStatus(body.status),
+      status: normalizeStatus(body.status ?? body.resultCode ?? body.vnp_ResponseCode),
       rawMeta: body,
     };
   }
@@ -77,7 +77,7 @@ export class CashPaymentAdapter implements PaymentAdapter {
 }
 
 function normalizeStatus(value: unknown) {
-  if (value === 'CAPTURED' || value === 'SUCCESS' || value === '00') {
+  if (value === 'CAPTURED' || value === 'SUCCESS' || value === '00' || value === '0' || value === 0) {
     return PaymentStatus.CAPTURED;
   }
   if (value === 'FAILED') {

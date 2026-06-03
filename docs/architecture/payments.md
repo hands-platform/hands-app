@@ -43,15 +43,25 @@ POST /api/payments/CASH/callback
 
 The routes parse payment-provider payloads and update the payment by `providerRef`.
 
+MoMo and VNPay callbacks are public provider-to-server routes, so the API verifies
+provider signatures before trusting the payload when the relevant secret is configured:
+
+- MoMo: HMAC-SHA256 over the IPN key/value payload with `MOMO_SECRET_KEY`.
+- VNPay: HMAC-SHA512 over sorted `vnp_*` fields with `VNPAY_HASH_SECRET`.
+
+In development, missing provider secrets keep the placeholder callback flow usable.
+In production, missing MoMo/VNPay callback secrets reject callback processing.
+Callback amount and merchant identity are also checked when those fields are present.
+Repeated callbacks with the same terminal status are treated as idempotent replays;
+conflicting terminal callback statuses are rejected.
+
 ## Refund Flow
 
 Admin refunds update the payment to `REFUNDED`, move the booking to `REFUNDED`, create a `Refund` row, and cancel unpaid partner earnings. If the earning is already `PAID`, the MVP keeps it unchanged and writes the skip reason to `AdminAuditLog`.
 
 ## Production Hardening
 
-- Verify MoMo signatures.
-- Verify VNPay secure hash.
 - Store callback attempts for auditability.
 - Replace placeholder status polling with provider API calls.
 - Separate `AUTHORIZED`, `CAPTURED`, `RELEASED`, `REFUNDED` semantics by payment provider.
-- Do not trust client-provided callback status.
+- Add payment provider replay nonce or provider transaction reference tracking once real sandbox credentials are connected.
