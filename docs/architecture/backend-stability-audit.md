@@ -28,13 +28,14 @@ This pass checked the API against the current HANDS MVP authority:
 - Negative partner wallets block marketplace join, direct accept, customer final selection, service start, and payout release.
 - Negative partner wallets do not create marketplace participant records when a join is blocked.
 - Real marketplace participants remain stored for admin visibility.
-- Payment callbacks are public by necessity. MoMo/VNPay signature verification now runs when provider secrets are configured, and production rejects missing callback secrets.
+- Marketplace accept/reject responses now require an existing participant record, so partners must join before responding unless they are the first-pick invitee.
+- Payment callbacks are public by necessity. MoMo/VNPay signature verification now runs when gateway secrets are configured, and production rejects missing callback secrets.
 - Firebase push is intentionally not part of the active MVP path; notifications are currently in-app with future OneSignal expansion.
 
 ## Follow-Up Before Production
 
 - Replace all local JWT secrets and disable development OTP values in production environments.
 - Complete real MoMo/VNPay sandbox E2E after HANDS receives provider credentials.
-- Add API tests for invalid partner response timing, service-completion ordering, and negative-wallet marketplace join rejection.
+- Add focused unit tests around partner response timing and service-completion ordering.
 - Confirm production storage uses separate private and public buckets.
 - Rotate any external keys that were ever pasted into chat before using staging for real user data.

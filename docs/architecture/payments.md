@@ -41,15 +41,15 @@ POST /api/payments/VNPAY/callback
 POST /api/payments/CASH/callback
 ```
 
-The routes parse payment-provider payloads and update the payment by `providerRef`.
+The routes parse payment-gateway payloads and update the payment by the stored gateway reference field, currently named `providerRef` for schema compatibility.
 
-MoMo and VNPay callbacks are public provider-to-server routes, so the API verifies
-provider signatures before trusting the payload when the relevant secret is configured:
+MoMo and VNPay callbacks are public gateway-to-server routes, so the API verifies
+gateway signatures before trusting the payload when the relevant secret is configured:
 
 - MoMo: HMAC-SHA256 over the IPN key/value payload with `MOMO_SECRET_KEY`.
 - VNPay: HMAC-SHA512 over sorted `vnp_*` fields with `VNPAY_HASH_SECRET`.
 
-In development, missing provider secrets keep the placeholder callback flow usable.
+In development, missing gateway secrets keep the placeholder callback flow usable.
 In production, missing MoMo/VNPay callback secrets reject callback processing.
 Callback amount and merchant identity are also checked when those fields are present.
 Repeated callbacks with the same terminal status are treated as idempotent replays;
@@ -95,7 +95,7 @@ Admin refunds update the payment to `REFUNDED`, move the booking to `REFUNDED`, 
 
 ## Production Hardening
 
-- Add provider-specific gateway field mapping once real MoMo/VNPay sandbox data is connected.
-- Replace placeholder status polling with provider API calls.
-- Separate `AUTHORIZED`, `CAPTURED`, `RELEASED`, `REFUNDED` semantics by payment provider.
-- Add payment provider replay nonce or provider transaction reference tracking once real sandbox credentials are connected.
+- Add gateway-specific field mapping once real MoMo/VNPay sandbox data is connected.
+- Replace placeholder status polling with gateway API calls.
+- Separate `AUTHORIZED`, `CAPTURED`, `RELEASED`, `REFUNDED` semantics by gateway.
+- Add gateway replay nonce or transaction reference tracking once real sandbox credentials are connected.

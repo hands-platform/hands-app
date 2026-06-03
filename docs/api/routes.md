@@ -135,8 +135,8 @@ Legacy `/admin/providers`, `/admin/provider-reports`, `/admin/provider-sanctions
 - `POST /payments/VNPAY/callback`
 - `POST /payments/CASH/callback`
 
-MoMo and VNPay callbacks verify provider signatures when the relevant secret is configured.
-Production rejects MoMo/VNPay callback processing if the required provider secret is missing.
+MoMo and VNPay callbacks verify gateway signatures when the relevant secret is configured.
+Production rejects MoMo/VNPay callback processing if the required gateway secret is missing.
 Cash callbacks are internal/admin-operable MVP placeholders.
 
 Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUNDED`, create a `Refund` row, and cancel unpaid partner earnings for that booking.

@@ -1659,6 +1659,20 @@ if (
     })}`,
   );
 }
+const marketplaceAcceptWithoutJoinError = await expectRequestFailure(
+  'Marketplace partner accept requires join',
+  () => postJson(`/provider/bookings/${hybridBooking.id}/accept`, backupProviderAuth.accessToken),
+  400,
+);
+if (
+  !marketplaceAcceptWithoutJoinError.includes(
+    'Partner must join this marketplace booking before responding',
+  )
+) {
+  throw new Error(
+    `Marketplace accept-before-join returned an unexpected error: ${marketplaceAcceptWithoutJoinError}`,
+  );
+}
 const hybridAdminBooking = await getJson(`/admin/bookings/${hybridBooking.id}`, adminAuth.accessToken);
 if (
   hybridAdminBooking.addressSnapshot?.addressText !== 'Hybrid fallback smoke flow' ||

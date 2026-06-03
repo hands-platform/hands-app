@@ -820,6 +820,19 @@ export class BookingsService {
     });
     this.assertBookingOpenForPartnerResponse(booking);
 
+    const participantKey = { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } };
+    const existingParticipant = await this.prisma.bookingParticipant.findUnique({
+      where: participantKey,
+      select: { id: true },
+    });
+    if (!existingParticipant) {
+      throw new BadRequestException(
+        booking.preferredProviderId === provider.id
+          ? 'Preferred partner invitation is not available for this booking'
+          : 'Partner must join this marketplace booking before responding',
+      );
+    }
+
     if (booking.preferredProviderId === provider.id) {
       if (status === ParticipantStatus.ACCEPTED) {
         const updated = await this.prisma.booking.update({
@@ -829,7 +842,7 @@ export class BookingsService {
             selectedProviderId: null,
             participants: {
               update: {
-                where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
+                where: participantKey,
                 data: { status, respondedAt: new Date() },
               },
             },
@@ -855,7 +868,7 @@ export class BookingsService {
             selectedProviderId: null,
             participants: {
               update: {
-                where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
+                where: participantKey,
                 data: { status, respondedAt: new Date() },
               },
             },
@@ -914,7 +927,7 @@ export class BookingsService {
     }
 
     const updatedParticipant = await this.prisma.bookingParticipant.update({
-      where: { bookingId_providerProfileId: { bookingId, providerProfileId: provider.id } },
+      where: participantKey,
       data: { status, respondedAt: new Date() },
       include: { providerProfile: true },
     });
