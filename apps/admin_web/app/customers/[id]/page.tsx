@@ -323,6 +323,50 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
     })),
     ['type', 'date', 'title', 'detail', 'href', 'record_id', 'customer_id', 'customer_phone'],
   );
+  const customerOperationsQuickRail = [
+    {
+      href: '#customer-operations-digest',
+      label: 'Digest',
+      value: `${customerOperationsDigest.length} lanes`,
+      detail: 'One-screen customer operations state.',
+    },
+    {
+      href: '#customer-connected-operations-records',
+      label: 'Linked records',
+      value: `${connectedCustomerRecordLinks.length} links`,
+      detail: 'Booking, chat, payment, refund, address, session, and staff links.',
+    },
+    {
+      href: '#booking-history',
+      label: 'Bookings',
+      value: `${bookings.length}`,
+      detail: `${bookingStats.completed} completed / ${bookingStats.active} active.`,
+    },
+    {
+      href: '#customer-chat-retention-ledger',
+      label: 'Chat archive',
+      value: `${chatMessageCount} messages`,
+      detail: `${chatRooms.length} retained room(s), hidden from mobile after completion.`,
+    },
+    {
+      href: '#wallet',
+      label: 'Wallet',
+      value: formatMoney(wallet.capturedSpend),
+      detail: `${wallet.refundCount} refund row(s), ${formatMoney(wallet.cashBookingAmount)} cash exposure.`,
+    },
+    {
+      href: '#addresses',
+      label: 'Addresses',
+      value: `${addresses.length}`,
+      detail: 'Saved locations and immutable booking address snapshots.',
+    },
+    {
+      href: '#customer-activity',
+      label: 'Activity',
+      value: `${filteredCustomerActivityRecords.length}`,
+      detail: `${dateFilters.label}, ${detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}.`,
+    },
+  ];
 
   return (
     <>
@@ -402,6 +446,28 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           value={latestSession ? 'Seen' : 'None'}
           helper={latestSession ? formatDate(latestSession.lastSeenAt) : 'No app session recorded'}
         />
+      </section>
+
+      <section className="card" id="customer-operations-quick-rail" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer operations quick rail</h2>
+            <p className="muted">
+              Fast jumps for support and operations. This keeps the customer page factual: bookings,
+              completed work, retained chat, payments, addresses, sessions, and staff records.
+            </p>
+          </div>
+          <span className="pill pill-info">{customerOperationsQuickRail.length} shortcuts</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {customerOperationsQuickRail.map((item) => (
+            <a href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </a>
+          ))}
+        </div>
       </section>
 
       <section className="card" id="customer-recent-operations-timeline" style={{ marginBottom: 16 }}>
@@ -738,7 +804,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </div>
       </section>
 
-      <section className="card" style={{ marginBottom: 16 }}>
+      <section className="card" id="customer-full-record-index" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Customer full record index</h2>

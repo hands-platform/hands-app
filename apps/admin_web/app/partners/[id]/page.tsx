@@ -460,6 +460,58 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     })),
     ['type', 'date', 'title', 'detail', 'record_id', 'partner_id', 'partner_phone'],
   );
+  const partnerOperationsQuickRail = [
+    {
+      href: '#partner-operations-digest',
+      label: 'Digest',
+      value: `${partnerOperationsDigest.length} lanes`,
+      detail: 'Identity, wallet, booking, location, payout, tax, and app reachability.',
+    },
+    {
+      href: '#partner-connected-operations-records',
+      label: 'Linked records',
+      value: `${connectedPartnerRecordLinks.length} links`,
+      detail: 'Booking, chat, KYC, bank, tax, location, wallet, payout, and notes.',
+    },
+    {
+      href: '#partner-booking-journey',
+      label: 'Booking journey',
+      value: `${partnerBookingJourneyRows.length}`,
+      detail: `${dispatchPolicy.responseWindowMinutes}m first-pick / ${Math.round(
+        dispatchPolicy.backupRadiusMeters / 1000,
+      )}km marketplace policy.`,
+    },
+    {
+      href: '#partner-chat-retention-ledger',
+      label: 'Chat archive',
+      value: `${partnerChatRetentionRows.length}`,
+      detail: 'Customer-final-selected chats retained for admin evidence.',
+    },
+    {
+      href: '#cash-debt-origin',
+      label: 'Cash debt',
+      value: formatCurrency(cashFeeDebtAmount(provider)),
+      detail: `${openCashDebtEarnings.length} unpaid cash fee earning row(s). Marketplace join is blocked until settled.`,
+    },
+    {
+      href: '#payout',
+      label: 'Payout',
+      value: payoutOps.status,
+      detail: payoutOps.cards.find((card) => card.title === 'Unpaid net')?.detail ?? 'No unpaid net.',
+    },
+    {
+      href: '#documents',
+      label: 'Documents',
+      value: `${missingApprovedRequiredKycDocuments(provider).length} missing`,
+      detail: 'CCCD front/back, selfie, public profile, and typed onboarding files.',
+    },
+    {
+      href: '#app-activity',
+      label: 'Activity',
+      value: `${filteredPartnerActivityRecords.length}`,
+      detail: `${dateFilters.label}, ${detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS)}.`,
+    },
+  ];
 
   return (
     <>
@@ -533,6 +585,28 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <StatusCard label="Verification" value={provider.verification?.status ?? 'DRAFT'} />
         <StatusCard label="Account block" value={provider.blockedAt ? 'BLOCKED' : 'CLEAR'} />
         <StatusCard label="Payout hold" value={payoutHold ? 'ACTIVE' : 'CLEAR'} />
+      </div>
+
+      <div className="card" id="partner-operations-quick-rail" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner operations quick rail</h2>
+            <p className="muted">
+              Fast jumps for operators. This page keeps partner handling factual: onboarding, marketplace
+              participation, wallet debt, payout, tax, location, retained chats, and staff notes.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerOperationsQuickRail.length} shortcuts</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {partnerOperationsQuickRail.map((item) => (
+            <a href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </a>
+          ))}
+        </div>
       </div>
 
       <div className="card" id="partner-recent-operations-timeline" style={{ marginBottom: 16 }}>
@@ -946,7 +1020,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         ) : null}
       </div>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" id="partner-full-record-index" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Partner full record index</h2>
