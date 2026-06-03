@@ -43,6 +43,7 @@ Checked commands:
 
 - `npm.cmd run setup:doctor`: PASS
 - `npm.cmd run authority:check`: PASS. This now guards the final MVP authority contract, legacy route redirects, address-based booking, payout batch policy, Firebase/Supabase mobile boundaries, no-tip active product surface, and factual customer/partner management pages.
+- `npm.cmd run authority:check`: PASS. The guard now also locks the Admin Operations Policy control plane to the API matching policy and API coverage checks for 10 minute first-pick, 10km marketplace radius, customer final partner choice, negative wallet final gates, and policy enforcement traceability.
 - `npm.cmd run external:copy-check`: PASS. This prevents the deferred Supabase Phone Auth/SMS path from drifting back to a deprecated SMS-provider path and keeps Vonage recorded as the selected next E2E SMS provider.
 - `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, matching policy marketplace windows, 10km radius/join guards, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
 - API policy coverage now explicitly guards completed earning closeout persistence markers for tax logs, platform fee logs, wallet ledger entries, selected service payout lines, pricing-rule snapshots, payout batch linking, and paid-payout wallet ledger entries.
@@ -152,6 +153,7 @@ Admin dashboard:
 - Tax policy page with versioned tax rules.
 - Operations policy page for matching and wallet gates.
 - Operations policy behavior is API-backed and smoke-tested for the first-pick response window, marketplace participation, customer final partner selection, and wallet settlement gates.
+- Operations policy is now statically guarded as the control plane for matching and wallet gates: Admin visible controls, `apps/api/src/matching/matching.policy.ts`, API policy coverage, and admin smoke must keep the same first-pick, 10km marketplace, customer-final-choice, and negative-wallet-gate contract.
 - Operations policy analysis labels use outcome-check language such as "Check outcomes" and "On track" instead of risk/health labels for people or partners.
 - Operations policy page now displays secondary participation as marketplace/candidate-alert wording even when older policy records still contain legacy secondary-participation labels.
 - Operations policy, setup, and reviews pages now avoid visible legacy secondary-participation/ranking language in operator-facing copy while preserving internal compatibility keys.
