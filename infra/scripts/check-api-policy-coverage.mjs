@@ -7,6 +7,18 @@ const source = readFileSync(smokePath, 'utf8');
 
 const requiredCoverage = [
   {
+    area: 'operational policy metadata',
+    markers: [
+      'assertOperationalPolicyMetadata',
+      "'matching.provider_response_window_minutes'",
+      "'matching.backup_provider_radius_meters'",
+      "'wallet.negative_balance_gate'",
+      "'cash.settlement_clearance_policy'",
+      "'payout.batch_cycle_policy'",
+      "'notification.partner_alert_channel'",
+    ],
+  },
+  {
     area: 'service pricing catalog',
     markers: [
       'service.priceStep !== 100000',
