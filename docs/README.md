@@ -15,7 +15,7 @@ This is the active documentation map for HANDS. If two files disagree, follow th
 
 - `README.md` - project overview, local setup, and current MVP contract.
 - `docs/architecture/hands-mvp-final-authority.md` - product rules that override old assumptions.
-- `docs/architecture/master-progress-roadmap.md` - current progress, validation commands, and next work.
+- `docs/architecture/master-progress-roadmap.md` - single execution board for current progress, decision backlog, validation commands, and next work.
 - `docs/api/routes.md` - active API route reference.
 - `docs/architecture/partner-acceptance-operations.md` - first-pick, marketplace, wallet, and closeout policy.
 - `docs/architecture/admin-web-integration.md` - Admin Operations Command Center integration.
