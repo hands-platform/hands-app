@@ -5072,9 +5072,9 @@ ProviderRequestGuidance providerRequestGuidance({
       roleLabel: roleLabel,
       decisionLabel: 'Settlement required',
       nextAction:
-          'Settle your negative HANDS wallet before participating in this booking.',
+          'Settle unpaid HANDS fees before participating in this booking.',
       contextMessage:
-          'This booking is visible, but your wallet must be settled before you can join or accept it.',
+          'This booking is visible, but unpaid HANDS fees must be settled before you can join or accept it.',
       detailMessage: providerWalletBlockFallbackReasonClean,
       infoMessage: providerWalletBlockHintClean,
     );

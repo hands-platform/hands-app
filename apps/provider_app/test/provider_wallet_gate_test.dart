@@ -173,7 +173,7 @@ void main() {
     );
 
     expect(guidance.decisionLabel, 'Settlement required');
-    expect(guidance.nextAction, contains('negative HANDS wallet'));
+    expect(guidance.nextAction, contains('unpaid HANDS fees'));
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
     expect(guidance.infoMessage, contains('joining marketplace requests'));
   });
@@ -191,7 +191,7 @@ void main() {
 
     expect(guidance.modeLabel, 'Marketplace opportunity');
     expect(guidance.decisionLabel, 'Settlement required');
-    expect(guidance.contextMessage, contains('join or accept'));
+    expect(guidance.contextMessage, contains('unpaid HANDS fees'));
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
   });
 
