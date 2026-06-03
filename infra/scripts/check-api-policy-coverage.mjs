@@ -1,9 +1,10 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slice('--root='.length) ?? '.');
 const smokePath = resolve(root, 'infra/scripts/api-smoke.mjs');
 const source = readFileSync(smokePath, 'utf8');
+const apiSourceRoot = resolve(root, 'apps/api/src');
 
 const requiredCoverage = [
   {
@@ -214,7 +215,13 @@ const checks = requiredCoverage.map((check) => {
   };
 });
 
-const failed = checks.filter((check) => check.status === 'FAIL');
+const authorityChecks = [
+  checkNegativeWalletBlockCallSites(),
+  checkNegativeWalletBookingFunctionBoundaries(),
+];
+
+const allChecks = [...checks, ...authorityChecks];
+const failed = allChecks.filter((check) => check.status === 'FAIL');
 
 console.log(
   JSON.stringify(
@@ -223,7 +230,7 @@ console.log(
       purpose:
         'Static guard that api-smoke.mjs still covers HANDS critical pricing, tax, wallet debt, and settlement invariants.',
       smokePath,
-      checks,
+      checks: allChecks,
     },
     null,
     2,
@@ -232,4 +239,84 @@ console.log(
 
 if (failed.length > 0) {
   process.exitCode = 1;
+}
+
+function checkNegativeWalletBlockCallSites() {
+  const matches = findFilesContaining(apiSourceRoot, 'throwProviderWalletBlocked').map((file) =>
+    file.replace(`${root}\\`, '').replaceAll('\\', '/'),
+  );
+  const allowedFiles = [
+    'apps/api/src/bookings/bookings.service.ts',
+    'apps/api/src/earnings/earnings.service.ts',
+    'apps/api/src/provider-wallet/provider-wallet.policy.ts',
+  ];
+  const unexpectedFiles = matches.filter((file) => !allowedFiles.includes(file));
+  const missingFiles = allowedFiles.filter((file) => !matches.includes(file));
+  return {
+    area: 'negative wallet block call site boundaries',
+    status: unexpectedFiles.length === 0 && missingFiles.length === 0 ? 'PASS' : 'FAIL',
+    markerCount: allowedFiles.length,
+    missingMarkers: [
+      ...missingFiles.map((file) => `missing expected call site: ${file}`),
+      ...unexpectedFiles.map((file) => `unexpected call site: ${file}`),
+    ],
+  };
+}
+
+function checkNegativeWalletBookingFunctionBoundaries() {
+  const bookingSource = readFileSync(resolve(root, 'apps/api/src/bookings/bookings.service.ts'), 'utf8');
+  const joinBooking = sliceBetween(bookingSource, 'async joinBooking(', 'async selectProvider(');
+  const selectProvider = sliceBetween(bookingSource, 'async selectProvider(', 'async updateParticipant(');
+  const updateParticipant = sliceBetween(bookingSource, 'async updateParticipant(', 'private async notifyBackupProviders(');
+  const lifecycleStatus = sliceBetween(bookingSource, 'async updateProviderBookingStatus(', 'private async requireSelectedProvider(');
+
+  const missingMarkers = [];
+  if (!joinBooking.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
+    missingMarkers.push('joinBooking must keep the negative-wallet marketplace join gate');
+  }
+  for (const [name, block] of [
+    ['selectProvider', selectProvider],
+    ['updateParticipant', updateParticipant],
+    ['updateProviderBookingStatus', lifecycleStatus],
+  ]) {
+    if (block.includes('ensureProviderWalletCanJoinMarketplace') || block.includes('throwProviderWalletBlocked')) {
+      missingMarkers.push(`${name} must not apply the negative-wallet marketplace join gate`);
+    }
+  }
+
+  return {
+    area: 'negative wallet marketplace-only booking gate',
+    status: missingMarkers.length === 0 ? 'PASS' : 'FAIL',
+    markerCount: 4,
+    missingMarkers,
+  };
+}
+
+function findFilesContaining(dir, marker) {
+  const matches = [];
+  for (const entry of readdirSync(dir)) {
+    const file = resolve(dir, entry);
+    const stat = statSync(file);
+    if (stat.isDirectory()) {
+      matches.push(...findFilesContaining(file, marker));
+      continue;
+    }
+    if (!file.endsWith('.ts')) {
+      continue;
+    }
+    const content = readFileSync(file, 'utf8');
+    if (content.includes(marker)) {
+      matches.push(file);
+    }
+  }
+  return matches;
+}
+
+function sliceBetween(sourceText, startMarker, endMarker) {
+  const start = sourceText.indexOf(startMarker);
+  if (start === -1) {
+    return '';
+  }
+  const end = sourceText.indexOf(endMarker, start + startMarker.length);
+  return sourceText.slice(start, end === -1 ? undefined : end);
 }
