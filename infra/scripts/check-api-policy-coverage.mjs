@@ -45,6 +45,12 @@ const requiredCoverage = [
     markers: [
       'Customer booking detail should expose immutable address snapshot',
       'Admin booking detail should expose immutable address snapshot',
+      'Customer should be able to browse partners globally with long distance metadata',
+      'Booking should open from the confirmed service address without requiring customer GPS',
+      'Stale customer GPS should be ignored as optional evidence, not block address-based booking',
+      'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
+      'Service area gate rejection should create an operations audit log',
+      'Selected-location-only booking should create an immutable dispatch snapshot',
     ],
   },
   {

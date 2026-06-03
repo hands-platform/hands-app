@@ -220,16 +220,28 @@ function checkNoTipContract() {
 
 function checkPayoutBatchContract() {
   const earnings = read('apps/api/src/earnings/earnings.service.ts');
+  const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
   const adminEarnings = read('apps/admin_web/app/earnings/page.tsx');
+  const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
   const smoke = read('infra/scripts/api-smoke.mjs');
   requireMarkers('apps/api/src/earnings/earnings.service.ts', earnings, [
     'Positive partner earnings must be paid through payout batches',
+  ]);
+  requireMarkers('apps/api/src/matching/matching.policy.ts', matchingPolicy, [
+    "export const PAYOUT_BATCH_CYCLE_POLICY_KEY = 'payout.batch_cycle_policy';",
+    'Payout remains batch-based and admin-controlled',
   ]);
   requireMarkers('apps/admin_web/app/earnings/page.tsx', adminEarnings, [
     'payout batching, and cash',
     'return isCashDebt(earning);',
   ]);
+  requireMarkers('apps/admin_web/app/operations-policy/page.tsx', operationsPolicy, [
+    'Payout batch cycle',
+    "'payout.batch_cycle_policy':",
+    'id={policySettingAnchor(setting.key)}',
+  ]);
   requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
+    "'payout.batch_cycle_policy'",
     'Positive partner earnings must be paid through payout batches',
     'Draft payout batch should not mark earnings paid',
   ]);
