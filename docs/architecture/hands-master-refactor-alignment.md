@@ -53,15 +53,16 @@ Allowed:
 - Profile visibility
 - Discovery
 - Marketplace browsing
-- Marketplace participation
-- Customer selection
 
-Blocked only when policy requires settlement before:
+Blocked while settlement is required:
 
-- Final booking gates
-- Final confirmation
+- Marketplace participation / join
+- Direct acceptance
+- Customer final partner selection
 - Service start
-- New matched booking confirmation
+- Payout release
+
+Admin does not need to track blocked browsing attempts as participant records. Admin tracks why the wallet is negative, whether the partner paid or was offset, and all actual marketplace participants who joined, accepted, rejected, or were selected.
 
 ## Partner Levels
 

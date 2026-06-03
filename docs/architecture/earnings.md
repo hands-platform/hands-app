@@ -58,7 +58,7 @@ For the MVP, the partner wallet guard still reads unsettled `ProviderEarning.net
 - Positive delta: HANDS owes money to the partner.
 - Negative delta: the partner owes HANDS fees/tax from cash bookings.
 
-If the unsettled wallet balance is negative, the API still allows marketplace list visibility, but blocks final acceptance or customer final selection when the configured gate requires settlement. It returns the partner-facing message:
+If the unsettled wallet balance is negative, the API still allows marketplace list visibility, but blocks marketplace participation/join, direct acceptance, customer final selection, service start, and payout release until the fee debt is cleared. It returns the partner-facing message:
 
 `Outstanding HANDS fee settlement must be completed before marketplace participation, direct acceptance, customer selection, service start, or payout release.`
 

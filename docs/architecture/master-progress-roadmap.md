@@ -18,7 +18,7 @@ Working summary:
 - Distance affects sorting, alert preference, operations filters, and the admin-configurable marketplace eligibility radius. The current MVP target default is 10km, but distance never auto-selects the final partner.
 - Booking confirmation and immutable booking address snapshots are mandatory.
 - Partner visibility and availability are separate.
-- Negative wallet balance is a settlement warning; hard blocking applies only at final acceptance/confirmation/service-start gates when policy requires it.
+- Negative wallet balance is a settlement-required state for partners. Marketplace requests can stay visible, but marketplace participation/join is blocked until the fee debt is cleared; customer wallets do not go negative in the MVP.
 - Use Partner in product/admin language while keeping Provider in existing DB/API internals until a planned migration.
 
 ## Product Direction
