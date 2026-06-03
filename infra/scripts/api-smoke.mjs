@@ -2911,6 +2911,36 @@ if (adminHybridBooking.preferredProvider.id === adminHybridBooking.selectedProvi
     `Hybrid booking did not switch from preferred to marketplace participant: ${JSON.stringify(adminHybridBooking)}`,
   );
 }
+const adminHybridMarketplaceParticipant = adminHybridBooking.participants?.find(
+  (participant) => participant.providerProfileId === adminHybridBooking.selectedProvider.id,
+);
+if (
+  !adminHybridMarketplaceParticipant ||
+  !['ACCEPTED', 'SELECTED'].includes(adminHybridMarketplaceParticipant.status) ||
+  !adminHybridMarketplaceParticipant.joinedAt ||
+  adminHybridMarketplaceParticipant.providerProfile?.id !== adminHybridBooking.selectedProvider.id
+) {
+  throw new Error(
+    `Admin booking monitor did not retain the selected marketplace participant record: ${JSON.stringify(
+      adminHybridBooking,
+    )}`,
+  );
+}
+const adminHybridBookingDetail = await getJson(`/admin/bookings/${hybridBooking.id}`, adminAuth.accessToken);
+const adminHybridDetailMarketplaceParticipant = adminHybridBookingDetail.participants?.find(
+  (participant) => participant.providerProfileId === adminHybridBookingDetail.selectedProvider?.id,
+);
+if (
+  !adminHybridDetailMarketplaceParticipant ||
+  !['ACCEPTED', 'SELECTED'].includes(adminHybridDetailMarketplaceParticipant.status) ||
+  !adminHybridDetailMarketplaceParticipant.providerProfile?.user?.phone
+) {
+  throw new Error(
+    `Admin booking detail did not expose marketplace participant identity and status: ${JSON.stringify(
+      adminHybridBookingDetail,
+    )}`,
+  );
+}
 const adminCancelledBooking = adminBookings.find((item) => item.id === cancellableMomoBooking.id);
 if (adminCancelledBooking?.status !== 'CANCELLED' || adminCancelledBooking?.payment?.status !== 'RELEASED') {
   throw new Error(
