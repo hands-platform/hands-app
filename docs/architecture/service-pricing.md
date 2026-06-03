@@ -104,11 +104,14 @@ If the partner wallet is negative:
 - The Partner app warns before confirming cash requests that direct customer cash can create
   wallet debt after completion.
 
-The partner-facing marketplace participation block copy currently follows the API message:
+The API separates operator reason from partner-facing app copy:
 
-`Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
+- Internal reason in `walletBlockReason`/`message`:
+  `Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
+- Partner app display copy in `walletBlockDisplayMessage`/`displayMessage`:
+  `수수료를 입금하지 않아 예약에 참여 할수 없습니다.`
 
-Vietnamese localization should replace this fallback after the final UI language pass, but the API smoke test keeps the current message stable so the booking guard cannot silently drift.
+Vietnamese localization should replace the display fallback after the final UI language pass, but the API smoke test keeps both the internal reason and display message stable so the booking guard cannot silently drift.
 
 ## Future Work
 

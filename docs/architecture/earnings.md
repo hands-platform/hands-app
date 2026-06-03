@@ -58,9 +58,12 @@ For the MVP, the partner wallet guard still reads unsettled `ProviderEarning.net
 - Positive delta: HANDS owes money to the partner.
 - Negative delta: the partner owes HANDS fees/tax from cash bookings.
 
-If the unsettled wallet balance is negative, the API still allows marketplace list visibility, but blocks marketplace participation/join and payout release until the fee debt is cleared. It returns the partner-facing message:
+If the unsettled wallet balance is negative, the API still allows marketplace list visibility, but blocks marketplace participation/join and payout release until the fee debt is cleared. It returns two messages:
 
-`Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
+- `walletBlockReason` / API `message`: `Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
+- `walletBlockDisplayMessage` / API `displayMessage`: `수수료를 입금하지 않아 예약에 참여 할수 없습니다.`
+
+The Partner app must prefer the display message. Admin and logs can keep the internal reason for audit clarity.
 
 This supports two settlement paths without hiding partners from the marketplace:
 

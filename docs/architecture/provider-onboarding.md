@@ -58,9 +58,11 @@ Cash bookings are handled differently from online payments. When a partner recei
 cash directly from the customer, HANDS records platform fee and withholding as a
 negative wallet amount. A negative partner wallet becomes a settlement-required state
 and blocks marketplace participation/join plus payout release until finance confirms
-partner repayment or an approved admin offset. The partner-facing response should explain:
+partner repayment or an approved admin offset. The API response must separate the
+internal reason from the partner-facing display message:
 
-`Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
+- Internal reason: `Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
+- Partner app display copy: `수수료를 입금하지 않아 예약에 참여 할수 없습니다.`
 
 ## Tax Policy Rule
 

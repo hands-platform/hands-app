@@ -93,7 +93,8 @@ void main() {
       'message': {
         'code': 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
         'message':
-            'Outstanding HANDS fee settlement must be completed before marketplace participation.',
+            'Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.',
+        'displayMessage': providerWalletBlockFallbackReasonClean,
         'walletBlocked': true,
         'walletBalance': -80000,
         'walletDebtAmount': 80000,
@@ -111,10 +112,13 @@ void main() {
     expect(summary, isNotNull);
     expect(summary?['walletBlocked'], isTrue);
     expect(summary?['walletDebtAmount'], 80000);
+    expect(summary?['displayMessage'], providerWalletBlockFallbackReasonClean);
     expect(
       providerWalletBlockReason(summary!),
-      contains('marketplace participation'),
+      providerWalletBlockFallbackReasonClean,
     );
+    expect(providerAppErrorMessage(exception),
+        providerWalletBlockFallbackReasonClean);
     expect(
       providerWalletSettlementInstruction(summary),
       contains('participation is blocked'),

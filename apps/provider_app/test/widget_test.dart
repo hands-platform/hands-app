@@ -46,6 +46,7 @@ void main() {
       'message': {
         'code': 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
         'message': 'Partner has unpaid HANDS cash-service fees',
+        'displayMessage': providerWalletBlockFallbackReasonClean,
       },
       'error': 'Bad Request',
       'statusCode': 400,
