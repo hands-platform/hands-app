@@ -14,6 +14,7 @@ void main() {
 
     expect(providerWalletBalance(summary), -120000);
     expect(providerWalletBlockReason(summary), 'Custom settlement message');
+    expect(providerWalletMarketplaceJoinBlocked(summary), isTrue);
     expect(providerWalletStatusLabel(summary), 'Settlement required');
     expect(
       providerWalletSettlementInstruction(summary),
@@ -96,6 +97,11 @@ void main() {
             'Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.',
         'displayMessage': providerWalletBlockFallbackReasonClean,
         'walletBlocked': true,
+        'marketplaceVisibilityBlocked': false,
+        'marketplaceJoinBlocked': true,
+        'directFirstPickBlocked': false,
+        'alreadyMatchedServiceBlocked': false,
+        'payoutReleaseBlocked': true,
         'walletBalance': -80000,
         'walletDebtAmount': 80000,
         'walletSettlementRequired': true,
@@ -108,22 +114,29 @@ void main() {
     });
 
     final summary = providerApiExceptionWalletSummary(exception);
+    final walletSummary = summary!;
 
     expect(summary, isNotNull);
-    expect(summary?['walletBlocked'], isTrue);
-    expect(summary?['walletDebtAmount'], 80000);
-    expect(summary?['displayMessage'], providerWalletBlockFallbackReasonClean);
+    expect(walletSummary['walletBlocked'], isTrue);
+    expect(walletSummary['marketplaceJoinBlocked'], isTrue);
+    expect(walletSummary['directFirstPickBlocked'], isFalse);
+    expect(walletSummary['alreadyMatchedServiceBlocked'], isFalse);
+    expect(providerWalletMarketplaceJoinBlocked(walletSummary), isTrue);
+    expect(walletSummary['walletDebtAmount'], 80000);
+    expect(walletSummary['displayMessage'],
+        providerWalletBlockFallbackReasonClean);
     expect(
-      providerWalletBlockReason(summary!),
+      providerWalletBlockReason(walletSummary),
       providerWalletBlockFallbackReasonClean,
     );
     expect(providerAppErrorMessage(exception),
         providerWalletBlockFallbackReasonClean);
     expect(
-      providerWalletSettlementInstruction(summary),
+      providerWalletSettlementInstruction(walletSummary),
       contains('participation is blocked'),
     );
-    expect(providerWalletSettlementReference(summary), 'HANDS-WALLET-BLOCKED');
+    expect(providerWalletSettlementReference(walletSummary),
+        'HANDS-WALLET-BLOCKED');
   });
 
   test('clears marketplace gate when unsettled wallet is non-negative', () {
@@ -134,9 +147,33 @@ void main() {
 
     expect(providerWalletBalance(summary), 20000);
     expect(providerWalletBlockReason(summary), isNull);
+    expect(providerWalletMarketplaceJoinBlocked(summary), isFalse);
     expect(providerWalletStatusLabel(summary), 'Available for payout review');
     expect(providerWalletSettlementSteps(summary),
         contains('Cash booking fees are settled.'));
+  });
+
+  test('prefers explicit marketplace join policy from API summary', () {
+    final explicitOpen = <String, dynamic>{
+      'walletBalance': -120000,
+      'walletBlocked': true,
+      'marketplaceJoinBlocked': false,
+      'walletBlockReason': 'Wallet needs settlement, but policy allows join.',
+    };
+    final explicitBlocked = <String, dynamic>{
+      'walletBalance': 20000,
+      'walletBlocked': false,
+      'marketplaceJoinBlocked': true,
+      'walletBlockDisplayMessage': providerWalletBlockFallbackReasonClean,
+    };
+
+    expect(providerWalletMarketplaceJoinBlocked(explicitOpen), isFalse);
+    expect(providerWalletBlockReason(explicitOpen), isNotNull);
+    expect(providerWalletMarketplaceJoinBlocked(explicitBlocked), isTrue);
+    expect(
+      providerWalletBlockReason(explicitBlocked),
+      providerWalletBlockFallbackReasonClean,
+    );
   });
 
   test('identifies cash bookings and explains settlement handling', () {

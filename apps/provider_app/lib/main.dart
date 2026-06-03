@@ -362,8 +362,10 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         return;
       }
       setState(() {
-        requestActionsWalletBlocked = true;
-        error = providerWalletBlockFallbackReasonClean;
+        requestActionsWalletBlocked =
+            providerWalletMarketplaceJoinBlocked(walletSummary);
+        error = providerWalletBlockReason(walletSummary) ??
+            providerWalletBlockFallbackReasonClean;
         statusMessage = providerWalletBlockHintClean;
       });
       await showWalletSettlementDialog(walletSummary);
@@ -379,8 +381,11 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     try {
       final summary =
           await ref.read(providerRepositoryProvider).earningsSummary();
-      final blockReason = providerWalletBlockReason(summary);
-      if (blockReason != null) {
+      final marketplaceJoinBlocked =
+          providerWalletMarketplaceJoinBlocked(summary);
+      if (marketplaceJoinBlocked) {
+        final blockReason = providerWalletBlockReason(summary) ??
+            providerWalletBlockFallbackReasonClean;
         if (mounted) {
           setState(() {
             requestActionsWalletBlocked = true;
@@ -593,7 +598,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                 final walletSummary =
                     walletSnapshot.data ?? const <String, dynamic>{};
                 final walletBlocked =
-                    providerWalletBlockReason(walletSummary) != null;
+                    providerWalletMarketplaceJoinBlocked(walletSummary);
                 if (walletSnapshot.hasData &&
                     requestActionsWalletBlocked != walletBlocked) {
                   WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -4897,9 +4902,19 @@ num providerWalletBalance(Map<String, dynamic> summary) {
           (asNum(summary['availableNetAmount']) ?? 0));
 }
 
+bool providerWalletMarketplaceJoinBlocked(Map<String, dynamic> summary) {
+  final explicit = summary['marketplaceJoinBlocked'];
+  if (explicit is bool) {
+    return explicit;
+  }
+  return providerWalletBlockReason(summary) != null;
+}
+
 String? providerWalletBlockReason(Map<String, dynamic> summary) {
   final walletBalance = providerWalletBalance(summary);
-  final walletBlocked = summary['walletBlocked'] == true || walletBalance < 0;
+  final walletBlocked = summary['marketplaceJoinBlocked'] == true ||
+      summary['walletBlocked'] == true ||
+      walletBalance < 0;
   if (!walletBlocked) {
     return null;
   }
