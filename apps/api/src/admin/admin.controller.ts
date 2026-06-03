@@ -369,6 +369,11 @@ export class AdminController {
     return this.admin.listPayments();
   }
 
+  @Get('payments/:id')
+  paymentDetail(@Param('id') paymentId: string) {
+    return this.admin.getPaymentDetail(paymentId);
+  }
+
   @Get('payment-callback-attempts')
   paymentCallbackAttempts() {
     return this.admin.listPaymentCallbackAttempts();

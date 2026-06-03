@@ -562,6 +562,13 @@ export type AdminPayment = {
   refunds?: Array<{ id: string; amount: number; status: string; createdAt?: string }>;
 };
 
+export type AdminPaymentDetail = Omit<AdminPayment, 'booking' | 'refunds' | 'callbackAttempts'> & {
+  booking?: AdminBookingDetail | null;
+  refunds?: AdminRefund[];
+  callbackAttempts?: AdminPaymentCallbackAttempt[];
+  auditLogs?: AdminAuditLog[];
+};
+
 export type AdminPaymentCallbackAttempt = {
   id: string;
   paymentId?: string | null;

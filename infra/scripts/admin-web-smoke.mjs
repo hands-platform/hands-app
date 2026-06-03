@@ -372,6 +372,7 @@ const pages = [
       'Payment date range',
       'Payment callback attempt ledger',
       'Payment action execution map',
+      'Open detail',
     ],
   },
   {
@@ -875,6 +876,28 @@ if (bookingLinkMatch) {
   }
   assertNoLegacyVisibleLanguage(bookingPath, bookingBody);
   console.log(`PASS ${bookingPath}`);
+}
+
+const paymentsBody = shouldRunDeepSection('/payments') ? await fetchPage('/payments') : '';
+const paymentLinkMatch = paymentsBody.match(/href="\/payments\/([^"]+)"/);
+if (paymentLinkMatch) {
+  const paymentPath = `/payments/${paymentLinkMatch[1]}`;
+  const paymentBody = await fetchPage(paymentPath);
+  const paymentMarkers = [
+    'Payment operation detail',
+    'Payment action execution map',
+    'Gateway callback attempt timeline',
+    'Linked booking evidence',
+    'Money ledger',
+    'Chat and operation evidence',
+    'Payment audit trail',
+  ];
+  const missing = paymentMarkers.filter((marker) => !paymentBody.includes(marker));
+  if (missing.length > 0) {
+    throw new Error(`${paymentPath} is missing expected markers: ${missing.join(', ')}`);
+  }
+  assertNoLegacyVisibleLanguage(paymentPath, paymentBody);
+  console.log(`PASS ${paymentPath}`);
 }
 
 console.log(`Admin web smoke passed for ${smokePages.length} page(s) at ${baseUrl}.`);

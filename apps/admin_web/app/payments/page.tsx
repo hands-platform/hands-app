@@ -163,7 +163,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
                   ) : (
                     <>
                       Not linked
-                      <div className="muted">Provider reference did not match a saved payment.</div>
+                      <div className="muted">Gateway reference did not match a saved payment.</div>
                     </>
                   )}
                 </td>
@@ -282,6 +282,9 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
                 </td>
                 <td>
                   <div className="actions">
+                    <Link className="text-link" href={`/payments/${payment.id}`}>
+                      Open detail
+                    </Link>
                     <PaymentAction
                       action={syncPayment}
                       paymentId={payment.id}

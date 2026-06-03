@@ -59,29 +59,35 @@ conflicting terminal callback statuses are rejected.
 
 `/payments` in the admin dashboard exposes callback evidence for every payment row:
 
-- provider reference
+- gateway reference
 - callback received time
 - signature verification result
 - verification mode
 - gateway status or response code
 - gateway transaction reference
-- callback amount when the provider sends it
+- callback amount when the gateway sends it
 - callback payload keys for quick operator inspection
 
 The page includes two dedicated queues:
 
-- `Callback review`: non-cash callbacks received without verified signature evidence.
-- `Callback verified`: callbacks accepted with provider signature evidence.
+- `Callback review`: rejected, conflicting, or unsigned gateway callbacks that need operator review.
+- `Callback verified`: accepted or replayed callbacks with verified signature evidence.
 
 Operators should use this view before manual capture, release, refund, or settlement
 actions. The backend remains the authority for accepting or rejecting callbacks; the
 admin screen only exposes the saved evidence so finance can audit what happened.
 
 Rejected and conflicting callbacks are stored in `PaymentCallbackAttempt` even when
-the provider reference cannot be matched to a saved payment. The admin payment page
+the gateway reference cannot be matched to a saved payment. The admin payment page
 shows the recent attempt ledger so operators can inspect unknown references, missing
 signatures, amount mismatches, merchant mismatches, terminal replays, and terminal
 conflicts without trusting the callback payload as business truth.
+
+`GET /admin/payments/:id` powers a dedicated payment operation detail page. It groups
+the payment, linked booking, customer, partner, chat evidence, refunds, earning,
+wallet ledger, tax/fee logs, callback attempts, and admin audit trail into a single
+inspection screen. This page is the finance operator's first stop before manual
+sync, capture, release, refund, or cash fee settlement actions.
 
 ## Refund Flow
 
@@ -89,7 +95,7 @@ Admin refunds update the payment to `REFUNDED`, move the booking to `REFUNDED`, 
 
 ## Production Hardening
 
-- Add a provider-specific callback detail view once real MoMo/VNPay sandbox data is connected.
+- Add provider-specific gateway field mapping once real MoMo/VNPay sandbox data is connected.
 - Replace placeholder status polling with provider API calls.
 - Separate `AUTHORIZED`, `CAPTURED`, `RELEASED`, `REFUNDED` semantics by payment provider.
 - Add payment provider replay nonce or provider transaction reference tracking once real sandbox credentials are connected.

@@ -1622,6 +1622,113 @@ export class AdminService {
     });
   }
 
+  async getPaymentDetail(paymentId: string) {
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+      include: {
+        booking: {
+          include: {
+            customerProfile: {
+              include: {
+                user: {
+                  include: {
+                    appSessions: { orderBy: { lastSeenAt: 'desc' }, take: 5 },
+                    pushDevices: {
+                      orderBy: { updatedAt: 'desc' },
+                      take: 5,
+                      include: { deliveries: { orderBy: { attemptedAt: 'desc' }, take: 3 } },
+                    },
+                  },
+                },
+              },
+            },
+            preferredProvider: { include: { user: true } },
+            selectedProvider: { include: { user: true } },
+            participants: {
+              orderBy: { joinedAt: 'asc' },
+              include: { providerProfile: { include: { user: true } } },
+            },
+            services: {
+              include: {
+                service: {
+                  include: {
+                    payoutRules: {
+                      where: { active: true },
+                      orderBy: { customerPrice: 'asc' },
+                    },
+                  },
+                },
+              },
+            },
+            addressSnapshot: true,
+            chatRoom: {
+              include: {
+                messages: {
+                  orderBy: { createdAt: 'asc' },
+                  take: 100,
+                  include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
+                },
+              },
+            },
+            refunds: true,
+            opsTasks: {
+              orderBy: { updatedAt: 'desc' },
+              include: { actor: { select: { id: true, phone: true, fullName: true } } },
+            },
+            snapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
+            earning: {
+              include: {
+                platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
+                taxLogs: {
+                  orderBy: { createdAt: 'desc' },
+                  take: 10,
+                  include: { withholdingLogs: { orderBy: { createdAt: 'desc' }, take: 10 } },
+                },
+                walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 10 },
+                payoutBatch: true,
+              },
+            },
+            platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
+            taxLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
+            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 10 },
+          },
+        },
+        refunds: true,
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException('Payment not found');
+    }
+
+    const callbackAttempts = await this.prisma.paymentCallbackAttempt.findMany({
+      where: {
+        OR: [
+          { paymentId: payment.id },
+          ...(payment.providerRef ? [{ providerRef: payment.providerRef }] : []),
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+
+    const auditLogs = await this.prisma.adminAuditLog.findMany({
+      where: {
+        OR: [
+          { target: `payment:${payment.id}` },
+          { target: `booking:${payment.bookingId}` },
+          { metadata: { path: ['paymentId'], equals: payment.id } },
+          { metadata: { path: ['bookingId'], equals: payment.bookingId } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 75,
+      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+    });
+
+    return { ...payment, callbackAttempts, auditLogs };
+  }
+
   listPaymentCallbackAttempts() {
     return this.prisma.paymentCallbackAttempt.findMany({
       orderBy: { createdAt: 'desc' },

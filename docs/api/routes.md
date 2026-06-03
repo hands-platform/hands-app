@@ -114,6 +114,7 @@ The retry queue stores DB notifications first. Delivery attempts are recorded in
 - `POST /admin/partner-sanctions/:id/lift`
 - `GET /admin/bookings`
 - `GET /admin/payments`
+- `GET /admin/payments/:id`
 - `GET /admin/payment-callback-attempts`
 - `POST /admin/payments/:id/refund`
 - `GET /admin/refunds`
