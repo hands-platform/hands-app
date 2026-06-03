@@ -2406,38 +2406,56 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <section className="detail-grid" style={{ marginTop: 16 }}>
         <div className="card" id="participants">
-          <h2>Participant shortlist</h2>
+          <h2>Marketplace participation record</h2>
+          <p className="muted">
+            Every partner who actually joined, accepted, rejected, or became the final partner stays here as
+            booking evidence. Wallet-blocked partners who only viewed the marketplace list are not tracked as
+            participants.
+          </p>
           <div className="stack">
-            {(booking.participants ?? []).map((participant) => (
-              <div className="ops-row" key={participant.id}>
-                <div>
-                  <strong>{providerName(participant.providerProfile)}</strong>
-                  <div className="muted">
-                    {participant.providerProfile?.user?.phone ?? 'No phone'} -{' '}
-                    {participant.providerStatusAtJoin ?? 'status unknown'}
+            {(booking.participants ?? []).map((participant) => {
+              const isPreferred = participant.providerProfile?.id === booking.preferredProvider?.id;
+              const isFinal = participant.providerProfile?.id === booking.selectedProvider?.id;
+              const roleLabel = isFinal ? 'Final partner' : isPreferred ? 'First-pick' : 'Marketplace';
+              const roleClass = isFinal ? 'pill-success' : isPreferred ? 'pill-info' : 'pill-neutral';
+              const statusClass =
+                participant.status === 'REJECTED'
+                  ? 'pill-warn'
+                  : participant.status === 'SELECTED'
+                    ? 'pill-success'
+                    : 'pill-info';
+
+              return (
+                <div className="ops-row" key={participant.id}>
+                  <div>
+                    <div className="filter-row" style={{ marginBottom: 6 }}>
+                      <span className={`pill ${roleClass}`}>{roleLabel}</span>
+                      <span className={`pill ${statusClass}`}>{participant.status}</span>
+                    </div>
+                    <strong>{providerName(participant.providerProfile)}</strong>
+                    <div className="muted">
+                      {participant.providerProfile?.user?.phone ?? 'No phone'} -{' '}
+                      {participant.providerStatusAtJoin ?? 'status unknown'}
+                    </div>
+                    <div className="muted">
+                      Joined {formatDate(participant.joinedAt)} / responded{' '}
+                      {formatDate(participant.respondedAt)}
+                    </div>
                   </div>
-                  <div className="muted">
-                    Joined {formatDate(participant.joinedAt)} / responded{' '}
-                    {formatDate(participant.respondedAt)}
+                  <div>
+                    <div className="muted">{distanceLabel(participant.distanceMeters)}</div>
+                    <div className="muted">Participant {participant.id}</div>
+                    {participant.providerProfile?.id && (
+                      <Link className="text-link" href={`/partners/${participant.providerProfile.id}`}>
+                        Open partner record
+                      </Link>
+                    )}
                   </div>
                 </div>
-                <div>
-                  <span
-                    className={`pill ${participant.status === 'REJECTED' ? 'pill-warn' : 'pill-success'}`}
-                  >
-                    {participant.status}
-                  </span>
-                  <div className="muted">{distanceLabel(participant.distanceMeters)}</div>
-                  {participant.providerProfile?.id && (
-                    <Link className="text-link" href={`/partners/${participant.providerProfile.id}`}>
-                      Open partner record
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {(booking.participants ?? []).length === 0 && (
-              <p className="muted">No partners have joined yet.</p>
+              <p className="muted">No partner has actually joined this booking yet.</p>
             )}
           </div>
         </div>
@@ -2933,7 +2951,7 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       status: cashDebt ? 'Available' : 'Locked',
       tone: cashDebt ? 'pill-danger' : 'pill-neutral',
       evidence: cashDebt
-        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} gates final acceptance or customer selection.`
+        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} keeps marketplace participation and booking handoff blocked.`
         : booking.payment?.method === 'CASH'
           ? 'Cash booking has no active negative wallet block.'
           : `${booking.payment?.method ?? 'No method'} booking.`,
@@ -4284,7 +4302,7 @@ function bookingPayoutBatchEligibility({
         ? `${financeTrace.walletLedger}. Settle company fee debt before batch release.`
         : `Wallet impact ${financeTrace.walletLedger}.`,
       operatorRule:
-        'Negative wallet partners can view marketplace requests, but participation and payout release wait for deposit or admin offset evidence.',
+        'Negative wallet partners can see the marketplace list, but cannot join or continue booking handoff until deposit or admin offset evidence clears the debt.',
       href: cashDebt ? '/cash-settlements' : '#finance',
       className: cashDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebt ? 'pill-danger' : 'pill-success',
@@ -4342,9 +4360,9 @@ function buildBookingFinalGateReason({
   if (bookingCashDebtNeedsSettlement(booking)) {
     return {
       title: 'Wallet debt gate',
-      detail: `${financeTrace.walletLedger}. Partner can view marketplace requests, but join, direct acceptance, customer selection, service start, and payout release wait for settlement or approved offset.`,
+      detail: `${financeTrace.walletLedger}. Partner can see marketplace requests, but marketplace join, direct acceptance, customer selection, service start, and payout release wait for settlement or approved offset.`,
       operatorRule:
-        'Collect the HANDS cash fee deposit or approve a documented offset before reopening final gates.',
+        'Collect the HANDS cash fee deposit or approve a documented offset before reopening marketplace and booking handoff gates.',
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
     };
@@ -6761,7 +6779,7 @@ function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinan
   const walletHelper =
     financeTrace.paymentMethod === 'CASH'
       ? financeTrace.walletTotalAmount < 0
-        ? 'Cash fee debt gates final acceptance or customer selection.'
+        ? 'Cash fee debt gates marketplace participation and booking handoff.'
         : 'Cash settlement ledger is not negative.'
       : 'Non-cash booking should create payout credit after completion.';
 
@@ -6861,7 +6879,7 @@ function bookingFinanceFlags(
       detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} owes ${money(
         Math.abs(booking.earning?.netAmount ?? financeTrace.walletTotalAmount),
         financeTrace.currency,
-      )} before final acceptance or customer selection.`,
+      )} before marketplace participation or booking handoff can continue.`,
       action: 'Collect the HANDS fee deposit or offset it in an admin settlement.',
     });
   }
@@ -7536,13 +7554,13 @@ function bookingMvpAuthorityContract({
       href: '#chat',
     },
     {
-      contract: 'Wallet final gate',
-      scope: 'Negative wallet can view marketplace requests, participation is held',
+      contract: 'Wallet participation gate',
+      scope: 'Negative wallet can see marketplace demand, but cannot participate',
       status: walletDebt ? 'Settlement needed' : 'Gate clear',
       tone: walletDebt ? 'pill-danger' : 'pill-success',
       evidence: financeTrace.walletLedger,
       operatorUse:
-        'Cash fee debt should block final acceptance/customer selection/service start until settlement rules clear it.',
+        'Cash fee debt should block marketplace join, direct acceptance, customer selection, service start, and payout release until settlement rules clear it.',
       href: '#finance',
     },
     {
@@ -8287,8 +8305,8 @@ function bookingOperationalPolicySnapshot(
         label: 'Wallet debt gate',
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
-            ? 'Negative wallet partners can hold one active recovery booking while the next final acceptance still requires settlement review.'
-            : 'Negative wallet partners can view marketplace requests, but participation, final acceptance, and customer selection are blocked.',
+            ? 'Legacy recovery mode is visible for audit only; current operations should settle debt before marketplace participation.'
+            : 'Negative wallet partners can see marketplace requests, but marketplace participation and booking handoff are blocked.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({
@@ -8307,7 +8325,7 @@ function bookingOperationalPolicySnapshot(
         label: 'Cash fee clearance',
         helper:
           String(cashSettlementClearancePolicy?.value) === 'DEPOSIT_REFERENCE_REQUIRED'
-            ? 'Cash fee debt clearance should include a company deposit reference before final gates reopen.'
+            ? 'Cash fee debt clearance should include a company deposit reference before marketplace participation reopens.'
             : 'Cash fee debt can clear through verified company deposit or approved admin offset with evidence.',
         enforced: false,
       }),

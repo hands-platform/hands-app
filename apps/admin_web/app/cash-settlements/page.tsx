@@ -27,9 +27,9 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       <h1>Cash Settlements</h1>
       <p className="muted">
         Finance queue for cash bookings where the partner collected customer cash and still owes HANDS
-        platform fee or withholding. A negative wallet is a settlement-required state and gates configured
-        final acceptance or customer selection until this debt is settled with a bank reference or approved
-        offset.
+        platform fee or withholding. This page focuses on why the wallet became negative, whether the
+        company-fee deposit or approved offset has evidence, and when marketplace participation can reopen.
+        Wallet-blocked partners who only viewed the marketplace list are not tracked here.
       </p>
 
       <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
@@ -442,7 +442,7 @@ function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlemen
           ? `${formatMoney(row.debtAmount, row.earning.currency)} remains as HANDS fee/tax wallet debt.`
           : 'No open wallet debt remains on this earning row.',
       operatorRule:
-        'Settle only after deposit evidence or approved offset; final acceptance and service start stay gated until cleared.',
+        'Settle only after deposit evidence or approved offset; marketplace participation and booking handoff stay gated until cleared.',
       pillClass: row.debtAmount > 0 ? 'pill-danger' : 'pill-success',
     },
     {
@@ -487,10 +487,11 @@ function buildCashSettlementEvidenceChecklist(
       pillClass: rows.length ? 'pill-warn' : 'pill-success',
     },
     {
-      title: 'Wallet final gate',
+      title: 'Wallet participation gate',
       status: `${summary.providerCount} Partner(s)`,
-      detail: 'Negative wallet is allowed for visibility and queue review, but final acceptance stays gated.',
-      operatorRule: 'Reopen the final gate only after settlement or approved offset is recorded.',
+      detail:
+        'Negative wallet partners can see marketplace demand, but cannot join marketplace bookings or continue booking handoff.',
+      operatorRule: 'Reopen marketplace participation only after settlement or approved offset is recorded.',
       href: '/partner-controls',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
@@ -614,7 +615,7 @@ function buildCommandCards(
         summary.currency,
       )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
       action: summary.providerCount
-        ? 'Collect partner deposit or approve admin offset before final acceptance or customer selection.'
+        ? 'Collect partner deposit or approve admin offset before marketplace participation or direct acceptance resumes.'
         : 'No wallet is currently blocked by cash fee debt.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',

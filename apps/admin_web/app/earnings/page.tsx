@@ -916,7 +916,8 @@ function buildEarningsMoneyFlowCards(
     {
       label: 'Cash debt',
       amount: cashDebtTotals.debtAmount,
-      detail: 'Negative wallet amount from cash jobs that must be settled before final acceptance or customer selection.',
+      detail:
+        'Negative wallet amount from cash jobs that must be settled before marketplace participation or booking handoff resumes.',
     },
   ];
 }
@@ -976,7 +977,7 @@ function buildEarningsMoneyFlowChecks(
       title: 'Cash job lock',
       status: `${cashDebtQueue.length} PARTNER(S)`,
       detail: cashDebtQueue.length
-        ? 'Negative wallet partners must settle company fee before final acceptance or customer selection.'
+        ? 'Negative wallet partners must settle company fee before marketplace participation or booking handoff resumes.'
         : 'No cash fee debt currently blocks partner work.',
       action: cashDebtQueue.length
         ? 'Use cash debt queue to confirm deposit or approved offset.'
