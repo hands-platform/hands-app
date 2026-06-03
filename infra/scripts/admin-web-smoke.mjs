@@ -799,6 +799,7 @@ if (bookingLinkMatch) {
   const bookingPath = `/bookings/${bookingLinkMatch[1]}`;
   const bookingBody = await fetchPage(bookingPath);
   const bookingMarkers = [
+    'Booking operations quick rail',
     'Operator command queue',
     'Operator action availability',
     'Final gate reason',

@@ -456,6 +456,83 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     closeoutReadiness,
   });
+  const bookingOperationsQuickRail = [
+    {
+      href: '#booking-priority-briefing',
+      label: 'Priority',
+      value: operatorPriorityBriefing.status,
+      detail: 'First-screen booking state for handoff, chat, location, payment, and closeout.',
+    },
+    {
+      href: '#matching-rule-snapshot',
+      label: 'Matching rules',
+      value: matchingRuleSnapshot.status,
+      detail: 'First-pick, booking-address marketplace radius, customer choice, and wallet gate.',
+    },
+    {
+      href: '#booking-full-evidence-bundle',
+      label: 'Evidence bundle',
+      value: `${bookingEvidenceBundleRows.length} lanes`,
+      detail: 'Customer, partner, address, chat, payment, finance, location, alerts, and notes.',
+    },
+    {
+      href: '#connected-operations-records',
+      label: 'Linked records',
+      value: `${connectedRecordLinks.length} links`,
+      detail: 'Open customer, partner, chat archive, notifications, payment, refund, and settlement.',
+    },
+    {
+      href: '#participants',
+      label: 'Marketplace',
+      value: `${booking.participants?.length ?? 0} joined`,
+      detail: 'Only actual joined partners are retained as booking participants.',
+    },
+    {
+      href: '#chat',
+      label: 'Chat',
+      value: booking.chatRoom ? `${messages.length} messages` : 'Missing room',
+      detail: 'Matched-booking transcript retained for admin even after mobile hides completed chats.',
+    },
+    {
+      href: '#payment',
+      label: 'Payment',
+      value: booking.payment?.status ?? 'NONE',
+      detail: `${booking.payment?.method ?? 'No method'} / ${money(
+        booking.payment?.amount,
+        booking.payment?.currency,
+      )}`,
+    },
+    {
+      href: '#finance',
+      label: 'Fees and tax',
+      value: financeTrace.platformFee,
+      detail: `${financeTrace.withholding} withholding / ${financeTrace.netHandsFee} net HANDS fee.`,
+    },
+    {
+      href: '#address-radius-contract',
+      label: 'Address',
+      value: addressPin,
+      detail: addressLine,
+    },
+    {
+      href: '#location',
+      label: 'Location',
+      value: providerLocationMetricValue(booking),
+      detail: providerLocationMetricHelper(booking),
+    },
+    {
+      href: '#operator-command-queue',
+      label: 'Operator queue',
+      value: operatorCommandQueue.status,
+      detail: `${operatorCommandQueue.commands.length} same-shift command(s).`,
+    },
+    {
+      href: '#booking-activity',
+      label: 'Activity',
+      value: `${bookingActivityRecords.length}`,
+      detail: 'Date-ordered booking, chat, payment, alert, location, and audit events.',
+    },
+  ];
 
   return (
     <>
@@ -537,6 +614,29 @@ export default async function BookingDetailPage({ params }: PageProps) {
           value={attentionSummary.label}
           helper={attentionSummary.helper}
         />
+      </section>
+
+      <section className="card" id="booking-operations-quick-rail" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operations quick rail</h2>
+            <p className="muted">
+              Fast jumps for one booking. This keeps operations centered on address evidence, marketplace
+              participants, customer choice, retained chat, payment, wallet, fee, tax, location, and staff
+              records.
+            </p>
+          </div>
+          <span className="pill pill-info">{bookingOperationsQuickRail.length} shortcuts</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {bookingOperationsQuickRail.map((item) => (
+            <a href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </a>
+          ))}
+        </div>
       </section>
 
       <section className="card" id="matching-rule-snapshot" style={{ marginBottom: 16 }}>
