@@ -18,6 +18,7 @@ checkLegacyRiskRoutesAreRedirectOnly();
 checkMobileVisibleCopyGuardIsStrict();
 checkAdminPeopleManagementIsFactual();
 checkAdminDashboardOperationsCoverage();
+checkBookingDetailIsSourceOfTruth();
 
 console.log(
   JSON.stringify(
@@ -418,6 +419,33 @@ function checkAdminDashboardOperationsCoverage() {
     'Partner supply',
   ]);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, requiredKpis);
+}
+
+function checkBookingDetailIsSourceOfTruth() {
+  const bookingDetail = read('apps/admin_web/app/bookings/[id]/page.tsx');
+  const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
+  const requiredBookingDetailMarkers = [
+    'MVP authority contract',
+    'NestJS business authority',
+    'BookingAddressSnapshot',
+    'customer final partner choice',
+    'wallet gate',
+    'Connected operations records',
+    'Operator action availability',
+    'Booking full record index',
+    'Finance trace',
+    'Cash settlement desk',
+    'Tax policy',
+    'Location trail',
+    'Communication and movement handoff',
+    'Chat lifecycle and retention',
+    'All customer chats',
+    'All partner chats',
+    'Service pricing snapshot',
+  ];
+
+  requireMarkers('apps/admin_web/app/bookings/[id]/page.tsx', bookingDetail, requiredBookingDetailMarkers);
+  requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, requiredBookingDetailMarkers);
 }
 
 function requireMarkers(file, source, markers) {
