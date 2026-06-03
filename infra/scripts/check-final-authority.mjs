@@ -16,6 +16,7 @@ checkSupabaseDraftContract();
 checkSupabaseBoundary();
 checkLegacyRiskRoutesAreRedirectOnly();
 checkMobileVisibleCopyGuardIsStrict();
+checkAdminPeopleManagementIsFactual();
 
 console.log(
   JSON.stringify(
@@ -341,6 +342,45 @@ function checkMobileVisibleCopyGuardIsStrict() {
     'tip wording',
     'people scoring wording',
     'partner hierarchy wording',
+  ]);
+}
+
+function checkAdminPeopleManagementIsFactual() {
+  const customerList = read('apps/admin_web/app/customers/page.tsx');
+  const customerDetail = read('apps/admin_web/app/customers/[id]/page.tsx');
+  const partnerList = read('apps/admin_web/app/partners/page.tsx');
+  const partnerDetail = read('apps/admin_web/app/partners/[id]/page.tsx');
+  const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
+
+  requireMarkers('apps/admin_web/app/customers/page.tsx', customerList, [
+    'factual customer activity',
+    'completed work',
+    'last app session',
+  ]);
+  requireMarkers('apps/admin_web/app/customers/[id]/page.tsx', customerDetail, [
+    'Customer operating ledger',
+    'Customer chat retention ledger',
+    'Matched bookings must create a chat room',
+    'Mobile apps can hide the room after completion',
+  ]);
+  requireMarkers('apps/admin_web/app/partners/page.tsx', partnerList, [
+    'List-first partner control view',
+    'completed work',
+    'last work',
+  ]);
+  requireMarkers('apps/admin_web/app/partners/[id]/page.tsx', partnerDetail, [
+    'Partner operating ledger',
+    'Partner chat retention ledger',
+    'Customer final selection creates the partner chat',
+    'Mobile apps can hide completed-service chats',
+  ]);
+  requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
+    'people scoring wording',
+    'separate partner activity page wording',
+    'operator risk scoring wording',
+    'List-first partner control view',
+    'Customer operating ledger',
+    'Partner operating ledger',
   ]);
 }
 
