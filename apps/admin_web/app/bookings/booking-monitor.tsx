@@ -169,6 +169,19 @@ type MarketplaceParticipantLedgerRow = {
   respondedLabel: string;
   choiceLabel: string;
   choiceTone: string;
+  windowLabel: string;
+  alertLabel: string;
+  alertTone: string;
+  walletLabel: string;
+  walletTone: string;
+};
+
+type MarketplaceOperationsCard = {
+  title: string;
+  value: string;
+  detail: string;
+  tone: string;
+  href: string;
 };
 
 export type BookingEvidenceFilter =
@@ -426,14 +439,22 @@ export function BookingMonitor({
   const marketplaceLedgerSummary = useMemo(() => {
     const selected = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Selected by customer');
     const marketplace = marketplaceLedgerRows.filter((row) => row.roleLabel === 'Marketplace participant');
+    const firstPick = marketplaceLedgerRows.filter((row) => row.roleLabel === 'First-pick partner');
+    const waitingChoice = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Visible to customer');
     const declined = marketplaceLedgerRows.filter((row) => row.statusLabel === 'Declined');
     return {
       total: marketplaceLedgerRows.length,
       marketplace: marketplace.length,
+      firstPick: firstPick.length,
       selected: selected.length,
+      waitingChoice: waitingChoice.length,
       declined: declined.length,
     };
   }, [marketplaceLedgerRows]);
+  const marketplaceOperationsCards = useMemo(
+    () => buildMarketplaceOperationsCards(visibleBookings, marketplaceLedgerRows, currentTimeMs),
+    [currentTimeMs, marketplaceLedgerRows, visibleBookings],
+  );
 
   const statusFilterOptions = useMemo(
     () => uniqueSortedOptions(orderedBookings.map((booking) => booking.status)),
@@ -1077,12 +1098,25 @@ export function BookingMonitor({
           </span>
         </div>
         <div className="participant-list" style={{ marginTop: 12 }}>
+          <span className="pill">First-pick partners {marketplaceLedgerSummary.firstPick}</span>
           <span className="pill">Marketplace participants {marketplaceLedgerSummary.marketplace}</span>
           <span className="pill pill-success">
             Selected marketplace partner {marketplaceLedgerSummary.selected}
           </span>
+          <span className="pill pill-warn">
+            Waiting customer choice {marketplaceLedgerSummary.waitingChoice}
+          </span>
           <span className="pill pill-info">Declined responses {marketplaceLedgerSummary.declined}</span>
           <span className="pill">Customer final choice</span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {marketplaceOperationsCards.map((card) => (
+            <Link className="ops-task-card" href={card.href} key={card.title}>
+              <span className={`signal ${card.tone}`}>{card.title}</span>
+              <h3>{card.value}</h3>
+              <p>{card.detail}</p>
+            </Link>
+          ))}
         </div>
         {marketplaceLedgerRows.length === 0 ? (
           <div className="empty-state" style={{ marginTop: 14 }}>
@@ -1097,6 +1131,8 @@ export function BookingMonitor({
                 <th>Partner</th>
                 <th>Status</th>
                 <th>Distance</th>
+                <th>Window / alerts</th>
+                <th>Wallet signal</th>
                 <th>Joined / response</th>
                 <th>Customer choice</th>
               </tr>
@@ -1127,6 +1163,13 @@ export function BookingMonitor({
                   </td>
                   <td>{row.distanceLabel}</td>
                   <td>
+                    <div>{row.windowLabel}</div>
+                    <span className={`pill ${row.alertTone}`}>{row.alertLabel}</span>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>
+                  </td>
+                  <td>
                     <div>{row.joinedLabel}</div>
                     <div className="muted">{row.respondedLabel}</div>
                   </td>
@@ -1137,7 +1180,7 @@ export function BookingMonitor({
               ))}
               {marketplaceLedgerRows.length > 40 && (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={9}>
                     Showing first 40 joined partner records. Narrow the booking filters to inspect the rest.
                   </td>
                 </tr>
@@ -4171,6 +4214,10 @@ function buildMarketplaceParticipantLedgerRows(
         respondedLabel: participant.respondedAt
           ? `Responded ${formatDate(participant.respondedAt)}`
           : 'No response time saved',
+        windowLabel: bookingMatchingWindowLabel(booking, nowMs),
+        alertLabel: bookingBackupAlertTracePill(booking),
+        alertTone: bookingBackupAlertTraceTone(booking),
+        ...bookingMarketplaceWalletSignal(booking),
         ...marketplaceParticipantChoiceState(booking, participant),
       }))
       .sort((left, right) => {
@@ -4183,6 +4230,71 @@ function buildMarketplaceParticipantLedgerRows(
         return bookingParticipantTimestamp(right.participant) - bookingParticipantTimestamp(left.participant);
       }),
   );
+}
+
+function buildMarketplaceOperationsCards(
+  bookings: AdminBooking[],
+  ledgerRows: MarketplaceParticipantLedgerRow[],
+  nowMs: number,
+): MarketplaceOperationsCard[] {
+  const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const customerChoiceWaiting = bookings.filter(
+    (booking) => booking.status === 'OPEN_MATCHING' && bookingHasAcceptedPartner(booking),
+  );
+  const noMarketplaceSupply = openBookings.filter(
+    (booking) => marketplaceParticipants(booking).length === 0 && !booking.selectedProvider,
+  );
+  const alertTraceMissing = openBookings.filter((booking) => {
+    const trace = bookingBackupAlertTraceSummary(booking, nowMs);
+    return trace.batchCount === 0;
+  });
+  const walletDebtBookings = bookings.filter(bookingHasPartnerWalletDebtSignal);
+  const selectedRows = ledgerRows.filter((row) => row.choiceLabel === 'Selected by customer');
+
+  return [
+    {
+      title: 'Open marketplace',
+      value: `${openBookings.length}`,
+      detail: 'Bookings still visible for partner participation or customer choice.',
+      tone: openBookings.length > 0 ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      title: 'Customer choice',
+      value: `${customerChoiceWaiting.length}`,
+      detail: 'Accepted partners are visible and the customer has not selected a final partner yet.',
+      tone: customerChoiceWaiting.length > 0 ? 'pill-info' : 'pill-neutral',
+      href: '/bookings?view=customer-choice',
+    },
+    {
+      title: 'No joined supply',
+      value: `${noMarketplaceSupply.length}`,
+      detail: 'Open requests with no marketplace participant in the ledger.',
+      tone: noMarketplaceSupply.length > 0 ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      title: 'Alert trace missing',
+      value: `${alertTraceMissing.length}`,
+      detail: 'Open requests without recorded 10 km marketplace notification batches.',
+      tone: alertTraceMissing.length > 0 ? 'pill-warn' : 'pill-success',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      title: 'Selected partners',
+      value: `${selectedRows.length}`,
+      detail: 'Marketplace or first-pick partners already chosen by customers.',
+      tone: selectedRows.length > 0 ? 'pill-success' : 'pill-neutral',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      title: 'Cash fee debt',
+      value: `${walletDebtBookings.length}`,
+      detail: 'Bookings with partner wallet debt signals after cash fee closeout.',
+      tone: walletDebtBookings.length > 0 ? 'pill-warn' : 'pill-neutral',
+      href: '/bookings?view=cash-debt',
+    },
+  ];
 }
 
 function marketplaceParticipantRoleLabel(booking: AdminBooking, participant: BookingParticipant) {
@@ -4242,6 +4354,34 @@ function bookingParticipantTimestamp(participant: BookingParticipant) {
   }
   const timestamp = new Date(value).getTime();
   return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function bookingMarketplaceWalletSignal(booking: AdminBooking) {
+  if (bookingHasPartnerWalletDebtSignal(booking)) {
+    return {
+      walletLabel: `Cash fee debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`,
+      walletTone: 'pill-warn',
+    };
+  }
+  if (booking.earning) {
+    return {
+      walletLabel: `Wallet ${money(booking.earning.netAmount ?? 0, booking.earning.currency)}`,
+      walletTone: booking.earning.status === 'PAID' ? 'pill-success' : 'pill-info',
+    };
+  }
+  if (booking.payment?.method === 'CASH') {
+    return { walletLabel: 'Cash closeout pending', walletTone: 'pill-warn' };
+  }
+  return { walletLabel: 'Wallet pending', walletTone: 'pill-neutral' };
+}
+
+function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
+  return Boolean(
+    booking.payment?.method === 'CASH' &&
+      booking.earning &&
+      (booking.earning.netAmount ?? 0) < 0 &&
+      booking.earning.status !== 'PAID',
+  );
 }
 
 function acceptedParticipants(booking: AdminBooking) {
