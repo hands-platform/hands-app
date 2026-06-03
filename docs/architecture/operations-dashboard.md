@@ -69,7 +69,8 @@ The dashboard intentionally mirrors the current MVP operations policy:
 - Marketplace partner location freshness: 30 minutes.
 - Marketplace partners can appear while the preferred partner is still deciding.
 - Customer always selects the final partner.
-- A negative partner wallet can still allow marketplace list visibility, but blocks final acceptance or customer final partner selection when the configured gate requires settlement.
+- A negative partner wallet can still allow marketplace list visibility, but blocks marketplace participation/join, direct acceptance, customer final partner selection, service start, and payout release until settlement or admin offset clears the debt.
+- Wallet-blocked view attempts are not participant records. Admin tracks why the wallet is negative and whether the cash fee settlement has been paid or offset.
 
 These values should be changed through Admin `/operations-policy` or environment defaults, not hardcoded in mobile UI.
 

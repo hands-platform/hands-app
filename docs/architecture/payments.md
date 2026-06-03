@@ -28,9 +28,10 @@ Each adapter supports:
 For cash bookings, the partner receives the customer payment directly. HANDS therefore
 records platform fee and withholding as a partner wallet debt instead of treating the
 full booking amount as money owed to the partner. A negative partner wallet can still
-allow marketplace list visibility, but blocks final acceptance or customer
-final partner selection until the partner settles the fee with HANDS or the balance is
-offset against later online-payment payouts.
+allow marketplace list visibility, but blocks marketplace join/participation, direct
+acceptance, customer final partner selection, service start, and payout release until
+the partner settles the fee with HANDS or the balance is offset against later
+online-payment payouts. Customers do not carry a negative wallet in the MVP.
 
 ## Callback Routes
 
