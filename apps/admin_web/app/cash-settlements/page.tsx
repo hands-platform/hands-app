@@ -30,6 +30,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       : visibleSummary;
   const debtCauseCards = buildDebtCauseCards(rows, summary);
   const recoverySteps = buildWalletRecoverySteps(rows, providers, summary);
+  const settlementHandoff = buildCashSettlementHandoffMap(rows, providers, summary);
   const commandCards = buildCommandCards(rows, providers, summary);
   const evidenceChecklist = buildCashSettlementEvidenceChecklist(rows, providers, summary);
 
@@ -196,6 +197,34 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           ))}
         </div>
       </div>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Cash settlement handoff map</h2>
+            <p className="muted">
+              Follow a cash booking from customer payment evidence to partner wallet reopening and payout
+              release. Marketplace viewing attempts are not tracked; actual marketplace participants remain
+              on the booking record.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=cash-debt">
+            Booking cash debt queue
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {settlementHandoff.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+              <div>
+                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <h3>{item.title}</h3>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.operatorRule}</small>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -458,6 +487,8 @@ type EvidenceChecklistItem = {
   pillClass: string;
 };
 
+type CashSettlementHandoffItem = EvidenceChecklistItem;
+
 type CashSettlementActionExecutionItem = {
   action: string;
   status: string;
@@ -705,6 +736,82 @@ function buildWalletRecoverySteps(
       operatorRule:
         'Negative-wallet partners may still see marketplace demand. Only actual marketplace join and payout release are gated.',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
+    },
+  ];
+}
+
+function buildCashSettlementHandoffMap(
+  rows: CashSettlementRow[],
+  providers: CashSettlementProviderGroup[],
+  summary: CashSettlementSummary,
+): CashSettlementHandoffItem[] {
+  const hasOpenDebt = summary.rowCount > 0;
+  const highestDebt = providers[0];
+  const rowsWithLedgerRefs = rows.filter((row) => row.lastLedgerRef || row.earning.settlementRef);
+  const missingReferenceRows = rows.filter((row) => !row.lastLedgerRef && !row.earning.settlementRef);
+  const cashRows = rows.filter((row) => row.paymentMethod === 'CASH');
+
+  return [
+    {
+      title: 'Cash booking source',
+      status: `${summary.cashPaymentRowCount} cash row(s)`,
+      detail: cashRows.length
+        ? `${formatMoney(
+            cashRows.reduce((sum, row) => sum + row.bookingAmount, 0),
+            summary.currency,
+          )} was collected by partners as customer cash.`
+        : 'No visible row is currently linked to a CASH payment method.',
+      operatorRule: 'Use booking detail for payment, chat, and marketplace participant evidence.',
+      href: '/bookings?view=cash-debt',
+      className: cashRows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: cashRows.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Partner wallet debt',
+      status: hasOpenDebt ? `${summary.providerCount} wallet(s)` : 'Clear',
+      detail: highestDebt
+        ? `${highestDebt.providerName} has the largest open wallet debt: ${formatMoney(
+            highestDebt.debtAmount,
+            highestDebt.currency,
+          )}.`
+        : 'No partner wallet has cash-fee debt in the current queue.',
+      operatorRule: 'Negative wallet applies only to partners; customers never carry negative wallet debt.',
+      href: '/partner-controls?review=cash-debt',
+      className: hasOpenDebt ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Deposit or offset proof',
+      status: missingReferenceRows.length ? `${missingReferenceRows.length} ref needed` : 'Proof linked',
+      detail: missingReferenceRows.length
+        ? 'Finance still needs a bank deposit reference or an approved admin offset memo.'
+        : `${rowsWithLedgerRefs.length} row(s) already have a settlement or wallet ledger reference.`,
+      operatorRule: 'The settlement action must keep booking, payment, earning, and wallet references aligned.',
+      href: '/cash-settlements?queue=missing-ref',
+      className: missingReferenceRows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: missingReferenceRows.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Marketplace reopen rule',
+      status: hasOpenDebt ? 'Join gated' : 'Join open',
+      detail: hasOpenDebt
+        ? 'Partners may see marketplace demand, but cannot join marketplace bookings while wallet debt remains.'
+        : 'Cleared partner wallets can join eligible marketplace bookings again.',
+      operatorRule: 'Partner app message: 수수료를 입금하지 않아 예약에 참여 할수 없습니다.',
+      href: '/bookings?view=marketplace',
+      className: hasOpenDebt ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Payout release gate',
+      status: hasOpenDebt ? 'Hold payout' : 'Release checks',
+      detail: hasOpenDebt
+        ? `${formatMoney(summary.debtAmount, summary.currency)} must be settled before payout release.`
+        : 'Payout release can continue through normal weekly, monthly, or admin-selected batch checks.',
+      operatorRule: 'Cash debt settlement should be visible before finance approves payout release.',
+      href: '/payouts',
+      className: hasOpenDebt ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: hasOpenDebt ? 'pill-warn' : 'pill-success',
     },
   ];
 }
