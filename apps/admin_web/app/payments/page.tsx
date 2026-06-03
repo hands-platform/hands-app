@@ -119,7 +119,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
           <div>
             <h2>Payment callback attempt ledger</h2>
             <p className="muted">
-              Accepted, replayed, rejected, and conflicting provider callbacks. Unknown provider references remain
+              Accepted, replayed, rejected, and conflicting gateway callbacks. Unknown gateway references remain
               visible here even when they cannot attach to a payment row.
             </p>
           </div>
@@ -487,10 +487,10 @@ function paymentFilterDescription(review: string) {
     return 'payments that are not settled, released, or refunded yet.';
   }
   if (review === 'callback-review') {
-    return 'MoMo or VNPay callbacks that were received without a verified provider signature.';
+    return 'MoMo or VNPay callbacks that were received without a verified gateway signature.';
   }
   if (review === 'callback-verified') {
-    return 'MoMo or VNPay callbacks already accepted with provider signature evidence.';
+    return 'MoMo or VNPay callbacks already accepted with gateway signature evidence.';
   }
   if (review === 'refunded') {
     return 'payments already moved into the refund path.';
@@ -853,7 +853,7 @@ function PaymentCallbackEvidence({ payment }: { payment: AdminPayment }) {
       <div className="ops-task-note" style={{ marginTop: 8 }}>
         <span className="pill pill-neutral">No callback</span>
         <p className="muted" style={{ marginTop: 6 }}>
-          No provider callback has been stored yet.
+          No gateway callback has been stored yet.
         </p>
       </div>
     );
