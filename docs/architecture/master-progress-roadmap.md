@@ -33,7 +33,7 @@ Core principles:
 - Chat opens after booking match and is available to customer and partner during the active service flow.
 - After service completion, mobile apps may hide the active chat, but admin keeps the full chat archive.
 - First-earning tax collection is preferred. Do not force full tax information at initial signup.
-- Cash booking platform fees can create negative partner wallet balance. Negative wallet is a settlement warning and blocks only configured final acceptance/confirmation/service-start gates.
+- Cash booking platform fees can create negative partner wallet balance. Negative wallet is a settlement warning that blocks marketplace participation plus configured acceptance/confirmation/service-start gates.
 - No customer/partner rating, premium membership, or gratuity system in MVP.
 - Design polish and full multilingual UI come after backend/admin/mobile flow stability.
 
@@ -271,7 +271,7 @@ Goal: Mobile apps and admin use the same policy logic.
 
 2. Wallet/cash debt gate
    - Cash booking fee debt creates negative wallet.
-   - Negative wallet creates settlement-required state and blocks only configured final acceptance/confirmation/service-start gates.
+   - Negative wallet creates settlement-required state and blocks marketplace participation plus configured acceptance/confirmation/service-start gates.
    - Admin can see and settle fee debt.
 
 3. Service pricing engine

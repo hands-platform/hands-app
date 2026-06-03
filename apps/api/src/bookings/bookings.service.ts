@@ -714,6 +714,7 @@ export class BookingsService {
       throw new BadRequestException('Booking request is expired');
     }
     assertProviderCanReceiveBooking(provider);
+    await this.ensureProviderWalletCanAccept(provider.id);
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 

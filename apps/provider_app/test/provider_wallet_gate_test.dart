@@ -7,7 +7,7 @@ void main() {
       'walletBalance': -120000,
       'walletBlocked': true,
       'walletBlockReason': 'Custom settlement message',
-      'walletSettlementInstruction': 'Pay the HANDS fee to clear final gates.',
+      'walletSettlementInstruction': 'Pay the HANDS fee to join bookings.',
       'walletSettlementReference': 'HANDS-WALLET-TEST1234',
     };
 
@@ -16,7 +16,7 @@ void main() {
     expect(providerWalletStatusLabel(summary), 'Settlement required');
     expect(
       providerWalletSettlementInstruction(summary),
-      'Pay the HANDS fee to clear final gates.',
+      'Pay the HANDS fee to join bookings.',
     );
     expect(
       providerWalletSettlementSteps(summary),
@@ -62,7 +62,7 @@ void main() {
     );
   });
 
-  test('clears final gates when unsettled wallet is non-negative', () {
+  test('clears marketplace gate when unsettled wallet is non-negative', () {
     final summary = {
       'pendingNetAmount': -50000,
       'availableNetAmount': 70000,
@@ -129,7 +129,7 @@ void main() {
     expect(guidance.detailMessage, contains('5 km'));
   });
 
-  test('holds direct finalization guidance when wallet is negative', () {
+  test('blocks direct and marketplace participation guidance when wallet is negative', () {
     final guidance = providerRequestGuidance(
       booking: {'status': 'OPEN_MATCHING'},
       isPreferredRequest: true,
@@ -140,7 +140,24 @@ void main() {
     expect(guidance.decisionLabel, 'Settlement required');
     expect(guidance.nextAction, contains('negative HANDS wallet'));
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
-    expect(guidance.infoMessage, contains('marketplace opportunities'));
+    expect(guidance.infoMessage, contains('joining marketplace requests'));
+  });
+
+  test('blocks marketplace join guidance when wallet is negative', () {
+    final guidance = providerRequestGuidance(
+      booking: {
+        'status': 'OPEN_MATCHING',
+        'preferredProvider': {'displayName': 'Linh Wellness'},
+      },
+      isPreferredRequest: false,
+      joined: false,
+      walletBlocked: true,
+    );
+
+    expect(guidance.modeLabel, 'Marketplace opportunity');
+    expect(guidance.decisionLabel, 'Settlement required');
+    expect(guidance.contextMessage, contains('join or accept'));
+    expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
   });
 
   test('explains marketplace opportunities after preferred partner exists', () {

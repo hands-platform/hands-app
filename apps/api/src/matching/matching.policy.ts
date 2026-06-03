@@ -257,21 +257,21 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'Negative wallet booking gate',
     description:
-      'Choose which final gates wait for unpaid cash-service platform fees while marketplace visibility stays open.',
+      'Controls how unpaid cash-service platform fees block partner marketplace participation and downstream booking gates.',
     value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
     recommendedValue: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
     options: [
       {
         value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
-        label: 'Hold final gates while negative',
+        label: 'Block marketplace participation while negative',
         tradeoff:
-          'Keeps marketplace visibility open, but blocks final acceptance or customer selection while debt is open.',
+          'Keeps marketplace requests visible for review, but blocks join, direct acceptance, customer selection, service start, and payout release while debt is open.',
       },
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,
-        label: 'Recovery supervision',
+        label: 'Legacy recovery supervision',
         tradeoff:
-          'Lets operators supervise configured final-gate exceptions, but leaves unpaid fees open longer.',
+          'Reserved for audited recovery workflows; HANDS MVP still blocks marketplace participation while the wallet is negative.',
       },
     ],
     enforced: true,

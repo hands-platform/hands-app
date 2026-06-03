@@ -4108,7 +4108,7 @@ function buildBookingCloseoutChecklist({
       title: 'Money and wallet gate',
       status: cashDebt ? 'Settlement needed' : (booking.payment?.status ?? 'No payment'),
       detail: cashDebt
-        ? `${financeTrace.walletLedger}. Partner can browse and join, but final acceptance is held until settled or offset.`
+        ? `${financeTrace.walletLedger}. Partner can view marketplace requests, but participation is held until settled or offset.`
         : `${booking.payment?.method ?? 'NONE'} payment / customer ${financeTrace.customerPrice} / partner ${financeTrace.providerPayout}.`,
       operatorRule:
         'Cash fee debt must be resolved before final acceptance, service start, or payout batch release.',
@@ -4284,7 +4284,7 @@ function bookingPayoutBatchEligibility({
         ? `${financeTrace.walletLedger}. Settle company fee debt before batch release.`
         : `Wallet impact ${financeTrace.walletLedger}.`,
       operatorRule:
-        'Negative wallet partners can browse/join, but payout release waits for deposit or admin offset evidence.',
+        'Negative wallet partners can view marketplace requests, but participation and payout release wait for deposit or admin offset evidence.',
       href: cashDebt ? '/cash-settlements' : '#finance',
       className: cashDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebt ? 'pill-danger' : 'pill-success',
@@ -4342,7 +4342,7 @@ function buildBookingFinalGateReason({
   if (bookingCashDebtNeedsSettlement(booking)) {
     return {
       title: 'Wallet debt gate',
-      detail: `${financeTrace.walletLedger}. Partner can browse and join, but final acceptance, customer selection, service start, and payout release wait for settlement or approved offset.`,
+      detail: `${financeTrace.walletLedger}. Partner can view marketplace requests, but join, direct acceptance, customer selection, service start, and payout release wait for settlement or approved offset.`,
       operatorRule:
         'Collect the HANDS cash fee deposit or approve a documented offset before reopening final gates.',
       className: 'ops-task-blocked',
@@ -4531,7 +4531,7 @@ function buildBookingActionEvidenceGate({
           ? 'Cash booking has no active negative wallet block.'
           : `${booking.payment?.method ?? 'NONE'} booking path.`,
       operatorRule:
-        'Negative wallet can still browse/join; final acceptance and payout actions wait for settlement evidence.',
+        'Negative wallet partners can view marketplace requests, but participation and payout actions wait for settlement evidence.',
       href: cashDebt ? '/cash-settlements' : '#finance',
       className: cashDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebt
@@ -7537,7 +7537,7 @@ function bookingMvpAuthorityContract({
     },
     {
       contract: 'Wallet final gate',
-      scope: 'Negative wallet can browse/join, final acceptance is held',
+      scope: 'Negative wallet can view marketplace requests, participation is held',
       status: walletDebt ? 'Settlement needed' : 'Gate clear',
       tone: walletDebt ? 'pill-danger' : 'pill-success',
       evidence: financeTrace.walletLedger,
@@ -8288,7 +8288,7 @@ function bookingOperationalPolicySnapshot(
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
             ? 'Negative wallet partners can hold one active recovery booking while the next final acceptance still requires settlement review.'
-            : 'Negative wallet partners can show intent, but final acceptance or customer selection is blocked.',
+            : 'Negative wallet partners can view marketplace requests, but participation, final acceptance, and customer selection are blocked.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({

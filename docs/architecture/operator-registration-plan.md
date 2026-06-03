@@ -185,7 +185,7 @@ Current recommended MVP policy:
 - Marketplace partner invite cap: 50.
 - Marketplace partners can appear immediately while the preferred partner is still deciding.
 - Customer makes the final partner selection.
-- Partners with negative wallet balance can still appear and join marketplace opportunities, but final acceptance or customer final partner selection is blocked when the configured gate requires settlement.
+- Partners with negative wallet balance can still see marketplace requests but cannot join until settlement, but final acceptance or customer final partner selection is blocked when the configured gate requires settlement.
 
 Seed/default values:
 

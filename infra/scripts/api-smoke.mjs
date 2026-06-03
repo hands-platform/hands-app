@@ -2291,7 +2291,7 @@ if (
   );
 }
 const expectedProviderWalletBlockReason =
-  'Outstanding HANDS fee settlement must be completed before final acceptance, customer selection, service start, or payout release.';
+  'Outstanding HANDS fee settlement must be completed before marketplace participation, direct acceptance, customer selection, service start, or payout release.';
 if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
@@ -2342,34 +2342,18 @@ const blockedOpenMatchingBooking = await postJson('/customer/bookings', customer
   lng: 106.6994,
   paymentMethod: 'MOMO',
 });
-const openMatchingWalletJoin = await postJson(
-  `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
-  walletDebtProviderAuth.accessToken,
-);
-if (
-  openMatchingWalletJoin.participant?.providerProfileId !== walletDebtProviderAuth.user.providerProfile.id
-) {
-  throw new Error(
-    `Negative provider wallet should allow marketplace join intent before final acceptance: ${JSON.stringify(
-      openMatchingWalletJoin,
-    )}`,
-  );
-}
-const negativeWalletFinalSelectionError = await expectRequestFailure(
-  'Negative provider wallet blocks customer final partner selection',
+const negativeWalletMarketplaceJoinError = await expectRequestFailure(
+  'Negative provider wallet blocks marketplace participation',
   () =>
     postJson(
-      `/customer/bookings/${blockedOpenMatchingBooking.id}/select-provider`,
-      customerAuth.accessToken,
-      {
-        providerId: walletDebtProviderAuth.user.providerProfile.id,
-      },
+      `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
+      walletDebtProviderAuth.accessToken,
     ),
   400,
 );
-if (!negativeWalletFinalSelectionError.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
+if (!negativeWalletMarketplaceJoinError.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
   throw new Error(
-    `Negative wallet final selection response is missing wallet block code: ${negativeWalletFinalSelectionError}`,
+    `Negative wallet marketplace join response is missing wallet block code: ${negativeWalletMarketplaceJoinError}`,
   );
 }
 const payoutWalletBlockError = await expectRequestFailure(

@@ -1253,7 +1253,7 @@ function buildBookingAcceptanceUnblockBoard(
       title: 'Cash fee debt gates final acceptance',
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
-        ? 'Partners with negative wallet balance can stay visible and show marketplace intent, but cannot complete final acceptance until HANDS fee debt is settled.'
+        ? 'Partners with negative wallet balance can stay visible but cannot participate in marketplace requests, but cannot complete final acceptance until HANDS fee debt is settled.'
         : 'No partner is currently blocked by cash-service fee debt.',
       operatorScript:
         'Tell the partner their unpaid HANDS fee must be deposited or offset before final acceptance or customer selection unlocks.',

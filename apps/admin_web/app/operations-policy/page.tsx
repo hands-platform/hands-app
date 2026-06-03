@@ -1901,7 +1901,7 @@ function policyRecommendationPosture(
           ? 'Cash-debt exposure is contained at final acceptance, customer selection, service-start, or payout release gates.'
           : 'Recovery supervision keeps debt visible while operators manage configured final-gate exceptions.',
       operatorAction:
-        'Keep marketplace visibility and join intent open; use settlement evidence before final confirmation gates.',
+        'Keep marketplace list visibility open; use settlement evidence before final confirmation gates.',
       alignedAction: 'Final-gate settlement control matches the HANDS MVP authority rule.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: value === recommended ? 'pill-success' : 'pill-danger',
@@ -4081,11 +4081,11 @@ function operationsOwnerDecisionBacklog() {
         {
           label: 'Final + payout gate',
           tradeoff:
-            'Adds service-start or payout release review while preserving marketplace visibility and join intent.',
+            'Adds service-start or payout release review while preserving marketplace list visibility.',
         },
       ],
       recommendation:
-        'Keep marketplace visibility and join intent open; apply settlement checks only at configured final gates.',
+        'Keep marketplace list visibility open; apply settlement checks only at configured final gates.',
       decisionTrigger:
         'Revisit after cash-settlement median collection time is under 24 hours for two consecutive weeks.',
       href: '/cash-settlements',
@@ -4601,7 +4601,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Wallet controls',
       title: 'Controls unpaid cash-fee debt enforcement',
       detail:
-        'Policy controls which final gates wait for cash-fee debt settlement. It must not remove marketplace visibility or join intent.',
+        'Policy controls cash-fee debt settlement. Marketplace requests remain visible, but participation and downstream booking gates stay blocked while the wallet is negative.',
       saveChecks: [
         {
           label: 'Cash debt queue',

@@ -2,10 +2,10 @@ import { BadRequestException } from '@nestjs/common';
 
 export const PROVIDER_WALLET_BLOCK_CODE = 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT';
 export const PROVIDER_WALLET_BLOCK_REASON =
-  'Outstanding HANDS fee settlement must be completed before final acceptance, customer selection, service start, or payout release.';
+  'Outstanding HANDS fee settlement must be completed before marketplace participation, direct acceptance, customer selection, service start, or payout release.';
 export const PROVIDER_WALLET_SETTLEMENT_METHOD = 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET';
 export const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
-  'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace visibility and join intent stay available; configured final gates unlock after HANDS confirms the deposit or admin offset.';
+  'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace requests stay visible for review, but participation is blocked until HANDS confirms the deposit or admin offset.';
 
 export function providerWalletSettlementReference(providerProfileId: string) {
   return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
@@ -16,7 +16,7 @@ export function providerWalletSettlementSteps(amount: number, currency: string, 
     `Settle ${amount.toLocaleString('vi-VN')} ${currency} for unpaid HANDS fees.`,
     `Use reference ${providerWalletSettlementReference(providerProfileId)} when reporting the deposit.`,
     'After admin confirms the deposit or offset, refresh wallet status.',
-    'Final acceptance, customer selection, service start, and payout release unlock when the wallet is no longer negative.',
+    'Marketplace participation, direct acceptance, customer selection, service start, and payout release unlock when the wallet is no longer negative.',
   ];
 }
 

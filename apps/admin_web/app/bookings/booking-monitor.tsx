@@ -3426,7 +3426,7 @@ function bookingFinalGateReason(booking: AdminBooking) {
     return {
       label: 'Wallet debt gate',
       detail:
-        'Partner can browse and join, but final acceptance, customer selection, service start, and payout release wait for cash fee settlement.',
+        'Partner can view marketplace requests, but join, direct acceptance, customer selection, service start, and payout release wait for cash fee settlement.',
       tone: 'pill-danger',
       href: '/cash-settlements',
     };

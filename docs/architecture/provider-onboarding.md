@@ -60,7 +60,7 @@ negative wallet amount. A negative partner wallet becomes a settlement-required 
 and blocks configured final acceptance, customer selection, or service-start gates until finance confirms partner
 repayment or an approved admin offset. The partner-facing response should explain:
 
-`Outstanding HANDS fee settlement must be completed before final acceptance or customer selection.`
+`Outstanding HANDS fee settlement must be completed before marketplace participation, direct acceptance, customer selection, service start, or payout release.`
 
 ## Tax Policy Rule
 

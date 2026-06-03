@@ -3205,7 +3205,7 @@ function buildShiftOperatingRoute(input: {
       value: `${input.cashSettlementSummary.providerCount} partner(s)`,
       checkpoint:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet partners can stay visible, but final acceptance or customer selection waits for settlement.'
+          ? 'Negative wallet partners can view marketplace requests, but participation, final acceptance, and customer selection wait for settlement.'
           : 'No cash fee debt is gating final acceptance or customer selection.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
@@ -3381,7 +3381,7 @@ function buildOperationsCommandBoard(input: {
       value: `${financeRows} item(s)`,
       detail:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet keeps visibility, but final acceptance waits for cash fee settlement.'
+          ? 'Negative wallet keeps marketplace list visibility, but participation waits for cash fee settlement.'
           : 'Completed work, cash settlement, and payout batch rows are visible for scheduled closeout.',
       href: financeRows ? '/finance-closeout' : '/earnings',
       tone: financeRows ? 'warn' : 'ok',
@@ -3812,12 +3812,12 @@ function buildLiveOperationsRadar(input: {
     {
       lane: 'Cash settlement lane',
       owner: 'Finance',
-      title: 'Separate visibility from final acceptance gates',
+      title: 'Separate list visibility from participation gates',
       value: `${input.cashSettlementSummary.providerCount} partner(s)`,
       status: input.cashSettlementSummary.providerCount ? 'Gate' : 'Clear',
       detail:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet partners can see and join intent, but final acceptance waits for cash fee settlement.'
+          ? 'Negative wallet partners can see marketplace requests but cannot join, but final acceptance waits for cash fee settlement.'
           : 'No cash fee debt is currently blocking final acceptance or customer selection.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
@@ -4308,7 +4308,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       owner: 'Finance',
       title: 'Clear cash fee debt',
       detail:
-        'Negative wallet partners are blocked only at configured final acceptance or service-start gates.',
+        'Negative wallet partners can view marketplace requests, but participation, direct acceptance, customer selection, service start, and payout release are blocked.',
       metricLabel: 'Debt partners',
       metricValue: input.cashSettlementSummary.providerCount.toString(),
       action: 'Open cash settlements',

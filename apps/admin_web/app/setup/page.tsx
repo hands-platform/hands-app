@@ -141,7 +141,7 @@ const setupOrder = [
       'Env values are seed/default hints; day-to-day changes should be made from /operations-policy so updates are audited.',
       'MVP rule: selected first partner gets the configured response window, and marketplace participants can still join the shortlist.',
       'Customers always make the final partner selection; no automatic final matching.',
-      'Partners with negative wallet balance see settlement-required state; visibility and join intent remain available while configured final acceptance or service-start gates wait for settlement.',
+      'Partners with negative wallet balance can view marketplace requests, but marketplace participation and configured booking gates wait for settlement.',
     ],
     commands: [
       'Open http://localhost:3101/operations-policy',

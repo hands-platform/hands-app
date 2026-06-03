@@ -2873,7 +2873,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
   if (walletBalance < 0) {
     return `Partner wallet is negative by ${formatProviderMoney(
       Math.abs(walletBalance),
-    )}. Marketplace visibility stays available, but configured final gates wait until finance settles the cash fee debt.`;
+    )}. Marketplace list visibility stays available while participation is blocked, but configured final gates wait until finance settles the cash fee debt.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Partner is approved but not currently online for direct or marketplace requests.';
@@ -2921,7 +2921,7 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
   if (!hasApprovedBankAccount(provider)) {
     blockers.push({ label: 'bank account', severity: 'hard' });
   }
-  // Negative wallet is a final-gate finance hold, not a marketplace visibility blocker.
+  // Negative wallet preserves marketplace list visibility, but blocks marketplace participation.
   // Partners can still receive availability awareness and join a shortlist candidate pool.
   if (provider.status !== 'ONLINE_AVAILABLE') {
     blockers.push({ label: 'not online available', severity: 'soft' });
@@ -3332,7 +3332,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Cash fee debt',
         value: cashDebt.length.toString(),
-        detail: 'Negative wallet partners can stay visible, but final acceptance waits until company fee settlement.',
+        detail: 'Negative wallet partners can view marketplace requests, but participation waits until company fee settlement.',
         href: '/cash-settlements',
         tone: cashDebt.length ? 'danger' : 'ok',
       },

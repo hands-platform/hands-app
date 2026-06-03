@@ -367,7 +367,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         if (mounted) {
           setState(() {
             error = blockReason;
-            statusMessage = providerWalletBlockHintKo;
+            statusMessage = providerWalletBlockHintClean;
           });
         }
         return false;
@@ -376,7 +376,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       if (mounted) {
         setState(() {
           statusMessage =
-              'Wallet status could not be refreshed locally. The server will verify settlement before finalizing.';
+              'Wallet status could not be refreshed locally. The server will verify settlement before marketplace participation.';
         });
       }
     }
@@ -1283,7 +1283,7 @@ class ProviderWalletGateCard extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Checking wallet settlement before final confirmation gates.',
+                  'Checking wallet settlement before marketplace participation.',
                   style: theme.textTheme.bodyMedium,
                 ),
               ),
@@ -1345,7 +1345,7 @@ class ProviderWalletGateCard extends StatelessWidget {
             Text(
               walletBlocked
                   ? reason
-                  : 'You can receive and finalize eligible booking requests.',
+                  : 'You can join marketplace and direct booking requests.',
             ),
             if (walletBlocked) ...[
               const SizedBox(height: 8),
@@ -1822,7 +1822,7 @@ class OpenBookingCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             InfoCard(text: guidance.infoMessage),
-            if (walletBlocked && isPreferredRequest && !isMatched) ...[
+            if (walletBlocked && !isMatched) ...[
               const SizedBox(height: 12),
               const ProviderErrorCard(
                   text: providerWalletBlockFallbackReasonClean),
@@ -1865,11 +1865,13 @@ class OpenBookingCard extends StatelessWidget {
               const InfoCard(text: 'Chat is ready. Continue from the Chat tab.')
             else if (!joined)
               FilledButton.icon(
-                onPressed: loading ? null : onJoin,
+                onPressed: loading || walletBlocked ? null : onJoin,
                 icon: const Icon(Icons.add_circle_outline),
-                label: Text(hasPreferredProvider
-                    ? 'Offer marketplace support'
-                    : 'Join open matching'),
+                label: Text(walletBlocked
+                    ? 'Settle fee to join'
+                    : hasPreferredProvider
+                        ? 'Offer marketplace support'
+                        : 'Join open matching'),
               )
             else ...[
               const InfoCard(
@@ -1992,8 +1994,8 @@ class EarningsScreen extends ConsumerWidget {
                                     Text(
                                       walletBlocked
                                           ? (walletBlockReason ??
-                                              'Unsettled cash service fees must be paid before final confirmation.')
-                                          : 'You can receive and finalize eligible booking requests.',
+                                              'Unsettled cash service fees must be paid before marketplace participation.')
+                                          : 'You can join marketplace and direct booking requests.',
                                     ),
                                     if (walletBlocked) ...[
                                       const SizedBox(height: 10),
@@ -4806,13 +4808,13 @@ const providerWalletBlockFallbackReasonReadable =
     '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
 
 const providerWalletBlockHintReadable =
-    'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, marketplace opportunities stay visible but final gates wait for settlement or admin offset.';
+    'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, marketplace requests stay visible but participation waits for settlement or admin offset.';
 
 const providerWalletBlockFallbackReasonClean =
-    'HANDS fee settlement is incomplete, so final customer confirmation is waiting.';
+    'HANDS fee settlement is incomplete, so you cannot participate in this booking.';
 
 const providerWalletBlockHintClean =
-    'Cash jobs are paid directly to you. You can still appear in marketplace opportunities, but final acceptance requires settling unpaid HANDS fees or an admin offset.';
+    'Cash jobs are paid directly to you. Settle unpaid HANDS fees or receive an admin offset before joining marketplace requests or accepting direct requests.';
 
 num providerWalletBalance(Map<String, dynamic> summary) {
   return asNum(summary['walletBalance']) ??
@@ -4884,7 +4886,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
   if (providerWalletBlockReason(summary) == null) {
     return const [
       'Cash booking fees are settled.',
-      'You can accept direct and marketplace requests.',
+      'You can join marketplace and direct requests.',
       'Payout still needs tax, bank, and agreement checks.',
     ];
   }
@@ -4897,7 +4899,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
     if (reference != null)
       'Use reference $reference when sending the deposit or requesting admin offset.',
     'After admin confirms the deposit or offset, refresh wallet status.',
-    'Final acceptance, customer selection, service start, and payout release unlock when the wallet is no longer negative.',
+    'Marketplace participation, direct acceptance, customer selection, service start, and payout release unlock when the wallet is no longer negative.',
   ];
 }
 
@@ -4935,8 +4937,7 @@ ProviderRequestGuidance providerRequestGuidance({
       preferredProvider?['displayName']?.toString().trim();
   final hasChat = isProviderAppChatVisible(booking);
   final isMatched = booking['status'] == 'MATCHED';
-  final actionBlockedByWallet =
-      walletBlocked && isPreferredRequest && !isMatched;
+  final actionBlockedByWallet = walletBlocked && !isMatched;
   final responseWindowLabel = providerMatchingWindowText(booking);
   final backupRadiusLabel = providerBackupRadiusText(booking);
 
@@ -4963,9 +4964,9 @@ ProviderRequestGuidance providerRequestGuidance({
       roleLabel: roleLabel,
       decisionLabel: 'Settlement required',
       nextAction:
-          'Settle your negative HANDS wallet before finalizing this booking.',
+          'Settle your negative HANDS wallet before participating in this booking.',
       contextMessage:
-          'This booking is visible, but your wallet must be settled before final acceptance.',
+          'This booking is visible, but your wallet must be settled before you can join or accept it.',
       detailMessage: providerWalletBlockFallbackReasonClean,
       infoMessage: providerWalletBlockHintClean,
     );
