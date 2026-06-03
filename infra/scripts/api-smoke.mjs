@@ -2394,6 +2394,21 @@ const negativeWalletMarketplaceJoinError = await expectRequestFailure(
   400,
 );
 assertNegativeWalletBlockResponse('marketplace participation', negativeWalletMarketplaceJoinError);
+const adminBookingAfterBlockedMarketplaceJoin = (
+  await getJson('/admin/bookings', adminAuth.accessToken)
+).find((booking) => booking.id === blockedOpenMatchingBooking.id);
+const blockedMarketplaceParticipant =
+  adminBookingAfterBlockedMarketplaceJoin?.participants?.find(
+    (participant) =>
+      participant.providerProfileId === walletDebtProviderAuth.user.providerProfile.id,
+  );
+if (blockedMarketplaceParticipant) {
+  throw new Error(
+    `Wallet-blocked marketplace attempt should not create a participant record: ${JSON.stringify(
+      blockedMarketplaceParticipant,
+    )}`,
+  );
+}
 const payoutWalletBlockError = await expectRequestFailure(
   'Negative provider wallet holds payout batch creation',
   () =>
