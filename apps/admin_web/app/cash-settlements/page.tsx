@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { AdminCashSettlementSummary, AdminEarning, adminGet } from '../../lib/admin-api';
-import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import {
+  type AdminDateRange,
+  dateRangeLabel,
+  isInDateRange,
+  normalizeDateRange,
+  readSearchParam,
+} from '../../lib/date-range';
 import { settleCashFeeDebt } from './actions';
 
 type CashSettlementsPageProps = {
@@ -14,11 +20,14 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
     adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
   ]);
   const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
-  const rows = buildCashSettlementRows(filteredEarnings);
+  const allRowsInRange = buildCashSettlementRows(filteredEarnings);
+  const rows = applyCashSettlementRowFilters(allRowsInRange, filters);
   const providers = buildProviderGroups(rows);
   const visibleSummary = buildSummary(rows, providers);
   const summary =
-    filters.range === 'all' ? mergeAuthoritativeSummary(visibleSummary, apiSummary) : visibleSummary;
+    filters.range === 'all' && filters.queue === 'all' && !filters.q
+      ? mergeAuthoritativeSummary(visibleSummary, apiSummary)
+      : visibleSummary;
   const commandCards = buildCommandCards(rows, providers, summary);
   const evidenceChecklist = buildCashSettlementEvidenceChecklist(rows, providers, summary);
 
@@ -47,16 +56,52 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         </div>
         <div className="filter-row" style={{ marginTop: 12 }}>
           {[
-            ['All dates', '/cash-settlements'],
-            ['Today', '/cash-settlements?range=today'],
-            ['Last 7 days', '/cash-settlements?range=7d'],
-            ['Last 30 days', '/cash-settlements?range=30d'],
+            ['All dates', cashSettlementHref({ range: 'all', queue: filters.queue, q: filters.q })],
+            ['Today', cashSettlementHref({ range: 'today', queue: filters.queue, q: filters.q })],
+            ['Last 7 days', cashSettlementHref({ range: '7d', queue: filters.queue, q: filters.q })],
+            ['Last 30 days', cashSettlementHref({ range: '30d', queue: filters.queue, q: filters.q })],
           ].map(([label, href]) => (
             <Link className="filter-pill" href={href} key={href}>
               {label}
             </Link>
           ))}
         </div>
+        <form className="inline-form" style={{ marginTop: 12 }} action="/cash-settlements">
+          <input type="hidden" name="range" value={filters.range} />
+          <input
+            aria-label="Search cash settlement queue"
+            name="q"
+            defaultValue={filters.q}
+            placeholder="Partner, phone, booking, reference"
+          />
+          <select aria-label="Cash settlement queue" name="queue" defaultValue={filters.queue}>
+            <option value="all">All open debt</option>
+            <option value="stale">Over 24h</option>
+            <option value="high-debt">High debt</option>
+            <option value="missing-ref">No recorded ref</option>
+            <option value="payment-check">Payment evidence check</option>
+          </select>
+          <button type="submit">Apply</button>
+          <Link className="text-link" href="/cash-settlements">
+            Clear
+          </Link>
+        </form>
+        <div className="filter-row" style={{ marginTop: 12 }}>
+          {cashSettlementQueueOptions.map((option) => (
+            <Link
+              className="filter-pill"
+              href={cashSettlementHref({ range: filters.range, queue: option.value, q: filters.q })}
+              key={option.value}
+            >
+              {option.label}
+            </Link>
+          ))}
+        </div>
+        <p className="muted" style={{ marginTop: 10 }}>
+          Showing {rows.length} of {allRowsInRange.length} open cash debt row(s) for this date range.
+          {filters.q ? ` Search: "${filters.q}".` : ''}{' '}
+          {filters.queue !== 'all' ? `Queue: ${cashSettlementQueueLabel(filters.queue)}.` : ''}
+        </p>
       </section>
 
       <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
@@ -379,6 +424,22 @@ type CashSettlementSummary = {
   cashPaymentRowCount: number;
 };
 
+type CashSettlementQueueFilter = 'all' | 'stale' | 'high-debt' | 'missing-ref' | 'payment-check';
+
+type CashSettlementFilters = {
+  range: AdminDateRange;
+  queue: CashSettlementQueueFilter;
+  q: string;
+};
+
+const cashSettlementQueueOptions: Array<{ value: CashSettlementQueueFilter; label: string }> = [
+  { value: 'all', label: 'All open debt' },
+  { value: 'stale', label: 'Over 24h' },
+  { value: 'high-debt', label: 'High debt' },
+  { value: 'missing-ref', label: 'No recorded ref' },
+  { value: 'payment-check', label: 'Payment check' },
+];
+
 function buildCashSettlementRows(earnings: AdminEarning[]): CashSettlementRow[] {
   return earnings
     .filter((earning) => isOpenCashDebt(earning))
@@ -409,6 +470,57 @@ function buildCashSettlementRows(earnings: AdminEarning[]): CashSettlementRow[] 
       }
       return Date.parse(left.earning.createdAt ?? '') - Date.parse(right.earning.createdAt ?? '');
     });
+}
+
+function applyCashSettlementRowFilters(
+  rows: CashSettlementRow[],
+  filters: CashSettlementFilters,
+): CashSettlementRow[] {
+  const query = filters.q.trim().toLowerCase();
+  return rows.filter((row) => {
+    if (!cashSettlementRowMatchesQueue(row, filters.queue)) {
+      return false;
+    }
+    if (!query) {
+      return true;
+    }
+    return cashSettlementSearchText(row).includes(query);
+  });
+}
+
+function cashSettlementRowMatchesQueue(row: CashSettlementRow, queue: CashSettlementQueueFilter) {
+  switch (queue) {
+    case 'stale':
+      return cashSettlementRowAgeHours(row) >= 24;
+    case 'high-debt':
+      return row.debtAmount >= 500_000;
+    case 'missing-ref':
+      return !row.earning.settlementRef && !row.lastLedgerRef;
+    case 'payment-check':
+      return !row.earning.booking?.payment || row.paymentMethod !== 'CASH';
+    case 'all':
+    default:
+      return true;
+  }
+}
+
+function cashSettlementSearchText(row: CashSettlementRow) {
+  return [
+    row.providerName,
+    row.providerPhone,
+    row.earning.providerProfileId,
+    row.earning.bookingId,
+    row.earning.id,
+    row.settlementReference,
+    row.earning.settlementRef,
+    row.lastLedgerRef,
+    row.paymentMethod,
+    row.serviceLabel,
+    row.debtOrigin,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 }
 
 function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlementActionExecutionItem[] {
@@ -732,10 +844,40 @@ function partnerDisplayText(value: string) {
   return value.replace(/\bProvider\b/g, 'Partner').replace(/\bprovider\b/g, 'partner');
 }
 
-function buildCashSettlementFilters(params: Record<string, string | string[] | undefined>) {
+function buildCashSettlementFilters(
+  params: Record<string, string | string[] | undefined>,
+): CashSettlementFilters {
   return {
     range: normalizeDateRange(readSearchParam(params.range)),
+    queue: normalizeCashSettlementQueue(readSearchParam(params.queue)),
+    q: readSearchParam(params.q).trim(),
   };
+}
+
+function normalizeCashSettlementQueue(value: string): CashSettlementQueueFilter {
+  if (value === 'stale' || value === 'high-debt' || value === 'missing-ref' || value === 'payment-check') {
+    return value;
+  }
+  return 'all';
+}
+
+function cashSettlementQueueLabel(queue: CashSettlementQueueFilter) {
+  return cashSettlementQueueOptions.find((option) => option.value === queue)?.label ?? 'All open debt';
+}
+
+function cashSettlementHref(input: { range: AdminDateRange; queue?: CashSettlementQueueFilter; q?: string }) {
+  const params = new URLSearchParams();
+  if (input.range && input.range !== 'all') {
+    params.set('range', input.range);
+  }
+  if (input.queue && input.queue !== 'all') {
+    params.set('queue', input.queue);
+  }
+  if (input.q?.trim()) {
+    params.set('q', input.q.trim());
+  }
+  const query = params.toString();
+  return query ? `/cash-settlements?${query}` : '/cash-settlements';
 }
 
 function formatMoney(amount: number, currency: string) {

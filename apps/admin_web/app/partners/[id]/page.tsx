@@ -1511,7 +1511,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <div className={`card ${cardClass(bookingAcceptance.tone)}`} style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Booking participation gate decision</h2>
+            <h2>Final booking gate decision</h2>
             <p className="muted">
               Operator-facing decision for whether this partner can join marketplace demand or continue
               booking handoff right now.
@@ -3239,7 +3239,7 @@ function PartnerAcceptanceRepairCommandPanel({
     <div className={`card ${cardClass(command.tone)}`} style={{ marginBottom: 16 }}>
       <div className="risk-watch-header">
         <div>
-          <h2>Booking gate repair command</h2>
+          <h2>Final-gate repair command</h2>
           <p className="muted">
             Exact operator diagnosis for marketplace participation, customer handoff, app message, and
             finance repair.

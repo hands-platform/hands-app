@@ -988,7 +988,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner booking gate hold board</h2>
+            <h2>Partner final-gate hold board</h2>
             <p className="muted">
               Shows why partners cannot participate in marketplace demand or continue booking handoff before
               operators try to dispatch them. View-only marketplace demand is not treated as a partner action.
