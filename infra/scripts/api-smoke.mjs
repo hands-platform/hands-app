@@ -152,6 +152,11 @@ function assertNegativeWalletBlockResponse(label, message) {
   const requiredMarkers = [
     '"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"',
     '"walletBlocked":true',
+    '"marketplaceVisibilityBlocked":false',
+    '"marketplaceJoinBlocked":true',
+    '"directFirstPickBlocked":false',
+    '"alreadyMatchedServiceBlocked":false',
+    '"payoutReleaseBlocked":true',
     '"walletDebtAmount":',
     '"walletSettlementRequired":true',
     '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
@@ -2298,6 +2303,11 @@ const walletDebtProviderEarningsSummary = await getJson(
 if (
   walletDebtProviderEarningsSummary.walletBalance >= 0 ||
   walletDebtProviderEarningsSummary.walletBlocked !== true ||
+  walletDebtProviderEarningsSummary.marketplaceVisibilityBlocked !== false ||
+  walletDebtProviderEarningsSummary.marketplaceJoinBlocked !== true ||
+  walletDebtProviderEarningsSummary.directFirstPickBlocked !== false ||
+  walletDebtProviderEarningsSummary.alreadyMatchedServiceBlocked !== false ||
+  walletDebtProviderEarningsSummary.payoutReleaseBlocked !== true ||
   walletDebtProviderEarningsSummary.walletDebtAmount <= 0 ||
   walletDebtProviderEarningsSummary.walletBlockCode !== 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT' ||
   walletDebtProviderEarningsSummary.walletSettlementRequired !== true ||
