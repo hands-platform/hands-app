@@ -533,6 +533,56 @@ export function BookingMonitor({
       href: '/bookings?view=blocked-create',
     },
   ];
+  const operatorRouteCards = [
+    {
+      label: 'Handle first',
+      value: topNextAction?.priority ?? 'Clear',
+      detail: topNextAction?.operatorAction ?? 'No urgent booking action is waiting right now.',
+      href: topNextAction?.href ?? '/bookings?view=active',
+    },
+    {
+      label: 'First-pick wait',
+      value: `${bookingViewCounts.get('first-pick') ?? 0}`,
+      detail: 'Preferred partner has the 10-minute response window before wider marketplace pressure.',
+      href: '/bookings?view=first-pick',
+    },
+    {
+      label: 'Marketplace pool',
+      value: `${bookingViewCounts.get('marketplace') ?? 0}`,
+      detail: 'Partners within the booking-address radius can join and remain visible to the customer.',
+      href: '/bookings?view=marketplace',
+    },
+    {
+      label: 'Customer choice',
+      value: `${bookingViewCounts.get('customer-choice') ?? 0}`,
+      detail: 'Customer must select the final partner. The system never auto-assigns.',
+      href: '/bookings?view=customer-choice',
+    },
+    {
+      label: 'Chat repair',
+      value: `${bookingViewCounts.get('chat-repair') ?? 0}`,
+      detail: 'Matched or started service records that need chat-room integrity checked.',
+      href: '/bookings?view=chat-repair',
+    },
+    {
+      label: 'Cash debt gate',
+      value: `${bookingViewCounts.get('cash-debt') ?? 0}`,
+      detail: 'Cash bookings that can create partner fee debt and block marketplace participation.',
+      href: '/bookings?view=cash-debt',
+    },
+    {
+      label: 'Closeout',
+      value: `${bookingViewCounts.get('closeout') ?? 0}`,
+      detail: 'Completed bookings needing earning, tax, wallet, or evidence closeout checks.',
+      href: '/bookings?view=closeout',
+    },
+    {
+      label: 'Create rejections',
+      value: `${orderedBookingCreateRejections.length}`,
+      detail: bookingGateRejectionLane.detail,
+      href: '/bookings?view=blocked-create',
+    },
+  ];
 
   useEffect(() => {
     const mountTimer = window.setTimeout(() => {
@@ -606,6 +656,28 @@ export function BookingMonitor({
         </div>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {commandSummaryCards.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={item.label}>
+              <span className="signal signal-info">{item.label}</span>
+              <h3>{item.value}</h3>
+              <p>{item.detail}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operations route map</h2>
+            <p className="muted">
+              Follow the actual HANDS booking path from direct first-pick to 10km marketplace,
+              customer selection, chat repair, cash fee debt, and closeout.
+            </p>
+          </div>
+          <span className="pill pill-info">No auto assignment</span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          {operatorRouteCards.map((item) => (
             <Link className="ops-task-card" href={item.href} key={item.label}>
               <span className="signal signal-info">{item.label}</span>
               <h3>{item.value}</h3>

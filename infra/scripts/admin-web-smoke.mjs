@@ -98,6 +98,7 @@ const pages = [
     markers: [
       'Booking Monitor',
       'Booking operations command summary',
+      'Booking operations route map',
       'Matching escalation board',
       'Matching flow timeline',
       'Marketplace participation',
