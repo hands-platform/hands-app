@@ -550,6 +550,7 @@ const requestedSmokePaths = ((process.env.ADMIN_WEB_SMOKE_PATHS ?? '') || reques
   .filter(Boolean);
 const smokePages =
   requestedSmokePaths.length > 0 ? pages.filter((page) => requestedSmokePaths.includes(page.path)) : pages;
+const FETCH_TIMEOUT_MS = Number(process.env.ADMIN_WEB_SMOKE_FETCH_TIMEOUT_MS ?? 20_000);
 
 if (requestedSmokePaths.length > 0 && smokePages.length === 0) {
   throw new Error(`No admin smoke pages matched ADMIN_WEB_SMOKE_PATHS=${requestedSmokePaths.join(',')}`);
@@ -558,13 +559,16 @@ if (requestedSmokePaths.length > 0 && smokePages.length === 0) {
 async function fetchPage(path, redirectDepth = 0, attempt = 0) {
   let response;
   try {
-    response = await fetch(`${baseUrl}${path}`, { redirect: 'manual' });
+    response = await fetch(`${baseUrl}${path}`, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
   } catch (error) {
     if (attempt < 6) {
       await delay(1_000 * (attempt + 1));
       return fetchPage(path, redirectDepth, attempt + 1);
     }
-    throw error;
+    throw new Error(`${path} failed after ${attempt + 1} attempt(s): ${error.message}`);
   }
   const body = await response.text();
   if ([307, 308].includes(response.status) && redirectDepth < 3) {
