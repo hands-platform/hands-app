@@ -4897,27 +4897,11 @@ class ProviderMvpScreen extends StatelessWidget {
   }
 }
 
-const providerWalletBlockFallbackReason = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
-
-const providerWalletBlockHint =
-    '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
-
-const providerWalletBlockFallbackReasonKo = '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
-
-const providerWalletBlockHintKo =
-    '현금 결제로 발생한 HANDS 수수료를 정산하면 다시 예약을 받을 수 있습니다. Earnings 탭에서 마이너스 월렛을 확인하세요.';
-
-const providerWalletBlockFallbackReasonReadable =
-    '수수료 정산이 완료되지 않아 예약을 받을 수 없습니다.';
-
-const providerWalletBlockHintReadable =
-    'Cash bookings are paid directly to you. If HANDS fees, tax withholding, or platform costs create a negative wallet, marketplace requests stay visible but participation waits for settlement or admin offset.';
-
 const providerWalletBlockFallbackReasonClean =
-    'HANDS fee settlement is incomplete, so you cannot participate in this booking.';
+    'Unpaid HANDS fees must be settled before you can join marketplace requests or accept direct bookings.';
 
 const providerWalletBlockHintClean =
-    'Cash jobs are paid directly to you. Settle unpaid HANDS fees or receive an admin offset before joining marketplace requests or accepting direct requests.';
+    'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before joining marketplace requests or accepting direct work.';
 
 num providerWalletBalance(Map<String, dynamic> summary) {
   return asNum(summary['walletBalance']) ??
