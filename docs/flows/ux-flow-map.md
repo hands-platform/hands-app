@@ -27,7 +27,7 @@ Admin web uses sidebar navigation:
 - Bookings
 - Matching
 - Payments
-- Reviews/Reports
+- Feedback/Reports
 - Coupons
 - Analytics
 - Audit Log
@@ -36,7 +36,7 @@ Admin web uses sidebar navigation:
 
 ```mermaid
 flowchart TD
-  A["Launch"] --> B["Location Permission"]
+  A["Launch"] --> B["Address Selection"]
   B --> C["Distance-Sorted Partner Discovery"]
   C --> D["Partner Detail"]
   D --> E["Review Profile / Reviews / Services"]
@@ -51,7 +51,7 @@ flowchart TD
   M --> N["Partner On The Way"]
   N --> O["In Service"]
   O --> P["Complete"]
-  P --> Q["Review"]
+  P --> Q["Factual Feedback"]
 ```
 
 ## Reference Dynamic Flow Notes

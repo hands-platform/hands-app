@@ -1,47 +1,33 @@
-# Feature Inventory From Reference APK
+# Reference APK Feature Inventory
 
-## Customer Features
+Historical reference only. This file records broad feature categories observed in the reference app and how HANDS interprets them.
 
-- Splash, onboarding carousel, language and region choice
-- Phone OTP auth and password reset/create flows
-- Location and push permission prompts
-- Home with location selector, notification/chat shortcuts, service category cards, support affordance, and bottom tabs
-- Service list, therapist/provider list, search, filter chips, sort controls, provider cards, therapist detail
-- Provider cards include image, display name, rating/review count, distance, earliest availability, and booking CTA
-- Booking CTA routes unauthenticated users to Google/phone auth gate
-- Saved addresses with map pin/search
-- Booking form with time, address, contact, notes, coupon
-- Checkout with wallet/card/cash-like methods and gateway WebView
-- Booking complete and live order detail/status timeline
-- Cancellation reason and penalty flows
-- Chat list and chat detail with media/location affordances
-- Notifications, favorites, order history
-- Profile, wallet, transactions, recharge/withdraw, reference-app VIP/subscription, referral
+## Reference Categories
 
-## Provider/Staff Features
+- Customer onboarding, language, auth, location permission, service browsing, partner list/detail, booking, payment, order status, chat, notifications, profile, wallet/history.
+- Staff/partner onboarding, identity verification, availability, service pricing, order list/detail, accept/reject/complete actions, chat, earnings/withdrawal.
+- Store/manager concepts and membership/subscription concepts existed in the reference app, but are not part of HANDS MVP.
 
-- Staff registration entry and role selection
-- Staff profile form and introduction
-- Identity verification with ID/passport/self image
-- Verification pending/approved/denied states
-- Staff home/dashboard with quality/rank/earnings indicators
-- Availability, schedule/work time, services and pricing
-- Staff order list and order detail
-- Accept/reject/confirm/check-in/complete-style actions
-- Customer chat, support chat, review list, wallet/reward/withdrawal
+## HANDS MVP Translation
 
-## Store/Manager Features
+HANDS keeps:
 
-- Store/station list and detail
-- Store orders
-- Store members
-- Store service/program tree
-- Store owner chat
+- address selection
+- partner list and detail
+- service and duration selection
+- booking confirmation
+- first-pick partner request
+- marketplace partner candidates
+- customer final partner selection
+- chat archive
+- service completion
+- factual feedback records
 
-## MVP Translation
+HANDS excludes:
 
-The MVP keeps the broad screen order and navigation hierarchy, but changes the core booking model into open matching:
-
-`service -> partner list/detail -> booking confirmation -> open matching -> partner participants -> customer selects final partner -> chat/location/service lifecycle -> review/feedback`
-
-Reference-app VIP/subscription and gratuity-like flows are recorded only as analysis findings. They are not part of the HANDS MVP operating model.
+- reference brand identity
+- store/station/franchise model
+- VIP/subscription/loyalty
+- customer tips/gratuity
+- automatic partner assignment
+- customer/partner scoring or ranking
