@@ -418,7 +418,7 @@ function checkBookingDetailIsSourceOfTruth() {
     'wallet gate',
     'Connected operations records',
     'Operator action availability',
-    'Final gate reason',
+    'Booking gate reason',
     'Booking full record index',
     'Finance trace',
     'Cash settlement desk',

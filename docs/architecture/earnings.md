@@ -53,7 +53,7 @@ Admin refunds cancel unpaid earnings and set their net amount to zero. If an ear
 
 ## Partner Wallet Guard
 
-For the MVP, the partner wallet guard still reads unsettled `ProviderEarning.netAmount` totals because that keeps final-gate checks fast and simple:
+For the MVP, the partner wallet guard still reads unsettled `ProviderEarning.netAmount` totals because that keeps marketplace and payout checks fast and simple:
 
 - Positive delta: HANDS owes money to the partner.
 - Negative delta: the partner owes HANDS fees/tax from cash bookings.

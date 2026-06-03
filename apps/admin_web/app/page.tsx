@@ -502,7 +502,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Cash debt',
       money(cashDebtAmount, earnings.currency),
-      `${cashSettlementSummary.providerCount} partner(s), ${cashSettlementSummary.rowCount} debt row(s) gating final acceptance.`,
+      `${cashSettlementSummary.providerCount} partner(s), ${cashSettlementSummary.rowCount} debt row(s) blocking marketplace join and payout release.`,
     ],
     [
       'Open payout batches',
@@ -564,7 +564,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       href: '/partners',
       primary: 'Partner list and partner detail',
       helper:
-        'KYC, service setup, final acceptance gates, app activity, location freshness, tax, payout, and account controls.',
+        'KYC, service setup, marketplace access, app activity, location freshness, tax, payout, and account controls.',
       links: [
         ['Partners', '/partners'],
         ['Partner controls', '/partner-controls'],
@@ -790,7 +790,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <strong>{cashSettlementSummary.rowCount}</strong>
             <small>
               <Link className="text-link" href="/cash-settlements">
-                Cash fee debt rows before final acceptance
+                Cash fee debt rows before marketplace join
               </Link>
             </small>
           </div>
@@ -1012,7 +1012,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <h2>Shift operating route</h2>
             <p className="muted">
               Click-through route for the control room. It keeps live booking work, customer final choice,
-              partner supply, chat archive, and finance final gates in the same operating order.
+              partner supply, chat archive, marketplace gates, and payout release in the same operating order.
             </p>
           </div>
           <Link className="text-link" href={shiftOperatingRoute[0]?.href ?? '/bookings'}>
@@ -1772,7 +1772,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <span>Cash debt gate</span>
               <strong>{partnerSupply.cashDebtPartners}</strong>
-              <small>Must settle before final acceptance</small>
+              <small>Must settle before marketplace join</small>
             </div>
             <div>
               <span>Verification queue</span>
@@ -1842,7 +1842,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Partner dispatch control</h2>
             <p className="muted">
-              Partner checklist queue for final-gate blockers, location readiness, first-revenue payout
+              Partner checklist queue for marketplace blockers, location readiness, first-revenue payout
               requirements, and app contactability.
             </p>
           </div>
@@ -1884,7 +1884,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <span>Blocked now</span>
             <strong>{partnerOpsQueue.blockedNow}</strong>
-            <small>Final gate or account control held</small>
+            <small>Marketplace or account control held</small>
           </div>
           <div>
             <span>Needs payout setup</span>
@@ -1907,10 +1907,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       <section className="card" style={{ marginTop: 20 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Final-gate unblock quick order</h2>
+            <h2>Marketplace unblock quick order</h2>
             <p className="muted">
-              First-screen sequence for clearing partner final-gate holds. Tax setup stays as a
-              post-first-earning payout gate, not an initial booking gate.
+              First-screen sequence for clearing partner marketplace holds. Tax setup stays as a
+              post-first-earning payout gate, not an initial marketplace gate.
             </p>
           </div>
           <Link className="text-link" href="/partner-controls">
@@ -3092,10 +3092,10 @@ function buildTodayCommandOrder(input: {
       title: 'Cash fee settlement gate',
       value: `${input.cashSettlementSummary.providerCount} partner(s)`,
       detail: input.cashSettlementSummary.providerCount
-        ? `${money(
+          ? `${money(
             input.cashSettlementSummary.totalDebtAmount,
             input.cashSettlementSummary.currency,
-          )} in open cash fee debt can gate final acceptance or customer selection until settled.`
+          )} in open cash fee debt blocks marketplace join and payout release until settled.`
         : 'No negative wallet cash fee block is loaded in the current snapshot.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
@@ -3199,14 +3199,14 @@ function buildShiftOperatingRoute(input: {
       tone: customerChoiceRows || chatHandoffRows ? 'info' : 'ok',
     },
     {
-      lane: 'Finance final-gate route',
+      lane: 'Finance settlement route',
       owner: 'Finance',
-      title: 'Clear cash fee debt before final gates',
+      title: 'Clear cash fee debt before marketplace join',
       value: `${input.cashSettlementSummary.providerCount} partner(s)`,
       checkpoint:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet partners can view marketplace requests, but participation, final acceptance, and customer selection wait for settlement.'
-          : 'No cash fee debt is gating final acceptance or customer selection.',
+          ? 'Negative wallet partners can view marketplace requests, but marketplace join and payout release wait for settlement.'
+          : 'No cash fee debt is blocking marketplace join or payout release.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
     },
@@ -3817,8 +3817,8 @@ function buildLiveOperationsRadar(input: {
       status: input.cashSettlementSummary.providerCount ? 'Gate' : 'Clear',
       detail:
         input.cashSettlementSummary.providerCount > 0
-          ? 'Negative wallet partners can see marketplace requests but cannot join, but final acceptance waits for cash fee settlement.'
-          : 'No cash fee debt is currently blocking final acceptance or customer selection.',
+          ? 'Negative wallet partners can see marketplace requests but cannot join until cash fee settlement is confirmed.'
+          : 'No cash fee debt is currently blocking marketplace join or payout release.',
       href: '/cash-settlements',
       tone: input.cashSettlementSummary.providerCount ? 'danger' : 'ok',
       checks: [
@@ -4308,7 +4308,7 @@ function buildDashboardAcceptanceUnblockQuickOrder(input: {
       owner: 'Finance',
       title: 'Clear cash fee debt',
       detail:
-        'Negative wallet partners can view marketplace requests, but participation, direct acceptance, customer selection, service start, and payout release are blocked.',
+        'Negative wallet partners can view marketplace requests, but marketplace join and payout release are blocked until settlement.',
       metricLabel: 'Debt partners',
       metricValue: input.cashSettlementSummary.providerCount.toString(),
       action: 'Open cash settlements',
@@ -4435,7 +4435,7 @@ function buildPartnerOpsQueueItem(
       name,
       status: 'Cash debt block',
       detail:
-        'Partner wallet is negative from cash fee/tax debt. Final acceptance or customer selection waits until finance records a deposit or offset.',
+        'Partner wallet is negative from cash fee/tax debt. Marketplace join and payout release wait until finance records a deposit or offset.',
       action: 'Open partner finance',
       href,
       className: 'ops-task-blocked',
@@ -5032,8 +5032,8 @@ function buildDashboardCommandSignals(input: {
       title: 'Cash settlement lane',
       status: cashDebtRowCount ? `${cashDebtRowCount} DEBT` : 'CLEAR',
       detail: cashDebtRowCount
-        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} partner cash fee/tax debt across ${cashDebtProviderCount} partner(s) must be collected or offset before final acceptance or customer selection.`
-        : 'No open cash fee debt is gating final acceptance or customer selection.',
+        ? `${money(cashDebtAmount, input.cashSettlementSummary.currency)} partner cash fee/tax debt across ${cashDebtProviderCount} partner(s) must be collected or offset before marketplace join or payout release.`
+        : 'No open cash fee debt is blocking marketplace join or payout release.',
       action: 'Open cash settlements',
       href: '/cash-settlements',
       priority: cashDebtRowCount ? 94 : 12,
@@ -5324,12 +5324,12 @@ function buildOpsQueue(input: {
       area: 'Finance',
       href: '/cash-settlements',
       label: 'Partner cash fee debt open',
-      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before final acceptance or customer selection.`,
+      detail: `${earning.providerProfile?.displayName ?? 'Partner'} owes ${money(Math.abs(earning.netAmount), earning.currency)} before marketplace join or payout release.`,
       severity: 'high',
       owner: 'Finance',
       priority: 98,
       recommendedAction:
-        'Collect the company fee deposit or offset it before this partner completes final acceptance.',
+        'Collect the company fee deposit or offset it before this partner joins marketplace demand again.',
     });
   }
 
@@ -5618,7 +5618,7 @@ function buildOperatorStartChecklist(input: {
       title: 'Clear acceptance blockers',
       status: cashDebtPartners || highQueueCount ? 'Blocked work' : 'No hard block',
       detail: cashDebtPartners
-        ? `${cashDebtPartners} partner(s) have cash fee or tax debt gating final acceptance or customer selection.`
+        ? `${cashDebtPartners} partner(s) have cash fee or tax debt blocking marketplace join and payout release.`
         : `${highQueueCount} checklist item(s), ${input.bookingOps.completedCloseoutChecks} closeout check(s).`,
       action: cashDebtPartners ? 'Open cash settlements' : 'Open checklist queue',
       href: cashDebtPartners ? '/cash-settlements' : '/?review=priority',

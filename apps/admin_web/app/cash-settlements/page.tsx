@@ -28,6 +28,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
     filters.range === 'all' && filters.queue === 'all' && !filters.q
       ? mergeAuthoritativeSummary(visibleSummary, apiSummary)
       : visibleSummary;
+  const debtCauseCards = buildDebtCauseCards(rows, summary);
   const commandCards = buildCommandCards(rows, providers, summary);
   const evidenceChecklist = buildCashSettlementEvidenceChecklist(rows, providers, summary);
 
@@ -140,6 +141,33 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           </h2>
         </div>
       </section>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Debt cause board</h2>
+            <p className="muted">
+              Factual breakdown of why partner wallets are negative. Use this before contacting a partner or
+              approving an admin offset.
+            </p>
+          </div>
+          <Link className="text-link" href="/payments?review=cash-debt">
+            Review cash payments
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {debtCauseCards.map((card) => (
+            <div className={`ops-task-card ${card.className}`} key={card.title}>
+              <div>
+                <span className={`pill ${card.pillClass}`}>{card.status}</span>
+                <h3>{card.title}</h3>
+                <p className="muted">{card.detail}</p>
+              </div>
+              <small>{card.action}</small>
+            </div>
+          ))}
+        </div>
+      </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -560,7 +588,7 @@ function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlemen
           ? `${formatMoney(row.debtAmount, row.earning.currency)} remains as HANDS fee/tax wallet debt.`
           : 'No open wallet debt remains on this earning row.',
       operatorRule:
-        'Settle only after deposit evidence or approved offset; marketplace participation and booking handoff stay gated until cleared.',
+        'Settle only after deposit evidence or approved offset; marketplace join and payout release stay gated until cleared.',
       pillClass: row.debtAmount > 0 ? 'pill-danger' : 'pill-success',
     },
     {
@@ -608,7 +636,7 @@ function buildCashSettlementEvidenceChecklist(
       title: 'Wallet participation gate',
       status: `${summary.providerCount} Partner(s)`,
       detail:
-        'Negative wallet partners can see marketplace demand, but cannot join marketplace bookings or continue booking handoff.',
+        'Negative wallet partners can see marketplace demand, but cannot join marketplace bookings until settlement is confirmed.',
       operatorRule: 'Reopen marketplace participation only after settlement or approved offset is recorded.',
       href: '/partner-controls',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
@@ -733,7 +761,7 @@ function buildCommandCards(
         summary.currency,
       )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
       action: summary.providerCount
-        ? 'Collect partner deposit or approve admin offset before marketplace participation or direct acceptance resumes.'
+        ? 'Collect partner deposit or approve admin offset before marketplace join or payout release resumes.'
         : 'No wallet is currently blocked by cash fee debt.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
@@ -779,6 +807,81 @@ function buildCommandCards(
         : 'Rows are ready for finance confirmation.',
       className: summary.missingPaymentEvidenceCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.missingPaymentEvidenceCount ? 'pill-danger' : 'pill-success',
+    },
+  ];
+}
+
+function buildDebtCauseCards(rows: CashSettlementRow[], summary: CashSettlementSummary): CommandCard[] {
+  const cashRows = rows.filter((row) => row.paymentMethod === 'CASH');
+  const taxRows = rows.filter((row) => row.taxAmount > 0);
+  const feeOnlyRows = rows.filter((row) => row.platformFee > 0 && row.taxAmount <= 0);
+  const missingEvidenceRows = rows.filter((row) => !row.earning.booking?.payment || row.paymentMethod !== 'CASH');
+  const staleRows = rows.filter((row) => cashSettlementRowAgeHours(row) >= 24);
+
+  return [
+    {
+      title: 'Cash collected by partner',
+      status: `${cashRows.length} ROW(S)`,
+      detail: `${formatMoney(
+        cashRows.reduce((sum, row) => sum + row.bookingAmount, 0),
+        summary.currency,
+      )} customer cash was collected outside the platform and needs HANDS fee reconciliation.`,
+      action: cashRows.length
+        ? 'Ask for company-fee deposit evidence or approve an admin offset.'
+        : 'No visible row is tied to a cash payment.',
+      className: cashRows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: cashRows.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Platform fee debt',
+      status: `${feeOnlyRows.length} FEE ROW(S)`,
+      detail: `${formatMoney(
+        rows.reduce((sum, row) => sum + row.platformFee, 0),
+        summary.currency,
+      )} HANDS fee remains open across visible rows.`,
+      action: 'This is the main reason marketplace join is blocked while the wallet is negative.',
+      className: rows.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: rows.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Tax withholding part',
+      status: `${taxRows.length} TAX ROW(S)`,
+      detail: `${formatMoney(
+        taxRows.reduce((sum, row) => sum + row.taxAmount, 0),
+        summary.currency,
+      )} tax withholding is included in the negative-wallet calculation.`,
+      action: taxRows.length
+        ? 'Check tax policy version before approving an offset.'
+        : 'No tax withholding is attached to visible rows.',
+      className: taxRows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: taxRows.length ? 'pill-info' : 'pill-success',
+    },
+    {
+      title: 'Evidence gaps',
+      status: `${missingEvidenceRows.length} CHECK`,
+      detail: missingEvidenceRows.length
+        ? 'Some rows lack cash payment evidence or are not marked CASH in the linked payment payload.'
+        : 'Visible rows have cash payment evidence attached.',
+      action: missingEvidenceRows.length
+        ? 'Open booking/payment detail before settlement.'
+        : 'Rows are ready for finance evidence confirmation.',
+      className: missingEvidenceRows.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: missingEvidenceRows.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Aging follow-up',
+      status: `${staleRows.length} OVER 24H`,
+      detail: staleRows.length
+        ? `${formatMoney(
+            staleRows.reduce((sum, row) => sum + row.debtAmount, 0),
+            summary.currency,
+          )} has been open longer than the first finance follow-up window.`
+        : 'No visible debt is older than 24 hours.',
+      action: staleRows.length
+        ? 'Prioritize partner contact and evidence collection.'
+        : 'Normal settlement cadence is enough.',
+      className: staleRows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: staleRows.length ? 'pill-warn' : 'pill-success',
     },
   ];
 }

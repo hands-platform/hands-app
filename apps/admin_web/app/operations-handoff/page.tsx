@@ -897,12 +897,12 @@ function buildImmediateActionQueue(input: {
       owner: 'Finance',
       title: 'Cash fee wallet gate',
       detail:
-        'Partners with negative wallet from cash bookings can stay visible, but final acceptance waits for settlement.',
+        'Partners with negative wallet from cash bookings can stay visible, but marketplace join and payout release wait for settlement.',
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,
       status: input.cashSummary.providerCount ? 'Collect/offset' : 'Clear',
-      nextAction: 'Open cash settlements and record deposit or offset before future acceptance.',
+      nextAction: 'Open cash settlements and record deposit or offset before future marketplace participation.',
       className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
       statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
     },
@@ -923,7 +923,7 @@ function buildImmediateActionQueue(input: {
       id: 'partner-admin-facts',
       owner: 'Partner Ops',
       title: 'Partner factual follow-up',
-      detail: 'Partner list groups KYC, bank, wallet, location, app session, and acceptance gate facts.',
+      detail: 'Partner list groups KYC, bank, wallet, location, app session, marketplace, and payout gate facts.',
       href: '/partners',
       count: input.partnerSignals.attentionCount,
       countLabel: `${input.partnerSignals.attentionCount} partner fact(s)`,
@@ -1043,7 +1043,7 @@ function buildFinanceHandoffActionMap(input: {
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,
       status: input.cashSummary.providerCount ? 'Settle' : 'Clear',
-      nextAction: 'Record deposit reference or approved offset before final acceptance gates are reopened.',
+      nextAction: 'Record deposit reference or approved offset before marketplace participation or payout release reopens.',
       className: input.cashSummary.providerCount ? 'signal signal-danger' : 'signal signal-ok',
       statusClass: input.cashSummary.providerCount ? 'pill pill-danger' : 'pill pill-success',
     },
@@ -1497,7 +1497,7 @@ function buildPartnerSignals(partners: AdminProvider[], cashSummary: AdminCashSe
         status,
         detail: `${completed} completed booking(s), ${partner.status}, location ${partner.currentLocationUpdatedAt ? relativeTime(partner.currentLocationUpdatedAt) : 'not shared'}.`,
         action: hasCashDebt
-          ? 'Open cash settlement before final acceptance or customer selection.'
+          ? 'Open cash settlement before marketplace participation or payout release.'
           : hasKycPending
             ? 'Open partner documents for review.'
             : hasBankPending

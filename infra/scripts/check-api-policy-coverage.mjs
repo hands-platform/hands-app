@@ -161,7 +161,7 @@ const requiredCoverage = [
     markers: [
       'Cash booking did not create a negative provider wallet',
       'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
-      'Negative wallet should not block preferred direct acceptance',
+      'Negative wallet should not block preferred direct request acceptance',
       'Negative wallet should not block customer final selection after a partner already joined',
       'Negative wallet should not block starting a booking that is already matched',
       'Negative wallet partner should still see marketplace request before settlement',

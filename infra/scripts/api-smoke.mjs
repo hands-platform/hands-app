@@ -2346,7 +2346,7 @@ const directAcceptedWithDebt = await postJson(
 );
 if (!['OPEN_MATCHING', 'MATCHED'].includes(directAcceptedWithDebt.status)) {
   throw new Error(
-    `Negative wallet should not block preferred direct acceptance: ${JSON.stringify(directAcceptedWithDebt)}`,
+    `Negative wallet should not block preferred direct request acceptance: ${JSON.stringify(directAcceptedWithDebt)}`,
   );
 }
 const customerSelectedDebtParticipant = await postJson(

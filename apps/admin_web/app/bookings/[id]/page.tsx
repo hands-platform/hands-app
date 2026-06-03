@@ -1579,9 +1579,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
         </div>
         <div className="ops-task-note" style={{ marginTop: 14 }}>
-          <div className={`ops-task-card ${finalGateReason.className}`} id="final-gate-reason">
+          <div className={`ops-task-card ${finalGateReason.className}`} id="booking-gate-reason">
             <div>
-              <span className={`pill ${finalGateReason.pillClass}`}>Final gate reason</span>
+              <span className={`pill ${finalGateReason.pillClass}`}>Booking gate reason</span>
               <h3>{finalGateReason.title}</h3>
               <p>{finalGateReason.detail}</p>
             </div>
@@ -1629,7 +1629,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               <tbody>
                 <tr>
                   <td>
-                    <strong>Final gate reason</strong>
+                    <strong>Booking gate reason</strong>
                   </td>
                   <td>
                     <span className={`pill ${finalGateReason.pillClass}`}>{finalGateReason.title}</span>
@@ -3051,7 +3051,7 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       status: cashDebt ? 'Available' : 'Locked',
       tone: cashDebt ? 'pill-danger' : 'pill-neutral',
       evidence: cashDebt
-        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} keeps marketplace participation and booking handoff blocked.`
+        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} keeps marketplace join and payout release blocked.`
         : booking.payment?.method === 'CASH'
           ? 'Cash booking has no active negative wallet block.'
           : `${booking.payment?.method ?? 'No method'} booking.`,
@@ -3556,7 +3556,7 @@ function bookingDecisionEvidenceGuardrails({
       id: 'finance-cash-debt',
       title: 'Finance: cash fee debt gate',
       scope:
-        'Cash bookings can create partner fee debt; negative wallet blocks final acceptance and payout release.',
+        'Cash bookings can create partner fee debt; negative wallet blocks marketplace join and payout release.',
       status: cashDebt
         ? 'Settlement required'
         : booking.payment?.method === 'CASH'
@@ -3829,7 +3829,7 @@ function bookingManualDecisionReadiness({
     },
     {
       lane: 'Cash fee settlement',
-      scope: 'Cash bookings can create partner fee debt; debt blocks final acceptance until settled.',
+      scope: 'Cash bookings can create partner fee debt; debt blocks marketplace join and payout release until settled.',
       status: cashDebt
         ? 'Settlement required'
         : booking.payment?.method === 'CASH'
@@ -3840,7 +3840,7 @@ function bookingManualDecisionReadiness({
         ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
         : `${booking.payment?.method ?? 'NONE'} / ${booking.payment?.status ?? 'NONE'}`,
       operatorUse:
-        'If debt exists, confirm company fee deposit or admin offset before future final acceptance is unlocked.',
+        'If debt exists, confirm company fee deposit or admin offset before marketplace join or payout release is unlocked.',
       href: '#finance',
     },
     {
@@ -3965,7 +3965,7 @@ function bookingDecisionNotePresets({
       detail:
         'Use when cash collection created a partner wallet debt that should be cleared by deposit or offset.',
       preset:
-        'Cash settlement note: partner cash-fee debt remains open; final acceptance/service/payout gates should stay blocked until company deposit or admin offset is verified.',
+        'Cash settlement note: partner cash-fee debt remains open; marketplace join and payout release should stay blocked until company deposit or admin offset is verified.',
     });
   }
 
@@ -4055,7 +4055,7 @@ function buildBookingEvidenceBundleRows({
       evidence: finalPartner
         ? `${providerName(finalPartner)} / ${providerLocationMetricValue(booking)}`
         : `${booking.participants?.length ?? 0} participant row(s), ${acceptedParticipants} accepted row(s)`,
-      operatorUse: 'Confirm the customer final partner selection and final-gate settlement requirements.',
+      operatorUse: 'Confirm the customer final partner selection and marketplace/payout settlement requirements.',
       href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
     },
     {
@@ -4229,7 +4229,7 @@ function buildBookingCloseoutChecklist({
         ? `${financeTrace.walletLedger}. Partner can view marketplace requests, but participation is held until settled or offset.`
         : `${booking.payment?.method ?? 'NONE'} payment / customer ${financeTrace.customerPrice} / partner ${financeTrace.providerPayout}.`,
       operatorRule:
-        'Cash fee debt must be resolved before final acceptance, service start, or payout batch release.',
+        'Cash fee debt must be resolved before marketplace join or payout batch release.',
       href: cashDebt ? '/cash-settlements' : '#finance',
       className: cashDebt ? 'ops-task-blocked' : booking.payment ? 'ops-task-done' : 'ops-task-warning',
       pillClass: cashDebt ? 'pill-danger' : booking.payment ? 'pill-success' : 'pill-warn',
@@ -4402,7 +4402,7 @@ function bookingPayoutBatchEligibility({
         ? `${financeTrace.walletLedger}. Settle company fee debt before batch release.`
         : `Wallet impact ${financeTrace.walletLedger}.`,
       operatorRule:
-        'Negative wallet partners can see the marketplace list, but cannot join or continue booking handoff until deposit or admin offset evidence clears the debt.',
+        'Negative wallet partners can see the marketplace list, but cannot join marketplace bookings or receive payout release until deposit or admin offset evidence clears the debt.',
       href: cashDebt ? '/cash-settlements' : '#finance',
       className: cashDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebt ? 'pill-danger' : 'pill-success',
@@ -4460,9 +4460,9 @@ function buildBookingFinalGateReason({
   if (bookingCashDebtNeedsSettlement(booking)) {
     return {
       title: 'Wallet debt gate',
-      detail: `${financeTrace.walletLedger}. Partner can see marketplace requests, but marketplace join, direct acceptance, customer selection, service start, and payout release wait for settlement or approved offset.`,
+      detail: `${financeTrace.walletLedger}. Partner can see marketplace requests, but marketplace join and payout release wait for settlement or approved offset.`,
       operatorRule:
-        'Collect the HANDS cash fee deposit or approve a documented offset before reopening marketplace and booking handoff gates.',
+        'Collect the HANDS cash fee deposit or approve a documented offset before reopening marketplace participation or payout release.',
       className: 'ops-task-blocked',
       pillClass: 'pill-danger',
     };
@@ -4541,7 +4541,7 @@ function buildBookingFinalGateReason({
   return {
     title: 'Gate clear',
     detail:
-      'No final acceptance blocker is visible on this booking. Continue using factual payment, chat, location, and closeout records.',
+      'No marketplace or payout blocker is visible on this booking. Continue using factual payment, chat, location, and closeout records.',
     operatorRule: 'Keep manual outcomes evidence-based; do not introduce judgment labels or automatic partner assignment.',
     className: 'ops-task-done',
     pillClass: 'pill-success',
@@ -4747,7 +4747,7 @@ function bookingHandoffChecklist(
     ? `${booking.payment.method} / ${booking.payment.status} / ${money(booking.payment.amount, booking.payment.currency)}`
     : 'No payment record';
   const cashDebtLabel = bookingCashDebtNeedsSettlement(booking)
-    ? 'Cash fee debt must be settled before the partner accepts more work.'
+    ? 'Cash fee debt must be settled before the partner joins marketplace demand again or receives payout release.'
     : 'No cash fee debt block on this booking.';
   const chatDetail = booking.chatRoom
     ? `${messageCount} retained message(s). Admin keeps the archive even if mobile hides chat after completion.`
@@ -4916,7 +4916,7 @@ function bookingCloseoutReadiness({
       label: 'Cash',
       status: cashDebtNeedsSettlement ? 'Cash fee settlement required' : 'No cash fee block',
       detail: cashDebtNeedsSettlement
-        ? 'Partner cash collection created company-fee debt; settle before final acceptance, customer selection, service start, or payout release.'
+        ? 'Partner cash collection created company-fee debt; settle before marketplace join or payout release.'
         : 'No negative cash-fee wallet block is active for this booking.',
       owner: 'Finance',
       href: '#finance',
@@ -6159,7 +6159,7 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
     return 'Service is complete. Capture the authorized payment or refund if there was a dispute.';
   }
   if (bookingCashDebtNeedsSettlement(booking)) {
-    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner completes final acceptance or customer final selection.';
+    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner joins marketplace demand again or receives payout release.';
   }
   if (booking.payment?.status === 'AUTHORIZED') {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';
@@ -6281,7 +6281,7 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
         Math.abs(booking.earning?.netAmount ?? 0),
         booking.earning?.currency,
       )}.`,
-      action: 'Confirm the partner deposit or admin offset, then settle the earning.',
+      action: 'Confirm the partner deposit or admin offset before marketplace join or payout release resumes.',
     });
   }
 
@@ -6776,7 +6776,7 @@ function paymentHint(booking: AdminBookingDetail) {
     return 'No-show requires payment decision before closing.';
   }
   if (bookingCashDebtNeedsSettlement(booking)) {
-    return 'Cash fee debt is still unsettled; partner acceptance is blocked.';
+    return 'Cash fee debt is still unsettled; marketplace join and payout release are blocked.';
   }
   if (booking.payment.status === 'AUTHORIZED') {
     return 'Hold is active; capture after service completion.';
@@ -6879,7 +6879,7 @@ function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinan
   const walletHelper =
     financeTrace.paymentMethod === 'CASH'
       ? financeTrace.walletTotalAmount < 0
-        ? 'Cash fee debt gates marketplace participation and booking handoff.'
+        ? 'Cash fee debt gates marketplace join and payout release.'
         : 'Cash settlement ledger is not negative.'
       : 'Non-cash booking should create payout credit after completion.';
 
@@ -6979,7 +6979,7 @@ function bookingFinanceFlags(
       detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} owes ${money(
         Math.abs(booking.earning?.netAmount ?? financeTrace.walletTotalAmount),
         financeTrace.currency,
-      )} before marketplace participation or booking handoff can continue.`,
+      )} before marketplace join or payout release can continue.`,
       action: 'Collect the HANDS fee deposit or offset it in an admin settlement.',
     });
   }
@@ -7660,7 +7660,7 @@ function bookingMvpAuthorityContract({
       tone: walletDebt ? 'pill-danger' : 'pill-success',
       evidence: financeTrace.walletLedger,
       operatorUse:
-        'Cash fee debt should block marketplace join, direct acceptance, customer selection, service start, and payout release until settlement rules clear it.',
+        'Cash fee debt blocks marketplace join and payout release until settlement rules clear it.',
       href: '#finance',
     },
     {
@@ -7930,7 +7930,7 @@ function bookingDetailMatchingRuleSnapshot({
         label: 'Wallet gate',
         value: walletBlocked ? 'Settlement needed' : 'Clear',
         helper: walletBlocked
-          ? 'Negative cash-fee debt can block final acceptance/service movement until settled or offset.'
+          ? 'Negative cash-fee debt can block marketplace join and payout release until settled or offset.'
           : 'No cash-fee debt block is visible for this booking.',
       },
     ],
@@ -8406,7 +8406,7 @@ function bookingOperationalPolicySnapshot(
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
             ? 'Legacy recovery mode is visible for audit only; current operations should settle debt before marketplace participation.'
-            : 'Negative wallet partners can see marketplace requests, but marketplace participation and booking handoff are blocked.',
+            : 'Negative wallet partners can see marketplace requests, but marketplace participation and payout release are blocked.',
         enforced: false,
       }),
       bookingPolicyDecisionCard({

@@ -352,7 +352,7 @@ export default async function OperationsPolicyPage({
             <h2>Final partner choice control matrix</h2>
             <p className="muted">
               Current owner choices for the direct booking window, marketplace participation, partner push
-              reach, and the negative wallet final-acceptance gate. This is the screen operators should check
+              reach, and the negative wallet marketplace/payout gate. This is the screen operators should check
               before changing the mobile flow.
             </p>
           </div>
@@ -384,7 +384,7 @@ export default async function OperationsPolicyPage({
             <h3>Current partner acceptance impact</h3>
             <p className="muted">
               Applies the policy posture to the current partner snapshot so operators can see who can pass
-              final gates, who needs account or identity follow-up, and who only needs recovery follow-up.
+              marketplace and payout gates, who needs account or identity follow-up, and who only needs recovery follow-up.
             </p>
           </div>
           <Link className="text-link" href="/partners">
@@ -428,7 +428,7 @@ export default async function OperationsPolicyPage({
             <h3>Marketplace supply sensitivity</h3>
             <p className="muted">
               Reference point: {supplySensitivity.referenceLabel}. Marketplace blockers include account,
-              identity, and bank readiness. Negative wallet stays visible and is shown as a final-gate hold.
+              identity, and bank readiness. Negative wallet stays visible and is shown as a marketplace/payout hold.
             </p>
             <table className="table service-trace">
               <thead>
@@ -436,7 +436,7 @@ export default async function OperationsPolicyPage({
                   <th>Radius</th>
                   <th>Visible partners</th>
                   <th>Fresh location</th>
-                  <th>Final-gate held</th>
+                  <th>Marketplace/payout held</th>
                   <th>Operator read</th>
                 </tr>
               </thead>
@@ -986,8 +986,8 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Negative wallet gate"
-            recommendation="Keep marketplace visibility open and hold only configured final gates."
-            detail="Cash services create company-fee debt. Partners can still appear and show intent, while final customer confirmation waits for settlement."
+            recommendation="Keep marketplace visibility open, but block marketplace join and payout release."
+            detail="Cash services create company-fee debt. Partners can still see demand, while marketplace participation and payout release wait for settlement."
           />
           <DecisionHint
             title="Phone OTP"
@@ -1282,7 +1282,7 @@ function buildActionGatePolicyChecklist(
       recommendedValue: 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED',
       detail:
         'Negative wallet from cash jobs can be cleared by verified company deposit or approved settlement offset, with evidence retained.',
-      operatorAction: 'Check cash settlement references before clearing partner final-gate holds.',
+      operatorAction: 'Check cash settlement references before clearing partner marketplace and payout holds.',
       href: '/cash-settlements',
     },
     {
@@ -1895,14 +1895,14 @@ function policyRecommendationPosture(
 
   if (setting.key === 'wallet.negative_balance_gate') {
     return {
-      status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Final-gate hold' : 'Recovery supervision',
+      status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Marketplace hold' : 'Recovery supervision',
       detail:
         value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Cash-debt exposure is contained at final acceptance, customer selection, service-start, or payout release gates.'
-          : 'Recovery supervision keeps debt visible while operators manage configured final-gate exceptions.',
+          ? 'Cash-debt exposure is contained at marketplace join and payout release gates.'
+          : 'Recovery supervision keeps debt visible while operators manage configured marketplace/payout exceptions.',
       operatorAction:
-        'Keep marketplace list visibility open; use settlement evidence before final confirmation gates.',
-      alignedAction: 'Final-gate settlement control matches the HANDS MVP authority rule.',
+        'Keep marketplace list visibility open; use settlement evidence before marketplace join or payout release.',
+      alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: value === recommended ? 'pill-success' : 'pill-danger',
     };
@@ -2098,10 +2098,10 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     },
     {
       title: 'Negative wallet gate',
-      status: hardWalletBlock ? 'Final-gate hold' : 'Recovery supervision',
+      status: hardWalletBlock ? 'Marketplace hold' : 'Recovery supervision',
       detail: hardWalletBlock
-        ? 'Partners with unpaid cash-service fee debt can stay visible, but final acceptance waits for settlement.'
-        : 'Operators can supervise configured final-gate exceptions while debt collection remains visible.',
+        ? 'Partners with unpaid cash-service fee debt can stay visible, but marketplace join and payout release wait for settlement.'
+        : 'Operators can supervise configured marketplace/payout exceptions while debt collection remains visible.',
       operatorAction: hardWalletBlock
         ? 'This protects HANDS cash-fee collection without removing marketplace visibility.'
         : 'Use recovery supervision only with settlement references and audit notes.',
@@ -2215,9 +2215,9 @@ function buildPolicySupplySensitivity(
         helper: 'Online, marketplace eligible, inside radius, and fresh enough.',
       },
       {
-        label: 'Final-gate held in radius',
+        label: 'Marketplace/payout held in radius',
         value: currentFinalGateHeld.length.toString(),
-        helper: 'Final customer confirmation may wait for settlement, identity, bank, or account controls.',
+        helper: 'Marketplace join or payout release may wait for settlement, identity, bank, or account controls.',
       },
       {
         label: 'Stale excluded',
@@ -2342,14 +2342,14 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       scope: 'Wallet gate',
       title:
         walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Negative wallet gates final acceptance'
+          ? 'Negative wallet gates marketplace join'
           : 'Recovery supervision mode is enabled',
       detail:
-        'Cash-service company fee debt is enforced before final acceptance, customer final selection, service start, and payout release.',
-      api: 'POST /provider/bookings/:id/accept, POST /customer/bookings/:id/select-provider, POST /provider/bookings/:id/start, POST /admin/payout-batches',
-      server: 'BookingsService.ensureProviderWalletCanAccept -> EarningsService wallet release guards',
+        'Cash-service company fee debt is enforced before marketplace join and payout release.',
+      api: 'POST /provider/bookings/:id/join, POST /admin/payout-batches',
+      server: 'BookingsService.joinBooking wallet guard -> EarningsService wallet release guards',
       verify:
-        'Verify from Cash Settlements, Partner Controls, and a blocked accept attempt in the partner app.',
+        'Verify from Cash Settlements, Partner Controls, and a blocked marketplace join attempt in the partner app.',
     },
   ];
 }
@@ -2632,9 +2632,9 @@ function buildPartnerAcceptancePolicyImpact(
 
   return [
     {
-      label: 'Final-gate ready',
+      label: 'Marketplace ready',
       value: finalGateReadyPartners.length.toString(),
-      helper: `${onlinePartners.length} online partner(s), filtered by final-gate, location, push, and control readiness.`,
+      helper: `${onlinePartners.length} online partner(s), filtered by marketplace, location, push, and control readiness.`,
     },
     {
       label: 'Account/identity held',
@@ -2646,7 +2646,7 @@ function buildPartnerAcceptancePolicyImpact(
       label: 'Cash debt gate',
       value: walletGateHeld.length.toString(),
       helper: policy.hardWalletBlock
-        ? 'Negative wallet gates final acceptance or customer selection.'
+        ? 'Negative wallet gates marketplace join and payout release.'
         : 'Negative wallet stays visible while recovery supervision is enabled.',
     },
     {
@@ -2932,7 +2932,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'Partner controls',
         title: 'Negative wallet gate protects cash-fee debt',
         detail:
-          'Partners with unpaid cash-fee debt can still show intent, but final acceptance or customer selection should wait until settlement is posted.',
+          'Partners with unpaid cash-fee debt can still see marketplace demand, but marketplace join and payout release wait until settlement is posted.',
         operatorAction:
           negativeCashDebtBookings.length > 0
             ? `${negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
@@ -3309,7 +3309,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
         { label: booking.status, className: 'pill-neutral' },
       ],
       operatorAction:
-        'Recent wallet entries are negative. Confirm settlement before final acceptance, customer selection, service start, or payout release.',
+        'Recent wallet entries are negative. Confirm settlement before marketplace join or payout release.',
     }));
 
   const lists: PolicyDrilldownListView[] = [
@@ -3334,7 +3334,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     {
       key: 'wallet-gate',
       title: 'Wallet gate queue',
-      helper: 'Partners with negative recent wallet ledger entries that may hold configured final gates.',
+      helper: 'Partners with negative recent wallet ledger entries that may hold marketplace join or payout release.',
       className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
       emptyText: 'No negative recent wallet ledger was found in the current booking sample.',
@@ -3478,7 +3478,7 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
     return policyRelatedBookingRecordSet({
       title: 'Cash-fee debt records',
       helper:
-        'Negative wallet records can hold final acceptance, customer selection, service start, or payout release.',
+        'Negative wallet records can hold marketplace join or payout release.',
       href: '/cash-settlements',
       emptyText: 'No negative wallet booking record is currently loaded.',
       bookings: walletRows,
@@ -3486,7 +3486,7 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
       pillBuilder: (booking) => [
         { label: formatMoney(Math.abs(bookingWalletLedgerTotal(booking))), className: 'pill-danger' },
         { label: booking.status, className: 'pill-info' },
-        { label: 'final gate check', className: 'pill-warn' },
+        { label: 'marketplace gate check', className: 'pill-warn' },
       ],
     });
   }
@@ -3905,7 +3905,7 @@ function buildOwnerDecisionPressure(
   );
   const currentVisibleSupply = readSupplySummaryNumber(supplySensitivity, 'Current visible supply');
   const staleExcluded = readSupplySummaryNumber(supplySensitivity, 'Stale excluded');
-  const finalGateHeldInRadius = readSupplySummaryNumber(supplySensitivity, 'Final-gate held in radius');
+  const finalGateHeldInRadius = readSupplySummaryNumber(supplySensitivity, 'Marketplace/payout held in radius');
   const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE')).length;
   const enabledPushPartners = providers.filter((provider) =>
     (provider.user?.pushDevices ?? []).some((device) => device.enabled),
@@ -3951,13 +3951,13 @@ function buildOwnerDecisionPressure(
       pillClass: staleExcluded ? 'pill-warn' : 'pill-success',
     },
     {
-      title: 'Wallet and final-gate holds',
+      title: 'Wallet and marketplace holds',
       status: finalGatePressure ? 'Gate active' : 'Clear',
-      detail: `${finalGatePressure} partner final-gate record(s) may require settlement, identity, bank, or account review.`,
+      detail: `${finalGatePressure} partner marketplace/payout record(s) may require settlement, identity, bank, or account review.`,
       operatorAction: finalGatePressure
-        ? 'Keep marketplace visibility open while finance and partner controls clear final-gate holds.'
-        : 'No current sample pressure to relax final acceptance gates.',
-      href: finalGatePressure ? '/partners?review=final-gate-held' : '/partner-controls',
+        ? 'Keep marketplace visibility open while finance and partner controls clear marketplace and payout holds.'
+        : 'No current sample pressure to relax marketplace gates.',
+      href: finalGatePressure ? '/partners?review=marketplace-held' : '/partner-controls',
       className: finalGatePressure ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: finalGatePressure ? 'pill-danger' : 'pill-success',
     },
@@ -3993,10 +3993,10 @@ function buildOwnerDecisionPressure(
         helper: `${supplySensitivity.currentPolicyLabel} around ${supplySensitivity.referenceLabel}.`,
       },
       {
-        label: 'Final-gate holds',
+        label: 'Marketplace/payout holds',
         value: String(finalGatePressure),
         helper:
-          'Wallet, identity, bank, or account-control records that change final confirmation readiness.',
+          'Wallet, identity, bank, or account-control records that change marketplace or payout readiness.',
       },
     ],
     cards,
@@ -4067,25 +4067,25 @@ function operationsOwnerDecisionBacklog() {
     },
     {
       owner: 'Finance',
-      title: 'Negative wallet final-gate policy',
+      title: 'Negative wallet marketplace policy',
       question:
-        'Should cash-fee debt hold only customer final confirmation, or also service-start and payout-release gates?',
+        'Should cash-fee debt block marketplace join only, or marketplace join plus payout release?',
       evidence:
-        'Review cash settlement speed, repeated debt partners, and customer impact before changing final-gate scope.',
+        'Review cash settlement speed, repeated debt partners, marketplace participation, and payout risk before changing wallet gate scope.',
       options: [
         {
-          label: 'Final gate only',
+          label: 'Marketplace only',
           tradeoff:
-            'Keeps partners visible and able to show intent, while settlement is required before final customer confirmation.',
+            'Keeps payout decisions separate, while settlement is required before joining new marketplace demand.',
         },
         {
-          label: 'Final + payout gate',
+          label: 'Marketplace + payout',
           tradeoff:
-            'Adds service-start or payout release review while preserving marketplace list visibility.',
+            'Adds payout release review while preserving marketplace list visibility.',
         },
       ],
       recommendation:
-        'Keep marketplace list visibility open; apply settlement checks only at configured final gates.',
+        'Keep marketplace list visibility open; apply settlement checks at marketplace join and payout release.',
       decisionTrigger:
         'Revisit after cash-settlement median collection time is under 24 hours for two consecutive weeks.',
       href: '/cash-settlements',
@@ -4606,7 +4606,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         {
           label: 'Cash debt queue',
           detail:
-            'Review partners held at final gates by unpaid HANDS cash fees before changing settlement gates.',
+            'Review partners held from marketplace join or payout release by unpaid HANDS cash fees before changing settlement gates.',
           href: '/partners?review=cash-debt',
         },
         {
@@ -4649,7 +4649,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'Partner cash holds',
-          detail: 'Check partners blocked at final gates by unpaid platform fees.',
+          detail: 'Check partners blocked from marketplace join or payout release by unpaid platform fees.',
           href: '/partners?review=cash-debt',
         },
       ],

@@ -1478,7 +1478,7 @@ export function BookingMonitor({
                       {nextAction(booking)}
                     </div>
                     <div className="participant-list" style={{ marginTop: 10 }}>
-                      <span className="muted">Final gate reason</span>
+                      <span className="muted">Booking gate reason</span>
                       <Link
                         className={`pill ${finalGateReason.tone}`}
                         href={finalGateReason.href}
@@ -1618,9 +1618,9 @@ const bookingViewOptions: Array<{
   {
     view: 'cash-debt',
     label: 'Cash debt',
-    description: 'cash bookings that created partner fee/tax debt and can gate final acceptance.',
+    description: 'cash bookings that created partner fee/tax debt and can block marketplace join or payout release.',
     operatorHint:
-      'Use this with Cash Settlements to confirm deposit or admin offset before the partner accepts more bookings.',
+      'Use this with Cash Settlements to confirm deposit or admin offset before the partner joins marketplace demand again.',
   },
   {
     view: 'closeout',
@@ -2000,9 +2000,9 @@ function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtecti
       tone: cashDebt.length ? 'danger' : 'ok',
       detail:
         cashDebt.length > 0
-          ? 'Cash bookings created negative wallet balances that require settlement before final acceptance or customer final selection.'
+          ? 'Cash bookings created negative wallet balances that require settlement before marketplace join or payout release.'
           : 'No cash booking currently creates an unpaid HANDS fee debt blocker.',
-      operatorAction: 'Collect partner fee deposit or settle from available earnings before new acceptance.',
+      operatorAction: 'Collect partner fee deposit or settle from available earnings before new marketplace participation.',
       href: '/bookings?view=cash-debt',
       bookings: cashDebt,
     },
@@ -2135,7 +2135,7 @@ function buildBookingDispatchPartnerShortcuts(
     {
       title: 'Cash fee debt',
       value: cashDebt.length.toString(),
-      detail: 'Cash bookings can create negative partner wallets that gate final acceptance.',
+      detail: 'Cash bookings can create negative partner wallets that block marketplace join and payout release.',
       href: '/cash-settlements',
       tone: cashDebt.length ? 'danger' : 'ok',
     },
@@ -3302,7 +3302,7 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
     flags.push({ severity: 'high', title: 'No-show payment unresolved' });
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    flags.push({ severity: 'high', title: 'Cash fee debt gates final acceptance' });
+    flags.push({ severity: 'high', title: 'Cash fee debt blocks marketplace join' });
   }
   const pricingPolicy = bookingPricingPolicySignal(booking);
   if (pricingPolicy.status === 'blocked') {
@@ -3657,7 +3657,7 @@ function bookingFinalGateReason(booking: AdminBooking) {
     return {
       label: 'Wallet debt gate',
       detail:
-        'Partner can view marketplace requests, but join, direct acceptance, customer selection, service start, and payout release wait for cash fee settlement.',
+        'Partner can view marketplace requests, but marketplace join and payout release wait for cash fee settlement.',
       tone: 'pill-danger',
       href: '/cash-settlements',
     };
@@ -3730,7 +3730,7 @@ function bookingFinalGateReason(booking: AdminBooking) {
   return {
     label: 'Gate clear',
     detail:
-      'No final acceptance blocker is visible in the booking list. Continue checking factual payment, chat, location, and closeout records.',
+      'No marketplace or finance blocker is visible in the booking list. Continue checking factual payment, chat, location, and closeout records.',
     tone: 'pill-success',
     href: `/bookings/${booking.id}`,
   };
@@ -3779,7 +3779,7 @@ function nextAction(booking: AdminBooking) {
     return 'Refund is recorded. Check the refund board and customer communication.';
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner completes final acceptance or customer final selection.';
+    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner joins marketplace demand again or receives payout release.';
   }
   if (
     booking.status === 'OPEN_MATCHING' &&

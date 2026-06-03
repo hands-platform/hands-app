@@ -247,9 +247,9 @@ export default async function PartnerControlsPage({
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Final-gate unblock board</h2>
+            <h2>Marketplace and payout unblock board</h2>
             <p className="muted">
-              Shows which partners cannot complete final acceptance now, which issues only affect payout, and
+              Shows which partners cannot join marketplace bookings now, which issues only affect payout, and
               exactly where staff should clear the blocker.
             </p>
           </div>
@@ -299,9 +299,9 @@ export default async function PartnerControlsPage({
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Final-gate unblock playbook</h2>
+            <h2>Marketplace and payout unblock playbook</h2>
             <p className="muted">
-              Step-by-step operating order for restoring partner finalization gates without mixing payout-only
+              Step-by-step operating order for restoring partner marketplace and payout gates without mixing payout-only
               gates into customer discovery or marketplace participation decisions.
             </p>
           </div>
@@ -1020,7 +1020,7 @@ function buildPartnerControlCommandCenter(input: PartnerControlCommandCenterInpu
       title: 'Finance block',
       status: walletDebtItems.length ? 'BLOCKED' : 'CLEAR',
       detail: walletDebtItems.length
-        ? 'Negative wallet partners must settle cash fee debt before final acceptance or customer selection.'
+        ? 'Negative wallet partners must settle cash fee debt before marketplace participation or payout release.'
         : 'No partner wallet is currently blocked by cash fee debt.',
       href: walletDebtItems.length ? '/cash-settlements' : '/earnings',
       action: walletDebtItems.length ? 'Open cash settlements' : 'Review earnings',
@@ -1094,10 +1094,10 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         id: `${item.provider.id}-wallet`,
         providerId: item.provider.id,
         partner,
-        impact: 'ACCEPTANCE BLOCK',
+        impact: 'MARKETPLACE BLOCK',
         severity: 'Wallet debt',
         tone: 'pill-danger',
-        title: `${partner} cannot complete final acceptance`,
+        title: `${partner} cannot join marketplace bookings`,
         reason: `${formatMoney(Math.abs(item.walletBalance))} cash/company fee debt is still open.`,
         operatorAction: `Confirm partner deposit, admin offset, or finance adjustment using ${cashDebtSettlementReference(item.provider.id)}.`,
         href: '/cash-settlements',
@@ -1250,13 +1250,13 @@ function buildBookingAcceptanceUnblockBoard(
   return [
     {
       id: 'wallet-debt',
-      title: 'Cash fee debt gates final acceptance',
+      title: 'Cash fee debt gates marketplace join',
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
-        ? 'Partners with negative wallet balance can stay visible but cannot participate in marketplace requests, but cannot complete final acceptance until HANDS fee debt is settled.'
+        ? 'Partners with negative wallet balance can stay visible but cannot join marketplace requests or receive payout release until HANDS fee debt is settled.'
         : 'No partner is currently blocked by cash-service fee debt.',
       operatorScript:
-        'Tell the partner their unpaid HANDS fee must be deposited or offset before final acceptance or customer selection unlocks.',
+        'Tell the partner their unpaid HANDS fee must be deposited or offset before marketplace participation or payout release unlocks.',
       customerImpact:
         'Customer requests are protected from partners who still owe settlement from previous cash bookings.',
       action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
@@ -1406,9 +1406,9 @@ function buildAcceptanceUnblockPlaybook(
       status: card('wallet-debt')?.status ?? 'UNKNOWN',
       pillClass: card('wallet-debt')?.blockingCount ? 'pill-danger' : 'pill-success',
       detail:
-        'Negative wallet is the strongest final-acceptance gate because cash bookings create unpaid HANDS fee debt.',
+        'Negative wallet is the strongest marketplace gate because cash bookings create unpaid HANDS fee debt.',
       bookingImpact:
-        'Keeps marketplace visibility available, but final acceptance/customer selection waits until deposit, admin offset, or earning offset is recorded.',
+        'Keeps marketplace visibility available, but marketplace join waits until deposit, admin offset, or earning offset is recorded.',
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:
@@ -1579,7 +1579,7 @@ function buildPartnerControlNextActions(input: {
       priority: 95 + Math.min(20, Math.abs(item.walletBalance) / 100000),
       status: 'WALLET',
       title: `${adminProviderName(item.provider)} cash fee debt`,
-      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before final acceptance or customer selection.`,
+      detail: `${formatMoney(Math.abs(item.walletBalance))} must be settled or offset before marketplace participation or payout release.`,
       operatorAction: `Use ${cashDebtSettlementReference(item.provider.id)} and confirm finance settlement.`,
       href: '/cash-settlements',
       tags: [

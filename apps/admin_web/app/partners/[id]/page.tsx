@@ -1585,10 +1585,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <div className={`card ${cardClass(bookingAcceptance.tone)}`} style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Final booking gate decision</h2>
+            <h2>Marketplace booking gate decision</h2>
             <p className="muted">
               Operator-facing decision for whether this partner can join marketplace demand or continue
-              booking handoff right now.
+              marketplace/payout operations right now.
             </p>
           </div>
           <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
@@ -1723,9 +1723,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <div className="card" id="payout" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner final-gate unblock playbook</h2>
+            <h2>Partner marketplace/payout unblock playbook</h2>
             <p className="muted">
-              Operator order for restoring this partner&apos;s final booking gates. Finance and
+              Operator order for restoring this partner&apos;s marketplace and payout gates. Finance and
               account-control blockers stay first; tax stays deferred until first earning and then blocks
               payout, not initial dispatch.
             </p>
@@ -3313,7 +3313,7 @@ function PartnerAcceptanceRepairCommandPanel({
     <div className={`card ${cardClass(command.tone)}`} style={{ marginBottom: 16 }}>
       <div className="risk-watch-header">
         <div>
-          <h2>Final-gate repair command</h2>
+          <h2>Marketplace repair command</h2>
           <p className="muted">
             Exact operator diagnosis for marketplace participation, customer handoff, app message, and
             finance repair.
@@ -3547,7 +3547,7 @@ function buildPartnerOperatorCommandQueue({
     add({
       id: 'acceptance-gate',
       label: 'ACCEPT',
-      title: 'Final booking gate is on hold',
+      title: 'Marketplace booking gate is on hold',
       detail: bookingAcceptance.primaryReason,
       owner: 'Dispatch',
       tone: 'blocked',
@@ -4494,7 +4494,7 @@ function buildPartnerOperatingChecklist(
     },
     {
       area: 'Booking',
-      status: bookingAcceptance.canAccept ? 'Final gate clear' : 'Final gate on hold',
+      status: bookingAcceptance.canAccept ? 'Marketplace gate clear' : 'Marketplace gate on hold',
       detail: bookingAcceptance.primaryReason,
       nextAction: bookingAcceptance.canAccept ? 'Ready for requests' : 'Resolve booking gate',
       href: `/partners/${provider.id}#booking-chat-records`,
@@ -4658,7 +4658,7 @@ function buildPartnerOperationsDigest({
     },
     {
       lane: 'Activity gate',
-      status: bookingAcceptance.canAccept ? 'Final gate clear' : 'Final gate on hold',
+      status: bookingAcceptance.canAccept ? 'Marketplace gate clear' : 'Marketplace gate on hold',
       detail: bookingAcceptance.primaryReason,
       href: '#final-booking-gate',
       latestAt: latestBooking?.createdAt,
@@ -5403,7 +5403,7 @@ function buildPartnerAcceptanceRepairCommand(
     : blockedGates.some((gate) =>
           ['Wallet and cash debt', 'Account controls', 'Identity and approval'].includes(gate.label),
         )
-      ? 'Hide or avoid this partner for direct acceptance and marketplace shortlist until hard blockers are cleared.'
+      ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
       : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
   const operatorDecision = bookingAcceptance.canAccept
     ? 'No manual repair required. Monitor service quality and response speed.'

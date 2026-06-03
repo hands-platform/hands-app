@@ -141,7 +141,7 @@ const setupOrder = [
       'Env values are seed/default hints; day-to-day changes should be made from /operations-policy so updates are audited.',
       'MVP rule: selected first partner gets the configured response window, and marketplace participants can still join the shortlist.',
       'Customers always make the final partner selection; no automatic final matching.',
-      'Partners with negative wallet balance can view marketplace requests, but marketplace participation and configured booking gates wait for settlement.',
+      'Partners with negative wallet balance can view marketplace requests, but marketplace participation and payout release wait for settlement.',
     ],
     commands: [
       'Open http://localhost:3101/operations-policy',
@@ -266,7 +266,7 @@ const externalRegistrationPlan = [
     status: 'Admin controlled',
     statusClass: 'pill-info',
     detail:
-      'First-pick response, Open Matching Marketplace behavior, customer final selection, and wallet settlement acceptance gates are controlled from Operations Policy.',
+      'First-pick response, Open Matching Marketplace behavior, customer final selection, wallet settlement, and payout gates are controlled from Operations Policy.',
     env: [
       'MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES',
       'MATCHING_BACKUP_PROVIDER_RADIUS_METERS',
@@ -344,7 +344,7 @@ const projectControlSequence = [
     title: 'Backend rule consistency',
     status: 'Next',
     detail:
-      'Align admin-configurable rules with final acceptance gates, first-pick response windows, marketplace participant alerts, wallet gates, fees, and tax logs.',
+      'Align admin-configurable rules with first-pick response windows, marketplace participant alerts, wallet gates, payout release, fees, and tax logs.',
   },
   {
     phase: 'Phase C',

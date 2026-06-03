@@ -117,7 +117,7 @@ When a partner cannot join marketplace demand or receive payout release, operato
    - Booking impact: missing tax profile should not block first signup or first paid job.
    - Payout impact: after first earning, tax profile, tax address, and payout/tax agreements block payout or withdrawal until complete.
 
-This order is mirrored in `/partner-controls` under `Final-gate unblock playbook`.
+This order is mirrored in `/partner-controls` under `Marketplace and payout unblock playbook`.
 
 ## No-Show Closeout
 
