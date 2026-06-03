@@ -301,6 +301,14 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     activityOrder,
   );
   const partnerActivitySummary = buildPartnerActivitySummary(filteredPartnerActivityRecords);
+  const partnerActivityCommandSnapshot = buildPartnerActivityCommandSnapshot(
+    provider,
+    filteredPartnerActivityRecords,
+    filteredPartnerBookingArchive,
+    payoutOps,
+    dateFilters.label,
+    detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS),
+  );
   const partnerDailyActivityDigest = buildPartnerDailyActivityDigest(
     filteredPartnerActivityRecords,
     activityOrder,
@@ -604,6 +612,28 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               <span>{item.label}</span>
               <strong>{item.value}</strong>
               <small>{item.detail}</small>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" id="partner-activity-command-snapshot" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner command snapshot</h2>
+            <p className="muted">
+              Filter-aware facts for this partner: completed work, retained chat, marketplace participation,
+              finance rows, latest location, app access, and staff records.
+            </p>
+          </div>
+          <span className="pill pill-info">{partnerActivityCommandSnapshot.length} fact groups</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {partnerActivityCommandSnapshot.map((item) => (
+            <a href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.helper}</small>
             </a>
           ))}
         </div>
@@ -4165,6 +4195,97 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
       label: 'Verification and operations',
       value: count((record) => verificationTypes.has(record.type)).toString(),
       helper: 'KYC, documents, bank, tax, agreements, reports, account controls, media, and notes.',
+    },
+  ];
+}
+
+function buildPartnerActivityCommandSnapshot(
+  provider: ProviderDetail,
+  records: PartnerActivityRecord[],
+  bookingArchive: PartnerBookingArchiveRecord[],
+  payoutOps: ReturnType<typeof buildProviderPayoutOps>,
+  dateLabel: string,
+  activityTypeLabel: string,
+) {
+  const latestEvent = orderPartnerActivityRecords(records, 'newest')[0];
+  const completedBookings = bookingArchive.filter((record) => record.booking.status === 'COMPLETED');
+  const latestCompletedBooking = completedBookings[0]?.booking;
+  const retainedChatRooms = bookingArchive.filter((record) => record.booking.chatRoom);
+  const retainedMessageCount = bookingArchive.reduce(
+    (sum, record) => sum + readPartnerChatMessages(record.booking).length,
+    0,
+  );
+  const joinedBookings = bookingArchive.filter((record) => record.relation === 'Joined').length;
+  const selectedBookings = bookingArchive.filter((record) => record.relation === 'Selected').length;
+  const preferredBookings = bookingArchive.filter((record) => record.relation === 'Preferred').length;
+  const earningCount = provider.earnings?.length ?? 0;
+  const payoutCount = provider.payoutBatches?.length ?? 0;
+  const latestAccessAt = latestPartnerAccessAt(provider);
+  const staffRecordCount =
+    (provider.auditLogs?.length ?? 0) +
+    (provider.verificationLogs?.length ?? 0) +
+    (provider.reports?.length ?? 0) +
+    (provider.sanctions?.length ?? 0);
+  const latestStaffRecord = records.find((record) =>
+    ['VERIFY', 'DOCUMENT', 'BANK', 'TAX', 'AGREEMENT', 'REPORT', 'SANCTION', 'PROFILE', 'OPS'].includes(
+      record.type,
+    ),
+  );
+
+  return [
+    {
+      label: 'Applied filter',
+      value: `${records.length} event(s)`,
+      helper: `${dateLabel} / ${activityTypeLabel}`,
+      href: '#app-activity',
+    },
+    {
+      label: 'Latest event',
+      value: latestEvent ? latestEvent.title : 'No event',
+      helper: latestEvent ? `${latestEvent.type} / ${formatDate(latestEvent.at)}` : 'No record in this filter.',
+      href: latestEvent ? partnerActivityRecordHref(latestEvent) : '#app-activity',
+    },
+    {
+      label: 'Completed work',
+      value: `${completedBookings.length} booking(s)`,
+      helper: latestCompletedBooking
+        ? `Latest ${bookingServiceLabel(latestCompletedBooking)} / ${formatDate(
+            latestCompletedBooking.scheduledStartAt ?? latestCompletedBooking.createdAt,
+          )}`
+        : 'No completed booking in this filter.',
+      href: latestCompletedBooking ? `/bookings/${latestCompletedBooking.id}` : '#partner-booking-journey',
+    },
+    {
+      label: 'Retained chat',
+      value: `${retainedMessageCount} message(s)`,
+      helper: `${retainedChatRooms.length} room(s) retained for admin review.`,
+      href: '#partner-chat-retention-ledger',
+    },
+    {
+      label: 'Marketplace records',
+      value: `${joinedBookings} joined`,
+      helper: `${preferredBookings} preferred / ${selectedBookings} selected booking relation(s).`,
+      href: '#partner-booking-journey',
+    },
+    {
+      label: 'Finance rows',
+      value: `${earningCount + payoutCount} row(s)`,
+      helper: `${earningCount} earning / ${payoutCount} payout / ${payoutOps.status}.`,
+      href: '#payout',
+    },
+    {
+      label: 'Location and app',
+      value: locationAgeLabel(provider.currentLocationUpdatedAt),
+      helper: latestAccessAt ? `Recent app access ${formatDate(latestAccessAt)}` : 'No app access row loaded.',
+      href: '#location',
+    },
+    {
+      label: 'Staff records',
+      value: `${staffRecordCount} row(s)`,
+      helper: latestStaffRecord
+        ? `${latestStaffRecord.title} / ${formatDate(latestStaffRecord.at)}`
+        : 'No staff record in this filter.',
+      href: '#partner-operator-notes',
     },
   ];
 }
