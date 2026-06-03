@@ -308,13 +308,17 @@ function checkLegacyRiskRoutesAreRedirectOnly() {
     }
   }
 
+  requireMarkers('apps/admin_web/app/providers/legacy-provider-redirect.ts', read('apps/admin_web/app/providers/legacy-provider-redirect.ts'), [
+    'buildLegacyPartnerQueryString',
+    'new URLSearchParams()',
+  ]);
   requireMarkers('apps/admin_web/app/providers/page.tsx', read('apps/admin_web/app/providers/page.tsx'), [
-    "redirect(`/partners${buildQueryString(searchParams ? await searchParams : {})}`);",
+    "redirect(`/partners${buildLegacyPartnerQueryString(searchParams ? await searchParams : {})}`);",
   ]);
   requireMarkers(
     'apps/admin_web/app/providers/[id]/page.tsx',
     read('apps/admin_web/app/providers/[id]/page.tsx'),
-    ['redirect(`/partners/${id}`);'],
+    ["redirect(`/partners/${id}${buildLegacyPartnerQueryString(searchParams ? await searchParams : {})}`);"],
   );
 }
 

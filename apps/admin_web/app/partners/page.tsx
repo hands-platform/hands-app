@@ -194,11 +194,20 @@ const DEFAULT_PROVIDER_OPS_POLICY: ProviderOpsPolicy = {
 };
 const PROVIDER_LIST_RENDER_LIMIT = 40;
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
+const providerBookingRowsCache = new WeakMap<AdminProvider, AdminBooking[]>();
+const providerCompletedWorkCountCache = new WeakMap<AdminProvider, number>();
+const providerGrossRevenueCache = new WeakMap<AdminProvider, number>();
+const providerPendingPayoutCache = new WeakMap<AdminProvider, number>();
+const providerAvailablePayoutCache = new WeakMap<AdminProvider, number>();
+const providerLastCompletedWorkAtCache = new WeakMap<AdminProvider, string | null>();
+const partnerLastActivityAtCache = new WeakMap<AdminProvider, string | null>();
+const partnerLastSessionAtCache = new WeakMap<AdminProvider, string | null>();
+const providerWalletBalanceCache = new WeakMap<AdminProvider, number>();
 
 export default async function ProvidersPage({ searchParams }: { searchParams?: ProvidersPageSearchParams }) {
   const filters = buildProviderFilters(searchParams ? await searchParams : {});
   const [rawProviders, operationalPolicies] = await Promise.all([
-    adminGet<AdminProvider[]>('/admin/partners', []),
+    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const opsPolicy = buildProviderOpsPolicy(operationalPolicies);
@@ -225,9 +234,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     buildPartnerOperationRow(provider, opsPolicy),
   );
   const partnerMasterRows = visibleProviders.map((provider) => buildPartnerMasterRow(provider, opsPolicy));
-  const partnerExportRows = providers.map((provider) => {
-    const master = buildPartnerMasterRow(provider, opsPolicy);
-    const operations = buildPartnerOperationRow(provider, opsPolicy);
+  const partnerExportRows = partnerMasterRows.map((master, index) => {
+    const provider = master.provider;
+    const operations = partnerOperationRows[index] ?? buildPartnerOperationRow(provider, opsPolicy);
     return {
       export_filter: partnerExportFilterLabel,
       export_sort: partnerSortLabel(filters.sort),
@@ -453,7 +462,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               download={`hands-partners-${partnerExportFileSlug}.csv`}
               href={partnerListCsvHref}
             >
-              Export CSV
+              Export visible CSV
             </a>
             <span className="muted">
               Showing {visibleProviders.length} of {providers.length} matching partners
@@ -2075,6 +2084,8 @@ function partnerLatestSessionFacts(provider: AdminProvider) {
 }
 
 function providerBookingRows(provider: AdminProvider) {
+  const cached = providerBookingRowsCache.get(provider);
+  if (cached) return cached;
   const records = new Map<string, NonNullable<AdminProvider['selectedBookings']>[number]>();
   for (const booking of provider.preferredBookings ?? []) {
     records.set(booking.id, booking);
@@ -2085,7 +2096,9 @@ function providerBookingRows(provider: AdminProvider) {
   for (const participant of provider.participants ?? []) {
     if (participant.booking) records.set(participant.booking.id, participant.booking);
   }
-  return [...records.values()];
+  const rows = [...records.values()] as AdminBooking[];
+  providerBookingRowsCache.set(provider, rows);
+  return rows;
 }
 
 function latestPartnerBookingRecord(bookings: AdminBooking[]) {
@@ -2146,30 +2159,48 @@ function partnerHasAppActivity(provider: AdminProvider) {
 }
 
 function providerCompletedWorkCount(provider: AdminProvider) {
-  return (provider.earnings ?? []).filter((earning) => {
+  const cached = providerCompletedWorkCountCache.get(provider);
+  if (cached !== undefined) return cached;
+  const count = (provider.earnings ?? []).filter((earning) => {
     if (earning.booking?.status === 'COMPLETED') return true;
     return ['AVAILABLE', 'PAID'].includes(earning.status);
   }).length;
+  providerCompletedWorkCountCache.set(provider, count);
+  return count;
 }
 
 function providerGrossRevenue(provider: AdminProvider) {
-  return (provider.earnings ?? []).reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0);
+  const cached = providerGrossRevenueCache.get(provider);
+  if (cached !== undefined) return cached;
+  const value = (provider.earnings ?? []).reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0);
+  providerGrossRevenueCache.set(provider, value);
+  return value;
 }
 
 function providerPendingPayout(provider: AdminProvider) {
-  return (provider.earnings ?? [])
+  const cached = providerPendingPayoutCache.get(provider);
+  if (cached !== undefined) return cached;
+  const value = (provider.earnings ?? [])
     .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status))
     .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
+  providerPendingPayoutCache.set(provider, value);
+  return value;
 }
 
 function providerAvailablePayout(provider: AdminProvider) {
-  return (provider.earnings ?? [])
+  const cached = providerAvailablePayoutCache.get(provider);
+  if (cached !== undefined) return cached;
+  const value = (provider.earnings ?? [])
     .filter((earning) => earning.status === 'AVAILABLE')
     .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
+  providerAvailablePayoutCache.set(provider, value);
+  return value;
 }
 
 function providerLastCompletedWorkAt(provider: AdminProvider) {
-  return latestTimestamp(
+  const cached = providerLastCompletedWorkAtCache.get(provider);
+  if (cached !== undefined) return cached;
+  const value = latestTimestamp(
     (provider.earnings ?? [])
       .filter(
         (earning) =>
@@ -2182,10 +2213,14 @@ function providerLastCompletedWorkAt(provider: AdminProvider) {
         earning.createdAt,
       ]),
   );
+  providerLastCompletedWorkAtCache.set(provider, value);
+  return value;
 }
 
 function partnerLastActivityAt(provider: AdminProvider) {
-  return latestTimestamp([
+  const cached = partnerLastActivityAtCache.get(provider);
+  if (cached !== undefined) return cached;
+  const value = latestTimestamp([
     provider.currentLocationUpdatedAt,
     provider.nextAvailableAt,
     ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
@@ -2198,13 +2233,19 @@ function partnerLastActivityAt(provider: AdminProvider) {
       earning.paidAt,
     ]),
   ]);
+  partnerLastActivityAtCache.set(provider, value);
+  return value;
 }
 
 function partnerLastSessionAt(provider: AdminProvider) {
-  return latestTimestamp([
+  const cached = partnerLastSessionAtCache.get(provider);
+  if (cached !== undefined) return cached;
+  const value = latestTimestamp([
     ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
     ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
   ]);
+  partnerLastSessionAtCache.set(provider, value);
+  return value;
 }
 
 function latestTimestamp(values: Array<string | null | undefined>) {
@@ -2825,9 +2866,13 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
 }
 
 function providerUnsettledWalletBalance(provider: AdminProvider) {
-  return (provider.earnings ?? [])
+  const cached = providerWalletBalanceCache.get(provider);
+  if (cached !== undefined) return cached;
+  const value = (provider.earnings ?? [])
     .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status) && !earning.payoutBatchId)
     .reduce((sum, earning) => sum + numberValue(earning.netAmount), 0);
+  providerWalletBalanceCache.set(provider, value);
+  return value;
 }
 
 function providerHasFirstRevenueSignal(provider: AdminProvider) {
@@ -4339,53 +4384,93 @@ function sortProviders(
   opsPolicy = DEFAULT_PROVIDER_OPS_POLICY,
   sort = 'ops-priority',
 ) {
+  const sortMetrics = new Map<string, PartnerSortMetrics>();
+  const metricsFor = (provider: AdminProvider) => {
+    const cached = sortMetrics.get(provider.id);
+    if (cached) return cached;
+    const metrics = buildPartnerSortMetrics(provider, opsPolicy);
+    sortMetrics.set(provider.id, metrics);
+    return metrics;
+  };
+
   return [...providers].sort((left, right) => {
+    const leftMetrics = metricsFor(left);
+    const rightMetrics = metricsFor(right);
     if (sort === 'last-work') {
-      return dateMs(providerLastCompletedWorkAt(right)) - dateMs(providerLastCompletedWorkAt(left));
+      return rightMetrics.lastWorkMs - leftMetrics.lastWorkMs;
     }
     if (sort === 'completed-count') {
       return (
-        providerCompletedWorkCount(right) - providerCompletedWorkCount(left) ||
-        dateMs(providerLastCompletedWorkAt(right)) - dateMs(providerLastCompletedWorkAt(left))
+        rightMetrics.completedWorkCount - leftMetrics.completedWorkCount ||
+        rightMetrics.lastWorkMs - leftMetrics.lastWorkMs
       );
     }
     if (sort === 'booking-count') {
       return (
-        providerBookingRows(right).length - providerBookingRows(left).length ||
-        dateMs(providerLastCompletedWorkAt(right)) - dateMs(providerLastCompletedWorkAt(left))
+        rightMetrics.bookingCount - leftMetrics.bookingCount ||
+        rightMetrics.lastWorkMs - leftMetrics.lastWorkMs
       );
     }
     if (sort === 'gross-revenue') {
-      return providerGrossRevenue(right) - providerGrossRevenue(left);
+      return rightMetrics.grossRevenue - leftMetrics.grossRevenue;
     }
     if (sort === 'pending-payout') {
-      return providerPendingPayout(right) - providerPendingPayout(left);
+      return rightMetrics.pendingPayout - leftMetrics.pendingPayout;
     }
     if (sort === 'available-payout') {
-      return providerAvailablePayout(right) - providerAvailablePayout(left);
+      return rightMetrics.availablePayout - leftMetrics.availablePayout;
     }
     if (sort === 'last-activity') {
-      return dateMs(partnerLastActivityAt(right)) - dateMs(partnerLastActivityAt(left));
+      return rightMetrics.lastActivityMs - leftMetrics.lastActivityMs;
     }
     if (sort === 'location-freshness') {
-      return dateMs(right.currentLocationUpdatedAt) - dateMs(left.currentLocationUpdatedAt);
+      return rightMetrics.locationUpdatedMs - leftMetrics.locationUpdatedMs;
     }
     if (sort === 'wallet-debt') {
-      return providerUnsettledWalletBalance(left) - providerUnsettledWalletBalance(right);
+      return leftMetrics.walletBalance - rightMetrics.walletBalance;
     }
     if (sort === 'name') {
-      return providerDisplayName(left).localeCompare(providerDisplayName(right));
+      return leftMetrics.name.localeCompare(rightMetrics.name);
     }
-    const leftPriority = providerPriority(left, opsPolicy);
-    const rightPriority = providerPriority(right, opsPolicy);
-    if (leftPriority !== rightPriority) {
-      return rightPriority - leftPriority;
+    if (leftMetrics.priority !== rightMetrics.priority) {
+      return rightMetrics.priority - leftMetrics.priority;
     }
 
-    return (left.displayName || left.user?.fullName || left.user?.phone || '').localeCompare(
-      right.displayName || right.user?.fullName || right.user?.phone || '',
-    );
+    return leftMetrics.name.localeCompare(rightMetrics.name);
   });
+}
+
+type PartnerSortMetrics = {
+  availablePayout: number;
+  bookingCount: number;
+  completedWorkCount: number;
+  grossRevenue: number;
+  lastActivityMs: number;
+  lastWorkMs: number;
+  locationUpdatedMs: number;
+  name: string;
+  pendingPayout: number;
+  priority: number;
+  walletBalance: number;
+};
+
+function buildPartnerSortMetrics(
+  provider: AdminProvider,
+  opsPolicy = DEFAULT_PROVIDER_OPS_POLICY,
+): PartnerSortMetrics {
+  return {
+    availablePayout: providerAvailablePayout(provider),
+    bookingCount: providerBookingRows(provider).length,
+    completedWorkCount: providerCompletedWorkCount(provider),
+    grossRevenue: providerGrossRevenue(provider),
+    lastActivityMs: dateMs(partnerLastActivityAt(provider)),
+    lastWorkMs: dateMs(providerLastCompletedWorkAt(provider)),
+    locationUpdatedMs: dateMs(provider.currentLocationUpdatedAt),
+    name: providerDisplayName(provider),
+    pendingPayout: providerPendingPayout(provider),
+    priority: providerPriority(provider, opsPolicy),
+    walletBalance: providerUnsettledWalletBalance(provider),
+  };
 }
 
 function buildProviderFilters(params: Record<string, string | string[] | undefined>): ProviderFilters {

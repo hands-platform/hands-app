@@ -35,7 +35,7 @@ This pass checked the API against the current HANDS MVP authority:
 ## Follow-Up Before Production
 
 - Replace all local JWT secrets and disable development OTP values in production environments.
-- Complete real MoMo/VNPay sandbox E2E after HANDS receives provider credentials.
+- Complete real MoMo/VNPay sandbox E2E after HANDS receives gateway credentials.
 - Add focused unit tests around partner response timing and service-completion ordering.
 - Confirm production storage uses separate private and public buckets.
 - Rotate any external keys that were ever pasted into chat before using staging for real user data.

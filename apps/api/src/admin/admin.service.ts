@@ -304,7 +304,23 @@ export class AdminService {
     });
   }
 
-  listProviders() {
+  listProviders(options: { compact?: boolean } = {}) {
+    const compact = options.compact ?? false;
+    const bookingListSelect = {
+      id: true,
+      preferredProviderId: true,
+      selectedProviderId: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+      scheduledStartAt: true,
+      scheduledEndAt: true,
+      closedAt: true,
+      closedByRole: true,
+      closedReason: true,
+      chatRoom: { select: { id: true } },
+    } satisfies Prisma.BookingSelect;
+
     return this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
       include: {
@@ -312,6 +328,7 @@ export class AdminService {
           include: {
             pushDevices: {
               orderBy: { createdAt: 'desc' },
+              take: compact ? 2 : undefined,
               include: {
                 deliveries: {
                   orderBy: { attemptedAt: 'desc' },
@@ -326,45 +343,71 @@ export class AdminService {
                 uploadStatus: FileUploadStatus.UPLOADED,
               },
               orderBy: { createdAt: 'desc' },
-              take: 8,
+              take: compact ? 2 : 8,
             },
           },
         },
-        verification: { include: { files: true } },
+        verification: { include: { files: compact ? { take: 3 } : true } },
         kyc: true,
-        documents: { include: { fileAsset: true }, orderBy: { createdAt: 'desc' } },
+        documents: {
+          include: { fileAsset: true },
+          orderBy: { createdAt: 'desc' },
+          take: compact ? 6 : undefined,
+        },
         bankAccounts: { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }] },
         taxProfile: true,
         reports: { orderBy: { createdAt: 'desc' }, take: 5 },
         sanctions: { orderBy: { createdAt: 'desc' }, take: 5 },
         preferredBookings: {
           orderBy: { createdAt: 'desc' },
-          take: 50,
-          include: {
-            services: { include: { service: true } },
-            payment: true,
-          },
+          take: compact ? 50 : 50,
+          ...(compact
+            ? { select: bookingListSelect }
+            : {
+                include: {
+                  services: { include: { service: true } },
+                  payment: true,
+                },
+              }),
         },
         selectedBookings: {
           orderBy: { createdAt: 'desc' },
-          take: 100,
-          include: {
-            services: { include: { service: true } },
-            payment: true,
-            review: true,
-          },
+          take: compact ? 100 : 100,
+          ...(compact
+            ? { select: bookingListSelect }
+            : {
+                include: {
+                  services: { include: { service: true } },
+                  payment: true,
+                  review: true,
+                },
+              }),
         },
         participants: {
           orderBy: { joinedAt: 'desc' },
-          take: 100,
-          include: {
-            booking: {
-              include: {
-                services: { include: { service: true } },
-                payment: true,
-              },
-            },
-          },
+          take: compact ? 100 : 100,
+          ...(compact
+            ? {
+                select: {
+                  id: true,
+                  status: true,
+                  distanceMeters: true,
+                  providerStatusAtJoin: true,
+                  joinedAt: true,
+                  respondedAt: true,
+                  booking: { select: bookingListSelect },
+                },
+              }
+            : {
+                include: {
+                  booking: {
+                    include: {
+                      services: { include: { service: true } },
+                      payment: true,
+                    },
+                  },
+                },
+              }),
         },
         agreements: { orderBy: { acceptedAt: 'desc' } },
         services: {
@@ -382,11 +425,36 @@ export class AdminService {
         earnings: {
           where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
           orderBy: { createdAt: 'desc' },
-          take: 50,
-          include: { booking: { include: { payment: true, services: { include: { service: true } } } } },
+          take: compact ? 50 : 50,
+          ...(compact
+            ? {
+                select: {
+                  id: true,
+                  providerProfileId: true,
+                  bookingId: true,
+                  grossAmount: true,
+                  platformFee: true,
+                  withholdingAmount: true,
+                  netAmount: true,
+                  currency: true,
+                  status: true,
+                  availableAt: true,
+                  paidAt: true,
+                  payoutBatchId: true,
+                  settlementRef: true,
+                  settlementNotes: true,
+                  createdAt: true,
+                  booking: { select: { id: true, status: true, scheduledStartAt: true } },
+                },
+              }
+            : {
+                include: {
+                  booking: { include: { payment: true, services: { include: { service: true } } } },
+                },
+              }),
         },
-        sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
-        devices: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
+        sessions: { orderBy: { lastSeenAt: 'desc' }, take: compact ? 3 : 10 },
+        devices: { orderBy: { lastSeenAt: 'desc' }, take: compact ? 3 : 10 },
       },
     });
   }
