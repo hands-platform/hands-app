@@ -161,6 +161,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     financeTrace,
     notificationTrace,
   });
+  const participantLedger = bookingParticipantLedger(booking, backupSupply, notificationTrace);
   const chatLifecycle = bookingChatLifecycle(booking, messages.length);
   const handoffChecklist = bookingHandoffChecklist(booking, messages.length, latestLocation);
   const closeoutReadiness = bookingCloseoutReadiness({
@@ -2559,58 +2560,68 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <section className="detail-grid" style={{ marginTop: 16 }}>
         <div className="card" id="participants">
-          <h2>Marketplace participation record</h2>
-          <p className="muted">
-            Every partner who actually joined, accepted, rejected, or became the final partner stays here as
-            booking evidence. Wallet-blocked partners who only viewed the marketplace list are not tracked as
-            participants.
-          </p>
-          <div className="stack">
-            {(booking.participants ?? []).map((participant) => {
-              const isPreferred = participant.providerProfile?.id === booking.preferredProvider?.id;
-              const isFinal = participant.providerProfile?.id === booking.selectedProvider?.id;
-              const roleLabel = isFinal ? 'Final partner' : isPreferred ? 'First-pick' : 'Marketplace';
-              const roleClass = isFinal ? 'pill-success' : isPreferred ? 'pill-info' : 'pill-neutral';
-              const statusClass =
-                participant.status === 'REJECTED'
-                  ? 'pill-warn'
-                  : participant.status === 'SELECTED'
-                    ? 'pill-success'
-                    : 'pill-info';
-
-              return (
-                <div className="ops-row" key={participant.id}>
-                  <div>
-                    <div className="filter-row" style={{ marginBottom: 6 }}>
-                      <span className={`pill ${roleClass}`}>{roleLabel}</span>
-                      <span className={`pill ${statusClass}`}>{participant.status}</span>
-                    </div>
-                    <strong>{providerName(participant.providerProfile)}</strong>
-                    <div className="muted">
-                      {participant.providerProfile?.user?.phone ?? 'No phone'} -{' '}
-                      {participant.providerStatusAtJoin ?? 'status unknown'}
-                    </div>
-                    <div className="muted">
-                      Joined {formatDate(participant.joinedAt)} / responded{' '}
-                      {formatDate(participant.respondedAt)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="muted">{distanceLabel(participant.distanceMeters)}</div>
-                    <div className="muted">Participant {participant.id}</div>
-                    {participant.providerProfile?.id && (
-                      <Link className="text-link" href={`/partners/${participant.providerProfile.id}`}>
+          <div className="risk-watch-header">
+            <div>
+              <h2>Actual marketplace participant ledger</h2>
+              <p className="muted">
+                Every partner who actually joined, accepted, rejected, or became the customer-selected final
+                partner stays here as booking evidence. Wallet-blocked partners who only viewed the
+                marketplace list are not tracked as participants.
+              </p>
+            </div>
+            <span className={`pill ${participantLedger.tone}`}>{participantLedger.status}</span>
+          </div>
+          <div className="service-trace-summary" style={{ marginTop: 12 }}>
+            {participantLedger.cards.map((card) => (
+              <a href={card.href} key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+                <small>{card.helper}</small>
+              </a>
+            ))}
+          </div>
+          <table className="table" style={{ marginTop: 14 }}>
+            <thead>
+              <tr>
+                <th>Partner</th>
+                <th>Role and status</th>
+                <th>Timing and distance</th>
+                <th>Operations record</th>
+              </tr>
+            </thead>
+            <tbody>
+              {participantLedger.rows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>{row.partner}</strong>
+                    <p className="muted">{row.identity}</p>
+                    {row.href && (
+                      <Link className="text-link" href={row.href}>
                         Open partner record
                       </Link>
                     )}
-                  </div>
-                </div>
-              );
-            })}
-            {(booking.participants ?? []).length === 0 && (
-              <p className="muted">No partner has actually joined this booking yet.</p>
-            )}
-          </div>
+                  </td>
+                  <td>
+                    <div className="filter-row">
+                      <span className={`pill ${row.roleTone}`}>{row.role}</span>
+                      <span className={`pill ${row.statusTone}`}>{row.status}</span>
+                    </div>
+                    <p className="muted">{row.decision}</p>
+                  </td>
+                  <td>
+                    <strong>{row.distance}</strong>
+                    <p className="muted">{row.timing}</p>
+                  </td>
+                  <td>{row.operatorUse}</td>
+                </tr>
+              ))}
+              {participantLedger.rows.length === 0 && (
+                <tr>
+                  <td colSpan={4}>No partner has actually joined this booking yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
         <div className="card" id="payment">
@@ -8145,6 +8156,120 @@ function bookingMarketplaceWalletEvidence({
           'Use this lane with cash settlement records to explain why wallet balance changed and what must be settled.',
       },
     ],
+  };
+}
+
+function bookingParticipantLedger(
+  booking: AdminBookingDetail,
+  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>,
+  notificationTrace: ReturnType<typeof bookingNotificationTrace>,
+) {
+  const participants = booking.participants ?? [];
+  const preferredProviderId = booking.preferredProvider?.id;
+  const selectedProviderId = booking.selectedProvider?.id;
+  const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
+  const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
+  const marketplaceParticipants = participants.filter(
+    (participant) => participant.providerProfile?.id !== preferredProviderId,
+  );
+  const firstPickParticipant = participants.find(
+    (participant) => participant.providerProfile?.id === preferredProviderId,
+  );
+  const selectedParticipant = participants.find(
+    (participant) => participant.providerProfile?.id === selectedProviderId,
+  );
+  const marketplaceAccepted = marketplaceParticipants.filter(
+    (participant) => participant.status === 'ACCEPTED' || participant.status === 'SELECTED',
+  );
+  const status = booking.selectedProvider
+    ? 'Final choice recorded'
+    : acceptedParticipants.length
+      ? 'Customer choice pending'
+      : participants.length
+        ? 'Shortlist active'
+        : 'Waiting for participants';
+  const tone = booking.selectedProvider
+    ? 'pill-success'
+    : acceptedParticipants.length
+      ? 'pill-warn'
+      : participants.length
+        ? 'pill-info'
+        : 'pill-neutral';
+
+  return {
+    status,
+    tone,
+    cards: [
+      {
+        label: 'First-pick partner',
+        value: booking.preferredProvider ? providerName(booking.preferredProvider) : 'Not set',
+        helper: firstPickParticipant
+          ? `${firstPickParticipant.status} / joined ${formatDate(firstPickParticipant.joinedAt)}`
+          : booking.preferredProvider
+            ? 'Waiting for the first-pick partner response window.'
+            : 'This booking was not opened with a preferred partner.',
+        href: booking.preferredProvider?.id ? `/partners/${booking.preferredProvider.id}` : '#participants',
+      },
+      {
+        label: 'Marketplace participants',
+        value: `${marketplaceParticipants.length} joined`,
+        helper: `${marketplaceAccepted.length} accepted or selected / ${rejectedParticipants.length} rejected row(s).`,
+        href: '#participants',
+      },
+      {
+        label: 'Customer final choice',
+        value: booking.selectedProvider ? providerName(booking.selectedProvider) : 'Not selected',
+        helper: selectedParticipant
+          ? `${selectedParticipant.status} participant row retained.`
+          : 'No automatic assignment; the customer final choice remains required.',
+        href: booking.selectedProvider?.id ? `/partners/${booking.selectedProvider.id}` : '#participants',
+      },
+      {
+        label: 'Booking-address radius',
+        value: formatDistanceMeters(backupSupply.radiusMeters),
+        helper: `${backupSupply.eligibleCount} currently eligible partner(s) / ${notificationTrace.backupBatches.length} alert batch(es).`,
+        href: '#marketplace-supply',
+      },
+    ],
+    rows: participants.map((participant) => {
+      const partnerId = participant.providerProfile?.id;
+      const isPreferred = partnerId === preferredProviderId;
+      const isFinal = partnerId === selectedProviderId;
+      const role = isFinal ? 'Final partner' : isPreferred ? 'First-pick' : 'Marketplace';
+      const roleTone = isFinal ? 'pill-success' : isPreferred ? 'pill-info' : 'pill-neutral';
+      const statusTone =
+        participant.status === 'REJECTED'
+          ? 'pill-warn'
+          : participant.status === 'SELECTED'
+            ? 'pill-success'
+            : participant.status === 'ACCEPTED'
+              ? 'pill-info'
+              : 'pill-neutral';
+      const decision = isFinal
+        ? 'Customer selected this partner as the final match.'
+        : participant.status === 'ACCEPTED'
+          ? 'Partner can take the booking; customer final choice is still the authority.'
+          : participant.status === 'REJECTED'
+            ? 'Partner declined or could not take this booking.'
+            : 'Partner is visible in the customer shortlist after joining.';
+      const providerStatus =
+        participant.providerStatusAtJoin ?? participant.providerProfile?.status ?? 'status unknown';
+
+      return {
+        id: participant.id,
+        partner: providerName(participant.providerProfile),
+        identity: `${participant.providerProfile?.user?.phone ?? 'No phone'} / ${providerStatus}`,
+        href: partnerId ? `/partners/${partnerId}` : null,
+        role,
+        roleTone,
+        status: participant.status,
+        statusTone,
+        decision,
+        distance: distanceLabel(participant.distanceMeters),
+        timing: `Joined ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
+        operatorUse: `Participant ${shortId(participant.id)} is retained as actual marketplace evidence for this booking.`,
+      };
+    }),
   };
 }
 
