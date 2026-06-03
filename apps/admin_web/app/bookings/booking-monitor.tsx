@@ -155,6 +155,22 @@ type BookingMatchingRuleSnapshot = {
   operatorAction: string;
 };
 
+type BookingParticipant = NonNullable<AdminBooking['participants']>[number];
+
+type MarketplaceParticipantLedgerRow = {
+  booking: AdminBooking;
+  participant: BookingParticipant;
+  partnerLabel: string;
+  roleLabel: string;
+  statusLabel: string;
+  statusTone: string;
+  distanceLabel: string;
+  joinedLabel: string;
+  respondedLabel: string;
+  choiceLabel: string;
+  choiceTone: string;
+};
+
 export type BookingEvidenceFilter =
   | 'all'
   | 'address'
@@ -403,6 +419,21 @@ export function BookingMonitor({
         bookingMatchesEvidenceFilter(booking, evidenceFilter, currentTimeMs),
     );
   }, [baseVisibleBookings, currentTimeMs, evidenceFilter, paymentFilter, searchQuery, statusFilter]);
+  const marketplaceLedgerRows = useMemo(
+    () => buildMarketplaceParticipantLedgerRows(visibleBookings, currentTimeMs),
+    [currentTimeMs, visibleBookings],
+  );
+  const marketplaceLedgerSummary = useMemo(() => {
+    const selected = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Selected by customer');
+    const marketplace = marketplaceLedgerRows.filter((row) => row.roleLabel === 'Marketplace participant');
+    const declined = marketplaceLedgerRows.filter((row) => row.statusLabel === 'Declined');
+    return {
+      total: marketplaceLedgerRows.length,
+      marketplace: marketplace.length,
+      selected: selected.length,
+      declined: declined.length,
+    };
+  }, [marketplaceLedgerRows]);
 
   const statusFilterOptions = useMemo(
     () => uniqueSortedOptions(orderedBookings.map((booking) => booking.status)),
@@ -1030,6 +1061,91 @@ export function BookingMonitor({
           )}
         </section>
       )}
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Marketplace participant ledger</h2>
+            <p className="muted">
+              All joined partners by booking, including first-pick, marketplace participants, declined
+              responses, and the customer final choice. This is the operations record of who entered the
+              request.
+            </p>
+          </div>
+          <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
+            All joined partners {marketplaceLedgerSummary.total}
+          </span>
+        </div>
+        <div className="participant-list" style={{ marginTop: 12 }}>
+          <span className="pill">Marketplace participants {marketplaceLedgerSummary.marketplace}</span>
+          <span className="pill pill-success">
+            Selected marketplace partner {marketplaceLedgerSummary.selected}
+          </span>
+          <span className="pill pill-info">Declined responses {marketplaceLedgerSummary.declined}</span>
+          <span className="pill">Customer final choice</span>
+        </div>
+        {marketplaceLedgerRows.length === 0 ? (
+          <div className="empty-state" style={{ marginTop: 14 }}>
+            No joined partner records match the current booking filters.
+          </div>
+        ) : (
+          <table className="table" style={{ marginTop: 14 }}>
+            <thead>
+              <tr>
+                <th>Booking</th>
+                <th>Customer / service</th>
+                <th>Partner</th>
+                <th>Status</th>
+                <th>Distance</th>
+                <th>Joined / response</th>
+                <th>Customer choice</th>
+              </tr>
+            </thead>
+            <tbody>
+              {marketplaceLedgerRows.slice(0, 40).map((row) => (
+                <tr key={`${row.booking.id}-${row.participant.id}`}>
+                  <td>
+                    <strong>
+                      <Link className="text-link" href={`/bookings/${row.booking.id}`}>
+                        {shortId(row.booking.id)}
+                      </Link>
+                    </strong>
+                    <div className="muted">{row.booking.status}</div>
+                  </td>
+                  <td>
+                    <strong>{bookingCustomerLabel(row.booking)}</strong>
+                    <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
+                  </td>
+                  <td>
+                    <strong>{row.partnerLabel}</strong>
+                    <div className="muted">{row.participant.providerProfile?.user?.phone ?? 'No phone'}</div>
+                    <span className="pill">{row.roleLabel}</span>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.statusTone}`}>{row.statusLabel}</span>
+                    <div className="muted">{row.participant.providerStatusAtJoin ?? 'Partner state not saved'}</div>
+                  </td>
+                  <td>{row.distanceLabel}</td>
+                  <td>
+                    <div>{row.joinedLabel}</div>
+                    <div className="muted">{row.respondedLabel}</div>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.choiceTone}`}>{row.choiceLabel}</span>
+                  </td>
+                </tr>
+              ))}
+              {marketplaceLedgerRows.length > 40 && (
+                <tr>
+                  <td colSpan={7}>
+                    Showing first 40 joined partner records. Narrow the booking filters to inspect the rest.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        )}
+      </section>
 
       <section className="card" style={{ marginTop: 16 }}>
         <table className="table">
@@ -4030,6 +4146,102 @@ function marketplaceParticipants(booking: AdminBooking) {
       participant.providerProfile?.id &&
       participant.providerProfile.id !== preferredId,
   );
+}
+
+function buildMarketplaceParticipantLedgerRows(
+  bookings: AdminBooking[],
+  nowMs: number,
+): MarketplaceParticipantLedgerRow[] {
+  return bookings.flatMap((booking) =>
+    (booking.participants ?? [])
+      .filter((participant) => Boolean(participant.providerProfile?.id))
+      .map((participant) => ({
+        booking,
+        participant,
+        partnerLabel: partnerDisplayName(participant.providerProfile),
+        roleLabel: marketplaceParticipantRoleLabel(booking, participant),
+        statusLabel: marketplaceParticipantStatusLabel(participant.status),
+        statusTone: marketplaceParticipantStatusTone(participant.status),
+        distanceLabel: formatMeters(
+          typeof participant.distanceMeters === 'number' ? participant.distanceMeters : null,
+        ),
+        joinedLabel: participant.joinedAt
+          ? `${formatDate(participant.joinedAt)} / ${relativeTimeLabel(participant.joinedAt, nowMs)}`
+          : 'Join time not saved',
+        respondedLabel: participant.respondedAt
+          ? `Responded ${formatDate(participant.respondedAt)}`
+          : 'No response time saved',
+        ...marketplaceParticipantChoiceState(booking, participant),
+      }))
+      .sort((left, right) => {
+        if (left.choiceLabel === 'Selected by customer' && right.choiceLabel !== 'Selected by customer') {
+          return -1;
+        }
+        if (right.choiceLabel === 'Selected by customer' && left.choiceLabel !== 'Selected by customer') {
+          return 1;
+        }
+        return bookingParticipantTimestamp(right.participant) - bookingParticipantTimestamp(left.participant);
+      }),
+  );
+}
+
+function marketplaceParticipantRoleLabel(booking: AdminBooking, participant: BookingParticipant) {
+  if (participant.providerProfile?.id === booking.preferredProvider?.id) {
+    return 'First-pick partner';
+  }
+  return 'Marketplace participant';
+}
+
+function marketplaceParticipantStatusLabel(status: string) {
+  if (status === 'ACCEPTED') {
+    return 'Accepted';
+  }
+  if (status === 'SELECTED') {
+    return 'Selected';
+  }
+  if (status === 'REJECTED') {
+    return 'Declined';
+  }
+  if (status === 'JOINED') {
+    return 'Joined';
+  }
+  return status.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase());
+}
+
+function marketplaceParticipantStatusTone(status: string) {
+  if (status === 'ACCEPTED' || status === 'SELECTED') {
+    return 'pill-success';
+  }
+  if (status === 'REJECTED') {
+    return 'pill-info';
+  }
+  if (status === 'JOINED') {
+    return 'pill-warn';
+  }
+  return 'pill-neutral';
+}
+
+function marketplaceParticipantChoiceState(booking: AdminBooking, participant: BookingParticipant) {
+  const selectedProviderId = booking.selectedProvider?.id ?? booking.selectedProviderId;
+  if (selectedProviderId && participant.providerProfile?.id === selectedProviderId) {
+    return { choiceLabel: 'Selected by customer', choiceTone: 'pill-success' };
+  }
+  if (selectedProviderId) {
+    return { choiceLabel: 'Not final choice', choiceTone: 'pill-neutral' };
+  }
+  if (participant.status === 'ACCEPTED' || participant.status === 'SELECTED') {
+    return { choiceLabel: 'Visible to customer', choiceTone: 'pill-info' };
+  }
+  return { choiceLabel: 'Not selectable now', choiceTone: 'pill-neutral' };
+}
+
+function bookingParticipantTimestamp(participant: BookingParticipant) {
+  const value = participant.respondedAt ?? participant.joinedAt;
+  if (!value) {
+    return 0;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function acceptedParticipants(booking: AdminBooking) {

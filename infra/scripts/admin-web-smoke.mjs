@@ -129,7 +129,17 @@ const pages = [
   },
   { path: '/bookings?view=attention', markers: ['Booking Monitor', 'Follow-up queue'] },
   { path: '/bookings?view=first-pick', markers: ['Booking Monitor', 'Stage 1 first-pick'] },
-  { path: '/bookings?view=marketplace', markers: ['Booking Monitor', 'Stage 2 marketplace'] },
+  {
+    path: '/bookings?view=marketplace',
+    markers: [
+      'Booking Monitor',
+      'Stage 2 marketplace',
+      'Marketplace participant ledger',
+      'All joined partners',
+      'Selected marketplace partner',
+      'Customer final choice',
+    ],
+  },
   { path: '/bookings?view=customer-choice', markers: ['Booking Monitor', 'Stage 3 choice'] },
   { path: '/bookings?view=handoff-repair', markers: ['Booking Monitor', 'Stage 4 repair'] },
   { path: '/bookings?view=no-supply', markers: ['Booking Monitor', 'No supply'] },
