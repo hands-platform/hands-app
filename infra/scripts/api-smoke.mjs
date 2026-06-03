@@ -38,6 +38,11 @@ const postJson = (path, accessToken, body = {}) =>
     body: JSON.stringify(applyBookingAttemptLocationDefaults(path, body)),
   });
 
+async function startAndCompleteBooking(bookingId, providerAccessToken) {
+  await postJson(`/provider/bookings/${bookingId}/start`, providerAccessToken);
+  return postJson(`/provider/bookings/${bookingId}/complete`, providerAccessToken);
+}
+
 const getJson = (path, accessToken) =>
   request(path, {
     headers: { authorization: `Bearer ${accessToken}` },
@@ -2256,7 +2261,7 @@ if (acceptedWalletDebtBooking.status !== 'MATCHED') {
     providerId: walletDebtProviderAuth.user.providerProfile.id,
   });
 }
-await postJson(`/provider/bookings/${walletDebtBooking.id}/complete`, walletDebtProviderAuth.accessToken);
+await startAndCompleteBooking(walletDebtBooking.id, walletDebtProviderAuth.accessToken);
 const walletDebtProviderNotifications = await getJson('/notifications', walletDebtProviderAuth.accessToken);
 if (
   !walletDebtProviderNotifications.some(
@@ -2560,7 +2565,7 @@ const chatMessage = await postJson(`/chat/rooms/${chatRoomId}/messages`, custome
   body: 'Hello, see you soon.',
 });
 
-await postJson(`/provider/bookings/${booking.id}/complete`, providerAuth.accessToken);
+await startAndCompleteBooking(booking.id, providerAuth.accessToken);
 
 const completedAdminChatDetail = await getJson(`/admin/bookings/${booking.id}`, adminAuth.accessToken);
 if (
@@ -2751,7 +2756,7 @@ if (matchedDirectCustomPrice.status !== 'MATCHED') {
     `Custom-price direct booking did not match the selected partner: ${JSON.stringify(matchedDirectCustomPrice)}`,
   );
 }
-await postJson(`/provider/bookings/${directCustomPriceBooking.id}/complete`, providerAuth.accessToken);
+await startAndCompleteBooking(directCustomPriceBooking.id, providerAuth.accessToken);
 const customPriceCloseout = await postJson(
   `/admin/bookings/${directCustomPriceBooking.id}/closeout`,
   adminAuth.accessToken,

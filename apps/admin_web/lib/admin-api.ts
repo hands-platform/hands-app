@@ -541,6 +541,7 @@ export type AdminPayment = {
   bookingId: string;
   providerRef?: string | null;
   rawMeta?: unknown;
+  callbackAttempts?: AdminPaymentCallbackAttempt[];
   booking?: {
     createdAt?: string;
     status?: string;
@@ -559,6 +560,29 @@ export type AdminPayment = {
     } | null;
   };
   refunds?: Array<{ id: string; amount: number; status: string; createdAt?: string }>;
+};
+
+export type AdminPaymentCallbackAttempt = {
+  id: string;
+  paymentId?: string | null;
+  method: string;
+  providerRef?: string | null;
+  outcome: string;
+  signatureVerified?: boolean | null;
+  verificationMode?: string | null;
+  providerStatus?: string | null;
+  gatewayTransactionId?: string | null;
+  callbackAmount?: number | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  rawPayload?: unknown;
+  createdAt: string;
+  payment?: (AdminPayment & {
+    booking?: AdminPayment['booking'] & {
+      customerProfile?: { user?: { phone?: string; fullName?: string | null } };
+      selectedProvider?: { displayName?: string | null };
+    };
+  }) | null;
 };
 
 export type AdminEarning = {

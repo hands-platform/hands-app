@@ -1,4 +1,4 @@
-import { AdminPayment, adminGet } from '../../lib/admin-api';
+import { AdminPayment, AdminPaymentCallbackAttempt, adminGet } from '../../lib/admin-api';
 import {
   AdminDateRange,
   dateRangeLabel,
@@ -14,7 +14,11 @@ type PaymentsPageSearchParams = Promise<Record<string, string | string[] | undef
 export default async function PaymentsPage({ searchParams }: { searchParams?: PaymentsPageSearchParams }) {
   const filters = buildPaymentFilters(searchParams ? await searchParams : {});
   const allPayments = sortPayments(await adminGet<AdminPayment[]>('/admin/payments', []));
+  const callbackAttempts = sortPaymentCallbackAttempts(
+    await adminGet<AdminPaymentCallbackAttempt[]>('/admin/payment-callback-attempts', []),
+  );
   const payments = filterPayments(allPayments, filters);
+  const visibleCallbackAttempts = filterPaymentCallbackAttempts(callbackAttempts, filters);
   const activeFilter = paymentFilterLinks().find((item) => item.review === filters.review);
 
   return (
@@ -53,11 +57,11 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
         </div>
         <div className="card">
           <p>Callback review</p>
-          <h2>{payments.filter(paymentCallbackNeedsReview).length}</h2>
+          <h2>{visibleCallbackAttempts.filter(paymentCallbackAttemptNeedsReview).length}</h2>
         </div>
         <div className="card">
           <p>Callback verified</p>
-          <h2>{payments.filter(paymentCallbackVerified).length}</h2>
+          <h2>{visibleCallbackAttempts.filter(paymentCallbackAttemptVerified).length}</h2>
         </div>
       </section>
       <section className="card" style={{ marginBottom: 16 }}>
@@ -109,6 +113,92 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
             </Link>
           ))}
         </div>
+      </section>
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payment callback attempt ledger</h2>
+            <p className="muted">
+              Accepted, replayed, rejected, and conflicting provider callbacks. Unknown provider references remain
+              visible here even when they cannot attach to a payment row.
+            </p>
+          </div>
+          <span className="pill pill-info">{visibleCallbackAttempts.length} attempt(s)</span>
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Received</th>
+              <th>Method</th>
+              <th>Outcome</th>
+              <th>Gateway ref</th>
+              <th>Payment</th>
+              <th>Evidence</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visibleCallbackAttempts.slice(0, 10).map((attempt) => (
+              <tr id={`callback-attempt-${attempt.id}`} key={attempt.id}>
+                <td>{new Date(attempt.createdAt).toLocaleString()}</td>
+                <td>{attempt.method}</td>
+                <td>
+                  <span className={`pill ${paymentCallbackAttemptPill(attempt)}`}>{attempt.outcome}</span>
+                  <div className="muted">{attempt.errorMessage ?? 'No processing error recorded.'}</div>
+                </td>
+                <td>
+                  {attempt.providerRef ?? 'NONE'}
+                  <div className="muted">{attempt.gatewayTransactionId ?? 'No gateway transaction id'}</div>
+                </td>
+                <td>
+                  {attempt.paymentId ? (
+                    <>
+                      {shortId(attempt.paymentId)}
+                      <div className="muted">{attempt.payment?.status ?? 'UNKNOWN'}</div>
+                      {attempt.payment?.bookingId ? (
+                        <Link className="text-link" href={`/bookings/${attempt.payment.bookingId}`}>
+                          Open booking
+                        </Link>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      Not linked
+                      <div className="muted">Provider reference did not match a saved payment.</div>
+                    </>
+                  )}
+                </td>
+                <td>
+                  <div className="setup-stage-list">
+                    <div className="setup-stage-item">
+                      <span className="pill pill-info">Signature</span>
+                      <div>
+                        <strong>{attempt.signatureVerified === true ? 'Verified' : 'Not verified'}</strong>
+                        <p className="muted">Mode: {attempt.verificationMode ?? 'unknown'}</p>
+                      </div>
+                    </div>
+                    <div className="setup-stage-item">
+                      <span className="pill pill-neutral">Gateway</span>
+                      <div>
+                        <strong>{attempt.providerStatus ?? 'No status code'}</strong>
+                        <p className="muted">
+                          Amount:{' '}
+                          {attempt.callbackAmount !== null && attempt.callbackAmount !== undefined
+                            ? money(attempt.callbackAmount)
+                            : 'unknown'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {visibleCallbackAttempts.length === 0 && (
+              <tr>
+                <td colSpan={6}>No callback attempts match this queue.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </section>
       <div className="card">
         <table className="table">
@@ -255,6 +345,14 @@ function sortPayments(payments: AdminPayment[]) {
   });
 }
 
+function sortPaymentCallbackAttempts(attempts: AdminPaymentCallbackAttempt[]) {
+  return [...attempts].sort((left, right) => {
+    const leftDate = Date.parse(left.createdAt || '');
+    const rightDate = Date.parse(right.createdAt || '');
+    return (Number.isFinite(rightDate) ? rightDate : 0) - (Number.isFinite(leftDate) ? leftDate : 0);
+  });
+}
+
 function buildPaymentFilters(params: Record<string, string | string[] | undefined>) {
   return {
     review: readSearchParam(params.review),
@@ -267,6 +365,22 @@ function filterPayments(payments: AdminPayment[], filters: ReturnType<typeof bui
     (payment) =>
       isInDateRange(paymentRecordDate(payment), filters.range) &&
       (!filters.review || paymentMatchesReview(payment, filters.review)),
+  );
+}
+
+function filterPaymentCallbackAttempts(
+  attempts: AdminPaymentCallbackAttempt[],
+  filters: ReturnType<typeof buildPaymentFilters>,
+) {
+  return attempts.filter(
+    (attempt) =>
+      isInDateRange(attempt.createdAt, filters.range) &&
+      (!filters.review ||
+        (filters.review === 'callback-review'
+          ? paymentCallbackAttemptNeedsReview(attempt)
+          : filters.review === 'callback-verified'
+            ? paymentCallbackAttemptVerified(attempt)
+            : true)),
   );
 }
 
@@ -290,10 +404,10 @@ function paymentMatchesReview(payment: AdminPayment, review: string) {
     return paymentOpsState(payment) !== 'settled';
   }
   if (review === 'callback-review') {
-    return paymentCallbackNeedsReview(payment);
+    return (payment.callbackAttempts?.some(paymentCallbackAttemptNeedsReview) ?? false) || paymentCallbackNeedsReview(payment);
   }
   if (review === 'callback-verified') {
-    return paymentCallbackVerified(payment);
+    return (payment.callbackAttempts?.some(paymentCallbackAttemptVerified) ?? false) || paymentCallbackVerified(payment);
   }
   if (review === 'refunded') {
     return payment.status === 'REFUNDED';
@@ -667,6 +781,30 @@ function paymentCallbackNeedsReview(payment: AdminPayment) {
   }
   const callback = paymentCallbackMeta(payment);
   return Boolean(callback.receivedAt) && callback.verified !== true;
+}
+
+function paymentCallbackAttemptNeedsReview(attempt: AdminPaymentCallbackAttempt) {
+  if (attempt.outcome === 'ACCEPTED' || attempt.outcome === 'REPLAY') {
+    return attempt.signatureVerified !== true;
+  }
+  return true;
+}
+
+function paymentCallbackAttemptVerified(attempt: AdminPaymentCallbackAttempt) {
+  return (attempt.outcome === 'ACCEPTED' || attempt.outcome === 'REPLAY') && attempt.signatureVerified === true;
+}
+
+function paymentCallbackAttemptPill(attempt: AdminPaymentCallbackAttempt) {
+  if (attempt.outcome === 'ACCEPTED' && paymentCallbackAttemptVerified(attempt)) {
+    return 'pill-success';
+  }
+  if (attempt.outcome === 'REPLAY' && paymentCallbackAttemptVerified(attempt)) {
+    return 'pill-info';
+  }
+  if (attempt.outcome === 'CONFLICT') {
+    return 'pill-danger';
+  }
+  return 'pill-warn';
 }
 
 function stringFromUnknown(value: unknown) {

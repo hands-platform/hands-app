@@ -1617,6 +1617,26 @@ export class AdminService {
           },
         },
         refunds: true,
+        callbackAttempts: { orderBy: { createdAt: 'desc' }, take: 5 },
+      },
+    });
+  }
+
+  listPaymentCallbackAttempts() {
+    return this.prisma.paymentCallbackAttempt.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      include: {
+        payment: {
+          include: {
+            booking: {
+              include: {
+                customerProfile: { include: { user: true } },
+                selectedProvider: true,
+              },
+            },
+          },
+        },
       },
     });
   }

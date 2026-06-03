@@ -366,7 +366,13 @@ const pages = [
   },
   {
     path: '/payments',
-    markers: ['Payments', 'Payment operation filters', 'Payment date range', 'Payment action execution map'],
+    markers: [
+      'Payments',
+      'Payment operation filters',
+      'Payment date range',
+      'Payment callback attempt ledger',
+      'Payment action execution map',
+    ],
   },
   {
     path: '/payments?range=7d',

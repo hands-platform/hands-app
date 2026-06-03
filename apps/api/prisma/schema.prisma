@@ -741,6 +741,30 @@ model Payment {
   rawMeta     Json?
   booking     Booking       @relation(fields: [bookingId], references: [id])
   refunds     Refund[]
+  callbackAttempts PaymentCallbackAttempt[]
+}
+
+model PaymentCallbackAttempt {
+  id                   String         @id @default(cuid())
+  paymentId            String?
+  method               PaymentMethod
+  providerRef          String?
+  outcome              String
+  signatureVerified    Boolean?
+  verificationMode     String?
+  providerStatus       String?
+  gatewayTransactionId String?
+  callbackAmount       Int?
+  errorCode            String?
+  errorMessage         String?
+  rawPayload           Json?
+  createdAt            DateTime       @default(now())
+  payment              Payment?       @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+
+  @@index([paymentId, createdAt])
+  @@index([method, outcome, createdAt])
+  @@index([providerRef, createdAt])
+  @@index([createdAt])
 }
 
 model Review {

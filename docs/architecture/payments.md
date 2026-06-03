@@ -77,13 +77,19 @@ Operators should use this view before manual capture, release, refund, or settle
 actions. The backend remains the authority for accepting or rejecting callbacks; the
 admin screen only exposes the saved evidence so finance can audit what happened.
 
+Rejected and conflicting callbacks are stored in `PaymentCallbackAttempt` even when
+the provider reference cannot be matched to a saved payment. The admin payment page
+shows the recent attempt ledger so operators can inspect unknown references, missing
+signatures, amount mismatches, merchant mismatches, terminal replays, and terminal
+conflicts without trusting the callback payload as business truth.
+
 ## Refund Flow
 
 Admin refunds update the payment to `REFUNDED`, move the booking to `REFUNDED`, create a `Refund` row, and cancel unpaid partner earnings. If the earning is already `PAID`, the MVP keeps it unchanged and writes the skip reason to `AdminAuditLog`.
 
 ## Production Hardening
 
-- Store every rejected callback attempt in a dedicated audit table, not only accepted callback metadata.
+- Add a provider-specific callback detail view once real MoMo/VNPay sandbox data is connected.
 - Replace placeholder status polling with provider API calls.
 - Separate `AUTHORIZED`, `CAPTURED`, `RELEASED`, `REFUNDED` semantics by payment provider.
 - Add payment provider replay nonce or provider transaction reference tracking once real sandbox credentials are connected.

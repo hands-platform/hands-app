@@ -75,38 +75,80 @@ export class PaymentsService {
 
   async handleCallback(method: PaymentMethod, payload: unknown) {
     const paymentMethod = this.parsePaymentMethod(method);
-    const verification = this.verifyCallback(paymentMethod, payload);
-    const parsed = this.adapterFor(paymentMethod).parseCallback(payload);
-    if (!parsed.providerRef) {
-      throw new BadRequestException('Payment callback provider reference is required');
-    }
+    const body = asJsonObject(payload);
+    const initialEvidence = callbackAttemptEvidence(paymentMethod, body);
+    let verification: ReturnType<PaymentsService['verifyCallback']> | null = null;
+    let parsed: ReturnType<PaymentAdapter['parseCallback']> | null = null;
+    let existing: Awaited<ReturnType<typeof this.prisma.payment.findUnique>> | null = null;
 
-    const existing = await this.prisma.payment.findUnique({ where: { providerRef: parsed.providerRef } });
-    if (!existing) {
-      throw new BadRequestException('Payment callback provider reference is unknown');
-    }
-    this.assertCallbackMatchesPayment(paymentMethod, payload, existing);
-
-    if (isTerminalPaymentStatus(existing.status)) {
-      if (existing.status === parsed.status) {
-        return { ok: true, replay: true, payment: existing };
+    try {
+      verification = this.verifyCallback(paymentMethod, payload);
+      parsed = this.adapterFor(paymentMethod).parseCallback(payload);
+      if (!parsed.providerRef) {
+        throw new BadRequestException('Payment callback provider reference is required');
       }
-      throw new ConflictException('Payment callback conflicts with a terminal payment status');
-    }
 
-    const payment = await this.prisma.payment.update({
-      where: { id: existing.id },
-      data: {
-        status: parsed.status,
-        rawMeta: toJsonOrUndefined({
-          ...parsed.rawMeta,
-          callbackReceivedAt: new Date().toISOString(),
-          callbackSignatureVerified: verification.verified,
-          callbackVerificationMode: verification.mode,
-        }),
-      },
-    });
-    return { ok: true, replay: false, payment };
+      existing = await this.prisma.payment.findUnique({ where: { providerRef: parsed.providerRef } });
+      if (!existing) {
+        throw new BadRequestException('Payment callback provider reference is unknown');
+      }
+      this.assertCallbackMatchesPayment(paymentMethod, payload, existing);
+
+      if (isTerminalPaymentStatus(existing.status)) {
+        if (existing.status === parsed.status) {
+          await this.recordCallbackAttempt({
+            ...initialEvidence,
+            paymentId: existing.id,
+            providerRef: parsed.providerRef,
+            outcome: 'REPLAY',
+            signatureVerified: verification.verified,
+            verificationMode: verification.mode,
+            providerStatus: parsed.status,
+            rawPayload: body,
+          });
+          return { ok: true, replay: true, payment: existing };
+        }
+        throw new ConflictException('Payment callback conflicts with a terminal payment status');
+      }
+
+      const payment = await this.prisma.payment.update({
+        where: { id: existing.id },
+        data: {
+          status: parsed.status,
+          rawMeta: toJsonOrUndefined({
+            ...parsed.rawMeta,
+            callbackReceivedAt: new Date().toISOString(),
+            callbackSignatureVerified: verification.verified,
+            callbackVerificationMode: verification.mode,
+          }),
+        },
+      });
+      await this.recordCallbackAttempt({
+        ...initialEvidence,
+        paymentId: payment.id,
+        providerRef: parsed.providerRef,
+        outcome: 'ACCEPTED',
+        signatureVerified: verification.verified,
+        verificationMode: verification.mode,
+        providerStatus: parsed.status,
+        rawPayload: body,
+      });
+      return { ok: true, replay: false, payment };
+    } catch (error) {
+      await this.recordCallbackAttempt({
+        ...initialEvidence,
+        paymentId: existing?.id ?? null,
+        providerRef: parsed?.providerRef || initialEvidence.providerRef,
+        outcome: error instanceof ConflictException ? 'CONFLICT' : 'REJECTED',
+        signatureVerified: verification?.verified ?? null,
+        verificationMode: verification?.mode ?? null,
+        providerStatus: parsed?.status ?? initialEvidence.providerStatus,
+        errorCode: errorCode(error),
+        errorMessage: errorMessage(error),
+        rawPayload: body,
+      });
+      throw error;
+    }
   }
 
   async checkAndSyncStatus(paymentId: string) {
@@ -308,6 +350,42 @@ export class PaymentsService {
       }
     }
   }
+
+  private async recordCallbackAttempt(input: {
+    paymentId?: string | null;
+    method: PaymentMethod;
+    providerRef?: string | null;
+    outcome: string;
+    signatureVerified?: boolean | null;
+    verificationMode?: string | null;
+    providerStatus?: string | null;
+    gatewayTransactionId?: string | null;
+    callbackAmount?: number | null;
+    errorCode?: string | null;
+    errorMessage?: string | null;
+    rawPayload?: Record<string, unknown>;
+  }) {
+    try {
+      await this.prisma.paymentCallbackAttempt.create({
+        data: {
+          paymentId: input.paymentId ?? undefined,
+          method: input.method,
+          providerRef: input.providerRef || undefined,
+          outcome: input.outcome,
+          signatureVerified: input.signatureVerified ?? undefined,
+          verificationMode: input.verificationMode ?? undefined,
+          providerStatus: input.providerStatus ?? undefined,
+          gatewayTransactionId: input.gatewayTransactionId ?? undefined,
+          callbackAmount: input.callbackAmount ?? undefined,
+          errorCode: input.errorCode ?? undefined,
+          errorMessage: input.errorMessage ?? undefined,
+          rawPayload: toJsonOrUndefined(input.rawPayload ?? {}),
+        },
+      });
+    } catch {
+      // Callback verification decisions must not become unavailable because audit storage failed.
+    }
+  }
 }
 
 function isTerminalPaymentStatus(status: PaymentStatus) {
@@ -387,6 +465,50 @@ function callbackAmountVnd(method: PaymentMethod, body: Record<string, unknown>)
     return rawAmount === null ? null : Math.round(rawAmount / 100);
   }
   return null;
+}
+
+function callbackAttemptEvidence(method: PaymentMethod, body: Record<string, unknown>) {
+  return {
+    method,
+    providerRef: callbackProviderRef(body),
+    providerStatus:
+      stringValueOrNull(body.status) ??
+      stringValueOrNull(body.resultCode) ??
+      stringValueOrNull(body.vnp_ResponseCode) ??
+      stringValueOrNull(body.message),
+    gatewayTransactionId:
+      stringValueOrNull(body.transId) ??
+      stringValueOrNull(body.transactionId) ??
+      stringValueOrNull(body.vnp_TransactionNo) ??
+      stringValueOrNull(body.vnp_TxnRef),
+    callbackAmount: callbackAmountVnd(method, body),
+  };
+}
+
+function callbackProviderRef(body: Record<string, unknown>) {
+  return stringValueOrNull(body.providerRef) ?? stringValueOrNull(body.orderId) ?? stringValueOrNull(body.vnp_TxnRef);
+}
+
+function stringValueOrNull(value: unknown) {
+  const valueString = stringValue(value);
+  return valueString ? valueString : null;
+}
+
+function errorCode(error: unknown) {
+  if (error instanceof BadRequestException) {
+    return 'BAD_REQUEST';
+  }
+  if (error instanceof ConflictException) {
+    return 'CONFLICT';
+  }
+  return 'CALLBACK_ERROR';
+}
+
+function errorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return 'Payment callback processing failed';
 }
 
 function stringValue(value: unknown) {

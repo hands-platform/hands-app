@@ -369,6 +369,11 @@ export class AdminController {
     return this.admin.listPayments();
   }
 
+  @Get('payment-callback-attempts')
+  paymentCallbackAttempts() {
+    return this.admin.listPaymentCallbackAttempts();
+  }
+
   @Get('refunds')
   refunds() {
     return this.admin.listRefunds();
