@@ -318,7 +318,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       });
       await loadOpenBookings();
     } catch (exception) {
-      setState(() => error = providerAppErrorMessage(exception));
+      await handleBookingActionException(exception);
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -350,11 +350,31 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
           : 'You declined the booking request.');
       await loadOpenBookings();
     } catch (exception) {
-      setState(() => error = providerAppErrorMessage(exception));
+      await handleBookingActionException(exception);
     } finally {
       if (mounted) {
         setState(() => loading = false);
       }
+    }
+  }
+
+  Future<void> handleBookingActionException(Object exception) async {
+    final walletSummary = providerApiExceptionWalletSummary(exception);
+    if (walletSummary != null) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        requestActionsWalletBlocked = true;
+        error = providerWalletBlockFallbackReasonClean;
+        statusMessage = providerWalletBlockHintClean;
+      });
+      await showWalletSettlementDialog(walletSummary);
+      return;
+    }
+
+    if (mounted) {
+      setState(() => error = providerAppErrorMessage(exception));
     }
   }
 
@@ -4917,6 +4937,11 @@ String? providerWalletBlockReason(Map<String, dynamic> summary) {
     return reason;
   }
 
+  final message = summary['message'];
+  if (message is String && message.trim().isNotEmpty) {
+    return message.trim();
+  }
+
   return providerWalletBlockFallbackReasonClean;
 }
 
@@ -5505,6 +5530,40 @@ String providerAppErrorMessage(Object error) {
     );
   }
   return normalized;
+}
+
+Map<String, dynamic>? providerApiExceptionWalletSummary(Object error) {
+  if (error is! ApiException) {
+    return null;
+  }
+  return providerWalletSummaryFromApiBody(error.body);
+}
+
+Map<String, dynamic>? providerWalletSummaryFromApiBody(
+    Map<String, dynamic> body) {
+  final directSummary = providerWalletSummaryCandidate(body);
+  if (directSummary != null) {
+    return directSummary;
+  }
+
+  final message = body['message'];
+  if (message is Map) {
+    return providerWalletSummaryCandidate(Map<String, dynamic>.from(message));
+  }
+  return null;
+}
+
+Map<String, dynamic>? providerWalletSummaryCandidate(
+    Map<String, dynamic> value) {
+  final code = value['code']?.toString().trim();
+  final isWalletBlocked =
+      code == 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT' ||
+          value['walletBlocked'] == true ||
+          value['walletSettlementRequired'] == true;
+  if (!isWalletBlocked) {
+    return null;
+  }
+  return value;
 }
 
 String? providerApiExceptionMessage(Map<String, dynamic> body) {

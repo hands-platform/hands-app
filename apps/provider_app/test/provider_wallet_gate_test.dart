@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/main.dart';
 
 void main() {
@@ -60,6 +61,40 @@ void main() {
       contains(
           'Use reference HANDS-WALLET-ABC12345 when reporting the deposit.'),
     );
+  });
+
+  test('extracts wallet settlement details from server API block response', () {
+    final exception = ApiException(400, {
+      'message': {
+        'code': 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
+        'message':
+            'Outstanding HANDS fee settlement must be completed before marketplace participation.',
+        'walletBlocked': true,
+        'walletBalance': -80000,
+        'walletDebtAmount': 80000,
+        'walletSettlementRequired': true,
+        'walletSettlementReference': 'HANDS-WALLET-BLOCKED',
+        'walletSettlementInstruction':
+            'Marketplace requests stay visible for review, but participation is blocked until settlement.',
+      },
+      'error': 'Bad Request',
+      'statusCode': 400,
+    });
+
+    final summary = providerApiExceptionWalletSummary(exception);
+
+    expect(summary, isNotNull);
+    expect(summary?['walletBlocked'], isTrue);
+    expect(summary?['walletDebtAmount'], 80000);
+    expect(
+      providerWalletBlockReason(summary!),
+      contains('marketplace participation'),
+    );
+    expect(
+      providerWalletSettlementInstruction(summary),
+      contains('participation is blocked'),
+    );
+    expect(providerWalletSettlementReference(summary), 'HANDS-WALLET-BLOCKED');
   });
 
   test('clears marketplace gate when unsettled wallet is non-negative', () {
