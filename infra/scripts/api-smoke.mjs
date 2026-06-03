@@ -157,7 +157,7 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
     '"walletSettlementReference":"HANDS-WALLET-',
     'Marketplace requests stay visible for review, but participation is blocked',
-    'Marketplace participation, direct acceptance, customer selection, service start, and payout release unlock',
+    'Marketplace participation and payout release unlock',
   ];
   const missingMarkers = requiredMarkers.filter((marker) => !message.includes(marker));
   if (missingMarkers.length) {
@@ -2332,7 +2332,7 @@ if (
   );
 }
 const expectedProviderWalletBlockReason =
-  'Outstanding HANDS fee settlement must be completed before marketplace participation, direct acceptance, customer selection, service start, or payout release.';
+  'Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.';
 if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
@@ -2340,38 +2340,39 @@ if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWall
     )}`,
   );
 }
-const directWalletBlockError = await expectRequestFailure(
-  'Negative provider wallet holds direct final acceptance',
-  () => postJson(`/provider/bookings/${blockedDirectBooking.id}/accept`, walletDebtProviderAuth.accessToken),
-  400,
+const directAcceptedWithDebt = await postJson(
+  `/provider/bookings/${blockedDirectBooking.id}/accept`,
+  walletDebtProviderAuth.accessToken,
 );
-const customerSelectionWalletBlockError = await expectRequestFailure(
-  'Negative provider wallet blocks customer final selection',
-  () =>
-    postJson(
-      `/customer/bookings/${walletDebtJoinedBeforeDebtBooking.id}/select-provider`,
-      customerAuth.accessToken,
-      {
-        providerId: walletDebtProviderAuth.user.providerProfile.id,
-      },
-    ),
-  400,
+if (!['OPEN_MATCHING', 'MATCHED'].includes(directAcceptedWithDebt.status)) {
+  throw new Error(
+    `Negative wallet should not block preferred direct acceptance: ${JSON.stringify(directAcceptedWithDebt)}`,
+  );
+}
+const customerSelectedDebtParticipant = await postJson(
+  `/customer/bookings/${walletDebtJoinedBeforeDebtBooking.id}/select-provider`,
+  customerAuth.accessToken,
+  {
+    providerId: walletDebtProviderAuth.user.providerProfile.id,
+  },
 );
-const serviceStartWalletBlockError = await expectRequestFailure(
-  'Negative provider wallet blocks service start',
-  () =>
-    postJson(
-      `/provider/bookings/${walletDebtServiceStartGateBooking.id}/start`,
-      walletDebtProviderAuth.accessToken,
-    ),
-  400,
+if (customerSelectedDebtParticipant.status !== 'MATCHED') {
+  throw new Error(
+    `Negative wallet should not block customer final selection after a partner already joined: ${JSON.stringify(
+      customerSelectedDebtParticipant,
+    )}`,
+  );
+}
+const serviceStartedWithDebt = await postJson(
+  `/provider/bookings/${walletDebtServiceStartGateBooking.id}/start`,
+  walletDebtProviderAuth.accessToken,
 );
-for (const [label, message] of [
-  ['direct final acceptance', directWalletBlockError],
-  ['customer final selection', customerSelectionWalletBlockError],
-  ['service start', serviceStartWalletBlockError],
-]) {
-  assertNegativeWalletBlockResponse(label, message);
+if (serviceStartedWithDebt.status !== 'IN_SERVICE') {
+  throw new Error(
+    `Negative wallet should not block starting a booking that is already matched: ${JSON.stringify(
+      serviceStartedWithDebt,
+    )}`,
+  );
 }
 const blockedOpenMatchingBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,

@@ -257,7 +257,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'Negative wallet booking gate',
     description:
-      'Controls how unpaid cash-service platform fees block partner marketplace participation and downstream booking gates.',
+      'Controls how unpaid cash-service platform fees block partner marketplace participation and payout release.',
     value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
     recommendedValue: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
     options: [
@@ -265,7 +265,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
         label: 'Block marketplace participation while negative',
         tradeoff:
-          'Keeps marketplace requests visible for review, but blocks join, direct acceptance, customer selection, service start, and payout release while debt is open.',
+          'Keeps marketplace requests visible for review, but blocks join and payout release while debt is open.',
       },
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,

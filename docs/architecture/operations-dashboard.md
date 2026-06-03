@@ -31,7 +31,7 @@ The dashboard answers these shift questions:
 | Regional demand | `Regional booking demand` | Compare demand by city/district and partner location freshness. |
 | Active app presence | `Customers in app`, `Partners in app`, `Active customers` | Distinguish live app demand/supply from stale users. |
 | Partner supply | `Online partners`, `Partner dispatch control` | Review direct-ready, marketplace-ready, blocked, or stale partners. |
-| Cash settlement pressure | `Cash debt` | Open Cash Settlements before negative-wallet partners complete final acceptance or customer selection. |
+| Cash settlement pressure | `Cash debt` | Open Cash Settlements before negative-wallet partners try to join marketplace demand or receive payout release. |
 | Finance pressure | `Payment holds`, `Available payout`, `Open payout batches` | Open Payments, Earnings, or Payouts to close money tasks. |
 | Notification follow-up | `Failed notifications` | Retry or inspect disabled devices before customers or partners miss critical state changes. |
 | Checklist next work | `Action queue`, `Shift command briefing`, `Opening shift checklist` | Follow the first recommended action instead of scanning pages manually. |
@@ -69,7 +69,7 @@ The dashboard intentionally mirrors the current MVP operations policy:
 - Marketplace partner location freshness: 30 minutes.
 - Marketplace partners can appear while the preferred partner is still deciding.
 - Customer always selects the final partner.
-- A negative partner wallet can still allow marketplace list visibility, but blocks marketplace participation/join, direct acceptance, customer final partner selection, service start, and payout release until settlement or admin offset clears the debt.
+- A negative partner wallet can still allow marketplace list visibility, but blocks marketplace participation/join and payout release until settlement or admin offset clears the debt.
 - Wallet-blocked view attempts are not participant records. Admin tracks why the wallet is negative and whether the cash fee settlement has been paid or offset.
 
 These values should be changed through Admin `/operations-policy` or environment defaults, not hardcoded in mobile UI.

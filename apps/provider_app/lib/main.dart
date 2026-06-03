@@ -307,7 +307,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       statusMessage = null;
     });
     try {
-      if (!await ensureWalletCanAcceptRequest()) {
+      if (!await ensureWalletCanJoinMarketplace()) {
         return;
       }
       await ref.read(providerRepositoryProvider).joinBooking(bookingId);
@@ -336,9 +336,6 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     });
     try {
       if (accepted) {
-        if (!await ensureWalletCanAcceptRequest()) {
-          return;
-        }
         await ref.read(providerRepositoryProvider).acceptBooking(bookingId);
       } else {
         await ref.read(providerRepositoryProvider).rejectBooking(bookingId);
@@ -378,7 +375,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     }
   }
 
-  Future<bool> ensureWalletCanAcceptRequest() async {
+  Future<bool> ensureWalletCanJoinMarketplace() async {
     try {
       final summary =
           await ref.read(providerRepositoryProvider).earningsSummary();
@@ -1706,6 +1703,8 @@ class OpenBookingCard extends StatelessWidget {
     final hasPreferredProvider = preferredProvider != null;
     final hasChat = isProviderAppChatVisible(booking);
     final isMatched = booking['status'] == 'MATCHED';
+    final walletBlocksMarketplaceJoin =
+        walletBlocked && !isPreferredRequest && !isMatched && !joined;
     final isCashBooking = providerBookingIsCash(booking);
     final customerAmount = payment?['amount'] ?? service?['basePrice'];
     final customerAddress = booking['address'] as Map<String, dynamic>?;
@@ -1920,7 +1919,7 @@ class OpenBookingCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             InfoCard(text: guidance.infoMessage),
-            if (walletBlocked && !isMatched) ...[
+            if (walletBlocksMarketplaceJoin) ...[
               const SizedBox(height: 12),
               const ProviderErrorCard(
                   text: providerWalletBlockFallbackReasonClean),
@@ -1947,11 +1946,8 @@ class OpenBookingCard extends StatelessWidget {
                   Expanded(
                     child: FilledButton.icon(
                       onPressed: loading ? null : onAccept,
-                      icon: Icon(
-                          walletBlocked ? Icons.lock_outline : Icons.check),
-                      label: Text(walletBlocked
-                          ? 'Settle fee first'
-                          : 'Accept request'),
+                      icon: const Icon(Icons.check),
+                      label: const Text('Accept request'),
                     ),
                   ),
                 ],
@@ -1967,10 +1963,10 @@ class OpenBookingCard extends StatelessWidget {
             else if (!joined)
               FilledButton.icon(
                 onPressed: loading ? null : onJoin,
-                icon: Icon(walletBlocked
+                icon: Icon(walletBlocksMarketplaceJoin
                     ? Icons.lock_outline
                     : Icons.add_circle_outline),
-                label: Text(walletBlocked
+                label: Text(walletBlocksMarketplaceJoin
                     ? 'Settle fee to join'
                     : hasPreferredProvider
                         ? 'Offer marketplace support'
@@ -4897,11 +4893,10 @@ class ProviderMvpScreen extends StatelessWidget {
   }
 }
 
-const providerWalletBlockFallbackReasonClean =
-    'Unpaid HANDS fees must be settled before you can join marketplace requests or accept direct bookings.';
+const providerWalletBlockFallbackReasonClean = '수수료를 입금하지 않아 예약에 참여 할수 없습니다.';
 
 const providerWalletBlockHintClean =
-    'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before joining marketplace requests or accepting direct work.';
+    'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before joining marketplace requests.';
 
 num providerWalletBalance(Map<String, dynamic> summary) {
   return asNum(summary['walletBalance']) ??
@@ -4978,7 +4973,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
   if (providerWalletBlockReason(summary) == null) {
     return const [
       'Cash booking fees are settled.',
-      'You can join marketplace and direct requests.',
+      'You can join marketplace requests.',
       'Payout still needs tax, bank, and agreement checks.',
     ];
   }
@@ -4991,7 +4986,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
     if (reference != null)
       'Use reference $reference when sending the deposit or requesting admin offset.',
     'After admin confirms the deposit or offset, refresh wallet status.',
-    'Marketplace participation, direct acceptance, customer selection, service start, and payout release unlock when the wallet is no longer negative.',
+    'Marketplace participation and payout release unlock when the wallet is no longer negative.',
   ];
 }
 
@@ -5029,7 +5024,8 @@ ProviderRequestGuidance providerRequestGuidance({
       preferredProvider?['displayName']?.toString().trim();
   final hasChat = isProviderAppChatVisible(booking);
   final isMatched = booking['status'] == 'MATCHED';
-  final actionBlockedByWallet = walletBlocked && !isMatched;
+  final actionBlockedByWallet =
+      walletBlocked && !isMatched && !isPreferredRequest && !joined;
   final responseWindowLabel = providerMatchingWindowText(booking);
   final backupRadiusLabel = providerBackupRadiusText(booking);
 
@@ -5056,9 +5052,9 @@ ProviderRequestGuidance providerRequestGuidance({
       roleLabel: roleLabel,
       decisionLabel: 'Settlement required',
       nextAction:
-          'Settle unpaid HANDS fees before participating in this booking.',
+          'Settle unpaid HANDS fees before joining this marketplace booking.',
       contextMessage:
-          'This booking is visible, but unpaid HANDS fees must be settled before you can join or accept it.',
+          'This marketplace booking is visible, but unpaid HANDS fees must be settled before you can join it.',
       detailMessage: providerWalletBlockFallbackReasonClean,
       infoMessage: providerWalletBlockHintClean,
     );
@@ -5222,7 +5218,7 @@ String providerCashBookingSettlementHint(Map<String, dynamic> booking) {
       amount == null ? 'this request' : '${formatCurrency(amount)} VND';
   return 'Cash payment: the customer pays you directly for $amountText. '
       'After completion, HANDS fees and tax withholding can create wallet debt. '
-      'Keep your wallet settled so final confirmation, service start, and payout gates stay clear.';
+      'Keep your wallet settled so marketplace participation and payout release stay clear.';
 }
 
 String providerServiceOptionLabel(Map<String, dynamic>? service) {
@@ -5540,10 +5536,9 @@ Map<String, dynamic>? providerWalletSummaryFromApiBody(
 Map<String, dynamic>? providerWalletSummaryCandidate(
     Map<String, dynamic> value) {
   final code = value['code']?.toString().trim();
-  final isWalletBlocked =
-      code == 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT' ||
-          value['walletBlocked'] == true ||
-          value['walletSettlementRequired'] == true;
+  final isWalletBlocked = code == 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT' ||
+      value['walletBlocked'] == true ||
+      value['walletSettlementRequired'] == true;
   if (!isWalletBlocked) {
     return null;
   }
@@ -5608,6 +5603,7 @@ ProviderActionBlockCopy? providerActionBlockCopy(String value) {
   if (normalized.contains('wallet') ||
       normalized.contains('settlement') ||
       normalized.contains('hands fee') ||
+      value.contains('수수료를 입금하지 않아') ||
       normalized.contains('unpaid hands cash-service fees')) {
     return const ProviderActionBlockCopy(
       title: 'Fee settlement required',

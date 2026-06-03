@@ -67,7 +67,7 @@ function checkNoContradictoryOperationsDocs() {
   );
   requireMarkers('docs/architecture/partner-acceptance-operations.md', partnerAcceptance, [
     'The partner can still see marketplace opportunities',
-    'Final acceptance, customer final partner selection, service-start, or payout release can be blocked',
+    'Marketplace join stays blocked until settlement',
     'Marketplace requests can remain visible, but join is blocked until settlement.',
   ]);
 

@@ -714,7 +714,7 @@ export class BookingsService {
       throw new BadRequestException('Booking request is expired');
     }
     assertProviderCanReceiveBooking(provider);
-    await this.ensureProviderWalletCanAccept(provider.id);
+    await this.ensureProviderWalletCanJoinMarketplace(provider.id);
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
@@ -762,8 +762,6 @@ export class BookingsService {
     if (!participant || participant.status === ParticipantStatus.REJECTED) {
       throw new BadRequestException('Partner must join before customer selection');
     }
-    await this.ensureProviderWalletCanAccept(providerId);
-
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
@@ -806,7 +804,6 @@ export class BookingsService {
     const provider = await this.requireProvider(providerUserId);
     if (status === ParticipantStatus.ACCEPTED) {
       assertProviderCanReceiveBooking(provider);
-      await this.ensureProviderWalletCanAccept(provider.id);
     }
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
@@ -1315,7 +1312,7 @@ export class BookingsService {
     );
   }
 
-  private async ensureProviderWalletCanAccept(providerProfileId: string) {
+  private async ensureProviderWalletCanJoinMarketplace(providerProfileId: string) {
     const wallet = await this.prisma.providerEarning.aggregate({
       where: {
         providerProfileId,
@@ -1349,7 +1346,6 @@ export class BookingsService {
         BookingStatus.PROVIDER_ON_THE_WAY,
         BookingStatus.ARRIVED,
       ]);
-      await this.ensureProviderWalletCanAccept(provider.id);
       const updated = await this.prisma.booking.update({
         where: { id: bookingId },
         data: {

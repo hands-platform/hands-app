@@ -25,7 +25,7 @@ A partner can accept or join only when the operational gates pass:
 - Location is available and inside the configured radius for marketplace matching.
 - Partner is online or available soon.
 - Partner offers the requested service and duration.
-- Wallet is not negative unless an explicit recovery policy allows one active recovery booking.
+- Wallet is not negative for marketplace join or payout release.
 - Required app notification state is healthy enough for the selected notification policy.
 
 The API remains the final guard. Mobile and admin UI warnings are advisory, but the API must reject unsafe finalization attempts.
@@ -36,9 +36,10 @@ Cash bookings are collected directly by the partner. HANDS records platform fee,
 
 When that wallet becomes negative:
 
-- The partner cannot complete final direct-request confirmation until finance clears the debt.
 - The partner can still see marketplace opportunities so customer supply stays visible, but cannot join until settlement is confirmed.
-- Final acceptance, customer final partner selection, service-start, or payout release can be blocked until the debt is settled, depending on the active operations policy.
+- Marketplace requests can remain visible, but join is blocked until settlement.
+- Marketplace join stays blocked until settlement.
+- Payout release stays blocked until the debt is settled.
 - The partner app displays the localized settlement-block message from `apps/provider_app/lib/main.dart`.
 - Admin finance can settle the debt through cash settlement, earning, payout, payment, or booking detail workflows.
 - Settlement must keep a reference or admin audit note.
@@ -78,12 +79,12 @@ Operators should use these screens together:
 
 ## Acceptance Unblock Playbook
 
-When a partner cannot complete final acceptance, customer final selection, service start, or payout release, operators should resolve blockers in this order:
+When a partner cannot join marketplace demand or receive payout release, operators should resolve blockers in this order:
 
 1. Clear negative wallet first.
    - Owner: Finance.
    - Why: cash bookings can create unpaid HANDS fee/tax debt.
-   - Booking impact: direct final acceptance and customer final selection stay blocked until the debt is settled, offset, or explicitly recovered. Marketplace requests can remain visible, but join is blocked until settlement.
+   - Booking impact: marketplace requests can remain visible, but join is blocked until settlement.
    - Payout impact: finance should not release payout while the partner still owes HANDS settlement.
 
 2. Resolve account and sanction controls.
@@ -172,7 +173,7 @@ These should stay configurable instead of being hardcoded:
 - Marketplace partner radius.
 - Whether marketplace partners can appear immediately or only after a delay.
 - Whether preferred partner acceptance requires customer final confirmation.
-- Whether a negative-wallet partner can receive a controlled recovery booking.
+- Whether a negative-wallet partner can only view marketplace demand or should also see additional settlement prompts.
 - No-show review thresholds and settlement decision options.
 - Cash settlement deadline.
 - Notification retry and fallback contact rules.

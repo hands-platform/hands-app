@@ -25,7 +25,7 @@ This pass checked the API against the current HANDS MVP authority:
 ## Current Backend Position
 
 - Customer booking cancellation is blocked after partner commitment and routed to admin review.
-- Negative partner wallets block marketplace join, direct accept, customer final selection, service start, and payout release.
+- Negative partner wallets block marketplace join and payout release.
 - Negative partner wallets do not create marketplace participant records when a join is blocked.
 - Real marketplace participants remain stored for admin visibility.
 - Marketplace accept/reject responses now require an existing participant record, so partners must join before responding unless they are the first-pick invitee.

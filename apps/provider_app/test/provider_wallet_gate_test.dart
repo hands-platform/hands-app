@@ -3,7 +3,7 @@ import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/main.dart';
 
 void main() {
-  test('holds final gates when wallet balance is negative', () {
+  test('holds marketplace participation when wallet balance is negative', () {
     final summary = {
       'walletBalance': -120000,
       'walletBlocked': true,
@@ -164,7 +164,7 @@ void main() {
     expect(guidance.detailMessage, contains('5 km'));
   });
 
-  test('blocks direct and marketplace participation guidance when wallet is negative', () {
+  test('keeps direct request guidance when wallet is negative', () {
     final guidance = providerRequestGuidance(
       booking: {'status': 'OPEN_MATCHING'},
       isPreferredRequest: true,
@@ -172,10 +172,10 @@ void main() {
       walletBlocked: true,
     );
 
-    expect(guidance.decisionLabel, 'Settlement required');
-    expect(guidance.nextAction, contains('unpaid HANDS fees'));
-    expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
-    expect(guidance.infoMessage, contains('joining marketplace requests'));
+    expect(guidance.modeLabel, 'Direct request');
+    expect(guidance.decisionLabel, 'Reply now');
+    expect(guidance.nextAction, contains('Reply now'));
+    expect(guidance.infoMessage, contains('Accept or decline'));
   });
 
   test('blocks marketplace join guidance when wallet is negative', () {
@@ -193,6 +193,8 @@ void main() {
     expect(guidance.decisionLabel, 'Settlement required');
     expect(guidance.contextMessage, contains('unpaid HANDS fees'));
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
+    expect(providerActionBlockCopy(guidance.detailMessage)?.title,
+        'Fee settlement required');
   });
 
   test('explains marketplace opportunities after preferred partner exists', () {

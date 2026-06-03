@@ -22,7 +22,7 @@ This is the single working board for day-to-day MVP execution. If this file conf
 - Marketplace participation uses booking-address distance, 10km by default.
 - Customer always selects the final partner. There is no automatic assignment.
 - MVP has no scheduled booking, tip, gratuity, VIP, people-scoring, ranking, or dispatch-priority system.
-- Negative partner wallet keeps marketplace visibility but blocks marketplace participation and downstream booking gates until settlement.
+- Negative partner wallet keeps marketplace visibility but blocks marketplace participation and payout release until settlement.
 - Admin is an Operations Command Center, not CRM.
 - Visible product/admin/mobile copy should say Partner. Internal DB/API names may still use Provider for compatibility.
 
