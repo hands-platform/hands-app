@@ -7,7 +7,7 @@ services:
       - .env
     environment:
       API_PORT: 3000
-      DATABASE_URL: postgresql://massage:massage@postgres:5432/massage_vn?schema=public
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for production}
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
     depends_on:
@@ -47,13 +47,13 @@ services:
   postgres:
     image: postgis/postgis:16-3.4
     environment:
-      POSTGRES_DB: massage_vn
-      POSTGRES_USER: massage
-      POSTGRES_PASSWORD: massage
+      POSTGRES_DB: ${POSTGRES_DB:-massage_vn}
+      POSTGRES_USER: ${POSTGRES_USER:-massage}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD for production}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U massage -d massage_vn"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -73,8 +73,8 @@ services:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER for production}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD for production}
     volumes:
       - minio_data:/data
     healthcheck:
@@ -88,11 +88,15 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER for production}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD for production}
+      S3_BUCKET: ${S3_BUCKET:-massage-vn}
     entrypoint:
       [
         "/bin/sh",
         "-c",
-        "mc alias set local http://minio:9000 minioadmin minioadmin && mc mb --ignore-existing local/massage-vn && mc anonymous set download local/massage-vn/public || true",
+        "mc alias set local http://minio:9000 \"$${MINIO_ROOT_USER}\" \"$${MINIO_ROOT_PASSWORD}\" && mc mb --ignore-existing local/\"$${S3_BUCKET}\" && mc anonymous set download local/\"$${S3_BUCKET}\"/public || true",
       ]
 
 volumes:

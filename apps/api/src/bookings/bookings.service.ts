@@ -818,6 +818,7 @@ export class BookingsService {
         services: { select: { serviceId: true } },
       },
     });
+    this.assertBookingOpenForPartnerResponse(booking);
 
     if (booking.preferredProviderId === provider.id) {
       if (status === ParticipantStatus.ACCEPTED) {
@@ -1322,8 +1323,19 @@ export class BookingsService {
 
   async updateProviderBookingStatus(bookingId: string, providerUserId: string, status: BookingStatus) {
     const provider = await this.requireProvider(providerUserId);
-    await this.requireSelectedProvider(bookingId, provider.id);
+    const booking = await this.requireSelectedProvider(bookingId, provider.id);
+    if (status === BookingStatus.ARRIVED) {
+      this.assertProviderLifecycleTransition(booking.status, [
+        BookingStatus.MATCHED,
+        BookingStatus.PROVIDER_ON_THE_WAY,
+      ]);
+    }
     if (status === BookingStatus.IN_SERVICE) {
+      this.assertProviderLifecycleTransition(booking.status, [
+        BookingStatus.MATCHED,
+        BookingStatus.PROVIDER_ON_THE_WAY,
+        BookingStatus.ARRIVED,
+      ]);
       await this.ensureProviderWalletCanAccept(provider.id);
       const updated = await this.prisma.booking.update({
         where: { id: bookingId },
@@ -1357,7 +1369,8 @@ export class BookingsService {
 
   async complete(bookingId: string, providerUserId: string) {
     const provider = await this.requireProvider(providerUserId);
-    await this.requireSelectedProvider(bookingId, provider.id);
+    const bookingBeforeComplete = await this.requireSelectedProvider(bookingId, provider.id);
+    this.assertProviderLifecycleTransition(bookingBeforeComplete.status, [BookingStatus.IN_SERVICE]);
 
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
@@ -1473,6 +1486,23 @@ export class BookingsService {
       throw new BadRequestException('Partner is not selected for this booking');
     }
     return booking;
+  }
+
+  private assertBookingOpenForPartnerResponse(booking: { status: BookingStatus; expiresAt?: Date | null }) {
+    if (booking.status !== BookingStatus.OPEN_MATCHING) {
+      throw new BadRequestException('Booking is not open for partner responses');
+    }
+    if (booking.expiresAt && booking.expiresAt.getTime() <= Date.now()) {
+      throw new BadRequestException('Booking request is expired');
+    }
+  }
+
+  private assertProviderLifecycleTransition(current: BookingStatus, allowed: BookingStatus[]) {
+    if (!allowed.includes(current)) {
+      throw new BadRequestException(
+        `Invalid booking status transition from ${current}. Expected one of: ${allowed.join(', ')}`,
+      );
+    }
   }
 
   private async getCustomerUserIdForBooking(bookingId: string) {
