@@ -407,15 +407,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       return;
     }
 
-    final currency = summary['currency']?.toString() ?? 'VND';
-    final walletBalance = providerWalletBalance(summary);
-    final debtAmount = asNum(summary['walletDebtAmount']) ??
-        (walletBalance < 0 ? walletBalance.abs() : 0);
-    final reason = providerWalletBlockReason(summary) ??
-        providerWalletBlockFallbackReasonClean;
-    final instruction = providerWalletSettlementInstruction(summary);
-    final reference = providerWalletSettlementReference(summary);
-    final steps = providerWalletSettlementSteps(summary);
+    final settlementView = ProviderWalletSettlementView.fromSummary(summary);
 
     await showDialog<void>(
       context: context,
@@ -430,7 +422,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  reason,
+                  settlementView.reasonLabel,
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
@@ -441,21 +433,21 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Amount to settle: ${formatCurrency(debtAmount)} $currency',
+                  'Amount to settle: ${settlementView.amountLabel}',
                   style: theme.textTheme.titleSmall
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 8),
-                Text(instruction),
-                if (reference != null) ...[
+                Text(settlementView.instruction),
+                if (settlementView.reference != null) ...[
                   const SizedBox(height: 12),
                   _WalletSettlementReferenceCard(
-                    reference: reference,
-                    amountLabel: '${formatCurrency(debtAmount)} $currency',
+                    reference: settlementView.reference!,
+                    amountLabel: settlementView.amountLabel,
                   ),
                 ],
                 const SizedBox(height: 12),
-                _WalletSettlementChecklist(items: steps),
+                _WalletSettlementChecklist(items: settlementView.steps),
               ],
             ),
           ),
@@ -1354,15 +1346,7 @@ class ProviderWalletGateCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final currency = summary['currency']?.toString() ?? 'VND';
-    final walletBalance = providerWalletBalance(summary);
-    final walletDebtAmount = asNum(summary['walletDebtAmount']) ??
-        (walletBalance < 0 ? walletBalance.abs() : 0);
-    final reason = providerWalletBlockReason(summary);
-    final settlementInstruction = providerWalletSettlementInstruction(summary);
-    final settlementSteps = providerWalletSettlementSteps(summary);
-    final settlementReference = providerWalletSettlementReference(summary);
-    final walletBlocked = reason != null;
+    final settlementView = ProviderWalletSettlementView.fromSummary(summary);
 
     if (isLoading) {
       return Card(
@@ -1389,7 +1373,7 @@ class ProviderWalletGateCard extends StatelessWidget {
     }
 
     return Card(
-      color: walletBlocked
+      color: settlementView.blocked
           ? colorScheme.errorContainer
           : colorScheme.primaryContainer.withValues(alpha: 0.55),
       child: Padding(
@@ -1400,17 +1384,17 @@ class ProviderWalletGateCard extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  walletBlocked
+                  settlementView.blocked
                       ? Icons.lock_outline
                       : Icons.account_balance_wallet_outlined,
-                  color: walletBlocked
+                  color: settlementView.blocked
                       ? colorScheme.onErrorContainer
                       : colorScheme.onPrimaryContainer,
                 ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    walletBlocked
+                    settlementView.blocked
                         ? 'Wallet settlement required'
                         : 'Wallet clear',
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -1419,7 +1403,7 @@ class ProviderWalletGateCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${formatCurrency(walletBalance)} $currency',
+                  settlementView.balanceLabel,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -1428,9 +1412,9 @@ class ProviderWalletGateCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              providerWalletStatusLabel(summary),
+              settlementView.statusLabel,
               style: theme.textTheme.labelLarge?.copyWith(
-                color: walletBlocked
+                color: settlementView.blocked
                     ? colorScheme.onErrorContainer
                     : colorScheme.onPrimaryContainer,
                 fontWeight: FontWeight.w800,
@@ -1438,29 +1422,29 @@ class ProviderWalletGateCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              walletBlocked
-                  ? reason
+              settlementView.blocked
+                  ? settlementView.reasonLabel
                   : 'You can join marketplace and direct booking requests.',
             ),
-            if (walletBlocked) ...[
+            if (settlementView.blocked) ...[
               const SizedBox(height: 8),
               Text(
-                'Amount to settle: ${formatCurrency(walletDebtAmount)} $currency',
+                'Amount to settle: ${settlementView.amountLabel}',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(height: 6),
-              Text(settlementInstruction),
-              if (settlementReference != null) ...[
+              Text(settlementView.instruction),
+              if (settlementView.reference != null) ...[
                 const SizedBox(height: 10),
                 _WalletSettlementReferenceCard(
-                  reference: settlementReference,
-                  amountLabel: '${formatCurrency(walletDebtAmount)} $currency',
+                  reference: settlementView.reference!,
+                  amountLabel: settlementView.amountLabel,
                 ),
               ],
               const SizedBox(height: 10),
-              _WalletSettlementChecklist(items: settlementSteps),
+              _WalletSettlementChecklist(items: settlementView.steps),
               const SizedBox(height: 10),
               FilledButton.tonalIcon(
                 onPressed: onRefresh,
@@ -2031,23 +2015,8 @@ class EarningsScreen extends ConsumerWidget {
                     final summary = summarySnapshot.data ?? <String, dynamic>{};
                     final earnings = earningsSnapshot.data ?? [];
                     final currency = summary['currency'] ?? 'VND';
-                    final walletBalance = asNum(summary['walletBalance']) ??
-                        ((asNum(summary['pendingNetAmount']) ?? 0) +
-                            (asNum(summary['availableNetAmount']) ?? 0));
-                    final walletBlocked = summary['walletBlocked'] == true;
-                    final walletBlockReason =
-                        summary['walletBlockReason']?.toString();
-                    final walletDebtAmount =
-                        asNum(summary['walletDebtAmount']) ??
-                            (walletBalance < 0 ? walletBalance.abs() : 0);
-                    final walletSettlementInstruction =
-                        providerWalletSettlementInstruction(summary);
-                    final walletStatusLabel =
-                        providerWalletStatusLabel(summary);
-                    final walletSettlementSteps =
-                        providerWalletSettlementSteps(summary);
-                    final walletSettlementReference =
-                        providerWalletSettlementReference(summary);
+                    final settlementView =
+                        ProviderWalletSettlementView.fromSummary(summary);
 
                     return FutureBuilder<List<dynamic>>(
                       future:
@@ -2058,7 +2027,7 @@ class EarningsScreen extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Card(
-                              color: walletBlocked
+                              color: settlementView.blocked
                                   ? Theme.of(context).colorScheme.errorContainer
                                   : Theme.of(context)
                                       .colorScheme
@@ -2074,14 +2043,14 @@ class EarningsScreen extends ConsumerWidget {
                                             .titleMedium),
                                     const SizedBox(height: 8),
                                     Text(
-                                      '${formatCurrency(walletBalance)} $currency',
+                                      settlementView.balanceLabel,
                                       style: Theme.of(context)
                                           .textTheme
                                           .headlineSmall,
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      walletStatusLabel,
+                                      settlementView.statusLabel,
                                       style: Theme.of(context)
                                           .textTheme
                                           .labelLarge
@@ -2091,15 +2060,14 @@ class EarningsScreen extends ConsumerWidget {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      walletBlocked
-                                          ? (walletBlockReason ??
-                                              'Unsettled cash service fees must be paid before marketplace participation.')
+                                      settlementView.blocked
+                                          ? settlementView.reasonLabel
                                           : 'You can join marketplace and direct booking requests.',
                                     ),
-                                    if (walletBlocked) ...[
+                                    if (settlementView.blocked) ...[
                                       const SizedBox(height: 10),
                                       Text(
-                                        'Amount to settle: ${formatCurrency(walletDebtAmount)} $currency',
+                                        'Amount to settle: ${settlementView.amountLabel}',
                                         style: Theme.of(context)
                                             .textTheme
                                             .titleSmall
@@ -2107,19 +2075,18 @@ class EarningsScreen extends ConsumerWidget {
                                                 fontWeight: FontWeight.w800),
                                       ),
                                       const SizedBox(height: 6),
-                                      Text(walletSettlementInstruction),
-                                      if (walletSettlementReference !=
-                                          null) ...[
+                                      Text(settlementView.instruction),
+                                      if (settlementView.reference != null) ...[
                                         const SizedBox(height: 10),
                                         _WalletSettlementReferenceCard(
-                                          reference: walletSettlementReference,
+                                          reference: settlementView.reference!,
                                           amountLabel:
-                                              '${formatCurrency(walletDebtAmount)} $currency',
+                                              settlementView.amountLabel,
                                         ),
                                       ],
                                       const SizedBox(height: 10),
                                       _WalletSettlementChecklist(
-                                        items: walletSettlementSteps,
+                                        items: settlementView.steps,
                                       ),
                                     ],
                                   ],
@@ -4949,6 +4916,58 @@ String? providerWalletSettlementReference(Map<String, dynamic> summary) {
   }
 
   return null;
+}
+
+class ProviderWalletSettlementView {
+  const ProviderWalletSettlementView({
+    required this.currency,
+    required this.walletBalance,
+    required this.debtAmount,
+    required this.blocked,
+    required this.statusLabel,
+    required this.instruction,
+    required this.steps,
+    this.reason,
+    this.reference,
+  });
+
+  factory ProviderWalletSettlementView.fromSummary(
+    Map<String, dynamic> summary,
+  ) {
+    final currency = summary['currency']?.toString().trim();
+    final walletBalance = providerWalletBalance(summary);
+    final debtAmount = asNum(summary['walletDebtAmount']) ??
+        (walletBalance < 0 ? walletBalance.abs() : 0);
+    final reason = providerWalletBlockReason(summary);
+
+    return ProviderWalletSettlementView(
+      currency: currency == null || currency.isEmpty ? 'VND' : currency,
+      walletBalance: walletBalance,
+      debtAmount: debtAmount,
+      blocked: reason != null,
+      reason: reason,
+      reference: providerWalletSettlementReference(summary),
+      statusLabel: providerWalletStatusLabel(summary),
+      instruction: providerWalletSettlementInstruction(summary),
+      steps: providerWalletSettlementSteps(summary),
+    );
+  }
+
+  final String currency;
+  final num walletBalance;
+  final num debtAmount;
+  final bool blocked;
+  final String statusLabel;
+  final String instruction;
+  final List<String> steps;
+  final String? reason;
+  final String? reference;
+
+  String get amountLabel => '${formatCurrency(debtAmount)} $currency';
+
+  String get balanceLabel => '${formatCurrency(walletBalance)} $currency';
+
+  String get reasonLabel => reason ?? providerWalletBlockFallbackReasonClean;
 }
 
 String providerWalletStatusLabel(Map<String, dynamic> summary) {

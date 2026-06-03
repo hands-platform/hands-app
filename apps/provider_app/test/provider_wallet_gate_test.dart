@@ -27,6 +27,31 @@ void main() {
     expect(providerWalletSettlementReference(summary), 'HANDS-WALLET-TEST1234');
   });
 
+  test('builds reusable wallet settlement view labels', () {
+    final summary = {
+      'walletBalance': '-120000',
+      'walletDebtAmount': '120000',
+      'walletBlocked': true,
+      'walletBlockReason': 'Custom settlement message',
+      'walletSettlementReference': 'HANDS-WALLET-TEST1234',
+      'currency': 'VND',
+    };
+
+    final view = ProviderWalletSettlementView.fromSummary(summary);
+
+    expect(view.blocked, isTrue);
+    expect(view.balanceLabel, startsWith('-'));
+    expect(view.balanceLabel, contains('120.000 VND'));
+    expect(view.amountLabel, '120.000 VND');
+    expect(view.reasonLabel, 'Custom settlement message');
+    expect(view.reference, 'HANDS-WALLET-TEST1234');
+    expect(
+      view.steps,
+      contains(
+          'Marketplace participation and payout release unlock when the wallet is no longer negative.'),
+    );
+  });
+
   test('falls back to computed wallet balance and default block message', () {
     final summary = {
       'pendingNetAmount': -50000,
