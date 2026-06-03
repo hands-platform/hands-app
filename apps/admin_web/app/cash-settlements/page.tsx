@@ -242,6 +242,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                   <div className="muted">
                     Cash collected: {formatMoney(row.bookingAmount, row.earning.currency)}
                   </div>
+                  <div className="muted">{row.debtOrigin}</div>
                 </td>
                 <td>
                   <div>HANDS fee {formatMoney(row.platformFee, row.earning.currency)}</div>
@@ -249,6 +250,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                 </td>
                 <td>
                   <div className="service-matrix-cell">
+                    <small>{row.settlementEvidence}</small>
                     <small>Suggested ref: {row.settlementReference}</small>
                     <small>Payment method: {row.paymentMethod}</small>
                     {row.lastLedgerRef ? <small>Last ledger ref: {row.lastLedgerRef}</small> : null}
@@ -316,6 +318,8 @@ type CashSettlementRow = {
   bookingAmount: number;
   settlementReference: string;
   lastLedgerRef?: string | null;
+  debtOrigin: string;
+  settlementEvidence: string;
   serviceLabel: string;
   createdAtLabel: string;
   nextAction: string;
@@ -392,6 +396,8 @@ function buildCashSettlementRows(earnings: AdminEarning[]): CashSettlementRow[] 
         bookingAmount: earning.booking?.payment?.amount ?? earning.grossAmount,
         settlementReference,
         lastLedgerRef: earning.walletLedgerEntries?.[0]?.reference ?? null,
+        debtOrigin: cashDebtOriginLabel(earning),
+        settlementEvidence: cashDebtEvidenceLabel(earning),
         serviceLabel: bookingServiceLabel(earning),
         createdAtLabel: earning.createdAt ? relativeTime(earning.createdAt) : 'No created date',
         nextAction: `Confirm partner deposit or approved offset before settling ${settlementReference}.`,
@@ -688,6 +694,26 @@ function bookingServiceLabel(earning: AdminEarning) {
 
 function cashSettlementReference(earning: AdminEarning) {
   return `HANDS-CASH-${shortId(earning.bookingId).toUpperCase()}`;
+}
+
+function cashDebtOriginLabel(earning: AdminEarning) {
+  const method = earning.booking?.payment?.method ?? 'CASH';
+  const service = bookingServiceLabel(earning);
+  if (method === 'CASH') {
+    return `${service}: partner collected customer cash; HANDS fee/tax is still unpaid.`;
+  }
+  return `${service}: negative wallet row needs finance review because payment method is ${method}.`;
+}
+
+function cashDebtEvidenceLabel(earning: AdminEarning) {
+  if (earning.settlementRef) {
+    return `Settlement reference recorded: ${earning.settlementRef}.`;
+  }
+  const ledgerRef = earning.walletLedgerEntries?.find((entry) => entry.reference)?.reference;
+  if (ledgerRef) {
+    return `Wallet ledger reference exists: ${ledgerRef}. Confirm whether it is a deposit or offset.`;
+  }
+  return 'No deposit or approved offset reference is recorded yet.';
 }
 
 function cashSettlementRowAgeHours(row: CashSettlementRow) {

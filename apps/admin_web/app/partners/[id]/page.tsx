@@ -282,6 +282,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const canApproveKyc = kycEvidence.allRequiredApproved;
   const payoutHold = activePayoutHold(provider);
   const hasCashFeeDebt = (provider.earnings ?? []).some(isCashFeeDebt);
+  const openCashDebtEarnings = (provider.earnings ?? []).filter(isCashFeeDebt);
   const partnerBookingArchive = buildPartnerBookingArchive(provider);
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
   const filteredPartnerBookingArchive = orderPartnerBookingArchive(
@@ -1510,10 +1511,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       <div className={`card ${cardClass(bookingAcceptance.tone)}`} style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Final booking gate decision</h2>
+            <h2>Booking participation gate decision</h2>
             <p className="muted">
-              Operator-facing decision for whether this partner can pass final customer selection and
-              service-start gates right now.
+              Operator-facing decision for whether this partner can join marketplace demand or continue
+              booking handoff right now.
             </p>
           </div>
           <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
@@ -1527,7 +1528,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <span>Cash debt</span>
             <strong>{formatCurrency(bookingAcceptance.cashDebt)}</strong>
-            <small>Negative wallet gates final acceptance</small>
+            <small>Negative wallet blocks marketplace participation</small>
           </div>
           <div>
             <span>Location</span>
@@ -1574,6 +1575,76 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         payoutOps={payoutOps}
         dispatchPolicy={dispatchPolicy}
       />
+
+      <div className={`card ${hasCashFeeDebt ? 'card-danger' : ''}`} id="cash-debt-origin" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Cash debt origin and settlement</h2>
+            <p className="muted">
+              Partner wallet debt is reviewed by why it became negative and whether a company-fee deposit or
+              approved offset has evidence. Marketplace view-only activity is not tracked here.
+            </p>
+          </div>
+          <span className={`pill ${hasCashFeeDebt ? 'pill-danger' : 'pill-success'}`}>
+            {hasCashFeeDebt ? `${openCashDebtEarnings.length} open row(s)` : 'No open cash debt'}
+          </span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Total open debt</span>
+            <strong>{formatCurrency(cashFeeDebtAmount(provider))}</strong>
+            <small>From cash-service fee/tax settlement rows.</small>
+          </div>
+          <div>
+            <span>Evidence</span>
+            <strong>{openCashDebtEarnings.some((earning) => earning.settlementRef) ? 'Some refs' : 'Needs ref'}</strong>
+            <small>Deposit reference or admin offset is required to clear debt.</small>
+          </div>
+          <div>
+            <span>Marketplace</span>
+            <strong>{hasCashFeeDebt ? 'Blocked' : 'Open'}</strong>
+            <small>Negative wallet blocks participation, not marketplace list visibility.</small>
+          </div>
+          <div>
+            <span>Next action</span>
+            <strong>{hasCashFeeDebt ? 'Collect/offset' : 'Monitor'}</strong>
+            <small>{hasCashFeeDebt ? 'Use Cash Settlements to clear the wallet.' : 'No finance action needed.'}</small>
+          </div>
+        </div>
+        {openCashDebtEarnings.length ? (
+          <div className="setup-stage-list" style={{ marginTop: 16 }}>
+            {openCashDebtEarnings.slice(0, 5).map((earning) => (
+              <div className="setup-stage-item" key={earning.id}>
+                <span>CASH DEBT</span>
+                <div>
+                  <strong>{formatCurrency(Math.abs(amountValue(earning.netAmount)))}</strong>
+                  <p className="muted">{partnerCashDebtOriginLabel(earning)}</p>
+                  <p className="muted">
+                    Booking {earning.bookingId ? shortRecordId(earning.bookingId) : 'unknown'} / payment{' '}
+                    {earning.booking?.payment?.method ?? 'UNKNOWN'} / created {formatDate(earning.createdAt)}
+                  </p>
+                  <div className="participant-list">
+                    <span className="pill pill-danger">
+                      HANDS fee {formatCurrency(earning.platformFee)}
+                    </span>
+                    <span className="pill pill-warn">
+                      Tax {formatCurrency(earning.withholdingAmount)}
+                    </span>
+                    <span className="pill pill-info">{partnerCashDebtEvidenceLabel(earning)}</span>
+                  </div>
+                </div>
+                <Link className="text-link" href="/cash-settlements">
+                  Settle
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No open cash-service fee debt is visible for this partner.
+          </p>
+        )}
+      </div>
 
       <div className="card" id="payout" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -3168,10 +3239,10 @@ function PartnerAcceptanceRepairCommandPanel({
     <div className={`card ${cardClass(command.tone)}`} style={{ marginBottom: 16 }}>
       <div className="risk-watch-header">
         <div>
-          <h2>Final-gate repair command</h2>
+          <h2>Booking gate repair command</h2>
           <p className="muted">
-            Exact operator diagnosis for final acceptance, customer selection, marketplace visibility, and
-            participation.
+            Exact operator diagnosis for marketplace participation, customer handoff, app message, and
+            finance repair.
           </p>
         </div>
         <span className={`pill ${pillClass(command.tone)}`}>{command.status}</span>
@@ -3271,8 +3342,8 @@ function buildPartnerOperatorCommandQueue({
     add({
       id: 'cash-fee-debt',
       label: 'CASH',
-      title: 'Cash fee debt gates final acceptance',
-      detail: `${formatCurrency(cashDebt)} must be settled before this partner completes final acceptance or customer selection.`,
+      title: 'Cash fee debt blocks marketplace participation',
+      detail: `${formatCurrency(cashDebt)} must be settled before this partner joins marketplace demand or continues booking handoff.`,
       owner: 'Finance',
       tone: 'blocked',
       action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },
@@ -3444,14 +3515,14 @@ function buildPartnerOperatorCommandQueue({
     tone: queueTone,
     metrics: [
       {
-        label: 'Final gates',
+        label: 'Booking gates',
         value: bookingAcceptance.canAccept ? 'Ready' : 'Hold',
         helper: bookingAcceptance.primaryReason,
       },
       {
         label: 'Cash fee debt',
         value: formatCurrency(cashDebt),
-        helper: cashDebt > 0 ? 'Holds final gates until settled.' : 'No cash fee debt.',
+        helper: cashDebt > 0 ? 'Holds marketplace participation until settled.' : 'No cash fee debt.',
       },
       {
         label: 'First revenue',
@@ -4361,7 +4432,7 @@ function buildPartnerOperatingChecklist(
       detail:
         cashDebt > 0
           ? `Partner wallet has ${formatCurrency(cashDebt)} unpaid HANDS commission from cash bookings.`
-          : 'No unpaid cash commission is gating final acceptance.',
+          : 'No unpaid cash commission is gating marketplace participation.',
       nextAction: cashDebt > 0 ? 'Collect or offset debt' : 'No cash action',
       href: '/cash-settlements',
       tone: cashDebt > 0 ? 'blocked' : 'done',
@@ -5155,7 +5226,7 @@ function buildProviderBookingAcceptance(
           : 'No open negative wallet debt is visible.',
       action:
         cashDebt > 0
-          ? 'Record partner deposit or admin offset before final acceptance or customer selection.'
+          ? 'Record partner deposit or admin offset before marketplace participation or booking handoff resumes.'
           : 'Clear',
     },
     {
@@ -5390,7 +5461,7 @@ function partnerAppBlockMessage(
     return 'Partner can receive and finalize booking requests.';
   }
   if (bookingAcceptance.cashDebt > 0) {
-    return 'Final acceptance or customer selection waits until unpaid HANDS commission is settled.';
+    return 'Marketplace participation and booking handoff wait until unpaid HANDS commission is settled.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
     return 'Account requires admin review before receiving work.';
@@ -5440,7 +5511,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
       detail: walletGate?.detail ?? 'Wallet gate was not evaluated.',
       bookingImpact: walletGate?.ok
         ? 'Partner can pass the cash-debt booking gate.'
-        : 'Configured final gates wait until debt is settled or offset.',
+        : 'Marketplace participation and booking handoff wait until debt is settled or offset.',
       payoutImpact: 'Finance should not release payout while HANDS fee/tax debt is still open.',
       action: walletGate?.ok ? 'Open cash settlement history' : 'Settle cash debt',
       href: '/cash-settlements',
@@ -5585,7 +5656,7 @@ function buildPartnerDetailOpsBadges(
       detail:
         cashDebt > 0
           ? `Partner owes HANDS ${formatCurrency(cashDebt)} from cash settlement.`
-          : 'No cash-settlement debt is gating final acceptance.',
+          : 'No cash-settlement debt is gating marketplace participation.',
     },
     {
       label: identityGate?.ok ? 'KYC and docs ok' : 'KYC/doc review',
@@ -6768,6 +6839,25 @@ function providerHasFirstRevenueSignal(provider: ProviderDetail) {
 
 function isCashFeeDebt(earning: NonNullable<ProviderDetail['earnings']>[number]) {
   return earning.netAmount < 0 && earning.booking?.payment?.method === 'CASH' && earning.status !== 'PAID';
+}
+
+function partnerCashDebtOriginLabel(earning: NonNullable<ProviderDetail['earnings']>[number]) {
+  const method = earning.booking?.payment?.method ?? 'CASH';
+  if (method === 'CASH') {
+    return 'Partner collected customer cash; HANDS fee/tax remains unpaid until deposit or approved offset.';
+  }
+  return `Negative wallet row needs finance review because payment method is ${method}.`;
+}
+
+function partnerCashDebtEvidenceLabel(earning: NonNullable<ProviderDetail['earnings']>[number]) {
+  if (earning.settlementRef) {
+    return `Ref ${earning.settlementRef}`;
+  }
+  const ledgerRef = earning.walletLedgerEntries?.find((entry) => entry.reference)?.reference;
+  if (ledgerRef) {
+    return `Ledger ${ledgerRef}`;
+  }
+  return 'Evidence needed';
 }
 
 function cashFeeDebtAmount(provider: ProviderDetail) {

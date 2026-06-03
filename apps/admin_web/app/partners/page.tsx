@@ -738,7 +738,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     <strong>{formatProviderMoney(row.walletBalance)}</strong>
                     <p className="muted">
                       {row.walletBalance < 0
-                        ? 'Company fee settlement is required before final acceptance or customer selection.'
+                        ? 'Company fee settlement is required before marketplace participation or booking handoff.'
                         : 'No negative wallet balance.'}
                     </p>
                     <p className="muted">
@@ -988,11 +988,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner final-gate hold board</h2>
+            <h2>Partner booking gate hold board</h2>
             <p className="muted">
-              Shows why partners cannot complete final acceptance before operators
-              try to dispatch them. Marketplace participation is checked separately so negative wallet debt does
-              not hide otherwise available supply.
+              Shows why partners cannot participate in marketplace demand or continue booking handoff before
+              operators try to dispatch them. View-only marketplace demand is not treated as a partner action.
             </p>
           </div>
           <div className="participant-list">
@@ -2283,8 +2282,8 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
       tone: walletBalance < 0 ? 'danger' : 'success',
       detail:
         walletBalance < 0
-          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before final acceptance or customer selection.`
-          : 'No negative wallet balance is gating final acceptance.',
+          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before marketplace participation or booking handoff.`
+          : 'No negative wallet balance is gating marketplace participation.',
     },
     {
       label:
@@ -2873,7 +2872,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
   if (walletBalance < 0) {
     return `Partner wallet is negative by ${formatProviderMoney(
       Math.abs(walletBalance),
-    )}. Marketplace list visibility stays available while participation is blocked, but configured final gates wait until finance settles the cash fee debt.`;
+    )}. They can see marketplace demand, but cannot participate until finance settles the cash fee debt.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Partner is approved but not currently online for direct or marketplace requests.';
@@ -2921,8 +2920,9 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
   if (!hasApprovedBankAccount(provider)) {
     blockers.push({ label: 'bank account', severity: 'hard' });
   }
-  // Negative wallet preserves marketplace list visibility, but blocks marketplace participation.
-  // Partners can still receive availability awareness and join a shortlist candidate pool.
+  if (providerUnsettledWalletBalance(provider) < 0) {
+    blockers.push({ label: 'cash fee debt', severity: 'hard' });
+  }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     blockers.push({ label: 'not online available', severity: 'soft' });
   }
@@ -2948,7 +2948,7 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
       ? `Can receive marketplace alerts and join eligible bookings within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )} during the ${opsPolicy.responseWindowMinutes}m first-pick window.`
-      : `Marketplace matching needs the listed non-finance blockers resolved. Negative wallet is checked later at final acceptance/customer selection. Distance is still checked per booking within ${formatDistanceMeters(
+      : `Marketplace matching needs the listed blockers resolved. Negative wallet blocks participation until the HANDS fee debt is settled. Distance is still checked per booking within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )}.`,
     operatorAction: eligible
@@ -3031,7 +3031,7 @@ function buildProviderCommandCenter(
       tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
       detail:
         walletDebt > 0
-          ? 'Cash fee debt can hold final acceptance, customer selection, service start, or payout release.'
+          ? 'Cash fee debt blocks marketplace participation, booking handoff, service start, and payout release.'
           : 'First-earning payout, bank, and freelance tax readiness are under control.',
       href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
       metrics: [
@@ -3097,7 +3097,7 @@ function buildPartnerShiftHandoff(
           scope: 'Finance gate',
           detail: `${cashDebt.length} partner(s) have negative wallet balance from cash-service fee or tax debt.`,
           operatorAction:
-            'Collect company fee deposit, record evidence, or offset from available earnings before final acceptance or customer selection.',
+            'Collect company fee deposit, record evidence, or offset from available earnings before marketplace participation resumes.',
           href: '/partners?review=cash-debt',
           tone: 'danger' as const,
           samples: partnerSampleNames(cashDebt),
@@ -3247,7 +3247,7 @@ function buildPartnerShiftHandoff(
       {
         label: 'Cash debt',
         value: cashDebt.length.toString(),
-        detail: 'Negative wallet gates final acceptance or customer selection.',
+        detail: 'Negative wallet blocks marketplace participation and booking handoff.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
       },
@@ -3642,8 +3642,7 @@ function buildPartnerDispatchForecast(
       {
         label: 'Wallet debt',
         count: walletDebt,
-        detail:
-          'Cash fee debt keeps marketplace visibility available, but configured final gates wait for settlement.',
+        detail: 'Cash fee debt keeps marketplace view-only demand visible, but participation waits for settlement.',
         href: '/partners?review=cash-debt',
         tone: walletDebt > 0 ? 'danger' : 'ok',
       },
@@ -3700,7 +3699,7 @@ function buildPartnerAcceptanceBlockerBoard(
         count: cashDebt.length,
         status: cashDebt.length ? 'Blocks accept' : 'Clear',
         detail:
-          'Negative wallet from cash bookings gates final acceptance until HANDS fee settlement is posted.',
+          'Negative wallet from cash bookings blocks marketplace participation until HANDS fee settlement is posted.',
         operatorAction: 'Open the cash debt queue and confirm settlement before allowing more booking work.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
@@ -4058,7 +4057,7 @@ function buildPartnerFilterSummary(
     {
       label: 'Wallet settlement',
       value: walletDebt.toString(),
-      detail: 'Negative wallet balance gates final acceptance or customer selection',
+      detail: 'Negative wallet balance blocks marketplace participation and booking handoff',
       href: '/partners?review=cash-debt',
     },
     {
@@ -4163,7 +4162,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       count: cashDebtNeedsReview,
       href: '/partners?review=cash-debt',
       detail:
-        'Partners with negative wallet balance can stay visible, but final acceptance waits until HANDS fee settlement is confirmed.',
+        'Partners with negative wallet balance can see marketplace demand, but cannot participate until HANDS fee settlement is confirmed.',
     },
     {
       label: 'Tax profile review',
@@ -4551,10 +4550,10 @@ function providerFilterDescription(kind: string, value: string) {
     return 'First earning payout setup highlights partners who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
   }
   if (kind === 'review' && value === 'cash-debt') {
-    return 'Cash fee debt highlights partners whose final acceptance or customer selection waits until HANDS commission is settled.';
+    return 'Cash fee debt highlights partners whose marketplace participation and booking handoff wait until HANDS commission is settled.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
-    return 'Final gate held highlights partners who can remain visible but cannot complete final acceptance or customer selection yet.';
+    return 'Booking gate held highlights partners who can remain visible but cannot participate or continue handoff yet.';
   }
   if (kind === 'review' && value === 'direct-ready') {
     return 'Direct request ready highlights partners who can accept a preferred customer request immediately.';
