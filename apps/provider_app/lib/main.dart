@@ -366,9 +366,11 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       if (blockReason != null) {
         if (mounted) {
           setState(() {
+            requestActionsWalletBlocked = true;
             error = blockReason;
             statusMessage = providerWalletBlockHintClean;
           });
+          await showWalletSettlementDialog(summary);
         }
         return false;
       }
@@ -381,6 +383,82 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       }
     }
     return true;
+  }
+
+  Future<void> showWalletSettlementDialog(Map<String, dynamic> summary) async {
+    if (!mounted) {
+      return;
+    }
+
+    final currency = summary['currency']?.toString() ?? 'VND';
+    final walletBalance = providerWalletBalance(summary);
+    final debtAmount = asNum(summary['walletDebtAmount']) ??
+        (walletBalance < 0 ? walletBalance.abs() : 0);
+    final reason = providerWalletBlockReason(summary) ??
+        providerWalletBlockFallbackReasonClean;
+    final instruction = providerWalletSettlementInstruction(summary);
+    final reference = providerWalletSettlementReference(summary);
+    final steps = providerWalletSettlementSteps(summary);
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        final theme = Theme.of(dialogContext);
+        return AlertDialog(
+          icon: const Icon(Icons.lock_outline),
+          title: const Text('Settlement required'),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  reason,
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'You cannot participate in this marketplace booking until unpaid HANDS fees are settled.',
+                  style: theme.textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Amount to settle: ${formatCurrency(debtAmount)} $currency',
+                  style: theme.textTheme.titleSmall
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 8),
+                Text(instruction),
+                if (reference != null) ...[
+                  const SizedBox(height: 12),
+                  _WalletSettlementReferenceCard(
+                    reference: reference,
+                    amountLabel: '${formatCurrency(debtAmount)} $currency',
+                  ),
+                ],
+                const SizedBox(height: 12),
+                _WalletSettlementChecklist(items: steps),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                setState(() {});
+              },
+              icon: const Icon(Icons.refresh),
+              label: const Text('Refresh wallet'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> startService(Map<String, dynamic> booking) async {
@@ -1848,9 +1926,12 @@ class OpenBookingCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: FilledButton.icon(
-                      onPressed: loading || walletBlocked ? null : onAccept,
-                      icon: const Icon(Icons.check),
-                      label: const Text('Accept request'),
+                      onPressed: loading ? null : onAccept,
+                      icon: Icon(
+                          walletBlocked ? Icons.lock_outline : Icons.check),
+                      label: Text(walletBlocked
+                          ? 'Settle fee first'
+                          : 'Accept request'),
                     ),
                   ),
                 ],
@@ -1865,8 +1946,10 @@ class OpenBookingCard extends StatelessWidget {
               const InfoCard(text: 'Chat is ready. Continue from the Chat tab.')
             else if (!joined)
               FilledButton.icon(
-                onPressed: loading || walletBlocked ? null : onJoin,
-                icon: const Icon(Icons.add_circle_outline),
+                onPressed: loading ? null : onJoin,
+                icon: Icon(walletBlocked
+                    ? Icons.lock_outline
+                    : Icons.add_circle_outline),
                 label: Text(walletBlocked
                     ? 'Settle fee to join'
                     : hasPreferredProvider
