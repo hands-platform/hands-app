@@ -143,6 +143,28 @@ async function expectRequestFailure(label, fn, expectedStatus) {
   throw new Error(`${label} unexpectedly succeeded`);
 }
 
+function assertNegativeWalletBlockResponse(label, message) {
+  const requiredMarkers = [
+    '"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"',
+    '"walletBlocked":true',
+    '"walletDebtAmount":',
+    '"walletSettlementRequired":true',
+    '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
+    '"walletSettlementReference":"HANDS-WALLET-',
+    'Marketplace requests stay visible for review, but participation is blocked',
+    'Marketplace participation, direct acceptance, customer selection, service start, and payout release unlock',
+  ];
+  const missingMarkers = requiredMarkers.filter((marker) => !message.includes(marker));
+  if (missingMarkers.length) {
+    throw new Error(
+      `Negative wallet ${label} response is missing settlement guidance markers: ${JSON.stringify({
+        missingMarkers,
+        message,
+      })}`,
+    );
+  }
+}
+
 async function approvePartnerBookingReadiness(providerAuth, adminAccessToken, label) {
   const providerProfileId = providerAuth.user.providerProfile.id;
   await postJson(`/admin/partners/${providerProfileId}/approve`, adminAccessToken);
@@ -2330,9 +2352,7 @@ for (const [label, message] of [
   ['customer final selection', customerSelectionWalletBlockError],
   ['service start', serviceStartWalletBlockError],
 ]) {
-  if (!message.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
-    throw new Error(`Negative wallet ${label} response is missing wallet block code: ${message}`);
-  }
+  assertNegativeWalletBlockResponse(label, message);
 }
 const blockedOpenMatchingBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -2351,11 +2371,7 @@ const negativeWalletMarketplaceJoinError = await expectRequestFailure(
     ),
   400,
 );
-if (!negativeWalletMarketplaceJoinError.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
-  throw new Error(
-    `Negative wallet marketplace join response is missing wallet block code: ${negativeWalletMarketplaceJoinError}`,
-  );
-}
+assertNegativeWalletBlockResponse('marketplace participation', negativeWalletMarketplaceJoinError);
 const payoutWalletBlockError = await expectRequestFailure(
   'Negative provider wallet holds payout batch creation',
   () =>
@@ -2367,9 +2383,7 @@ const payoutWalletBlockError = await expectRequestFailure(
   400,
 );
 for (const [label, message] of [['payout batch creation', payoutWalletBlockError]]) {
-  if (!message.includes('"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"')) {
-    throw new Error(`Negative wallet ${label} response is missing wallet block code: ${message}`);
-  }
+  assertNegativeWalletBlockResponse(label, message);
 }
 const adminEarningsAfterCashDebt = await getJson('/admin/earnings', adminAuth.accessToken);
 const cashDebtEarning = adminEarningsAfterCashDebt.find(

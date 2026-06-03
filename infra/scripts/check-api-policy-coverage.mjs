@@ -163,6 +163,9 @@ const requiredCoverage = [
       'Negative provider wallet blocks service start',
       'Negative provider wallet blocks marketplace participation',
       'Negative provider wallet holds payout batch creation',
+      'assertNegativeWalletBlockResponse',
+      'walletSettlementReference',
+      'Marketplace requests stay visible for review, but participation is blocked',
     ],
   },
   {
@@ -172,6 +175,8 @@ const requiredCoverage = [
       'Negative provider wallet blocks marketplace participation',
       'Negative provider wallet blocks customer final selection',
       'Negative provider wallet blocks service start',
+      'marketplace participation',
+      'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET',
     ],
   },
   {
