@@ -42,6 +42,7 @@ Core principles:
 Checked commands:
 
 - `npm.cmd run setup:doctor`: PASS
+- `npm.cmd run authority:check`: PASS. This now guards the final MVP authority contract, legacy route redirects, address-based booking, payout batch policy, Firebase/Supabase mobile boundaries, no-tip active product surface, and factual customer/partner management pages.
 - `npm.cmd run external:copy-check`: PASS. This prevents the deferred Supabase Phone Auth/SMS path from drifting back to a deprecated SMS-provider path and keeps Vonage recorded as the selected next E2E SMS provider.
 - `npm.cmd run api:policy-coverage`: PASS. This statically verifies that API smoke coverage still includes service pricing, payout rules, matching policy marketplace windows, 10km radius/join guards, withholding, negative cash-fee wallet debt, settlement, and admin traceability invariants.
 - API policy coverage now explicitly guards completed earning closeout persistence markers for tax logs, platform fee logs, wallet ledger entries, selected service payout lines, pricing-rule snapshots, payout batch linking, and paid-payout wallet ledger entries.
@@ -60,6 +61,7 @@ Checked commands:
 - `ADMIN_WEB_SMOKE_PATHS=/operations-policy node infra/scripts/admin-web-smoke.mjs`: PASS. Use this targeted mode for fast page-specific checks.
 - `node infra/scripts/admin-web-smoke.mjs /operations-policy /customers /partners`: PASS. This confirms the current customer, partner, and operations policy entry points after the Partner terminology cleanup.
 - `ADMIN_WEB_SMOKE_PATHS=/customers,/partners node infra/scripts/admin-web-smoke.mjs`: PASS. This confirms customer and partner list/detail pages after closure metadata was added to the operator views.
+- `ADMIN_WEB_SMOKE_PATHS=/customers,/partners node infra/scripts/admin-web-smoke.mjs`: PASS. Customer and partner list/detail pages are now also guarded as factual management surfaces: they must keep activity, work, chat-retention, wallet, address, app-session, payout, and operator-note records visible without people scoring, partner ranking, VIP, tip, penalty, or separate Partner Activity concepts.
 - `ADMIN_WEB_SMOKE_PATHS=/customers,/partners node infra/scripts/admin-web-smoke.mjs`: PASS. Customer and partner list operations are now additionally guarded for the requested list-first management columns, including customer last work/completed work/payment/chat/address/memo evidence and partner ID/profile/state/location/work/revenue/payout/account/checklist evidence.
 - `ADMIN_WEB_SMOKE_PATHS=/,/customers,/partners,/bookings,/chat-archive,/partner-controls node infra/scripts/admin-web-smoke.mjs`: PASS. This focused operating-core check verifies dashboard, customer, partner, booking, chat archive, partner controls, and dynamic customer/partner/booking details after the latest admin continuity changes.
 - `ADMIN_WEB_SMOKE_PATHS=/bookings node infra/scripts/admin-web-smoke.mjs`: PASS. This targeted booking check now guards the dynamic booking detail operating ledger, including service/pricing and refund evidence rows.
@@ -82,7 +84,7 @@ Checked commands:
 - `flutter test` in partner app: PASS, 59 tests
 - Customer and partner mobile tests now explicitly guard the chat visibility rule: active service chats are shown in the apps, while completed/closed booking chats are hidden from mobile and retained for admin archives.
 - `npm.cmd run external:check:maps`: PASS
-- `npm.cmd run supabase:schema:check`: PASS, 38 required tables
+- `npm.cmd run supabase:schema:check`: PASS, 39 required tables
 - `npm.cmd run mobile:architecture:check`: PASS
 - `npm.cmd run mobile:visible-copy`: PASS. This guards customer/partner app visible copy against gratuity, VIP, people-scoring wording, and partner hierarchy wording.
 
@@ -143,6 +145,7 @@ Admin dashboard:
 - Partner list now supports operations sorting by booking count, completed work count, gross revenue, pending payout, available payout, last work, app activity, location freshness, wallet debt, and checklist order.
 - Partner list and detail show feedback as factual review record counts instead of average feedback values, so partners are not ranked or scored in operator views.
 - Customer and partner pages are intentionally factual: they show IDs, contact, joined/recent access dates, completed work, booking/payment/chat/activity records, and operator notes without customer or partner ranking.
+- Final authority checks now require the customer list, customer detail, partner list, partner detail, and admin smoke guard to preserve factual management markers such as customer/partner operating ledgers and chat retention ledgers.
 - Partner queue wording is checklist/order based, not rating/ranking based. Operator ordering is for fixing factual blockers only.
 - Admin finance/review wording avoids presenting a gratuity program. Active schema, API code, admin UI, and mobile UI keep customer tips/gratuity out of the MVP; immutable starter migrations are treated only as historical records.
 - Services page with service groups, duration options, minimum price, price step, payout policy, fee/tax visibility.
