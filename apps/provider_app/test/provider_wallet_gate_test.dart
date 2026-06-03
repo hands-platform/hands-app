@@ -192,9 +192,35 @@ void main() {
     expect(guidance.modeLabel, 'Marketplace opportunity');
     expect(guidance.decisionLabel, 'Settlement required');
     expect(guidance.contextMessage, contains('unpaid HANDS fees'));
+    expect(
+      providerWalletBlockFallbackReasonClean,
+      '수수료를 입금하지 않아 예약에 참여 할수 없습니다.',
+    );
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
     expect(providerActionBlockCopy(guidance.detailMessage)?.title,
         'Fee settlement required');
+    expect(
+      providerActionBlockCopy('수수료를 입금하지 않아 예약에 참여 할수 없습니다.')?.detail,
+      providerWalletBlockFallbackReasonClean,
+    );
+  });
+
+  test('keeps marketplace booking visible but explains join is blocked', () {
+    final guidance = providerRequestGuidance(
+      booking: {
+        'status': 'OPEN_MATCHING',
+        'preferredProvider': {'displayName': 'Sen ne'},
+      },
+      isPreferredRequest: false,
+      joined: false,
+      walletBlocked: true,
+    );
+
+    expect(guidance.modeLabel, 'Marketplace opportunity');
+    expect(guidance.nextAction, contains('Settle unpaid HANDS fees'));
+    expect(guidance.contextMessage, contains('visible'));
+    expect(guidance.contextMessage, contains('before you can join'));
+    expect(guidance.detailMessage, '수수료를 입금하지 않아 예약에 참여 할수 없습니다.');
   });
 
   test('explains marketplace opportunities after preferred partner exists', () {

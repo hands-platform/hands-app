@@ -1967,7 +1967,7 @@ class OpenBookingCard extends StatelessWidget {
                     ? Icons.lock_outline
                     : Icons.add_circle_outline),
                 label: Text(walletBlocksMarketplaceJoin
-                    ? 'Settle fee to join'
+                    ? 'Fee settlement required'
                     : hasPreferredProvider
                         ? 'Offer marketplace support'
                         : 'Join open matching'),
