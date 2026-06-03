@@ -430,7 +430,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="blocked">Account blocks</option>
               <option value="location">Location freshness</option>
               <option value="push">Push alert readiness</option>
-              <option value="acceptance-blocked">Final gate held</option>
+              <option value="acceptance-blocked">Direct request held</option>
               <option value="direct-ready">Direct request ready</option>
               <option value="marketplace-ready">Marketplace ready</option>
               <option value="marketplace-blocked">Marketplace blocked</option>
@@ -668,11 +668,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <span className="pill pill-info">{providers.length} partner(s)</span>
             <span className="pill pill-success">
               {providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length} can
-              accept
+              receive direct requests
             </span>
             <span className="pill pill-warn">
               {providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length} wallet
-              hold
+              marketplace hold
             </span>
           </div>
         </div>
@@ -682,8 +682,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <tr>
                 <th>Partner</th>
                 <th>Basic checklist</th>
-                <th>Final gates</th>
+                <th>Direct request gate</th>
                 <th>Matching flow</th>
+                <th>Marketplace access</th>
                 <th>Work history</th>
                 <th>Money</th>
                 <th>App/location</th>
@@ -737,6 +738,19 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </p>
                   </td>
                   <td>
+                    <span className={`signal ${providerCommandToneClass(row.marketplaceAccessTone)}`}>
+                      {row.marketplaceAccessLabel}
+                    </span>
+                    <p className="muted" style={{ marginTop: 8 }}>
+                      {row.marketplaceAccessDetail}
+                    </p>
+                    {row.walletBalance < 0 ? (
+                      <p className="muted" style={{ marginTop: 8 }}>
+                        Partner app message: 수수료를 입금하지 않아 예약에 참여 할수 없습니다.
+                      </p>
+                    ) : null}
+                  </td>
+                  <td>
                     <strong>{row.completedWorkCount} completed</strong>
                     <p className="muted">Last work: {row.lastWorkAt ? formatDate(row.lastWorkAt) : 'none'}</p>
                     <p className="muted">
@@ -747,7 +761,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     <strong>{formatProviderMoney(row.walletBalance)}</strong>
                     <p className="muted">
                       {row.walletBalance < 0
-                        ? 'Company fee settlement is required before marketplace participation or booking handoff.'
+                        ? 'Company fee settlement is required before marketplace participation.'
                         : 'No negative wallet balance.'}
                     </p>
                     <p className="muted">
@@ -778,7 +792,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               ))}
               {partnerOperationRows.length === 0 ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={10}>
                     <strong>No partners found</strong>
                     <p className="muted">Change the filters or clear search to view partner records.</p>
                   </td>
@@ -786,7 +800,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               ) : null}
               {hiddenProviderCount > 0 ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={10}>
                     <p className="muted">
                       {hiddenProviderCount} more partner row(s) are hidden for page speed. Use search or
                       filters to narrow this list.
@@ -997,10 +1011,10 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
-            <h2>Partner final-gate hold board</h2>
+            <h2>Partner marketplace hold board</h2>
             <p className="muted">
-              Shows why partners cannot participate in marketplace demand or continue booking handoff before
-              operators try to dispatch them. View-only marketplace demand is not treated as a partner action.
+              Shows why partners cannot participate in marketplace demand before operators rely on them for
+              booking recovery. View-only marketplace demand is not treated as a partner action.
             </p>
           </div>
           <div className="participant-list">
@@ -1009,7 +1023,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             >
               {acceptanceBlockerBoard.hardBlocked} hard blocked
             </span>
-            <span className="pill pill-info">{acceptanceBlockerBoard.eligibleNow} final-gate clear</span>
+            <span className="pill pill-info">{acceptanceBlockerBoard.eligibleNow} direct-ready</span>
           </div>
         </div>
         <div className="grid" style={{ marginTop: 12 }}>
@@ -1792,6 +1806,9 @@ type PartnerOperationRow = {
   acceptanceLabel: string;
   acceptanceDetail: string;
   acceptanceTone: ProviderCommandLane['tone'];
+  marketplaceAccessLabel: string;
+  marketplaceAccessDetail: string;
+  marketplaceAccessTone: ProviderCommandLane['tone'];
   completedWorkCount: number;
   lastWorkAt: string | null;
   walletBalance: number;
@@ -1953,13 +1970,22 @@ function buildPartnerOperationRow(
     ],
     matchingFlow: matchingFlow.items,
     matchingFlowDetail: matchingFlow.detail,
-    acceptanceLabel: canAccept ? 'Final gate clear' : 'Final gate on hold',
+    acceptanceLabel: canAccept ? 'Direct request clear' : 'Direct request held',
     acceptanceDetail: canAccept
-      ? backupEligibility.eligible
-        ? `Ready for direct requests and ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} marketplace matching.`
-        : 'Ready for direct requests. Marketplace participation depends on booking address, location freshness, and policy.'
+      ? 'Ready to receive and accept preferred direct booking requests.'
       : partnerAcceptBlockerSummary(provider, opsPolicy),
     acceptanceTone: canAccept ? 'ok' : 'warn',
+    marketplaceAccessLabel: backupEligibility.eligible
+      ? 'Marketplace ready'
+      : walletBalance < 0
+        ? 'Marketplace blocked by wallet'
+        : 'Marketplace held',
+    marketplaceAccessDetail: backupEligibility.eligible
+      ? `Can join marketplace bookings within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} when the booking address matches policy.`
+      : walletBalance < 0
+        ? 'Partner may see marketplace demand, but the Partner app must block participation until HANDS fee settlement is posted.'
+        : backupEligibility.detail,
+    marketplaceAccessTone: backupEligibility.eligible ? 'ok' : walletBalance < 0 ? 'danger' : 'warn',
     completedWorkCount,
     lastWorkAt: providerLastCompletedWorkAt(provider),
     walletBalance,
@@ -2304,10 +2330,10 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
 
   return [
     {
-      label: canAccept ? 'Accept ready' : 'Accept blocked',
+      label: canAccept ? 'Direct request ready' : 'Direct request held',
       tone: canAccept ? 'success' : 'danger',
       detail: canAccept
-        ? 'Partner can accept a direct booking now.'
+        ? 'Partner can receive and accept a preferred direct booking now.'
         : partnerAcceptBlockerSummary(provider, opsPolicy),
     },
     {
@@ -2323,7 +2349,7 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
       tone: walletBalance < 0 ? 'danger' : 'success',
       detail:
         walletBalance < 0
-          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before marketplace participation or booking handoff.`
+          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before marketplace participation.`
           : 'No negative wallet balance is gating marketplace participation.',
     },
     {
@@ -2388,14 +2414,13 @@ function partnerAcceptBlockerSummary(provider: AdminProvider, opsPolicy: Provide
   if (provider.kyc?.status !== 'APPROVED') blockers.push(`KYC ${provider.kyc?.status ?? 'MISSING'}`);
   if (!hasApprovedRequiredKycDocuments(provider)) blockers.push('identity documents');
   if (!hasApprovedBankAccount(provider)) blockers.push('bank account');
-  if (providerUnsettledWalletBalance(provider) < 0) blockers.push('cash fee debt');
   if (provider.status !== 'ONLINE_AVAILABLE') blockers.push(`status ${provider.status}`);
   if (locationState !== 'recent') blockers.push(`location ${locationState}`);
   if (!hasHealthyPush(provider)) blockers.push('push missing');
   if (!['clear', 'missing'].includes(securityState))
     blockers.push(providerSecurityLabel(securityState).toLowerCase());
 
-  return blockers.length ? `Held by: ${blockers.join(', ')}.` : 'Final gate is held by policy.';
+  return blockers.length ? `Held by: ${blockers.join(', ')}.` : 'Direct request gate is held by policy.';
 }
 
 function partnerOpsBadgePillClass(tone: PartnerOpsBadge['tone']) {
@@ -2551,7 +2576,7 @@ function nextProviderListAction(
     return {
       status: 'CASH DEBT',
       detail: `Wallet is negative by ${formatProviderMoney(Math.abs(walletBalance))}.`,
-      operatorAction: 'Confirm partner fee deposit or settle the cash fee debt from Earnings.',
+      operatorAction: 'Confirm partner fee deposit or settle the cash fee debt before marketplace participation.',
       tone: 'blocked',
       priority: 85,
     };
@@ -3076,7 +3101,7 @@ function buildProviderCommandCenter(
       tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
       detail:
         walletDebt > 0
-          ? 'Cash fee debt blocks marketplace participation, booking handoff, service start, and payout release.'
+          ? 'Cash fee debt blocks marketplace participation until HANDS fee settlement is posted.'
           : 'First-earning payout, bank, and freelance tax readiness are under control.',
       href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
       metrics: [
@@ -3234,7 +3259,7 @@ function buildPartnerShiftHandoff(
       ? {
           title: 'Keep ready partners warm for live requests',
           scope: 'Dispatch supply',
-          detail: `${acceptReady.length} partner(s) can accept direct bookings now; ${backupReady.length} are also marketplace-ready.`,
+          detail: `${acceptReady.length} partner(s) can receive direct bookings now; ${backupReady.length} are also marketplace-ready.`,
           operatorAction: 'Use these partners first when matching demand spikes or customer wait time rises.',
           href: '/partners?review=direct-ready',
           tone: 'ok' as const,
@@ -3276,7 +3301,7 @@ function buildPartnerShiftHandoff(
     },
     stats: [
       {
-        label: 'Can accept now',
+        label: 'Direct request ready',
         value: acceptReady.length.toString(),
         detail: `${backupReady.length} marketplace-ready within current policy gates.`,
         href: '/partners?review=direct-ready',
@@ -3292,7 +3317,7 @@ function buildPartnerShiftHandoff(
       {
         label: 'Cash debt',
         value: cashDebt.length.toString(),
-        detail: 'Negative wallet blocks marketplace participation and booking handoff.',
+        detail: 'Negative wallet blocks marketplace participation.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
       },
@@ -3356,7 +3381,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Direct ready',
         value: directReady.length.toString(),
-        detail: 'Partners who can accept the first customer request immediately.',
+        detail: 'Partners who can receive the first customer request immediately.',
         href: '/partners?review=direct-ready',
         tone: directReady.length ? 'ok' : 'warn',
       },
@@ -3490,7 +3515,7 @@ function partnerDailyActionAgeSignal(provider: AdminProvider, action: ProviderLi
     return providerReviewedAgeLabel(provider.bankAccounts?.[0]?.reviewedAt);
   }
   if (action.status === 'CASH DEBT') {
-    return 'Final gate is held now.';
+    return 'Marketplace participation is held now.';
   }
   if (action.status === 'PUSH') {
     return latestPushAgeLabel(provider);
@@ -3742,10 +3767,10 @@ function buildPartnerAcceptanceBlockerBoard(
       {
         title: 'Cash fee settlement',
         count: cashDebt.length,
-        status: cashDebt.length ? 'Blocks accept' : 'Clear',
+        status: cashDebt.length ? 'Blocks marketplace' : 'Clear',
         detail:
           'Negative wallet from cash bookings blocks marketplace participation until HANDS fee settlement is posted.',
-        operatorAction: 'Open the cash debt queue and confirm settlement before allowing more booking work.',
+        operatorAction: 'Open the cash debt queue and confirm settlement before allowing marketplace participation.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
         samples: partnerBlockerSamples(cashDebt),
@@ -3952,7 +3977,6 @@ function partnerHasHardAcceptanceBlocker(provider: AdminProvider) {
     provider.kyc?.status !== 'APPROVED' ||
     !hasApprovedRequiredKycDocuments(provider) ||
     !hasApprovedBankAccount(provider) ||
-    providerUnsettledWalletBalance(provider) < 0 ||
     ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider))
   );
 }
@@ -4090,7 +4114,7 @@ function buildPartnerFilterSummary(
     {
       label: 'Direct ready',
       value: directReady.toString(),
-      detail: 'Can accept a direct customer request with current policy gates',
+      detail: 'Can receive a direct customer request with current policy gates',
       href: '/partners?review=direct-ready',
     },
     {
@@ -4102,7 +4126,7 @@ function buildPartnerFilterSummary(
     {
       label: 'Wallet settlement',
       value: walletDebt.toString(),
-      detail: 'Negative wallet balance blocks marketplace participation and booking handoff',
+      detail: 'Negative wallet balance blocks marketplace participation',
       href: '/partners?review=cash-debt',
     },
     {
@@ -4157,11 +4181,11 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
 
   const items = [
     {
-      label: 'Final gate held',
+      label: 'Direct request held',
       count: acceptanceBlocked,
       href: '/partners?review=acceptance-blocked',
       detail:
-        'Partners who cannot accept direct requests now because identity, bank, wallet, location, push, or control gates are not satisfied.',
+        'Partners who cannot receive direct requests now because identity, bank, location, push, or control gates are not satisfied.',
     },
     {
       label: 'Account blocks',
@@ -4635,13 +4659,13 @@ function providerFilterDescription(kind: string, value: string) {
     return 'First earning payout setup highlights partners who have earned revenue but still need tax profile, address, or agreements before withdrawal.';
   }
   if (kind === 'review' && value === 'cash-debt') {
-    return 'Cash fee debt highlights partners whose marketplace participation and booking handoff wait until HANDS commission is settled.';
+    return 'Cash fee debt highlights partners whose marketplace participation waits until HANDS commission is settled.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
-    return 'Booking gate held highlights partners who can remain visible but cannot participate or continue handoff yet.';
+    return 'Direct request held highlights partners who remain visible but cannot receive preferred direct requests yet.';
   }
   if (kind === 'review' && value === 'direct-ready') {
-    return 'Direct request ready highlights partners who can accept a preferred customer request immediately.';
+    return 'Direct request ready highlights partners who can receive a preferred customer request immediately.';
   }
   if (kind === 'review' && value === 'marketplace-ready') {
     return 'Marketplace ready highlights partners who can receive availability alerts and join customer shortlists.';
@@ -4738,7 +4762,7 @@ function partnerReviewFilterLabel(review: string) {
     blocked: 'Account blocks',
     location: 'Location freshness',
     push: 'Push alert readiness',
-    'acceptance-blocked': 'Final gate held',
+    'acceptance-blocked': 'Direct request held',
     'direct-ready': 'Direct request ready',
     'marketplace-ready': 'Marketplace ready',
     'marketplace-blocked': 'Marketplace blocked',
