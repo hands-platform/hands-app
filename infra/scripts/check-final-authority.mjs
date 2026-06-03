@@ -17,6 +17,7 @@ checkSupabaseBoundary();
 checkLegacyRiskRoutesAreRedirectOnly();
 checkMobileVisibleCopyGuardIsStrict();
 checkAdminPeopleManagementIsFactual();
+checkAdminDashboardOperationsCoverage();
 
 console.log(
   JSON.stringify(
@@ -382,6 +383,41 @@ function checkAdminPeopleManagementIsFactual() {
     'Customer operating ledger',
     'Partner operating ledger',
   ]);
+}
+
+function checkAdminDashboardOperationsCoverage() {
+  const dashboard = read('apps/admin_web/app/page.tsx');
+  const dashboardDoc = read('docs/architecture/operations-dashboard.md');
+  const adminSmoke = read('infra/scripts/admin-web-smoke.mjs');
+  const requiredKpis = [
+    'Total bookings',
+    'Open matching',
+    'Completed bookings',
+    'Cancelled bookings',
+    'No-show records',
+    'Customers in app',
+    'Partners in app',
+    'Online partners',
+    'Hourly booking demand',
+    'Regional booking demand',
+    'Shift command briefing',
+    'Opening shift checklist',
+  ];
+
+  requireMarkers('apps/admin_web/app/page.tsx', dashboard, requiredKpis);
+  requireMarkers('docs/architecture/operations-dashboard.md', dashboardDoc, [
+    'Admin home page is the first shift screen',
+    'Total reservation volume',
+    'Current matching pressure',
+    'Completed services',
+    'Cancelled reservations',
+    'No-show follow-up',
+    'Hourly demand',
+    'Regional demand',
+    'Active app presence',
+    'Partner supply',
+  ]);
+  requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, requiredKpis);
 }
 
 function requireMarkers(file, source, markers) {

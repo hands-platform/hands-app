@@ -53,6 +53,7 @@ const pages = [
       'Supply pressure',
       'Customers in app',
       'Partners in app',
+      'Online partners',
       'Partner dispatch control',
       'Final-gate unblock quick order',
       'Operations checklist queue',
