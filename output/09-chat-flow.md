@@ -1,32 +1,24 @@
 # Chat Flow
 
 ## Rule
-- Chat room is created after matching and becomes usable when partner starts service flow.
-- Mobile apps hide completed booking chat after service completion.
-- Admin keeps the full chat archive for every booking.
 
-## Customer
+Chat is created for matched bookings. It is available to the customer and selected partner during the active service flow. After the partner completes the service, normal mobile chat disappears from the active app flow, but Admin retains the full archive.
+
+## Flow
+
 1. Customer selects final partner.
-2. Booking is matched.
-3. Chat room appears.
-4. Customer sends/receives messages.
-5. After completion, chat is no longer primary mobile action.
-
-## Partner
-1. Partner accepts matched booking.
-2. Partner starts service.
-3. Chat tab opens for customer communication.
-4. Partner can share current location manually.
-5. After completion, chat is hidden from active mobile workflow.
-
-## Admin
-- Search by booking, customer, partner, date/time.
-- View all messages.
-- Export or inspect message history.
-- Do not delete operational chat archive unless retention policy allows.
+2. API creates or opens the booking chat room.
+3. Partner starts service/work flow.
+4. Customer and partner exchange messages.
+5. Messages are stored as `ChatMessage` records.
+6. Admin can view booking chat history for operations, cancellation, no-show, refund, and dispute decisions.
 
 ## Events
-- chat.message.created
-- booking.matched
-- service.started
-- service.completed
+
+- `chat.message.created`
+- `service.started`
+- `service.completed`
+
+## Admin Use
+
+Admin should show chat as evidence and history, not as a customer or partner score.

@@ -1,76 +1,43 @@
-# HANDS Customer App IA
+# Customer App Information Architecture
 
-## 기준
-- 앱 이름은 HANDS, 서비스 국가는 Vietnam 전체로 고정한다.
-- 참고 APK의 화면 순서와 정보 구조만 참고하고, 브랜드/문구/이미지/아이콘/소스/자산은 사용하지 않는다.
-- Customer App은 여행객과 베트남 거주 고객 모두가 빠르게 주소를 정하고 파트너를 예약하는 앱이다.
-- 다국어는 최종 디자인 이후 적용하되 IA는 Vietnamese, English, Korean, Chinese, Japanese 확장을 전제로 한다.
+The Customer App is the guest-facing on-demand booking surface. It should stay simple until the Admin and backend authority model are stable.
 
-## 제외
-- 국가 선택 화면
-- Store Member / affiliate / franchise / multi-country branch
-- 태국/필리핀 등 국가별 분기
-- 제휴점 전용 앱
+## Primary Tabs
 
-## Main Navigation
 1. Home
+   - Confirm or search service address
+   - Browse nearby partners sorted by booking-address distance and availability
+   - Open partner detail
 2. Partners
+   - Full partner list
+   - Filters by service type, availability, and area
+   - Partner profile entry point
 3. Bookings
+   - Current booking status
+   - Past booking records
+   - Admin-decided cancellation/no-show outcomes when applicable
 4. Chat
+   - Opens after partner matching/service-start flow
+   - Hidden from normal customer flow after service completion
+   - Admin retains the archive
 5. Profile
+   - Phone/account state
+   - Saved addresses
+   - App settings
 
-## IA Tree
-- App Start
-  - Splash / Boot
-  - Onboarding
-  - Login Check
-- Auth
-  - Phone OTP Login
-  - Register Profile
-  - Session Recovery
-- Home
-  - Current city / serviceable region
-  - Address selector
-  - Recommended services
-  - Nearby partners
-  - Active booking banner
-- Booking
-  - Service List
-  - Service Detail
-  - Address Picker
-  - Partner List / Picker
-  - Partner Detail
-  - Booking Information
-  - Payment Method
-  - Checkout Webview
-  - Booking Complete
-  - Booking Detail
-  - Cancel Modal
-- Matching
-  - Preferred partner waiting
-  - Backup partner shortlist
-  - Customer final partner selection
-  - Auto-close timeout
-- Chat
-  - Chat List
-  - Chat Detail
-  - Location preview
-- Wallet
-  - Balance / points / coupon
-  - Payment history
-  - Refund history
-- Profile
-  - Customer info
-  - Address book
-  - Notifications
-  - Reviews
-  - Terms
+## Key Screens
 
-## MVP
-- Phone auth, home, service list/detail, address picker, partner list/detail, booking, payment placeholder, matching, chat, review, booking history.
+- Address selection with MapTiler/MapLibre map, Geoapify search, center pin, and manual adjustment.
+- Partner list with distance, availability, service summary, and factual feedback counts.
+- Partner detail with profile, services, public photos, reviews/feedback, and booking entry.
+- Booking information with immutable address snapshot, selected service option, payment method, and policy notices.
+- Matching wait screen with first-pick partner, marketplace candidates, countdown, and customer final-select action.
+- Chat screen after final partner match.
 
-## Phase 2
-- Coupon, wallet credit, refund detail, notification center, saved addresses, admin-controlled service regions.
+## MVP Exclusions
 
-## Phase 3
-- Full multilingual copy, loyalty/VIP, advanced personalization, native payment callbacks, app deep links.
+- No tip or gratuity flow.
+- No VIP, loyalty, membership, or customer scoring.
+- No scheduled/calendar booking UX.
+- No automatic partner assignment.
+- No route navigation or live route streaming.

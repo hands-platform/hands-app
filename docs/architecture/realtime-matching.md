@@ -26,10 +26,12 @@ and partner join eligibility.
 Enforced settings:
 
 - `matching.provider_response_window_minutes`
-- `matching.backup_provider_radius_meters`
+- `matching.marketplace_partner_radius_meters`
 - `matching.travel_buffer_minutes`
 - `matching.preferred_accept_mode`
-- `matching.backup_open_mode`
+- `matching.marketplace_open_mode`
+
+Compatibility note: older internal keys may still contain `backup_provider` or `backup_open`. Admin and product-facing copy should use marketplace partner/candidate wording.
 
 Existing open bookings keep their stored `expiresAt` timestamp so operators do not accidentally change a
 live customer countdown. `matching.preferred_accept_mode` is kept for snapshot compatibility, but the

@@ -1,46 +1,37 @@
-# Booking Flow and Status Mapping
+# Booking Flow
 
-## Requested Product Statuses
-- CREATED
-- PAYMENT_PENDING
-- PAID
-- OPEN_MATCHING
-- partner_SELECTED
-- ACCEPTED
-- IN_PROGRESS
-- COMPLETED
-- CANCELLED
-- REJECTED
-- REFUNDED
+## States
 
-## Current System Mapping
-| Product status | Current backend model |
+| State | Meaning |
 | --- | --- |
-| CREATED | Booking.CREATED |
-| PAYMENT_PENDING | Payment.PENDING with Booking.CREATED |
-| PAID | Payment.AUTHORIZED or Payment.CAPTURED |
-| OPEN_MATCHING | Booking.OPEN_MATCHING |
-| partner_SELECTED | Booking.MATCHED |
-| ACCEPTED | Booking.MATCHED or Booking.PROVIDER_ON_THE_WAY |
-| IN_PROGRESS | Booking.IN_SERVICE |
-| COMPLETED | Booking.COMPLETED |
-| CANCELLED | Booking.CANCELLED |
-| REJECTED | BookingParticipant.REJECTED |
-| REFUNDED | Booking.REFUNDED and Payment.REFUNDED |
+| `CREATED` | Booking request created with address snapshot and service option. |
+| `OPEN_MATCHING` | First-pick and marketplace participation window is active. |
+| `MATCHED` | Customer selected the final partner. |
+| `PROVIDER_ON_THE_WAY` | Internal compatibility state for partner travel/work preparation. |
+| `ARRIVED` | Partner arrived or is ready to begin. |
+| `IN_SERVICE` | Service is active and chat/work evidence continues. |
+| `COMPLETED` | Service completed. |
+| `CANCELLED` | Admin-closed cancellation. |
+| `EXPIRED` | Matching window expired without final selection. |
+| `REFUNDED` | Payment/refund closure recorded. |
 
-## Flow
-1. CREATED: customer creates booking request.
-2. PAYMENT_PENDING: online payment authorization is waiting.
-3. PAID: payment authorization succeeds or cash method is accepted.
-4. OPEN_MATCHING: matching window starts.
-5. partner_SELECTED: customer selects preferred/final partner.
-6. ACCEPTED: partner accepts/starts toward service.
-7. IN_PROGRESS: partner starts service.
-8. COMPLETED: service finished and earnings ledger created.
-9. CANCELLED/REJECTED/REFUNDED: branch statuses by actor and payment state.
+## Creation Requirements
 
-## Policy Values
-- Preferred partner response window: admin configurable, default 10 minutes.
-- Backup radius: admin configurable, default 10 km.
-- Matching timeout: admin configurable.
-- Final partner is always selected by customer, not automatically assigned.
+- Customer can browse from any country.
+- Booking creation requires confirmed service address inside the active service area.
+- API stores `BookingAddressSnapshot`.
+- API snapshots selected service, duration, price, payout, tax/fee policy, and payment method.
+
+## Matching Rules
+
+- Preferred partner gets a 10-minute first-pick response window by default.
+- Marketplace partners can join within the configured booking-address radius, 10km by default.
+- Partner distance is calculated server-side from the booking address.
+- Customer always chooses the final partner.
+- No automatic assignment.
+
+## Closure Rules
+
+- No normal customer cancellation button after direct matching in MVP.
+- Cancellation and no-show decisions are admin actions based on chat/evidence.
+- Completed bookings can produce factual feedback records, not scores or rankings.

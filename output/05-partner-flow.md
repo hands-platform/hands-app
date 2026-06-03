@@ -1,30 +1,25 @@
 # Partner Flow
 
-## Primary Work Flow
-1. Partner logs in with phone OTP.
-2. Partner completes minimum profile.
-3. Partner requests or waits for verification approval.
-4. Partner opens app and grants GPS permission.
-5. App sends current location once.
-6. While app is open, location updates every 10 minutes.
-7. Partner switches online.
-8. Partner receives direct first-pick booking request or nearby backup request.
-9. Partner opens order detail.
-10. Partner accepts, rejects, or joins backup shortlist.
-11. If customer selects partner, booking is matched.
-12. Partner starts service and chat is available.
-13. Partner completes service.
-14. Earnings and wallet ledger are updated.
-15. If first earning exists, tax information gate is shown before payout.
-16. Partner requests withdrawal when eligible.
+## MVP Flow
 
-## Blocking Rules
-- Blocked account cannot accept booking.
-- Negative wallet from unpaid cash booking fees blocks new booking acceptance.
-- Partner outside policy radius cannot join backup matching.
-- Missing KYC/bank/tax/agreement gates apply by level and payout stage.
+1. Partner logs in.
+2. Partner completes the required onboarding level for active work.
+3. Partner goes online.
+4. App sends current location once on launch and every 10 minutes while open.
+5. Partner receives direct first-pick booking requests.
+6. Partner can see eligible marketplace requests within policy radius.
+7. Partner accepts or rejects direct first-pick requests.
+8. Partner joins marketplace requests when wallet and policy gates allow it.
+9. Customer selects the final partner.
+10. Partner starts service to unlock chat/work flow.
+11. Partner completes service.
+12. Earnings and wallet ledger update.
+13. Payout is handled through weekly, monthly, or admin-selected batch cycles.
 
-## App-off Behavior
-- No background tracking.
-- Last saved location remains visible.
-- Old locations are marked not recent or hidden according to policy.
+## Gates
+
+- KYC/bank/account level controls whether the partner can work.
+- Negative wallet blocks marketplace join/participation.
+- Negative wallet also blocks direct acceptance, customer final selection, service start, and payout release where the API policy enforces it.
+- Partners outside marketplace radius cannot join that booking.
+- Stale or missing location can make a partner ineligible for marketplace participation.

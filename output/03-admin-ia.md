@@ -1,74 +1,60 @@
-# HANDS Admin IA
+# Admin Information Architecture
 
-## 운영 목표
-- 운영자가 고객, 파트너, 예약, 결제, 정산, 세금, 알림, 채팅 기록을 한 화면 구조 안에서 빠르게 확인하고 조치할 수 있게 한다.
-- 사람을 점수화하거나 리스크 판단하지 않는다. 대신 사실 기반 활동 내역, 상태, 시간, 금액, 조치 기록을 보여준다.
+Admin is an Operations Command Center. It should help operators understand current work, factual history, blocked gates, money movement, and required next actions without scoring people.
 
-## Main Navigation
-- Dashboard
-- Customers
-- Partners
-- Bookings
-- Services
-- Payments
-- Refunds
-- Earnings
-- Payouts
-- Cash / Wallet Ledger
-- Tax Policy
-- Platform Fee Policy
-- Operations Policy
-- Partner Controls
-- Notifications
-- Reviews
-- Chat Archive
-- Coupons
-- Files / Documents
-- App Sessions
-- Audit Log
-- Setup
+## Core Navigation
 
-## Dashboard Widgets
-- Total bookings
-- Current open matching
-- Completed bookings
-- Cancelled bookings
-- No-show count
-- Hourly bookings
-- Regional bookings
-- Customers currently active in app
-- Partners online / available / busy / offline
-- Cash fee debt total
-- Payout waiting amount
-- Refund waiting count
-- Notification failure count
+1. Dashboard
+   - Total bookings
+   - Open marketplace bookings
+   - Completed bookings
+   - Cancelled/admin-closed bookings
+   - No-show decisions
+   - Hourly and regional demand
+   - Active customer sessions
+   - Online partners
+   - Settlement debt and payout readiness
+2. Bookings
+   - Current operations queue
+   - Marketplace participation ledger
+   - Address snapshot
+   - Chat/evidence archive
+   - Cancellation/no-show decision tools
+3. Customers
+   - Customer list
+   - Customer detail with bookings, payments, refunds, chats, addresses, sessions, and operator notes
+4. Partners
+   - Partner list
+   - Partner detail with KYC, bank, tax, agreements, documents, services, location, bookings, chats, earnings, payouts, and notes
+5. Services
+   - Service names
+   - Duration options
+   - Minimum customer prices
+   - Partner payout rules
+   - Platform fee/tax breakdown
+6. Payments, Refunds, Earnings, Payouts
+   - Payment status
+   - Refund actions
+   - Wallet ledger
+   - Weekly/monthly/admin-selected payout batches
+7. Operations Policy
+   - First-pick response window
+   - Marketplace radius
+   - Location freshness
+   - Wallet/debt gates
+   - Cancellation and no-show decision policy
+8. Tax Policy
+   - Versioned Vietnam freelancer tax and withholding rules
+   - Effective dates and service/amount-band rules
+9. Notifications
+   - In-app notification history
+   - Future push-provider delivery records
+10. Audit Log
+   - Immutable operator and system trace
 
-## Customer Management
-- Customer list
-- Customer detail
-- Booking history
-- Payment/refund history
-- Wallet/coupon history
-- Chat archive per booking
-- Saved addresses
-- Device/session history
-- Admin memo
+## Admin Copy Rules
 
-## Partner Management
-- Partner list
-- Partner detail
-- KYC review
-- Service/pricing setup
-- Booking history
-- Earnings and wallet ledger
-- Payouts
-- Tax information
-- Agreement history
-- Location history
-- Device/session history
-- Admin memo and controls
-
-## Excluded
-- Affiliate/store member management
-- Franchise branch operations
-- Multi-country switcher
+- Use Partner in visible labels.
+- Avoid customer or partner scores, rankings, VIP labels, or risk judgments.
+- Show factual activity, status, time, money, and evidence.
+- Keep internal Provider model names only in technical docs or code.

@@ -1,29 +1,30 @@
-# Payment Flow
+# Payment and Wallet Flow
 
-## Methods
+## Payment Methods
+
 - MoMo
 - VNPay
 - Cash
-- Wallet/credit as Phase 2
 
-## Online Payment
+MoMo and VNPay remain behind provider adapters until sandbox/production credentials are fully verified. Cash is active as an MVP method.
+
+## Online Payment Flow
+
 1. Customer confirms booking.
-2. Payment is authorized or pending.
-3. Booking opens matching after payment state is acceptable.
-4. If booking expires, authorization is released or refunded.
+2. Payment is authorized or marked pending by adapter.
+3. Booking opens matching.
+4. If booking expires before match, authorization is released or refund is recorded.
 5. If service completes, payment is captured/confirmed.
-6. Admin can refund.
+6. Admin can refund with an audited reason.
 
-## Cash Payment
-1. Customer selects cash.
-2. Partner receives cash directly.
-3. System calculates platform fee, VAT, withholding, and other policies.
-4. Partner wallet can become negative for fees owed to HANDS.
-5. Negative wallet blocks future booking acceptance.
-6. Partner is guided to settle fee debt.
+## Cash Flow
 
-## Rules
-- Pricing and payout rules are admin managed.
-- Taxes and fee policies are not hardcoded.
-- Default currency is VND.
-- Service price increments are 100,000 VND.
+1. Customer pays partner directly in cash.
+2. HANDS records platform fee, withholding, and fee policy snapshot.
+3. Partner wallet ledger records the company receivable.
+4. If the ledger becomes negative, partner marketplace participation and downstream booking gates are blocked until settlement or admin offset.
+5. Customer wallet never becomes negative in the MVP.
+
+## No Tip Policy
+
+HANDS MVP does not collect, store, calculate, or expose customer tips or gratuity.

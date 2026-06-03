@@ -1,37 +1,28 @@
 # Auth Flow
 
-## Scope
-- Vietnam-only phone-first auth.
-- Default country code: +84.
-- Future final target: Supabase Auth.
-- Current backend can keep OTP abstraction while Firebase is removed gradually.
+## Current MVP
 
-## Customer Auth
-1. App opens.
-2. Session check.
-3. Phone number input.
-4. OTP request.
-5. OTP verify.
-6. CustomerProfile loaded or created.
-7. AppSession/device record updated.
+- NestJS owns login session policy and role authorization.
+- Mobile apps use phone OTP style screens and API-issued tokens for local/staging development.
+- Admin uses protected server-side API calls.
+- Supabase Auth is the target infrastructure for production phone OTP, but business authorization remains in NestJS.
 
-## Partner Auth
-1. Partner phone login.
-2. OTP verify.
-3. ProviderProfile/Partner profile loaded or created.
-4. Onboarding level checked.
-5. Device/session recorded.
+## Roles
 
-## Admin Auth
-- Admin routes are protected by role.
-- Admin action writes audit log.
+- `CUSTOMER`
+- `PROVIDER` internally, shown as Partner in UI
+- `ADMIN`
 
-## Excluded
-- Country chooser.
-- Store-member account type.
-- Affiliate login.
+## Deferred External Setup
 
-## Security Notes
-- No hardcoded secrets.
-- Session refresh must be separated from OTP verification.
-- Device/session history is used for operation visibility, not person scoring.
+- Production SMS provider, such as Vonage, is deferred until account credentials and OTP E2E verification are ready.
+- Do not reintroduce Firebase Auth.
+- Do not let mobile screens call Supabase directly for business writes.
+
+## Security Requirements
+
+- Access tokens must be sent as Bearer tokens.
+- Refresh/session handling should be abstracted behind repositories/use cases in Flutter.
+- Admin routes require admin role.
+- Partner routes require partner ownership or admin role.
+- Customer routes require customer ownership or admin role.

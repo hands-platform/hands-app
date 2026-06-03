@@ -1,32 +1,29 @@
 # Settlement Flow
 
-## Earnings
-1. Booking completes.
-2. Customer payment/cash record is finalized.
-3. ProviderEarning is created.
-4. Platform fee, tax, withholding, and other deductions are calculated from active policy versions.
-5. Wallet ledger is updated.
-6. Payout eligibility is recalculated.
+## Partner Earnings
 
-## First Earning Tax Gate
-- Tax information is not forced at initial signup.
-- After the first earning, partner must complete tax profile before payout.
-- The system policy exists from day one, even if partner tax profile is collected later.
+Completed bookings create partner earning records. Earnings are not automatically paid per booking.
 
-## Cash Debt
-- If partner receives cash directly, HANDS fee/tax owed can make wallet negative.
-- Negative wallet blocks new booking acceptance.
-- App message: unpaid service fee settlement prevents accepting new bookings.
+## Payout Cycles
 
-## Payout
-1. Partner requests withdrawal.
-2. System checks KYC, bank, tax, agreement, wallet balance, account status.
-3. Admin approves/rejects payout.
-4. Ledger and payout batch update.
+- Weekly batch
+- Monthly batch
+- Admin-selected payout date batch
 
-## Admin Controls
-- Tax policy version
-- Tax rules by service type, amount bracket, effective date
-- Platform fee policy
-- Payout batch status
-- Wallet ledger correction with audit log
+Admin creates, reviews, approves, and marks payout batches as paid.
+
+## Cash Fee Debt
+
+Cash bookings can create a negative partner wallet because the partner receives customer cash directly and owes HANDS platform fee and withholding.
+
+Negative wallet effects:
+
+- Customer is not affected.
+- Partner can see marketplace requests.
+- Partner cannot join or participate in marketplace bookings.
+- Direct acceptance, customer final selection, service start, and payout release are blocked where policy applies.
+- Admin can clear debt through repayment confirmation or approved offset.
+
+## Tax and Fee Policy
+
+Tax and fee calculation must use versioned policy records. Do not hardcode Vietnam freelancer tax rates, platform fees, payout amounts, or policy dates in mobile apps.

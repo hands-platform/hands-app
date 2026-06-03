@@ -203,6 +203,8 @@ NO_SHOW_PARTNER_REPORT_POLICY=ADMIN_REVIEW_REQUIRED
 NOTIFICATION_PARTNER_ALERT_CHANNEL=IN_APP_WITH_PUSH_LATER
 ```
 
+The `MATCHING_BACKUP_*` names are legacy compatibility keys. Treat them as marketplace partner settings in operator UI and product docs.
+
 Operate:
 
 ```text

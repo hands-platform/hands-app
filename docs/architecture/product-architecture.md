@@ -38,7 +38,9 @@ Defaults:
 
 - `travel_buffer_minutes = 30`
 - `early_accept_window_minutes = 10`
-- `backup_provider_radius_meters = 10000`
+- `marketplace_partner_radius_meters = 10000`
+
+Some existing environment/config keys may still contain `backup_provider` for compatibility. Product and operator-facing wording should describe this as marketplace partner participation.
 
 ## Redis Responsibilities
 

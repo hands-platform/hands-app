@@ -2,6 +2,25 @@
 
 Original MVP for HANDS, a realtime on-demand massage marketplace serving all of Vietnam.
 
+## Documentation Start Point
+
+Read `docs/README.md` first. It explains which documents are authoritative, which files are product planning snapshots, and which files are historical reference only.
+
+## Current MVP Contract
+
+- Supabase is infrastructure; NestJS owns business rules, authorization, booking state, matching, payments, settlement, and audit decisions.
+- Customer discovery is address-based. Customers may browse partners from any country, but booking creation requires a confirmed HANDS service address.
+- Every booking stores an immutable `BookingAddressSnapshot`.
+- First-pick partner response window is 10 minutes.
+- Marketplace partners can join only when they are eligible within the configured booking-address radius, currently 10km by default.
+- Customers always select the final partner. There is no automatic assignment.
+- MVP bookings are immediate/on-demand. Scheduled booking and calendar booking UX are not exposed.
+- Tips, gratuity, VIP, people scoring, and ranking programs are not part of the MVP.
+- Customer cancellation after direct matching is not a normal app action in MVP. Cancellation and no-show outcomes are admin decisions based on chat/evidence.
+- Partner negative wallet balances do not affect customers. Partners may see marketplace requests, but marketplace join/participation and downstream booking gates are blocked until settlement.
+- Admin is an Operations Command Center, not a CRM.
+- Internal code may still use `Provider` names for compatibility. Visible product and admin copy should say `Partner`.
+
 ## Apps
 
 - `apps/customer_app` - Flutter customer app.
@@ -187,7 +206,7 @@ MoMo, VNPay, and Cash are wired behind placeholder adapters with callback routes
 
 ## Reviews MVP
 
-Completed bookings can be reviewed by customers. Provider ratings are recalculated from published reviews. See:
+Completed bookings can keep factual customer feedback records for service recovery and operator review. The MVP does not use feedback as a customer or partner score, ranking, dispatch priority, VIP status, or automatic account decision. See:
 
 - `docs/architecture/reviews.md`
 

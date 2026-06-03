@@ -1,86 +1,100 @@
 # DB Domain Mapping
 
+Internal schema names may still use `Provider` for compatibility. Visible product/admin language should use Partner.
+
 ## User/Auth
-- User
-- CustomerProfile
-- ProviderProfile
-- AppSession
-- ProviderSession
-- ProviderDevice
+
+- `User`
+- `CustomerProfile`
+- `ProviderProfile`
+- `AppSession`
+- `ProviderSession`
+- `ProviderDevice`
 
 ## Customer
-- CustomerProfile
-- CustomerSelectedLocation
-- Booking
-- Review
-- Coupon
-- Refund
+
+- `CustomerProfile`
+- `CustomerSelectedLocation`
+- `Booking`
+- `Review`
+- `Coupon`
+- `Refund`
 
 ## Partner
-- ProviderProfile
-- ProviderKyc
-- ProviderDocument
-- ProviderBankAccount
-- ProviderTaxProfile
-- ProviderAgreement
-- ProviderVerificationLog
-- ProviderService
-- ProviderEarning
-- ProviderPayoutBatch
-- ProviderWalletLedgerEntry
-- LocationSnapshot
+
+- `ProviderProfile`
+- `ProviderKyc`
+- `ProviderDocument`
+- `ProviderBankAccount`
+- `ProviderTaxProfile`
+- `ProviderAgreement`
+- `ProviderVerificationLog`
+- `ProviderService`
+- `ProviderEarning`
+- `ProviderPayoutBatch`
+- `ProviderWalletLedgerEntry`
+- `LocationSnapshot`
 
 ## Services and Pricing
-- MassageService
-- ProviderService
-- ServicePayoutRule
-- PlatformFeePolicyVersion
-- PlatformFeeRule
+
+- `MassageService`
+- `ServiceDurationOption`
+- `ProviderService`
+- `ServicePayoutRule`
+- `PlatformFeePolicyVersion`
+- `PlatformFeeRule`
 
 ## Booking and Matching
-- Booking
-- BookingService
-- BookingParticipant
-- BookingOpsTask
-- OperationalPolicySetting
+
+- `Booking`
+- `BookingAddressSnapshot`
+- `BookingService`
+- `BookingParticipant`
+- `BookingOpsTask`
+- `OperationalPolicySetting`
 
 ## Payment and Settlement
-- Payment
-- Refund
-- ProviderEarning
-- ProviderPayoutBatch
-- ProviderWalletLedgerEntry
-- ProviderPlatformFeeLog
-- ProviderTaxLog
-- WithholdingLog
+
+- `Payment`
+- `Refund`
+- `ProviderEarning`
+- `ProviderPayoutBatch`
+- `ProviderWalletLedgerEntry`
+- `ProviderPlatformFeeLog`
+- `ProviderTaxLog`
+- `WithholdingLog`
 
 ## Tax
-- TaxPolicyVersion
-- TaxRule
-- ProviderTaxProfile
-- ProviderTaxLog
-- WithholdingLog
+
+- `TaxPolicyVersion`
+- `TaxRule`
+- `ProviderTaxProfile`
+- `ProviderTaxLog`
+- `WithholdingLog`
 
 ## Chat
-- ChatRoom
-- ChatMessage
+
+- `ChatRoom`
+- `ChatMessage`
 
 ## Notifications
-- Notification
-- PushDevice
-- NotificationDelivery
+
+- `Notification`
+- `PushDevice`
+- `NotificationDelivery`
 
 ## Files
-- FileAsset
-- ProviderDocument
+
+- `FileAsset`
+- `ProviderDocument`
 
 ## Admin Operations
-- AdminAuditLog
-- ProviderReport
-- ProviderSanction
-- OperationalPolicySetting
 
-## Naming Note
-- Existing schema still uses Provider in many model names.
-- Product/admin visible wording should use Partner.
-- Rename DB models only in a planned migration, not during documentation cleanup.
+- `AdminAuditLog`
+- `ProviderReport`
+- `ProviderSanction`
+- `OperationalPolicySetting`
+
+## Rename Note
+
+Do not rename schema models during ordinary feature work. A full Provider-to-Partner model rename should be a dedicated migration with API, mobile, admin, seed, smoke, and history compatibility planning.

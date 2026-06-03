@@ -1,72 +1,47 @@
-# HANDS Partner App IA
+# Partner App Information Architecture
 
-## 기준
-- 화면 표기는 Partner를 기본 용어로 사용한다.
-- Partner App은 베트남 파트너가 가입, 인증, 온라인 상태, 예약 수락, 채팅, 완료, 수익/출금까지 처리하는 앱이다.
-- 초기 가입에서는 이탈을 줄이기 위해 최소 정보만 받고, 세금 정보는 첫 수익 발생 후 출금 전 플로우로 유도한다.
+The Partner App helps Vietnam-based partners receive direct first-pick requests, see eligible marketplace requests, update location, chat with customers, complete services, and manage settlement readiness.
 
-## 제외
-- Store Member / affiliate / franchise 기능
-- 제휴 매장 프로그램
-- 다른 국가 지점 분기
-- 별도 스태프 파견 앱
+## Primary Tabs
 
-## Main Navigation
 1. Requests
+   - Online/offline state
+   - Direct first-pick booking requests
+   - Marketplace request list for eligible bookings
+   - Accept, reject, or join actions
 2. Schedule
+   - Today/current work status only for MVP
+   - No scheduled booking creation UX
 3. Earnings
+   - Completed work
+   - Platform fee debt
+   - Weekly/monthly/admin-designated payout batches
 4. Chat
+   - Opens after matched/service-start flow
+   - Customer conversation during active work
 5. Profile
+   - Basic profile
+   - Verification/KYC state
+   - Bank, tax, agreement, and document readiness
 
-## IA Tree
-- App Start
-  - Splash / Login Check
-  - Approval Status Check
-- Auth
-  - Phone OTP Login
-  - Partner Register
-  - Session Recovery
-- Onboarding
-  - Basic profile
-  - Service skill/category
-  - Service area
-  - KYC upload
-  - Bank account
-  - Agreement consent
-  - Approval pending
-- Work
-  - Online / offline toggle
-  - One-time GPS send on app open
-  - 10-minute interval location update while app is open
-  - Last location status
-- Requests
-  - Direct first-pick request
-  - Nearby backup request list within policy radius
-  - Accept / reject
-  - Active order
-  - Complete order
-- Chat
-  - Chat detail opens after matching/service start
-  - Location share
-  - Chat hidden on mobile after completion
-- Earnings
-  - Earnings summary
-  - Cash fee debt
-  - Wallet ledger
-  - Payout request
-  - Tax info collection gate after first earning
-- Profile
-  - Profile detail
-  - KYC status
-  - Service prices
-  - Work time
-  - Devices / sessions
+## Location Model
 
-## MVP
-- Login, basic profile, online status, location update, booking request list, accept/reject, active order, chat, complete, earnings summary.
+- Partner app asks for GPS permission.
+- On app launch, it sends current location once.
+- While open, it refreshes location every 10 minutes.
+- No background tracking.
+- Last stored location remains available for customer discovery and marketplace eligibility.
 
-## Phase 2
-- KYC review loop, bank account history, wallet debt blocking, tax profile gate, payout request.
+## Wallet Gate
 
-## Phase 3
-- Advanced schedule, document re-upload, partner badges, richer notification routing, native storage optimization.
+- A negative partner wallet means unpaid HANDS fees exist.
+- Partners can still see marketplace requests.
+- Marketplace join/participation is blocked until settlement or admin offset clears the debt.
+- Direct acceptance, customer final selection, service start, and payout release are also blocked by the configured debt gate.
+
+## MVP Exclusions
+
+- No partner ranking or trust score.
+- No tip/gratuity feature.
+- No route navigation or live route streaming.
+- No background GPS tracking.
