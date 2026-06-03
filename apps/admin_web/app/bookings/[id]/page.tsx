@@ -155,6 +155,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingActivityRecords = buildBookingActivityRecords(booking, rawNotifications);
   const bookingActivitySummary = buildBookingActivitySummary(bookingActivityRecords);
   const bookingActivityCsvHref = buildBookingActivityCsvHref(booking, bookingActivityRecords);
+  const marketplaceWalletEvidence = bookingMarketplaceWalletEvidence({
+    booking,
+    backupSupply,
+    financeTrace,
+    notificationTrace,
+  });
   const chatLifecycle = bookingChatLifecycle(booking, messages.length);
   const handoffChecklist = bookingHandoffChecklist(booking, messages.length, latestLocation);
   const closeoutReadiness = bookingCloseoutReadiness({
@@ -1305,6 +1311,53 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <small>Date-ordered operational history.</small>
           </a>
         </div>
+      </section>
+
+      <section className="card" id="marketplace-wallet-evidence" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Marketplace participation and wallet evidence</h2>
+            <p className="muted">
+              One booking view for actual joined partners, customer final choice, marketplace alert batches,
+              and cash-fee wallet impact. View-only marketplace exposure is not stored as participation.
+            </p>
+          </div>
+          <span className={`pill ${marketplaceWalletEvidence.tone}`}>{marketplaceWalletEvidence.status}</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {marketplaceWalletEvidence.cards.map((card) => (
+            <a href={card.href} key={card.label}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <small>{card.helper}</small>
+            </a>
+          ))}
+        </div>
+        <table className="table" style={{ marginTop: 14 }}>
+          <thead>
+            <tr>
+              <th>Evidence lane</th>
+              <th>Status</th>
+              <th>Record</th>
+              <th>Operator use</th>
+            </tr>
+          </thead>
+          <tbody>
+            {marketplaceWalletEvidence.rows.map((row) => (
+              <tr key={row.lane}>
+                <td>
+                  <strong>{row.lane}</strong>
+                  <p className="muted">{row.scope}</p>
+                </td>
+                <td>
+                  <span className={`pill ${row.tone}`}>{row.status}</span>
+                </td>
+                <td>{row.record}</td>
+                <td>{row.operatorUse}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </section>
 
       <section className="card" id="booking-operating-ledger" style={{ marginBottom: 16 }}>
@@ -7939,6 +7992,158 @@ function bookingDetailMatchingRuleSnapshot({
       { label: 'Open marketplace supply', href: '#marketplace-supply' },
       { label: 'Open alerts', href: '#alerts' },
       { label: 'Open chat evidence', href: '#chat' },
+    ],
+  };
+}
+
+function bookingMarketplaceWalletEvidence({
+  booking,
+  backupSupply,
+  financeTrace,
+  notificationTrace,
+}: {
+  booking: AdminBookingDetail;
+  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>;
+  financeTrace: ReturnType<typeof bookingFinanceTrace>;
+  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
+}) {
+  const participants = booking.participants ?? [];
+  const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
+  const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
+  const selectedParticipants = participants.filter((participant) => participant.status === 'SELECTED');
+  const finalPartner = booking.selectedProvider;
+  const walletDebt = bookingCashDebtNeedsSettlement(booking);
+  const marketplaceAlerts = notificationTrace.backupBatches.length;
+  const excludedMarketplaceRows = backupSupply.rows.filter((row) => !row.eligible).length;
+  const status = finalPartner
+    ? 'Final choice recorded'
+    : acceptedParticipants.length
+      ? 'Customer choice pending'
+      : participants.length
+        ? 'Joined partners visible'
+        : 'Waiting for join';
+  const tone = finalPartner
+    ? 'pill-success'
+    : acceptedParticipants.length
+      ? 'pill-warn'
+      : participants.length
+        ? 'pill-info'
+        : 'pill-neutral';
+
+  return {
+    status,
+    tone,
+    cards: [
+      {
+        label: 'Actual participants',
+        value: `${participants.length} joined`,
+        helper: `${acceptedParticipants.length} accepted / ${rejectedParticipants.length} rejected / ${selectedParticipants.length} selected row(s).`,
+        href: '#participants',
+      },
+      {
+        label: 'Customer final choice',
+        value: finalPartner ? providerName(finalPartner) : 'Not selected',
+        helper: finalPartner
+          ? 'Customer-selected final partner is stored on this booking.'
+          : 'Operators do not auto-assign; customer choice is still required.',
+        href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
+      },
+      {
+        label: 'Marketplace policy',
+        value: formatDistanceMeters(backupSupply.radiusMeters),
+        helper: `${backupSupply.eligibleCount} currently eligible partner(s) by booking address.`,
+        href: '#marketplace-supply',
+      },
+      {
+        label: 'Marketplace alerts',
+        value: `${marketplaceAlerts} batch(es)`,
+        helper: `${notificationTrace.rows.filter((row) => row.isPartnerAlert).length} partner alert row(s).`,
+        href: '#alerts',
+      },
+      {
+        label: 'Wallet gate',
+        value: walletDebt ? 'Settlement needed' : 'Clear',
+        helper: walletDebt
+          ? 'Cash-fee debt blocks marketplace participation and payout release.'
+          : 'No active cash-fee wallet block is visible for this booking.',
+        href: walletDebt ? '/cash-settlements' : '#finance',
+      },
+      {
+        label: 'HANDS fee origin',
+        value: financeTrace.platformFee,
+        helper:
+          financeTrace.paymentMethod === 'CASH'
+            ? `${financeTrace.walletLedger} wallet impact from cash collection.`
+            : `${financeTrace.providerPayout} partner payout for non-cash flow.`,
+        href: '#finance',
+      },
+    ],
+    rows: [
+      {
+        lane: 'Participation ledger',
+        scope: 'Only actual joined, accepted, rejected, or final partner rows are stored as participants.',
+        status: `${participants.length} participant row(s)`,
+        tone: participants.length ? 'pill-info' : 'pill-neutral',
+        record: participants.length
+          ? participants
+              .slice(0, 4)
+              .map((participant) => `${providerName(participant.providerProfile)} ${participant.status}`)
+              .join(' / ')
+          : 'No partner has joined this booking yet.',
+        operatorUse:
+          'Use this lane to confirm who actually entered the customer shortlist. Wallet-blocked view attempts are not stored here.',
+      },
+      {
+        lane: 'Marketplace reach',
+        scope: 'Booking address is the source of truth for distance-based participation.',
+        status: `${backupSupply.eligibleCount} eligible`,
+        tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn',
+        record: `${formatDistanceMeters(backupSupply.radiusMeters)} radius / ${
+          excludedMarketplaceRows
+        } excluded by current evidence.`,
+        operatorUse:
+          'Use this lane to explain why marketplace partner supply is available or why operations may need location/policy review.',
+      },
+      {
+        lane: 'Customer final choice',
+        scope: 'HANDS does not automatically assign the final partner.',
+        status: finalPartner ? 'Recorded' : acceptedParticipants.length ? 'Pending' : 'Waiting',
+        tone: finalPartner ? 'pill-success' : acceptedParticipants.length ? 'pill-warn' : 'pill-info',
+        record: finalPartner
+          ? providerName(finalPartner)
+          : `${acceptedParticipants.length} accepted partner(s), ${participants.length} participant row(s).`,
+        operatorUse:
+          'Use this lane to confirm that the customer, not the system, created the final match before chat and service handoff.',
+      },
+      {
+        lane: 'Wallet participation gate',
+        scope: 'Negative partner wallet blocks marketplace participation before the join is recorded.',
+        status: walletDebt ? 'Settlement needed' : 'Clear',
+        tone: walletDebt ? 'pill-danger' : 'pill-success',
+        record: financeTrace.walletLedger,
+        operatorUse: walletDebt
+          ? 'Collect the HANDS fee deposit or apply an approved offset before this partner can join new marketplace bookings.'
+          : 'No cash-fee wallet debt from this booking is currently gating marketplace participation.',
+      },
+      {
+        lane: 'Cash fee accounting',
+        scope: 'Cash bookings can create partner wallet debt because the partner collects customer cash directly.',
+        status:
+          financeTrace.paymentMethod === 'CASH'
+            ? walletDebt
+              ? 'Debt open'
+              : 'Cash ledger clear'
+            : 'Non-cash',
+        tone:
+          financeTrace.paymentMethod === 'CASH'
+            ? walletDebt
+              ? 'pill-danger'
+              : 'pill-success'
+            : 'pill-neutral',
+        record: `${financeTrace.platformFee} HANDS fee / ${financeTrace.withholding} withholding / ${financeTrace.netHandsFee} net fee.`,
+        operatorUse:
+          'Use this lane with cash settlement records to explain why wallet balance changed and what must be settled.',
+      },
     ],
   };
 }

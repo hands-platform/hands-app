@@ -814,6 +814,7 @@ if (bookingLinkMatch) {
   const bookingBody = await fetchPage(bookingPath);
   const bookingMarkers = [
     'Booking operations quick rail',
+    'Marketplace participation and wallet evidence',
     'Operator command queue',
     'Operator action availability',
     'Booking gate reason',
