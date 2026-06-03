@@ -156,6 +156,7 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"walletSettlementRequired":true',
     '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
     '"walletSettlementReference":"HANDS-WALLET-',
+    '"displayMessage":"수수료를 입금하지 않아 예약에 참여 할수 없습니다."',
     'Marketplace requests stay visible for review, but participation is blocked',
     'Marketplace participation and payout release unlock',
   ];
@@ -2336,6 +2337,16 @@ const expectedProviderWalletBlockReason =
 if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
+      walletDebtProviderEarningsSummary,
+    )}`,
+  );
+}
+if (
+  walletDebtProviderEarningsSummary.walletBlockDisplayMessage !==
+  '수수료를 입금하지 않아 예약에 참여 할수 없습니다.'
+) {
+  throw new Error(
+    `Negative wallet summary should include the partner-app marketplace block message: ${JSON.stringify(
       walletDebtProviderEarningsSummary,
     )}`,
   );

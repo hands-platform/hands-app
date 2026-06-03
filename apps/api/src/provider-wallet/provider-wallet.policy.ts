@@ -3,6 +3,8 @@ import { BadRequestException } from '@nestjs/common';
 export const PROVIDER_WALLET_BLOCK_CODE = 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT';
 export const PROVIDER_WALLET_BLOCK_REASON =
   'Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.';
+export const PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE =
+  '수수료를 입금하지 않아 예약에 참여 할수 없습니다.';
 export const PROVIDER_WALLET_SETTLEMENT_METHOD = 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET';
 export const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
   'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace requests stay visible for review, but participation is blocked until HANDS confirms the deposit or admin offset.';
@@ -30,6 +32,7 @@ export function providerWalletBlockedResponse(input: {
   return {
     code: PROVIDER_WALLET_BLOCK_CODE,
     message: PROVIDER_WALLET_BLOCK_REASON,
+    displayMessage: PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE,
     walletBlocked: true,
     walletBalance: input.walletBalance,
     walletDebtAmount,

@@ -4878,6 +4878,14 @@ String? providerWalletBlockReason(Map<String, dynamic> summary) {
     return null;
   }
 
+  final displayMessage =
+      (summary['walletBlockDisplayMessage'] ?? summary['displayMessage'])
+          ?.toString()
+          .trim();
+  if (displayMessage != null && displayMessage.isNotEmpty) {
+    return displayMessage;
+  }
+
   final reason = summary['walletBlockReason']?.toString().trim();
   if (reason != null && reason.isNotEmpty) {
     return reason;
@@ -5569,6 +5577,7 @@ String? providerApiExceptionMessage(Map<String, dynamic> body) {
   final directMessage = body['message'];
   final directReadable = providerReadableApiMessage(
     code: directCode,
+    displayMessage: body['displayMessage'],
     message: directMessage,
     fallbackError: directMessage is Map ? null : body['error'],
   );
@@ -5580,6 +5589,7 @@ String? providerApiExceptionMessage(Map<String, dynamic> body) {
     final nestedCode = directMessage['code']?.toString().trim();
     final nestedReadable = providerReadableApiMessage(
       code: nestedCode,
+      displayMessage: directMessage['displayMessage'],
       message: directMessage['message'],
       fallbackError: directMessage['error'],
     );
@@ -5597,10 +5607,14 @@ String? providerApiExceptionMessage(Map<String, dynamic> body) {
 
 String? providerReadableApiMessage({
   required String? code,
+  required Object? displayMessage,
   required Object? message,
   required Object? fallbackError,
 }) {
   if (code == 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT') {
+    if (displayMessage is String && displayMessage.trim().isNotEmpty) {
+      return displayMessage.trim();
+    }
     return providerWalletBlockFallbackReasonClean;
   }
   if (message is String && message.trim().isNotEmpty) {

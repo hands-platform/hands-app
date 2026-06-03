@@ -18,6 +18,7 @@ import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onbo
 import { calculateProviderWalletDelta, calculateServicePayoutFeeFromRules } from './earnings.policy';
 import {
   PROVIDER_WALLET_BLOCK_CODE,
+  PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE,
   PROVIDER_WALLET_BLOCK_REASON,
   PROVIDER_WALLET_SETTLEMENT_INSTRUCTION,
   PROVIDER_WALLET_SETTLEMENT_METHOD,
@@ -161,6 +162,7 @@ export class EarningsService {
       walletDebtAmount,
       walletBlockCode: walletBlocked ? PROVIDER_WALLET_BLOCK_CODE : null,
       walletBlockReason: walletBlocked ? PROVIDER_WALLET_BLOCK_REASON : null,
+      walletBlockDisplayMessage: walletBlocked ? PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE : null,
       walletSettlementRequired: walletBlocked,
       walletSettlementMethod: walletBlocked ? PROVIDER_WALLET_SETTLEMENT_METHOD : null,
       walletSettlementReference: walletBlocked ? providerWalletSettlementReference(provider.id) : null,
