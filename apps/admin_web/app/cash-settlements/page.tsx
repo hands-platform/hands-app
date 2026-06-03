@@ -29,6 +29,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       ? mergeAuthoritativeSummary(visibleSummary, apiSummary)
       : visibleSummary;
   const debtCauseCards = buildDebtCauseCards(rows, summary);
+  const recoverySteps = buildWalletRecoverySteps(rows, providers, summary);
   const commandCards = buildCommandCards(rows, providers, summary);
   const evidenceChecklist = buildCashSettlementEvidenceChecklist(rows, providers, summary);
 
@@ -164,6 +165,33 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                 <p className="muted">{card.detail}</p>
               </div>
               <small>{card.action}</small>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Wallet recovery workflow</h2>
+            <p className="muted">
+              Standard operating flow for reopening marketplace participation after cash-fee debt is paid
+              or offset. This does not track blocked marketplace attempts.
+            </p>
+          </div>
+          <Link className="text-link" href="/partner-controls?review=cash-debt">
+            Open partner controls
+          </Link>
+        </div>
+        <div className="setup-stage-list" style={{ marginTop: 12 }}>
+          {recoverySteps.map((step) => (
+            <div className="setup-stage-item" key={step.title}>
+              <span className={`pill ${step.pillClass}`}>{step.status}</span>
+              <div>
+                <strong>{step.title}</strong>
+                <p className="muted">{step.detail}</p>
+                <small>{step.operatorRule}</small>
+              </div>
             </div>
           ))}
         </div>
@@ -351,19 +379,19 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                     <input
                       aria-label="Settlement reference"
                       name="settlementRef"
-                      placeholder="Deposit ref or offset memo"
+                      placeholder="Bank deposit ref or admin offset"
                       defaultValue={row.settlementReference}
                     />
                     <input
                       aria-label="Settlement notes"
                       name="settlementNotes"
-                      placeholder="Settlement notes"
+                      placeholder="Evidence note"
                       defaultValue={`Partner deposit or approved offset for ${formatMoney(
                         row.debtAmount,
                         row.earning.currency,
                       )} using ${row.settlementReference}`}
                     />
-                    <button type="submit">Settle debt</button>
+                    <button type="submit">Confirm deposit / offset</button>
                   </form>
                 </td>
               </tr>
@@ -434,6 +462,14 @@ type CashSettlementActionExecutionItem = {
   action: string;
   status: string;
   reason: string;
+  operatorRule: string;
+  pillClass: string;
+};
+
+type WalletRecoveryStep = {
+  title: string;
+  status: string;
+  detail: string;
   operatorRule: string;
   pillClass: string;
 };
@@ -610,6 +646,65 @@ function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlemen
         ? 'Prioritize partner deposit confirmation or admin offset review.'
         : 'Keep in the normal settlement queue.',
       pillClass: isOldDebt ? 'pill-warn' : 'pill-success',
+    },
+  ];
+}
+
+function buildWalletRecoverySteps(
+  rows: CashSettlementRow[],
+  providers: CashSettlementProviderGroup[],
+  summary: CashSettlementSummary,
+): WalletRecoveryStep[] {
+  const hasOpenDebt = summary.rowCount > 0;
+  const missingEvidenceRows = rows.filter((row) => !row.earning.booking?.payment || row.paymentMethod !== 'CASH');
+  const highestDebt = providers[0];
+
+  return [
+    {
+      title: '1. Confirm why the wallet is negative',
+      status: hasOpenDebt ? `${summary.rowCount} open` : 'Clear',
+      detail: hasOpenDebt
+        ? `${summary.providerCount} partner wallet(s) are negative because cash bookings created ${formatMoney(
+            summary.debtAmount,
+            summary.currency,
+          )} of unpaid HANDS fee or withholding debt.`
+        : 'No partner wallet is currently negative because of cash-fee debt.',
+      operatorRule:
+        'Use booking, payment, earning, and chat evidence. Record facts only; do not turn this into a partner or customer label.',
+      pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: '2. Collect deposit or approve offset',
+      status: missingEvidenceRows.length ? `${missingEvidenceRows.length} check` : 'Evidence ready',
+      detail: missingEvidenceRows.length
+        ? 'Some rows need payment evidence review before finance should clear the wallet.'
+        : 'Visible rows have the minimum booking/payment evidence needed for settlement review.',
+      operatorRule:
+        'Use a bank transfer reference when the partner pays HANDS, or an admin offset memo when finance deducts from future earnings.',
+      pillClass: missingEvidenceRows.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: '3. Confirm deposit / offset on the row',
+      status: hasOpenDebt ? 'Action needed' : 'No action',
+      detail: highestDebt
+        ? `Start with ${highestDebt.providerName}, currently ${formatMoney(
+            highestDebt.debtAmount,
+            highestDebt.currency,
+          )} open.`
+        : 'There is no open row waiting for confirmation.',
+      operatorRule:
+        'Submitting the settlement form marks the negative earning paid and creates the wallet ledger trace.',
+      pillClass: hasOpenDebt ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: '4. Reopen marketplace and payout release',
+      status: hasOpenDebt ? 'Still gated' : 'Unlocked',
+      detail: hasOpenDebt
+        ? 'Marketplace join and payout release remain blocked until the partner wallet is no longer negative.'
+        : 'Partners with cleared wallets can participate in eligible marketplace bookings and continue payout release checks.',
+      operatorRule:
+        'Negative-wallet partners may still see marketplace demand. Only actual marketplace join and payout release are gated.',
+      pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
     },
   ];
 }

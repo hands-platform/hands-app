@@ -317,13 +317,22 @@ const pages = [
       'Cash Settlements',
       'Cash settlement date range',
       'Debt cause board',
+      'Wallet recovery workflow',
+      'Confirm deposit / offset',
       'Settlement command queue',
       'Cash settlement action execution map',
     ],
   },
   {
     path: '/cash-settlements?range=7d',
-    markers: ['Cash Settlements', 'Cash settlement date range', 'Last 7 days', 'Debt cause board', 'Settlement command queue'],
+    markers: [
+      'Cash Settlements',
+      'Cash settlement date range',
+      'Last 7 days',
+      'Debt cause board',
+      'Wallet recovery workflow',
+      'Settlement command queue',
+    ],
   },
   {
     path: '/finance-closeout',

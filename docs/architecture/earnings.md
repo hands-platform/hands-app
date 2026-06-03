@@ -69,7 +69,14 @@ This supports two settlement paths without hiding partners from the marketplace:
 
 The admin earnings screen separates negative cash wallet rows into a cash fee debt queue. The admin payments list and booking detail page also expose direct settlement forms for the same debt when finance is reviewing a cash booking from operational context.
 
-After finance confirms the partner deposit or an approved offset, the operator must enter a deposit reference or offset reference and marks the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks marketplace participation. The API rejects cash-fee debt settlement without a reference because finance needs an auditable payment or offset trail.
+The standard wallet recovery workflow is:
+
+1. Confirm why the wallet is negative from booking, payment, earning, wallet, and chat evidence.
+2. Collect a partner bank deposit to HANDS or approve an admin offset against later earnings.
+3. Enter the bank deposit reference or admin offset reference on the negative earning row.
+4. Reopen marketplace participation and payout release only after the wallet is no longer negative.
+
+After finance confirms the partner deposit or an approved offset, the operator must enter a deposit reference or offset reference and mark the negative earning as settled. This stores `settlementRef`/`settlementNotes`, moves the row to `PAID`, removes it from the unsettled wallet balance, and unblocks marketplace participation. The API rejects cash-fee debt settlement without a reference because finance needs an auditable payment or offset trail.
 
 `ProviderWalletLedgerEntry` records the finance audit trail around those earning rows:
 

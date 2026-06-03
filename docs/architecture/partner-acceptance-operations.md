@@ -74,7 +74,7 @@ Operators should use these screens together:
 - `/bookings/:id`: inspect one booking's policy snapshot, participants, alerts, finance trace, and audit trace.
 - `/partners`: review partner acceptance blockers across wallet, account, location, push, KYC, and payout gates.
 - `/partner-controls`: drill into unblock actions for debt, location, push, verification, tax, payout readiness, and saved report/sanction records.
-- `/cash-settlements`, `/earnings`, `/payouts`, and `/payments`: settle or offset cash fee debt.
+- `/cash-settlements`, `/earnings`, `/payouts`, and `/payments`: confirm cash-fee debt cause, collect partner deposit or approve admin offset, record the settlement reference, and reopen marketplace/payout checks only after the wallet is no longer negative.
 - `/tax-policy` and `/services`: manage tax, fee, service duration, minimum price, price step, and payout matrix policy.
 
 ## Acceptance Unblock Playbook
