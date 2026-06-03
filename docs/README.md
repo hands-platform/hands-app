@@ -1,43 +1,25 @@
 # HANDS Documentation Guide
 
-This guide keeps the project documentation readable as the MVP grows. If two documents disagree, follow the authority order below.
+This is the active documentation map for HANDS. If two files disagree, follow the authority order below.
 
 ## Authority Order
 
 1. `HANDS_MVP_FINAL_AUTHORITY_RESET_PROMPT.md`
 2. `docs/architecture/hands-mvp-final-authority.md`
-3. `README.md`
-4. `docs/architecture/master-progress-roadmap.md`
-5. Current source code and smoke tests
-6. `output/*.md` product planning snapshots
-7. Older research and APK analysis notes
+3. Current source code and smoke tests
+4. `README.md`
+5. `docs/architecture/master-progress-roadmap.md`
+6. Historical APK/research notes
 
 ## Read First
 
 - `README.md` - project overview, local setup, and current MVP contract.
-- `docs/architecture/hands-mvp-final-authority.md` - highest-priority product rules.
-- `docs/architecture/master-progress-roadmap.md` - current progress, validations, and next work.
-- `docs/api/routes.md` - API route reference.
+- `docs/architecture/hands-mvp-final-authority.md` - product rules that override old assumptions.
+- `docs/architecture/master-progress-roadmap.md` - current progress, validation commands, and next work.
+- `docs/api/routes.md` - active API route reference.
+- `docs/architecture/partner-acceptance-operations.md` - first-pick, marketplace, wallet, and closeout policy.
 - `docs/architecture/admin-web-integration.md` - Admin Operations Command Center integration.
 - `docs/architecture/mobile-api-integration.md` - Flutter app integration notes.
-
-## Product Planning Snapshots
-
-The `output/` folder contains concise planning documents used to align Customer App, Partner App, Admin, API, database, and implementation phases.
-
-These files are not higher authority than `hands-mvp-final-authority.md`. They should stay short, current, and practical.
-
-Recommended reading order:
-
-1. `output/01-customer-app-ia.md`
-2. `output/02-partner-app-ia.md`
-3. `output/03-admin-ia.md`
-4. `output/04-customer-flow.md`
-5. `output/05-partner-flow.md`
-6. `output/06-booking-flow.md`
-7. `output/13-api-mapping.md`
-8. `output/14-db-domain-mapping.md`
-9. `output/15-dev-implementation-plan.md`
 
 ## Architecture Areas
 
@@ -61,6 +43,16 @@ APK analysis and GitHub research files are useful references, but they do not de
 - `docs/research/github-reference-report.md`
 
 Reference-app VIP, subscription, gratuity, scheduled booking, or ranking patterns are recorded only as analysis findings. They are not active HANDS MVP requirements.
+
+Old planning snapshots were removed because their useful content is now covered by this guide, `README.md`, `docs/api/routes.md`, and the focused architecture documents above.
+
+## Maintenance Rules
+
+- Prefer updating one active architecture document instead of creating another overlapping note.
+- Keep old research clearly marked as historical reference.
+- Delete planning snapshots when their useful content has moved into active docs.
+- Do not add policy that conflicts with `hands-mvp-final-authority.md`.
+- Keep visible product language as Partner even when code still uses Provider internally.
 
 ## Naming Rule
 
