@@ -443,6 +443,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     closeoutReadiness,
   });
+  const finalGateReason = buildBookingFinalGateReason({
+    booking,
+    financeTrace,
+  });
   const decisionNotePresets = bookingDecisionNotePresets({
     booking,
     messages,
@@ -1475,6 +1479,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
         </div>
         <div className="ops-task-note" style={{ marginTop: 14 }}>
+          <div className={`ops-task-card ${finalGateReason.className}`} id="final-gate-reason">
+            <div>
+              <span className={`pill ${finalGateReason.pillClass}`}>Final gate reason</span>
+              <h3>{finalGateReason.title}</h3>
+              <p>{finalGateReason.detail}</p>
+            </div>
+            <small>{finalGateReason.operatorRule}</small>
+          </div>
+        </div>
+        <div className="ops-task-note" style={{ marginTop: 14 }}>
           <div className="risk-watch-header">
             <div>
               <strong>Action evidence gate</strong>
@@ -1513,6 +1527,16 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <td>
+                    <strong>Final gate reason</strong>
+                  </td>
+                  <td>
+                    <span className={`pill ${finalGateReason.pillClass}`}>{finalGateReason.title}</span>
+                  </td>
+                  <td>{finalGateReason.detail}</td>
+                  <td>{finalGateReason.operatorRule}</td>
+                </tr>
                 {actionEvidenceGate.rows.map((row) => (
                   <tr key={`button-map-${row.action}`}>
                     <td>
@@ -4293,6 +4317,118 @@ type BookingActionEvidenceGateRow = {
   className: BookingCloseoutChecklistItem['className'];
   pillClass: BookingCloseoutChecklistItem['pillClass'];
 };
+
+function buildBookingFinalGateReason({
+  booking,
+  financeTrace,
+}: {
+  booking: AdminBookingDetail;
+  financeTrace: ReturnType<typeof bookingFinanceTrace>;
+}): {
+  title: string;
+  detail: string;
+  operatorRule: string;
+  className: BookingCloseoutChecklistItem['className'];
+  pillClass: BookingCloseoutChecklistItem['pillClass'];
+} {
+  const acceptedParticipants =
+    booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+      .length ?? 0;
+  const selected = Boolean(booking.selectedProvider);
+  const marketplaceParticipants =
+    booking.participants?.filter((participant) => participant.providerProfile?.id !== booking.preferredProvider?.id)
+      .length ?? 0;
+
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    return {
+      title: 'Wallet debt gate',
+      detail: `${financeTrace.walletLedger}. Partner can browse and join, but final acceptance, customer selection, service start, and payout release wait for settlement or approved offset.`,
+      operatorRule:
+        'Collect the HANDS cash fee deposit or approve a documented offset before reopening final gates.',
+      className: 'ops-task-blocked',
+      pillClass: 'pill-danger',
+    };
+  }
+
+  if (!booking.addressSnapshot) {
+    return {
+      title: 'Address snapshot gate',
+      detail:
+        'BookingAddressSnapshot is missing. Marketplace radius and dispatch evidence should use the confirmed service address, not a moving customer GPS point.',
+      operatorRule: 'Repair or verify the booking address snapshot before relying on distance-based dispatch decisions.',
+      className: 'ops-task-blocked',
+      pillClass: 'pill-danger',
+    };
+  }
+
+  if (
+    booking.status === 'OPEN_MATCHING' &&
+    booking.preferredProvider &&
+    isPreferredAwaitingDecision(booking)
+  ) {
+    return {
+      title: 'First-pick window',
+      detail:
+        'The preferred partner is still inside the first response window. Nearby marketplace partners can express intent, but the system must not auto-assign anyone.',
+      operatorRule:
+        'Watch partner alerts and response time; customer final choice remains the only final matching action.',
+      className: 'ops-task-warning',
+      pillClass: 'pill-warn',
+    };
+  }
+
+  if (booking.status === 'OPEN_MATCHING' && acceptedParticipants > 0 && !selected) {
+    return {
+      title: 'Customer final choice',
+      detail: `${acceptedParticipants} partner(s) can take this booking, including ${marketplaceParticipants} marketplace participant(s). Chat opens only after the customer chooses the final partner.`,
+      operatorRule: 'Support the customer decision step; do not assign a partner automatically.',
+      className: 'ops-task-warning',
+      pillClass: 'pill-warn',
+    };
+  }
+
+  if (booking.status === 'OPEN_MATCHING') {
+    return {
+      title: 'Partner supply wait',
+      detail:
+        'No accepted partner is ready yet. Check 10km marketplace eligibility, partner app inbox, push delivery, and latest saved locations.',
+      operatorRule: 'Use factual alert, location, and participant records before support follow-up.',
+      className: 'ops-task-warning',
+      pillClass: 'pill-warn',
+    };
+  }
+
+  if (booking.status === 'MATCHED' && !booking.chatRoom) {
+    return {
+      title: 'Chat handoff gate',
+      detail:
+        'Customer final partner is locked, but the chat room is missing. Service coordination should wait until chat is repaired.',
+      operatorRule: 'Repair chat creation or open a support record before partner movement handoff.',
+      className: 'ops-task-blocked',
+      pillClass: 'pill-danger',
+    };
+  }
+
+  if (booking.status === 'MATCHED') {
+    return {
+      title: 'Final partner locked',
+      detail:
+        'Customer final choice is complete. Continue monitoring chat, partner location handoff, and service progress.',
+      operatorRule: 'Use the retained booking record as source of truth for operations follow-up.',
+      className: 'ops-task-done',
+      pillClass: 'pill-success',
+    };
+  }
+
+  return {
+    title: 'Gate clear',
+    detail:
+      'No final acceptance blocker is visible on this booking. Continue using factual payment, chat, location, and closeout records.',
+    operatorRule: 'Keep manual outcomes evidence-based; do not introduce judgment labels or automatic partner assignment.',
+    className: 'ops-task-done',
+    pillClass: 'pill-success',
+  };
+}
 
 function buildBookingActionEvidenceGate({
   booking,

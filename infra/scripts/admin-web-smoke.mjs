@@ -112,6 +112,7 @@ const pages = [
       'Booking / stage',
       'Address / customer',
       'Payment / wallet',
+      'Final gate reason',
       'Action status strip',
       'Matching rule snapshot',
       'Stage 3 choice',
@@ -779,6 +780,7 @@ if (bookingLinkMatch) {
   const bookingMarkers = [
     'Operator command queue',
     'Operator action availability',
+    'Final gate reason',
     'MVP authority contract',
     'NestJS business authority',
     'address snapshot',
