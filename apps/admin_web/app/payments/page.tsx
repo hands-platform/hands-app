@@ -51,6 +51,14 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
           <p>Linked refunds</p>
           <h2>{payments.reduce((total, payment) => total + (payment.refunds?.length ?? 0), 0)}</h2>
         </div>
+        <div className="card">
+          <p>Callback review</p>
+          <h2>{payments.filter(paymentCallbackNeedsReview).length}</h2>
+        </div>
+        <div className="card">
+          <p>Callback verified</p>
+          <h2>{payments.filter(paymentCallbackVerified).length}</h2>
+        </div>
       </section>
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
@@ -178,7 +186,10 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
                     </div>
                   </div>
                 </td>
-                <td>{payment.providerRef ?? 'NONE'}</td>
+                <td>
+                  <div>{payment.providerRef ?? 'NONE'}</div>
+                  <PaymentCallbackEvidence payment={payment} />
+                </td>
                 <td>
                   <div className="actions">
                     <PaymentAction
@@ -278,6 +289,12 @@ function paymentMatchesReview(payment: AdminPayment, review: string) {
   if (review === 'needs-action') {
     return paymentOpsState(payment) !== 'settled';
   }
+  if (review === 'callback-review') {
+    return paymentCallbackNeedsReview(payment);
+  }
+  if (review === 'callback-verified') {
+    return paymentCallbackVerified(payment);
+  }
   if (review === 'refunded') {
     return payment.status === 'REFUNDED';
   }
@@ -293,6 +310,8 @@ function paymentFilterLinks() {
     { label: 'Cash collection', href: '/payments?review=cash', review: 'cash' },
     { label: 'Cash fee debt', href: '/payments?review=cash-debt', review: 'cash-debt' },
     { label: 'Needs action', href: '/payments?review=needs-action', review: 'needs-action' },
+    { label: 'Callback review', href: '/payments?review=callback-review', review: 'callback-review' },
+    { label: 'Callback verified', href: '/payments?review=callback-verified', review: 'callback-verified' },
     { label: 'Refunded', href: '/payments?review=refunded', review: 'refunded' },
   ];
 }
@@ -350,6 +369,12 @@ function paymentFilterDescription(review: string) {
   if (review === 'needs-action') {
     return 'payments that are not settled, released, or refunded yet.';
   }
+  if (review === 'callback-review') {
+    return 'MoMo or VNPay callbacks that were received without a verified provider signature.';
+  }
+  if (review === 'callback-verified') {
+    return 'MoMo or VNPay callbacks already accepted with provider signature evidence.';
+  }
   if (review === 'refunded') {
     return 'payments already moved into the refund path.';
   }
@@ -364,6 +389,9 @@ function emptyPaymentMessage(review: string) {
 }
 
 function paymentPriority(payment: AdminPayment) {
+  if (paymentCallbackNeedsReview(payment)) {
+    return 7;
+  }
   if (paymentCashDebtNeedsSettlement(payment)) {
     return 6;
   }
@@ -383,6 +411,9 @@ function paymentPriority(payment: AdminPayment) {
 }
 
 function paymentOpsState(payment: AdminPayment) {
+  if (paymentCallbackNeedsReview(payment)) {
+    return 'callback-review';
+  }
   if (paymentCashDebtNeedsSettlement(payment)) {
     return 'cash-debt';
   }
@@ -421,6 +452,9 @@ function paymentStateLabel(payment: AdminPayment) {
 }
 
 function paymentOpsSignal(payment: AdminPayment) {
+  if (paymentCallbackNeedsReview(payment)) {
+    return <span className="signal signal-warn">Callback check</span>;
+  }
   if (paymentCashDebtNeedsSettlement(payment)) {
     return <span className="signal signal-warn">Cash fee debt</span>;
   }
@@ -440,6 +474,12 @@ function paymentOpsSignal(payment: AdminPayment) {
 }
 
 function paymentOpsHint(payment: AdminPayment) {
+  if (paymentCallbackNeedsReview(payment)) {
+    const meta = paymentCallbackMeta(payment);
+    return `A ${payment.method} callback was received but signature evidence is not verified${
+      meta.mode ? ` (${meta.mode})` : ''
+    }. Compare gateway reference, amount, and callback status before manual money actions.`;
+  }
   if (paymentCashDebtNeedsSettlement(payment)) {
     const debt = Math.abs(payment.booking?.earning?.netAmount ?? 0);
     return `Cash was collected by the partner. Settle ${money(
@@ -574,6 +614,142 @@ function paymentCashDebtNeedsSettlement(payment: AdminPayment) {
     Boolean(earning) &&
     (earning?.netAmount ?? 0) < 0 &&
     earning?.status !== 'PAID'
+  );
+}
+
+type PaymentCallbackMeta = {
+  receivedAt: string | null;
+  verified: boolean | null;
+  mode: string | null;
+  providerStatus: string | null;
+  gatewayTransactionId: string | null;
+  callbackAmount: number | null;
+  rawKeys: string[];
+};
+
+function paymentCallbackMeta(payment: AdminPayment): PaymentCallbackMeta {
+  const meta = paymentRawMeta(payment);
+  const vnpAmount = numberFromUnknown(meta.vnp_Amount);
+
+  return {
+    receivedAt: stringFromUnknown(meta.callbackReceivedAt),
+    verified: booleanFromUnknown(meta.callbackSignatureVerified),
+    mode: stringFromUnknown(meta.callbackVerificationMode),
+    providerStatus:
+      stringFromUnknown(meta.status) ??
+      stringFromUnknown(meta.resultCode) ??
+      stringFromUnknown(meta.vnp_ResponseCode) ??
+      stringFromUnknown(meta.message),
+    gatewayTransactionId:
+      stringFromUnknown(meta.transId) ??
+      stringFromUnknown(meta.transactionId) ??
+      stringFromUnknown(meta.vnp_TransactionNo) ??
+      stringFromUnknown(meta.vnp_TxnRef),
+    callbackAmount: numberFromUnknown(meta.amount) ?? (vnpAmount ? Math.round(vnpAmount / 100) : null),
+    rawKeys: Object.keys(meta).sort(),
+  };
+}
+
+function paymentRawMeta(payment: AdminPayment): Record<string, unknown> {
+  if (!payment.rawMeta || typeof payment.rawMeta !== 'object' || Array.isArray(payment.rawMeta)) {
+    return {};
+  }
+  return payment.rawMeta as Record<string, unknown>;
+}
+
+function paymentCallbackVerified(payment: AdminPayment) {
+  return paymentCallbackMeta(payment).verified === true;
+}
+
+function paymentCallbackNeedsReview(payment: AdminPayment) {
+  if (payment.method === 'CASH') {
+    return false;
+  }
+  const callback = paymentCallbackMeta(payment);
+  return Boolean(callback.receivedAt) && callback.verified !== true;
+}
+
+function stringFromUnknown(value: unknown) {
+  if (typeof value === 'string' && value.trim()) {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return null;
+}
+
+function booleanFromUnknown(value: unknown) {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    if (value.toLowerCase() === 'true') {
+      return true;
+    }
+    if (value.toLowerCase() === 'false') {
+      return false;
+    }
+  }
+  return null;
+}
+
+function numberFromUnknown(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function PaymentCallbackEvidence({ payment }: { payment: AdminPayment }) {
+  const callback = paymentCallbackMeta(payment);
+  if (!callback.receivedAt) {
+    return (
+      <div className="ops-task-note" style={{ marginTop: 8 }}>
+        <span className="pill pill-neutral">No callback</span>
+        <p className="muted" style={{ marginTop: 6 }}>
+          No provider callback has been stored yet.
+        </p>
+      </div>
+    );
+  }
+
+  const callbackPill = callback.verified ? 'pill-success' : 'pill-warn';
+  const callbackLabel = callback.verified ? 'Verified callback' : 'Review callback';
+
+  return (
+    <div className="ops-task-note" style={{ marginTop: 8 }}>
+      <span className={`pill ${callbackPill}`}>{callbackLabel}</span>
+      <div className="setup-stage-list" style={{ marginTop: 8 }}>
+        <div className="setup-stage-item">
+          <span className="pill pill-info">Received</span>
+          <div>
+            <strong>{new Date(callback.receivedAt).toLocaleString()}</strong>
+            <p className="muted">Verification mode: {callback.mode ?? 'unknown'}</p>
+          </div>
+        </div>
+        <div className="setup-stage-item">
+          <span className="pill pill-neutral">Gateway</span>
+          <div>
+            <strong>{callback.providerStatus ?? 'No status code'}</strong>
+            <p className="muted">
+              Transaction: {callback.gatewayTransactionId ?? 'none'} · Amount:{' '}
+              {callback.callbackAmount !== null ? money(callback.callbackAmount, payment.currency) : 'unknown'}
+            </p>
+          </div>
+        </div>
+      </div>
+      {callback.rawKeys.length ? (
+        <details style={{ marginTop: 8 }}>
+          <summary>Callback payload keys</summary>
+          <p className="muted">{callback.rawKeys.join(', ')}</p>
+        </details>
+      ) : null}
+    </div>
   );
 }
 

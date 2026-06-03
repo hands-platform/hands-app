@@ -55,13 +55,35 @@ Callback amount and merchant identity are also checked when those fields are pre
 Repeated callbacks with the same terminal status are treated as idempotent replays;
 conflicting terminal callback statuses are rejected.
 
+## Admin Callback Audit
+
+`/payments` in the admin dashboard exposes callback evidence for every payment row:
+
+- provider reference
+- callback received time
+- signature verification result
+- verification mode
+- gateway status or response code
+- gateway transaction reference
+- callback amount when the provider sends it
+- callback payload keys for quick operator inspection
+
+The page includes two dedicated queues:
+
+- `Callback review`: non-cash callbacks received without verified signature evidence.
+- `Callback verified`: callbacks accepted with provider signature evidence.
+
+Operators should use this view before manual capture, release, refund, or settlement
+actions. The backend remains the authority for accepting or rejecting callbacks; the
+admin screen only exposes the saved evidence so finance can audit what happened.
+
 ## Refund Flow
 
 Admin refunds update the payment to `REFUNDED`, move the booking to `REFUNDED`, create a `Refund` row, and cancel unpaid partner earnings. If the earning is already `PAID`, the MVP keeps it unchanged and writes the skip reason to `AdminAuditLog`.
 
 ## Production Hardening
 
-- Store callback attempts for auditability.
+- Store every rejected callback attempt in a dedicated audit table, not only accepted callback metadata.
 - Replace placeholder status polling with provider API calls.
 - Separate `AUTHORIZED`, `CAPTURED`, `RELEASED`, `REFUNDED` semantics by payment provider.
 - Add payment provider replay nonce or provider transaction reference tracking once real sandbox credentials are connected.
