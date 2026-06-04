@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedUser } from './auth.types';
+import { jwtAccessSecretFromConfig } from './jwt-secrets';
 
 type NestJwtPayload = {
   sub?: string;
@@ -61,7 +62,7 @@ export class AuthTokenService {
   private tryVerifyNestJwt(token: string): AuthenticatedUser | null {
     try {
       const payload = this.jwt.verify<NestJwtPayload>(token, {
-        secret: this.config.get<string>('JWT_ACCESS_SECRET') ?? 'dev-access-secret',
+        secret: jwtAccessSecretFromConfig(this.config),
       });
 
       if (!payload.sub) {

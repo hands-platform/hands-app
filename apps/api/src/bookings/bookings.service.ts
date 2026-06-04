@@ -1719,13 +1719,6 @@ function normalizeBookingCoordinate(value: unknown, fieldName: 'lat' | 'lng') {
   return parsed;
 }
 
-function assertVietnamBookingCoordinate(lat: number, lng: number) {
-  const gateError = vietnamBookingCoordinateGateError(lat, lng);
-  if (gateError) {
-    throw new BadRequestException(gateError.message);
-  }
-}
-
 function vietnamBookingCoordinateGateError(lat: number, lng: number) {
   if (!isVietnamBookingCoordinate(lat, lng)) {
     return {

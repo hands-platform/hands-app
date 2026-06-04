@@ -5,6 +5,7 @@ import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import { AuthTokenService } from './auth-token.service';
+import { jwtRefreshSecretFromConfig } from './jwt-secrets';
 import { OtpDeliveryService } from './otp-delivery.service';
 
 type RefreshPayload = {
@@ -217,6 +218,6 @@ export class AuthService {
   }
 
   private refreshSecret() {
-    return this.config.get<string>('JWT_REFRESH_SECRET') ?? 'dev-refresh-secret';
+    return jwtRefreshSecretFromConfig(this.config);
   }
 }

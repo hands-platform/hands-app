@@ -11,8 +11,9 @@ import { Server, Socket } from 'socket.io';
 import { SocketAuthService } from '../auth/socket-auth.service';
 import { SOCKET_ROOMS } from '../common/domain';
 import { PrismaService } from '../prisma/prisma.service';
+import { corsOriginFromEnv } from '../security/cors-origin';
 
-@WebSocketGateway({ cors: { origin: true, credentials: true } })
+@WebSocketGateway({ cors: { origin: corsOriginFromEnv(), credentials: true } })
 export class MatchingGateway implements OnGatewayConnection {
   constructor(
     private readonly socketAuth: SocketAuthService,

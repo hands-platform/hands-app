@@ -8,12 +8,13 @@ import { OtpDeliveryService } from './otp-delivery.service';
 import { RolesGuard } from './roles.guard';
 import { SocketAuthService } from './socket-auth.service';
 import { SupabaseAdminService } from './supabase-admin.service';
+import { jwtAccessSecretFromEnv } from './jwt-secrets';
 
 @Global()
 @Module({
   imports: [
     JwtModule.register({
-      secret: process.env.JWT_ACCESS_SECRET ?? 'dev-access-secret',
+      secret: jwtAccessSecretFromEnv(),
       signOptions: { expiresIn: '15m' },
     }),
   ],
