@@ -869,6 +869,7 @@ if (bookingLinkMatch) {
     'Applied operations policy',
     'Action evidence gate',
     'Action button execution map',
+    'Payment sync',
     'Cash fee clearance',
     'First-pick expiry',
     'No-show evidence requirement',

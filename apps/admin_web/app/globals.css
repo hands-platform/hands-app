@@ -118,6 +118,47 @@ a {
   min-width: 180px;
 }
 
+.action-button-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
+.action-button-card {
+  align-content: space-between;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  min-height: 220px;
+  padding: 14px;
+}
+
+.action-button-card strong {
+  display: block;
+  margin-top: 10px;
+}
+
+.action-button-card p {
+  margin: 10px 0 0;
+}
+
+.action-button-card small {
+  color: #64748b;
+  display: block;
+  font-weight: 700;
+}
+
+.action-button-card input {
+  min-width: 0;
+  width: 100%;
+}
+
+.action-button-card button {
+  width: 100%;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -201,6 +242,11 @@ a {
 
 .ops-command-center .actions {
   justify-content: flex-end;
+}
+
+#booking-ops.ops-command-center {
+  display: grid;
+  grid-template-columns: 1fr;
 }
 
 .ops-note-panel {
@@ -937,6 +983,10 @@ button:disabled {
 
   .ops-command-center .actions {
     justify-content: flex-start;
+  }
+
+  .action-button-grid {
+    grid-template-columns: 1fr;
   }
 
   .ops-filter-grid {

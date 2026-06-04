@@ -479,6 +479,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     closeoutReadiness,
   });
+  const actionGateByAction = new Map(actionEvidenceGate.rows.map((row) => [row.action, row]));
   const finalGateReason = buildBookingFinalGateReason({
     booking,
     financeTrace,
@@ -1736,7 +1737,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </table>
           </div>
         </div>
-        <div className="actions">
+        <div className="action-button-grid">
           {booking.payment?.id ? (
             <>
               <PaymentAction
@@ -1745,6 +1746,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 paymentId={booking.payment.id}
                 label="Sync payment"
                 disabled={!booking.payment.providerRef || isTerminalPayment(booking.payment.status)}
+                readout={actionGateByAction.get('Payment sync')}
               />
               <PaymentAction
                 action={captureBookingPayment}
@@ -1756,6 +1758,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                   booking.payment.status === 'REFUNDED' ||
                   booking.payment.status === 'RELEASED'
                 }
+                readout={actionGateByAction.get('Payment capture')}
               />
               <PaymentAction
                 action={releaseBookingPayment}
@@ -1767,6 +1770,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                   booking.payment.status === 'REFUNDED' ||
                   booking.payment.status === 'RELEASED'
                 }
+                readout={actionGateByAction.get('Release or refund')}
               />
               <PaymentAction
                 action={refundBookingPayment}
@@ -1774,13 +1778,19 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 paymentId={booking.payment.id}
                 label="Refund"
                 disabled={booking.payment.status === 'REFUNDED' || booking.payment.status === 'RELEASED'}
+                readout={actionGateByAction.get('Release or refund')}
               />
               {bookingCashDebtNeedsSettlement(booking) && booking.earning?.id && (
                 <CashDebtSettlementForm booking={booking} />
               )}
             </>
           ) : (
-            <span className="muted">No payment action available.</span>
+            <div className="action-button-card ops-task-blocked">
+              <span className="pill pill-neutral">Locked</span>
+              <strong>No payment action available</strong>
+              <p className="muted">No payment record is linked to this booking yet.</p>
+              <small>Payment buttons appear after a booking payment row exists.</small>
+            </div>
           )}
         </div>
       </section>
@@ -4686,6 +4696,7 @@ function buildBookingActionEvidenceGate({
   const paymentStatus = booking.payment?.status ?? 'NONE';
   const paymentIsTerminal = isTerminalPayment(paymentStatus);
   const paymentActionAvailable = Boolean(booking.payment?.id) && !paymentIsTerminal;
+  const paymentSyncAvailable = Boolean(booking.payment?.providerRef) && !paymentIsTerminal;
   const hasAddressSnapshot = Boolean(booking.addressSnapshot);
   const hasChatArchive = Boolean(booking.chatRoom);
   const hasDecisionEvidence = Boolean(
@@ -4711,6 +4722,18 @@ function buildBookingActionEvidenceGate({
     .join(', ');
 
   const rows: BookingActionEvidenceGateRow[] = [
+    {
+      action: 'Payment sync',
+      status: paymentSyncAvailable ? 'Available' : 'Locked',
+      evidence: booking.payment?.providerRef
+        ? `${paymentStatus} / provider ref ${booking.payment.providerRef}`
+        : `Payment status is ${paymentStatus}; no gateway reference is linked.`,
+      operatorRule:
+        'Sync only when a provider reference exists and the payment is not already captured, released, or refunded.',
+      href: '#booking-ops',
+      className: paymentSyncAvailable ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: paymentSyncAvailable ? 'pill-success' : 'pill-neutral',
+    },
     {
       action: 'Payment capture',
       status: completedWorkEvidenceReady
@@ -5865,20 +5888,30 @@ function PaymentAction({
   paymentId,
   label,
   disabled,
+  readout,
 }: {
   action: (...args: [FormData]) => Promise<void>;
   bookingId: string;
   paymentId: string;
   label: string;
   disabled?: boolean;
+  readout?: BookingActionEvidenceGateRow;
 }) {
   return (
-    <form action={action}>
+    <form action={action} className={`action-button-card ${readout?.className ?? ''}`}>
       <input type="hidden" name="bookingId" value={bookingId} />
       <input type="hidden" name="paymentId" value={paymentId} />
+      <div>
+        <span className={`pill ${readout?.pillClass ?? (disabled ? 'pill-neutral' : 'pill-info')}`}>
+          {readout?.status ?? (disabled ? 'Locked' : 'Available')}
+        </span>
+        <strong>{label}</strong>
+        <p className="muted">{readout?.evidence ?? 'Payment action state is derived from the booking.'}</p>
+      </div>
       <button type="submit" disabled={disabled}>
         {label}
       </button>
+      <small>{readout?.operatorRule ?? 'Use retained booking evidence before changing payment state.'}</small>
     </form>
   );
 }
@@ -5891,9 +5924,16 @@ function CashDebtSettlementForm({ booking }: { booking: AdminBookingDetail }) {
 
   const settlementRef = `HANDS-CASH-${shortId(booking.id).toUpperCase()}`;
   return (
-    <form action={settleBookingCashDebt} className="inline-form">
+    <form action={settleBookingCashDebt} className="action-button-card ops-task-blocked">
       <input type="hidden" name="bookingId" value={booking.id} />
       <input type="hidden" name="earningId" value={earning.id} />
+      <div>
+        <span className="pill pill-danger">Settlement needed</span>
+        <strong>Settle cash fee debt</strong>
+        <p className="muted">
+          Partner cash collection created a negative wallet fee. Confirm deposit or admin offset evidence.
+        </p>
+      </div>
       <input
         name="settlementRef"
         defaultValue={settlementRef}
