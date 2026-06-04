@@ -5,6 +5,8 @@ const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slic
 const smokePath = resolve(root, 'infra/scripts/api-smoke.mjs');
 const source = readFileSync(smokePath, 'utf8');
 const apiSourceRoot = resolve(root, 'apps/api/src');
+const providerAppMainPath = resolve(root, 'apps/provider_app/lib/main.dart');
+const providerWalletGateTestPath = resolve(root, 'apps/provider_app/test/provider_wallet_gate_test.dart');
 
 const requiredCoverage = [
   {
@@ -221,6 +223,7 @@ const checks = requiredCoverage.map((check) => {
 const authorityChecks = [
   checkNegativeWalletBlockCallSites(),
   checkNegativeWalletBookingFunctionBoundaries(),
+  checkProviderMobileWalletGateBoundaries(),
 ];
 
 const allChecks = [...checks, ...authorityChecks];
@@ -291,6 +294,51 @@ function checkNegativeWalletBookingFunctionBoundaries() {
     area: 'negative wallet marketplace-only booking gate',
     status: missingMarkers.length === 0 ? 'PASS' : 'FAIL',
     markerCount: 4,
+    missingMarkers,
+  };
+}
+
+function checkProviderMobileWalletGateBoundaries() {
+  const providerSource = readFileSync(providerAppMainPath, 'utf8');
+  const providerWalletGateTest = readFileSync(providerWalletGateTestPath, 'utf8');
+  const walletBlockDisplayMessage = '수수료를 입금하지 않아 예약에 참여 할수 없습니다.';
+  const walletBlockButtonLabel = '수수료 정산 필요';
+  const missingMarkers = [];
+
+  for (const [label, marker] of [
+    ['partner app cash-fee block message', walletBlockDisplayMessage],
+    ['partner app cash-fee blocked button label', walletBlockButtonLabel],
+    [
+      'partner app marketplace-only gate expression',
+      'return walletBlocked && !isPreferredRequest && !isMatched && !joined;',
+    ],
+    ['partner app honors explicit server marketplace join flag', "summary['marketplaceJoinBlocked']"],
+    ['partner app renders wallet settlement guidance', 'providerWalletBlockHintClean'],
+  ]) {
+    if (!providerSource.includes(marker)) {
+      missingMarkers.push(`missing ${label}: ${marker}`);
+    }
+  }
+
+  for (const [label, marker] of [
+    [
+      'partner app wallet gate boundary test',
+      'wallet gate only blocks joining marketplace before participation',
+    ],
+    ['direct first-pick remains unblocked', 'Direct first-pick accept/reject is not marketplace join.'],
+    ['already-joined participant remains selectable', 'Already joined participants stay visible for customer choice.'],
+    ['already-matched workflow remains unblocked', 'Already matched bookings are handled by service workflow.'],
+    ['partner app exact cash-fee block copy test', walletBlockDisplayMessage],
+  ]) {
+    if (!providerWalletGateTest.includes(marker)) {
+      missingMarkers.push(`missing ${label}: ${marker}`);
+    }
+  }
+
+  return {
+    area: 'partner app negative wallet marketplace-only gate',
+    status: missingMarkers.length === 0 ? 'PASS' : 'FAIL',
+    markerCount: 10,
     missingMarkers,
   };
 }
