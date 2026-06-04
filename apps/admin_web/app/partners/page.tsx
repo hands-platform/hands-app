@@ -68,6 +68,7 @@ type PartnerDispatchForecast = {
 type PartnerAcceptanceBlockerBoard = {
   hardBlocked: number;
   eligibleNow: number;
+  marketplaceBlocked: number;
   cards: Array<{
     title: string;
     count: number;
@@ -1021,9 +1022,16 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <span
               className={`pill ${acceptanceBlockerBoard.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}
             >
-              {acceptanceBlockerBoard.hardBlocked} hard blocked
+              {acceptanceBlockerBoard.hardBlocked} direct hard blocked
             </span>
             <span className="pill pill-info">{acceptanceBlockerBoard.eligibleNow} direct-ready</span>
+            <span
+              className={`pill ${
+                acceptanceBlockerBoard.marketplaceBlocked > 0 ? 'pill-warn' : 'pill-success'
+              }`}
+            >
+              {acceptanceBlockerBoard.marketplaceBlocked} marketplace held
+            </span>
           </div>
         </div>
         <div className="grid" style={{ marginTop: 12 }}>
@@ -3310,7 +3318,7 @@ function buildPartnerShiftHandoff(
       {
         label: 'Hard blocked',
         value: hardBlocked.length.toString(),
-        detail: 'Account, KYC, bank, wallet, device/session, or identity blockers.',
+        detail: 'Account, KYC, bank, device/session, or identity blockers for direct partner work.',
         href: '/partners?review=acceptance-blocked',
         tone: hardBlocked.length ? 'danger' : 'ok',
       },
@@ -3395,7 +3403,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Acceptance blocked',
         value: acceptanceBlocked.length.toString(),
-        detail: 'Partners blocked by KYC, bank, wallet, location, push, or control gates.',
+        detail: 'Partners blocked from direct requests by KYC, bank, location, push, or control gates.',
         href: '/partners?review=acceptance-blocked',
         tone: acceptanceBlocked.length ? 'danger' : 'ok',
       },
@@ -3674,7 +3682,7 @@ function buildPartnerDispatchForecast(
         label: 'Online capacity',
         value: `${online}/${bookingBase}`,
         detail:
-          'Partners currently online versus the pool that has passed identity, bank, wallet, and control gates.',
+          'Partners currently online versus the pool that has passed identity, bank, and control gates.',
         tone: online > 0 ? 'info' : bookingBase > 0 ? 'warn' : 'danger',
         href: '/partners?providerStatus=ONLINE_AVAILABLE',
       },
@@ -3682,9 +3690,9 @@ function buildPartnerDispatchForecast(
         label: 'Hard blockers',
         value: hardBlocked.toString(),
         detail:
-          'Identity, account, cash debt, or device/session blockers that should not be bypassed by dispatch.',
+          'Identity, account, bank, or device/session blockers that should not be bypassed by dispatch.',
         tone: hardBlocked > 0 ? 'danger' : 'ok',
-        href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=security',
+        href: hardBlocked > 0 ? '/partners?review=acceptance-blocked' : '/partners?review=security',
       },
     ],
     blockers: [
@@ -3759,10 +3767,14 @@ function buildPartnerAcceptanceBlockerBoard(
   const firstEarningPayoutGate = providers.filter(providerPayoutSetupNeedsReview);
   const hardBlocked = providers.filter((provider) => partnerHasHardAcceptanceBlocker(provider)).length;
   const eligibleNow = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy)).length;
+  const marketplaceBlocked = providers.filter(
+    (provider) => !partnerBackupMatchingEligibility(provider, opsPolicy).eligible,
+  ).length;
 
   return {
     hardBlocked,
     eligibleNow,
+    marketplaceBlocked,
     cards: [
       {
         title: 'Cash fee settlement',
