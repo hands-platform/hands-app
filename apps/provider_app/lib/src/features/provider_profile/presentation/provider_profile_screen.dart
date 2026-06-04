@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../provider_services/presentation/widgets/provider_service_pricing_card.dart';
 import '../../../app_state.dart';
@@ -9,6 +8,7 @@ import '../../provider_onboarding/presentation/provider_onboarding_status.dart';
 import '../../provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
 import '../../provider_onboarding/presentation/widgets/provider_onboarding_forms.dart';
 import 'provider_feedback_cards.dart';
+import 'provider_image_upload_picker.dart';
 import 'provider_onboarding_card.dart';
 import 'provider_public_media_review_card.dart';
 
@@ -211,8 +211,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _pickAndUploadVerificationFile(String documentType) async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
+    final image = await pickProviderImage(
       imageQuality: 85,
       maxWidth: 2400,
     );
@@ -224,12 +223,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _isUploading = true;
     });
     try {
-      final bytes = await image.readAsBytes();
-      final contentType =
-          image.mimeType ?? guessImageContentTypeFromName(image.name);
-      final completedFile = await ref
-          .read(providerRepositoryProvider)
-          .uploadVerificationFile(bytes: bytes, contentType: contentType);
+      final completedFile =
+          await ref.read(providerRepositoryProvider).uploadVerificationFile(
+                bytes: image.bytes,
+                contentType: image.contentType,
+              );
       final fileId = completedFile['id']?.toString();
       if (fileId != null && fileId.isNotEmpty) {
         _uploadedFileIds.add(fileId);
@@ -261,8 +259,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _pickAndUploadProfileImage() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
+    final image = await pickProviderImage(
       imageQuality: 85,
       maxWidth: 1600,
     );
@@ -274,12 +271,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _isUploadingProfileImage = true;
     });
     try {
-      final bytes = await image.readAsBytes();
-      final contentType =
-          image.mimeType ?? guessImageContentTypeFromName(image.name);
-      await ref
-          .read(providerRepositoryProvider)
-          .uploadProfileImage(bytes: bytes, contentType: contentType);
+      await ref.read(providerRepositoryProvider).uploadProfileImage(
+            bytes: image.bytes,
+            contentType: image.contentType,
+          );
       if (mounted) {
         _refreshProfile();
       }
@@ -306,8 +301,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   Future<void> _pickAndUploadGalleryImage() async {
-    final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
+    final image = await pickProviderImage(
       imageQuality: 82,
       maxWidth: 1800,
     );
@@ -319,12 +313,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       _isUploadingGalleryImage = true;
     });
     try {
-      final bytes = await image.readAsBytes();
-      final contentType =
-          image.mimeType ?? guessImageContentTypeFromName(image.name);
-      await ref
-          .read(providerRepositoryProvider)
-          .uploadGalleryImage(bytes: bytes, contentType: contentType);
+      await ref.read(providerRepositoryProvider).uploadGalleryImage(
+            bytes: image.bytes,
+            contentType: image.contentType,
+          );
       if (mounted) {
         _refreshProfile();
       }
@@ -602,15 +594,4 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       ),
     );
   }
-}
-
-String guessImageContentTypeFromName(String name) {
-  final lowerName = name.toLowerCase();
-  if (lowerName.endsWith('.png')) {
-    return 'image/png';
-  }
-  if (lowerName.endsWith('.webp')) {
-    return 'image/webp';
-  }
-  return 'image/jpeg';
 }
