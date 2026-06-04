@@ -1,5 +1,6 @@
 import { AdminReview, adminGet } from '../../lib/admin-api';
 import Link from 'next/link';
+import { shortId } from '../../lib/admin-format';
 import { readSearchParam } from '../../lib/date-range';
 import { moderateReview } from './actions';
 
@@ -427,10 +428,6 @@ function opsHint(review: AdminReview) {
     return 'Hidden feedback should still be documented for support or partner coaching.';
   }
   return 'Routine feedback row for customer sentiment and booking context.';
-}
-
-function shortId(value: string) {
-  return value.slice(0, 8);
 }
 
 function dateMs(value?: string | null) {

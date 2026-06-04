@@ -1,4 +1,5 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
+import { formatDateTime as formatDate } from '../../lib/admin-format';
 
 const setupOrder = [
   {
@@ -1045,12 +1046,4 @@ function envPillClass(name: string, checks: AdminExternalReadiness['checks']) {
     return 'pill pill-warn';
   }
   return 'pill pill-neutral';
-}
-
-function formatDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return 'unknown';
-  }
-  return date.toLocaleString('en-US');
 }

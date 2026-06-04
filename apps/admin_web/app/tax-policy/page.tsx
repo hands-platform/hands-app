@@ -1,4 +1,5 @@
 import { AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
+import { formatDateTime } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
@@ -96,7 +97,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               <strong>{preview.policy?.name ?? 'No active policy available now'}</strong>
               <p className="muted">
                 {preview.policy
-                  ? `Effective from ${formatDate(preview.policy.effectiveFrom)}`
+                  ? `Effective from ${formatDateTime(preview.policy.effectiveFrom, 'No date')}`
                   : 'Create or activate one policy before partner earnings are settled.'}
               </p>
             </div>
@@ -169,8 +170,8 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               <div>
                 <h2>{policy.name}</h2>
                 <p className="muted">
-                  {formatDate(policy.effectiveFrom)}
-                  {policy.effectiveTo ? ` - ${formatDate(policy.effectiveTo)}` : ''}
+                  {formatDateTime(policy.effectiveFrom, 'No date')}
+                  {policy.effectiveTo ? ` - ${formatDateTime(policy.effectiveTo, 'No date')}` : ''}
                 </p>
               </div>
               <span className={`pill ${policy.status === 'ACTIVE' ? 'pill-success' : 'pill-neutral'}`}>
@@ -325,13 +326,6 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       </section>
     </>
   );
-}
-
-function formatDate(value?: string | null) {
-  if (!value) {
-    return 'No date';
-  }
-  return new Date(value).toLocaleString();
 }
 
 function toDateTimeLocal(value?: string | null) {
