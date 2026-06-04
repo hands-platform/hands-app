@@ -1,119 +1,9 @@
 import 'package:flutter/material.dart';
 
-const providerAgreementTypes = [
-  'TERMS',
-  'PRIVACY',
-  'LOCATION',
-  'PAYOUT',
-  'TAX'
-];
+export 'provider_onboarding_form_inputs.dart';
 
-class ProviderBasicProfileInput {
-  const ProviderBasicProfileInput({
-    required this.legalName,
-    required this.displayName,
-    required this.dateOfBirth,
-    required this.gender,
-    required this.facebookId,
-    required this.activityNickname,
-    required this.bio,
-    required this.experienceYears,
-    required this.specialties,
-    required this.languages,
-    required this.serviceStyle,
-    required this.residentialAddress,
-    required this.city,
-    required this.serviceCities,
-  });
-
-  final String legalName;
-  final String displayName;
-  final String dateOfBirth;
-  final String gender;
-  final String facebookId;
-  final String activityNickname;
-  final String bio;
-  final int? experienceYears;
-  final List<String> specialties;
-  final List<String> languages;
-  final String serviceStyle;
-  final String residentialAddress;
-  final String city;
-  final List<String> serviceCities;
-
-  Map<String, dynamic> toJson() {
-    return {
-      'legalName': legalName,
-      'displayName': displayName,
-      'dateOfBirth': dateOfBirth,
-      'gender': gender,
-      'facebookId': facebookId,
-      'activityNickname': activityNickname,
-      'bio': bio,
-      'experienceYears': experienceYears,
-      'specialties': specialties,
-      'languages': languages,
-      'serviceStyle': serviceStyle,
-      'residentialAddress': residentialAddress,
-      'city': city,
-      'serviceArea': {
-        'country': 'VN',
-        'cities': serviceCities,
-      },
-    };
-  }
-}
-
-class ProviderKycInput {
-  const ProviderKycInput({required this.cccdNumber});
-
-  final String cccdNumber;
-}
-
-class ProviderBankAccountInput {
-  const ProviderBankAccountInput({
-    required this.bankName,
-    required this.accountNumber,
-    required this.accountHolderName,
-    required this.qrBankingProvider,
-  });
-
-  final String bankName;
-  final String accountNumber;
-  final String accountHolderName;
-  final String qrBankingProvider;
-
-  Map<String, dynamic> get qrBankingInfo {
-    return {
-      'provider': qrBankingProvider,
-      'enabled': qrBankingProvider.trim().isNotEmpty,
-    };
-  }
-}
-
-class ProviderTaxProfileInput {
-  const ProviderTaxProfileInput({
-    required this.taxCode,
-    required this.legalName,
-    required this.registeredAddress,
-  });
-
-  final String taxCode;
-  final String legalName;
-  final String registeredAddress;
-}
-
-class ProviderAgreementsInput {
-  const ProviderAgreementsInput({
-    required this.types,
-    required this.version,
-    required this.deviceId,
-  });
-
-  final List<String> types;
-  final String version;
-  final String deviceId;
-}
+import 'provider_onboarding_form_inputs.dart';
+import 'provider_onboarding_form_widgets.dart';
 
 Future<ProviderBasicProfileInput?> showProviderBasicProfileSheet(
   BuildContext context, {
@@ -272,64 +162,69 @@ class _BasicProfileFormState extends State<_BasicProfileForm> {
 
   @override
   Widget build(BuildContext context) {
-    return _SheetFrame(
+    return ProviderOnboardingSheetFrame(
       title: 'Partner basic profile',
       child: Form(
         key: _formKey,
         child: Column(
           children: [
-            _Field(controller: legalName, label: 'Legal name', required: true),
-            _Field(controller: displayName, label: 'Public display name'),
-            _Field(
+            ProviderOnboardingField(
+                controller: legalName, label: 'Legal name', required: true),
+            ProviderOnboardingField(
+                controller: displayName, label: 'Public display name'),
+            ProviderOnboardingField(
               controller: dateOfBirth,
               label: 'Date of birth',
               hint: 'YYYY-MM-DD',
               required: true,
             ),
-            _Field(
+            ProviderOnboardingField(
               controller: gender,
               label: 'Gender',
               hint: 'female, male, other',
             ),
-            _Field(controller: facebookId, label: 'Facebook ID'),
-            _Field(controller: activityNickname, label: 'Activity nickname'),
-            _Field(controller: bio, label: 'Bio', maxLines: 3),
-            _Field(
+            ProviderOnboardingField(
+                controller: facebookId, label: 'Facebook ID'),
+            ProviderOnboardingField(
+                controller: activityNickname, label: 'Activity nickname'),
+            ProviderOnboardingField(controller: bio, label: 'Bio', maxLines: 3),
+            ProviderOnboardingField(
               controller: experienceYears,
               label: 'Experience years',
               hint: '4',
               keyboardType: TextInputType.number,
             ),
-            _Field(
+            ProviderOnboardingField(
               controller: specialties,
               label: 'Specialties',
               hint: 'Foot massage, Swedish massage',
             ),
-            _Field(
+            ProviderOnboardingField(
               controller: languages,
               label: 'Languages',
               hint: 'Vietnamese, English, Korean',
             ),
-            _Field(
+            ProviderOnboardingField(
               controller: serviceStyle,
               label: 'Service style',
               hint: 'Quiet, professional, hotel-friendly',
               maxLines: 2,
             ),
-            _Field(
+            ProviderOnboardingField(
               controller: residentialAddress,
               label: 'Residential / tax address',
               hint: 'Required after first earning, before withdrawal',
               maxLines: 2,
             ),
-            _Field(controller: city, label: 'City / province', required: true),
-            _Field(
+            ProviderOnboardingField(
+                controller: city, label: 'City / province', required: true),
+            ProviderOnboardingField(
               controller: serviceCities,
               label: 'Service cities',
               hint: 'Ho Chi Minh City, Da Nang',
             ),
             const SizedBox(height: 12),
-            _SubmitButton(
+            ProviderOnboardingSubmitButton(
               label: 'Save basic profile',
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
@@ -380,7 +275,7 @@ class _KycFormState extends State<_KycForm> {
 
   @override
   Widget build(BuildContext context) {
-    return _SheetFrame(
+    return ProviderOnboardingSheetFrame(
       title: 'KYC identity check',
       description:
           'Enter the partner CCCD/CMND number after the front, back, and selfie photos are ready.',
@@ -388,7 +283,7 @@ class _KycFormState extends State<_KycForm> {
         key: _formKey,
         child: Column(
           children: [
-            _Field(
+            ProviderOnboardingField(
               controller: cccdNumber,
               label: 'CCCD / CMND number',
               keyboardType: TextInputType.number,
@@ -400,7 +295,7 @@ class _KycFormState extends State<_KycForm> {
               },
             ),
             const SizedBox(height: 12),
-            _SubmitButton(
+            ProviderOnboardingSubmitButton(
               label: 'Submit KYC for review',
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
@@ -461,7 +356,7 @@ class _BankAccountFormState extends State<_BankAccountForm> {
 
   @override
   Widget build(BuildContext context) {
-    return _SheetFrame(
+    return ProviderOnboardingSheetFrame(
       title: 'Payout bank account',
       description: bankAccountFormDescription(
         status: widget.status,
@@ -471,29 +366,29 @@ class _BankAccountFormState extends State<_BankAccountForm> {
         key: _formKey,
         child: Column(
           children: [
-            _Field(
+            ProviderOnboardingField(
               controller: bankName,
               label: 'Vietnam bank name',
               required: true,
             ),
-            _Field(
+            ProviderOnboardingField(
               controller: accountNumber,
               label: 'Bank account number',
               keyboardType: TextInputType.number,
               required: true,
             ),
-            _Field(
+            ProviderOnboardingField(
               controller: accountHolderName,
               label: 'Account holder legal name',
               required: true,
             ),
-            _Field(
+            ProviderOnboardingField(
               controller: qrBankingProvider,
               label: 'QR banking provider / VietQR',
               hint: 'vietqr',
             ),
             const SizedBox(height: 12),
-            _SubmitButton(
+            ProviderOnboardingSubmitButton(
               label: 'Submit bank account',
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
@@ -565,7 +460,7 @@ class _TaxProfileFormState extends State<_TaxProfileForm> {
 
   @override
   Widget build(BuildContext context) {
-    return _SheetFrame(
+    return ProviderOnboardingSheetFrame(
       title: 'Tax profile',
       description: taxProfileFormDescription(
         status: widget.status,
@@ -575,16 +470,18 @@ class _TaxProfileFormState extends State<_TaxProfileForm> {
         key: _formKey,
         child: Column(
           children: [
-            _Field(controller: taxCode, label: 'MST / personal tax code'),
-            _Field(controller: legalName, label: 'Legal name', required: true),
-            _Field(
+            ProviderOnboardingField(
+                controller: taxCode, label: 'MST / personal tax code'),
+            ProviderOnboardingField(
+                controller: legalName, label: 'Legal name', required: true),
+            ProviderOnboardingField(
               controller: registeredAddress,
               label: 'Registered address',
               required: true,
               maxLines: 2,
             ),
             const SizedBox(height: 12),
-            _SubmitButton(
+            ProviderOnboardingSubmitButton(
               label: 'Submit tax profile',
               onPressed: () {
                 if (!_formKey.currentState!.validate()) return;
@@ -650,7 +547,7 @@ class _AgreementsFormState extends State<_AgreementsForm> {
 
   @override
   Widget build(BuildContext context) {
-    return _SheetFrame(
+    return ProviderOnboardingSheetFrame(
       title: 'Required agreements',
       description:
           'Agreement versions are saved so future policy changes can request re-consent.',
@@ -658,8 +555,9 @@ class _AgreementsFormState extends State<_AgreementsForm> {
         key: _formKey,
         child: Column(
           children: [
-            _Field(controller: version, label: 'Agreement version'),
-            _Field(
+            ProviderOnboardingField(
+                controller: version, label: 'Agreement version'),
+            ProviderOnboardingField(
               controller: deviceId,
               label: 'Device ID',
               hint: 'Optional',
@@ -677,7 +575,7 @@ class _AgreementsFormState extends State<_AgreementsForm> {
                 contentPadding: EdgeInsets.zero,
               ),
             const SizedBox(height: 12),
-            _SubmitButton(
+            ProviderOnboardingSubmitButton(
               label: 'Accept selected agreements',
               onPressed: () {
                 final chosen = selected.entries
@@ -703,101 +601,6 @@ class _AgreementsFormState extends State<_AgreementsForm> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SheetFrame extends StatelessWidget {
-  const _SheetFrame({
-    required this.title,
-    required this.child,
-    this.description,
-  });
-
-  final String title;
-  final String? description;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20, 4, 20, bottomInset + 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            if (description != null) ...[
-              const SizedBox(height: 8),
-              Text(description!),
-            ],
-            const SizedBox(height: 16),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Field extends StatelessWidget {
-  const _Field({
-    required this.controller,
-    required this.label,
-    this.hint,
-    this.required = false,
-    this.keyboardType,
-    this.maxLines = 1,
-    this.validator,
-  });
-
-  final TextEditingController controller;
-  final String label;
-  final String? hint;
-  final bool required;
-  final TextInputType? keyboardType;
-  final int maxLines;
-  final String? Function(String?)? validator;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          border: const OutlineInputBorder(),
-        ),
-        validator: validator ??
-            (value) {
-              if (required && (value == null || value.trim().isEmpty)) {
-                return '$label is required.';
-              }
-              return null;
-            },
-      ),
-    );
-  }
-}
-
-class _SubmitButton extends StatelessWidget {
-  const _SubmitButton({required this.label, required this.onPressed});
-
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return FilledButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.check),
-      label: Text(label),
     );
   }
 }
