@@ -8,6 +8,9 @@ import {
   AdminNotification,
   AdminOperationalPolicySetting,
   AdminProvider,
+  AdminProviderPlatformFeeLog,
+  AdminProviderTaxLog,
+  AdminProviderWalletLedgerEntry,
   adminGet,
 } from '../../../lib/admin-api';
 import { buildCsvDataHref } from '../../../lib/csv-export';
@@ -55,6 +58,9 @@ type BookingDetailMatchingRuleSnapshot = {
 };
 
 type BookingDetailParticipant = NonNullable<AdminBookingDetail['participants']>[number];
+type BookingTimelineRefundRow =
+  | NonNullable<AdminBookingDetail['refunds']>[number]
+  | NonNullable<NonNullable<AdminBookingDetail['payment']>['refunds']>[number];
 
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
@@ -5159,9 +5165,14 @@ function bookingOperatingTimeline({
 }) {
   const items: BookingOperatingTimelineItem[] = [];
   const pendingItems: BookingOperatingTimelineItem[] = [];
+  const seenItemIds = new Set<string>();
   const paymentCurrency = booking.payment?.currency ?? booking.earning?.currency ?? 'VND';
 
   const addItem = (item: BookingOperatingTimelineItem) => {
+    if (seenItemIds.has(item.id)) {
+      return;
+    }
+    seenItemIds.add(item.id);
     if (item.at) {
       items.push(item);
       return;
@@ -5330,7 +5341,7 @@ function bookingOperatingTimeline({
       detail: `${booking.payment.method} / ${money(booking.payment.amount, paymentCurrency)} / ${
         booking.payment.providerRef ?? 'no provider ref'
       }`,
-      at: booking.createdAt,
+      at: booking.updatedAt ?? booking.createdAt,
       status: booking.payment.status,
     });
   }
@@ -5349,7 +5360,11 @@ function bookingOperatingTimeline({
     });
   }
 
-  for (const refund of booking.refunds ?? booking.payment?.refunds ?? []) {
+  const refundRows = new Map<string, BookingTimelineRefundRow>();
+  for (const refund of [...(booking.refunds ?? []), ...(booking.payment?.refunds ?? [])]) {
+    refundRows.set(refund.id, refund);
+  }
+  for (const refund of refundRows.values()) {
     const refundReason = 'reason' in refund ? refund.reason : null;
 
     addItem({
@@ -5362,7 +5377,23 @@ function bookingOperatingTimeline({
     });
   }
 
-  for (const taxLog of booking.taxLogs ?? []) {
+  if (bookingCashDebtNeedsSettlement(booking)) {
+    addItem({
+      id: `cash-debt-${booking.earning?.id ?? booking.id}`,
+      type: 'CASH',
+      title: 'Cash fee debt blocks marketplace participation',
+      detail:
+        'Partner collected customer cash. Company fee must be deposited or admin-offset before marketplace participation and payout release.',
+      at: booking.earning?.createdAt ?? booking.updatedAt ?? booking.createdAt,
+      status: 'Settlement needed',
+    });
+  }
+
+  const taxLogs = new Map<string, AdminProviderTaxLog>();
+  for (const taxLog of [...(booking.taxLogs ?? []), ...(booking.earning?.taxLogs ?? [])]) {
+    taxLogs.set(taxLog.id, taxLog);
+  }
+  for (const taxLog of taxLogs.values()) {
     addItem({
       id: `tax-${taxLog.id}`,
       type: 'TAX',
@@ -5376,7 +5407,11 @@ function bookingOperatingTimeline({
     });
   }
 
-  for (const feeLog of booking.platformFeeLogs ?? []) {
+  const feeLogs = new Map<string, AdminProviderPlatformFeeLog>();
+  for (const feeLog of [...(booking.platformFeeLogs ?? []), ...(booking.earning?.platformFeeLogs ?? [])]) {
+    feeLogs.set(feeLog.id, feeLog);
+  }
+  for (const feeLog of feeLogs.values()) {
     addItem({
       id: `fee-${feeLog.id}`,
       type: 'FEE',
@@ -5390,7 +5425,14 @@ function bookingOperatingTimeline({
     });
   }
 
-  for (const walletEntry of booking.walletLedgerEntries ?? []) {
+  const walletEntries = new Map<string, AdminProviderWalletLedgerEntry>();
+  for (const walletEntry of [
+    ...(booking.walletLedgerEntries ?? []),
+    ...(booking.earning?.walletLedgerEntries ?? []),
+  ]) {
+    walletEntries.set(walletEntry.id, walletEntry);
+  }
+  for (const walletEntry of walletEntries.values()) {
     addItem({
       id: `wallet-${walletEntry.id}`,
       type: 'WALLET',
@@ -5451,8 +5493,8 @@ function bookingOperatingTimeline({
     });
   }
 
-  const sorted = items.sort((left, right) => safeTime(left.at) - safeTime(right.at));
-  return [...sorted.slice(-18), ...pendingItems].slice(0, 22);
+  const sorted = items.sort((left, right) => safeTime(right.at) - safeTime(left.at));
+  return [...sorted.slice(0, 18), ...pendingItems].slice(0, 22);
 }
 
 type CommunicationMovementEvent = {
