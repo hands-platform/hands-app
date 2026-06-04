@@ -1,4 +1,5 @@
 import { AdminRefund, adminGet } from '../../lib/admin-api';
+import { shortId } from '../../lib/admin-format';
 import {
   AdminDateRange,
   dateRangeLabel,
@@ -580,8 +581,4 @@ function refundToneLabel(tone: RefundCommandTone) {
     return 'Clear';
   }
   return 'Monitor';
-}
-
-function shortId(value: string) {
-  return value.slice(0, 8);
 }

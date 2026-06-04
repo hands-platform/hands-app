@@ -1,4 +1,5 @@
 import { AdminNotification, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
+import { shortId } from '../../lib/admin-format';
 import Link from 'next/link';
 import { readSearchParam } from '../../lib/date-range';
 import { enablePushDevice, retryNotification } from './actions';
@@ -821,6 +822,3 @@ function readString(value: unknown) {
   return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
-function shortId(id: string) {
-  return id.slice(0, 8);
-}
