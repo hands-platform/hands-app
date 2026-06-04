@@ -896,6 +896,7 @@ if (bookingLinkMatch) {
     'First-pick requirement',
     'Customer shortlist',
     'customer-selectable',
+    'retained final selected row',
     'First-pick partner',
     'Booking-address radius',
     'Wallet-blocked partners who only viewed the marketplace list are not tracked as participants.',
@@ -907,6 +908,7 @@ if (bookingLinkMatch) {
   if (missing.length > 0) {
     throw new Error(`${bookingPath} is missing expected markers: ${missing.join(', ')}`);
   }
+  assertSelectedParticipantCountedInCustomerShortlist(bookingPath, bookingBody);
   assertNoLegacyVisibleLanguage(bookingPath, bookingBody);
   console.log(`PASS ${bookingPath}`);
 }
@@ -934,3 +936,15 @@ if (paymentLinkMatch) {
 }
 
 console.log(`Admin web smoke passed for ${smokePages.length} page(s) at ${baseUrl}.`);
+
+function assertSelectedParticipantCountedInCustomerShortlist(path, body) {
+  const visibleText = visibleTextFromHtml(body);
+  if (!visibleText.includes('SELECTED participant row retained.')) {
+    return;
+  }
+  if (/Customer shortlist\s+0 customer-selectable\b/.test(visibleText)) {
+    throw new Error(
+      `${path} shows a selected participant row, but the customer shortlist count is still 0 customer-selectable.`,
+    );
+  }
+}
