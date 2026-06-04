@@ -1,71 +1,7 @@
 import './globals.css';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-
-const navSections = [
-  {
-    label: 'Live Operations',
-    links: [
-      ['/', 'Command Dashboard'],
-      ['/operations-handoff', 'Shift Handoff'],
-      ['/bookings?view=attention', 'Attention Queue'],
-      ['/bookings?view=matching', 'Live Matching'],
-      ['/app-sessions', 'App Presence'],
-      ['/notifications?review=failed', 'Failed Alerts'],
-    ],
-  },
-  {
-    label: 'Booking Operations',
-    links: [
-      ['/bookings', 'All Bookings'],
-      ['/bookings?view=customer-choice', 'Customer Choice'],
-      ['/bookings?view=marketplace', '10km Marketplace'],
-      ['/bookings?view=chat-repair', 'Chat Repair'],
-      ['/bookings?view=no-show', 'No-show Evidence'],
-    ],
-  },
-  {
-    label: 'People Operations',
-    links: [
-      ['/customers', 'Customers'],
-      ['/partners', 'Partners'],
-      ['/partners?review=kyc', 'KYC Review'],
-      ['/partners?review=acceptance-blocked', 'Acceptance Blocked'],
-      ['/partners?review=marketplace-ready', 'Marketplace Ready'],
-      ['/partner-controls', 'Partner Controls'],
-    ],
-  },
-  {
-    label: 'Money Operations',
-    links: [
-      ['/finance-closeout', 'Finance Closeout'],
-      ['/payments', 'Payments'],
-      ['/earnings', 'Earnings'],
-      ['/cash-settlements', 'Cash Settlements'],
-      ['/payouts', 'Payouts'],
-      ['/refunds', 'Refunds'],
-    ],
-  },
-  {
-    label: 'Policy and Setup',
-    links: [
-      ['/operations-policy', 'Operations Policy'],
-      ['/services', 'Service Catalog'],
-      ['/tax-policy', 'Tax Policy'],
-      ['/setup', 'Setup'],
-    ],
-  },
-  {
-    label: 'Evidence and Audit',
-    links: [
-      ['/chat-archive', 'Chat Archive'],
-      ['/notifications', 'Notifications'],
-      ['/reviews', 'Feedback'],
-      ['/coupons', 'Coupons'],
-      ['/audit-log', 'Audit Log'],
-    ],
-  },
-];
+import { adminNavSections, adminShiftFlow } from '../lib/admin-navigation';
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -77,13 +13,25 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <strong>HANDS Admin</strong>
               <span>Operations Command Center</span>
             </div>
+            <section className="nav-flow" aria-label="Shift flow">
+              <span className="nav-section-label">Shift Flow</span>
+              <div className="nav-flow-list">
+                {adminShiftFlow.map((item, index) => (
+                  <Link className="nav-flow-link" href={item.href} key={item.href} title={item.description}>
+                    <span>{index + 1}</span>
+                    <strong>{item.label}</strong>
+                  </Link>
+                ))}
+              </div>
+            </section>
             <nav className="nav">
-              {navSections.map((section) => (
+              {adminNavSections.map((section) => (
                 <section className="nav-section" key={section.label}>
                   <span className="nav-section-label">{section.label}</span>
-                  {section.links.map(([href, label]) => (
-                    <Link key={href} href={href}>
-                      {label}
+                  <p className="nav-section-description">{section.description}</p>
+                  {section.links.map((link) => (
+                    <Link key={link.href} href={link.href} title={link.description}>
+                      {link.label}
                     </Link>
                   ))}
                 </section>

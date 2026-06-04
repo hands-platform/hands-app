@@ -45,6 +45,51 @@ a {
   font-size: 12px;
 }
 
+.nav-flow {
+  display: grid;
+  gap: 8px;
+  margin-top: 22px;
+}
+
+.nav-flow-list {
+  display: grid;
+  gap: 6px;
+}
+
+.nav-flow-link {
+  align-items: center;
+  background: rgba(148, 163, 184, 0.1);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 8px;
+  color: #e2e8f0;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 24px 1fr;
+  padding: 8px;
+}
+
+.nav-flow-link:hover {
+  background: #1e293b;
+  color: white;
+}
+
+.nav-flow-link span {
+  align-items: center;
+  background: #334155;
+  border-radius: 999px;
+  color: white;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+
+.nav-flow-link strong {
+  font-size: 13px;
+}
+
 .nav {
   display: grid;
   gap: 18px;
@@ -63,6 +108,14 @@ a {
   letter-spacing: 0.08em;
   padding: 0 12px;
   text-transform: uppercase;
+}
+
+.nav-section-description {
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0 12px 4px;
 }
 
 .nav a {

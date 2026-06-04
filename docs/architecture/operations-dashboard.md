@@ -46,6 +46,30 @@ The dashboard answers these shift questions:
 6. Use hourly and regional demand panels to decide whether to widen partner outreach, run incentives, or adjust staffing.
 7. Finish with `Action queue` and `Audit Log` so manual decisions remain traceable.
 
+## Admin Information Architecture
+
+The Admin sidebar keeps existing working routes stable and groups them into operating lanes instead of renaming or deleting pages during MVP development.
+
+| Lane | Purpose |
+| --- | --- |
+| `Command` | Start-of-shift dashboard, handoff, app presence, and failed critical alerts. |
+| `Bookings` | Booking list, attention queue, first-pick, marketplace, customer choice, chat repair, and no-show evidence. |
+| `Partners` | Partner list/detail, KYC, wallet gates, marketplace readiness, and manual partner controls. |
+| `Customers` | Customer list/detail, live customers, booking history, wallet/address facts, and retained chat evidence. |
+| `Finance` | Payments, earnings, cash settlements, payout batches, refunds, and closeout. |
+| `Policy` | Operations policy, service catalog, payout/price rules, tax policy, and coupons. |
+| `Evidence and System` | Chat archive, notifications, feedback, audit log, and setup readiness. |
+
+The top sidebar `Shift Flow` is intentionally short:
+
+1. Start Shift
+2. Urgent Bookings
+3. Marketplace
+4. Cash Debt
+5. Handoff
+
+This gives operators a predictable first route without hiding the deeper pages needed for detailed checks.
+
 ## Source Pages
 
 The dashboard links to these deeper operating pages:

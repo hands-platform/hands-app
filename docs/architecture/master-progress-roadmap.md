@@ -1,6 +1,6 @@
 # HANDS MVP Master Progress Roadmap
 
-Last checked: 2026-06-03
+Last checked: 2026-06-04
 
 This is the single working board for day-to-day MVP execution. If this file conflicts with `docs/architecture/hands-mvp-final-authority.md`, the final authority file wins.
 
@@ -93,7 +93,7 @@ npm.cmd run external:check:production
 | Firebase removal | Done | Flutter apps no longer use Firebase as the active MVP path. | Decide production push provider timing separately. |
 | Supabase core | Active | Supabase URL, anon, service role, JWT, schema/RLS pack are tracked. NestJS remains business authority. | Decide when to switch real mobile OTP to Supabase Phone Auth plus SMS. |
 | Map/location | Active | MapTiler and Geoapify are configured locally; low-cost map path is active. | Decide when to replace remaining placeholder map visuals with final MapLibre screens. |
-| Admin Operations Command Center | Active | Dashboard, bookings, customers, partners, services, policy, payments, refunds, earnings, payouts, cash settlements, notifications, chat archive, sessions, audit, setup are present. | Decide Admin information architecture consolidation before adding more pages. |
+| Admin Operations Command Center | Active | Dashboard, bookings, customers, partners, services, policy, payments, refunds, earnings, payouts, cash settlements, notifications, chat archive, sessions, audit, setup are present. Sidebar IA now groups existing routes into Command, Bookings, Partners, Customers, Finance, Policy, Evidence/System without deleting pages. | Continue adding depth inside existing command lanes before creating new top-level pages. |
 | Customers admin | Active | Customer list/detail exists with factual records. No customer scoring. | Decide which fields are must-show above the fold. |
 | Partners admin | Active | Partner list/detail, KYC, wallet, payout, tax, device/session, document, activity evidence are present. | Decide whether to remove legacy `/providers` routes or keep as redirects only. |
 | Booking and marketplace | Active | Address snapshot, first-pick, 10km marketplace, customer final selection, negative wallet blocking, chat evidence closeout are guarded by smoke tests. | Decide next audit slice: API policy consistency or mobile E2E consistency. |
@@ -112,9 +112,8 @@ npm.cmd run external:check:production
 These items should be proposed to the owner before implementation.
 
 1. Admin information architecture
-   - Option A: keep all existing pages but add a stronger operations hub and redirects for legacy pages.
-   - Option B: restructure navigation now and rename/remove legacy pages.
-   - Recommended: Option A first. It reduces breakage while giving operators a clearer entry point.
+   - Decision: Option A is active. Keep all existing pages, strengthen the operations sidebar and hub, and avoid route deletion during MVP.
+   - Next: add depth inside existing lanes before introducing new top-level pages.
 
 2. Backend policy consistency pass
    - Option A: audit booking/matching/wallet/payment services first.
@@ -167,8 +166,8 @@ Do not implement these automatically. Propose the selected slice first, then pro
 1. Backend policy consistency pass
    - Check booking creation, first-pick, marketplace join, customer final selection, negative wallet gates, payment callbacks, and closeout actions against final authority.
 
-2. Admin information architecture proposal
-   - Consolidate current pages into Operations, People, Money, Policy, Evidence, and Setup groups without deleting working pages.
+2. Admin lane depth
+   - Continue improving existing Command, Bookings, Partners, Customers, Finance, Policy, and Evidence/System lanes without deleting working pages.
 
 3. Mobile paired E2E audit
    - Walk customer and partner apps through one booking from address selection to chat and completion.

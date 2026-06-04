@@ -11,6 +11,18 @@ Admin Web now calls the protected backend admin APIs from server components:
 
 Dashboard metrics are derived from those API responses.
 
+The visible Admin product is organized as an Operations Command Center. Existing routes stay stable for MVP safety, while the sidebar groups them into:
+
+- Command
+- Bookings
+- Partners
+- Customers
+- Finance
+- Policy
+- Evidence and System
+
+The sidebar also exposes a short shift flow: start shift, urgent bookings, marketplace, cash debt, and handoff.
+
 ## Auth
 
 Preferred production configuration:
@@ -37,7 +49,6 @@ If the API is unavailable during build or local UI development, pages render emp
 ## Next Admin Work
 
 - Add real admin login UI and session cookies.
+- Keep adding depth inside existing command lanes before creating new top-level pages.
 - Keep partner approve/reject/block/unblock actions aligned with the canonical `/admin/partners` API aliases.
-- Add refund action wiring.
-- Add coupon CRUD.
-- Add audit log writes and audit log list API.
+- Continue pairing every manual finance, policy, and partner action with audit evidence.
