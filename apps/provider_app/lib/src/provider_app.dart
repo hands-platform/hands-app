@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/services.dart';
 
 import 'app_state.dart';
 import 'core/realtime_socket.dart';
@@ -11,7 +10,9 @@ import 'features/booking/presentation/provider_booking_service_helpers.dart';
 import 'features/chat/presentation/provider_chat_screen.dart';
 import 'features/booking/presentation/provider_jobs_helpers.dart';
 import 'features/booking/presentation/provider_request_guidance_helpers.dart';
+import 'features/earnings/presentation/provider_earnings_screen.dart';
 import 'features/earnings/presentation/provider_wallet_gate_helpers.dart';
+import 'features/earnings/presentation/provider_wallet_settlement_widgets.dart';
 import 'features/provider_profile/presentation/provider_error_helpers.dart';
 import 'features/provider_profile/presentation/provider_feedback_cards.dart';
 import 'features/provider_profile/presentation/provider_profile_screen.dart';
@@ -453,13 +454,13 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
                 Text(settlementView.instruction),
                 if (settlementView.reference != null) ...[
                   const SizedBox(height: 12),
-                  _WalletSettlementReferenceCard(
+                  WalletSettlementReferenceCard(
                     reference: settlementView.reference!,
                     amountLabel: settlementView.amountLabel,
                   ),
                 ],
                 const SizedBox(height: 12),
-                _WalletSettlementChecklist(items: settlementView.steps),
+                WalletSettlementChecklist(items: settlementView.steps),
               ],
             ),
           ),
@@ -1306,13 +1307,13 @@ class ProviderWalletGateCard extends StatelessWidget {
               Text(settlementView.instruction),
               if (settlementView.reference != null) ...[
                 const SizedBox(height: 10),
-                _WalletSettlementReferenceCard(
+                WalletSettlementReferenceCard(
                   reference: settlementView.reference!,
                   amountLabel: settlementView.amountLabel,
                 ),
               ],
               const SizedBox(height: 10),
-              _WalletSettlementChecklist(items: settlementView.steps),
+              WalletSettlementChecklist(items: settlementView.steps),
               const SizedBox(height: 10),
               FilledButton.tonalIcon(
                 onPressed: onRefresh,
@@ -1331,103 +1332,6 @@ class ProviderWalletGateCard extends StatelessWidget {
             ],
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _WalletSettlementChecklist extends StatelessWidget {
-  const _WalletSettlementChecklist({required this.items});
-
-  final List<String> items;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        for (final item in items)
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.check_circle_outline, size: 18),
-                const SizedBox(width: 8),
-                Expanded(child: Text(item, style: theme.textTheme.bodySmall)),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _WalletSettlementReferenceCard extends StatelessWidget {
-  const _WalletSettlementReferenceCard({
-    required this.reference,
-    required this.amountLabel,
-  });
-
-  final String reference;
-  final String amountLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.72),
-        border: Border.all(color: colorScheme.outlineVariant),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Settlement reference',
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 6),
-          SelectableText(
-            reference,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-              letterSpacing: 0,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'Deposit or offset amount: $amountLabel',
-            style: theme.textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: reference));
-                if (!context.mounted) {
-                  return;
-                }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Settlement reference copied.'),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.copy, size: 18),
-              label: const Text('Copy reference'),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -1889,183 +1793,6 @@ class MarketplaceJoinLockCard extends StatelessWidget {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class EarningsScreen extends ConsumerWidget {
-  const EarningsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authControllerProvider);
-
-    return SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text('Earnings', style: Theme.of(context).textTheme.headlineMedium),
-          const SizedBox(height: 8),
-          Text(
-            auth == null
-                ? 'Login to view completed service earnings.'
-                : 'Track gross revenue, platform fees, tax withholding, and net payout.',
-            style: Theme.of(context).textTheme.bodyLarge,
-          ),
-          const SizedBox(height: 16),
-          if (auth == null)
-            const InfoCard(
-                text: 'Demo partner login is available on the Requests tab.')
-          else
-            FutureBuilder<List<dynamic>>(
-              future: ref.read(providerRepositoryProvider).earnings(),
-              builder: (context, earningsSnapshot) {
-                return FutureBuilder<Map<String, dynamic>>(
-                  future:
-                      ref.read(providerRepositoryProvider).earningsSummary(),
-                  builder: (context, summarySnapshot) {
-                    if (earningsSnapshot.connectionState ==
-                            ConnectionState.waiting ||
-                        summarySnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    final summary = summarySnapshot.data ?? <String, dynamic>{};
-                    final earnings = earningsSnapshot.data ?? [];
-                    final currency = summary['currency'] ?? 'VND';
-                    final settlementView =
-                        ProviderWalletSettlementView.fromSummary(summary);
-
-                    return FutureBuilder<List<dynamic>>(
-                      future:
-                          ref.read(providerRepositoryProvider).payoutBatches(),
-                      builder: (context, payoutSnapshot) {
-                        final batches = payoutSnapshot.data ?? [];
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Card(
-                              color: settlementView.blocked
-                                  ? Theme.of(context).colorScheme.errorContainer
-                                  : Theme.of(context)
-                                      .colorScheme
-                                      .primaryContainer,
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Wallet balance',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      settlementView.balanceLabel,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      settlementView.statusLabel,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .labelLarge
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      settlementView.blocked
-                                          ? settlementView.reasonLabel
-                                          : 'You can join marketplace and direct booking requests.',
-                                    ),
-                                    if (settlementView.blocked) ...[
-                                      const SizedBox(height: 10),
-                                      Text(
-                                        'Amount to settle: ${settlementView.amountLabel}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                                fontWeight: FontWeight.w800),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(settlementView.instruction),
-                                      if (settlementView.reference != null) ...[
-                                        const SizedBox(height: 10),
-                                        _WalletSettlementReferenceCard(
-                                          reference: settlementView.reference!,
-                                          amountLabel:
-                                              settlementView.amountLabel,
-                                        ),
-                                      ],
-                                      const SizedBox(height: 10),
-                                      _WalletSettlementChecklist(
-                                        items: settlementView.steps,
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Net payout',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      '${summary['netAmount'] ?? 0} $currency',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineSmall,
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                        'Tax withholding ${summary['taxAmount'] ?? 0} $currency'),
-                                    Text(
-                                        'Platform fee ${summary['platformFee'] ?? 0} $currency'),
-                                    Text('Payout batches ${batches.length}'),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            if (earnings.isEmpty)
-                              const InfoCard(
-                                  text: 'Completed jobs will appear here.')
-                            else
-                              for (final earning in earnings)
-                                Card(
-                                  child: ListTile(
-                                    title: Text(
-                                        '${earning['netAmount']} ${earning['currency'] ?? currency}'),
-                                    subtitle: Text(
-                                        'Booking ${earning['bookingId']} - ${earning['status']}'),
-                                    trailing: Text(
-                                        '${earning['platformFee'] ?? 0} fee'),
-                                  ),
-                                ),
-                          ],
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            ),
         ],
       ),
     );
