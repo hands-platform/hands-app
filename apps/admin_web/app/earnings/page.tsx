@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
-import { formatMoney, formatRelativeTime } from '../../lib/admin-format';
+import { formatMoney, formatRelativeTime, shortId as formatShortId } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
 
@@ -1463,7 +1463,7 @@ function settlementMethodLabel(method: string) {
 }
 
 function shortId(value: string) {
-  return value.length > 12 ? value.slice(0, 12) : value;
+  return formatShortId(value, { length: 12 });
 }
 
 function relativeTime(value: string) {
