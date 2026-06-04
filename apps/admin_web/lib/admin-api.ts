@@ -556,6 +556,7 @@ export type AdminPayment = {
       netAmount: number;
       currency: string;
       settlementRef?: string | null;
+      settlementMethod?: string | null;
       walletLedgerEntries?: AdminProviderWalletLedgerEntry[];
     } | null;
   };
@@ -607,6 +608,7 @@ export type AdminEarning = {
   payoutBatchId?: string | null;
   settlementRef?: string | null;
   settlementNotes?: string | null;
+  settlementMethod?: string | null;
   createdAt?: string;
   providerProfile?: { displayName?: string | null; user?: { phone?: string; fullName?: string | null } };
   booking?: {

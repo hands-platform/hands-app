@@ -508,6 +508,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                     <small>{row.settlementEvidence}</small>
                     <small>Suggested ref: {row.settlementReference}</small>
                     <small>Payment method: {row.paymentMethod}</small>
+                    <small>Settlement method: {settlementMethodLabel(row.earning.settlementMethod)}</small>
                     {row.lastLedgerRef ? <small>Last ledger ref: {row.lastLedgerRef}</small> : null}
                     <small>{row.nextAction}</small>
                   </div>
@@ -530,6 +531,14 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                 <td>
                   <form action={settleCashFeeDebt} className="inline-form">
                     <input type="hidden" name="earningId" value={row.earning.id} />
+                    <select
+                      aria-label="Settlement method"
+                      name="settlementMethod"
+                      defaultValue={row.earning.settlementMethod ?? 'PARTNER_DEPOSIT'}
+                    >
+                      <option value="PARTNER_DEPOSIT">Partner deposit</option>
+                      <option value="ADMIN_OFFSET">Admin offset</option>
+                    </select>
                     <input
                       aria-label="Settlement reference"
                       name="settlementRef"
@@ -1472,6 +1481,16 @@ function cashDebtEvidenceLabel(earning: AdminEarning) {
     return `Wallet ledger reference exists: ${ledgerRef}. Confirm whether it is a deposit or offset.`;
   }
   return 'No deposit or approved offset reference is recorded yet.';
+}
+
+function settlementMethodLabel(method?: string | null) {
+  if (method === 'PARTNER_DEPOSIT') {
+    return 'Partner deposit';
+  }
+  if (method === 'ADMIN_OFFSET') {
+    return 'Admin offset';
+  }
+  return 'Not recorded yet';
 }
 
 function cashSettlementRowAgeHours(row: CashSettlementRow) {

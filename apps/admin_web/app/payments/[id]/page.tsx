@@ -344,6 +344,7 @@ function CashDebtSettlementForm({ payment }: { payment: AdminPaymentDetail }) {
   return (
     <form action={settleCashDebt} className="inline-form" style={{ marginTop: 16 }}>
       <input type="hidden" name="earningId" value={earning.id} />
+      <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
       <input
         name="settlementRef"
         defaultValue={settlementRef}

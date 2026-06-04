@@ -6076,6 +6076,7 @@ function CashDebtSettlementForm({ booking }: { booking: AdminBookingDetail }) {
     <form action={settleBookingCashDebt} className="action-button-card ops-task-blocked">
       <input type="hidden" name="bookingId" value={booking.id} />
       <input type="hidden" name="earningId" value={earning.id} />
+      <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
       <div>
         <span className="pill pill-danger">Settlement needed</span>
         <strong>Settle cash fee debt</strong>

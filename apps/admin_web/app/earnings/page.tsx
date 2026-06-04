@@ -441,6 +441,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                   </Link>
                   <form action={markEarningPaid}>
                     <input type="hidden" name="earningId" value={item.earning.id} />
+                    <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
                     <input
                       aria-label="Settlement reference"
                       name="settlementRef"
@@ -542,6 +543,9 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                   {earning.settlementRef && (
                     <div className="muted">Settlement ref {earning.settlementRef}</div>
                   )}
+                  {earning.settlementMethod && (
+                    <div className="muted">Settlement method {settlementMethodLabel(earning.settlementMethod)}</div>
+                  )}
                   {(earning.walletLedgerEntries ?? []).slice(0, 2).map((entry) => (
                     <div className="muted" key={entry.id}>
                       Wallet {entry.type}: {formatMoney(entry.amount, entry.currency)}
@@ -582,6 +586,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                   {canDirectlyPay(earning) && (
                     <form action={markEarningPaid}>
                       <input type="hidden" name="earningId" value={earning.id} />
+                      <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
                       <input
                         aria-label="Settlement reference"
                         name="settlementRef"
@@ -1444,6 +1449,16 @@ function isCashDebt(earning: AdminEarning) {
     earning.status !== 'CANCELLED' &&
     !earning.payoutBatchId
   );
+}
+
+function settlementMethodLabel(method: string) {
+  if (method === 'PARTNER_DEPOSIT') {
+    return 'Partner deposit';
+  }
+  if (method === 'ADMIN_OFFSET') {
+    return 'Admin offset';
+  }
+  return method;
 }
 
 function formatMoney(amount: number, currency: string) {

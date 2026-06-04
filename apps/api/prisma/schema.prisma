@@ -167,6 +167,11 @@ enum EarningStatus {
   CANCELLED
 }
 
+enum CashFeeSettlementMethod {
+  PARTNER_DEPOSIT
+  ADMIN_OFFSET
+}
+
 enum PayoutBatchStatus {
   DRAFT
   PROCESSING
@@ -798,6 +803,7 @@ model ProviderEarning {
   payoutBatchId       String?
   settlementRef       String?
   settlementNotes     String?
+  settlementMethod    CashFeeSettlementMethod?
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
   providerProfile     ProviderProfile             @relation(fields: [providerProfileId], references: [id])
@@ -806,6 +812,8 @@ model ProviderEarning {
   platformFeeLogs     ProviderPlatformFeeLog[]
   taxLogs             ProviderTaxLog[]
   walletLedgerEntries ProviderWalletLedgerEntry[]
+
+  @@index([settlementMethod, paidAt])
 }
 
 model ProviderPayoutBatch {

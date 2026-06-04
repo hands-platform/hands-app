@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import {
   BookingStatus,
+  CashFeeSettlementMethod,
   EarningStatus,
   PaymentMethod,
   PayoutBatchStatus,
@@ -325,7 +326,11 @@ export class EarningsService {
 
   async markPaid(
     earningId: string,
-    input: { settlementRef?: string | null; settlementNotes?: string | null } = {},
+    input: {
+      settlementRef?: string | null;
+      settlementNotes?: string | null;
+      settlementMethod?: string | null;
+    } = {},
   ) {
     const earning = await this.prisma.providerEarning.findUnique({ where: { id: earningId } });
     if (!earning) {
@@ -333,11 +338,15 @@ export class EarningsService {
     }
     const settlementRef = cleanOptionalText(input.settlementRef);
     const settlementNotes = cleanOptionalText(input.settlementNotes);
+    const settlementMethod = normalizeCashFeeSettlementMethod(input.settlementMethod);
     if (earning.netAmount >= 0) {
       throw new BadRequestException('Positive partner earnings must be paid through payout batches');
     }
     if (earning.netAmount < 0 && !settlementRef) {
       throw new BadRequestException('Settlement reference is required for cash fee debt settlement');
+    }
+    if (earning.netAmount < 0 && !settlementMethod) {
+      throw new BadRequestException('Settlement method is required for cash fee debt settlement');
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -348,6 +357,7 @@ export class EarningsService {
           paidAt: new Date(),
           settlementRef,
           settlementNotes,
+          settlementMethod,
         },
       });
       await this.upsertPaidWalletLedger(tx, updated, {
@@ -1073,6 +1083,22 @@ function cleanOptionalText(value: string | null | undefined): string | null {
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
+}
+
+function normalizeCashFeeSettlementMethod(
+  value: string | null | undefined,
+): CashFeeSettlementMethod | null {
+  const clean = cleanOptionalText(value);
+  if (!clean) {
+    return null;
+  }
+  if (
+    clean === CashFeeSettlementMethod.PARTNER_DEPOSIT ||
+    clean === CashFeeSettlementMethod.ADMIN_OFFSET
+  ) {
+    return clean;
+  }
+  throw new BadRequestException('Invalid cash fee settlement method');
 }
 
 function activePayoutHoldWhere(providerProfileId?: string): Prisma.ProviderSanctionWhereInput {

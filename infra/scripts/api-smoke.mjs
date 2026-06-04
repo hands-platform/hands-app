@@ -2566,10 +2566,19 @@ await expectRequestFailure(
   () => postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {}),
   400,
 );
+await expectRequestFailure(
+  'Negative cash fee settlement requires a method',
+  () =>
+    postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {
+      settlementRef: `SMOKE-MISSING-METHOD-${Date.now()}`,
+    }),
+  400,
+);
 const cashDebtSettlementRef = `SMOKE-CASH-FEE-${Date.now()}`;
 await postJson(`/admin/earnings/${cashDebtEarning.id}/mark-paid`, adminAuth.accessToken, {
   settlementRef: cashDebtSettlementRef,
   settlementNotes: 'Smoke test cash fee deposit reference',
+  settlementMethod: 'PARTNER_DEPOSIT',
 });
 const adminEarningsAfterCashSettlement = await getJson('/admin/earnings', adminAuth.accessToken);
 const settledCashDebtEarning = adminEarningsAfterCashSettlement.find(
@@ -2578,6 +2587,11 @@ const settledCashDebtEarning = adminEarningsAfterCashSettlement.find(
 if (settledCashDebtEarning?.settlementRef !== cashDebtSettlementRef) {
   throw new Error(
     `Cash fee settlement reference was not persisted: ${JSON.stringify(settledCashDebtEarning)}`,
+  );
+}
+if (settledCashDebtEarning?.settlementMethod !== 'PARTNER_DEPOSIT') {
+  throw new Error(
+    `Cash fee settlement method was not persisted: ${JSON.stringify(settledCashDebtEarning)}`,
   );
 }
 const cashDebtSettlementLedger = settledCashDebtEarning.walletLedgerEntries?.find(
@@ -2730,6 +2744,7 @@ await expectRequestFailure(
   () =>
     postJson(`/admin/earnings/${adminCompletedEarning.id}/mark-paid`, adminAuth.accessToken, {
       settlementRef: `DIRECT-PAYOUT-BLOCKED-${Date.now()}`,
+      settlementMethod: 'PARTNER_DEPOSIT',
     }),
   400,
 );

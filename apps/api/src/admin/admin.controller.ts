@@ -531,7 +531,12 @@ export class AdminController {
   markEarningPaid(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: { settlementRef?: string | null; settlementNotes?: string | null },
+    @Body()
+    body: {
+      settlementRef?: string | null;
+      settlementNotes?: string | null;
+      settlementMethod?: string | null;
+    },
   ) {
     return this.admin.markEarningPaid(user.id, id, body);
   }

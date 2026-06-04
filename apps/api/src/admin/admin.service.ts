@@ -443,6 +443,7 @@ export class AdminService {
                   payoutBatchId: true,
                   settlementRef: true,
                   settlementNotes: true,
+                  settlementMethod: true,
                   createdAt: true,
                   booking: { select: { id: true, status: true, scheduledStartAt: true } },
                 },
@@ -2295,7 +2296,11 @@ export class AdminService {
   async markEarningPaid(
     actorId: string,
     earningId: string,
-    input: { settlementRef?: string | null; settlementNotes?: string | null } = {},
+    input: {
+      settlementRef?: string | null;
+      settlementNotes?: string | null;
+      settlementMethod?: string | null;
+    } = {},
   ) {
     const earning = await this.earnings.markPaid(earningId, input);
     await this.writeAudit(
@@ -2307,6 +2312,7 @@ export class AdminService {
         providerProfileId: earning.providerProfileId,
         netAmount: earning.netAmount,
         settlementRef: earning.settlementRef,
+        settlementMethod: earning.settlementMethod,
       },
     );
     return earning;

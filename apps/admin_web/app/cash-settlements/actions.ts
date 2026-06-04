@@ -11,12 +11,14 @@ export async function settleCashFeeDebt(formData: FormData) {
 
   const settlementRef = String(formData.get('settlementRef') ?? '').trim();
   const settlementNotes = String(formData.get('settlementNotes') ?? '').trim();
+  const settlementMethod = String(formData.get('settlementMethod') ?? '').trim();
 
   await adminPost(
     `/admin/earnings/${earningId}/mark-paid`,
     {
       settlementRef: settlementRef || undefined,
       settlementNotes: settlementNotes || undefined,
+      settlementMethod: settlementMethod || 'PARTNER_DEPOSIT',
     },
     null,
   );

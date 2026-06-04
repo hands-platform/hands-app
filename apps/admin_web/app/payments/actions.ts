@@ -39,6 +39,7 @@ export async function settleCashDebt(formData: FormData) {
       settlementRef: String(formData.get('settlementRef') ?? '') || undefined,
       settlementNotes:
         String(formData.get('settlementNotes') ?? '') || 'Cash fee debt settled from Payments operations.',
+      settlementMethod: String(formData.get('settlementMethod') ?? '') || 'PARTNER_DEPOSIT',
     },
     null,
   );
