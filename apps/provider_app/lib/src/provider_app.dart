@@ -13,7 +13,7 @@ import 'features/booking/presentation/provider_request_panels.dart';
 import 'features/chat/presentation/provider_chat_screen.dart';
 import 'features/earnings/presentation/provider_earnings_screen.dart';
 import 'features/earnings/presentation/provider_wallet_gate_helpers.dart';
-import 'features/earnings/presentation/provider_wallet_settlement_widgets.dart';
+import 'features/earnings/presentation/provider_wallet_settlement_dialog.dart';
 import 'features/provider_profile/presentation/provider_error_helpers.dart';
 import 'features/provider_profile/presentation/provider_feedback_cards.dart';
 import 'features/provider_profile/presentation/provider_profile_screen.dart';
@@ -423,65 +423,13 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       return;
     }
 
-    final settlementView = ProviderWalletSettlementView.fromSummary(summary);
-
-    await showDialog<void>(
+    await showProviderWalletSettlementDialog(
       context: context,
-      builder: (dialogContext) {
-        final theme = Theme.of(dialogContext);
-        return AlertDialog(
-          icon: const Icon(Icons.lock_outline),
-          title: const Text('Settlement required'),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  settlementView.reasonLabel,
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'You cannot participate in this marketplace booking until unpaid HANDS fees are settled.',
-                  style: theme.textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Amount to settle: ${settlementView.amountLabel}',
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                Text(settlementView.instruction),
-                if (settlementView.reference != null) ...[
-                  const SizedBox(height: 12),
-                  WalletSettlementReferenceCard(
-                    reference: settlementView.reference!,
-                    amountLabel: settlementView.amountLabel,
-                  ),
-                ],
-                const SizedBox(height: 12),
-                WalletSettlementChecklist(items: settlementView.steps),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Close'),
-            ),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                setState(() {});
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh wallet'),
-            ),
-          ],
-        );
+      summary: summary,
+      onRefresh: () {
+        if (mounted) {
+          setState(() {});
+        }
       },
     );
   }
