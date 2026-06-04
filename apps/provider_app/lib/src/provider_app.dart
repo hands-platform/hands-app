@@ -11,10 +11,15 @@ import 'app_state.dart';
 import 'core/app_config.dart';
 import 'core/api_client.dart';
 import 'core/realtime_socket.dart';
+import 'core/provider_value_helpers.dart';
+import 'features/booking/presentation/provider_booking_service_helpers.dart';
 import 'features/provider_onboarding/presentation/provider_onboarding_status.dart';
 import 'features/provider_onboarding/presentation/widgets/provider_document_upload_slots.dart';
 import 'features/provider_onboarding/presentation/widgets/provider_onboarding_forms.dart';
 import 'features/provider_services/presentation/widgets/provider_service_pricing_card.dart';
+
+export 'core/provider_value_helpers.dart';
+export 'features/booking/presentation/provider_booking_service_helpers.dart';
 
 class ProviderApp extends StatelessWidget {
   const ProviderApp({super.key});
@@ -5321,99 +5326,6 @@ String providerBackupRadiusText(Map<String, dynamic> booking) {
 
 String providerBackupRadiusTagLabel(Map<String, dynamic> booking) {
   return '${providerBackupRadiusText(booking)} marketplace';
-}
-
-bool providerBookingIsCash(Map<String, dynamic> booking) {
-  final payment = asMap(booking['payment']);
-  return payment?['method']?.toString().toUpperCase() == 'CASH' ||
-      booking['paymentMethod']?.toString().toUpperCase() == 'CASH';
-}
-
-String providerCashBookingSettlementHint(Map<String, dynamic> booking) {
-  final payment = asMap(booking['payment']);
-  final amount = payment?['amount'] ?? booking['totalAmount'];
-  final amountText =
-      amount == null ? 'this request' : '${formatCurrency(amount)} VND';
-  return 'Cash payment: the customer pays you directly for $amountText. '
-      'After completion, HANDS fees and tax withholding can create wallet debt. '
-      'Keep your wallet settled so marketplace participation and payout release stay clear.';
-}
-
-String providerServiceOptionLabel(Map<String, dynamic>? service) {
-  final name = service?['name']?.toString().trim();
-  final duration = asNum(service?['durationMin'])?.toInt();
-  if (name == null || name.isEmpty) {
-    return 'Massage booking';
-  }
-  if (duration == null || duration <= 0) {
-    return name;
-  }
-  return '$name / $duration min';
-}
-
-String providerServiceOptionPriceLabel(
-  Map<String, dynamic>? service, {
-  dynamic amount,
-}) {
-  final serviceText = providerServiceOptionLabel(service);
-  final price = amount ??
-      service?['bookingPrice'] ??
-      service?['effectivePrice'] ??
-      service?['basePrice'];
-  if (price == null) {
-    return serviceText;
-  }
-  return '$serviceText / ${formatCurrency(price)} VND';
-}
-
-String providerServiceDurationLabel(Map<String, dynamic>? service) {
-  final duration = asNum(service?['durationMin'])?.toInt();
-  return duration == null || duration <= 0 ? '- min' : '$duration min';
-}
-
-String formatCurrency(dynamic amount) {
-  final number = asNum(amount)?.toInt() ?? 0;
-  final sign = number < 0 ? '-' : '';
-  final text = number.abs().toString();
-  final buffer = StringBuffer();
-  buffer.write(sign);
-
-  for (var index = 0; index < text.length; index++) {
-    final reverseIndex = text.length - index;
-    buffer.write(text[index]);
-    if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-      buffer.write('.');
-    }
-  }
-
-  return buffer.toString();
-}
-
-num? asNum(dynamic value) {
-  if (value == null) {
-    return null;
-  }
-  if (value is num) {
-    return value;
-  }
-  if (value is String) {
-    return num.tryParse(value);
-  }
-  return null;
-}
-
-Map<String, dynamic>? asMap(dynamic value) {
-  if (value is Map<String, dynamic>) {
-    return value;
-  }
-  if (value is Map) {
-    return Map<String, dynamic>.from(value);
-  }
-  return null;
-}
-
-List<dynamic> asList(dynamic value) {
-  return value is List<dynamic> ? value : const [];
 }
 
 bool providerPublicMediaIsReviewable(Map<String, dynamic> item) {
