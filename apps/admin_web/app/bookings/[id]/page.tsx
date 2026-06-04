@@ -74,6 +74,9 @@ function isCustomerSelectableParticipantForFinalChoice(
   if (!partnerId) {
     return false;
   }
+  if (participant.status === 'SELECTED') {
+    return true;
+  }
   if (participant.status === 'ACCEPTED') {
     return true;
   }
@@ -8491,7 +8494,7 @@ function bookingParticipantLedger(
         tone: customerSelectableParticipants.length ? 'pill-warn' : 'pill-info',
         value: `${customerSelectableParticipants.length} customer-selectable`,
         helper:
-          'Selectable means accepted first-pick partner, or marketplace partner who joined/accepted. Evidence-only rows are not customer choices.',
+          'Selectable means accepted first-pick partner, marketplace partner who joined/accepted, or the retained final selected row. Evidence-only rows are not customer choices.',
       },
       {
         label: '4. Final match',
