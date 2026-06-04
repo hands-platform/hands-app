@@ -419,6 +419,8 @@ const pages = [
     markers: [
       'Partner Payouts',
       'Payout date range',
+      'Payout batch release policy desk',
+      'Payout release cycle board',
       'Payout command queue',
       'Payout inclusion audit',
       'Payout action execution map',
@@ -426,7 +428,13 @@ const pages = [
   },
   {
     path: '/payouts?range=7d',
-    markers: ['Partner Payouts', 'Payout date range', 'Last 7 days', 'Payout command queue'],
+    markers: [
+      'Partner Payouts',
+      'Payout date range',
+      'Last 7 days',
+      'Payout batch release policy desk',
+      'Payout command queue',
+    ],
   },
   {
     path: '/partner-controls',

@@ -22,6 +22,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const serviceEvidence = buildPayoutServiceEvidence(batches);
   const moneyFlowCards = buildPayoutMoneyFlowCards(summary, serviceEvidence);
   const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
+  const releasePolicyDesk = buildPayoutReleasePolicyDesk(batches, earnings, summary);
+  const releaseCycleBoard = buildPayoutReleaseCycleBoard(batches, earnings);
   const releaseQueue = buildPayoutReleaseQueue(batches);
   const inclusionAudit = buildPayoutInclusionAudit(earnings, batches);
 
@@ -86,6 +88,73 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         <div className="card">
           <p>Withheld tax</p>
           <h2>{formatMoney(summary.withholdingAmount, summary.currency)}</h2>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Payout batch release policy desk</h2>
+            <p className="muted">
+              Shows the operating gates before partner payout release. Weekly, monthly, and admin-selected
+              batch timing stays configurable from Operations Policy.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy#policy-payout-batch-cycle-policy">
+            Batch policy
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {releasePolicyDesk.map((signal) => (
+            <div className={`ops-task-card ${signal.className}`} key={signal.title}>
+              <div>
+                <span className={`pill ${signal.pillClass}`}>{signal.status}</span>
+                <h3>{signal.title}</h3>
+                <p className="muted">{signal.detail}</p>
+              </div>
+              <small>{signal.action}</small>
+            </div>
+          ))}
+        </div>
+        <div className="risk-watch-header" style={{ marginTop: 16 }}>
+          <div>
+            <h3>Payout release cycle board</h3>
+            <p className="muted">
+              Finance can read this from top to bottom before a bank transfer run. Partner cash-fee debt stays
+              out of payout release until cleared.
+            </p>
+          </div>
+          <Link className="text-link" href="/cash-settlements">
+            Cash settlements
+          </Link>
+        </div>
+        <div style={{ overflowX: 'auto', marginTop: 12 }}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Step</th>
+                <th>Queue</th>
+                <th>Operator check</th>
+                <th>Next action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {releaseCycleBoard.map((item) => (
+                <tr key={item.step}>
+                  <td>
+                    <strong>{item.step}</strong>
+                    <div className="muted">{item.timing}</div>
+                  </td>
+                  <td>
+                    <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                    <div className="muted">{item.queue}</div>
+                  </td>
+                  <td>{item.operatorCheck}</td>
+                  <td>{item.nextAction}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </section>
 
@@ -734,6 +803,16 @@ type PayoutReleaseQueueItem = {
   severity: 'Block' | 'Check';
 };
 
+type PayoutReleaseCycleItem = {
+  step: string;
+  timing: string;
+  status: string;
+  queue: string;
+  operatorCheck: string;
+  nextAction: string;
+  pillClass: string;
+};
+
 type PayoutInclusionAuditRow = {
   id: string;
   status: 'Ready' | 'Hold' | 'Batched';
@@ -904,6 +983,133 @@ function sumPayoutServiceEvidence(
   >,
 ) {
   return serviceEvidence.reduce((sum, item) => sum + item[field], 0);
+}
+
+function buildPayoutReleasePolicyDesk(
+  batches: AdminPayoutBatch[],
+  earnings: AdminEarning[],
+  summary: ReturnType<typeof buildSummary>,
+): PayoutCommandSignal[] {
+  const activeBatches = batches.filter((batch) => !['PAID', 'CANCELLED'].includes(batch.status));
+  const blockedBatches = activeBatches.filter((batch) => payoutBlockingReasons(batch).length > 0);
+  const readyBatches = activeBatches.filter((batch) => payoutBlockingReasons(batch).length === 0);
+  const cashDebtRows = earnings.filter((earning) => !earning.payoutBatchId && earning.netAmount < 0);
+  const cashDebtAmount = Math.abs(sumEarnings(cashDebtRows, 'netAmount'));
+  const currency = earnings[0]?.currency ?? summary.currency;
+  const paidMissingReference = batches.filter((batch) => batch.status === 'PAID' && !batch.transferRef);
+
+  return [
+    {
+      title: 'Batch cycle policy',
+      status: 'Config driven',
+      detail: 'Payout release follows weekly, monthly, or admin-selected batch timing from Operations Policy.',
+      action: 'Change the cycle in policy first, then run finance batches from this page.',
+      className: 'ops-task-pending',
+      pillClass: 'pill-info',
+    },
+    {
+      title: 'Release gate',
+      status: `${readyBatches.length} ready / ${blockedBatches.length} blocked`,
+      detail: 'Paid status requires clean transfer reference, closed tax logs, no payout hold, and no cash-fee debt attached.',
+      action: blockedBatches.length
+        ? 'Open the release blocker queue before marking a batch paid.'
+        : 'Active batches have no release blocker in the current filter.',
+      className: blockedBatches.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: blockedBatches.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Cash debt exclusion',
+      status: cashDebtRows.length ? `${cashDebtRows.length} held` : 'Clear',
+      detail: cashDebtRows.length
+        ? `${formatMoney(cashDebtAmount, currency)} partner cash-fee debt is held outside payout release.`
+        : 'No unbatched partner cash-fee debt is waiting in the current earning range.',
+      action: cashDebtRows.length
+        ? 'Clear deposit or approved offset in Cash Settlements before payout release.'
+        : 'Payout release is not carrying partner cash-fee debt.',
+      className: cashDebtRows.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: cashDebtRows.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Reference repair',
+      status: paidMissingReference.length ? `${paidMissingReference.length} repair` : 'Complete',
+      detail: paidMissingReference.length
+        ? 'At least one paid batch is missing the bank reference needed for finance evidence.'
+        : 'Paid payout batches have bank references in the visible range.',
+      action: paidMissingReference.length
+        ? 'Add historical transfer reference and notes on the payout row.'
+        : 'No paid-reference repair is required.',
+      className: paidMissingReference.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: paidMissingReference.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Customer wallet isolation',
+      status: 'Partner only',
+      detail: 'Cash-fee wallet debt belongs to partner settlement; customer wallet balance is not made negative.',
+      action: 'Use customer pages for booking and payment history, not partner cash-fee recovery.',
+      className: 'ops-task-done',
+      pillClass: 'pill-success',
+    },
+  ];
+}
+
+function buildPayoutReleaseCycleBoard(
+  batches: AdminPayoutBatch[],
+  earnings: AdminEarning[],
+): PayoutReleaseCycleItem[] {
+  const draft = batches.filter((batch) => batch.status === 'DRAFT');
+  const processing = batches.filter((batch) => batch.status === 'PROCESSING');
+  const paid = batches.filter((batch) => batch.status === 'PAID');
+  const failed = batches.filter((batch) => batch.status === 'FAILED');
+  const cashDebt = earnings.filter((earning) => !earning.payoutBatchId && earning.netAmount < 0);
+  const readyUnbatched = earnings.filter(isEarningBatchReady);
+
+  return [
+    {
+      step: '1. Build next batch',
+      timing: 'Weekly / monthly / admin-selected',
+      status: `${readyUnbatched.length} earning(s)`,
+      queue: 'Positive completed earnings only.',
+      operatorCheck: 'Exclude partner cash-fee debt and any booking that is not completed.',
+      nextAction: 'Create or rebuild the payout batch after finance closeout.',
+      pillClass: readyUnbatched.length ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      step: '2. Draft review',
+      timing: 'Before bank transfer',
+      status: `${draft.length} draft`,
+      queue: 'Draft payout batches awaiting finance checks.',
+      operatorCheck: 'Confirm transfer ref plan, service evidence, tax logs, and partner payout facts.',
+      nextAction: 'Move clean draft batches to processing.',
+      pillClass: draft.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      step: '3. Banking transfer',
+      timing: 'Transfer run',
+      status: `${processing.length} processing`,
+      queue: 'Batches currently in bank transfer workflow.',
+      operatorCheck: 'Wait for bank result; keep evidence attached to the same batch row.',
+      nextAction: 'Mark paid with bank ref, or failed when transfer did not complete.',
+      pillClass: processing.length ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      step: '4. Paid reconciliation',
+      timing: 'After transfer',
+      status: `${paid.length} paid / ${failed.length} failed`,
+      queue: 'Finished or failed payout batches.',
+      operatorCheck: 'Paid rows must keep earning status, tax logs, and bank reference aligned.',
+      nextAction: 'Repair missing references or rebuild failed batches.',
+      pillClass: failed.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      step: '5. Cash-fee debt lane',
+      timing: 'Before release',
+      status: `${cashDebt.length} held`,
+      queue: 'Partner cash-fee wallet debt from cash bookings.',
+      operatorCheck: 'Debt must be settled by deposit evidence or approved offset before marketplace and payout unlock.',
+      nextAction: 'Open Cash Settlements for deposit or offset confirmation.',
+      pillClass: cashDebt.length ? 'pill-danger' : 'pill-success',
+    },
+  ];
 }
 
 function buildPayoutInclusionAudit(earnings: AdminEarning[], batches: AdminPayoutBatch[]) {
@@ -1258,12 +1464,22 @@ function payoutBlockingReasons(batch: AdminPayoutBatch): PayoutBlockingReason[] 
   const withholdingAmount = batchWithholdingAmount(batch);
   const withholdingLogs = batch.withholdingLogs ?? [];
   const earnings = batch.earnings ?? [];
+  const cashFeeDebtEarnings = earnings.filter((earning) => earning.netAmount < 0);
 
   if (payoutHold) {
     reasons.push({
       label: 'Payout hold',
       detail: payoutHold.reason,
       action: 'Lift the partner payout hold before changing this payout.',
+      pillClass: 'pill-danger',
+    });
+  }
+
+  if (cashFeeDebtEarnings.length) {
+    reasons.push({
+      label: 'Cash fee debt',
+      detail: `${cashFeeDebtEarnings.length} partner cash-fee debt earning row(s) are attached to this payout batch.`,
+      action: 'Settle cash-fee debt or remove negative earning rows before payout release.',
       pillClass: 'pill-danger',
     });
   }
