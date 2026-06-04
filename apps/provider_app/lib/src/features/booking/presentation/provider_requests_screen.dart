@@ -13,6 +13,7 @@ import 'provider_jobs_helpers.dart';
 import 'provider_request_cards.dart';
 import 'provider_request_guidance_helpers.dart';
 import 'provider_request_panels.dart';
+import 'provider_requests_list_section.dart';
 
 class RequestsScreen extends ConsumerStatefulWidget {
   const RequestsScreen({super.key});
@@ -502,87 +503,22 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
               },
             ),
             const SizedBox(height: 16),
-            RequestFlowBar(
-              activeStep: !isOnline
-                  ? 0
-                  : (bookingItems.any(isProviderAppChatVisible)
-                      ? 3
-                      : (bookingItems.any((item) => item['status'] == 'MATCHED')
-                          ? 2
-                          : 1)),
+            ProviderRequestsListSection(
+              isOnline: isOnline,
+              authUserId: auth.userId,
+              bookingItems: bookingItems,
+              visibleBookings: visibleBookings,
+              requestView: requestView,
+              joinedBookingIds: joinedBookingIds,
+              loading: loading,
+              walletBlocked: requestActionsWalletBlocked,
+              onRequestViewChanged: (value) =>
+                  setState(() => requestView = value),
+              onJoin: joinBooking,
+              onAccept: (booking) => respondToBooking(booking, true),
+              onReject: (booking) => respondToBooking(booking, false),
+              onStart: startService,
             ),
-            const SizedBox(height: 16),
-            RequestQueueSummary(
-              totalRequests: bookingItems.length,
-              preferredRequests: bookingItems.where((booking) {
-                final preferredProvider = booking['preferredProvider'];
-                return preferredProvider is Map<String, dynamic> &&
-                    preferredProvider['userId'] == auth.userId;
-              }).length,
-              backupRequests: bookingItems.where((booking) {
-                final preferredProvider = booking['preferredProvider'];
-                return preferredProvider is Map<String, dynamic> &&
-                    preferredProvider['userId'] != auth.userId;
-              }).length,
-              chatReady: bookingItems.where(isProviderAppChatVisible).length,
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ChoiceChip(
-                  label: const Text('Action needed'),
-                  selected: requestView == 'action',
-                  onSelected: (_) => setState(() => requestView = 'action'),
-                ),
-                ChoiceChip(
-                  label: const Text('Chat ready'),
-                  selected: requestView == 'chat',
-                  onSelected: (_) => setState(() => requestView = 'chat'),
-                ),
-                ChoiceChip(
-                  label: const Text('All requests'),
-                  selected: requestView == 'all',
-                  onSelected: (_) => setState(() => requestView = 'all'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            InfoCard(
-              text:
-                  'Showing ${visibleBookings.length} of ${bookingItems.length} request(s) - ${requestView == 'action' ? 'Requests that still need action' : requestView == 'chat' ? 'Requests with chat already unlocked' : 'All loaded requests'}',
-            ),
-            const SizedBox(height: 16),
-            if (bookingItems.isEmpty)
-              const InfoCard(
-                  text:
-                      'No direct requests yet. Once a customer books your profile, it will appear here.')
-            else if (visibleBookings.isEmpty)
-              const InfoCard(
-                  text:
-                      'No requests match this filter right now. Switch filters to review older items.')
-            else
-              for (final booking in visibleBookings)
-                Builder(
-                  builder: (context) {
-                    final preferredProvider = booking['preferredProvider'];
-                    final isPreferredRequest =
-                        preferredProvider is Map<String, dynamic> &&
-                            preferredProvider['userId'] == auth.userId;
-                    return OpenBookingCard(
-                      booking: booking,
-                      isPreferredRequest: isPreferredRequest,
-                      joined: joinedBookingIds.contains(booking['id']),
-                      loading: loading,
-                      walletBlocked: requestActionsWalletBlocked,
-                      onJoin: () => joinBooking(booking),
-                      onAccept: () => respondToBooking(booking, true),
-                      onReject: () => respondToBooking(booking, false),
-                      onStart: () => startService(booking),
-                    );
-                  },
-                ),
           ],
         ],
       ),
