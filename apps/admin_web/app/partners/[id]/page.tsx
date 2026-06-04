@@ -20,6 +20,7 @@ import {
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
 import { buildCsvDataHref } from '../../../lib/csv-export';
+import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../../lib/operations-policy';
 import {
   approveProvider,
   approveProviderBankAccount,
@@ -140,10 +141,6 @@ type PartnerDetailChatMessage = NonNullable<
   NonNullable<PartnerDetailBooking['chatRoom']>['messages']
 >[number];
 
-const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
-const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
-const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
-  'matching.backup_provider_location_max_age_minutes';
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const DETAIL_ACTIVITY_ORDER_OPTIONS = [
@@ -7048,22 +7045,15 @@ function formatDateOnly(value?: string | null) {
 function buildPartnerDispatchPolicy(settings: AdminOperationalPolicySetting[]): PartnerDispatchPolicy {
   return {
     responseWindowMinutes:
-      readPolicyNumber(settings, MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY) ??
+      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
       DEFAULT_PARTNER_DISPATCH_POLICY.responseWindowMinutes,
     backupRadiusMeters:
-      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY) ??
+      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
       DEFAULT_PARTNER_DISPATCH_POLICY.backupRadiusMeters,
     locationFreshnessMinutes:
-      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
+      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
       DEFAULT_PARTNER_DISPATCH_POLICY.locationFreshnessMinutes,
   };
-}
-
-function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
-  const setting = settings.find((item) => item.key === key);
-  if (!setting) return null;
-  const parsed = Number(setting.value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function formatJsonSummary(value: unknown) {

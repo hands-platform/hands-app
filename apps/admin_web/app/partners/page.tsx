@@ -27,6 +27,7 @@ import {
   unblockProviderAccount,
 } from './actions';
 import { readSearchParam } from '../../lib/date-range';
+import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../lib/operations-policy';
 
 type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
 type AdminProviderPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
@@ -183,10 +184,6 @@ type ProviderOpsPolicy = {
   responseWindowMinutes: number;
 };
 
-const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
-  'matching.backup_provider_location_max_age_minutes';
-const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
-const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
 const DEFAULT_PROVIDER_OPS_POLICY: ProviderOpsPolicy = {
   staleLocationMinutes: 30,
   expiredLocationHours: 24,
@@ -5070,23 +5067,16 @@ function providerLocationStatus(
 function buildProviderOpsPolicy(settings: AdminOperationalPolicySetting[]): ProviderOpsPolicy {
   return {
     staleLocationMinutes:
-      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY) ??
+      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
       DEFAULT_PROVIDER_OPS_POLICY.staleLocationMinutes,
     expiredLocationHours: DEFAULT_PROVIDER_OPS_POLICY.expiredLocationHours,
     backupRadiusMeters:
-      readPolicyNumber(settings, MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY) ??
+      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
       DEFAULT_PROVIDER_OPS_POLICY.backupRadiusMeters,
     responseWindowMinutes:
-      readPolicyNumber(settings, MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY) ??
+      readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
       DEFAULT_PROVIDER_OPS_POLICY.responseWindowMinutes,
   };
-}
-
-function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
-  const setting = settings.find((item) => item.key === key);
-  if (!setting) return null;
-  const parsed = Number(setting.value);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function hasProviderCoordinate(provider: AdminProvider) {

@@ -58,6 +58,11 @@ export function readPolicyNumber(settings: AdminOperationalPolicySetting[], key:
   return Number.isFinite(numberValue) ? numberValue : null;
 }
 
+export function readPositivePolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
+  const value = readPolicyNumber(settings, key);
+  return value !== null && value > 0 ? value : null;
+}
+
 export function readPolicyString(settings: AdminOperationalPolicySetting[], key: string) {
   const value = settings.find((setting) => setting.key === key)?.value;
   return typeof value === 'string' && value.trim() ? value : null;
