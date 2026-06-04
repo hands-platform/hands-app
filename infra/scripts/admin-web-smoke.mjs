@@ -143,6 +143,8 @@ const pages = [
       'All joined partners',
       'Selected marketplace partner',
       'Customer final choice',
+      'Marketplace participation gate',
+      'Joined partner evidence',
     ],
   },
   { path: '/bookings?view=customer-choice', markers: ['Booking Monitor', 'Stage 3 choice'] },

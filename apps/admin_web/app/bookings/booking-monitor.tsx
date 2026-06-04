@@ -162,6 +162,9 @@ type MarketplaceParticipantLedgerRow = {
   participant: BookingParticipant;
   partnerLabel: string;
   roleLabel: string;
+  evidenceLabel: string;
+  evidenceDetail: string;
+  evidenceTone: string;
   statusLabel: string;
   statusTone: string;
   distanceLabel: string;
@@ -1200,7 +1203,8 @@ export function BookingMonitor({
             <p className="muted">
               All joined partners by booking, including first-pick, marketplace participants, declined
               responses, and the customer final choice. This is the operations record of who entered the
-              request.
+              request. Wallet-blocked partners who only viewed marketplace demand are blocked before
+              participation and are not participant rows.
             </p>
           </div>
           <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
@@ -1218,6 +1222,8 @@ export function BookingMonitor({
           </span>
           <span className="pill pill-info">Declined responses {marketplaceLedgerSummary.declined}</span>
           <span className="pill">Customer final choice</span>
+          <span className="pill">Joined partner evidence</span>
+          <span className="pill">Marketplace participation gate</span>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {marketplaceOperationsCards.map((card) => (
@@ -1239,6 +1245,7 @@ export function BookingMonitor({
                 <th>Booking</th>
                 <th>Customer / service</th>
                 <th>Partner</th>
+                <th>Joined partner evidence</th>
                 <th>Status</th>
                 <th>Distance</th>
                 <th>Window / alerts</th>
@@ -1268,6 +1275,10 @@ export function BookingMonitor({
                     <span className="pill">{row.roleLabel}</span>
                   </td>
                   <td>
+                    <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
+                    <div className="muted">{row.evidenceDetail}</div>
+                  </td>
+                  <td>
                     <span className={`pill ${row.statusTone}`}>{row.statusLabel}</span>
                     <div className="muted">{row.participant.providerStatusAtJoin ?? 'Partner state not saved'}</div>
                   </td>
@@ -1290,7 +1301,7 @@ export function BookingMonitor({
               ))}
               {marketplaceLedgerRows.length > 40 && (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={10}>
                     Showing first 40 joined partner records. Narrow the booking filters to inspect the rest.
                   </td>
                 </tr>
@@ -4313,6 +4324,7 @@ function buildMarketplaceParticipantLedgerRows(
         participant,
         partnerLabel: partnerDisplayName(participant.providerProfile),
         roleLabel: marketplaceParticipantRoleLabel(booking, participant),
+        ...marketplaceParticipantEvidenceState(booking, participant),
         statusLabel: marketplaceParticipantStatusLabel(participant.status),
         statusTone: marketplaceParticipantStatusTone(participant.status),
         distanceLabel: formatMeters(
@@ -4413,6 +4425,42 @@ function marketplaceParticipantRoleLabel(booking: AdminBooking, participant: Boo
     return 'First-pick partner';
   }
   return 'Marketplace participant';
+}
+
+function marketplaceParticipantEvidenceState(booking: AdminBooking, participant: BookingParticipant) {
+  const selectedProviderId = booking.selectedProvider?.id ?? booking.selectedProviderId;
+  const preferredProviderId = booking.preferredProvider?.id ?? booking.preferredProviderId;
+  const partnerId = participant.providerProfile?.id;
+
+  if (selectedProviderId && partnerId === selectedProviderId) {
+    return {
+      evidenceLabel: 'Final selected row',
+      evidenceDetail: 'Customer chose this partner; the row remains after matching for operations history.',
+      evidenceTone: 'pill-success',
+    };
+  }
+
+  if (participant.status === 'REJECTED') {
+    return {
+      evidenceLabel: 'Declined response row',
+      evidenceDetail: 'Decline is retained as response evidence, not as a customer-selectable partner.',
+      evidenceTone: 'pill-info',
+    };
+  }
+
+  if (partnerId && partnerId === preferredProviderId) {
+    return {
+      evidenceLabel: 'First-pick response row',
+      evidenceDetail: 'Preferred partner response evidence from the 10-minute first-pick window.',
+      evidenceTone: 'pill-info',
+    };
+  }
+
+  return {
+    evidenceLabel: 'Marketplace join row',
+    evidenceDetail: 'Partner entered the customer shortlist from booking-address marketplace participation.',
+    evidenceTone: 'pill-info',
+  };
 }
 
 function marketplaceParticipantStatusLabel(status: string) {
