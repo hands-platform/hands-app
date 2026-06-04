@@ -46,6 +46,11 @@ const adminUserSummarySelect = {
   updatedAt: true,
 } satisfies Prisma.UserSelect;
 
+const adminUserAuthSelect = {
+  ...adminUserSummarySelect,
+  supabaseUserId: true,
+} satisfies Prisma.UserSelect;
+
 const adminAppSessionSummarySelect = {
   id: true,
   userId: true,
@@ -474,11 +479,11 @@ export class AdminService {
               },
             },
             walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-            preferredProvider: { include: { user: true } },
-            selectedProvider: { include: { user: true } },
+            preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
+            selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
             participants: {
               orderBy: { joinedAt: 'asc' },
-              include: { providerProfile: { include: { user: true } } },
+              include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } },
             },
             opsTasks: {
               orderBy: { updatedAt: 'desc' },
@@ -499,7 +504,7 @@ export class AdminService {
           orderBy: { createdAt: 'desc' },
           take: 25,
           include: {
-            providerProfile: { include: { user: true } },
+            providerProfile: { include: { user: { select: adminUserSummarySelect } } },
             booking: { include: { services: { include: { service: true } } } },
           },
         },
@@ -617,7 +622,8 @@ export class AdminService {
       orderBy: { id: 'desc' },
       include: {
         user: {
-          include: {
+          select: {
+            ...adminUserSummarySelect,
             pushDevices: {
               orderBy: { createdAt: 'desc' },
               take: compact ? 2 : undefined,
@@ -1390,7 +1396,7 @@ export class AdminService {
   async syncProviderSupabaseRole(actorId: string, providerProfileId: string) {
     const provider = await this.prisma.providerProfile.findUniqueOrThrow({
       where: { id: providerProfileId },
-      include: { user: true, verification: true },
+      include: { user: { select: adminUserAuthSelect }, verification: true },
     });
 
     if (provider.verification?.status !== VerificationStatus.APPROVED) {
@@ -1542,16 +1548,16 @@ export class AdminService {
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id },
       include: {
-        customerProfile: { include: { user: true } },
+        customerProfile: { include: { user: { select: adminUserSummarySelect } } },
         preferredProvider: {
           include: {
-            user: true,
+            user: { select: adminUserSummarySelect },
             locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 1 },
           },
         },
         selectedProvider: {
           include: {
-            user: true,
+            user: { select: adminUserSummarySelect },
             locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 1 },
           },
         },
@@ -1560,7 +1566,7 @@ export class AdminService {
           include: {
             providerProfile: {
               include: {
-                user: true,
+                user: { select: adminUserSummarySelect },
                 locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 1 },
               },
             },
@@ -1719,11 +1725,11 @@ export class AdminService {
       },
       include: {
         payment: true,
-        customerProfile: { include: { user: true } },
-        selectedProvider: { include: { user: true } },
-        preferredProvider: { include: { user: true } },
+        customerProfile: { include: { user: { select: adminUserSummarySelect } } },
+        selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
+        preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
         services: { include: { service: true } },
-        participants: { include: { providerProfile: { include: { user: true } } } },
+        participants: { include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } } },
         opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
       },
     });
@@ -1830,11 +1836,11 @@ export class AdminService {
         },
         include: {
           payment: true,
-          customerProfile: { include: { user: true } },
-          selectedProvider: { include: { user: true } },
-          preferredProvider: { include: { user: true } },
+          customerProfile: { include: { user: { select: adminUserSummarySelect } } },
+          selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
+          preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
           services: { include: { service: true } },
-          participants: { include: { providerProfile: { include: { user: true } } } },
+          participants: { include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } } },
           opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
         },
       });
@@ -1910,11 +1916,11 @@ export class AdminService {
             walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
           },
         },
-        customerProfile: { include: { user: true } },
-        selectedProvider: { include: { user: true } },
-        preferredProvider: { include: { user: true } },
+        customerProfile: { include: { user: { select: adminUserSummarySelect } } },
+        selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
+        preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
         services: { include: { service: true } },
-        participants: { include: { providerProfile: { include: { user: true } } } },
+        participants: { include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } } },
         opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
       },
     });
@@ -2037,11 +2043,11 @@ export class AdminService {
                 },
               },
             },
-            preferredProvider: { include: { user: true } },
-            selectedProvider: { include: { user: true } },
+            preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
+            selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
             participants: {
               orderBy: { joinedAt: 'asc' },
-              include: { providerProfile: { include: { user: true } } },
+              include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } },
             },
             services: {
               include: {
@@ -2133,7 +2139,7 @@ export class AdminService {
           include: {
             booking: {
               include: {
-                customerProfile: { include: { user: true } },
+                customerProfile: { include: { user: { select: adminUserSummarySelect } } },
                 selectedProvider: true,
               },
             },
@@ -2149,7 +2155,12 @@ export class AdminService {
       take: 100,
       include: {
         payment: true,
-        booking: { include: { customerProfile: { include: { user: true } }, selectedProvider: true } },
+        booking: {
+          include: {
+            customerProfile: { include: { user: { select: adminUserSummarySelect } } },
+            selectedProvider: true,
+          },
+        },
       },
     });
   }
@@ -2680,7 +2691,11 @@ export class AdminService {
     return this.prisma.review.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: { booking: true, customerProfile: { include: { user: true } }, providerProfile: true },
+      include: {
+        booking: true,
+        customerProfile: { include: { user: { select: adminUserSummarySelect } } },
+        providerProfile: true,
+      },
     });
   }
 
