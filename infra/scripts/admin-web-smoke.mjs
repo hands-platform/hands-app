@@ -888,6 +888,7 @@ if (bookingLinkMatch) {
     'Excluded partner groups',
     'Marketplace partner supply for this booking',
     'Actual marketplace participant ledger',
+    'customer-selectable',
     'First-pick partner',
     'Booking-address radius',
     'Wallet-blocked partners who only viewed the marketplace list are not tracked as participants.',
