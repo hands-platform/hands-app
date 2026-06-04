@@ -570,6 +570,54 @@ export default async function BookingDetailPage({ params }: PageProps) {
       detail: 'Date-ordered booking, chat, payment, alert, location, and audit events.',
     },
   ];
+  const bookingOperatorFirstRead = [
+    {
+      href: '#address-radius-contract',
+      label: 'Service address',
+      value: addressPin,
+      detail: addressLine,
+    },
+    {
+      href: '#matching-rule-snapshot',
+      label: 'Matching state',
+      value: matchingRuleSnapshot.status,
+      detail: `${customerWaitPanel.signalStatus} / ${backupSupply.eligibleCount} marketplace partner(s) in policy.`,
+    },
+    {
+      href: finalProvider?.id ? `/partners/${finalProvider.id}` : '#participants',
+      label: 'Customer choice',
+      value: finalProvider?.id ? providerName(finalProvider) : 'Pending',
+      detail: finalProvider?.id
+        ? 'Final partner exists; confirm chat handoff before service coordination.'
+        : 'Customer must choose the final partner before chat unlocks.',
+    },
+    {
+      href: '#participants',
+      label: 'Marketplace joins',
+      value: `${booking.participants?.length ?? 0} joined`,
+      detail: 'Only actual partner participation rows are retained for this booking.',
+    },
+    {
+      href: '#chat',
+      label: 'Chat evidence',
+      value: booking.chatRoom ? `${messages.length} messages` : 'Missing room',
+      detail: booking.chatRoom
+        ? `Room ${shortId(booking.chatRoom.id)} is retained for admin review.`
+        : 'Matched bookings should create a retained chat room.',
+    },
+    {
+      href: bookingCashDebtNeedsSettlement(booking) ? '/cash-settlements' : '#payment',
+      label: 'Money path',
+      value: booking.payment?.status ?? 'No payment',
+      detail:
+        booking.payment?.method === 'CASH'
+          ? `${financeTrace.walletLedger} / ${financeTrace.platformFee} HANDS fee.`
+          : `${booking.payment?.method ?? 'NONE'} / ${money(
+              booking.payment?.amount,
+              booking.payment?.currency,
+            )}.`,
+    },
+  ];
 
   return (
     <>
@@ -624,6 +672,27 @@ export default async function BookingDetailPage({ params }: PageProps) {
               Open refund
             </Link>
           )}
+        </div>
+      </section>
+
+      <section className="card" id="booking-operator-first-read" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Booking operator first read</h2>
+            <p className="muted">
+              The first facts an operator checks before opening the full booking evidence record.
+            </p>
+          </div>
+          <span className="pill pill-info">Above-fold summary</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {bookingOperatorFirstRead.map((item) => (
+            <a href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </a>
+          ))}
         </div>
       </section>
 
