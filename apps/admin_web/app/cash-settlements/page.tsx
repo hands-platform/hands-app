@@ -34,6 +34,8 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const settlementHandoff = buildCashSettlementHandoffMap(rows, providers, summary);
   const commandCards = buildCommandCards(rows, providers, summary);
   const evidenceChecklist = buildCashSettlementEvidenceChecklist(rows, providers, summary);
+  const executionDesk = buildCashSettlementExecutionDesk(rows, providers, summary);
+  const priorityBoard = buildCashSettlementPriorityBoard(rows);
 
   return (
     <>
@@ -143,6 +145,101 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             {summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'OK'}
           </h2>
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Cash settlement execution desk</h2>
+            <p className="muted">
+              Operator-first view for clearing partner cash-fee debt. It does not judge partner quality; it
+              only shows what must be evidenced before marketplace participation and payout release reopen.
+            </p>
+          </div>
+          <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
+            Audit evidence
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {executionDesk.map((card) => (
+            <div className={`ops-task-card ${card.className}`} key={card.title}>
+              <div>
+                <span className={`pill ${card.pillClass}`}>{card.status}</span>
+                <h3>{card.title}</h3>
+                <p className="muted">{card.detail}</p>
+              </div>
+              <small>{card.action}</small>
+            </div>
+          ))}
+        </div>
+        <div className="risk-watch-header" style={{ marginTop: 16 }}>
+          <div>
+            <h3>Settlement priority board</h3>
+            <p className="muted">
+              Sort order is amount first, then age. Confirm bank deposit evidence or a documented admin
+              offset before pressing the settlement action on a row.
+            </p>
+          </div>
+          <Link className="text-link" href="/cash-settlements?queue=high-debt">
+            High debt queue
+          </Link>
+        </div>
+        {priorityBoard.length ? (
+          <div style={{ overflowX: 'auto', marginTop: 12 }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Priority</th>
+                  <th>Partner / booking</th>
+                  <th>Debt reason</th>
+                  <th>Required evidence</th>
+                  <th>Unlock result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {priorityBoard.map((item) => (
+                  <tr key={item.row.earning.id}>
+                    <td>
+                      <span className={`pill ${item.pillClass}`}>{item.priority}</span>
+                      <div className="muted">{item.ageLabel}</div>
+                    </td>
+                    <td>
+                      <strong>{item.row.providerName}</strong>
+                      <div>
+                        <Link className="text-link" href={`/bookings/${item.row.earning.bookingId}`}>
+                          {shortId(item.row.earning.bookingId)}
+                        </Link>
+                      </div>
+                      <div className="muted">{item.row.providerPhone}</div>
+                    </td>
+                    <td>
+                      <strong>{formatMoney(item.row.debtAmount, item.row.earning.currency)}</strong>
+                      <div className="muted">{item.reason}</div>
+                    </td>
+                    <td>
+                      <div className="service-matrix-cell">
+                        {item.requiredEvidence.map((line) => (
+                          <small key={line}>{line}</small>
+                        ))}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="service-matrix-cell">
+                        {item.unlockResult.map((line) => (
+                          <small key={line}>{line}</small>
+                        ))}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="muted" style={{ marginTop: 12 }}>
+            No settlement priority rows are waiting for finance action.
+          </p>
+        )}
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
@@ -503,6 +600,16 @@ type CommandCard = {
   action: string;
   className: string;
   pillClass: string;
+};
+
+type CashSettlementPriorityItem = {
+  row: CashSettlementRow;
+  priority: string;
+  pillClass: string;
+  ageLabel: string;
+  reason: string;
+  requiredEvidence: string[];
+  unlockResult: string[];
 };
 
 type EvidenceChecklistItem = {
@@ -952,6 +1059,116 @@ function buildSummary(rows: CashSettlementRow[], providers: CashSettlementProvid
   };
 }
 
+function buildCashSettlementExecutionDesk(
+  rows: CashSettlementRow[],
+  providers: CashSettlementProviderGroup[],
+  summary: CashSettlementSummary,
+): CommandCard[] {
+  const missingReferenceRows = rows.filter((row) => !row.earning.settlementRef && !row.lastLedgerRef);
+  const highestDebt = providers[0];
+  const cashEvidenceRows = rows.filter((row) => row.paymentMethod === 'CASH' && row.earning.booking?.payment);
+
+  return [
+    {
+      title: 'Deposit or offset evidence',
+      status: missingReferenceRows.length ? `${missingReferenceRows.length} ref needed` : 'Refs ready',
+      detail: missingReferenceRows.length
+        ? `${formatMoney(
+            missingReferenceRows.reduce((sum, row) => sum + row.debtAmount, 0),
+            summary.currency,
+          )} still needs a bank deposit reference or an approved admin offset memo.`
+        : 'Visible rows already have settlement or wallet ledger references for finance review.',
+      action: 'Do not clear wallet debt until evidence is tied to the booking or earning row.',
+      className: missingReferenceRows.length ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: missingReferenceRows.length ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Partner contact order',
+      status: highestDebt ? 'Debt first' : 'No queue',
+      detail: highestDebt
+        ? `${highestDebt.providerName} is first in the queue at ${formatMoney(
+            highestDebt.debtAmount,
+            highestDebt.currency,
+          )}, open since ${highestDebt.oldestOpenLabel}.`
+        : 'There is no partner cash-fee debt waiting for contact.',
+      action: 'Contact highest debt first, then oldest debt. Record facts only; do not create a partner label.',
+      className: highestDebt ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: highestDebt ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Marketplace unlock condition',
+      status: summary.providerCount ? `${summary.providerCount} blocked` : 'Open',
+      detail: summary.providerCount
+        ? 'Partners with negative cash-fee wallet debt can see marketplace demand but cannot join until settlement is posted.'
+        : 'No partner is blocked from marketplace participation by cash-fee debt in the visible queue.',
+      action: 'Unlock marketplace join only when the partner wallet is no longer negative.',
+      className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Payout release condition',
+      status: summary.debtAmount > 0 ? 'Hold release' : 'Batch ready',
+      detail: summary.debtAmount > 0
+        ? `${formatMoney(summary.debtAmount, summary.currency)} must be settled before payout release.`
+        : 'Cash-fee debt is clear; payout release follows the weekly, monthly, or admin-selected batch rule.',
+      action: 'Payout release stays separate from customer booking history and customer wallet state.',
+      className: summary.debtAmount > 0 ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: summary.debtAmount > 0 ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Cash evidence coverage',
+      status: `${cashEvidenceRows.length}/${rows.length} row(s)`,
+      detail: rows.length
+        ? `${cashEvidenceRows.length} visible row(s) have linked CASH payment evidence; ${summary.missingPaymentEvidenceCount} need payment review.`
+        : 'No cash settlement row is visible for the current filters.',
+      action: 'Open booking detail when payment method, amount, or chat evidence is unclear.',
+      className: summary.missingPaymentEvidenceCount ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: summary.missingPaymentEvidenceCount ? 'pill-warn' : 'pill-success',
+    },
+  ];
+}
+
+function buildCashSettlementPriorityBoard(rows: CashSettlementRow[]): CashSettlementPriorityItem[] {
+  return rows
+    .slice()
+    .sort((left, right) => {
+      if (left.debtAmount !== right.debtAmount) {
+        return right.debtAmount - left.debtAmount;
+      }
+      return cashSettlementRowAgeHours(right) - cashSettlementRowAgeHours(left);
+    })
+    .slice(0, 8)
+    .map((row) => {
+      const ageHours = cashSettlementRowAgeHours(row);
+      const missingReference = !row.earning.settlementRef && !row.lastLedgerRef;
+      const missingPaymentEvidence = !row.earning.booking?.payment || row.paymentMethod !== 'CASH';
+      const priority = row.debtAmount >= 500_000
+        ? 'High debt'
+        : ageHours >= 24
+          ? 'Over 24h'
+          : missingReference || missingPaymentEvidence
+            ? 'Evidence check'
+            : 'Ready';
+      const pillClass = row.debtAmount >= 500_000
+        ? 'pill-danger'
+        : ageHours >= 24
+          ? 'pill-warn'
+          : missingReference || missingPaymentEvidence
+            ? 'pill-info'
+            : 'pill-success';
+
+      return {
+        row,
+        priority,
+        pillClass,
+        ageLabel: ageHours >= 1 ? `${Math.round(ageHours)}h open` : row.createdAtLabel,
+        reason: settlementPriorityReason(row, ageHours, missingReference, missingPaymentEvidence),
+        requiredEvidence: settlementRequiredEvidence(row, missingReference, missingPaymentEvidence),
+        unlockResult: settlementUnlockResult(row),
+      };
+    });
+}
+
 function buildCashSettlementRuleCards(summary: CashSettlementSummary): CommandCard[] {
   const hasDebt = summary.rowCount > 0;
 
@@ -1161,6 +1378,54 @@ function buildDebtCauseCards(rows: CashSettlementRow[], summary: CashSettlementS
       className: staleRows.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: staleRows.length ? 'pill-warn' : 'pill-success',
     },
+  ];
+}
+
+function settlementPriorityReason(
+  row: CashSettlementRow,
+  ageHours: number,
+  missingReference: boolean,
+  missingPaymentEvidence: boolean,
+) {
+  if (row.debtAmount >= 500_000) {
+    return `Largest debt lane: ${formatMoney(row.debtAmount, row.earning.currency)} is holding marketplace participation.`;
+  }
+  if (ageHours >= 24) {
+    return `Aging lane: this cash-fee debt has been open for about ${Math.round(ageHours)} hours.`;
+  }
+  if (missingPaymentEvidence) {
+    return 'Payment evidence lane: booking payment method or amount needs review before settlement.';
+  }
+  if (missingReference) {
+    return 'Reference lane: finance still needs a bank deposit ref or approved offset memo.';
+  }
+  return 'Ready lane: minimum evidence exists; finance can confirm deposit or offset on the row.';
+}
+
+function settlementRequiredEvidence(
+  row: CashSettlementRow,
+  missingReference: boolean,
+  missingPaymentEvidence: boolean,
+) {
+  return [
+    missingPaymentEvidence
+      ? 'Check booking payment method and customer cash amount.'
+      : `Cash payment evidence: ${formatMoney(row.bookingAmount, row.earning.currency)} collected.`,
+    missingReference
+      ? `Attach deposit or offset reference: ${row.settlementReference}.`
+      : `Existing ref: ${row.earning.settlementRef ?? row.lastLedgerRef}.`,
+    `Confirm HANDS fee ${formatMoney(row.platformFee, row.earning.currency)} and tax ${formatMoney(
+      row.taxAmount,
+      row.earning.currency,
+    )}.`,
+  ];
+}
+
+function settlementUnlockResult(row: CashSettlementRow) {
+  return [
+    'Marketplace join unlocks only after wallet balance is no longer negative.',
+    'Payout release returns to batch review after settlement.',
+    `Customer wallet stays unchanged; this is partner cash-fee debt for booking ${shortId(row.earning.bookingId)}.`,
   ];
 }
 
