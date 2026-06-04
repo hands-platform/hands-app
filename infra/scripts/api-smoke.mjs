@@ -1895,6 +1895,21 @@ try {
   }
   await postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken);
   await postJson(`/provider/bookings/${delayedBackupBooking.id}/reject`, backupProviderAuth.accessToken);
+  const rejectedMarketplaceSelectionError = await expectRequestFailure(
+    'Customer final selection rejects inactive marketplace participant',
+    () =>
+      postJson(
+        `/customer/bookings/${delayedBackupBooking.id}/select-provider`,
+        customerAuth.accessToken,
+        { providerId: backupProviderAuth.user.providerProfile.id },
+      ),
+    400,
+  );
+  if (!rejectedMarketplaceSelectionError.includes('Partner must join or accept before customer selection')) {
+    throw new Error(
+      `Rejected marketplace participant should not be selectable by customer: ${rejectedMarketplaceSelectionError}`,
+    );
+  }
   const delayedBackupCustomerNotifications = await getJson('/notifications', customerAuth.accessToken);
   backupDeclineNotificationObserved = delayedBackupCustomerNotifications.some(
     (notification) =>

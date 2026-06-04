@@ -759,8 +759,12 @@ export class BookingsService {
     const participant = await this.prisma.bookingParticipant.findUnique({
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
     });
-    if (!participant || participant.status === ParticipantStatus.REJECTED) {
-      throw new BadRequestException('Partner must join before customer selection');
+    const customerSelectableStatuses = new Set<ParticipantStatus>([
+      ParticipantStatus.JOINED,
+      ParticipantStatus.ACCEPTED,
+    ]);
+    if (!participant || !customerSelectableStatuses.has(participant.status)) {
+      throw new BadRequestException('Partner must join or accept before customer selection');
     }
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },

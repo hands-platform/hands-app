@@ -2678,11 +2678,10 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
     final finalizedProvider =
         status == 'OPEN_MATCHING' ? null : selectedProvider;
     final alternativeParticipants = status == 'OPEN_MATCHING'
-        ? participants
-            .whereType<Map<String, dynamic>>()
-            .where(
-                (item) => item['providerProfileId'] != preferredProvider?['id'])
-            .toList()
+        ? customerSelectableMarketplaceParticipants(
+            participants,
+            preferredProviderId: preferredProvider?['id']?.toString(),
+          )
         : <Map<String, dynamic>>[];
     final expiresAt = currentBooking?['expiresAt'] as String?;
     final fallbackCount = alternativeParticipants.length;
@@ -4981,6 +4980,29 @@ bool canCustomerDirectlyCancelBooking(Map<String, dynamic>? booking) {
   });
 }
 
+bool customerParticipantSelectableForFinalChoice(
+    Map<String, dynamic> participant) {
+  final providerProfileId = participant['providerProfileId']?.toString();
+  if (providerProfileId == null || providerProfileId.isEmpty) {
+    return false;
+  }
+
+  final status = participant['status']?.toString().toUpperCase();
+  return const {'JOINED', 'ACCEPTED'}.contains(status);
+}
+
+List<Map<String, dynamic>> customerSelectableMarketplaceParticipants(
+  List<dynamic> participants, {
+  String? preferredProviderId,
+}) {
+  return participants
+      .whereType<Map<String, dynamic>>()
+      .where(customerParticipantSelectableForFinalChoice)
+      .where((participant) =>
+          participant['providerProfileId']?.toString() != preferredProviderId)
+      .toList();
+}
+
 bool customerCancellationNeedsOpsReview(String status) {
   return const {
     'MATCHED',
@@ -5775,8 +5797,10 @@ String providerDisplayName(Map<String, dynamic>? booking) {
   final participants = booking['participants'] is List<dynamic>
       ? booking['participants'] as List<dynamic>
       : [];
-  if (participants.isNotEmpty) {
-    final first = participants.first as Map<String, dynamic>;
+  final selectableParticipants =
+      customerSelectableMarketplaceParticipants(participants);
+  if (selectableParticipants.isNotEmpty) {
+    final first = selectableParticipants.first;
     final providerProfile = first['providerProfile'] as Map<String, dynamic>?;
     if (providerProfile != null) {
       return providerProfile['displayName'] as String? ?? 'Partner';

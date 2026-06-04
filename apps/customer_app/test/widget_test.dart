@@ -319,4 +319,100 @@ void main() {
     expect(customerCancellationNeedsOpsReview('MATCHED'), isTrue);
     expect(customerCancellationNeedsOpsReview('COMPLETED'), isFalse);
   });
+
+  test('customer final choice only shows active marketplace participants', () {
+    final participants = [
+      {
+        'providerProfileId': 'preferred-1',
+        'status': 'ACCEPTED',
+        'providerProfile': {'displayName': 'Preferred Partner'},
+      },
+      {
+        'providerProfileId': 'joined-1',
+        'status': 'JOINED',
+        'providerProfile': {'displayName': 'Joined Partner'},
+      },
+      {
+        'providerProfileId': 'accepted-1',
+        'status': 'ACCEPTED',
+        'providerProfile': {'displayName': 'Accepted Partner'},
+      },
+      {
+        'providerProfileId': 'rejected-1',
+        'status': 'REJECTED',
+        'providerProfile': {'displayName': 'Rejected Partner'},
+      },
+      {
+        'providerProfileId': 'expired-1',
+        'status': 'EXPIRED',
+        'providerProfile': {'displayName': 'Expired Partner'},
+      },
+      {
+        'providerProfileId': 'selected-1',
+        'status': 'SELECTED',
+        'providerProfile': {'displayName': 'Already Selected Partner'},
+      },
+      {
+        'providerProfileId': '',
+        'status': 'JOINED',
+      },
+    ];
+
+    final selectable = customerSelectableMarketplaceParticipants(
+      participants,
+      preferredProviderId: 'preferred-1',
+    );
+
+    expect(selectable.map((item) => item['providerProfileId']), [
+      'joined-1',
+      'accepted-1',
+    ]);
+    expect(
+      customerParticipantSelectableForFinalChoice({
+        'providerProfileId': 'joined-1',
+        'status': 'JOINED',
+      }),
+      isTrue,
+    );
+    expect(
+      customerParticipantSelectableForFinalChoice({
+        'providerProfileId': 'expired-1',
+        'status': 'EXPIRED',
+      }),
+      isFalse,
+    );
+  });
+
+  test('booking display name ignores inactive participant evidence', () {
+    final booking = {
+      'status': 'OPEN_MATCHING',
+      'participants': [
+        {
+          'providerProfileId': 'rejected-1',
+          'status': 'REJECTED',
+          'providerProfile': {'displayName': 'Rejected Partner'},
+        },
+        {
+          'providerProfileId': 'joined-1',
+          'status': 'JOINED',
+          'providerProfile': {'displayName': 'Joined Partner'},
+        },
+      ],
+    };
+
+    expect(providerDisplayName(booking), 'Joined Partner');
+    expect(
+      providerDisplayName({
+        'status': 'OPEN_MATCHING',
+        'participants': [
+          {
+            'providerProfileId': 'expired-1',
+            'status': 'EXPIRED',
+            'providerProfile': {'displayName': 'Expired Partner'},
+          },
+        ],
+      }),
+      'Booking request',
+    );
+  });
 }

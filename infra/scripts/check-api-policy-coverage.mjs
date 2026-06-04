@@ -66,6 +66,8 @@ const requiredCoverage = [
     markers: [
       '/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider',
       'Customer final confirmation did not match preferred accepted partner',
+      'Customer final selection rejects inactive marketplace participant',
+      'Partner must join or accept before customer selection',
       'Hybrid booking did not switch from preferred to marketplace participant',
       'Admin booking monitor did not retain the selected marketplace participant record',
       'Admin booking detail did not expose marketplace participant identity and status',
