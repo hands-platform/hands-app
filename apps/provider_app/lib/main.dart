@@ -1892,37 +1892,36 @@ class OpenBookingCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(guidance.contextMessage),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: isPreferredRequest
-                    ? const Color(0xFFF1F8EC)
-                    : const Color(0xFFF8F6EC),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isPreferredRequest
-                      ? const Color(0xFFD6E9C8)
-                      : const Color(0xFFE7D9B7),
-                ),
-              ),
-              child: Text(guidance.detailMessage,
-                  style: Theme.of(context).textTheme.bodyMedium),
-            ),
-            const SizedBox(height: 12),
-            InfoCard(text: guidance.infoMessage),
             if (walletBlocksMarketplaceJoin) ...[
               const SizedBox(height: 12),
-              const ProviderErrorCard(
-                  text: providerWalletBlockFallbackReasonClean),
-              const SizedBox(height: 8),
-              const InfoCard(text: providerWalletBlockHintClean),
-            ] else if (isCashBooking &&
-                ((isPreferredRequest && !isMatched) ||
-                    (!isPreferredRequest && !joined))) ...[
+              const MarketplaceJoinLockCard(),
+            ] else ...[
               const SizedBox(height: 12),
-              InfoCard(text: providerCashBookingSettlementHint(booking)),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isPreferredRequest
+                      ? const Color(0xFFF1F8EC)
+                      : const Color(0xFFF8F6EC),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isPreferredRequest
+                        ? const Color(0xFFD6E9C8)
+                        : const Color(0xFFE7D9B7),
+                  ),
+                ),
+                child: Text(guidance.detailMessage,
+                    style: Theme.of(context).textTheme.bodyMedium),
+              ),
+              const SizedBox(height: 12),
+              InfoCard(text: guidance.infoMessage),
+              if (isCashBooking &&
+                  ((isPreferredRequest && !isMatched) ||
+                      (!isPreferredRequest && !joined))) ...[
+                const SizedBox(height: 12),
+                InfoCard(text: providerCashBookingSettlementHint(booking)),
+              ],
             ],
             const SizedBox(height: 12),
             if (isPreferredRequest && !isMatched)
@@ -1955,7 +1954,8 @@ class OpenBookingCard extends StatelessWidget {
               const InfoCard(text: 'Chat is ready. Continue from the Chat tab.')
             else if (!joined)
               FilledButton.icon(
-                onPressed: loading ? null : onJoin,
+                onPressed:
+                    loading || walletBlocksMarketplaceJoin ? null : onJoin,
                 icon: Icon(walletBlocksMarketplaceJoin
                     ? Icons.lock_outline
                     : Icons.add_circle_outline),
@@ -1977,6 +1977,56 @@ class OpenBookingCard extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class MarketplaceJoinLockCard extends StatelessWidget {
+  const MarketplaceJoinLockCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_outline, color: colorScheme.onErrorContainer),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Marketplace visible, join locked',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(providerWalletBlockFallbackReasonClean),
+                const SizedBox(height: 8),
+                Text(
+                  providerWalletBlockHintClean,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
