@@ -81,6 +81,44 @@ const adminPushDeviceSummarySelect = {
   },
 } satisfies Prisma.PushDeviceSelect;
 
+const adminUserListPushDeviceSelect = {
+  id: true,
+  platform: true,
+  enabled: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.PushDeviceSelect;
+
+const adminUserListSessionSelect = {
+  id: true,
+  userId: true,
+  role: true,
+  deviceId: true,
+  platform: true,
+  appVersion: true,
+  active: true,
+  lastSeenAt: true,
+  expiresAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.AppSessionSelect;
+
+const adminUserListSelect = {
+  ...adminUserSummarySelect,
+  customerProfile: { select: { id: true, userId: true, addresses: true } },
+  providerProfile: { select: { id: true, displayName: true, status: true } },
+  appSessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 1,
+    select: adminUserListSessionSelect,
+  },
+  pushDevices: {
+    orderBy: { updatedAt: 'desc' },
+    take: 3,
+    select: adminUserListPushDeviceSelect,
+  },
+} satisfies Prisma.UserSelect;
+
 const adminProviderSummarySelect = {
   id: true,
   displayName: true,
@@ -337,23 +375,7 @@ export class AdminService {
   listUsers() {
     return this.prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
-      include: {
-        customerProfile: true,
-        providerProfile: true,
-        appSessions: {
-          orderBy: { lastSeenAt: 'desc' },
-          take: 5,
-        },
-        pushDevices: {
-          orderBy: { updatedAt: 'desc' },
-          include: {
-            deliveries: {
-              orderBy: { attemptedAt: 'desc' },
-              take: 1,
-            },
-          },
-        },
-      },
+      select: adminUserListSelect,
     });
   }
 

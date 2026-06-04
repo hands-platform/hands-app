@@ -27,7 +27,7 @@ export type AdminUser = {
     id: string;
     platform: string;
     enabled: boolean;
-    token: string;
+    token?: string;
     createdAt?: string;
     updatedAt?: string;
     deliveries?: Array<{
