@@ -1,4 +1,5 @@
 import { AdminPayment, AdminPaymentCallbackAttempt, adminGet } from '../../lib/admin-api';
+import { formatMoney as money, shortId } from '../../lib/admin-format';
 import {
   AdminDateRange,
   dateRangeLabel,
@@ -892,14 +893,6 @@ function PaymentCallbackEvidence({ payment }: { payment: AdminPayment }) {
       ) : null}
     </div>
   );
-}
-
-function money(amount: number, currency = 'VND') {
-  return `${amount.toLocaleString()} ${currency}`;
-}
-
-function shortId(value: string) {
-  return value.slice(0, 8);
 }
 
 function PaymentAction({
