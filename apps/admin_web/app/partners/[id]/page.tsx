@@ -520,6 +520,56 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       detail: `${dateFilters.label}, ${detailActivityTypeLabel(activityType, PARTNER_ACTIVITY_TYPE_OPTIONS)}.`,
     },
   ];
+  const partnerChatMessageCount = partnerBookingArchive.reduce(
+    (sum, record) => sum + readPartnerChatMessages(record.booking).length,
+    0,
+  );
+  const partnerOperatorFirstRead = [
+    {
+      href: '#partner-master-facts',
+      label: 'Identity',
+      value: marketplaceDisplayText(
+        provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+      ),
+      detail: `${provider.user?.phone ?? 'No phone'} / joined ${formatDate(provider.user?.createdAt)}`,
+    },
+    {
+      href: '#partner-booking-journey',
+      label: 'Booking flow',
+      value: `${partnerBookingArchive.length} records`,
+      detail: `${dispatchPolicy.responseWindowMinutes}m first-pick / ${Math.round(
+        dispatchPolicy.backupRadiusMeters / 1000,
+      )}km marketplace radius.`,
+    },
+    {
+      href: '#cash-debt-origin',
+      label: 'Marketplace access',
+      value: hasCashFeeDebt ? 'Blocked by unpaid fee' : 'Open',
+      detail: hasCashFeeDebt
+        ? `${formatCurrency(cashFeeDebtAmount(provider))} company fee must be settled before joining.`
+        : 'No unpaid cash fee debt loaded.',
+    },
+    {
+      href: '#partner-chat-retention-ledger',
+      label: 'Retained chat',
+      value: `${partnerChatMessageCount} messages`,
+      detail: `${partnerChatRetentionRows.length} room(s) retained for admin review after completion.`,
+    },
+    {
+      href: '#payout',
+      label: 'Payout',
+      value: payoutOps.status,
+      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
+    },
+    {
+      href: '#location',
+      label: 'Location',
+      value: provider.currentLocationUpdatedAt ? 'Recorded' : 'No pin',
+      detail: provider.currentLocationUpdatedAt
+        ? formatDate(provider.currentLocationUpdatedAt)
+        : 'No latest partner location loaded.',
+    },
+  ];
 
   return (
     <>
@@ -585,6 +635,27 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           )}
         </div>
       </section>
+
+      <div className="card" id="partner-operator-first-read" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Partner operator first read</h2>
+            <p className="muted">
+              The first facts an operator checks before opening the full partner record.
+            </p>
+          </div>
+          <span className="pill pill-info">Above-fold summary</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {partnerOperatorFirstRead.map((item) => (
+            <a href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </a>
+          ))}
+        </div>
+      </div>
 
       <div className="grid" style={{ marginBottom: 16 }}>
         <StatusCard label="Level" value={provider.level ?? 'LEVEL_1_SIGNUP'} />

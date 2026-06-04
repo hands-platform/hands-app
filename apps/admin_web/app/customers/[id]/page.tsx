@@ -367,6 +367,55 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       detail: `${dateFilters.label}, ${detailActivityTypeLabel(activityType, CUSTOMER_ACTIVITY_TYPE_OPTIONS)}.`,
     },
   ];
+  const customerOperatorFirstRead = [
+    {
+      href: '#customer-info',
+      label: 'Identity',
+      value: customer.user?.fullName ?? customer.user?.phone ?? 'Unnamed customer',
+      detail: `${customer.user?.phone ?? 'No phone'} / joined ${formatDate(customer.user?.createdAt)}`,
+    },
+    {
+      href: activeBooking ? `/bookings/${activeBooking.id}` : '#booking-history',
+      label: 'Current booking',
+      value: activeBooking ? activeBooking.status : 'None',
+      detail: activeBooking
+        ? `${bookingServiceLabel(activeBooking)} / ${shortId(activeBooking.id)}`
+        : 'No active booking is loaded now.',
+    },
+    {
+      href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : '#booking-history',
+      label: 'Last completed work',
+      value: lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None',
+      detail: lastCompletedBooking
+        ? `${bookingServiceLabel(lastCompletedBooking)} / ${formatDate(
+            lastCompletedBooking.updatedAt ??
+              lastCompletedBooking.scheduledStartAt ??
+              lastCompletedBooking.createdAt,
+          )}`
+        : 'No completed service record yet.',
+    },
+    {
+      href: '#customer-chat-retention-ledger',
+      label: 'Retained chat',
+      value: `${chatMessageCount} messages`,
+      detail: `${chatRooms.length} room(s) retained for admin review after completion.`,
+    },
+    {
+      href: '#wallet',
+      label: 'Payments',
+      value: formatMoney(wallet.capturedSpend),
+      detail: `${wallet.refundCount} refund row(s), ${formatMoney(wallet.refundAmount)} refunded.`,
+    },
+    {
+      href: '#addresses',
+      label: 'Locations',
+      value: `${addresses.length} saved`,
+      detail:
+        latestAddressSnapshotBooking?.addressSnapshot?.addressText ??
+        addresses[0]?.value ??
+        'No selected service address loaded.',
+    },
+  ];
 
   return (
     <>
@@ -394,6 +443,27 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(customer.id)}`}>
             All customer chats
           </Link>
+        </div>
+      </section>
+
+      <section className="card" id="customer-operator-first-read" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Customer operator first read</h2>
+            <p className="muted">
+              The first facts an operator checks before opening the full customer record.
+            </p>
+          </div>
+          <span className="pill pill-info">Above-fold summary</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {customerOperatorFirstRead.map((item) => (
+            <a href={item.href} key={item.label}>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+              <small>{item.detail}</small>
+            </a>
+          ))}
         </div>
       </section>
 
