@@ -187,6 +187,18 @@ type MarketplaceOperationsCard = {
   href: string;
 };
 
+type MarketplaceOperatingQueueItem = {
+  step: string;
+  title: string;
+  value: string;
+  status: string;
+  tone: BookingCommandLane['tone'];
+  detail: string;
+  operatorAction: string;
+  href: string;
+  bookings: AdminBooking[];
+};
+
 export type BookingEvidenceFilter =
   | 'all'
   | 'address'
@@ -457,6 +469,10 @@ export function BookingMonitor({
   const marketplaceOperationsCards = useMemo(
     () => buildMarketplaceOperationsCards(visibleBookings, marketplaceLedgerRows, currentTimeMs),
     [currentTimeMs, marketplaceLedgerRows, visibleBookings],
+  );
+  const marketplaceOperatingQueue = useMemo(
+    () => buildMarketplaceOperatingQueue(orderedBookings, currentTimeMs),
+    [currentTimeMs, orderedBookings],
   );
 
   const statusFilterOptions = useMemo(
@@ -1211,6 +1227,42 @@ export function BookingMonitor({
             All joined partners {marketplaceLedgerSummary.total}
           </span>
         </div>
+        <section className="card" style={{ marginTop: 14 }}>
+          <div className="risk-watch-header">
+            <div>
+              <h3>Marketplace operating queue</h3>
+              <p className="muted">
+                Practical dispatch sequence for first-pick timer control, partner participation pool,
+                customer final selection lane, chat handoff, and wallet unblock lane.
+              </p>
+            </div>
+            <span className="pill pill-info">No auto assignment</span>
+          </div>
+          <div className="ops-task-grid" style={{ marginTop: 12 }}>
+            {marketplaceOperatingQueue.map((item) => (
+              <Link className="ops-task-card" href={item.href} key={item.step}>
+                <span className={`signal ${commandToneClass(item.tone)}`}>{item.step}</span>
+                <h3>{item.title}</h3>
+                <p>{item.detail}</p>
+                <div className="participant-list">
+                  <span className={`pill ${stagePillClass(item.tone)}`}>{item.status}</span>
+                  <span className="pill">{item.value}</span>
+                </div>
+                <small>{item.operatorAction}</small>
+                {item.bookings.length > 0 && (
+                  <div className="stack" style={{ marginTop: 10 }}>
+                    {item.bookings.slice(0, 3).map((booking) => (
+                      <span className="muted" key={`${item.step}-${booking.id}`}>
+                        {shortId(booking.id)} / {bookingServiceOptionLabel(booking)} /{' '}
+                        {bookingCustomerLabel(booking)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
         <div className="participant-list" style={{ marginTop: 12 }}>
           <span className="pill">First-pick partners {marketplaceLedgerSummary.firstPick}</span>
           <span className="pill">Marketplace participants {marketplaceLedgerSummary.marketplace}</span>
@@ -4415,6 +4467,96 @@ function buildMarketplaceOperationsCards(
       detail: 'Bookings with partner wallet debt signals after cash fee closeout.',
       tone: walletDebtBookings.length > 0 ? 'pill-warn' : 'pill-neutral',
       href: '/bookings?view=cash-debt',
+    },
+  ];
+}
+
+function buildMarketplaceOperatingQueue(
+  bookings: AdminBooking[],
+  nowMs: number,
+): MarketplaceOperatingQueueItem[] {
+  const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
+  const firstPickWaiting = openBookings.filter(
+    (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
+  );
+  const firstPickExpired = firstPickWaiting.filter((booking) =>
+    bookingMatchingWindowExpired(booking, nowMs),
+  );
+  const noJoinedSupply = openBookings.filter(
+    (booking) => marketplaceParticipants(booking).length === 0 && !bookingHasCustomerSelectablePartner(booking),
+  );
+  const marketplaceJoined = openBookings.filter((booking) => marketplaceParticipants(booking).length > 0);
+  const customerChoiceWaiting = openBookings.filter((booking) =>
+    bookingHasCustomerSelectablePartner(booking),
+  );
+  const matchedWithoutChat = bookings.filter((booking) => bookingChatRepairNeedsOps(booking));
+  const cashDebtBookings = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
+
+  return [
+    {
+      step: '1. First-pick timer control',
+      title: 'First-pick timer control',
+      value: `${firstPickWaiting.length} waiting`,
+      status: firstPickExpired.length ? 'Timer review' : firstPickWaiting.length ? 'Running' : 'Clear',
+      tone: firstPickExpired.length ? 'danger' : firstPickWaiting.length ? 'warn' : 'ok',
+      detail:
+        'Preferred partner gets the first response window. Operators watch timer, alert delivery, wallet gate, and KYC readiness without auto assignment.',
+      operatorAction:
+        'If the first-pick timer is near expiry, prepare marketplace partner nudges and keep customer wait messaging accurate.',
+      href: firstPickExpired.length ? '/bookings?view=attention' : '/bookings?view=first-pick',
+      bookings: firstPickExpired.length ? firstPickExpired : firstPickWaiting,
+    },
+    {
+      step: '2. Partner participation pool',
+      title: 'Partner participation pool',
+      value: `${marketplaceJoined.length} with joined partners`,
+      status: noJoinedSupply.length ? 'Supply gap' : marketplaceJoined.length ? 'Visible' : 'Clear',
+      tone: noJoinedSupply.length ? 'warn' : marketplaceJoined.length ? 'info' : 'ok',
+      detail:
+        'Partners inside the booking-address marketplace radius can join. Joined, accepted, declined, and selected rows stay as operations evidence.',
+      operatorAction:
+        'When supply is thin, check location freshness, app presence, alert delivery, service price, and partner wallet gate before changing policy.',
+      href: noJoinedSupply.length ? '/bookings?view=no-supply' : '/bookings?view=marketplace',
+      bookings: noJoinedSupply.length ? noJoinedSupply : marketplaceJoined,
+    },
+    {
+      step: '3. Customer final selection lane',
+      title: 'Customer final selection lane',
+      value: `${customerChoiceWaiting.length} waiting`,
+      status: customerChoiceWaiting.length ? 'Customer decision' : 'Clear',
+      tone: customerChoiceWaiting.length ? 'warn' : 'ok',
+      detail:
+        'Customer selects the final partner from ready participants. HANDS does not automatically assign the final partner.',
+      operatorAction:
+        'Support should guide the customer only when partner options are ready and the booking is still open.',
+      href: '/bookings?view=customer-choice',
+      bookings: customerChoiceWaiting,
+    },
+    {
+      step: '4. Chat handoff lane',
+      title: 'Chat handoff lane',
+      value: `${matchedWithoutChat.length} repair`,
+      status: matchedWithoutChat.length ? 'Repair needed' : 'Ready',
+      tone: matchedWithoutChat.length ? 'danger' : 'ok',
+      detail:
+        'Final partner selection must create a retained chat room for customer and partner coordination.',
+      operatorAction:
+        'Repair missing chat before arrival, service start, completion, or any manual outcome decision.',
+      href: matchedWithoutChat.length ? '/bookings?view=chat-repair' : '/bookings?view=chat',
+      bookings: matchedWithoutChat,
+    },
+    {
+      step: '5. Wallet unblock lane',
+      title: 'Wallet unblock lane',
+      value: `${cashDebtBookings.length} blocked`,
+      status: cashDebtBookings.length ? 'Fee settlement' : 'Clear',
+      tone: cashDebtBookings.length ? 'danger' : 'ok',
+      detail:
+        'Negative wallet partners can see marketplace demand but cannot participate. App message: 수수료를 입금하지 않아 예약에 참여 할수 없습니다.',
+      operatorAction:
+        'Confirm HANDS fee deposit or approved admin offset before marketplace participation and payout release reopen.',
+      href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',
+      bookings: cashDebtBookings,
     },
   ];
 }
