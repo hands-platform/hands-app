@@ -54,12 +54,31 @@ type BookingDetailMatchingRuleSnapshot = {
   actions: Array<{ label: string; href: string }>;
 };
 
+type BookingDetailParticipant = NonNullable<AdminBookingDetail['participants']>[number];
+
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
 const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 
-function isCustomerSelectableParticipantStatus(status?: string | null) {
-  return status === 'JOINED' || status === 'ACCEPTED';
+function isCustomerSelectableParticipantForFinalChoice(
+  participant: BookingDetailParticipant,
+  preferredProviderId?: string | null,
+) {
+  const partnerId = participant.providerProfile?.id;
+  if (!partnerId) {
+    return false;
+  }
+  if (participant.status === 'ACCEPTED') {
+    return true;
+  }
+  if (participant.status === 'JOINED') {
+    return partnerId !== preferredProviderId;
+  }
+  return false;
+}
+
+function bookingPreferredProviderId(booking: AdminBookingDetail) {
+  return booking.preferredProvider?.id ?? booking.preferredProviderId ?? null;
 }
 
 export default async function BookingDetailPage({ params }: PageProps) {
@@ -4087,7 +4106,8 @@ function buildBookingEvidenceBundleRows({
   const customerChoiceCandidates =
     booking.participants?.filter(
       (participant) =>
-        isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+        isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)) ||
+        participant.status === 'SELECTED',
     )
       .length ?? 0;
   const failedAlerts = notificationTrace.rows.filter((row) => row.deliveryStatuses.includes('FAILED')).length;
@@ -4233,7 +4253,8 @@ function buildBookingCloseoutChecklist({
   const customerChoiceCandidates =
     booking.participants?.filter(
       (participant) =>
-        isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+        isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)) ||
+        participant.status === 'SELECTED',
     )
       .length ?? 0;
   const addressReady = Boolean(booking.addressSnapshot);
@@ -4527,7 +4548,8 @@ function buildBookingFinalGateReason({
   const customerChoiceCandidates =
     booking.participants?.filter(
       (participant) =>
-        isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+        isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)) ||
+        participant.status === 'SELECTED',
     )
       .length ?? 0;
   const selected = Boolean(booking.selectedProvider);
@@ -4820,7 +4842,8 @@ function bookingHandoffChecklist(
   const selectableCount =
     booking.participants?.filter(
       (participant) =>
-        isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+        isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)) ||
+        participant.status === 'SELECTED',
     )
       .length ?? 0;
   const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
@@ -5607,7 +5630,8 @@ function bookingOperatingSnapshot({
   const participants = booking.participants ?? [];
   const customerChoiceCandidates = participants.filter(
     (participant) =>
-      isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+      isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)) ||
+      participant.status === 'SELECTED',
   );
   const preferredState = preferredParticipantState(booking);
   const paymentLabel = booking.payment
@@ -7097,7 +7121,7 @@ function providerHint(booking: AdminBookingDetail) {
 }
 
 function providerDecisionLabel(booking: AdminBookingDetail) {
-  const preferredId = booking.preferredProvider?.id;
+  const preferredId = bookingPreferredProviderId(booking);
   const preferredParticipant = (booking.participants ?? []).find(
     (participant) => participant.providerProfile?.id === preferredId,
   );
@@ -7111,7 +7135,7 @@ function providerDecisionLabel(booking: AdminBookingDetail) {
 }
 
 function preferredParticipantState(booking: AdminBookingDetail) {
-  const preferredProviderId = booking.preferredProvider?.id;
+  const preferredProviderId = bookingPreferredProviderId(booking);
   if (!preferredProviderId) {
     return null;
   }
@@ -7370,7 +7394,7 @@ function bookingBackupPartnerSupply(
   const participantProviderIds = new Set(
     (booking.participants ?? []).map((participant) => participant.providerProfile?.id).filter(Boolean),
   );
-  const preferredProviderId = booking.preferredProvider?.id;
+  const preferredProviderId = bookingPreferredProviderId(booking);
   const selectedProviderId = booking.selectedProvider?.id;
 
   const evaluatedRows = hasCustomerPin
@@ -7656,7 +7680,7 @@ function bookingMvpAuthorityContract({
     readOptionalNumber(byKey.get('matching.backup_provider_radius_meters')?.value) ??
     10000;
   const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantStatus(participant.status),
+    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
   );
   const selectedPartner =
     booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);
@@ -7929,7 +7953,7 @@ function bookingDetailMatchingRuleSnapshot({
   const hasSavedPolicy = Object.values(savedPolicy).some((value) => value !== null);
   const participants = booking.participants ?? [];
   const customerChoiceCandidates = participants.filter((participant) =>
-    isCustomerSelectableParticipantStatus(participant.status),
+    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
   );
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const finalPartner =
@@ -8041,7 +8065,7 @@ function bookingMarketplaceWalletEvidence({
   const participants = booking.participants ?? [];
   const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
   const customerChoiceCandidates = participants.filter((participant) =>
-    isCustomerSelectableParticipantStatus(participant.status),
+    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
   );
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const selectedParticipants = participants.filter((participant) => participant.status === 'SELECTED');
@@ -8188,21 +8212,22 @@ function bookingParticipantLedger(
   notificationTrace: ReturnType<typeof bookingNotificationTrace>,
 ) {
   const participants = booking.participants ?? [];
-  const preferredProviderId = booking.preferredProvider?.id;
+  const preferredProviderId = bookingPreferredProviderId(booking);
   const selectedProviderId = booking.selectedProvider?.id;
   const customerSelectableParticipants = participants.filter((participant) =>
-    isCustomerSelectableParticipantStatus(participant.status),
+    isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId),
   );
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const marketplaceParticipants = participants.filter(
     (participant) => participant.providerProfile?.id !== preferredProviderId,
   );
   const marketplaceCustomerSelectable = marketplaceParticipants.filter((participant) =>
-    isCustomerSelectableParticipantStatus(participant.status),
+    isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId),
   );
   const marketplaceEvidenceOnly = marketplaceParticipants.filter(
     (participant) =>
-      !isCustomerSelectableParticipantStatus(participant.status) && participant.status !== 'SELECTED',
+      !isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId) &&
+      participant.status !== 'SELECTED',
   );
   const firstPickParticipant = participants.find(
     (participant) => participant.providerProfile?.id === preferredProviderId,
@@ -8266,7 +8291,7 @@ function bookingParticipantLedger(
       const isFinal = partnerId === selectedProviderId;
       const role = isFinal ? 'Final partner' : isPreferred ? 'First-pick' : 'Marketplace';
       const roleTone = isFinal ? 'pill-success' : isPreferred ? 'pill-info' : 'pill-neutral';
-      const customerSelectable = isCustomerSelectableParticipantStatus(participant.status);
+      const customerSelectable = isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId);
       const statusTone =
         participant.status === 'REJECTED'
           ? 'pill-warn'
@@ -8331,7 +8356,7 @@ function bookingCustomerWaitPanel(
       readOptionalString(byKey.get('matching.preferred_accept_mode')?.value)) ===
     'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantStatus(participant.status),
+    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
   );
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
@@ -8519,7 +8544,7 @@ function bookingStageSnapshot(
 ): BookingStageSnapshot {
   const status = String(booking.status);
   const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantStatus(participant.status),
+    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
   );
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
@@ -8729,7 +8754,7 @@ function bookingOperationalPolicySnapshot(
       ? null
       : Math.max(0, Math.ceil((expiresAt - Date.now()) / 60_000));
   const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantStatus(participant.status),
+    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
   );
   const selected = booking.status === 'MATCHED' || Boolean(booking.selectedProvider);
   const customerConfirmMode = String(acceptMode?.value) === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';

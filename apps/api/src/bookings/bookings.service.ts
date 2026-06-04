@@ -38,6 +38,21 @@ const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.SELFIE,
 ];
 
+function isCustomerSelectableParticipantForFinalChoice(
+  participant: { status: ParticipantStatus; providerProfileId: string },
+  preferredProviderId?: string | null,
+) {
+  if (participant.status === ParticipantStatus.ACCEPTED) {
+    return true;
+  }
+
+  if (participant.status === ParticipantStatus.JOINED) {
+    return participant.providerProfileId !== preferredProviderId;
+  }
+
+  return false;
+}
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -759,11 +774,7 @@ export class BookingsService {
     const participant = await this.prisma.bookingParticipant.findUnique({
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
     });
-    const customerSelectableStatuses = new Set<ParticipantStatus>([
-      ParticipantStatus.JOINED,
-      ParticipantStatus.ACCEPTED,
-    ]);
-    if (!participant || !customerSelectableStatuses.has(participant.status)) {
+    if (!participant || !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)) {
       throw new BadRequestException('Partner must join or accept before customer selection');
     }
     const booking = await this.prisma.booking.update({

@@ -65,6 +65,7 @@ const requiredCoverage = [
     area: 'customer final partner selection',
     markers: [
       '/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider',
+      'Customer final selection rejects preferred partner before acceptance',
       'Customer final confirmation did not match preferred accepted partner',
       'Customer final selection rejects inactive marketplace participant',
       'Partner must join or accept before customer selection',

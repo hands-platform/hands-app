@@ -4370,7 +4370,8 @@ function buildMarketplaceOperationsCards(
 }
 
 function marketplaceParticipantRoleLabel(booking: AdminBooking, participant: BookingParticipant) {
-  if (participant.providerProfile?.id === booking.preferredProvider?.id) {
+  const preferredProviderId = booking.preferredProvider?.id ?? booking.preferredProviderId;
+  if (participant.providerProfile?.id === preferredProviderId) {
     return 'First-pick partner';
   }
   return 'Marketplace participant';
@@ -4396,7 +4397,7 @@ function marketplaceParticipantStatusTone(status: string) {
   if (status === 'SELECTED') {
     return 'pill-success';
   }
-  if (isCustomerSelectableMarketplaceStatus(status)) {
+  if (status === 'JOINED' || status === 'ACCEPTED') {
     return 'pill-info';
   }
   if (status === 'REJECTED') {
@@ -4413,7 +4414,7 @@ function marketplaceParticipantChoiceState(booking: AdminBooking, participant: B
   if (selectedProviderId) {
     return { choiceLabel: 'Not final choice', choiceTone: 'pill-neutral' };
   }
-  if (isCustomerSelectableMarketplaceStatus(participant.status)) {
+  if (isCustomerSelectableMarketplaceParticipant(booking, participant)) {
     return { choiceLabel: 'Customer-selectable', choiceTone: 'pill-info' };
   }
   return { choiceLabel: 'Evidence-only', choiceTone: 'pill-neutral' };
@@ -4458,12 +4459,23 @@ function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
 
 function customerSelectableParticipants(booking: AdminBooking) {
   return (booking.participants ?? []).filter(
-    (participant) => isCustomerSelectableMarketplaceStatus(participant.status) || participant.status === 'SELECTED',
+    (participant) =>
+      isCustomerSelectableMarketplaceParticipant(booking, participant) || participant.status === 'SELECTED',
   );
 }
 
-function isCustomerSelectableMarketplaceStatus(status?: string | null) {
-  return status === 'JOINED' || status === 'ACCEPTED';
+function isCustomerSelectableMarketplaceParticipant(booking: AdminBooking, participant: BookingParticipant) {
+  const partnerId = participant.providerProfile?.id;
+  if (!partnerId) {
+    return false;
+  }
+  if (participant.status === 'ACCEPTED') {
+    return true;
+  }
+  if (participant.status === 'JOINED') {
+    return partnerId !== (booking.preferredProvider?.id ?? booking.preferredProviderId);
+  }
+  return false;
 }
 
 function bookingHasCustomerSelectablePartner(booking: AdminBooking) {

@@ -4981,14 +4981,22 @@ bool canCustomerDirectlyCancelBooking(Map<String, dynamic>? booking) {
 }
 
 bool customerParticipantSelectableForFinalChoice(
-    Map<String, dynamic> participant) {
+  Map<String, dynamic> participant, {
+  String? preferredProviderId,
+}) {
   final providerProfileId = participant['providerProfileId']?.toString();
   if (providerProfileId == null || providerProfileId.isEmpty) {
     return false;
   }
 
   final status = participant['status']?.toString().toUpperCase();
-  return const {'JOINED', 'ACCEPTED'}.contains(status);
+  if (status == 'ACCEPTED') {
+    return true;
+  }
+  if (status == 'JOINED') {
+    return providerProfileId != preferredProviderId;
+  }
+  return false;
 }
 
 List<Map<String, dynamic>> customerSelectableMarketplaceParticipants(
@@ -4997,9 +5005,12 @@ List<Map<String, dynamic>> customerSelectableMarketplaceParticipants(
 }) {
   return participants
       .whereType<Map<String, dynamic>>()
-      .where(customerParticipantSelectableForFinalChoice)
-      .where((participant) =>
-          participant['providerProfileId']?.toString() != preferredProviderId)
+      .where(
+        (participant) => customerParticipantSelectableForFinalChoice(
+          participant,
+          preferredProviderId: preferredProviderId,
+        ),
+      )
       .toList();
 }
 
@@ -5797,8 +5808,12 @@ String providerDisplayName(Map<String, dynamic>? booking) {
   final participants = booking['participants'] is List<dynamic>
       ? booking['participants'] as List<dynamic>
       : [];
-  final selectableParticipants =
-      customerSelectableMarketplaceParticipants(participants);
+  final preferredProvider = asMap(booking['preferredProvider']);
+  final selectableParticipants = customerSelectableMarketplaceParticipants(
+    participants,
+    preferredProviderId: preferredProvider?['id']?.toString() ??
+        booking['preferredProviderId']?.toString(),
+  );
   if (selectableParticipants.isNotEmpty) {
     final first = selectableParticipants.first;
     final providerProfile = first['providerProfile'] as Map<String, dynamic>?;

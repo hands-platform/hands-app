@@ -1746,6 +1746,21 @@ try {
       `Unsupported first-pick policy returned an unexpected error: ${unsupportedPreferredAcceptModeError}`,
     );
   }
+  const preferredBeforeAcceptSelectionError = await expectRequestFailure(
+    'Customer final selection rejects preferred partner before acceptance',
+    () =>
+      postJson(
+        `/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider`,
+        customerAuth.accessToken,
+        { providerId: providerAuth.user.providerProfile.id },
+      ),
+    400,
+  );
+  if (!preferredBeforeAcceptSelectionError.includes('Partner must join or accept before customer selection')) {
+    throw new Error(
+      `Preferred partner selection before acceptance returned an unexpected error: ${preferredBeforeAcceptSelectionError}`,
+    );
+  }
   const acceptedButWaiting = await postJson(
     `/provider/bookings/${preferredAcceptPolicyBooking.id}/accept`,
     providerAuth.accessToken,

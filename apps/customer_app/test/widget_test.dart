@@ -328,6 +328,11 @@ void main() {
         'providerProfile': {'displayName': 'Preferred Partner'},
       },
       {
+        'providerProfileId': 'preferred-1',
+        'status': 'JOINED',
+        'providerProfile': {'displayName': 'Preferred Waiting Partner'},
+      },
+      {
         'providerProfileId': 'joined-1',
         'status': 'JOINED',
         'providerProfile': {'displayName': 'Joined Partner'},
@@ -364,6 +369,7 @@ void main() {
     );
 
     expect(selectable.map((item) => item['providerProfileId']), [
+      'preferred-1',
       'joined-1',
       'accepted-1',
     ]);
@@ -372,6 +378,26 @@ void main() {
         'providerProfileId': 'joined-1',
         'status': 'JOINED',
       }),
+      isTrue,
+    );
+    expect(
+      customerParticipantSelectableForFinalChoice(
+        {
+          'providerProfileId': 'preferred-1',
+          'status': 'JOINED',
+        },
+        preferredProviderId: 'preferred-1',
+      ),
+      isFalse,
+    );
+    expect(
+      customerParticipantSelectableForFinalChoice(
+        {
+          'providerProfileId': 'preferred-1',
+          'status': 'ACCEPTED',
+        },
+        preferredProviderId: 'preferred-1',
+      ),
       isTrue,
     );
     expect(
