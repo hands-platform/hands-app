@@ -2707,6 +2707,30 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <table className="table" style={{ marginTop: 14 }}>
             <thead>
               <tr>
+                <th>Lifecycle stage</th>
+                <th>Current evidence</th>
+                <th>Operator check</th>
+              </tr>
+            </thead>
+            <tbody>
+              {participantLedger.lifecycleRows.map((row) => (
+                <tr key={row.stage}>
+                  <td>
+                    <strong>{row.stage}</strong>
+                    <p className="muted">{row.scope}</p>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.tone}`}>{row.status}</span>
+                    <p className="muted">{row.evidence}</p>
+                  </td>
+                  <td>{row.operatorUse}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <table className="table" style={{ marginTop: 14 }}>
+            <thead>
+              <tr>
                 <th>Partner</th>
                 <th>Joined evidence</th>
                 <th>Role and status</th>
@@ -8566,6 +8590,8 @@ function bookingParticipantLedger(
       !isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId) &&
       participant.status !== 'SELECTED',
   );
+  const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
+  const joinedParticipants = participants.filter((participant) => participant.status === 'JOINED');
   const firstPickParticipant = participants.find(
     (participant) => participant.providerProfile?.id === preferredProviderId,
   );
@@ -8576,6 +8602,11 @@ function bookingParticipantLedger(
     ? isCustomerSelectableParticipantForFinalChoice(firstPickParticipant, preferredProviderId)
     : false;
   const selectedFromMarketplace = Boolean(selectedProviderId && selectedProviderId !== preferredProviderId);
+  const chatRequired = Boolean(
+    booking.selectedProvider ||
+      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status),
+  );
+  const chatMessageCount = booking.chatRoom?.messages?.length ?? 0;
   const status = booking.selectedProvider
     ? 'Final choice recorded'
     : customerSelectableParticipants.length
@@ -8624,6 +8655,16 @@ function bookingParticipantLedger(
         value: formatDistanceMeters(backupSupply.radiusMeters),
         helper: `${backupSupply.eligibleCount} currently eligible partner(s) / ${notificationTrace.backupBatches.length} alert batch(es).`,
         href: '#marketplace-supply',
+      },
+      {
+        label: 'Chat archive',
+        value: booking.chatRoom ? `${chatMessageCount} message(s)` : chatRequired ? 'Missing' : 'Not opened',
+        helper: booking.chatRoom
+          ? 'Admin retains the booking chat even after mobile hides completed-service chat.'
+          : chatRequired
+            ? 'Matched bookings should create a retained chat archive for operations evidence.'
+            : 'Chat opens only after customer final partner selection and service handoff.',
+        href: '#chat',
       },
     ],
     selectionTrace: [
@@ -8677,6 +8718,76 @@ function bookingParticipantLedger(
             ? 'Customer selected a marketplace participant instead of the first-pick partner.'
             : 'Customer selected the first-pick partner after acceptance.'
           : 'No automatic assignment; customer final choice is required before matched service handoff.',
+      },
+    ],
+    lifecycleRows: [
+      {
+        stage: '1. First-pick response',
+        scope: 'Preferred partner receives the first response window; marketplace may still collect options.',
+        status: booking.preferredProvider
+          ? firstPickParticipant
+            ? firstPickParticipant.status
+            : 'Waiting'
+          : 'Not used',
+        tone: booking.preferredProvider
+          ? firstPickParticipant?.status === 'REJECTED'
+            ? 'pill-warn'
+            : firstPickParticipant
+              ? 'pill-info'
+              : 'pill-neutral'
+          : 'pill-neutral',
+        evidence: booking.preferredProvider
+          ? firstPickParticipant
+            ? `${providerName(firstPickParticipant.providerProfile)} / joined ${formatDate(
+                firstPickParticipant.joinedAt,
+              )} / responded ${formatDate(firstPickParticipant.respondedAt)}`
+            : `${providerName(booking.preferredProvider)} has no participant response row yet.`
+          : 'This booking does not have a preferred partner row.',
+        operatorUse:
+          'Confirm the first-pick partner response without assigning the final partner manually.',
+      },
+      {
+        stage: '2. Marketplace participation',
+        scope: 'Only partners who actually join, accept, reject, or are selected are stored as rows.',
+        status: marketplaceParticipants.length
+          ? `${marketplaceParticipants.length} marketplace row(s)`
+          : 'No marketplace row',
+        tone: marketplaceParticipants.length ? 'pill-info' : 'pill-neutral',
+        evidence: `${marketplaceCustomerSelectable.length} customer-selectable / ${acceptedParticipants.length} accepted / ${joinedParticipants.length} joined / ${rejectedParticipants.length} rejected.`,
+        operatorUse:
+          'Use the rows below as the factual list of partners who entered the booking; view-only blocked wallets are not logged here.',
+      },
+      {
+        stage: '3. Customer final choice',
+        scope: 'HANDS does not auto-assign. Customer selection is the authority for the final partner.',
+        status: booking.selectedProvider
+          ? 'Selected'
+          : customerSelectableParticipants.length
+            ? 'Waiting customer'
+            : 'Not ready',
+        tone: booking.selectedProvider
+          ? 'pill-success'
+          : customerSelectableParticipants.length
+            ? 'pill-warn'
+            : 'pill-neutral',
+        evidence: booking.selectedProvider
+          ? `${providerName(booking.selectedProvider)} is saved as selectedProvider.`
+          : `${customerSelectableParticipants.length} customer-selectable partner(s) available.`,
+        operatorUse:
+          'If final partner is missing, check customer app shortlist visibility instead of manually choosing for the customer.',
+      },
+      {
+        stage: '4. Chat and service handoff',
+        scope: 'Chat must open after final partner selection and stay retained in Admin as evidence.',
+        status: booking.chatRoom ? 'Chat retained' : chatRequired ? 'Chat missing' : 'Not opened yet',
+        tone: booking.chatRoom ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-neutral',
+        evidence: booking.chatRoom
+          ? `Room ${shortId(booking.chatRoom.id)} / ${chatMessageCount} message(s).`
+          : chatRequired
+            ? 'Final/matched service flow exists but no chat room is attached.'
+            : 'Waiting for customer final choice before chat opens.',
+        operatorUse:
+          'Use chat evidence for cancellation, no-show, dispute, and service handoff review.',
       },
     ],
     rows: [...participants].sort(sortBookingParticipantsForOps(preferredProviderId, selectedProviderId)).map((participant) => {
