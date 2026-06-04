@@ -3704,7 +3704,7 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat('en-GB', {
     dateStyle: 'medium',
     timeStyle: 'short',
-    timeZone: 'Asia/Bangkok',
+    timeZone: 'Asia/Ho_Chi_Minh',
   }).format(new Date(value));
 }
 

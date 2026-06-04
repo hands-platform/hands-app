@@ -1,4 +1,5 @@
 import { AdminCoupon, adminGet } from '../../lib/admin-api';
+import { formatDateTime as formatDate } from '../../lib/admin-format';
 import Link from 'next/link';
 import { createCoupon, toggleCoupon } from './actions';
 
@@ -357,16 +358,6 @@ function formatDiscount(discount: unknown) {
     return `${value}% off`;
   }
   return JSON.stringify(discount);
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(new Date(value));
 }
 
 function campaignToneClass(tone: CampaignCommandTone) {

@@ -228,7 +228,7 @@ const terminalBookingStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'R
 const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
-const displayTimeZone = 'Asia/Bangkok';
+const displayTimeZone = 'Asia/Ho_Chi_Minh';
 const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   dateStyle: 'medium',
   timeStyle: 'short',

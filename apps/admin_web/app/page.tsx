@@ -1686,7 +1686,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <h2>Hourly booking demand</h2>
               <p className="muted">Reservations grouped by request hour in Vietnam time.</p>
             </div>
-            <span className="pill pill-info">Asia/Bangkok</span>
+            <span className="pill pill-info">Asia/Ho_Chi_Minh</span>
           </div>
           <div className="stack">
             {hourlyDemand.map((item) => (
@@ -2942,17 +2942,17 @@ function buildDailyOperationsSnapshot(input: {
   activePayoutBatches: AdminPayoutBatch[];
 }): DailyOperationsSnapshotItem[] {
   const todayBookings = input.bookings.filter((booking) =>
-    isBangkokToday(booking.scheduledStartAt ?? booking.createdAt),
+    isVietnamToday(booking.scheduledStartAt ?? booking.createdAt),
   );
   const completedToday = input.bookings.filter(
     (booking) =>
       booking.status === 'COMPLETED' &&
-      isBangkokToday(booking.updatedAt ?? booking.scheduledEndAt ?? booking.createdAt),
+      isVietnamToday(booking.updatedAt ?? booking.scheduledEndAt ?? booking.createdAt),
   );
   const closedToday = input.bookings.filter(
     (booking) =>
       ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(booking.status) &&
-      isBangkokToday(booking.updatedAt ?? booking.createdAt),
+      isVietnamToday(booking.updatedAt ?? booking.createdAt),
   );
   const onlinePartners = input.providers.filter((provider) => provider.status.startsWith('ONLINE'));
   const freshPartnerPins = onlinePartners.filter((provider) => {
@@ -3616,7 +3616,7 @@ function dashboardDateLabel(value?: string | null) {
 const dashboardDateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
   dateStyle: 'medium',
   timeStyle: 'short',
-  timeZone: 'Asia/Bangkok',
+  timeZone: 'Asia/Ho_Chi_Minh',
 });
 
 function dashboardDateValue(value?: string | null) {
@@ -3893,19 +3893,19 @@ function buildLiveOperationsRadar(input: {
   ];
 }
 
-function isBangkokToday(value?: string | null) {
+function isVietnamToday(value?: string | null) {
   if (!value) return false;
   const timestamp = Date.parse(value);
   if (Number.isNaN(timestamp)) return false;
-  return bangkokDateKey(new Date(timestamp)) === bangkokDateKey(new Date());
+  return vietnamDateKey(new Date(timestamp)) === vietnamDateKey(new Date());
 }
 
-function bangkokDateKey(date: Date) {
+function vietnamDateKey(date: Date) {
   return new Intl.DateTimeFormat('en-CA', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-    timeZone: 'Asia/Bangkok',
+    timeZone: 'Asia/Ho_Chi_Minh',
   }).format(date);
 }
 
@@ -4637,7 +4637,7 @@ function buildHourlyBookingDemand(bookings: AdminBooking[]) {
   const hourFormatter = new Intl.DateTimeFormat('en-GB', {
     hour: '2-digit',
     hour12: false,
-    timeZone: 'Asia/Bangkok',
+    timeZone: 'Asia/Ho_Chi_Minh',
   });
   const buckets = new Map<
     string,

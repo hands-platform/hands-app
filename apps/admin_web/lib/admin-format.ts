@@ -1,4 +1,4 @@
-const BANGKOK_TIME_ZONE = 'Asia/Bangkok';
+const VIETNAM_TIME_ZONE = 'Asia/Ho_Chi_Minh';
 
 export function formatMoney(amount?: number | null, currency = 'VND', fallback = 'Not set') {
   if (amount === undefined || amount === null) {
@@ -21,7 +21,7 @@ export function formatDateTime(value?: string | null, fallback = 'Not set') {
   return new Intl.DateTimeFormat('en-GB', {
     dateStyle: 'medium',
     timeStyle: 'short',
-    timeZone: BANGKOK_TIME_ZONE,
+    timeZone: VIETNAM_TIME_ZONE,
   }).format(date);
 }
 
@@ -37,7 +37,7 @@ export function formatDateOnly(value?: string | null, fallback = 'Not set') {
 
   return new Intl.DateTimeFormat('en-GB', {
     dateStyle: 'medium',
-    timeZone: BANGKOK_TIME_ZONE,
+    timeZone: VIETNAM_TIME_ZONE,
   }).format(date);
 }
 
