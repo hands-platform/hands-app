@@ -162,8 +162,8 @@ function Invoke-Check {
 
 function Invoke-SmokeWithApi {
   param(
-    [string]$ApiBaseUrl = "http://localhost:3100/api",
-    [string]$SocketBaseUrl = "http://localhost:3100",
+    [string]$ApiBaseUrl = "http://localhost:3000/api",
+    [string]$SocketBaseUrl = "http://localhost:3000",
     [switch]$IncludeSupabaseAuthSmoke
   )
 
@@ -344,13 +344,13 @@ if (Test-CommandExists "docker") {
 
     $existingHandsApiReady = $false
     try {
-      Invoke-RestMethod "http://localhost:3100/api/health/ready" | Out-Null
+      Invoke-RestMethod "http://localhost:3000/api/health/ready" | Out-Null
       $existingHandsApiReady = $true
     } catch {}
 
     if ($existingHandsApiReady) {
-      Add-Result "api runtime source" "PASS" "Using existing HANDS local API on http://localhost:3100/api"
-      Invoke-SmokeWithApi -ApiBaseUrl "http://localhost:3100/api" -SocketBaseUrl "http://localhost:3100"
+      Add-Result "api runtime source" "PASS" "Using existing HANDS local API on http://localhost:3000/api"
+      Invoke-SmokeWithApi -ApiBaseUrl "http://localhost:3000/api" -SocketBaseUrl "http://localhost:3000"
     } else {
       Invoke-SmokeWithManagedApi
     }

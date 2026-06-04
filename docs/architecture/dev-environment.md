@@ -127,7 +127,7 @@ For the organized HANDS workspace, prefer:
 
 - repo: `C:\dev\massage-vn-workspace\repo`
 - secrets: `C:\dev\massage-vn-workspace\secrets`
-- local API: `http://localhost:3100`
+- local API: `http://localhost:3000`
 - local Admin: `http://localhost:3101`
 
 For a physical Android device over USB, use the helper script from the workspace root:

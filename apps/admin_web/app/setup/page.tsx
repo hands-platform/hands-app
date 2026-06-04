@@ -92,7 +92,7 @@ const setupOrder = [
     ],
     commands: [
       'npm.cmd run external:check:supabase-auth',
-      '$env:SUPABASE_JWT_SECRET="<project-jwt-secret>"; $env:API_BASE_URL="http://localhost:3100/api"; npm.cmd run auth:supabase-smoke',
+      '$env:SUPABASE_JWT_SECRET="<project-jwt-secret>"; $env:API_BASE_URL="http://localhost:3000/api"; npm.cmd run auth:supabase-smoke',
     ],
   },
   {
@@ -554,6 +554,13 @@ export default async function SetupPage() {
                 <span>{item.phase}</span>
                 <strong>{item.name}</strong>
                 <p className="muted">{item.action}</p>
+                {item.commands.length > 0 && (
+                  <div className="setup-command-list" style={{ marginTop: 8 }}>
+                    {item.commands.slice(0, 2).map((command) => (
+                      <code key={`${item.groupId}-${item.name}-${command}`}>{command}</code>
+                    ))}
+                  </div>
+                )}
               </a>
             ))}
             {nextActions.length === 0 && (
@@ -574,6 +581,7 @@ export default async function SetupPage() {
                 {deferredActions.slice(0, 6).map((item) => (
                   <code key={`${item.groupId}-${item.name}`}>
                     {item.name}: {item.action}
+                    {item.commands.length > 0 ? ` Verify: ${item.commands[0]}` : ''}
                   </code>
                 ))}
               </div>
@@ -754,15 +762,35 @@ function ReadinessRow({ check }: { check: AdminExternalReadiness['checks'][numbe
   const configured = check.configured.map(externalReadinessDisplayText);
   const missing = check.missing.map(externalReadinessDisplayText);
   const invalid = (check.invalid ?? []).map(externalReadinessDisplayText);
+  const commands = check.commands ?? [];
+  const isCurrentStage = check.scope === 'CURRENT_STAGE';
 
   return (
     <div className="ops-row">
       <div>
         <strong>{externalReadinessDisplayText(check.name)}</strong>
         <p className="muted">{externalReadinessDisplayText(check.detail)}</p>
+        <div className="participant-list" style={{ marginBottom: 8 }}>
+          <span className={`pill ${isCurrentStage ? 'pill-info' : 'pill-neutral'}`}>
+            {isCurrentStage ? 'Current stage' : 'Deferred'}
+          </span>
+          {check.secretSafe && <span className="pill pill-neutral">Secret-safe</span>}
+        </div>
+        {check.operatorAction && (
+          <p className="muted">
+            <strong>Operator action:</strong> {externalReadinessDisplayText(check.operatorAction)}
+          </p>
+        )}
         {configured.length > 0 && <p className="muted">Configured: {configured.join(', ')}</p>}
         {missing.length > 0 && <p className="muted">Missing: {missing.join(', ')}</p>}
         {invalid.length > 0 && <p className="muted">Invalid: {invalid.join(', ')}</p>}
+        {commands.length > 0 && (
+          <div className="setup-command-list" style={{ marginTop: 8 }}>
+            {commands.map((command) => (
+              <code key={`${check.category}-${command}`}>{command}</code>
+            ))}
+          </div>
+        )}
       </div>
       <span className={`pill ${check.status === 'READY' ? 'pill-success' : 'pill-warn'}`}>
         {check.status}
@@ -807,6 +835,7 @@ function buildExternalBacklog(readiness: AdminExternalReadiness, readinessUnavai
         name: 'API readiness endpoint',
         reason:
           'Start the HANDS API or Docker services, then refresh this page before using setup status.',
+        commands: [],
       },
     ];
   }
@@ -820,7 +849,8 @@ function buildExternalBacklog(readiness: AdminExternalReadiness, readinessUnavai
       groupId,
       groupTitle,
       name,
-      reason: check.detail,
+      reason: check.operatorAction ?? check.detail,
+      commands: check.commands ?? [],
     }));
   });
 }
@@ -847,6 +877,7 @@ function buildNextOperatorActions(readiness: AdminExternalReadiness, readinessUn
           ...item,
           phase: 'Runtime check',
           action: 'Start the API/Docker services and rerun setup doctor before external E2E.',
+          commands: item.commands ?? [],
           rank: -1,
         };
       }
@@ -856,6 +887,7 @@ function buildNextOperatorActions(readiness: AdminExternalReadiness, readinessUn
         ...item,
         phase: group.phase,
         action: group.operatorAction,
+        commands: item.commands ?? [],
         rank: groupIndex === -1 ? setupOrder.length : groupIndex,
       };
     })
@@ -877,6 +909,7 @@ function buildDeferredOperatorActions(readiness: AdminExternalReadiness, readine
         ...item,
         phase: group.phase,
         action: group.operatorAction,
+        commands: item.commands ?? [],
         rank: groupIndex === -1 ? setupOrder.length : groupIndex,
       };
     })

@@ -1,4 +1,4 @@
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3100/api';
+const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
 const defaultCustomerCurrentLocation = {
   currentLat: 10.7769,
   currentLng: 106.7009,

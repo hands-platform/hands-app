@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3100/api';
+const API_BASE_URL = process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api';
 const ADMIN_TOKEN_REFRESH_SKEW_MS = 60_000;
 
 let cachedAdminToken: { token: string; expiresAt: number } | null = null;
@@ -945,6 +945,8 @@ export type AdminExternalReadiness = {
   productionE2EOk?: boolean;
   blockingCategories?: string[];
   deferredCategories?: string[];
+  currentStageCommands?: string[];
+  deferredCommands?: string[];
   timestamp: string;
   checks: Array<{
     name: string;
@@ -954,6 +956,11 @@ export type AdminExternalReadiness = {
     missing: string[];
     invalid?: string[];
     detail: string;
+    scope?: 'CURRENT_STAGE' | 'DEFERRED';
+    deferred?: boolean;
+    operatorAction?: string;
+    commands?: string[];
+    secretSafe?: boolean;
   }>;
 };
 

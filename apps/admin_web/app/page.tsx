@@ -608,6 +608,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         'Matching windows, partner candidate radius, booking gates, service options, price policy, tax policy, and setup checks.',
       links: [
         ['Operations policy', '/operations-policy'],
+        ['First-pick window', '/operations-policy#policy-matching-provider-response-window-minutes'],
+        ['Wallet gate', '/operations-policy#policy-wallet-negative-balance-gate'],
         ['Services', '/services'],
         ['Tax policy', '/tax-policy'],
         ['Setup', '/setup'],
@@ -2181,7 +2183,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
       </section>
 
-      <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3100/api'}</p>
+      <p className="muted">API source: {process.env.ADMIN_API_BASE_URL ?? 'http://localhost:3000/api'}</p>
     </>
   );
 }

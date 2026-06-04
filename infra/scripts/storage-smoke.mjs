@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 loadEnv('.env');
 
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3100/api';
+const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
 const providerPhone = process.env.PROVIDER_DEMO_PHONE ?? '+84900000002';
 const adminPhone = process.env.ADMIN_DEMO_PHONE ?? '+84900000099';
 const otp = process.env.DEV_OTP ?? process.env.ADMIN_DEMO_OTP ?? '123456';

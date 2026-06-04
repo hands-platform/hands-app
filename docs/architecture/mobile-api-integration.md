@@ -100,7 +100,7 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\run-hands-emulator.ps1 
 
 The script:
 
-- checks that the HANDS API is already running on `localhost:3100`
+- checks that the HANDS API is already running on `localhost:3000`
 - starts `Pixel_6_API_33` if no emulator is already connected
 - waits for Android boot completion
 - launches Flutter with:

@@ -35,7 +35,7 @@ $env:ADMIN_ACCESS_TOKEN='<short-lived-admin-token>'
 Local MVP fallback:
 
 ```powershell
-$env:ADMIN_API_BASE_URL='http://localhost:3100/api'
+$env:ADMIN_API_BASE_URL='http://localhost:3000/api'
 $env:ADMIN_DEMO_PHONE='+84900000099'
 $env:ADMIN_DEMO_OTP='123456'
 ```

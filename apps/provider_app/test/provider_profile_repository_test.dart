@@ -42,7 +42,7 @@ void main() {
         baseUrl: 'http://${server.address.host}:${server.port}',
         tokenRefreshMode: TokenRefreshMode.disabled,
       ),
-      socket: RealtimeSocket(baseUrl: 'http://localhost:3100'),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3000'),
       locationDataSource: _NoLocationDataSource(),
       deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
     );
@@ -85,7 +85,7 @@ void main() {
         baseUrl: 'http://${server.address.host}:${server.port}',
         tokenRefreshMode: TokenRefreshMode.disabled,
       ),
-      socket: RealtimeSocket(baseUrl: 'http://localhost:3100'),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3000'),
       locationDataSource: _NoLocationDataSource(),
       deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
     );
@@ -129,7 +129,7 @@ void main() {
         baseUrl: 'http://${server.address.host}:${server.port}',
         tokenRefreshMode: TokenRefreshMode.disabled,
       ),
-      socket: RealtimeSocket(baseUrl: 'http://localhost:3100'),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3000'),
       locationDataSource: _NoLocationDataSource(),
       deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
     );
@@ -185,7 +185,7 @@ void main() {
         baseUrl: 'http://${server.address.host}:${server.port}',
         tokenRefreshMode: TokenRefreshMode.disabled,
       ),
-      socket: RealtimeSocket(baseUrl: 'http://localhost:3100'),
+      socket: RealtimeSocket(baseUrl: 'http://localhost:3000'),
       locationDataSource: _VietnamLocationDataSource(),
       deviceIdentityDataSource: const _FakeDeviceIdentityDataSource(),
     );

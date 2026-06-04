@@ -7,7 +7,7 @@ const envPath = resolve(envFile);
 const fileEnv = existsSync(envPath) ? parseEnv(readFileSync(envPath, 'utf8')) : {};
 const env = { ...fileEnv, ...process.env };
 
-const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3100/api';
+const apiBaseUrl = env.API_BASE_URL ?? 'http://localhost:3000/api';
 const jwtSecret = env.SUPABASE_JWT_SECRET;
 const jwtAudience = env.SUPABASE_JWT_AUDIENCE ?? 'authenticated';
 

@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3100/api';
+const apiBaseUrl = process.env.API_BASE_URL ?? 'http://localhost:3000/api';
 const socketBaseUrl = process.env.SOCKET_BASE_URL ?? apiBaseUrl.replace(/\/api$/, '');
 
 async function request(path, options = {}) {

@@ -85,7 +85,7 @@ Mobile sessions are persisted with `flutter_secure_storage` after OTP verificati
 After the API is running with the same `SUPABASE_JWT_SECRET`, run this smoke test to verify that Supabase-style access tokens are accepted by protected Nest routes:
 
 ```powershell
-$env:API_BASE_URL="http://localhost:3100/api"
+$env:API_BASE_URL="http://localhost:3000/api"
 $env:SUPABASE_JWT_SECRET="your-project-jwt-secret"
 $env:SUPABASE_JWT_AUDIENCE="authenticated"
 npm.cmd run auth:supabase-smoke

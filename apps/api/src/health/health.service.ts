@@ -39,7 +39,7 @@ export class HealthService {
   }
 
   externalReadiness() {
-    const checks = [
+    const rawChecks = [
       this.mobileFirebaseRemovalReadiness(),
       this.mobileReleaseReadiness(),
       this.externalGroup('Supabase core', 'supabase', [
@@ -71,15 +71,26 @@ export class HealthService {
         { key: 'SMS_API_KEY', validator: 'secret' },
       ]),
       this.pushProviderExternalReadiness(),
-    ];
-    const currentStageChecks = checks.filter((check) => !isDeferredExternalCategory(check.category));
+    ] as ExternalReadinessCheck[];
+    const checks = rawChecks.map((check) => this.decorateExternalCheck(check));
+    const currentStageChecks = checks.filter((check) => check.scope === 'CURRENT_STAGE');
     const blockingCategories = uniqueCategories(
       currentStageChecks.filter((check) => check.status !== 'READY').map((check) => check.category),
     );
     const deferredCategories = uniqueCategories(
       checks
-        .filter((check) => isDeferredExternalCategory(check.category) && check.status !== 'READY')
+        .filter((check) => check.scope === 'DEFERRED' && check.status !== 'READY')
         .map((check) => check.category),
+    );
+    const currentStageCommands = uniqueStrings(
+      currentStageChecks
+        .filter((check) => check.status !== 'READY')
+        .flatMap((check) => check.commands ?? []),
+    );
+    const deferredCommands = uniqueStrings(
+      checks
+        .filter((check) => check.scope === 'DEFERRED' && check.status !== 'READY')
+        .flatMap((check) => check.commands ?? []),
     );
 
     return {
@@ -88,6 +99,8 @@ export class HealthService {
       productionE2EOk: checks.every((check) => check.status === 'READY'),
       blockingCategories,
       deferredCategories,
+      currentStageCommands,
+      deferredCommands,
       timestamp: new Date().toISOString(),
       checks,
     };
@@ -410,7 +423,36 @@ export class HealthService {
           : 'Set the missing or invalid environment values before production-like E2E testing.',
     };
   }
+
+  private decorateExternalCheck(check: ExternalReadinessCheck): ExternalReadinessCheck {
+    const metadata = externalReadinessMetadata(check.category, check.name);
+    const deferred = isDeferredExternalCategory(check.category);
+    return {
+      ...check,
+      scope: deferred ? 'DEFERRED' : 'CURRENT_STAGE',
+      deferred,
+      operatorAction: metadata.operatorAction,
+      commands: metadata.commands,
+      secretSafe: true,
+      detail: metadata.detailPrefix ? `${metadata.detailPrefix} ${check.detail}` : check.detail,
+    };
+  }
 }
+
+type ExternalReadinessCheck = {
+  name: string;
+  category: string;
+  status: 'READY' | 'PARTIAL' | 'BLOCKED';
+  configured: string[];
+  missing: string[];
+  invalid: string[];
+  detail: string;
+  scope?: 'CURRENT_STAGE' | 'DEFERRED';
+  deferred?: boolean;
+  operatorAction?: string;
+  commands?: string[];
+  secretSafe?: boolean;
+};
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
@@ -435,4 +477,91 @@ function isDeferredExternalCategory(category: string) {
 
 function uniqueCategories(categories: string[]) {
   return [...new Set(categories)];
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values)];
+}
+
+function externalReadinessMetadata(category: string, name: string) {
+  if (category === 'supabase') {
+    return {
+      operatorAction:
+        'Set Supabase core values in the ignored .env or server environment. Keep service role and JWT secret server-side only.',
+      commands: ['npm.cmd run external:check:supabase', 'npm.cmd run supabase:schema:check'],
+    };
+  }
+
+  if (category === 'maps') {
+    return {
+      operatorAction:
+        'Set MapTiler and Geoapify keys in the ignored .env or shell, then rerun map readiness before mobile map E2E.',
+      commands: ['npm.cmd run external:check:maps'],
+    };
+  }
+
+  if (category === 'storage') {
+    return {
+      detailPrefix:
+        'Local MVP can continue without upload E2E, but KYC/media upload flows need this before release.',
+      operatorAction:
+        'Configure MinIO, R2, or Supabase Storage S3 values outside Git, then run storage readiness and smoke.',
+      commands: ['npm.cmd run external:check:storage', 'npm.cmd run storage:smoke'],
+    };
+  }
+
+  if (category === 'supabase-auth') {
+    return {
+      operatorAction:
+        'Keep Nest/dev OTP for local work. Enable Supabase Phone Auth only after the chosen SMS service is ready.',
+      commands: ['npm.cmd run external:check:supabase-auth', 'npm.cmd run auth:supabase-smoke'],
+    };
+  }
+
+  if (category === 'payments') {
+    return {
+      operatorAction:
+        'Register MoMo/VNPay merchant values for staging E2E. Keep cash and mocked status checks until merchant credentials are ready.',
+      commands: ['npm.cmd run external:check:payments', 'node infra\\scripts\\api-smoke.mjs'],
+    };
+  }
+
+  if (category === 'sms') {
+    return {
+      operatorAction:
+        'Register the chosen SMS service and connect it only when production phone OTP E2E begins.',
+      commands: ['npm.cmd run external:check:supabase-auth'],
+    };
+  }
+
+  if (category === 'push') {
+    return {
+      operatorAction:
+        'Keep in-app notifications now. Add OneSignal credentials later for OS push E2E.',
+      commands: ['npm.cmd run external:check:production'],
+    };
+  }
+
+  if (category === 'mobile-release') {
+    return {
+      operatorAction:
+        'Create local Android release signing files and keystores outside Git before Play release.',
+      commands: ['npm.cmd run external:check:production'],
+    };
+  }
+
+  if (category === 'mobile') {
+    return {
+      operatorAction:
+        name.includes('Firebase')
+          ? 'Keep mobile Firebase-free before continuing Supabase migration work.'
+          : 'Run the mobile guard scripts from the repository.',
+      commands: ['node infra\\scripts\\check-mobile-firebase.mjs'],
+    };
+  }
+
+  return {
+    operatorAction: 'Fill the required values outside Git, then rerun the setup checks.',
+    commands: ['npm.cmd run external:check'],
+  };
 }

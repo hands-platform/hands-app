@@ -1318,10 +1318,10 @@ export function BookingMonitor({
               <th>Booking / stage</th>
               <th>Address / customer</th>
               <th>Customer choice</th>
-              <th>Partner supply</th>
+              <th title="Matching rule snapshot">Partner supply</th>
               <th>Chat / location</th>
               <th>Payment / wallet</th>
-              <th>Ops check</th>
+              <th title="Booking gate reason Action status strip">Ops check</th>
             </tr>
           </thead>
           <tbody>
