@@ -440,7 +440,7 @@ export function BookingMonitor({
     const selected = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Selected by customer');
     const marketplace = marketplaceLedgerRows.filter((row) => row.roleLabel === 'Marketplace participant');
     const firstPick = marketplaceLedgerRows.filter((row) => row.roleLabel === 'First-pick partner');
-    const waitingChoice = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Visible to customer');
+    const waitingChoice = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Customer-selectable');
     const declined = marketplaceLedgerRows.filter((row) => row.statusLabel === 'Declined');
     return {
       total: marketplaceLedgerRows.length,
@@ -1568,7 +1568,7 @@ const bookingViewOptions: Array<{
   {
     view: 'customer-choice',
     label: 'Stage 3 choice',
-    description: 'open bookings with accepted partners waiting for customer final selection.',
+      description: 'open bookings with joined/accepted partners waiting for customer final selection.',
     operatorHint:
       'Use this when customer support should guide the customer to choose one final partner before chat unlocks.',
   },
@@ -2020,7 +2020,7 @@ function buildMatchingEscalationBoard(
   );
   const noMarketplaceSupply = open.filter((booking) => marketplaceParticipants(booking).length === 0);
   const marketplaceReady = open.filter((booking) => marketplaceParticipants(booking).length > 0);
-  const customerFinalSelection = open.filter((booking) => bookingHasAcceptedPartner(booking));
+  const customerFinalSelection = open.filter((booking) => bookingHasCustomerSelectablePartner(booking));
   const matchedWithoutChat = bookings.filter((booking) => booking.status === 'MATCHED' && !booking.chatRoom);
   const chatReady = bookings.filter((booking) => Boolean(booking.chatRoom));
 
@@ -2062,10 +2062,10 @@ function buildMatchingEscalationBoard(
       tone: customerFinalSelection.length > 0 ? 'warn' : 'ok',
       detail:
         customerFinalSelection.length > 0
-          ? 'At least one partner accepted or joined; the customer still needs to lock the final partner.'
+      ? 'At least one partner joined or accepted; the customer still needs to lock the final partner.'
           : 'No open request is waiting on customer final selection.',
       operatorAction:
-        'Guide support to nudge the customer when accepted partners are waiting and the booking is still open.',
+      'Guide support to nudge the customer when joined/accepted partners are waiting and the booking is still open.',
       href: '/bookings?view=matching',
       bookings: customerFinalSelection,
       metrics: [
@@ -2099,7 +2099,7 @@ function buildBookingDispatchPartnerShortcuts(
   const firstPickWaiting = openMatching.filter(
     (booking) => booking.preferredProvider && isPreferredAwaitingDecision(booking),
   );
-  const customerSelection = openMatching.filter((booking) => bookingHasAcceptedPartner(booking));
+  const customerSelection = openMatching.filter((booking) => bookingHasCustomerSelectablePartner(booking));
   const cashDebt = bookings.filter((booking) => bookingCashDebtNeedsOps(booking));
   const locationChecks = bookings.filter((booking) => bookingLocationNeedsOps(booking, nowMs));
 
@@ -2165,7 +2165,7 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
   const noSupply = open.filter((booking) => marketplaceParticipants(booking).length === 0);
   const marketplaceVisible = open.filter((booking) => marketplaceParticipants(booking).length > 0);
   const backupAlerted = open.filter((booking) => bookingBackupAlertTraceSummary(booking).totalNotified > 0);
-  const customerChoice = open.filter((booking) => bookingHasAcceptedPartner(booking));
+  const customerChoice = open.filter((booking) => bookingHasCustomerSelectablePartner(booking));
   const matched = bookings.filter((booking) => booking.status === 'MATCHED');
   const matchedWithoutChat = matched.filter((booking) => !booking.chatRoom);
   const liveHandoff = bookings.filter((booking) =>
@@ -2295,7 +2295,7 @@ function humanizeClosureReason(reason: string) {
 
 function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStage {
   const marketplaceCount = marketplaceParticipants(booking).length;
-  const acceptedCount = acceptedParticipants(booking).length;
+  const selectableCount = customerSelectableParticipants(booking).length;
 
   if (terminalBookingStatuses.has(booking.status)) {
     return {
@@ -2335,11 +2335,11 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
     };
   }
 
-  if (booking.status === 'OPEN_MATCHING' && acceptedCount > 0 && !booking.selectedProvider) {
+  if (booking.status === 'OPEN_MATCHING' && selectableCount > 0 && !booking.selectedProvider) {
     return {
       key: 'customer-choice',
       label: 'Stage 3 choice',
-      detail: `${acceptedCount} accepted partner(s) are waiting for customer selection.`,
+      detail: `${selectableCount} customer-selectable partner(s) are waiting for customer selection.`,
       action: 'Prompt customer support to help the customer choose the final partner.',
       tone: 'warn',
       href: `/bookings/${booking.id}#participants`,
@@ -2410,13 +2410,13 @@ function buildMatchingEscalationRows(
       }
 
       const marketplaceCount = marketplaceParticipants(booking).length;
-      const acceptedCount = acceptedParticipants(booking).length;
+      const selectableCount = customerSelectableParticipants(booking).length;
       const windowLabel = bookingMatchingWindowLabel(booking, nowMs);
       const baseTags = [
         booking.status,
         windowLabel,
         `${marketplaceCount} marketplace`,
-        `${acceptedCount} accepted`,
+        `${selectableCount} selectable`,
       ];
 
       if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
@@ -2431,7 +2431,7 @@ function buildMatchingEscalationRows(
         };
       }
 
-      if (booking.status === 'OPEN_MATCHING' && acceptedCount > 0) {
+      if (booking.status === 'OPEN_MATCHING' && selectableCount > 0) {
         return {
           booking,
           title: 'Customer final partner selection needed',
@@ -3148,7 +3148,7 @@ function emptyBookingMessage(view: BookingView) {
     return 'No Stage 2 marketplace bookings need partner participation review right now.';
   }
   if (view === 'customer-choice') {
-    return 'No Stage 3 customer choice bookings are waiting. Accepted partners are not blocked on customer selection.';
+  return 'No Stage 3 customer choice bookings are waiting. Joined/accepted partners are not blocked on customer selection.';
   }
   if (view === 'handoff-repair') {
     return 'No Stage 4 handoff repair bookings are missing chat.';
@@ -3650,7 +3650,7 @@ function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingLi
 
 function bookingFinalGateReason(booking: AdminBooking) {
   const participantCount = marketplaceParticipants(booking).length;
-  const acceptedPartnerReady = bookingHasAcceptedPartner(booking);
+  const acceptedPartnerReady = bookingHasCustomerSelectablePartner(booking);
   const selectedPartnerReady = Boolean(booking.selectedProvider);
 
   if (bookingCashDebtNeedsOps(booking)) {
@@ -3900,7 +3900,7 @@ function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | nu
 function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): BookingMatchingRuleSnapshot {
   const policy = bookingMatchingPolicySnapshot(booking);
   const marketplaceCount = marketplaceParticipants(booking).length;
-  const acceptedCount = acceptedParticipants(booking).length;
+  const selectableCount = customerSelectableParticipants(booking).length;
   const responseWindow = policy?.providerResponseWindowMinutes ?? 10;
   const marketplaceRadius = policy?.backupProviderRadiusMeters ?? 10_000;
   const alertSummary = bookingBackupAlertTraceSummary(booking, nowMs);
@@ -3914,8 +3914,8 @@ function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): Book
           : 'not in open matching';
   const customerChoice = booking.selectedProvider
     ? `Customer final choice: ${partnerDisplayName(booking.selectedProvider)}`
-    : acceptedCount > 0
-      ? `Customer final choice: waiting, ${acceptedCount} accepted partner(s)`
+    : selectableCount > 0
+    ? `Customer final choice: waiting, ${selectableCount} selectable partner(s)`
       : 'Customer final choice: not ready yet';
 
   return {
@@ -3923,12 +3923,12 @@ function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): Book
     sourceTone: policy ? 'pill-info' : 'pill-warn',
     windowLabel: `First-pick window: ${responseWindow}m / ${windowState}`,
     radiusLabel: `Marketplace radius: ${formatMeters(marketplaceRadius)} from booking address`,
-    supplyLabel: `Marketplace supply: ${marketplaceCount} joined / ${acceptedCount} accepted / ${alertSummary.totalNotified} notified`,
+    supplyLabel: `Marketplace supply: ${marketplaceCount} joined / ${selectableCount} selectable / ${alertSummary.totalNotified} notified`,
     customerChoiceLabel: `${customerChoice}; no automatic assignment`,
     operatorAction: bookingMatchingRuleOperatorAction(
       booking,
       marketplaceCount,
-      acceptedCount,
+      selectableCount,
       alertSummary.totalNotified,
     ),
   };
@@ -3937,7 +3937,7 @@ function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): Book
 function bookingMatchingRuleOperatorAction(
   booking: AdminBooking,
   marketplaceCount: number,
-  acceptedCount: number,
+  selectableCount: number,
   notifiedCount: number,
 ) {
   if (booking.selectedProvider) {
@@ -3948,7 +3948,7 @@ function bookingMatchingRuleOperatorAction(
   if (booking.status !== 'OPEN_MATCHING') {
     return 'Open booking detail and continue from the latest factual status.';
   }
-  if (acceptedCount > 0) {
+  if (selectableCount > 0) {
     return 'Customer must select the final partner; do not auto-assign.';
   }
   if (marketplaceCount > 0) {
@@ -3978,7 +3978,7 @@ function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPo
 }
 
 function customerVisibleStateLabel(booking: AdminBooking) {
-  const acceptedCount = acceptedParticipants(booking).length;
+  const selectableCount = customerSelectableParticipants(booking).length;
   const marketplaceCount = marketplaceParticipants(booking).length;
 
   if (['CANCELLED', 'EXPIRED', 'REFUNDED', 'COMPLETED', 'NO_SHOW'].includes(booking.status)) {
@@ -3989,8 +3989,8 @@ function customerVisibleStateLabel(booking: AdminBooking) {
       booking.chatRoom ? ' with chat ready' : ' but chat not ready'
     }`;
   }
-  if (acceptedCount > 0) {
-    return `Customer screen: ${acceptedCount} accepted partner(s) ready for final choice`;
+  if (selectableCount > 0) {
+    return `Customer screen: ${selectableCount} joined/accepted partner(s) ready for final choice`;
   }
   if (
     booking.status === 'OPEN_MATCHING' &&
@@ -4311,7 +4311,7 @@ function buildMarketplaceOperationsCards(
 ): MarketplaceOperationsCard[] {
   const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const customerChoiceWaiting = bookings.filter(
-    (booking) => booking.status === 'OPEN_MATCHING' && bookingHasAcceptedPartner(booking),
+    (booking) => booking.status === 'OPEN_MATCHING' && bookingHasCustomerSelectablePartner(booking),
   );
   const noMarketplaceSupply = openBookings.filter(
     (booking) => marketplaceParticipants(booking).length === 0 && !booking.selectedProvider,
@@ -4334,7 +4334,7 @@ function buildMarketplaceOperationsCards(
     {
       title: 'Customer choice',
       value: `${customerChoiceWaiting.length}`,
-      detail: 'Accepted partners are visible and the customer has not selected a final partner yet.',
+      detail: 'Joined or accepted partners are visible and the customer has not selected a final partner yet.',
       tone: customerChoiceWaiting.length > 0 ? 'pill-info' : 'pill-neutral',
       href: '/bookings?view=customer-choice',
     },
@@ -4393,14 +4393,14 @@ function marketplaceParticipantStatusLabel(status: string) {
 }
 
 function marketplaceParticipantStatusTone(status: string) {
-  if (status === 'ACCEPTED' || status === 'SELECTED') {
+  if (status === 'SELECTED') {
     return 'pill-success';
+  }
+  if (isCustomerSelectableMarketplaceStatus(status)) {
+    return 'pill-info';
   }
   if (status === 'REJECTED') {
     return 'pill-info';
-  }
-  if (status === 'JOINED') {
-    return 'pill-warn';
   }
   return 'pill-neutral';
 }
@@ -4413,10 +4413,10 @@ function marketplaceParticipantChoiceState(booking: AdminBooking, participant: B
   if (selectedProviderId) {
     return { choiceLabel: 'Not final choice', choiceTone: 'pill-neutral' };
   }
-  if (participant.status === 'ACCEPTED' || participant.status === 'SELECTED') {
-    return { choiceLabel: 'Visible to customer', choiceTone: 'pill-info' };
+  if (isCustomerSelectableMarketplaceStatus(participant.status)) {
+    return { choiceLabel: 'Customer-selectable', choiceTone: 'pill-info' };
   }
-  return { choiceLabel: 'Not selectable now', choiceTone: 'pill-neutral' };
+  return { choiceLabel: 'Evidence-only', choiceTone: 'pill-neutral' };
 }
 
 function bookingParticipantTimestamp(participant: BookingParticipant) {
@@ -4456,14 +4456,18 @@ function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
   );
 }
 
-function acceptedParticipants(booking: AdminBooking) {
+function customerSelectableParticipants(booking: AdminBooking) {
   return (booking.participants ?? []).filter(
-    (participant) => participant.status === 'ACCEPTED' || participant.status === 'SELECTED',
+    (participant) => isCustomerSelectableMarketplaceStatus(participant.status) || participant.status === 'SELECTED',
   );
 }
 
-function bookingHasAcceptedPartner(booking: AdminBooking) {
-  return acceptedParticipants(booking).length > 0 && !booking.selectedProvider;
+function isCustomerSelectableMarketplaceStatus(status?: string | null) {
+  return status === 'JOINED' || status === 'ACCEPTED';
+}
+
+function bookingHasCustomerSelectablePartner(booking: AdminBooking) {
+  return customerSelectableParticipants(booking).length > 0 && !booking.selectedProvider;
 }
 
 function bookingMatchingEscalationNeedsOps(booking: AdminBooking, nowMs: number) {

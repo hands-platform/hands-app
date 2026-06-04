@@ -58,6 +58,10 @@ const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
 const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 
+function isCustomerSelectableParticipantStatus(status?: string | null) {
+  return status === 'JOINED' || status === 'ACCEPTED';
+}
+
 export default async function BookingDetailPage({ params }: PageProps) {
   const { id } = await params;
   const [booking, operationalPolicies, rawNotifications, providers] = await Promise.all([
@@ -2605,6 +2609,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                     <div className="filter-row">
                       <span className={`pill ${row.roleTone}`}>{row.role}</span>
                       <span className={`pill ${row.statusTone}`}>{row.status}</span>
+                      <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
                     </div>
                     <p className="muted">{row.decision}</p>
                   </td>
@@ -4079,8 +4084,11 @@ function buildBookingEvidenceBundleRows({
   bookingActivityRecords: BookingActivityRecord[];
 }) {
   const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
-  const acceptedParticipants =
-    booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+  const customerChoiceCandidates =
+    booking.participants?.filter(
+      (participant) =>
+        isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+    )
       .length ?? 0;
   const failedAlerts = notificationTrace.rows.filter((row) => row.deliveryStatuses.includes('FAILED')).length;
   const latestActivity = bookingActivityRecords[0];
@@ -4114,11 +4122,11 @@ function buildBookingEvidenceBundleRows({
     {
       lane: 'Partner',
       recordLabel: finalPartner?.id ? shortId(finalPartner.id) : 'Selection pending',
-      status: finalPartner?.id ? 'Selected' : `${acceptedParticipants} ready`,
-      tone: finalPartner?.id ? 'pill-success' : acceptedParticipants ? 'pill-warn' : 'pill-info',
+      status: finalPartner?.id ? 'Selected' : `${customerChoiceCandidates} selectable`,
+      tone: finalPartner?.id ? 'pill-success' : customerChoiceCandidates ? 'pill-warn' : 'pill-info',
       evidence: finalPartner
         ? `${providerName(finalPartner)} / ${providerLocationMetricValue(booking)}`
-        : `${booking.participants?.length ?? 0} participant row(s), ${acceptedParticipants} accepted row(s)`,
+        : `${booking.participants?.length ?? 0} participant row(s), ${customerChoiceCandidates} customer-selectable row(s)`,
       operatorUse: 'Confirm the customer final partner selection and marketplace/payout settlement requirements.',
       href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
     },
@@ -4222,8 +4230,11 @@ function buildBookingCloseoutChecklist({
   bookingActivityRecords: BookingActivityRecord[];
 }): BookingCloseoutChecklistItem[] {
   const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
-  const acceptedParticipants =
-    booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+  const customerChoiceCandidates =
+    booking.participants?.filter(
+      (participant) =>
+        isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+    )
       .length ?? 0;
   const addressReady = Boolean(booking.addressSnapshot);
   const chatNeeded = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
@@ -4254,18 +4265,18 @@ function buildBookingCloseoutChecklist({
     },
     {
       title: 'Customer final partner choice',
-      status: finalPartner ? 'Selected' : acceptedParticipants ? 'Choice pending' : 'Waiting',
+      status: finalPartner ? 'Selected' : customerChoiceCandidates ? 'Choice pending' : 'Waiting',
       detail: finalPartner
         ? `${providerName(finalPartner)} is linked as the selected partner for this booking.`
-        : `${acceptedParticipants} accepted partner(s) are available for the customer decision step.`,
+        : `${customerChoiceCandidates} joined/accepted partner(s) are available for the customer decision step.`,
       operatorRule: 'No automatic partner assignment; customer selection is the final matching authority.',
       href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
       className: finalPartner
         ? 'ops-task-done'
-        : acceptedParticipants
+        : customerChoiceCandidates
           ? 'ops-task-warning'
           : 'ops-task-blocked',
-      pillClass: finalPartner ? 'pill-success' : acceptedParticipants ? 'pill-warn' : 'pill-info',
+      pillClass: finalPartner ? 'pill-success' : customerChoiceCandidates ? 'pill-warn' : 'pill-info',
     },
     {
       title: 'Chat archive',
@@ -4513,8 +4524,11 @@ function buildBookingFinalGateReason({
   className: BookingCloseoutChecklistItem['className'];
   pillClass: BookingCloseoutChecklistItem['pillClass'];
 } {
-  const acceptedParticipants =
-    booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+  const customerChoiceCandidates =
+    booking.participants?.filter(
+      (participant) =>
+        isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+    )
       .length ?? 0;
   const selected = Boolean(booking.selectedProvider);
   const marketplaceParticipants =
@@ -4559,10 +4573,10 @@ function buildBookingFinalGateReason({
     };
   }
 
-  if (booking.status === 'OPEN_MATCHING' && acceptedParticipants > 0 && !selected) {
+  if (booking.status === 'OPEN_MATCHING' && customerChoiceCandidates > 0 && !selected) {
     return {
       title: 'Customer final choice',
-      detail: `${acceptedParticipants} partner(s) can take this booking, including ${marketplaceParticipants} marketplace participant(s). Chat opens only after the customer chooses the final partner.`,
+      detail: `${customerChoiceCandidates} partner(s) can be selected by the customer, including ${marketplaceParticipants} marketplace participant(s). Chat opens only after the customer chooses the final partner.`,
       operatorRule: 'Support the customer decision step; do not assign a partner automatically.',
       className: 'ops-task-warning',
       pillClass: 'pill-warn',
@@ -4573,7 +4587,7 @@ function buildBookingFinalGateReason({
     return {
       title: 'Partner supply wait',
       detail:
-        'No accepted partner is ready yet. Check 10km marketplace eligibility, partner app inbox, push delivery, and latest saved locations.',
+        'No joined/accepted partner is selectable yet. Check 10km marketplace eligibility, partner app inbox, push delivery, and latest saved locations.',
       operatorRule: 'Use factual alert, location, and participant records before support follow-up.',
       className: 'ops-task-warning',
       pillClass: 'pill-warn',
@@ -4803,8 +4817,11 @@ function bookingHandoffChecklist(
   latestLocation?: AdminLocationSnapshot,
 ) {
   const participantCount = booking.participants?.length ?? 0;
-  const acceptedCount =
-    booking.participants?.filter((participant) => ['ACCEPTED', 'SELECTED'].includes(participant.status))
+  const selectableCount =
+    booking.participants?.filter(
+      (participant) =>
+        isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
+    )
       .length ?? 0;
   const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
   const paymentLabel = booking.payment
@@ -4833,7 +4850,7 @@ function bookingHandoffChecklist(
       id: 'partner-response',
       label: 'Partner',
       title: finalPartner ? providerName(finalPartner) : 'Waiting for partner response',
-      detail: `${participantCount} partner(s) joined / ${acceptedCount} accepted. The customer remains the final decision maker.`,
+      detail: `${participantCount} partner(s) joined / ${selectableCount} customer-selectable. The customer remains the final decision maker.`,
       status: 'Partner shortlist',
       href: '#participants',
     },
@@ -4843,7 +4860,7 @@ function bookingHandoffChecklist(
       title: booking.selectedProvider ? 'Final partner selected' : 'Customer choice pending',
       detail: booking.selectedProvider
         ? `${providerName(booking.selectedProvider)} is recorded as the final partner.`
-        : 'Keep the customer waiting screen synced with accepted partner options.',
+        : 'Keep the customer waiting screen synced with joined/accepted partner options.',
       status: 'Customer screen',
       href: '#audit',
     },
@@ -5588,8 +5605,9 @@ function bookingOperatingSnapshot({
   notificationCount: number;
 }) {
   const participants = booking.participants ?? [];
-  const acceptedParticipants = participants.filter((participant) =>
-    ['ACCEPTED', 'SELECTED'].includes(participant.status),
+  const customerChoiceCandidates = participants.filter(
+    (participant) =>
+      isCustomerSelectableParticipantStatus(participant.status) || participant.status === 'SELECTED',
   );
   const preferredState = preferredParticipantState(booking);
   const paymentLabel = booking.payment
@@ -5654,7 +5672,7 @@ function bookingOperatingSnapshot({
       },
       {
         label: 'Marketplace supply',
-        value: `${participants.length} joined / ${acceptedParticipants.length} accepted`,
+        value: `${participants.length} joined / ${customerChoiceCandidates.length} selectable`,
         helper: 'Partners can participate while the customer waits.',
       },
       {
@@ -5687,7 +5705,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
         ? 'Monitor customer final selection'
         : 'Monitor partner participation',
       detail: booking.participants?.length
-        ? 'Accepted partners should be visible to the customer so the customer can choose the final partner.'
+        ? 'Joined or accepted partners should be visible to the customer so the customer can choose the final partner.'
         : 'Keep the first-pick window and marketplace participation visible until a partner joins or the booking expires.',
       href: '#alerts',
       hrefLabel: 'Open matching',
@@ -5881,7 +5899,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
         type: 'PARTNER',
         at: participant.respondedAt,
         title: `${providerName(participant.providerProfile)} responded`,
-        detail: `${participant.status} / customer can select from accepted partners.`,
+        detail: `${participant.status} / customer can select from joined or accepted partners.`,
         href: participant.providerProfile?.id
           ? `/partners/${participant.providerProfile.id}`
           : '#participants',
@@ -7637,8 +7655,8 @@ function bookingMvpAuthorityContract({
     savedPolicy.backupProviderRadiusMeters ??
     readOptionalNumber(byKey.get('matching.backup_provider_radius_meters')?.value) ??
     10000;
-  const acceptedParticipants = (booking.participants ?? []).filter(
-    (participant) => participant.status === 'ACCEPTED',
+  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
+    isCustomerSelectableParticipantStatus(participant.status),
   );
   const selectedPartner =
     booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);
@@ -7696,13 +7714,13 @@ function bookingMvpAuthorityContract({
       scope: 'No automatic assignment',
       status: selectedPartner
         ? 'Final partner selected'
-        : acceptedParticipants.length
+        : customerChoiceCandidates.length
           ? 'Customer choice pending'
-          : 'Waiting for accepted partner',
-      tone: selectedPartner ? 'pill-success' : acceptedParticipants.length ? 'pill-warn' : 'pill-info',
+          : 'Waiting for selectable partner',
+      tone: selectedPartner ? 'pill-success' : customerChoiceCandidates.length ? 'pill-warn' : 'pill-info',
       evidence: selectedPartner
         ? providerName(selectedPartner)
-        : `${acceptedParticipants.length} accepted partner(s), ${booking.participants?.length ?? 0} participant(s).`,
+        : `${customerChoiceCandidates.length} customer-selectable partner(s), ${booking.participants?.length ?? 0} participant(s).`,
       operatorUse: 'Do not auto-assign; keep the customer selection step visible before chat unlocks.',
       href: '#participants',
     },
@@ -7910,7 +7928,9 @@ function bookingDetailMatchingRuleSnapshot({
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
   const hasSavedPolicy = Object.values(savedPolicy).some((value) => value !== null);
   const participants = booking.participants ?? [];
-  const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
+  const customerChoiceCandidates = participants.filter((participant) =>
+    isCustomerSelectableParticipantStatus(participant.status),
+  );
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const finalPartner =
     booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);
@@ -7923,7 +7943,7 @@ function bookingDetailMatchingRuleSnapshot({
     ? booking.chatRoom
       ? 'Final partner and chat ready'
       : 'Final partner, chat missing'
-    : acceptedParticipants.length
+    : customerChoiceCandidates.length
       ? 'Customer final choice pending'
       : booking.status === 'OPEN_MATCHING'
         ? customerWaitPanel.signalStatus
@@ -7932,7 +7952,7 @@ function bookingDetailMatchingRuleSnapshot({
     ? booking.chatRoom
       ? 'pill-success'
       : 'pill-danger'
-    : acceptedParticipants.length
+    : customerChoiceCandidates.length
       ? 'pill-warn'
       : customerWaitPanel.signalTone;
 
@@ -7941,7 +7961,7 @@ function bookingDetailMatchingRuleSnapshot({
       ? 'Repair chat before service handoff.'
       : finalPartner
         ? 'Use chat, location, payment, and closeout evidence for the next operation.'
-        : acceptedParticipants.length
+        : customerChoiceCandidates.length
           ? 'Customer must select the final partner; operators should not assign one for them.'
           : booking.status === 'OPEN_MATCHING'
             ? 'Monitor first-pick, marketplace joins, and partner alert evidence.'
@@ -7969,11 +7989,11 @@ function bookingDetailMatchingRuleSnapshot({
       {
         label: 'Marketplace radius',
         value: formatDistanceMeters(radiusMeters),
-        helper: `${backupSupply.eligibleCount} eligible partner(s), ${participants.length} joined, ${acceptedParticipants.length} accepted.`,
+        helper: `${backupSupply.eligibleCount} eligible partner(s), ${participants.length} joined, ${customerChoiceCandidates.length} customer-selectable.`,
       },
       {
         label: 'Customer choice',
-        value: finalPartner ? providerName(finalPartner) : `${acceptedParticipants.length} accepted`,
+        value: finalPartner ? providerName(finalPartner) : `${customerChoiceCandidates.length} selectable`,
         helper: finalPartner
           ? 'Customer final partner choice is recorded.'
           : 'Final partner remains customer-selected; no automatic assignment is used.',
@@ -8020,6 +8040,9 @@ function bookingMarketplaceWalletEvidence({
 }) {
   const participants = booking.participants ?? [];
   const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
+  const customerChoiceCandidates = participants.filter((participant) =>
+    isCustomerSelectableParticipantStatus(participant.status),
+  );
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const selectedParticipants = participants.filter((participant) => participant.status === 'SELECTED');
   const finalPartner = booking.selectedProvider;
@@ -8028,14 +8051,14 @@ function bookingMarketplaceWalletEvidence({
   const excludedMarketplaceRows = backupSupply.rows.filter((row) => !row.eligible).length;
   const status = finalPartner
     ? 'Final choice recorded'
-    : acceptedParticipants.length
+    : customerChoiceCandidates.length
       ? 'Customer choice pending'
       : participants.length
         ? 'Joined partners visible'
         : 'Waiting for join';
   const tone = finalPartner
     ? 'pill-success'
-    : acceptedParticipants.length
+    : customerChoiceCandidates.length
       ? 'pill-warn'
       : participants.length
         ? 'pill-info'
@@ -8118,11 +8141,11 @@ function bookingMarketplaceWalletEvidence({
       {
         lane: 'Customer final choice',
         scope: 'HANDS does not automatically assign the final partner.',
-        status: finalPartner ? 'Recorded' : acceptedParticipants.length ? 'Pending' : 'Waiting',
-        tone: finalPartner ? 'pill-success' : acceptedParticipants.length ? 'pill-warn' : 'pill-info',
+        status: finalPartner ? 'Recorded' : customerChoiceCandidates.length ? 'Pending' : 'Waiting',
+        tone: finalPartner ? 'pill-success' : customerChoiceCandidates.length ? 'pill-warn' : 'pill-info',
         record: finalPartner
           ? providerName(finalPartner)
-          : `${acceptedParticipants.length} accepted partner(s), ${participants.length} participant row(s).`,
+          : `${customerChoiceCandidates.length} customer-selectable partner(s), ${participants.length} participant row(s).`,
         operatorUse:
           'Use this lane to confirm that the customer, not the system, created the final match before chat and service handoff.',
       },
@@ -8167,10 +8190,19 @@ function bookingParticipantLedger(
   const participants = booking.participants ?? [];
   const preferredProviderId = booking.preferredProvider?.id;
   const selectedProviderId = booking.selectedProvider?.id;
-  const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
+  const customerSelectableParticipants = participants.filter((participant) =>
+    isCustomerSelectableParticipantStatus(participant.status),
+  );
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const marketplaceParticipants = participants.filter(
     (participant) => participant.providerProfile?.id !== preferredProviderId,
+  );
+  const marketplaceCustomerSelectable = marketplaceParticipants.filter((participant) =>
+    isCustomerSelectableParticipantStatus(participant.status),
+  );
+  const marketplaceEvidenceOnly = marketplaceParticipants.filter(
+    (participant) =>
+      !isCustomerSelectableParticipantStatus(participant.status) && participant.status !== 'SELECTED',
   );
   const firstPickParticipant = participants.find(
     (participant) => participant.providerProfile?.id === preferredProviderId,
@@ -8178,19 +8210,16 @@ function bookingParticipantLedger(
   const selectedParticipant = participants.find(
     (participant) => participant.providerProfile?.id === selectedProviderId,
   );
-  const marketplaceAccepted = marketplaceParticipants.filter(
-    (participant) => participant.status === 'ACCEPTED' || participant.status === 'SELECTED',
-  );
   const status = booking.selectedProvider
     ? 'Final choice recorded'
-    : acceptedParticipants.length
+    : customerSelectableParticipants.length
       ? 'Customer choice pending'
       : participants.length
         ? 'Shortlist active'
         : 'Waiting for participants';
   const tone = booking.selectedProvider
     ? 'pill-success'
-    : acceptedParticipants.length
+    : customerSelectableParticipants.length
       ? 'pill-warn'
       : participants.length
         ? 'pill-info'
@@ -8213,7 +8242,7 @@ function bookingParticipantLedger(
       {
         label: 'Marketplace participants',
         value: `${marketplaceParticipants.length} joined`,
-        helper: `${marketplaceAccepted.length} accepted or selected / ${rejectedParticipants.length} rejected row(s).`,
+        helper: `${marketplaceCustomerSelectable.length} customer-selectable / ${marketplaceEvidenceOnly.length} evidence-only / ${rejectedParticipants.length} rejected row(s).`,
         href: '#participants',
       },
       {
@@ -8237,21 +8266,28 @@ function bookingParticipantLedger(
       const isFinal = partnerId === selectedProviderId;
       const role = isFinal ? 'Final partner' : isPreferred ? 'First-pick' : 'Marketplace';
       const roleTone = isFinal ? 'pill-success' : isPreferred ? 'pill-info' : 'pill-neutral';
+      const customerSelectable = isCustomerSelectableParticipantStatus(participant.status);
       const statusTone =
         participant.status === 'REJECTED'
           ? 'pill-warn'
           : participant.status === 'SELECTED'
             ? 'pill-success'
-            : participant.status === 'ACCEPTED'
+            : customerSelectable
               ? 'pill-info'
               : 'pill-neutral';
+      const choiceState = isFinal
+        ? 'Customer final choice'
+        : customerSelectable
+          ? 'Customer-selectable'
+          : 'Evidence-only';
+      const choiceTone = isFinal ? 'pill-success' : customerSelectable ? 'pill-info' : 'pill-neutral';
       const decision = isFinal
         ? 'Customer selected this partner as the final match.'
-        : participant.status === 'ACCEPTED'
-          ? 'Partner can take the booking; customer final choice is still the authority.'
+        : customerSelectable
+          ? 'Customer can choose this partner as the final match; the system will not auto-assign.'
           : participant.status === 'REJECTED'
             ? 'Partner declined or could not take this booking.'
-            : 'Partner is visible in the customer shortlist after joining.';
+            : 'Participant row is retained as evidence, but it is not a customer selection candidate.';
       const providerStatus =
         participant.providerStatusAtJoin ?? participant.providerProfile?.status ?? 'status unknown';
 
@@ -8264,6 +8300,8 @@ function bookingParticipantLedger(
         roleTone,
         status: participant.status,
         statusTone,
+        choiceState,
+        choiceTone,
         decision,
         distance: distanceLabel(participant.distanceMeters),
         timing: `Joined ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
@@ -8292,8 +8330,8 @@ function bookingCustomerWaitPanel(
     (savedPolicy.preferredAcceptMode ??
       readOptionalString(byKey.get('matching.preferred_accept_mode')?.value)) ===
     'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
-  const acceptedParticipants = (booking.participants ?? []).filter(
-    (participant) => participant.status === 'ACCEPTED',
+  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
+    isCustomerSelectableParticipantStatus(participant.status),
   );
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
@@ -8307,8 +8345,8 @@ function bookingCustomerWaitPanel(
   const expired = booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false;
   const customerPinReady = Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng));
   const backupWindowOpen = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW' || firstPickRejected || expired;
-  const waitingForCustomerChoice = customerConfirmMode && acceptedParticipants.length > 0 && !selected;
-  const waitingForPartnerJoin = booking.status === 'OPEN_MATCHING' && acceptedParticipants.length === 0;
+  const waitingForCustomerChoice = customerConfirmMode && customerChoiceCandidates.length > 0 && !selected;
+  const waitingForPartnerJoin = booking.status === 'OPEN_MATCHING' && customerChoiceCandidates.length === 0;
   const timer = matchingTimerStatus(booking.expiresAt, responseWindowMinutes);
 
   let signalStatus = 'Monitor';
@@ -8332,9 +8370,9 @@ function bookingCustomerWaitPanel(
   } else if (waitingForCustomerChoice) {
     signalStatus = 'Customer choice';
     signalTone = 'pill-warn';
-    headline = 'A partner accepted; the customer still needs to select the final partner.';
+    headline = 'A joined or accepted partner is ready for customer final selection.';
     detail =
-      'Make sure the customer app shows the accepted partner shortlist and can unlock chat after selection.';
+      'Make sure the customer app shows the joined/accepted partner shortlist and can unlock chat after selection.';
     nextActionLabel = 'Check participants';
   } else if (waitingForPartnerJoin && backupSupply.eligibleCount === 0) {
     signalStatus = 'Supply gap';
@@ -8385,8 +8423,8 @@ function bookingCustomerWaitPanel(
       detail: selected
         ? `Final partner: ${providerName(booking.selectedProvider ?? booking.preferredProvider)}.`
         : waitingForCustomerChoice
-          ? `${acceptedParticipants.length} accepted partner(s) are ready for customer selection.`
-          : 'No accepted partner is ready for final customer selection yet.',
+          ? `${customerChoiceCandidates.length} joined/accepted partner(s) are ready for customer selection.`
+          : 'No joined/accepted partner is ready for final customer selection yet.',
       action: customerConfirmMode
         ? 'Customer selects the final partner before chat unlocks.'
         : 'Policy conflicts with HANDS final-choice flow; return to customer-confirm mode.',
@@ -8416,7 +8454,7 @@ function bookingCustomerWaitPanel(
       status: backupSupply.eligibleCount ? 'Supply ready' : customerPinReady ? 'Supply low' : 'No pin',
       detail: backupSupply.decisionDetail,
       action: customerPinReady
-        ? `${backupSupply.eligibleCount} eligible, ${rejectedParticipants.length} rejected, ${acceptedParticipants.length} accepted.`
+        ? `${backupSupply.eligibleCount} eligible, ${rejectedParticipants.length} rejected, ${customerChoiceCandidates.length} selectable.`
         : 'Confirm customer pin before relying on radius search.',
       className: backupSupply.eligibleCount ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: backupSupply.eligibleCount ? 'pill-success' : 'pill-danger',
@@ -8439,9 +8477,9 @@ function bookingCustomerWaitPanel(
 
   const badges = [
     {
-      label: `${acceptedParticipants.length} accepted`,
-      tone: acceptedParticipants.length ? 'pill-success' : 'pill-neutral',
-      detail: 'Partners who accepted or are ready for final customer choice.',
+      label: `${customerChoiceCandidates.length} selectable`,
+      tone: customerChoiceCandidates.length ? 'pill-success' : 'pill-neutral',
+      detail: 'Partners who joined or accepted and can be shown for final customer choice.',
     },
     {
       label: `${rejectedParticipants.length} rejected`,
@@ -8480,8 +8518,8 @@ function bookingStageSnapshot(
   backupSupply: ReturnType<typeof bookingBackupPartnerSupply>,
 ): BookingStageSnapshot {
   const status = String(booking.status);
-  const acceptedParticipants = (booking.participants ?? []).filter(
-    (participant) => participant.status === 'ACCEPTED',
+  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
+    isCustomerSelectableParticipantStatus(participant.status),
   );
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
@@ -8530,11 +8568,11 @@ function bookingStageSnapshot(
     detail = 'Repair the chat room before the customer and partner lose coordination after match.';
     actionHref = `/bookings/${booking.id}#chat`;
     actionLabel = 'Repair chat';
-  } else if (status === 'OPEN_MATCHING' && acceptedParticipants.length > 0) {
+  } else if (status === 'OPEN_MATCHING' && customerChoiceCandidates.length > 0) {
     stage = 'Stage 3 - Customer choice';
     pillClass = 'pill-warn';
     noteClassName = 'ops-task-pending';
-    headline = 'Accepted partner(s) are waiting for customer final selection.';
+    headline = 'Joined or accepted partner(s) are waiting for customer final selection.';
     detail = customerWaitPanel.detail;
     actionHref = `/bookings/${booking.id}#participants`;
     actionLabel = 'Review shortlist';
@@ -8585,7 +8623,7 @@ function bookingStageSnapshot(
       },
       {
         label: 'Shortlist',
-        value: `${acceptedParticipants.length} accepted`,
+        value: `${customerChoiceCandidates.length} selectable`,
         helper: `${rejectedParticipants.length} rejected, ${backupSupply.eligibleCount} marketplace eligible.`,
       },
       {
@@ -8690,8 +8728,8 @@ function bookingOperationalPolicySnapshot(
     expiresAt === null || Number.isNaN(expiresAt)
       ? null
       : Math.max(0, Math.ceil((expiresAt - Date.now()) / 60_000));
-  const acceptedParticipants = (booking.participants ?? []).filter(
-    (participant) => participant.status === 'ACCEPTED',
+  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
+    isCustomerSelectableParticipantStatus(participant.status),
   );
   const selected = booking.status === 'MATCHED' || Boolean(booking.selectedProvider);
   const customerConfirmMode = String(acceptMode?.value) === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
@@ -8700,16 +8738,16 @@ function bookingOperationalPolicySnapshot(
     ? 'Customer final confirmation mode'
     : 'Legacy accept mode ignored';
   const decisionStatus =
-    customerConfirmMode && acceptedParticipants.length > 0 && !selected
+    customerConfirmMode && customerChoiceCandidates.length > 0 && !selected
       ? 'Customer action needed'
       : acceptMode?.enforced
         ? 'Policy enforced'
         : 'Policy default';
   const decisionTone =
-    customerConfirmMode && acceptedParticipants.length > 0 && !selected ? 'pill-warn' : 'pill-success';
+    customerConfirmMode && customerChoiceCandidates.length > 0 && !selected ? 'pill-warn' : 'pill-success';
   const decisionDetail = customerConfirmMode
-    ? acceptedParticipants.length > 0 && !selected
-      ? 'A partner accepted, but the customer still needs to confirm the final partner before chat is unlocked.'
+    ? customerChoiceCandidates.length > 0 && !selected
+      ? 'A partner joined or accepted, but the customer still needs to confirm the final partner before chat is unlocked.'
       : 'Preferred partner acceptance keeps the request open until the customer confirms the final partner.'
     : 'Preferred partner acceptance immediately locks the booking to that partner.';
 
