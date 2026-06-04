@@ -1,7 +1,18 @@
 import Link from 'next/link';
 
-import { AdminEarning, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
+import {
+  AdminEarning,
+  AdminOperationalPolicySetting,
+  AdminPayoutBatch,
+  adminGet,
+} from '../../lib/admin-api';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
+import {
+  type AdminLiveOperationsPolicy,
+  buildAdminLiveOperationsPolicy,
+  formatPolicyDistance,
+  humanizePolicyValue,
+} from '../../lib/operations-policy';
 import { markPayoutFailed, markPayoutPaid, markPayoutProcessing, updatePayoutTransferRef } from './actions';
 
 type PayoutsPageProps = {
@@ -10,9 +21,10 @@ type PayoutsPageProps = {
 
 export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const filters = buildPayoutFilters(searchParams ? await searchParams : {});
-  const [allBatches, allEarnings] = await Promise.all([
+  const [allBatches, allEarnings, policySettings] = await Promise.all([
     adminGet<AdminPayoutBatch[]>('/admin/payout-batches', []),
     adminGet<AdminEarning[]>('/admin/earnings', []),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const batches = sortBatches(allBatches.filter((batch) => isInDateRange(batch.createdAt, filters.range)));
   const earnings = allEarnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
@@ -22,6 +34,8 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const serviceEvidence = buildPayoutServiceEvidence(batches);
   const moneyFlowCards = buildPayoutMoneyFlowCards(summary, serviceEvidence);
   const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
+  const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
+  const appliedPayoutPolicyCards = buildAppliedPayoutPolicyCards(liveOperationsPolicy);
   const releasePolicyDesk = buildPayoutReleasePolicyDesk(batches, earnings, summary);
   const releaseCycleBoard = buildPayoutReleaseCycleBoard(batches, earnings);
   const marketplaceUnblockBridge = buildPayoutMarketplaceUnblockBridge(batches, earnings, summary);
@@ -104,6 +118,25 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
           <Link className="text-link" href="/operations-policy#policy-payout-batch-cycle-policy">
             Batch policy
           </Link>
+        </div>
+        <div className="risk-watch-header" style={{ marginTop: 14 }}>
+          <div>
+            <h3>Applied operations policy</h3>
+            <p className="muted">
+              Live Admin policy values used by finance before payout release, cash-fee clearance, and
+              marketplace join reopening.
+            </p>
+          </div>
+          <span className="pill pill-info">Live policy default</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {appliedPayoutPolicyCards.map((card) => (
+            <div key={card.label}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <small>{card.helper}</small>
+            </div>
+          ))}
         </div>
         <div className="ops-task-grid">
           {releasePolicyDesk.map((signal) => (
@@ -849,6 +882,12 @@ type PayoutMarketplaceUnblockItem = {
   pillClass: string;
 };
 
+type AppliedPayoutPolicyCard = {
+  label: string;
+  value: string;
+  helper: string;
+};
+
 type PayoutInclusionAuditRow = {
   id: string;
   status: 'Ready' | 'Hold' | 'Batched';
@@ -1084,6 +1123,31 @@ function buildPayoutReleasePolicyDesk(
       action: 'Use customer pages for booking and payment history, not partner cash-fee recovery.',
       className: 'ops-task-done',
       pillClass: 'pill-success',
+    },
+  ];
+}
+
+function buildAppliedPayoutPolicyCards(policy: AdminLiveOperationsPolicy): AppliedPayoutPolicyCard[] {
+  return [
+    {
+      label: 'Payout batch cycle',
+      value: humanizePolicyValue(policy.payoutBatchCycle),
+      helper: 'Positive partner earnings move through weekly, monthly, or admin-selected batches.',
+    },
+    {
+      label: 'Cash clearance',
+      value: humanizePolicyValue(policy.cashSettlementClearance),
+      helper: 'Cash-fee debt clears only with deposit evidence or an approved admin offset.',
+    },
+    {
+      label: 'Wallet gate',
+      value: humanizePolicyValue(policy.walletNegativeGate),
+      helper: 'Negative partner wallet blocks marketplace join and payout release until settled.',
+    },
+    {
+      label: 'Marketplace radius',
+      value: formatPolicyDistance(policy.marketplaceRadiusMeters),
+      helper: 'Used when reopened partners join eligible marketplace requests.',
     },
   ];
 }

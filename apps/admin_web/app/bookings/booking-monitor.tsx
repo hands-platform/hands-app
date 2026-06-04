@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
+import {
+  type AdminLiveOperationsPolicy,
+  formatPolicyDistance,
+  humanizePolicyValue,
+} from '../../lib/operations-policy';
 
 type Props = {
   bookings: AdminBooking[];
@@ -11,6 +16,7 @@ type Props = {
   initialView: BookingView;
   initialEvidenceFilter?: BookingEvidenceFilter;
   initialGateFilter?: BookingGateFilter;
+  liveOperationsPolicy: AdminLiveOperationsPolicy;
 };
 
 type BookingView =
@@ -287,6 +293,7 @@ export function BookingMonitor({
   initialView,
   initialEvidenceFilter = 'all',
   initialGateFilter = 'all',
+  liveOperationsPolicy,
 }: Props) {
   const router = useRouter();
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -417,6 +424,10 @@ export function BookingMonitor({
   const matchingEscalationBoard = useMemo(
     () => buildMatchingEscalationBoard(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
+  );
+  const livePolicyCards = useMemo(
+    () => buildLiveMatchingPolicyCards(liveOperationsPolicy),
+    [liveOperationsPolicy],
   );
   const matchingEscalationRows = useMemo(
     () => buildMatchingEscalationRows(orderedBookings, currentTimeMs),
@@ -802,6 +813,25 @@ export function BookingMonitor({
           <Link className="text-link" href="/operations-policy">
             Change matching rules
           </Link>
+        </div>
+        <div className="risk-watch-header" style={{ marginTop: 14 }}>
+          <div>
+            <h3>Applied operations policy</h3>
+            <p className="muted">
+              Live Admin policy values used as the default when a booking does not carry its own saved
+              matching snapshot.
+            </p>
+          </div>
+          <span className="pill pill-info">Live policy default</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {livePolicyCards.map((card) => (
+            <div key={card.label}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <small>{card.helper}</small>
+            </div>
+          ))}
         </div>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
           {matchingEscalationBoard.map((lane) => (
@@ -4557,6 +4587,36 @@ function buildMarketplaceOperatingQueue(
         'Confirm HANDS fee deposit or approved admin offset before marketplace participation and payout release reopen.',
       href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',
       bookings: cashDebtBookings,
+    },
+  ];
+}
+
+function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
+  return [
+    {
+      label: 'First-pick window',
+      value: `${policy.providerResponseWindowMinutes}m`,
+      helper: 'First-pick partner response timer before operators watch marketplace alternatives.',
+    },
+    {
+      label: 'Marketplace radius',
+      value: formatPolicyDistance(policy.marketplaceRadiusMeters),
+      helper: 'Partners inside the booking-address radius can join when other gates pass.',
+    },
+    {
+      label: 'Location freshness',
+      value: `${policy.marketplaceLocationFreshnessMinutes}m`,
+      helper: 'Partner last location must be fresh enough for marketplace participation.',
+    },
+    {
+      label: 'Invitation cap',
+      value: `${policy.marketplaceInvitationLimit}`,
+      helper: 'Maximum nearby partners exposed to a marketplace request.',
+    },
+    {
+      label: 'Wallet gate',
+      value: humanizePolicyValue(policy.walletNegativeGate),
+      helper: 'Negative partner wallet blocks marketplace join; customers never carry this debt.',
     },
   ];
 }

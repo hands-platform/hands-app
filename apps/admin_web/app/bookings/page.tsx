@@ -1,12 +1,14 @@
-import { AdminAuditLog, AdminBooking, adminGet } from '../../lib/admin-api';
+import { AdminAuditLog, AdminBooking, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
+import { buildAdminLiveOperationsPolicy } from '../../lib/operations-policy';
 import { BookingMonitor, type BookingEvidenceFilter, type BookingGateFilter } from './booking-monitor';
 
 type BookingsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function BookingsPage({ searchParams }: { searchParams?: BookingsPageSearchParams }) {
-  const [bookings, auditLogs] = await Promise.all([
+  const [bookings, auditLogs, policySettings] = await Promise.all([
     adminGet<AdminBooking[]>('/admin/bookings', []),
     adminGet<AdminAuditLog[]>('/admin/audit-logs', []),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const bookingCreateRejections = auditLogs.filter((log) => log.action === 'booking.create.rejected');
   const params = await searchParams;
@@ -21,6 +23,7 @@ export default async function BookingsPage({ searchParams }: { searchParams?: Bo
       initialView={initialView}
       initialEvidenceFilter={initialEvidenceFilter}
       initialGateFilter={initialGateFilter}
+      liveOperationsPolicy={buildAdminLiveOperationsPolicy(policySettings)}
     />
   );
 }
