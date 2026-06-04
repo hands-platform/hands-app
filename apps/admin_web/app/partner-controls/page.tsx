@@ -7,6 +7,11 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import {
+  formatDateTime,
+  formatMoney,
+  shortId as formatShortId,
+} from '../../lib/admin-format';
+import {
   createProviderReport,
   createProviderSanction,
   liftProviderSanction,
@@ -1967,10 +1972,6 @@ function cashDebtSettlementReference(providerProfileId: string) {
   return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
 }
 
-function formatMoney(value: number, currency = 'VND') {
-  return `${new Intl.NumberFormat('vi-VN').format(value)} ${currency}`;
-}
-
 function reportSearchText(report: AdminProviderReport) {
   return [
     report.id,
@@ -2073,11 +2074,9 @@ function statusPill(status: string) {
 }
 
 function shortId(value: string) {
-  return value.length > 12 ? `${value.slice(0, 8)}...` : value;
+  return formatShortId(value, { length: 8, ellipsis: true });
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return 'None';
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleString() : 'Invalid';
+  return formatDateTime(value, value ? 'Invalid' : 'None');
 }
