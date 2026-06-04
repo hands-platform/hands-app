@@ -36,6 +36,294 @@ import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 
 const PRICE_STEP_UNIT_VND = 100000;
 
+const adminUserSummarySelect = {
+  id: true,
+  phone: true,
+  email: true,
+  fullName: true,
+  roles: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.UserSelect;
+
+const adminAppSessionSummarySelect = {
+  id: true,
+  userId: true,
+  role: true,
+  deviceId: true,
+  platform: true,
+  appVersion: true,
+  ipAddress: true,
+  active: true,
+  lastSeenAt: true,
+  expiresAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.AppSessionSelect;
+
+const adminPushDeviceSummarySelect = {
+  id: true,
+  token: true,
+  platform: true,
+  enabled: true,
+  createdAt: true,
+  updatedAt: true,
+  deliveries: {
+    orderBy: { attemptedAt: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      status: true,
+      attemptedAt: true,
+      provider: true,
+      response: true,
+    },
+  },
+} satisfies Prisma.PushDeviceSelect;
+
+const adminProviderSummarySelect = {
+  id: true,
+  displayName: true,
+  status: true,
+  ratingAvg: true,
+  reviewCount: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  blockedAt: true,
+  user: { select: adminUserSummarySelect },
+} satisfies Prisma.ProviderProfileSelect;
+
+const adminAddressSnapshotSelect = {
+  id: true,
+  bookingId: true,
+  customerProfileId: true,
+  selectedLocationId: true,
+  address: true,
+  addressText: true,
+  latitude: true,
+  longitude: true,
+  source: true,
+  createdAt: true,
+} satisfies Prisma.BookingAddressSnapshotSelect;
+
+const adminServicePayoutRuleSummarySelect = {
+  id: true,
+  customerPrice: true,
+  providerPayoutAmount: true,
+  vatBps: true,
+  otherCostAmount: true,
+  currency: true,
+  active: true,
+  notes: true,
+} satisfies Prisma.ServicePayoutRuleSelect;
+
+const adminBookingServiceSummarySelect = {
+  id: true,
+  bookingId: true,
+  serviceId: true,
+  quantity: true,
+  price: true,
+  service: {
+    select: {
+      id: true,
+      serviceGroupKey: true,
+      name: true,
+      durationMin: true,
+      basePrice: true,
+      priceStep: true,
+      active: true,
+      payoutRules: {
+        where: { active: true },
+        orderBy: { customerPrice: 'asc' },
+        select: adminServicePayoutRuleSummarySelect,
+      },
+    },
+  },
+} satisfies Prisma.BookingServiceSelect;
+
+const adminRefundSummarySelect = {
+  id: true,
+  bookingId: true,
+  paymentId: true,
+  amount: true,
+  reason: true,
+  status: true,
+  createdAt: true,
+} satisfies Prisma.RefundSelect;
+
+const adminPaymentSummarySelect = {
+  id: true,
+  bookingId: true,
+  method: true,
+  status: true,
+  amount: true,
+  currency: true,
+  providerRef: true,
+  rawMeta: true,
+  refunds: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminRefundSummarySelect,
+  },
+} satisfies Prisma.PaymentSelect;
+
+const adminEarningSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  bookingId: true,
+  grossAmount: true,
+  platformFee: true,
+  withholdingAmount: true,
+  netAmount: true,
+  currency: true,
+  status: true,
+  availableAt: true,
+  paidAt: true,
+  payoutBatchId: true,
+  settlementRef: true,
+  settlementNotes: true,
+  settlementMethod: true,
+  createdAt: true,
+  platformFeeLogs: {
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: {
+      id: true,
+      grossAmount: true,
+      platformFeeAmount: true,
+      currency: true,
+      ruleSnapshot: true,
+      createdAt: true,
+    },
+  },
+  taxLogs: {
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: {
+      id: true,
+      grossAmount: true,
+      taxableAmount: true,
+      withholdingAmount: true,
+      currency: true,
+      ruleSnapshot: true,
+      createdAt: true,
+    },
+  },
+  walletLedgerEntries: {
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: {
+      id: true,
+      type: true,
+      sourceKey: true,
+      amount: true,
+      currency: true,
+      reference: true,
+      notes: true,
+      createdAt: true,
+    },
+  },
+} satisfies Prisma.ProviderEarningSelect;
+
+const adminChatRoomPresenceSelect = {
+  id: true,
+  messages: {
+    orderBy: { createdAt: 'desc' },
+    take: 1,
+    select: {
+      id: true,
+      createdAt: true,
+      body: true,
+      sender: { select: { id: true, phone: true, fullName: true, roles: true } },
+    },
+  },
+} satisfies Prisma.ChatRoomSelect;
+
+const adminBookingListSelect = {
+  id: true,
+  customerProfileId: true,
+  preferredProviderId: true,
+  selectedProviderId: true,
+  status: true,
+  scheduledStartAt: true,
+  scheduledEndAt: true,
+  openedAt: true,
+  expiresAt: true,
+  closedAt: true,
+  closedByRole: true,
+  closedReason: true,
+  closedNote: true,
+  createdAt: true,
+  updatedAt: true,
+  metadata: true,
+  address: true,
+  lat: true,
+  lng: true,
+  customerProfile: {
+    select: {
+      id: true,
+      user: { select: adminUserSummarySelect },
+    },
+  },
+  preferredProvider: { select: adminProviderSummarySelect },
+  selectedProvider: { select: adminProviderSummarySelect },
+  participants: {
+    orderBy: { joinedAt: 'asc' },
+    select: {
+      id: true,
+      status: true,
+      distanceMeters: true,
+      providerStatusAtJoin: true,
+      joinedAt: true,
+      respondedAt: true,
+      providerProfile: { select: adminProviderSummarySelect },
+    },
+  },
+  services: { select: adminBookingServiceSummarySelect },
+  addressSnapshot: { select: adminAddressSnapshotSelect },
+  payment: { select: adminPaymentSummarySelect },
+  refunds: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminRefundSummarySelect,
+  },
+  earning: { select: adminEarningSummarySelect },
+  chatRoom: { select: adminChatRoomPresenceSelect },
+} satisfies Prisma.BookingSelect;
+
+const adminCustomerBookingListSelect = {
+  id: true,
+  customerProfileId: true,
+  preferredProviderId: true,
+  selectedProviderId: true,
+  status: true,
+  scheduledStartAt: true,
+  scheduledEndAt: true,
+  expiresAt: true,
+  closedAt: true,
+  closedByRole: true,
+  closedReason: true,
+  closedNote: true,
+  createdAt: true,
+  updatedAt: true,
+  metadata: true,
+  address: true,
+  lat: true,
+  lng: true,
+  preferredProvider: { select: adminProviderSummarySelect },
+  selectedProvider: { select: adminProviderSummarySelect },
+  services: { select: adminBookingServiceSummarySelect },
+  addressSnapshot: { select: adminAddressSnapshotSelect },
+  payment: { select: adminPaymentSummarySelect },
+  refunds: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminRefundSummarySelect,
+  },
+  chatRoom: { select: { id: true } },
+} satisfies Prisma.BookingSelect;
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -73,58 +361,40 @@ export class AdminService {
     return this.prisma.customerProfile.findMany({
       orderBy: { id: 'desc' },
       take: 500,
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        addresses: true,
         user: {
-          include: {
+          select: {
+            ...adminUserSummarySelect,
             appSessions: {
               orderBy: { lastSeenAt: 'desc' },
               take: 3,
+              select: adminAppSessionSummarySelect,
             },
             pushDevices: {
               orderBy: { updatedAt: 'desc' },
               take: 3,
-              include: {
-                deliveries: {
-                  orderBy: { attemptedAt: 'desc' },
-                  take: 1,
-                },
-              },
+              select: adminPushDeviceSummarySelect,
             },
           },
         },
         selectedLocations: {
           orderBy: { createdAt: 'desc' },
           take: 5,
+          select: {
+            id: true,
+            latitude: true,
+            longitude: true,
+            addressText: true,
+            createdAt: true,
+          },
         },
         bookings: {
           orderBy: { createdAt: 'desc' },
           take: 25,
-          include: {
-            services: { include: { service: true } },
-            addressSnapshot: true,
-            payment: { include: { refunds: true } },
-            refunds: true,
-            review: true,
-            preferredProvider: { include: { user: true } },
-            selectedProvider: { include: { user: true } },
-            chatRoom: {
-              include: {
-                messages: {
-                  orderBy: { createdAt: 'desc' },
-                  take: 3,
-                  include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
-                },
-              },
-            },
-          },
-        },
-        reviews: {
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-          include: {
-            providerProfile: { include: { user: true } },
-            booking: { include: { services: { include: { service: true } } } },
-          },
+          select: adminCustomerBookingListSelect,
         },
       },
     });
@@ -1190,21 +1460,7 @@ export class AdminService {
     return this.prisma.booking.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: {
-        customerProfile: { include: { user: true } },
-        preferredProvider: { include: { user: true } },
-        selectedProvider: { include: { user: true } },
-        participants: { include: { providerProfile: { include: { user: true } } } },
-        services: { include: { service: true } },
-        addressSnapshot: true,
-        payment: true,
-        earning: {
-          include: {
-            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-          },
-        },
-        chatRoom: true,
-      },
+      select: adminBookingListSelect,
     });
   }
 
@@ -1215,20 +1471,44 @@ export class AdminService {
       },
       orderBy: { updatedAt: 'desc' },
       take: 200,
-      include: {
-        customerProfile: { include: { user: true } },
-        preferredProvider: { include: { user: true } },
-        selectedProvider: { include: { user: true } },
-        participants: { include: { providerProfile: { include: { user: true } } } },
-        services: { include: { service: true } },
-        payment: true,
+      select: {
+        id: true,
+        customerProfileId: true,
+        preferredProviderId: true,
+        selectedProviderId: true,
+        status: true,
+        scheduledStartAt: true,
+        scheduledEndAt: true,
+        createdAt: true,
+        updatedAt: true,
+        customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+        preferredProvider: { select: adminProviderSummarySelect },
+        selectedProvider: { select: adminProviderSummarySelect },
+        participants: {
+          orderBy: { joinedAt: 'asc' },
+          select: {
+            id: true,
+            status: true,
+            joinedAt: true,
+            respondedAt: true,
+            providerProfile: { select: adminProviderSummarySelect },
+          },
+        },
+        services: { select: adminBookingServiceSummarySelect },
+        payment: { select: adminPaymentSummarySelect },
         review: true,
         chatRoom: {
-          include: {
+          select: {
+            id: true,
             messages: {
               orderBy: { createdAt: 'asc' },
               take: 200,
-              include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
+              select: {
+                id: true,
+                body: true,
+                createdAt: true,
+                sender: { select: { id: true, phone: true, fullName: true, roles: true } },
+              },
             },
           },
         },
@@ -1673,20 +1953,44 @@ export class AdminService {
     return this.prisma.payment.findMany({
       orderBy: { id: 'desc' },
       take: 100,
-      include: {
+      select: {
+        ...adminPaymentSummarySelect,
         booking: {
-          include: {
-            customerProfile: { include: { user: true } },
-            selectedProvider: true,
-            earning: {
-              include: {
-                walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
+          select: {
+            id: true,
+            status: true,
+            createdAt: true,
+            customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+            selectedProvider: {
+              select: {
+                id: true,
+                displayName: true,
+                user: { select: adminUserSummarySelect },
               },
             },
+            earning: { select: adminEarningSummarySelect },
           },
         },
-        refunds: true,
-        callbackAttempts: { orderBy: { createdAt: 'desc' }, take: 5 },
+        callbackAttempts: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            paymentId: true,
+            method: true,
+            providerRef: true,
+            outcome: true,
+            signatureVerified: true,
+            verificationMode: true,
+            providerStatus: true,
+            gatewayTransactionId: true,
+            callbackAmount: true,
+            errorCode: true,
+            errorMessage: true,
+            rawPayload: true,
+            createdAt: true,
+          },
+        },
       },
     });
   }
