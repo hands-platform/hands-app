@@ -24,6 +24,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
   const moneyFlowChecks = buildPayoutMoneyFlowChecks(batches, serviceEvidence);
   const releasePolicyDesk = buildPayoutReleasePolicyDesk(batches, earnings, summary);
   const releaseCycleBoard = buildPayoutReleaseCycleBoard(batches, earnings);
+  const marketplaceUnblockBridge = buildPayoutMarketplaceUnblockBridge(batches, earnings, summary);
   const releaseQueue = buildPayoutReleaseQueue(batches);
   const inclusionAudit = buildPayoutInclusionAudit(earnings, batches);
 
@@ -156,9 +157,34 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             </tbody>
           </table>
         </div>
+        <div className="risk-watch-header" style={{ marginTop: 16 }}>
+          <div>
+            <h3>Marketplace and payout unblock bridge</h3>
+            <p className="muted">
+              Connects partner cash-fee debt to the two gates operators care about: marketplace join and
+              payout release. Partners can see marketplace demand, but cannot join bookings while the wallet
+              is negative.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=marketplace">
+            Marketplace monitor
+          </Link>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {marketplaceUnblockBridge.map((item) => (
+            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
+              <div>
+                <span className={`pill ${item.pillClass}`}>{item.status}</span>
+                <h3>{item.title}</h3>
+                <p className="muted">{item.detail}</p>
+              </div>
+              <small>{item.action}</small>
+            </Link>
+          ))}
+        </div>
       </section>
 
-      <div className="card" style={{ marginBottom: 16 }}>
+      <div className="card" id="release-blocker-queue" style={{ marginBottom: 16 }}>
         <div className="risk-watch-header">
           <div>
             <h2>Payout money flow</h2>
@@ -813,6 +839,16 @@ type PayoutReleaseCycleItem = {
   pillClass: string;
 };
 
+type PayoutMarketplaceUnblockItem = {
+  title: string;
+  status: string;
+  detail: string;
+  action: string;
+  href: string;
+  className: string;
+  pillClass: string;
+};
+
 type PayoutInclusionAuditRow = {
   id: string;
   status: 'Ready' | 'Hold' | 'Batched';
@@ -1108,6 +1144,85 @@ function buildPayoutReleaseCycleBoard(
       operatorCheck: 'Debt must be settled by deposit evidence or approved offset before marketplace and payout unlock.',
       nextAction: 'Open Cash Settlements for deposit or offset confirmation.',
       pillClass: cashDebt.length ? 'pill-danger' : 'pill-success',
+    },
+  ];
+}
+
+function buildPayoutMarketplaceUnblockBridge(
+  batches: AdminPayoutBatch[],
+  earnings: AdminEarning[],
+  summary: ReturnType<typeof buildSummary>,
+): PayoutMarketplaceUnblockItem[] {
+  const unbatchedCashDebt = earnings.filter((earning) => !earning.payoutBatchId && earning.netAmount < 0);
+  const cashDebtAmount = Math.abs(sumEarnings(unbatchedCashDebt, 'netAmount'));
+  const cashDebtPartnerCount = new Set(unbatchedCashDebt.map((earning) => earning.providerProfileId)).size;
+  const cashDebtCurrency = unbatchedCashDebt[0]?.currency ?? summary.currency;
+  const activePayoutHoldBatches = batches.filter((batch) => Boolean(activePayoutHold(batch)));
+  const activeBlockedBatches = batches.filter(
+    (batch) => !['PAID', 'CANCELLED'].includes(batch.status) && payoutBlockingReasons(batch).length > 0,
+  );
+  const batchCashDebtLeak = batches.filter((batch) =>
+    (batch.earnings ?? []).some((earning) => earning.netAmount < 0),
+  );
+  const readyForTransfer = batches.filter(
+    (batch) =>
+      !['PAID', 'CANCELLED'].includes(batch.status) &&
+      payoutBlockingReasons(batch).length === 0 &&
+      batch.totalNetAmount > 0,
+  );
+
+  return [
+    {
+      title: 'Marketplace join gate',
+      status: unbatchedCashDebt.length ? `${cashDebtPartnerCount} partner wallet(s)` : 'Clear',
+      detail: unbatchedCashDebt.length
+        ? `${formatMoney(cashDebtAmount, cashDebtCurrency)} unpaid HANDS fee or withholding blocks marketplace join.`
+        : 'No negative partner wallet is blocking marketplace join from the current earning range.',
+      action: unbatchedCashDebt.length
+        ? 'Partner can see marketplace demand, but join action is blocked until fee deposit or approved offset is posted.'
+        : 'Marketplace join follows booking-address radius, KYC, service, and app-presence rules.',
+      href: unbatchedCashDebt.length ? '/cash-settlements' : '/bookings?view=marketplace',
+      className: unbatchedCashDebt.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: unbatchedCashDebt.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Payout release gate',
+      status: `${activeBlockedBatches.length} blocked`,
+      detail: activeBlockedBatches.length
+        ? 'One or more payout batches still have a hold, missing reference, missing tax evidence, or cash debt leakage.'
+        : 'Active payout batches have no release blocker in this date range.',
+      action: activeBlockedBatches.length
+        ? 'Open the release blocker queue before marking any payout as paid.'
+        : `${readyForTransfer.length} active batch(es) can continue through finance review and transfer.`,
+      href: activeBlockedBatches.length ? '#release-blocker-queue' : '/finance-closeout',
+      className: activeBlockedBatches.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: activeBlockedBatches.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Cash debt must stay out of payout',
+      status: batchCashDebtLeak.length ? `${batchCashDebtLeak.length} batch leak` : 'Excluded',
+      detail: batchCashDebtLeak.length
+        ? 'A payout batch includes negative earning rows. Finance should remove or settle those rows before release.'
+        : 'Partner cash-fee debt is kept in Cash Settlements instead of being paid out as partner net.',
+      action: batchCashDebtLeak.length
+        ? 'Repair the batch so cash debt is settled by deposit evidence or admin offset, not bank payout.'
+        : 'Use Cash Settlements for wallet reopening, then Payouts for positive partner earnings.',
+      href: batchCashDebtLeak.length ? '/payouts?review=cash-debt-leak' : '/cash-settlements',
+      className: batchCashDebtLeak.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: batchCashDebtLeak.length ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Partner hold evidence',
+      status: `${activePayoutHoldBatches.length} hold`,
+      detail: activePayoutHoldBatches.length
+        ? 'A partner payout hold is active. This is separate from customer booking history and customer wallet state.'
+        : 'No active partner payout hold is attached to visible payout batches.',
+      action: activePayoutHoldBatches.length
+        ? 'Open partner detail, confirm the operational reason, and lift only after evidence is complete.'
+        : 'Keep partner controls factual with activity and finance evidence only.',
+      href: activePayoutHoldBatches.length ? '/partners?review=payout-hold' : '/partners',
+      className: activePayoutHoldBatches.length ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: activePayoutHoldBatches.length ? 'pill-danger' : 'pill-success',
     },
   ];
 }
