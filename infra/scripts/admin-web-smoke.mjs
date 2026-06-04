@@ -895,6 +895,7 @@ if (bookingLinkMatch) {
     'Excluded partner groups',
     'Marketplace partner supply for this booking',
     'Actual marketplace participant ledger',
+    'Joined evidence',
     'First-pick requirement',
     'Customer shortlist',
     'customer-selectable',

@@ -2707,6 +2707,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <thead>
               <tr>
                 <th>Partner</th>
+                <th>Joined evidence</th>
                 <th>Role and status</th>
                 <th>Timing and distance</th>
                 <th>Operations record</th>
@@ -2725,6 +2726,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
                     )}
                   </td>
                   <td>
+                    <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
+                    <p className="muted">{row.evidenceDetail}</p>
+                  </td>
+                  <td>
                     <div className="filter-row">
                       <span className={`pill ${row.roleTone}`}>{row.role}</span>
                       <span className={`pill ${row.statusTone}`}>{row.status}</span>
@@ -2741,7 +2746,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               ))}
               {participantLedger.rows.length === 0 && (
                 <tr>
-                  <td colSpan={4}>No partner has actually joined this booking yet.</td>
+                  <td colSpan={5}>No partner has actually joined this booking yet.</td>
                 </tr>
               )}
             </tbody>
@@ -8544,6 +8549,11 @@ function bookingParticipantLedger(
         partner: providerName(participant.providerProfile),
         identity: `${participant.providerProfile?.user?.phone ?? 'No phone'} / ${providerStatus}`,
         href: partnerId ? `/partners/${partnerId}` : null,
+        ...bookingParticipantEvidenceState({
+          isFinal,
+          isPreferred,
+          status: participant.status,
+        }),
         role,
         roleTone,
         status: participant.status,
@@ -8574,6 +8584,45 @@ function sortBookingParticipantsForOps(
       return leftRank - rightRank;
     }
     return bookingParticipantEventTime(right) - bookingParticipantEventTime(left);
+  };
+}
+
+function bookingParticipantEvidenceState(input: {
+  isFinal: boolean;
+  isPreferred: boolean;
+  status: string;
+}) {
+  if (input.isFinal || input.status === 'SELECTED') {
+    return {
+      evidenceLabel: 'Final selected row',
+      evidenceDetail:
+        'Customer chose this partner; the participant row stays in the booking archive after matching.',
+      evidenceTone: 'pill-success',
+    };
+  }
+
+  if (input.status === 'REJECTED') {
+    return {
+      evidenceLabel: 'Declined response row',
+      evidenceDetail:
+        'Decline is retained as response evidence, not as a customer-selectable marketplace option.',
+      evidenceTone: 'pill-info',
+    };
+  }
+
+  if (input.isPreferred) {
+    return {
+      evidenceLabel: 'First-pick response row',
+      evidenceDetail: 'Preferred partner evidence from the 10-minute first-pick response window.',
+      evidenceTone: 'pill-info',
+    };
+  }
+
+  return {
+    evidenceLabel: 'Marketplace join row',
+    evidenceDetail:
+      'Partner entered the customer shortlist from booking-address marketplace participation.',
+    evidenceTone: 'pill-info',
   };
 }
 
