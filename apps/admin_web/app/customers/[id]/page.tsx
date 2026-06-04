@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { MetricCard } from '../../../components/metric-card';
 import {
   AdminAppSession,
   AdminAuditLog,
@@ -1734,16 +1735,6 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
         </table>
       </section>
     </>
-  );
-}
-
-function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
-  return (
-    <div className="card">
-      <span className="muted">{label}</span>
-      <h2>{value}</h2>
-      <p className="muted">{helper}</p>
-    </div>
   );
 }
 

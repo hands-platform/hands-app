@@ -6,6 +6,7 @@ import {
   AdminPayoutBatch,
   adminGet,
 } from '../../lib/admin-api';
+import { formatMoney, formatRelativeTime } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
@@ -1950,30 +1951,10 @@ function activePayoutHold(batch: AdminPayoutBatch) {
   );
 }
 
-function formatMoney(amount: number, currency: string) {
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
-}
-
 function shortId(value: string) {
   return value.length > 12 ? value.slice(0, 12) : value;
 }
 
 function relativeTime(value: string) {
-  const diffMs = Date.now() - Date.parse(value);
-  if (!Number.isFinite(diffMs)) {
-    return 'Unknown time';
-  }
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) {
-    return 'Updated just now';
-  }
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return formatRelativeTime(value, { justNow: 'Updated just now' });
 }

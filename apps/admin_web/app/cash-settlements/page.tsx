@@ -5,6 +5,7 @@ import {
   AdminOperationalPolicySetting,
   adminGet,
 } from '../../lib/admin-api';
+import { formatMoney } from '../../lib/admin-format';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -1609,10 +1610,6 @@ function cashSettlementHref(input: { range: AdminDateRange; queue?: CashSettleme
   }
   const query = params.toString();
   return query ? `/cash-settlements?${query}` : '/cash-settlements';
-}
-
-function formatMoney(amount: number, currency: string) {
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
 }
 
 function shortId(value: string) {

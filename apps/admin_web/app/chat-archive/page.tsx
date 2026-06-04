@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
+import { formatDateTime as formatDate, shortId } from '../../lib/admin-format';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 import {
@@ -418,16 +420,6 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
   );
 }
 
-function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
-  return (
-    <div className="card">
-      <span className="muted">{label}</span>
-      <h2>{value}</h2>
-      <p className="muted">{helper}</p>
-    </div>
-  );
-}
-
 function readChatArchiveFilters(params: Record<string, string | string[] | undefined>): ChatArchiveFilters {
   return {
     q: readParam(params.q),
@@ -678,22 +670,8 @@ function readParam(value: string | string[] | undefined) {
   return readSearchParam(value);
 }
 
-function shortId(id?: string) {
-  if (!id) return 'unknown';
-  return id.slice(0, 8);
-}
-
 function dateMs(value?: string | null) {
   if (!value) return 0;
   const ms = new Date(value).getTime();
   return Number.isFinite(ms) ? ms : 0;
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return 'Not set';
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Bangkok',
-  }).format(new Date(value));
 }

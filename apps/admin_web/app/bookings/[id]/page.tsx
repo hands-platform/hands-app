@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { MetricCard } from '../../../components/metric-card';
 import {
   AdminAuditLog,
   AdminBookingDetail,
@@ -6001,16 +6002,6 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
     href: '#booking-activity',
     hrefLabel: 'Open timeline',
   };
-}
-
-function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
-  return (
-    <div className="card">
-      <p>{label}</p>
-      <h2>{value}</h2>
-      <p className="muted">{helper}</p>
-    </div>
-  );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {

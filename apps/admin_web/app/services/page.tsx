@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 import { AdminAuditLog, AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
+import { formatMoney, formatRelativeTime } from '../../lib/admin-format';
 import {
   bulkUpsertPayoutRules,
   createService,
@@ -2236,28 +2237,8 @@ function slugify(value: string) {
     .replace(/^_+|_+$/g, '');
 }
 
-function formatMoney(amount: number, currency: string) {
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
-}
-
 function relativeTime(value: string) {
-  const diffMs = Date.now() - Date.parse(value);
-  if (!Number.isFinite(diffMs)) {
-    return 'Unknown time';
-  }
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) {
-    return 'Updated just now';
-  }
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return formatRelativeTime(value, { justNow: 'Updated just now' });
 }
 
 function formatBps(value: number) {

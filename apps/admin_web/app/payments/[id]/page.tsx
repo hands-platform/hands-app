@@ -1,5 +1,11 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { MetricCard } from '../../../components/metric-card';
+import {
+  formatDateTime as formatDate,
+  formatMoney as money,
+  shortId,
+} from '../../../lib/admin-format';
 import {
   AdminAuditLog,
   AdminChatMessage,
@@ -287,16 +293,6 @@ export default async function PaymentDetailPage({ params }: PageProps) {
         </table>
       </section>
     </>
-  );
-}
-
-function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
-  return (
-    <div className="card">
-      <p>{label}</p>
-      <h2>{value}</h2>
-      <small className="muted">{helper}</small>
-    </div>
   );
 }
 
@@ -678,22 +674,4 @@ function compactValue(value: unknown) {
     return String(value);
   }
   return JSON.stringify(value).slice(0, 160);
-}
-
-function money(amount?: number | null, currency = 'VND') {
-  if (amount === undefined || amount === null) {
-    return 'Not set';
-  }
-  return `${amount.toLocaleString()} ${currency}`;
-}
-
-function formatDate(value?: string | null) {
-  if (!value) {
-    return 'Not set';
-  }
-  return new Date(value).toLocaleString();
-}
-
-function shortId(value: string) {
-  return value.slice(0, 8);
 }

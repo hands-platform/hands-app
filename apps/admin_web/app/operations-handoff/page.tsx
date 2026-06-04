@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { MetricCard } from '../../components/metric-card';
 import {
   AdminAppSession,
   AdminAuditLog,
@@ -1243,26 +1244,6 @@ function shortTarget(target?: string | null) {
 function trimText(value: string, maxLength: number) {
   if (value.length <= maxLength) return value;
   return `${value.slice(0, Math.max(0, maxLength - 1)).trim()}...`;
-}
-
-function MetricCard({
-  label,
-  value,
-  helper,
-  href,
-}: {
-  label: string;
-  value: number | string;
-  helper: string;
-  href: string;
-}) {
-  return (
-    <Link className="card" href={href}>
-      <p>{label}</p>
-      <h2>{value}</h2>
-      <small className="muted">{helper}</small>
-    </Link>
-  );
 }
 
 function buildBookingHandoffQueue(bookings: AdminBooking[]) {

@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { MetricCard } from '../../components/metric-card';
 import { AdminCustomer, adminGet } from '../../lib/admin-api';
+import { formatDateTime as formatDate } from '../../lib/admin-format';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 
@@ -575,16 +577,6 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
   );
 }
 
-function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
-  return (
-    <div className="card">
-      <span className="muted">{label}</span>
-      <h2>{value}</h2>
-      <p className="muted">{helper}</p>
-    </div>
-  );
-}
-
 function buildCustomerFilters(params: Record<string, string | string[] | undefined>): CustomerFilters {
   return {
     q: readSearchParam(params.q),
@@ -1101,15 +1093,6 @@ function compactJson(value: unknown) {
   } catch {
     return 'Metadata unavailable';
   }
-}
-
-function formatDate(value?: string | null) {
-  if (!value) return 'Not set';
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Bangkok',
-  }).format(new Date(value));
 }
 
 function formatMoney(value: number, currency = 'VND') {

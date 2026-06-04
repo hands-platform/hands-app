@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
+import { formatMoney, formatRelativeTime } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
 
@@ -1461,32 +1462,10 @@ function settlementMethodLabel(method: string) {
   return method;
 }
 
-function formatMoney(amount: number, currency: string) {
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
-}
-
 function shortId(value: string) {
   return value.length > 12 ? value.slice(0, 12) : value;
 }
 
 function relativeTime(value: string) {
-  const timestamp = Date.parse(value);
-  if (!Number.isFinite(timestamp)) {
-    return 'Unknown time';
-  }
-  const diffMs = Date.now() - timestamp;
-  const absoluteMinutes = Math.floor(Math.abs(diffMs) / 60000);
-  const suffix = diffMs >= 0 ? 'ago' : 'from now';
-  if (absoluteMinutes < 1) {
-    return diffMs >= 0 ? 'just now' : 'in less than 1m';
-  }
-  if (absoluteMinutes < 60) {
-    return `${absoluteMinutes}m ${suffix}`;
-  }
-  const hours = Math.floor(absoluteMinutes / 60);
-  if (hours < 24) {
-    return `${hours}h ${suffix}`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d ${suffix}`;
+  return formatRelativeTime(value, { includeFuture: true });
 }

@@ -8,6 +8,7 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
+import { formatMoney } from '../../lib/admin-format';
 import {
   AdminDateRange,
   dateRangeLabel,
@@ -621,10 +622,6 @@ function InfoTile({ label, value }: { label: string; value: string }) {
       <h3>{value}</h3>
     </div>
   );
-}
-
-function formatMoney(amount: number, currency: string) {
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
 }
 
 function buildFinanceCloseoutFilters(params: Record<string, string | string[] | undefined>) {
