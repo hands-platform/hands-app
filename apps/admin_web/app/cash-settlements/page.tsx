@@ -5,7 +5,7 @@ import {
   AdminOperationalPolicySetting,
   adminGet,
 } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
+import { formatMoney, shortId as formatShortId } from '../../lib/admin-format';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -1613,7 +1613,7 @@ function cashSettlementHref(input: { range: AdminDateRange; queue?: CashSettleme
 }
 
 function shortId(value: string) {
-  return value.length > 12 ? value.slice(0, 12) : value;
+  return formatShortId(value, { length: 12 });
 }
 
 function relativeTime(value?: string | null) {

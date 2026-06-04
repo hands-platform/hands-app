@@ -15,6 +15,7 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
+import { formatMoney, shortId as formatShortId } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { addOperationsHandoffNote } from './actions';
@@ -1571,12 +1572,7 @@ function operatorDisplayText(value?: string | null) {
 }
 
 function shortId(id?: string | null) {
-  if (!id) return '-';
-  return id.length > 10 ? `${id.slice(0, 8)}...` : id;
-}
-
-function formatMoney(amount: number, currency = 'VND') {
-  return `${Math.round(amount).toLocaleString()} ${currency}`;
+  return formatShortId(id, { length: 8, ellipsis: true });
 }
 
 function dateValue(value?: string | null) {
