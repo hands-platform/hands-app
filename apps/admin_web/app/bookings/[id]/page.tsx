@@ -121,6 +121,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeTrace = bookingFinanceTrace(booking);
   const financeSummaryCards = bookingFinanceSummaryCards(financeTrace);
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
+  const cashFeeSettlementPath = bookingCashFeeSettlementPath(booking, financeTrace);
   const refundLedgerRows = bookingRefundRows(booking);
   const operatorNoteLines = bookingOperatorNoteLines(booking);
   const closureSummary = bookingClosureSummary(booking);
@@ -2777,6 +2778,53 @@ export default async function BookingDetailPage({ params }: PageProps) {
             />
           )}
           <InfoRow label="Service feedback" value={booking.review ? 'Submitted' : 'Not submitted'} />
+        </div>
+
+        <div className="card">
+          <div className="risk-watch-header">
+            <div>
+              <h2>Cash fee settlement path</h2>
+              <p className="muted">
+                Operational view for cash bookings: customer cash collection, HANDS fee debt, tax/fee logs,
+                partner wallet impact, and the exact unblock path for marketplace participation and payout.
+              </p>
+            </div>
+            <span className={`pill ${cashFeeSettlementPath.tone}`}>{cashFeeSettlementPath.status}</span>
+          </div>
+          <div className="service-trace-summary" style={{ marginTop: 12 }}>
+            {cashFeeSettlementPath.cards.map((card) => (
+              <a href={card.href} key={card.label}>
+                <span>{card.label}</span>
+                <strong>{card.value}</strong>
+                <small>{card.helper}</small>
+              </a>
+            ))}
+          </div>
+          <table className="table" style={{ marginTop: 14 }}>
+            <thead>
+              <tr>
+                <th>Settlement lane</th>
+                <th>Status</th>
+                <th>Evidence</th>
+                <th>Operator next step</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cashFeeSettlementPath.rows.map((row) => (
+                <tr key={row.lane}>
+                  <td>
+                    <strong>{row.lane}</strong>
+                    <p className="muted">{row.scope}</p>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.tone}`}>{row.status}</span>
+                  </td>
+                  <td>{row.evidence}</td>
+                  <td>{row.nextStep}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
 
         <div className="card">
@@ -7150,6 +7198,124 @@ function bookingCashDebtNeedsSettlement(booking: AdminBookingDetail) {
     (booking.earning?.netAmount ?? 0) < 0 &&
     booking.earning?.status !== 'PAID'
   );
+}
+
+function bookingCashFeeSettlementPath(
+  booking: AdminBookingDetail,
+  financeTrace: ReturnType<typeof bookingFinanceTrace>,
+) {
+  const isCash = financeTrace.paymentMethod === 'CASH';
+  const cashDebt = bookingCashDebtNeedsSettlement(booking);
+  const walletEntries = [
+    ...(booking.walletLedgerEntries ?? []),
+    ...(booking.earning?.walletLedgerEntries ?? []),
+  ];
+  const taxLogCount = (booking.taxLogs ?? booking.earning?.taxLogs ?? []).length;
+  const platformFeeLogCount = (booking.platformFeeLogs ?? booking.earning?.platformFeeLogs ?? []).length;
+  const settlementAmount = Math.abs(booking.earning?.netAmount ?? financeTrace.walletTotalAmount ?? 0);
+  const settlementRef = `HANDS-CASH-${shortId(booking.id).toUpperCase()}`;
+  const selectedPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const status = !isCash
+    ? 'Non-cash flow'
+    : cashDebt
+      ? 'Deposit or offset needed'
+      : walletEntries.length
+        ? 'Cash ledger clear'
+        : 'Cash closeout pending';
+  const tone = !isCash
+    ? 'pill-neutral'
+    : cashDebt
+      ? 'pill-danger'
+      : walletEntries.length
+        ? 'pill-success'
+        : 'pill-warn';
+
+  return {
+    status,
+    tone,
+    cards: [
+      {
+        label: 'Payment method',
+        value: financeTrace.paymentMethod,
+        helper: isCash
+          ? 'Partner collected customer cash directly.'
+          : 'Customer payment is handled outside the cash-debt path.',
+        href: '#payment',
+      },
+      {
+        label: 'HANDS fee due',
+        value: financeTrace.platformFee,
+        helper: `${financeTrace.withholding} withholding / ${financeTrace.netHandsFee} net HANDS fee.`,
+        href: '#finance',
+      },
+      {
+        label: 'Wallet debt',
+        value: cashDebt ? money(settlementAmount, financeTrace.currency) : financeTrace.walletLedger,
+        helper: cashDebt
+          ? 'Marketplace join and payout release stay blocked until settlement evidence clears this.'
+          : 'No active negative wallet block is visible on this booking.',
+        href: cashDebt ? '/cash-settlements' : '#finance',
+      },
+      {
+        label: 'Settlement reference',
+        value: cashDebt ? settlementRef : 'Not required',
+        helper: cashDebt
+          ? 'Use this reference for company deposit evidence or admin offset notes.'
+          : 'No cash fee deposit reference is needed right now.',
+        href: cashDebt ? '/cash-settlements' : '#booking-activity',
+      },
+    ],
+    rows: [
+      {
+        lane: 'Cash collection source',
+        scope: 'Whether the partner collected customer cash directly.',
+        status: isCash ? 'Cash booking' : 'Non-cash',
+        tone: isCash ? 'pill-info' : 'pill-neutral',
+        evidence: `${financeTrace.paymentMethod} / customer ${financeTrace.customerPrice} / partner ${
+          selectedPartner ? providerName(selectedPartner) : 'not selected'
+        }`,
+        nextStep: isCash
+          ? 'Confirm cash fee accounting after service completion.'
+          : 'Use normal payment capture, refund, and payout checks.',
+      },
+      {
+        lane: 'Fee and tax evidence',
+        scope: 'Tax, platform fee, VAT/other cost, and withholding records.',
+        status:
+          taxLogCount || platformFeeLogCount
+            ? `${taxLogCount} tax / ${platformFeeLogCount} fee log(s)`
+            : 'Logs pending',
+        tone: taxLogCount || platformFeeLogCount ? 'pill-info' : 'pill-warn',
+        evidence: `${financeTrace.platformFee} HANDS fee / ${financeTrace.feeCosts} / ${financeTrace.withholding}`,
+        nextStep:
+          'Keep tax and fee policy versioned in Admin; do not hardcode rates in the booking workflow.',
+      },
+      {
+        lane: 'Partner wallet impact',
+        scope: 'Wallet ledger created by cash settlement or payout closeout.',
+        status: cashDebt ? 'Negative wallet' : walletEntries.length ? 'Ledger saved' : 'No ledger row',
+        tone: cashDebt ? 'pill-danger' : walletEntries.length ? 'pill-success' : 'pill-warn',
+        evidence: `${financeTrace.walletLedger} / ${walletEntries.length} wallet row(s)`,
+        nextStep: cashDebt
+          ? 'Block marketplace participation and payout release until deposit or approved offset is recorded.'
+          : walletEntries.length
+            ? 'Keep the wallet row as settlement evidence.'
+            : 'Create or inspect wallet ledger generation during completed closeout.',
+      },
+      {
+        lane: 'Unblock path',
+        scope: 'How operations clears a negative wallet state.',
+        status: cashDebt ? 'Action required' : 'No active block',
+        tone: cashDebt ? 'pill-danger' : 'pill-success',
+        evidence: cashDebt
+          ? `${settlementRef} / ${money(settlementAmount, financeTrace.currency)} due`
+          : 'Marketplace participation and payout release are not blocked by this booking.',
+        nextStep: cashDebt
+          ? 'Collect company deposit evidence or apply an approved admin offset, then settle the cash debt.'
+          : 'No settlement action needed from this booking.',
+      },
+    ],
+  };
 }
 
 function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinanceTrace>) {

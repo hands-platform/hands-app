@@ -886,6 +886,7 @@ if (bookingLinkMatch) {
     '10km participation rule',
     'Marketplace radius',
     'Payment and refund',
+    'Cash fee settlement path',
     'Service feedback',
     'Finance trace',
     'Chat transcript',
