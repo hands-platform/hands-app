@@ -17,6 +17,7 @@ import {
   apiGet,
   adminGet,
 } from '../lib/admin-api';
+import { formatMoney, shortId as formatShortId } from '../lib/admin-format';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -6040,9 +6041,9 @@ function opsQueueSeverityLabel(severity: OpsQueueItem['severity']) {
 }
 
 function shortId(id?: string) {
-  return id ? id.slice(0, 8) : 'unknown';
+  return formatShortId(id, { fallback: 'unknown' });
 }
 
 function money(amount?: number, currency = 'VND') {
-  return `${Number(amount ?? 0).toLocaleString('vi-VN')} ${currency}`;
+  return formatMoney(amount ?? 0, currency);
 }

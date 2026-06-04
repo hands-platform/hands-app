@@ -7,6 +7,7 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
+import { formatDateTime } from '../../lib/admin-format';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import {
   approveProvider,
@@ -5155,14 +5156,7 @@ function formatBytes(value: number) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return 'not recorded';
-  }
-  const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) {
-    return 'invalid time';
-  }
-  return new Date(timestamp).toLocaleString();
+  return formatDateTime(value, value ? 'invalid time' : 'not recorded');
 }
 
 function dateMs(value?: string | null) {

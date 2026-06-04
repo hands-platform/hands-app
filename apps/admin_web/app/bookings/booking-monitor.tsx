@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
+import { formatMoney, shortId as formatShortId } from '../../lib/admin-format';
 import {
   type AdminLiveOperationsPolicy,
   formatPolicyDistance,
@@ -3947,7 +3948,7 @@ function nextAction(booking: AdminBooking) {
 }
 
 function shortId(id: string) {
-  return id.slice(0, 8);
+  return formatShortId(id);
 }
 
 function displayMarketplaceText(value: string) {
@@ -4223,7 +4224,7 @@ function relativeTimeLabel(value: string, nowMs: number) {
 }
 
 function money(amount: number, currency = 'VND') {
-  return `${amount.toLocaleString()} ${currency}`;
+  return formatMoney(amount, currency);
 }
 
 function coordinatePairLabel(lat: unknown, lng: unknown) {

@@ -14,6 +14,7 @@ import {
   AdminProviderWalletLedgerEntry,
   adminGet,
 } from '../../../lib/admin-api';
+import { formatMoney, shortId as formatShortId } from '../../../lib/admin-format';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import {
   addBookingOpsNote,
@@ -10285,10 +10286,7 @@ function toRadians(value: number) {
 }
 
 function money(amount?: number | null, currency = 'VND') {
-  if (amount === undefined || amount === null) {
-    return 'Not set';
-  }
-  return `${amount.toLocaleString()} ${currency}`;
+  return formatMoney(amount, currency);
 }
 
 function formatDate(value?: string | null) {
@@ -10318,5 +10316,5 @@ function minutesSince(value?: string | null) {
 }
 
 function shortId(id: string) {
-  return id.slice(0, 8);
+  return formatShortId(id);
 }

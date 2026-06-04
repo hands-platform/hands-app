@@ -1,4 +1,5 @@
 import { AdminAuditLog, adminGet } from '../../lib/admin-api';
+import { formatMoney as money } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import Link from 'next/link';
 
@@ -892,10 +893,6 @@ function serviceOptionLabel(value: Record<string, unknown>) {
     return null;
   }
   return duration ? `${name} / ${duration} min` : name;
-}
-
-function money(amount: number, currency = 'VND') {
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} ${currency}`;
 }
 
 function formatBps(value: number | null) {

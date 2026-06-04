@@ -10,6 +10,7 @@ import {
   AdminNotification,
   adminGet,
 } from '../../../lib/admin-api';
+import { shortId as formatShortId } from '../../../lib/admin-format';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -3642,8 +3643,7 @@ function stringifyAddress(value: unknown) {
 }
 
 function shortId(id?: string) {
-  if (!id) return 'unknown';
-  return id.slice(0, 8);
+  return formatShortId(id, { fallback: 'unknown' });
 }
 
 function compactJson(value: unknown) {

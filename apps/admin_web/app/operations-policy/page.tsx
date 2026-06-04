@@ -6,6 +6,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
+import { formatMoney } from '../../lib/admin-format';
 import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -3599,10 +3600,6 @@ function policyRelatedBookingRecordSet(input: {
 
 function shortId(id: string) {
   return id.length > 10 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
-}
-
-function formatMoney(amount: number) {
-  return `${new Intl.NumberFormat('vi-VN').format(amount)} VND`;
 }
 
 function policyNumberValue(settings: AdminOperationalPolicySetting[], key: string) {
