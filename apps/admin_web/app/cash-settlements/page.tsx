@@ -29,6 +29,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       ? mergeAuthoritativeSummary(visibleSummary, apiSummary)
       : visibleSummary;
   const debtCauseCards = buildDebtCauseCards(rows, summary);
+  const settlementRuleCards = buildCashSettlementRuleCards(summary);
   const recoverySteps = buildWalletRecoverySteps(rows, providers, summary);
   const settlementHandoff = buildCashSettlementHandoffMap(rows, providers, summary);
   const commandCards = buildCommandCards(rows, providers, summary);
@@ -109,7 +110,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
 
       <section className="grid" style={{ marginTop: 16, marginBottom: 16 }}>
         <div className="card">
-          <p>Blocked partners</p>
+          <p>Marketplace-held partners</p>
           <h2>{summary.providerCount}</h2>
         </div>
         <div className="card">
@@ -141,6 +142,33 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           <h2>
             {summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'OK'}
           </h2>
+        </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="risk-watch-header">
+          <div>
+            <h2>Cash fee operating rules</h2>
+            <p className="muted">
+              Use this as the first read before finance calls a partner or clears a wallet. The rule is
+              factual: cash fee debt gates marketplace participation, not customer access or account status.
+            </p>
+          </div>
+          <Link className="text-link" href="/operations-policy?review=wallet">
+            Wallet policy
+          </Link>
+        </div>
+        <div className="ops-task-grid">
+          {settlementRuleCards.map((card) => (
+            <div className={`ops-task-card ${card.className}`} key={card.title}>
+              <div>
+                <span className={`pill ${card.pillClass}`}>{card.status}</span>
+                <h3>{card.title}</h3>
+                <p className="muted">{card.detail}</p>
+              </div>
+              <small>{card.action}</small>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -357,7 +385,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                     <Link className="pill" href={`/partners/${row.earning.providerProfileId}`}>
                       Partner
                     </Link>
-                    <span className="pill pill-danger">Wallet blocked</span>
+                    <span className="pill pill-danger">Marketplace join blocked</span>
                   </div>
                 </td>
                 <td>
@@ -924,6 +952,54 @@ function buildSummary(rows: CashSettlementRow[], providers: CashSettlementProvid
   };
 }
 
+function buildCashSettlementRuleCards(summary: CashSettlementSummary): CommandCard[] {
+  const hasDebt = summary.rowCount > 0;
+
+  return [
+    {
+      title: 'Why the wallet is negative',
+      status: hasDebt ? `${summary.rowCount} debt row(s)` : 'Clear',
+      detail: hasDebt
+        ? `Cash bookings created ${formatMoney(
+            summary.debtAmount,
+            summary.currency,
+          )} of unpaid HANDS fee or withholding debt.`
+        : 'There is no open cash fee debt in the current queue.',
+      action: 'Keep booking, payment, earning, and wallet references aligned before clearing debt.',
+      className: hasDebt ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: hasDebt ? 'pill-warn' : 'pill-success',
+    },
+    {
+      title: 'Marketplace gate',
+      status: hasDebt ? 'Join blocked' : 'Join open',
+      detail: hasDebt
+        ? 'Negative-wallet partners can see marketplace requests, but cannot join marketplace bookings.'
+        : 'No negative-wallet marketplace join gate is active from the visible cash settlement queue.',
+      action: 'The partner app should guide the partner to settle the fee before marketplace participation.',
+      className: hasDebt ? 'ops-task-blocked' : 'ops-task-done',
+      pillClass: hasDebt ? 'pill-danger' : 'pill-success',
+    },
+    {
+      title: 'Customer wallet rule',
+      status: 'Never negative',
+      detail: 'Customers do not carry partner cash-fee debt. Customer browsing, booking, and chat history stay factual.',
+      action: 'Do not create customer labels or negative wallet balances for this settlement flow.',
+      className: 'ops-task-done',
+      pillClass: 'pill-success',
+    },
+    {
+      title: 'Clearance evidence',
+      status: summary.missingPaymentEvidenceCount ? `${summary.missingPaymentEvidenceCount} check` : 'Evidence ready',
+      detail: summary.missingPaymentEvidenceCount
+        ? 'Some rows need payment evidence review before finance should clear the partner wallet.'
+        : 'Visible rows have enough linked payment evidence for finance review.',
+      action: 'Use a bank deposit reference or approved admin offset memo; do not clear debt from a verbal promise.',
+      className: summary.missingPaymentEvidenceCount ? 'ops-task-pending' : 'ops-task-done',
+      pillClass: summary.missingPaymentEvidenceCount ? 'pill-warn' : 'pill-success',
+    },
+  ];
+}
+
 function mergeAuthoritativeSummary(
   visibleSummary: CashSettlementSummary,
   apiSummary: AdminCashSettlementSummary | null,
@@ -956,14 +1032,14 @@ function buildCommandCards(
 
   return [
     {
-      title: 'Blocked wallets',
+      title: 'Marketplace-held wallets',
       status: `${summary.providerCount} PARTNER(S)`,
       detail: `${summary.rowCount} open cash settlement row(s), ${formatMoney(
         summary.debtAmount,
         summary.currency,
       )} total. ${summary.cashPaymentRowCount} row(s) are linked to cash payment evidence.`,
       action: summary.providerCount
-        ? 'Collect partner deposit or approve admin offset before marketplace join or payout release resumes.'
+        ? 'Collect partner deposit or approve admin offset before marketplace participation or payout release resumes.'
         : 'No wallet is currently blocked by cash fee debt.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
@@ -981,7 +1057,7 @@ function buildCommandCards(
             .join(' / ')
         : 'No partner is above the high-debt review threshold.',
       action: highDebtProviders.length
-        ? 'Prioritize these partners before allowing more cash work.'
+        ? 'Prioritize these partners before reopening marketplace participation or payout release.'
         : 'Normal settlement queue priority.',
       className: highDebtProviders.length ? 'ops-task-pending' : 'ops-task-done',
       pillClass: highDebtProviders.length ? 'pill-warn' : 'pill-success',
