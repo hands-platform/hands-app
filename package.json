@@ -37,6 +37,7 @@
     "local:stop": "powershell -ExecutionPolicy Bypass -File infra/scripts/stop-hands-local.ps1",
     "local:status": "powershell -ExecutionPolicy Bypass -File infra/scripts/status-hands-local.ps1",
     "dev-env:check": "powershell -ExecutionPolicy Bypass -File infra/scripts/check-dev-env.ps1",
+    "verify:scope": "powershell -ExecutionPolicy Bypass -File infra/scripts/verify-scope.ps1",
     "verify:local": "powershell -ExecutionPolicy Bypass -File infra/scripts/verify-local.ps1",
     "backup:db": "powershell -ExecutionPolicy Bypass -File infra/scripts/backup-db.ps1",
     "logs:collect": "powershell -ExecutionPolicy Bypass -File infra/scripts/collect-logs.ps1",
