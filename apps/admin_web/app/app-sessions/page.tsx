@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AdminAppSession, adminGet } from '../../lib/admin-api';
+import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 
 type SessionState = 'live' | 'recent' | 'stale' | 'expired';
 type AppSessionsPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -574,26 +575,4 @@ function sessionUserLabel(session: AdminAppSession) {
 
 function shortDeviceId(deviceId: string) {
   return deviceId.length > 24 ? `${deviceId.slice(0, 12)}...${deviceId.slice(-6)}` : deviceId;
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(new Date(value));
-}
-
-function formatRelativeTime(value: string) {
-  const timestamp = Date.parse(value);
-  if (!Number.isFinite(timestamp)) {
-    return 'unknown';
-  }
-  const diffMs = Date.now() - timestamp;
-  const diffMinutes = Math.max(0, Math.round(diffMs / 60_000));
-  if (diffMinutes < 1) return 'just now';
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 48) return `${diffHours}h ago`;
-  return `${Math.round(diffHours / 24)}d ago`;
 }
