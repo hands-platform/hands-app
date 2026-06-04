@@ -1,5 +1,10 @@
 import Link from 'next/link';
-import { AdminCashSettlementSummary, AdminEarning, adminGet } from '../../lib/admin-api';
+import {
+  AdminCashSettlementSummary,
+  AdminEarning,
+  AdminOperationalPolicySetting,
+  adminGet,
+} from '../../lib/admin-api';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -7,6 +12,12 @@ import {
   normalizeDateRange,
   readSearchParam,
 } from '../../lib/date-range';
+import {
+  type AdminLiveOperationsPolicy,
+  buildAdminLiveOperationsPolicy,
+  formatPolicyDistance,
+  humanizePolicyValue,
+} from '../../lib/operations-policy';
 import { settleCashFeeDebt } from './actions';
 
 type CashSettlementsPageProps = {
@@ -15,9 +26,10 @@ type CashSettlementsPageProps = {
 
 export default async function CashSettlementsPage({ searchParams }: CashSettlementsPageProps) {
   const filters = buildCashSettlementFilters(searchParams ? await searchParams : {});
-  const [earnings, apiSummary] = await Promise.all([
+  const [earnings, apiSummary, policySettings] = await Promise.all([
     adminGet<AdminEarning[]>('/admin/cash-settlement-earnings', []),
     adminGet<AdminCashSettlementSummary | null>('/admin/cash-settlement-summary', null),
+    adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
   const filteredEarnings = earnings.filter((earning) => isInDateRange(earning.createdAt, filters.range));
   const allRowsInRange = buildCashSettlementRows(filteredEarnings);
@@ -36,6 +48,8 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
   const evidenceChecklist = buildCashSettlementEvidenceChecklist(rows, providers, summary);
   const executionDesk = buildCashSettlementExecutionDesk(rows, providers, summary);
   const priorityBoard = buildCashSettlementPriorityBoard(rows);
+  const liveOperationsPolicy = buildAdminLiveOperationsPolicy(policySettings);
+  const appliedCashSettlementPolicyCards = buildAppliedCashSettlementPolicyCards(liveOperationsPolicy);
 
   return (
     <>
@@ -254,6 +268,25 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           <Link className="text-link" href="/operations-policy?review=wallet">
             Wallet policy
           </Link>
+        </div>
+        <div className="risk-watch-header" style={{ marginTop: 14 }}>
+          <div>
+            <h3>Applied operations policy</h3>
+            <p className="muted">
+              Live Admin policy values used by finance before clearing partner cash-fee debt and reopening
+              marketplace participation.
+            </p>
+          </div>
+          <span className="pill pill-info">Live policy default</span>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          {appliedCashSettlementPolicyCards.map((card) => (
+            <div key={card.label}>
+              <span>{card.label}</span>
+              <strong>{card.value}</strong>
+              <small>{card.helper}</small>
+            </div>
+          ))}
         </div>
         <div className="ops-task-grid">
           {settlementRuleCards.map((card) => (
@@ -619,6 +652,12 @@ type CashSettlementPriorityItem = {
   reason: string;
   requiredEvidence: string[];
   unlockResult: string[];
+};
+
+type AppliedCashSettlementPolicyCard = {
+  label: string;
+  value: string;
+  helper: string;
 };
 
 type EvidenceChecklistItem = {
@@ -1222,6 +1261,33 @@ function buildCashSettlementRuleCards(summary: CashSettlementSummary): CommandCa
       action: 'Use a bank deposit reference or approved admin offset memo; do not clear debt from a verbal promise.',
       className: summary.missingPaymentEvidenceCount ? 'ops-task-pending' : 'ops-task-done',
       pillClass: summary.missingPaymentEvidenceCount ? 'pill-warn' : 'pill-success',
+    },
+  ];
+}
+
+function buildAppliedCashSettlementPolicyCards(
+  policy: AdminLiveOperationsPolicy,
+): AppliedCashSettlementPolicyCard[] {
+  return [
+    {
+      label: 'Cash clearance',
+      value: humanizePolicyValue(policy.cashSettlementClearance),
+      helper: 'Partner cash-fee debt clears only with deposit evidence or an approved admin offset.',
+    },
+    {
+      label: 'Wallet gate',
+      value: humanizePolicyValue(policy.walletNegativeGate),
+      helper: 'Negative partner wallet blocks marketplace join until settlement is posted.',
+    },
+    {
+      label: 'Payout batch cycle',
+      value: humanizePolicyValue(policy.payoutBatchCycle),
+      helper: 'Positive earnings return to weekly, monthly, or admin-selected payout batches after clearance.',
+    },
+    {
+      label: 'Marketplace radius',
+      value: formatPolicyDistance(policy.marketplaceRadiusMeters),
+      helper: 'Reopened partners can join eligible marketplace bookings inside the booking-address radius.',
     },
   ];
 }
