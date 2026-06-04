@@ -900,6 +900,7 @@ if (bookingLinkMatch) {
     'Policy pin source',
     '10km participation rule',
     'Marketplace radius',
+    'Partner app message: 수수료를 입금하지 않아 예약에 참여 할수 없습니다.',
     'Payment and refund',
     'Cash fee settlement path',
     'Service feedback',
