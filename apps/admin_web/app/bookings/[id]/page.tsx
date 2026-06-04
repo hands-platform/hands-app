@@ -2603,6 +2603,18 @@ export default async function BookingDetailPage({ params }: PageProps) {
               </a>
             ))}
           </div>
+          <div className="setup-stage-list" style={{ marginTop: 14 }}>
+            {participantLedger.selectionTrace.map((item) => (
+              <div className="setup-stage-item" key={item.label}>
+                <span>{item.label}</span>
+                <div>
+                  <strong>{item.value}</strong>
+                  <p className="muted">{item.helper}</p>
+                </div>
+                <span className={`pill ${item.tone}`}>{item.status}</span>
+              </div>
+            ))}
+          </div>
           <table className="table" style={{ marginTop: 14 }}>
             <thead>
               <tr>
@@ -8235,6 +8247,10 @@ function bookingParticipantLedger(
   const selectedParticipant = participants.find(
     (participant) => participant.providerProfile?.id === selectedProviderId,
   );
+  const firstPickSelectable = firstPickParticipant
+    ? isCustomerSelectableParticipantForFinalChoice(firstPickParticipant, preferredProviderId)
+    : false;
+  const selectedFromMarketplace = Boolean(selectedProviderId && selectedProviderId !== preferredProviderId);
   const status = booking.selectedProvider
     ? 'Final choice recorded'
     : customerSelectableParticipants.length
@@ -8285,7 +8301,60 @@ function bookingParticipantLedger(
         href: '#marketplace-supply',
       },
     ],
-    rows: participants.map((participant) => {
+    selectionTrace: [
+      {
+        label: '1. First-pick requirement',
+        status: booking.preferredProvider
+          ? firstPickParticipant
+            ? firstPickParticipant.status
+            : 'Requested'
+          : 'Not used',
+        tone: booking.preferredProvider
+          ? firstPickSelectable || selectedProviderId === preferredProviderId
+            ? 'pill-success'
+            : firstPickParticipant?.status === 'REJECTED'
+              ? 'pill-warn'
+              : 'pill-info'
+          : 'pill-neutral',
+        value: booking.preferredProvider ? providerName(booking.preferredProvider) : 'No preferred partner',
+        helper: firstPickSelectable
+          ? 'Preferred partner accepted and can be chosen by the customer.'
+          : firstPickParticipant?.status === 'JOINED'
+            ? 'Preferred partner is recorded as first-pick evidence, but is not customer-selectable until acceptance.'
+            : firstPickParticipant?.status === 'REJECTED'
+              ? 'Preferred partner declined; marketplace partners remain as customer options.'
+              : booking.preferredProvider
+                ? 'Waiting for the first-pick partner response window.'
+                : 'Booking was opened without a first-pick partner.',
+      },
+      {
+        label: '2. Marketplace participation',
+        status: marketplaceParticipants.length ? 'Participants recorded' : 'Waiting',
+        tone: marketplaceParticipants.length ? 'pill-info' : 'pill-neutral',
+        value: `${marketplaceParticipants.length} actual row(s)`,
+        helper: `${formatDistanceMeters(backupSupply.radiusMeters)} booking-address radius / ${notificationTrace.backupBatches.length} alert batch(es).`,
+      },
+      {
+        label: '3. Customer shortlist',
+        status: customerSelectableParticipants.length ? 'Selectable' : 'Not ready',
+        tone: customerSelectableParticipants.length ? 'pill-warn' : 'pill-info',
+        value: `${customerSelectableParticipants.length} customer-selectable`,
+        helper:
+          'Selectable means accepted first-pick partner, or marketplace partner who joined/accepted. Evidence-only rows are not customer choices.',
+      },
+      {
+        label: '4. Final match',
+        status: booking.selectedProvider ? 'Customer selected' : 'Pending',
+        tone: booking.selectedProvider ? 'pill-success' : 'pill-neutral',
+        value: booking.selectedProvider ? providerName(booking.selectedProvider) : 'No final partner yet',
+        helper: booking.selectedProvider
+          ? selectedFromMarketplace
+            ? 'Customer selected a marketplace participant instead of the first-pick partner.'
+            : 'Customer selected the first-pick partner after acceptance.'
+          : 'No automatic assignment; customer final choice is required before matched service handoff.',
+      },
+    ],
+    rows: [...participants].sort(sortBookingParticipantsForOps(preferredProviderId, selectedProviderId)).map((participant) => {
       const partnerId = participant.providerProfile?.id;
       const isPreferred = partnerId === preferredProviderId;
       const isFinal = partnerId === selectedProviderId;
@@ -8330,10 +8399,55 @@ function bookingParticipantLedger(
         decision,
         distance: distanceLabel(participant.distanceMeters),
         timing: `Joined ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
-        operatorUse: `Participant ${shortId(participant.id)} is retained as actual marketplace evidence for this booking.`,
+        operatorUse: `Participant ${shortId(participant.id)} is retained as actual booking evidence. ${
+          isPreferred
+            ? 'First-pick JOINED is not customer-selectable until partner acceptance.'
+            : 'Marketplace JOINED/ACCEPTED can appear in the customer shortlist.'
+        }`,
       };
     }),
   };
+}
+
+function sortBookingParticipantsForOps(
+  preferredProviderId?: string | null,
+  selectedProviderId?: string | null,
+) {
+  return (left: BookingDetailParticipant, right: BookingDetailParticipant) => {
+    const leftRank = bookingParticipantOpsRank(left, preferredProviderId, selectedProviderId);
+    const rightRank = bookingParticipantOpsRank(right, preferredProviderId, selectedProviderId);
+    if (leftRank !== rightRank) {
+      return leftRank - rightRank;
+    }
+    return bookingParticipantEventTime(right) - bookingParticipantEventTime(left);
+  };
+}
+
+function bookingParticipantOpsRank(
+  participant: BookingDetailParticipant,
+  preferredProviderId?: string | null,
+  selectedProviderId?: string | null,
+) {
+  const partnerId = participant.providerProfile?.id;
+  if (partnerId === selectedProviderId || participant.status === 'SELECTED') {
+    return 0;
+  }
+  if (partnerId === preferredProviderId) {
+    return 1;
+  }
+  if (isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId)) {
+    return 2;
+  }
+  if (participant.status === 'REJECTED') {
+    return 3;
+  }
+  return 4;
+}
+
+function bookingParticipantEventTime(participant: BookingDetailParticipant) {
+  const raw = participant.respondedAt ?? participant.joinedAt;
+  const parsed = raw ? Date.parse(raw) : 0;
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function bookingCustomerWaitPanel(

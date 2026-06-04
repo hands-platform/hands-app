@@ -888,6 +888,8 @@ if (bookingLinkMatch) {
     'Excluded partner groups',
     'Marketplace partner supply for this booking',
     'Actual marketplace participant ledger',
+    'First-pick requirement',
+    'Customer shortlist',
     'customer-selectable',
     'First-pick partner',
     'Booking-address radius',
