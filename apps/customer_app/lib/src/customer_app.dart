@@ -7,15 +7,14 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'app_state.dart';
 import 'core/app_config.dart';
 import 'core/realtime_socket.dart';
+import 'core/customer_value_helpers.dart';
 import 'features/booking/presentation/customer_booking_error_messages.dart';
+import 'features/discovery/presentation/customer_service_option_helpers.dart';
+import 'features/map/presentation/customer_location_helpers.dart';
 
-const double demoCustomerLat = 10.7769;
-const double demoCustomerLng = 106.7009;
-const String demoCustomerCity = 'Ho Chi Minh City';
-const String demoCustomerAddress = 'District 1, Ho Chi Minh City, Vietnam';
-
-final selectedCustomerLocationProvider =
-    StateProvider<SelectedCustomerLocation?>((ref) => null);
+export 'core/customer_value_helpers.dart';
+export 'features/discovery/presentation/customer_service_option_helpers.dart';
+export 'features/map/presentation/customer_location_helpers.dart';
 
 class CustomerApp extends StatelessWidget {
   const CustomerApp({super.key});
@@ -1409,18 +1408,6 @@ class ServiceDurationOptionTile extends StatelessWidget {
       ),
     );
   }
-}
-
-class CustomerServiceOptionGroup {
-  const CustomerServiceOptionGroup({
-    required this.key,
-    required this.name,
-    required this.options,
-  });
-
-  final String key;
-  final String name;
-  final List<Map<String, dynamic>> options;
 }
 
 class DurationPill extends StatelessWidget {
@@ -3660,34 +3647,6 @@ class LocationStatusChip extends StatelessWidget {
   }
 }
 
-class SelectedCustomerLocation {
-  const SelectedCustomerLocation({
-    this.id,
-    required this.latitude,
-    required this.longitude,
-    required this.addressText,
-  });
-
-  final String? id;
-  final double latitude;
-  final double longitude;
-  final String addressText;
-
-  SelectedCustomerLocation copyWith({
-    String? id,
-    double? latitude,
-    double? longitude,
-    String? addressText,
-  }) {
-    return SelectedCustomerLocation(
-      id: id ?? this.id,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-      addressText: addressText ?? this.addressText,
-    );
-  }
-}
-
 class LocationSelectionPage extends ConsumerStatefulWidget {
   const LocationSelectionPage({
     super.key,
@@ -5587,212 +5546,6 @@ Map<String, dynamic>? firstBookingService(Map<String, dynamic> booking) {
   };
 }
 
-Map<String, dynamic> customerBookableService(
-    Map<String, dynamic> providerService) {
-  final service = asMap(providerService['service']) ?? <String, dynamic>{};
-  final providerPrice = asNum(providerService['price'])?.toInt();
-  final basePrice = asNum(service['basePrice'])?.toInt() ?? 0;
-  final effectivePrice = providerPrice ?? basePrice;
-
-  return {
-    ...service,
-    'providerServiceId': providerService['id'],
-    if (providerPrice != null) 'providerPrice': providerPrice,
-    'effectivePrice': effectivePrice,
-    'customerPrice': effectivePrice,
-    'providerServiceActive': providerService['active'] ?? true,
-  };
-}
-
-List<CustomerServiceOptionGroup> customerServiceOptionGroups(
-    List<dynamic> providerServices) {
-  final grouped = <String, List<Map<String, dynamic>>>{};
-  final names = <String, String>{};
-
-  for (final item in providerServices) {
-    final providerService = asMap(item);
-    if (providerService == null) {
-      continue;
-    }
-
-    final service = customerBookableService(providerService);
-    if (!customerProviderServiceIsBookable(providerService, service)) {
-      continue;
-    }
-    final key = customerServiceGroupKey(service);
-    grouped.putIfAbsent(key, () => <Map<String, dynamic>>[]).add(service);
-    names.putIfAbsent(key, () => service['name'] as String? ?? 'Service');
-  }
-
-  return grouped.entries.map((entry) {
-    final options = [...entry.value]..sort((left, right) {
-        final leftDuration = asNum(left['durationMin'])?.toInt() ?? 0;
-        final rightDuration = asNum(right['durationMin'])?.toInt() ?? 0;
-        final durationCompare = leftDuration.compareTo(rightDuration);
-        if (durationCompare != 0) {
-          return durationCompare;
-        }
-        return customerServicePrice(left)
-            .compareTo(customerServicePrice(right));
-      });
-
-    return CustomerServiceOptionGroup(
-      key: entry.key,
-      name: names[entry.key] ?? 'Service',
-      options: options,
-    );
-  }).toList();
-}
-
-String customerServiceGroupKey(Map<String, dynamic> service) {
-  final groupKey = service['serviceGroupKey'];
-  if (groupKey is String && groupKey.trim().isNotEmpty) {
-    return groupKey.trim();
-  }
-
-  final slug = service['slug'];
-  if (slug is String && slug.trim().isNotEmpty) {
-    return slug.trim();
-  }
-
-  final name = service['name'];
-  if (name is String && name.trim().isNotEmpty) {
-    return name.trim().toLowerCase();
-  }
-
-  return service['id']?.toString() ?? 'service';
-}
-
-bool customerProviderServiceIsBookable(
-  Map<String, dynamic> providerService,
-  Map<String, dynamic> service,
-) {
-  if (providerService['active'] == false ||
-      service['providerServiceActive'] == false) {
-    return false;
-  }
-
-  final nestedService = asMap(providerService['service']);
-  if (nestedService?['active'] == false) {
-    return false;
-  }
-
-  if (nestedService == null) {
-    return false;
-  }
-
-  final price = customerServicePrice(service);
-  final basePrice = asNum(nestedService['basePrice'])?.toInt() ?? 0;
-  final priceStep = asNum(nestedService['priceStep'])?.toInt() ?? 100000;
-  if (price < basePrice || priceStep <= 0 || price % priceStep != 0) {
-    return false;
-  }
-
-  final payoutRules = asList(nestedService['payoutRules']);
-  return payoutRules.any((rule) {
-    final mapped = asMap(rule);
-    if (mapped == null || mapped['active'] == false) {
-      return false;
-    }
-    return asNum(mapped['customerPrice'])?.toInt() == price;
-  });
-}
-
-int customerServicePrice(Map<String, dynamic>? service) {
-  if (service == null) {
-    return 0;
-  }
-  return asNum(service['effectivePrice'])?.toInt() ??
-      asNum(service['customerPrice'])?.toInt() ??
-      asNum(service['providerPrice'])?.toInt() ??
-      asNum(service['bookingPrice'])?.toInt() ??
-      asNum(service['basePrice'])?.toInt() ??
-      0;
-}
-
-String customerServiceOptionLabel(Map<String, dynamic>? service) {
-  if (service == null) {
-    return 'Selected service';
-  }
-  final name = customerServiceName(service);
-  final duration = asNum(service['durationMin'])?.toInt();
-  if (duration == null || duration <= 0) {
-    return name;
-  }
-  return '$name / $duration min';
-}
-
-String customerServiceName(Map<String, dynamic>? service) {
-  final name = service?['name']?.toString().trim();
-  return name == null || name.isEmpty ? 'Selected service' : name;
-}
-
-String customerServiceDurationLabel(Map<String, dynamic>? service) {
-  final duration = asNum(service?['durationMin'])?.toInt();
-  return duration == null || duration <= 0
-      ? 'Duration not set'
-      : '$duration min';
-}
-
-String customerServiceGroupDurationSummary(CustomerServiceOptionGroup group) {
-  final durations = group.options
-      .map((option) => asNum(option['durationMin'])?.toInt())
-      .whereType<int>()
-      .where((duration) => duration > 0)
-      .toSet()
-      .toList()
-    ..sort();
-  if (durations.isEmpty) {
-    return '${group.options.length} option(s)';
-  }
-  return durations.map((duration) => '$duration min').join(' / ');
-}
-
-String customerServiceGroupPriceRangeLabel(CustomerServiceOptionGroup group) {
-  final prices = group.options
-      .map(customerServicePrice)
-      .where((price) => price > 0)
-      .toList()
-    ..sort();
-  if (prices.isEmpty) {
-    return 'Price pending';
-  }
-  final lowest = prices.first;
-  final highest = prices.last;
-  if (lowest == highest) {
-    return '${formatCurrency(lowest)} VND';
-  }
-  return '${formatCurrency(lowest)}-${formatCurrency(highest)} VND';
-}
-
-String customerServicePricePolicyLabel(Map<String, dynamic>? service) {
-  if (service == null) {
-    return 'Policy pending';
-  }
-  final price = customerServicePrice(service);
-  final basePrice = asNum(service['basePrice'])?.toInt() ?? 0;
-  final step = asNum(service['priceStep'])?.toInt() ?? 100000;
-  if (price <= 0) {
-    return 'Price pending';
-  }
-  if (basePrice > 0 && price < basePrice) {
-    return 'Below minimum';
-  }
-  if (step > 0 && price % step != 0) {
-    return 'Price step check';
-  }
-  if (basePrice > 0 && price > basePrice) {
-    return 'Partner price';
-  }
-  return 'Admin minimum';
-}
-
-String customerServiceOptionPriceLabel(Map<String, dynamic>? service,
-    {dynamic amount}) {
-  final price = asNum(amount)?.toInt() ?? customerServicePrice(service);
-  return '${customerServiceOptionLabel(service)} / ${formatCurrency(price)} VND';
-}
-
 String providerDisplayName(Map<String, dynamic>? booking) {
   if (booking == null) {
     return 'Booking';
@@ -5884,43 +5637,6 @@ Future<CustomerLocationSnapshot> resolveDiscoveryLocation(WidgetRef ref) async {
   return defaultVietnamDiscoveryLocation();
 }
 
-CustomerLocationSnapshot defaultVietnamDiscoveryLocation() {
-  return const CustomerLocationSnapshot(
-    latitude: demoCustomerLat,
-    longitude: demoCustomerLng,
-    addressText: demoCustomerAddress,
-    isDemoLocation: true,
-  );
-}
-
-CustomerLocationSnapshot discoveryLocationFromSelected(
-  SelectedCustomerLocation selected,
-) {
-  if (isVietnamCoordinate(selected.latitude, selected.longitude)) {
-    return CustomerLocationSnapshot(
-      latitude: selected.latitude,
-      longitude: selected.longitude,
-      addressText: selected.addressText,
-    );
-  }
-  return defaultVietnamDiscoveryLocation();
-}
-
-String locationTitle(String addressText, bool isDemoLocation) {
-  if (isDemoLocation) {
-    return demoCustomerCity;
-  }
-  final first = addressText.split(',').first.trim();
-  if (first.isEmpty || first.startsWith('Map pin:')) {
-    return 'Selected location';
-  }
-  return first;
-}
-
-bool isVietnamCoordinate(double lat, double lng) {
-  return lat >= 8.0 && lat <= 24.0 && lng >= 102.0 && lng <= 110.0;
-}
-
 String formatDistance(num? meters) {
   if (meters == null) {
     return '?';
@@ -6005,20 +5721,6 @@ String providerLocationFreshnessLabel(Map<String, dynamic> provider) {
   return 'Location $ageLabel';
 }
 
-class CustomerLocationSnapshot {
-  const CustomerLocationSnapshot({
-    required this.latitude,
-    required this.longitude,
-    this.addressText,
-    this.isDemoLocation = false,
-  });
-
-  final double latitude;
-  final double longitude;
-  final String? addressText;
-  final bool isDemoLocation;
-}
-
 LatLng? deriveBookingLatLng(Map<String, dynamic>? booking) {
   final lat = asDouble(booking?['lat']);
   final lng = asDouble(booking?['lng']);
@@ -6042,61 +5744,6 @@ String formatCoordinate(double? value) {
     return '-';
   }
   return value.toStringAsFixed(4);
-}
-
-String formatCurrency(dynamic amount) {
-  final number = asNum(amount)?.toInt() ?? 0;
-  final text = number.toString();
-  final buffer = StringBuffer();
-  for (var index = 0; index < text.length; index++) {
-    final reverseIndex = text.length - index;
-    buffer.write(text[index]);
-    if (reverseIndex > 1 && reverseIndex % 3 == 1) {
-      buffer.write('.');
-    }
-  }
-  return buffer.toString();
-}
-
-num? asNum(dynamic value) {
-  if (value == null) {
-    return null;
-  }
-  if (value is num) {
-    return value;
-  }
-  if (value is String) {
-    return num.tryParse(value);
-  }
-  return null;
-}
-
-double? asDouble(dynamic value) {
-  return asNum(value)?.toDouble();
-}
-
-Map<String, dynamic>? asMap(dynamic value) {
-  if (value is Map<String, dynamic>) {
-    return value;
-  }
-  if (value is Map) {
-    return Map<String, dynamic>.from(value);
-  }
-  return null;
-}
-
-List<dynamic> asList(dynamic value) {
-  return value is List<dynamic> ? value : const [];
-}
-
-List<String> asStringList(dynamic value) {
-  if (value is List) {
-    return value
-        .map((item) => item.toString().trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
-  }
-  return const [];
 }
 
 double bookingProgress(String status) {
