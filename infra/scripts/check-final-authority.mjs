@@ -21,6 +21,7 @@ checkAdminPeopleManagementIsFactual();
 checkAdminDashboardOperationsCoverage();
 checkBookingDetailIsSourceOfTruth();
 checkOperationsPolicyControlPlane();
+checkMarketplaceCompatibilityCopy();
 
 console.log(
   JSON.stringify(
@@ -531,6 +532,30 @@ function checkOperationsPolicyControlPlane() {
     'id="policy-matching-provider-response-window-minutes"',
     'id="policy-matching-marketplace-provider-radius-meters"',
     'id="policy-wallet-negative-balance-gate"',
+  ]);
+}
+
+function checkMarketplaceCompatibilityCopy() {
+  const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
+  const adminCopy = read('apps/admin_web/lib/admin-copy.ts');
+
+  requireMarkers('apps/api/src/matching/matching.policy.ts', matchingPolicy, [
+    'Compatibility: these saved policy keys keep the older internal "backup" naming.',
+    'Product and Admin copy must present this flow as marketplace partner participation.',
+    'Compatibility: existing settings store this key as backup_open_mode.',
+    'Visible operations language must call it marketplace open mode.',
+    'Marketplace partner radius',
+    'Marketplace partner location freshness',
+    'Marketplace partner invitation limit',
+    'When marketplace partners can join',
+  ]);
+  requireMarkers('apps/admin_web/lib/admin-copy.ts', adminCopy, [
+    "replaceAll('backup partner', 'marketplace partner')",
+    "replaceAll('backup participation', 'marketplace participation')",
+    "replaceAll('backup request', 'marketplace request')",
+    "replaceAll('backup open mode', 'marketplace open mode')",
+    "replaceAll('backup_', 'marketplace_')",
+    "replace(/\\bbackup\\b/g, 'marketplace')",
   ]);
 }
 

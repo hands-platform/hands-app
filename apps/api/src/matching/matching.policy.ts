@@ -11,6 +11,8 @@ export const DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES = 10;
 
 export const MATCHING_TRAVEL_BUFFER_MINUTES_KEY = 'matching.travel_buffer_minutes';
 export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
+// Compatibility: these saved policy keys keep the older internal "backup" naming.
+// Product and Admin copy must present this flow as marketplace partner participation.
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 export const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
@@ -22,6 +24,8 @@ export const BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY = 'booking.current_l
 export const BOOKING_DISTANCE_GATE_ENABLED_KEY = 'booking.distance_gate_enabled';
 export const BOOKING_SERVICE_AREA_REQUIRED_KEY = 'booking.service_area_required';
 export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
+// Compatibility: existing settings store this key as backup_open_mode.
+// Visible operations language must call it marketplace open mode.
 export const MATCHING_BACKUP_OPEN_MODE_KEY = 'matching.backup_open_mode';
 export const BACKUP_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
 export const BACKUP_OPEN_AFTER_FIRST_PICK_DELAY = 'AFTER_FIRST_PICK_DELAY';
