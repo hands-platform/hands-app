@@ -62,7 +62,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
         return;
       }
       setState(
-          () => statusMessage = 'A new direct booking request just arrived.');
+          () => statusMessage = 'A new booking request just arrived.');
       unawaited(loadOpenBookings(showLoading: false));
     });
 
@@ -206,7 +206,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     await ref.read(providerRepositoryProvider).goOnline();
     setState(() {
       isOnline = true;
-      statusMessage = 'You are online and visible for direct booking requests.';
+      statusMessage =
+          'You are online and visible for first-pick and marketplace requests.';
     });
   }
 
@@ -410,13 +411,13 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       child: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          Text('Direct booking requests',
+          Text('Booking requests',
               style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 8),
           Text(
             auth == null
-                ? 'Login to receive direct booking requests.'
-                : 'Accept or reject bookings sent directly to you.',
+                ? 'Login to receive booking requests.'
+                : 'Review first-pick requests, marketplace opportunities, and chat-ready work.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),

@@ -43,13 +43,13 @@ class RequestQueueSummary extends StatelessWidget {
     super.key,
     required this.totalRequests,
     required this.preferredRequests,
-    required this.backupRequests,
+    required this.marketplaceRequests,
     required this.chatReady,
   });
 
   final int totalRequests;
   final int preferredRequests;
-  final int backupRequests;
+  final int marketplaceRequests;
   final int chatReady;
 
   @override
@@ -81,7 +81,7 @@ class RequestQueueSummary extends StatelessWidget {
             Expanded(
               child: RequestSummaryCard(
                 label: 'Marketplace',
-                value: '$backupRequests standby',
+                value: '$marketplaceRequests standby',
                 tone: const Color(0xFFFBF0DE),
               ),
             ),

@@ -58,7 +58,7 @@ class ProviderRequestsListSection extends StatelessWidget {
             return preferredProvider is Map<String, dynamic> &&
                 preferredProvider['userId'] == authUserId;
           }).length,
-          backupRequests: bookingItems.where((booking) {
+          marketplaceRequests: bookingItems.where((booking) {
             final preferredProvider = booking['preferredProvider'];
             return preferredProvider is Map<String, dynamic> &&
                 preferredProvider['userId'] != authUserId;
@@ -76,7 +76,7 @@ class ProviderRequestsListSection extends StatelessWidget {
         if (bookingItems.isEmpty)
           const InfoCard(
             text:
-                'No direct requests yet. Once a customer books your profile, it will appear here.',
+                'No booking requests yet. First-pick and marketplace requests will appear here.',
           )
         else if (visibleBookings.isEmpty)
           const InfoCard(

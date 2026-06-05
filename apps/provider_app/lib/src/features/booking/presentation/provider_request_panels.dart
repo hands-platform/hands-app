@@ -37,7 +37,7 @@ class ProviderOtpLoginPanel extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Use phone OTP for the production partner account, or local demo login while testing direct booking requests.',
+              'Use phone OTP for the production partner account, or local demo login while testing booking requests.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -140,7 +140,7 @@ class ProviderStatusPanel extends StatelessWidget {
                   Text(
                     isOnline
                         ? providerLocationHeartbeatLabel(heartbeatSnapshot)
-                        : 'Go online to receive direct booking requests.',
+                        : 'Go online to receive first-pick and marketplace requests.',
                   ),
                   if (isOnline && heartbeatSnapshot.lastError != null) ...[
                     const SizedBox(height: 4),
