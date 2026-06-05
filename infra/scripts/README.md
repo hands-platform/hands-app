@@ -6,6 +6,7 @@ Operational scripts:
 - `api-smoke.mjs` runs the end-to-end MVP API flow against a running API.
 - `storage-smoke.mjs` verifies real S3-compatible storage by presigning a provider verification upload, PUT-ing a tiny PNG, completing the file record, and reading it back through an admin signed URL.
 - `check-env.mjs` validates required and recommended environment variables.
+- `check-admin-sensitive-exposure.mjs` prevents Admin API/Admin Web regressions that expose raw push notification tokens.
 - `external-registration-pack.mjs` prints or writes the external account/key registration pack for HANDS.
 - `setup-doctor.mjs` runs the external setup preflight and regenerates operator handoff files.
 - `prepare-supabase-sql-pack.mjs` generates the ordered Supabase staging SQL bundle under `infra/supabase/.generated/`.

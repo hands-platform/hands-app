@@ -24,6 +24,7 @@
     "external:pack:write": "node infra/scripts/external-registration-pack.mjs --out=infra/setup/.generated/hands-external-registration-pack.md",
     "setup:doctor": "node infra/scripts/setup-doctor.mjs",
     "security:secrets": "node infra/scripts/check-secret-leaks.mjs",
+    "security:admin-sensitive": "node infra/scripts/check-admin-sensitive-exposure.mjs",
     "authority:check": "node infra/scripts/check-final-authority.mjs",
     "api:domain-smoke": "node infra/scripts/api-domain-smoke.mjs",
     "api:policy-coverage": "node infra/scripts/check-api-policy-coverage.mjs",

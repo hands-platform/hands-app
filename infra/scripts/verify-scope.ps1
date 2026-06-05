@@ -152,6 +152,7 @@ function Invoke-Harness {
   Invoke-Check "script syntax: admin web smoke" "node --check infra\scripts\admin-web-smoke.mjs"
   Invoke-Check "script syntax: realtime smoke" "node --check infra\scripts\realtime-smoke.mjs"
   Invoke-Check "script syntax: final authority" "node --check infra\scripts\check-final-authority.mjs"
+  Invoke-Check "script syntax: admin sensitive exposure" "node --check infra\scripts\check-admin-sensitive-exposure.mjs"
 }
 
 function Invoke-Docs {

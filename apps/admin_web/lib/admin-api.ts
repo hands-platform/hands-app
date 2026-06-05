@@ -27,7 +27,6 @@ export type AdminUser = {
     id: string;
     platform: string;
     enabled: boolean;
-    token?: string;
     createdAt?: string;
     updatedAt?: string;
     deliveries?: Array<{
@@ -933,7 +932,7 @@ export type AdminNotification = {
       statusCode?: number;
       body?: unknown;
     } | null;
-    pushDevice?: { id?: string; platform?: string; token?: string; enabled?: boolean };
+    pushDevice?: { id?: string; platform?: string; enabled?: boolean };
   }>;
 };
 
