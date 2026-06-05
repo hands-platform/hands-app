@@ -193,6 +193,7 @@ const requiredCoverage = [
       'Negative wallet should not block starting a booking that is already matched',
       'Negative wallet partner should still see marketplace request before settlement',
       'Negative provider wallet blocks marketplace participation',
+      'Wallet-blocked marketplace attempt should not create a participant record',
       'Negative provider wallet holds payout batch creation',
       'assertNegativeWalletBlockResponse',
       'walletSettlementReference',
@@ -304,8 +305,14 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   if (!selectProvider.includes('await this.ensureProviderWalletCanJoinMarketplace(providerId);')) {
     missingMarkers.push('selectProvider must keep the negative-wallet marketplace final selection gate');
   }
+  if (!selectProvider.includes('if (providerId !== ownedBooking.preferredProviderId)')) {
+    missingMarkers.push('selectProvider must not block direct first-pick final selection for negative wallet');
+  }
   if (!updateParticipant.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
     missingMarkers.push('updateParticipant must keep the negative-wallet marketplace acceptance gate');
+  }
+  if (!updateParticipant.includes('if (booking.preferredProviderId === provider.id)')) {
+    missingMarkers.push('updateParticipant must keep the preferred first-pick branch before marketplace wallet gate');
   }
   if (
     lifecycleStatus.includes('ensureProviderWalletCanJoinMarketplace') ||
