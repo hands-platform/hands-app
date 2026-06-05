@@ -599,6 +599,8 @@ const pages = [
       'Service catalog',
       'Duration pricing matrix',
       'Customer booking exposure guard',
+      'Service type coverage board',
+      'Missing duration options',
       'Pricing health',
       'Booking readiness queue',
       'Service payout ledger',

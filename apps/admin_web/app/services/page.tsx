@@ -39,6 +39,13 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
   const pricePolicyPreviewRows = servicePricePolicyPreviewRows(filteredActiveServices, activeTaxPolicy);
   const pricePolicyPreviewSummary = servicePricePolicyPreviewSummary(pricePolicyPreviewRows);
   const payoutLedgerRows = servicePayoutLedgerRows(filteredActiveServices, activeTaxPolicy);
+  const serviceTypeCoverageRows = buildServiceTypeCoverageRows(filteredGroupedServices, activeTaxPolicy);
+  const serviceTypeCoverageSummary = buildServiceTypeCoverageSummary(serviceTypeCoverageRows);
+  const visibleServiceTypeCoverageRows = serviceTypeCoverageRows.slice(0, SERVICE_GROUP_RENDER_LIMIT);
+  const hiddenServiceTypeCoverageRowCount = Math.max(
+    serviceTypeCoverageRows.length - visibleServiceTypeCoverageRows.length,
+    0,
+  );
   const visibleGroupedServices = filteredGroupedServices.slice(0, SERVICE_GROUP_RENDER_LIMIT);
   const hiddenServiceGroupCount = Math.max(filteredGroupedServices.length - visibleGroupedServices.length, 0);
   const visiblePayoutLedgerRows = payoutLedgerRows.slice(0, SERVICE_ROW_RENDER_LIMIT);
@@ -161,6 +168,135 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             Review service pricing audit
           </a>
         </div>
+      </section>
+
+      <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
+        <div className="ops-section-header">
+          <div>
+            <h2>Service type coverage board</h2>
+            <p className="muted">
+              Checks each service name as one operating unit: duration options, minimum-price payout rules,
+              partner price visibility, and projected company commission.
+            </p>
+          </div>
+          <div className="actions">
+            <span
+              className={
+                serviceTypeCoverageSummary.blockedCount ? 'pill pill-danger' : 'pill pill-success'
+              }
+            >
+              {serviceTypeCoverageSummary.blockedCount} blocked
+            </span>
+            <span
+              className={
+                serviceTypeCoverageSummary.warningCount ? 'pill pill-warn' : 'pill pill-success'
+              }
+            >
+              {serviceTypeCoverageSummary.warningCount} warning
+            </span>
+            <span className="pill pill-info">{serviceTypeCoverageSummary.readyCount} ready</span>
+          </div>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Service types checked</span>
+            <strong>{serviceTypeCoverageRows.length}</strong>
+          </div>
+          <div>
+            <span>Missing duration options</span>
+            <strong>{serviceTypeCoverageSummary.missingDurationCount}</strong>
+          </div>
+          <div>
+            <span>Missing base payout</span>
+            <strong>{serviceTypeCoverageSummary.missingBasePayoutCount}</strong>
+          </div>
+          <div>
+            <span>Hidden partner prices</span>
+            <strong>{serviceTypeCoverageSummary.hiddenPartnerPriceCount}</strong>
+          </div>
+          <div>
+            <span>Net company fee</span>
+            <strong>
+              {formatMoney(serviceTypeCoverageSummary.netCompanyFee, serviceTypeCoverageSummary.currency)}
+            </strong>
+          </div>
+        </div>
+        {visibleServiceTypeCoverageRows.length ? (
+          <table className="table service-trace" style={{ marginTop: 12 }}>
+            <thead>
+              <tr>
+                <th>Service type</th>
+                <th>Duration coverage</th>
+                <th>Payout coverage</th>
+                <th>Partner price visibility</th>
+                <th>Finance snapshot</th>
+                <th>Next action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibleServiceTypeCoverageRows.map((row) => (
+                <tr key={row.key}>
+                  <td>
+                    <strong>{row.label}</strong>
+                    <p className="muted">{row.key}</p>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <span className={`pill ${row.missingDurations.length ? 'pill-warn' : 'pill-success'}`}>
+                        {row.activeDurationLabels || 'No active duration'}
+                      </span>
+                      <small>
+                        Missing duration options:{' '}
+                        {row.missingDurations.length
+                          ? row.missingDurations.map((duration) => `${duration} min`).join(', ')
+                          : 'none'}
+                      </small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <span
+                        className={`pill ${row.missingBasePayoutCount ? 'pill-danger' : 'pill-success'}`}
+                      >
+                        {row.missingBasePayoutCount} missing base payout
+                      </span>
+                      <small>{row.activeOptionCount} active option(s)</small>
+                      <small>{row.payoutRuleCount} payout rule(s)</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <span className={`pill ${row.hiddenPartnerPriceCount ? 'pill-warn' : 'pill-success'}`}>
+                        {row.visiblePartnerPriceCount} visible / {row.hiddenPartnerPriceCount} hidden
+                      </span>
+                      <small>{row.belowMinimumCount} below minimum</small>
+                      <small>{row.missingPayoutPriceCount} missing payout rule</small>
+                    </div>
+                  </td>
+                  <td>
+                    <div className="service-matrix-cell">
+                      <strong>{formatMoney(row.netCompanyFee, row.currency)}</strong>
+                      <small>Customer min {formatMoney(row.customerMinimumTotal, row.currency)}</small>
+                      <small>Partner payout {formatMoney(row.partnerPayoutTotal, row.currency)}</small>
+                    </div>
+                  </td>
+                  <td>
+                    <span className={`pill ${row.tone}`}>{row.statusLabel}</span>
+                    <p className="muted">{row.nextAction}</p>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="muted">No service type matches the current catalog search.</p>
+        )}
+        {hiddenServiceTypeCoverageRowCount ? (
+          <p className="muted">
+            Showing first {visibleServiceTypeCoverageRows.length} of {serviceTypeCoverageRows.length} service
+            type(s). Search by service name or group key to narrow the board.
+          </p>
+        ) : null}
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
@@ -1612,6 +1748,139 @@ function emptyFinancePreview() {
     taxRuleLabel: null,
     actualCompanyCommission: 0,
   };
+}
+
+function buildServiceTypeCoverageRows(
+  groups: ReturnType<typeof groupServices>,
+  activeTaxPolicy: AdminTaxPolicyVersion | undefined,
+) {
+  return groups
+    .map((group) => {
+      const activeItems = group.items.filter((item) => item.active);
+      const missingDurations = missingStandardDurations(group.items);
+      const missingBasePayoutCount = activeItems.filter((service) => !basePayoutRule(service)).length;
+      const payoutRuleCount = group.items.reduce((sum, service) => sum + (service.payoutRules?.length ?? 0), 0);
+      const providerImpactRows = activeItems.flatMap((service) => providerPriceImpact(service, activeTaxPolicy).rows);
+      const visiblePartnerPriceCount = providerImpactRows.filter((row) => row.state === 'bookable').length;
+      const belowMinimumCount = providerImpactRows.filter((row) => row.state === 'below_minimum').length;
+      const missingPayoutPriceCount = providerImpactRows.filter((row) => row.state === 'missing_payout').length;
+      const inactivePartnerPriceCount = providerImpactRows.filter((row) => row.state === 'inactive').length;
+      const hiddenPartnerPriceCount = belowMinimumCount + missingPayoutPriceCount + inactivePartnerPriceCount;
+      const financeRows = activeItems
+        .map((service) => {
+          const rule = basePayoutRule(service);
+          if (!rule) {
+            return null;
+          }
+
+          return {
+            service,
+            rule,
+            finance: servicePayoutFinance(service, rule, activeTaxPolicy),
+          };
+        })
+        .filter(
+          (
+            row,
+          ): row is {
+            service: AdminServiceCatalogItem;
+            rule: ServicePayoutRule;
+            finance: ReturnType<typeof servicePayoutFinance>;
+          } => row !== null,
+        );
+      const lowCommissionCount = financeRows.filter((row) => row.finance.actualCompanyCommission <= 0).length;
+      const currency = financeRows[0]?.rule.currency ?? 'VND';
+      const totals = financeRows.reduce(
+        (summary, row) => ({
+          customerMinimumTotal: summary.customerMinimumTotal + row.service.basePrice,
+          partnerPayoutTotal: summary.partnerPayoutTotal + row.rule.providerPayoutAmount,
+          netCompanyFee: summary.netCompanyFee + row.finance.actualCompanyCommission,
+        }),
+        { customerMinimumTotal: 0, partnerPayoutTotal: 0, netCompanyFee: 0 },
+      );
+      const activeDurationLabels = formatDurationList(activeItems);
+      let tone = 'pill-success';
+      let statusLabel = 'Ready';
+      let nextAction = 'Ready for customer booking with configured duration and payout coverage.';
+
+      if (missingBasePayoutCount > 0) {
+        tone = 'pill-danger';
+        statusLabel = 'Base payout missing';
+        nextAction = 'Add payout rules at the minimum customer price for every active duration option.';
+      } else if (belowMinimumCount > 0) {
+        tone = 'pill-danger';
+        statusLabel = 'Partner price blocked';
+        nextAction = 'Raise partner prices below the admin minimum or intentionally lower the service minimum.';
+      } else if (missingPayoutPriceCount > 0) {
+        tone = 'pill-warn';
+        statusLabel = 'Partner price hidden';
+        nextAction = 'Add payout rules for active partner prices that should be visible to customers.';
+      } else if (lowCommissionCount > 0) {
+        tone = 'pill-warn';
+        statusLabel = 'Commission check';
+        nextAction = 'Adjust partner payout, VAT, withholding, or other cost assumptions before scaling.';
+      } else if (missingDurations.length > 0) {
+        tone = 'pill-warn';
+        statusLabel = 'Duration gap';
+        nextAction = 'Add missing 60, 90, or 120 minute options when this service type should be complete.';
+      }
+
+      return {
+        key: group.key,
+        label: group.label,
+        activeOptionCount: activeItems.length,
+        activeDurationLabels,
+        missingDurations,
+        missingBasePayoutCount,
+        payoutRuleCount,
+        visiblePartnerPriceCount,
+        hiddenPartnerPriceCount,
+        belowMinimumCount,
+        missingPayoutPriceCount,
+        inactivePartnerPriceCount,
+        lowCommissionCount,
+        customerMinimumTotal: totals.customerMinimumTotal,
+        partnerPayoutTotal: totals.partnerPayoutTotal,
+        netCompanyFee: totals.netCompanyFee,
+        currency,
+        tone,
+        statusLabel,
+        nextAction,
+      };
+    })
+    .sort((left, right) => {
+      const priority = (row: { tone: string }) =>
+        row.tone === 'pill-danger' ? 0 : row.tone === 'pill-warn' ? 1 : 2;
+
+      return priority(left) - priority(right) || left.label.localeCompare(right.label);
+    });
+}
+
+function buildServiceTypeCoverageSummary(rows: ReturnType<typeof buildServiceTypeCoverageRows>) {
+  const currency = rows.find((row) => row.currency)?.currency ?? 'VND';
+
+  return rows.reduce(
+    (summary, row) => ({
+      currency: summary.currency,
+      blockedCount: summary.blockedCount + (row.tone === 'pill-danger' ? 1 : 0),
+      warningCount: summary.warningCount + (row.tone === 'pill-warn' ? 1 : 0),
+      readyCount: summary.readyCount + (row.tone === 'pill-success' ? 1 : 0),
+      missingDurationCount: summary.missingDurationCount + row.missingDurations.length,
+      missingBasePayoutCount: summary.missingBasePayoutCount + row.missingBasePayoutCount,
+      hiddenPartnerPriceCount: summary.hiddenPartnerPriceCount + row.hiddenPartnerPriceCount,
+      netCompanyFee: summary.netCompanyFee + row.netCompanyFee,
+    }),
+    {
+      currency,
+      blockedCount: 0,
+      warningCount: 0,
+      readyCount: 0,
+      missingDurationCount: 0,
+      missingBasePayoutCount: 0,
+      hiddenPartnerPriceCount: 0,
+      netCompanyFee: 0,
+    },
+  );
 }
 
 function servicePayoutLedgerRows(
