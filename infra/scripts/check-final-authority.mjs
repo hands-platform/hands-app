@@ -94,6 +94,7 @@ function checkNoContradictoryNegativeWalletWording() {
     'can browse and join',
     'can browse/join',
     'can still browse/join',
+    'Unpaid HANDS fees must be settled before you can join this booking.',
     'final acceptance only',
     'blocks only configured final',
     'blocked only at configured final',
@@ -107,6 +108,8 @@ function checkNoContradictoryNegativeWalletWording() {
     ...listFiles('apps/customer_app/lib', '.dart'),
     ...listFiles('apps/provider_app/lib', '.dart'),
     'infra/scripts/api-smoke.mjs',
+    'infra/scripts/admin-web-smoke.mjs',
+    'infra/scripts/check-api-policy-coverage.mjs',
     ...listFiles('docs/architecture', '.md'),
   ]) {
     const source = read(file);
