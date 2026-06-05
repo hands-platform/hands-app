@@ -713,6 +713,27 @@ const adminProviderWalletLedgerEntrySummarySelect = {
   updatedAt: true,
 } satisfies Prisma.ProviderWalletLedgerEntrySelect;
 
+const adminRecentPlatformFeeLogsSelect = (take: number) =>
+  ({
+    orderBy: { createdAt: 'desc' },
+    take,
+    select: adminPlatformFeeLogSummarySelect,
+  }) satisfies Prisma.ProviderPlatformFeeLogFindManyArgs;
+
+const adminRecentProviderTaxLogsSelect = (take: number) =>
+  ({
+    orderBy: { createdAt: 'desc' },
+    take,
+    select: adminProviderTaxLogSummarySelect,
+  }) satisfies Prisma.ProviderTaxLogFindManyArgs;
+
+const adminRecentProviderWalletLedgerEntriesSelect = (take: number) =>
+  ({
+    orderBy: { createdAt: 'desc' },
+    take,
+    select: adminProviderWalletLedgerEntrySummarySelect,
+  }) satisfies Prisma.ProviderWalletLedgerEntryFindManyArgs;
+
 const adminEarningSummarySelect = {
   id: true,
   providerProfileId: true,
@@ -730,40 +751,16 @@ const adminEarningSummarySelect = {
   settlementNotes: true,
   settlementMethod: true,
   createdAt: true,
-  platformFeeLogs: {
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-    select: adminPlatformFeeLogSummarySelect,
-  },
-  taxLogs: {
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-    select: adminProviderTaxLogSummarySelect,
-  },
-  walletLedgerEntries: {
-    orderBy: { createdAt: 'desc' },
-    take: 3,
-    select: adminProviderWalletLedgerEntrySummarySelect,
-  },
+  platformFeeLogs: adminRecentPlatformFeeLogsSelect(3),
+  taxLogs: adminRecentProviderTaxLogsSelect(3),
+  walletLedgerEntries: adminRecentProviderWalletLedgerEntriesSelect(3),
 } satisfies Prisma.ProviderEarningSelect;
 
 const adminEarningDetailSelect = {
   ...adminEarningSummarySelect,
-  platformFeeLogs: {
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: adminPlatformFeeLogSummarySelect,
-  },
-  taxLogs: {
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: adminProviderTaxLogSummarySelect,
-  },
-  walletLedgerEntries: {
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: adminProviderWalletLedgerEntrySummarySelect,
-  },
+  platformFeeLogs: adminRecentPlatformFeeLogsSelect(5),
+  taxLogs: adminRecentProviderTaxLogsSelect(5),
+  walletLedgerEntries: adminRecentProviderWalletLedgerEntriesSelect(5),
 } satisfies Prisma.ProviderEarningSelect;
 
 const adminChatRoomPresenceSelect = {
@@ -1193,21 +1190,9 @@ const adminBookingDetailSelect = {
   review: true,
   addressSnapshot: { select: adminAddressSnapshotSelect },
   earning: { select: adminEarningDetailSelect },
-  platformFeeLogs: {
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: adminPlatformFeeLogSummarySelect,
-  },
-  taxLogs: {
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: adminProviderTaxLogSummarySelect,
-  },
-  walletLedgerEntries: {
-    orderBy: { createdAt: 'desc' },
-    take: 5,
-    select: adminProviderWalletLedgerEntrySummarySelect,
-  },
+  platformFeeLogs: adminRecentPlatformFeeLogsSelect(5),
+  taxLogs: adminRecentProviderTaxLogsSelect(5),
+  walletLedgerEntries: adminRecentProviderWalletLedgerEntriesSelect(5),
   opsTasks: {
     orderBy: { updatedAt: 'desc' },
     select: adminBookingOpsTaskSummarySelect,
