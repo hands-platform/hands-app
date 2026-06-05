@@ -1433,7 +1433,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <p className="muted">
               One booking view for actual joined partners, customer final choice, marketplace alert batches,
               and cash-fee wallet impact. View-only marketplace exposure is not stored as participation.
-              Partner app message when wallet debt blocks participation: Unpaid HANDS fees must be settled before you can join this booking.
+              Partner app message when wallet debt blocks participation: Unpaid HANDS fees must be settled before joining marketplace bookings.
             </p>
           </div>
           <span className={`pill ${marketplaceWalletEvidence.tone}`}>{marketplaceWalletEvidence.status}</span>
@@ -8543,8 +8543,8 @@ function bookingMarketplaceWalletEvidence({
         tone: walletDebt ? 'pill-danger' : 'pill-success',
         record: financeTrace.walletLedger,
         operatorUse: walletDebt
-          ? 'Partner app message: Unpaid HANDS fees must be settled before you can join this booking. Collect the HANDS fee deposit or apply an approved offset before this partner can join new marketplace bookings.'
-          : 'Partner app message: Unpaid HANDS fees must be settled before you can join this booking. No cash-fee wallet debt from this booking is currently gating marketplace participation.',
+          ? 'Partner app message: Unpaid HANDS fees must be settled before joining marketplace bookings. Collect the HANDS fee deposit or apply an approved offset before this partner can join new marketplace bookings.'
+          : 'Partner app message: Unpaid HANDS fees must be settled before joining marketplace bookings. No cash-fee wallet debt from this booking is currently gating marketplace participation.',
       },
       {
         lane: 'Cash fee accounting',

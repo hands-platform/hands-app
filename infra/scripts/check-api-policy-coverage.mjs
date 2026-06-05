@@ -320,7 +320,7 @@ function checkNegativeWalletBookingFunctionBoundaries() {
 function checkProviderMobileWalletGateBoundaries() {
   const providerSource = readFileSync(providerWalletGateHelperPath, 'utf8');
   const providerWalletGateTest = readFileSync(providerWalletGateTestPath, 'utf8');
-  const walletBlockDisplayMessage = 'Unpaid HANDS fees must be settled before you can join this booking.';
+  const walletBlockDisplayMessage = 'Unpaid HANDS fees must be settled before you can join this marketplace booking.';
   const walletBlockButtonLabel = 'Fee settlement required';
   const missingMarkers = [];
 

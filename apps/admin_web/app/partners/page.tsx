@@ -750,7 +750,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </p>
                     {row.walletBalance < 0 ? (
                       <p className="muted" style={{ marginTop: 8 }}>
-                        Partner app message: Unpaid HANDS fees must be settled before you can join this booking.
+                        Partner app message: Unpaid HANDS fees must be settled before joining marketplace bookings.
                       </p>
                     ) : null}
                   </td>

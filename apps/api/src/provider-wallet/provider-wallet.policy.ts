@@ -4,7 +4,7 @@ export const PROVIDER_WALLET_BLOCK_CODE = 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEB
 export const PROVIDER_WALLET_BLOCK_REASON =
   'Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.';
 export const PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE =
-  'Unpaid HANDS fees must be settled before you can join this booking.';
+  'Unpaid HANDS fees must be settled before you can join this marketplace booking.';
 export const PROVIDER_WALLET_SETTLEMENT_METHOD = 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET';
 export const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
   'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace requests stay visible for review, but participation is blocked until HANDS confirms the deposit or admin offset.';

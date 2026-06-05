@@ -267,14 +267,14 @@ void main() {
     );
     expect(
       providerWalletBlockFallbackReasonClean,
-      'Unpaid HANDS fees must be settled before you can join this booking.',
+      'Unpaid HANDS fees must be settled before you can join this marketplace booking.',
     );
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
     expect(providerActionBlockCopy(guidance.detailMessage)?.title,
         'Fee settlement required');
     expect(
       providerActionBlockCopy(
-              'Unpaid HANDS fees must be settled before you can join this booking.')
+              'Unpaid HANDS fees must be settled before you can join this marketplace booking.')
           ?.detail,
       providerWalletBlockFallbackReasonClean,
     );
@@ -345,7 +345,7 @@ void main() {
     expect(guidance.contextMessage, contains('visible'));
     expect(guidance.contextMessage, contains('before you can join'));
     expect(guidance.detailMessage,
-        'Unpaid HANDS fees must be settled before you can join this booking.');
+        'Unpaid HANDS fees must be settled before you can join this marketplace booking.');
   });
 
   test('explains marketplace opportunities after preferred partner exists', () {
