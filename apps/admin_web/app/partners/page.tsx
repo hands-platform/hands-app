@@ -663,8 +663,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner operations list</h2>
             <p className="muted">
-              List-first partner control view. Operators can check onboarding, final booking gates, completed
-              work, last work, wallet, location, push, services, and app activity before opening the full
+              List-first partner control view. Operators can check onboarding, direct and marketplace readiness,
+              completed work, last work, wallet, location, push, services, and app activity before opening the full
               partner record.
             </p>
           </div>

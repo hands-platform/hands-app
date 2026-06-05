@@ -936,7 +936,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner operator command queue</h2>
             <p className="muted">
-              Same-shift partner operations queue for onboarding, final booking gates, payout, location, app
+              Same-shift partner operations queue for onboarding, direct and marketplace readiness gates, payout, location, app
               reachability, and service setup. This is factual handling for operators.
             </p>
           </div>
@@ -5591,7 +5591,7 @@ function buildProviderBookingAcceptance(
 
   const blockers = gates.filter((gate) => !gate.ok);
   const directFirstPickBlockers = blockers.filter((gate) => gate.label !== 'Wallet and cash debt');
-  const primaryReason = blockers[0]?.detail ?? 'All final booking gates are clear.';
+  const primaryReason = blockers[0]?.detail ?? 'All marketplace participation gates are clear.';
   const directFirstPickReason =
     directFirstPickBlockers[0]?.detail ??
     (cashDebt > 0
@@ -5650,7 +5650,7 @@ function buildPartnerAcceptanceRepairCommand(
     steps.push({
       owner: 'Ops',
       blocker: 'No active blocker',
-      reason: 'All final booking gates are currently clear for this partner.',
+      reason: 'All direct and marketplace readiness gates are currently clear for this partner.',
       operatorAction: 'Keep monitoring customer feedback records, response speed, and location freshness.',
       href: `/partners/${provider.id}`,
       actionLabel: 'Open profile',
@@ -5765,7 +5765,7 @@ function partnerAppBlockMessage(
   dispatchPolicy: PartnerDispatchPolicy,
 ) {
   if (bookingAcceptance.canJoinMarketplace) {
-    return 'Partner can receive and finalize booking requests.';
+    return 'Partner is clear for direct first-pick and marketplace participation.';
   }
   if (bookingAcceptance.cashDebt > 0) {
     return 'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.';
@@ -5788,7 +5788,7 @@ function partnerAppBlockMessage(
   if (payoutOps.hold) {
     return 'Payout is held by admin review; booking may require operator confirmation.';
   }
-  return 'Partner is temporarily unavailable for final booking flow.';
+  return 'Partner needs operator review before marketplace participation.';
 }
 
 function buildPartnerAcceptanceUnblockPlaybook(
