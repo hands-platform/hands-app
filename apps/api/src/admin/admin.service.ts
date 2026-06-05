@@ -631,12 +631,7 @@ export class AdminService {
             },
             pushDevices: {
               orderBy: { updatedAt: 'desc' },
-              include: {
-                deliveries: {
-                  orderBy: { attemptedAt: 'desc' },
-                  take: 5,
-                },
-              },
+              select: adminPushDeviceSummarySelect,
             },
             notifications: {
               orderBy: { createdAt: 'desc' },
@@ -994,12 +989,7 @@ export class AdminService {
           include: {
             pushDevices: {
               orderBy: { createdAt: 'desc' },
-              include: {
-                deliveries: {
-                  orderBy: { attemptedAt: 'desc' },
-                  take: 5,
-                },
-              },
+              select: adminPushDeviceSummarySelect,
             },
             fileAssets: {
               where: {
@@ -2265,7 +2255,7 @@ export class AdminService {
                     pushDevices: {
                       orderBy: { updatedAt: 'desc' },
                       take: 5,
-                      include: { deliveries: { orderBy: { attemptedAt: 'desc' }, take: 3 } },
+                      select: adminPushDeviceSummarySelect,
                     },
                   },
                 },
