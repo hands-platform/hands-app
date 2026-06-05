@@ -98,7 +98,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     adminGet<AdminBookingDetail | null>(`/admin/bookings/${id}`, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
     adminGet<AdminNotification[]>('/admin/notifications', []),
-    adminGet<AdminProvider[]>('/admin/partners', []),
+    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
   ]);
 
   if (!booking) {

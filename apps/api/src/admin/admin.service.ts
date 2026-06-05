@@ -137,6 +137,159 @@ const adminProviderSummarySelect = {
   user: { select: adminUserSummarySelect },
 } satisfies Prisma.ProviderProfileSelect;
 
+const adminProviderPublicMediaSelect = {
+  id: true,
+  key: true,
+  url: true,
+  contentType: true,
+  purpose: true,
+  visibility: true,
+  uploadStatus: true,
+  reviewStatus: true,
+  reviewedAt: true,
+  reviewReason: true,
+  uploadedAt: true,
+  sizeBytes: true,
+  createdAt: true,
+} satisfies Prisma.FileAssetSelect;
+
+const adminProviderVerificationFileSelect = {
+  id: true,
+  key: true,
+  contentType: true,
+  purpose: true,
+  visibility: true,
+  uploadStatus: true,
+  reviewStatus: true,
+  reviewedAt: true,
+  reviewReason: true,
+  uploadedAt: true,
+  sizeBytes: true,
+  url: true,
+} satisfies Prisma.FileAssetSelect;
+
+const adminProviderVerificationSummarySelect = {
+  id: true,
+  status: true,
+  submittedAt: true,
+  reviewedAt: true,
+  rejectionReason: true,
+  files: {
+    take: 3,
+    select: adminProviderVerificationFileSelect,
+  },
+} satisfies Prisma.ProviderVerificationSelect;
+
+const adminProviderKycSummarySelect = {
+  id: true,
+  status: true,
+  cccdNumberLast4: true,
+  submittedAt: true,
+  reviewedAt: true,
+  rejectionReason: true,
+} satisfies Prisma.ProviderKycSelect;
+
+const adminProviderDocumentSummarySelect = {
+  id: true,
+  type: true,
+  status: true,
+  reviewedAt: true,
+  rejectionReason: true,
+  fileAsset: {
+    select: {
+      id: true,
+      key: true,
+      contentType: true,
+      uploadStatus: true,
+      uploadedAt: true,
+      sizeBytes: true,
+    },
+  },
+} satisfies Prisma.ProviderDocumentSelect;
+
+const adminProviderBankAccountSummarySelect = {
+  id: true,
+  bankName: true,
+  accountNumberMasked: true,
+  accountNumberLast4: true,
+  accountHolderName: true,
+  status: true,
+  isPrimary: true,
+  reviewedAt: true,
+  rejectionReason: true,
+} satisfies Prisma.ProviderBankAccountSelect;
+
+const adminProviderTaxProfileSummarySelect = {
+  id: true,
+  status: true,
+  taxCodeLast4: true,
+  legalName: true,
+  registeredAddress: true,
+  approvedAt: true,
+  rejectionReason: true,
+} satisfies Prisma.ProviderTaxProfileSelect;
+
+const adminProviderAgreementSummarySelect = {
+  id: true,
+  type: true,
+  version: true,
+  acceptedAt: true,
+} satisfies Prisma.ProviderAgreementSelect;
+
+const adminProviderReportSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  bookingId: true,
+  source: true,
+  severity: true,
+  status: true,
+  category: true,
+  summary: true,
+  details: true,
+  resolvedAt: true,
+  resolutionNote: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderReportSelect;
+
+const adminProviderSanctionSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  reportId: true,
+  type: true,
+  status: true,
+  reason: true,
+  startsAt: true,
+  expiresAt: true,
+  liftedAt: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderSanctionSelect;
+
+const adminProviderSessionSummarySelect = {
+  id: true,
+  deviceId: true,
+  ipAddress: true,
+  appVersion: true,
+  loggedInAt: true,
+  lastSeenAt: true,
+  suspicious: true,
+  suspiciousReason: true,
+} satisfies Prisma.ProviderSessionSelect;
+
+const adminProviderDeviceSummarySelect = {
+  id: true,
+  deviceId: true,
+  platform: true,
+  appVersion: true,
+  enabled: true,
+  lastSeenAt: true,
+  blockedAt: true,
+  blockReason: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderDeviceSelect;
+
 const adminAddressSnapshotSelect = {
   id: true,
   bookingId: true,
@@ -160,6 +313,27 @@ const adminServicePayoutRuleSummarySelect = {
   active: true,
   notes: true,
 } satisfies Prisma.ServicePayoutRuleSelect;
+
+const adminProviderServiceSummarySelect = {
+  id: true,
+  price: true,
+  active: true,
+  service: {
+    select: {
+      id: true,
+      name: true,
+      durationMin: true,
+      basePrice: true,
+      priceStep: true,
+      active: true,
+      payoutRules: {
+        where: { active: true },
+        orderBy: { customerPrice: 'asc' },
+        select: adminServicePayoutRuleSummarySelect,
+      },
+    },
+  },
+} satisfies Prisma.ProviderServiceSelect;
 
 const adminBookingServiceSummarySelect = {
   id: true,
@@ -627,12 +801,7 @@ export class AdminService {
             pushDevices: {
               orderBy: { createdAt: 'desc' },
               take: compact ? 2 : undefined,
-              include: {
-                deliveries: {
-                  orderBy: { attemptedAt: 'desc' },
-                  take: 1,
-                },
-              },
+              select: adminPushDeviceSummarySelect,
             },
             fileAssets: {
               where: {
@@ -642,20 +811,36 @@ export class AdminService {
               },
               orderBy: { createdAt: 'desc' },
               take: compact ? 2 : 8,
+              ...(compact ? { select: adminProviderPublicMediaSelect } : {}),
             },
           },
         },
-        verification: { include: { files: compact ? { take: 3 } : true } },
-        kyc: true,
+        verification: compact
+          ? { select: adminProviderVerificationSummarySelect }
+          : { include: { files: true } },
+        kyc: compact ? { select: adminProviderKycSummarySelect } : true,
         documents: {
-          include: { fileAsset: true },
           orderBy: { createdAt: 'desc' },
           take: compact ? 6 : undefined,
+          ...(compact
+            ? { select: adminProviderDocumentSummarySelect }
+            : { include: { fileAsset: true } }),
         },
-        bankAccounts: { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }] },
-        taxProfile: true,
-        reports: { orderBy: { createdAt: 'desc' }, take: 5 },
-        sanctions: { orderBy: { createdAt: 'desc' }, take: 5 },
+        bankAccounts: {
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+          ...(compact ? { select: adminProviderBankAccountSummarySelect } : {}),
+        },
+        taxProfile: compact ? { select: adminProviderTaxProfileSummarySelect } : true,
+        reports: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          ...(compact ? { select: adminProviderReportSummarySelect } : {}),
+        },
+        sanctions: {
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          ...(compact ? { select: adminProviderSanctionSummarySelect } : {}),
+        },
         preferredBookings: {
           orderBy: { createdAt: 'desc' },
           take: compact ? 50 : 50,
@@ -707,18 +892,25 @@ export class AdminService {
                 },
               }),
         },
-        agreements: { orderBy: { acceptedAt: 'desc' } },
+        agreements: {
+          orderBy: { acceptedAt: 'desc' },
+          ...(compact ? { select: adminProviderAgreementSummarySelect } : {}),
+        },
         services: {
-          include: {
-            service: {
-              include: {
-                payoutRules: {
-                  where: { active: true },
-                  orderBy: { customerPrice: 'asc' },
+          ...(compact
+            ? { select: adminProviderServiceSummarySelect }
+            : {
+                include: {
+                  service: {
+                    include: {
+                      payoutRules: {
+                        where: { active: true },
+                        orderBy: { customerPrice: 'asc' },
+                      },
+                    },
+                  },
                 },
-              },
-            },
-          },
+              }),
         },
         earnings: {
           where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
@@ -752,8 +944,16 @@ export class AdminService {
                 },
               }),
         },
-        sessions: { orderBy: { lastSeenAt: 'desc' }, take: compact ? 3 : 10 },
-        devices: { orderBy: { lastSeenAt: 'desc' }, take: compact ? 3 : 10 },
+        sessions: {
+          orderBy: { lastSeenAt: 'desc' },
+          take: compact ? 3 : 10,
+          ...(compact ? { select: adminProviderSessionSummarySelect } : {}),
+        },
+        devices: {
+          orderBy: { lastSeenAt: 'desc' },
+          take: compact ? 3 : 10,
+          ...(compact ? { select: adminProviderDeviceSummarySelect } : {}),
+        },
       },
     });
   }

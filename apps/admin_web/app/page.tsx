@@ -229,7 +229,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     operationalPolicies,
   ] = await Promise.all([
     adminGet<AdminUser[]>('/admin/users', []),
-    adminGet<AdminProvider[]>('/admin/partners', []),
+    adminGet<AdminProvider[]>('/admin/partners?view=list', []),
     adminGet<AdminBooking[]>('/admin/bookings', []),
     adminGet<AdminPayment[]>('/admin/payments', []),
     adminGet<AdminEarningSummary>('/admin/earnings/summary', {
