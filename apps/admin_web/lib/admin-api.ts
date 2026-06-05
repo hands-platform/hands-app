@@ -73,7 +73,6 @@ export type AdminCustomer = {
       id: string;
       platform: string;
       enabled: boolean;
-      token: string;
       createdAt?: string;
       updatedAt?: string;
       deliveries?: Array<{
@@ -295,7 +294,6 @@ export type AdminProvider = {
       id: string;
       platform: string;
       enabled: boolean;
-      token: string;
       createdAt?: string;
       deliveries?: Array<{
         id: string;

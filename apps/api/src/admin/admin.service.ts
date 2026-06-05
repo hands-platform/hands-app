@@ -68,7 +68,6 @@ const adminAppSessionSummarySelect = {
 
 const adminPushDeviceSummarySelect = {
   id: true,
-  token: true,
   platform: true,
   enabled: true,
   createdAt: true,

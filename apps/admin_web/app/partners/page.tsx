@@ -1343,7 +1343,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                         <div key={device.id} style={{ marginBottom: 8 }}>
                           <p className="muted" style={{ marginBottom: 4 }}>
                             {device.platform} / {device.enabled ? 'enabled' : 'disabled'} /{' '}
-                            {maskToken(device.token)}
+                            Token hidden
                           </p>
                           {!device.enabled ? (
                             <p className="muted" style={{ marginBottom: 4 }}>
