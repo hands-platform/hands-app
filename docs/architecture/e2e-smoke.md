@@ -16,7 +16,7 @@
 - Customer selects final partner.
 - Chat message creation.
 - Service completion.
-- Customer review with neutral extra-payment reconciliation coverage.
+- Customer review without customer tip or gratuity payment coverage.
 - Provider earnings and summary.
 - Service duration option pricing, provider custom price validation, payout-rule fee calculation, and admin finance trace.
 - Admin payout batch creation.

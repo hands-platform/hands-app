@@ -1775,12 +1775,12 @@ function buildBookingCreateGateReview(
       },
       {
         key: 'booking.current_location_freshness_minutes',
-        gate: 'Fresh GPS',
+        gate: 'Optional GPS freshness',
         current: `${freshnessMinutes} min`,
         defaultValue: '10 min',
         operatorMeaning:
-          'The customer location proof must be recent. GPS failure still allows browsing and address search, but not unsafe immediate booking.',
-        evidence: `${bookingGateCurrentLocationRejectCount(reasonCounts)} reject(s)`,
+          'Fresh customer GPS can be stored as optional support evidence when available. Booking authority remains the confirmed service address.',
+        evidence: `${bookingGateCurrentLocationRejectCount(reasonCounts)} legacy row(s)`,
         href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION',
         pillClass: freshnessMinutes === 10 ? 'pill-success' : 'pill-warn',
       },
@@ -1980,12 +1980,12 @@ function policyRecommendationPosture(
       Number.isFinite(numericRecommended) &&
       numericValue > numericRecommended;
     return {
-      status: looser ? 'Allows older GPS evidence' : 'Fresh GPS evidence baseline',
+      status: looser ? 'Keeps older optional GPS evidence' : 'Optional GPS evidence baseline',
       detail:
         'This controls how recent optional customer GPS evidence is retained when the app can provide it.',
       operatorAction:
-        'Verify mobile permission and current-location capture before changing evidence freshness.',
-      alignedAction: 'Fresh customer GPS evidence matches the 10 minute support-evidence baseline.',
+        'Verify address search and optional current-location capture before changing evidence freshness.',
+      alignedAction: 'Optional customer GPS evidence matches the 10 minute support-evidence baseline.',
       className: looser ? 'ops-task-pending' : 'ops-task-done',
       pillClass: looser ? 'pill-warn' : 'pill-success',
     };
@@ -4412,19 +4412,19 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'booking.current_location_freshness_minutes': {
       area: 'Booking create gate',
-      title: 'Controls current customer GPS freshness',
+      title: 'Records optional current customer GPS freshness',
       detail:
-        'The app must provide recent customer GPS evidence before immediate booking. If GPS fails, customers can still browse and search addresses, but booking should not bypass local proof.',
+        'The app may attach recent customer GPS evidence when available. Booking must not require current GPS; the confirmed Vietnam service address remains the authority.',
       saveChecks: [
         {
-          label: 'Blocked create attempts',
-          detail: 'Review location-related booking create failures before loosening freshness.',
+          label: 'Optional GPS evidence rows',
+          detail: 'Review historical GPS-related rows as support evidence, not as a current booking blocker.',
           href: '/bookings?view=blocked-create',
         },
         {
-          label: 'Mobile setup',
+          label: 'Address selection flow',
           detail:
-            'Confirm customer app location permission and address search flows work before changing this threshold.',
+            'Confirm customers can still search and confirm a Vietnam service address when GPS is denied.',
           href: '/setup',
         },
       ],

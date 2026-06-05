@@ -723,7 +723,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer booking evidence bundles</h2>
             <p className="muted">
-              Reservation-by-reservation operating bundle for customer desk review. Each row connects the
+              Booking-by-booking operating bundle for customer desk review. Each row connects the
               selected address snapshot, partner state, chat archive, payment, refund, earning, wallet, tax,
               and staff task records as factual history only.
             </p>
@@ -835,7 +835,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Customer booking journey</h2>
             <p className="muted">
-              Reservation-by-reservation journey for support review: service address, partner handoff,
+              Booking-by-booking journey for support review: service address, partner handoff,
               retained chat, payment rows, and staff records are grouped as factual records only.
             </p>
           </div>
@@ -874,7 +874,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <span>NONE</span>
               <div>
                 <strong>No booking journey matched this filter</strong>
-                <p className="muted">Use a wider date range to show older reservation rows.</p>
+                <p className="muted">Use a wider date range to show older booking rows.</p>
               </div>
               <small>0</small>
             </div>
@@ -2636,7 +2636,7 @@ function buildCustomerActivityPlan(
       {
         title: 'Latest booking',
         value: latestBooking ? `${shortId(latestBooking.id)} / ${latestBooking.status}` : 'None',
-        detail: latestBooking ? bookingServiceLabel(latestBooking) : 'No reservation history yet',
+        detail: latestBooking ? bookingServiceLabel(latestBooking) : 'No booking history yet',
         href: latestBooking ? `/bookings/${latestBooking.id}` : '/bookings',
       },
       {
@@ -3379,7 +3379,7 @@ function buildCustomerBookingOpsLedgerRows(bookings: AdminBookingDetail[]): Cust
         status: booking.status,
         partnerLabel: bookingPartnerDisplayName(booking),
         noteStatus: latestNote ? 'Manual note saved' : 'No manual note',
-        noteDetail: latestNote ?? 'No booking-level staff note has been saved for this reservation.',
+        noteDetail: latestNote ?? 'No booking-level staff note has been saved for this booking.',
         taskStatus: tasks.length ? `${tasks.length} task row(s)` : 'No staff task',
         taskDetail: latestTask
           ? `${latestTask.status} ${latestTask.type} / ${latestTask.note ?? 'No task note'} / ${

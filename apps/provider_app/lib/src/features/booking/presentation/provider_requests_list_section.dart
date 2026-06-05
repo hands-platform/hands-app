@@ -104,7 +104,7 @@ class ProviderRequestsListSection extends StatelessWidget {
     final filterCopy = requestView == 'action'
         ? 'Requests that still need action'
         : requestView == 'chat'
-            ? 'Requests with chat already unlocked'
+            ? 'Requests with matched chat ready'
             : 'All loaded requests';
     return 'Showing ${visibleBookings.length} of ${bookingItems.length} request(s) - $filterCopy';
   }

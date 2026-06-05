@@ -78,7 +78,7 @@ The guard blocks Firebase references, direct Supabase imports from screens/prese
    - Store selected customer locations and provider last-known locations in PostgreSQL/Supabase tables.
 
 4. Booking boundary
-   - Keep booking, direct request, provider accept, marketplace matching, and chat-unlock behavior in the API.
+   - Keep booking, direct request, provider accept, marketplace matching, and matched chat lifecycle in the API.
    - Move Flutter API calls into `BookingRepository`.
 
 5. Chat boundary

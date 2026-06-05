@@ -2041,7 +2041,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Dispatch candidate decision matrix</h2>
             <p className="muted">
-              Reservation-specific readout for who can be used now, who is excluded, and what the operator
+              Booking-specific readout for who can be used now, who is excluded, and what the operator
               should fix before extending customer wait time.
             </p>
           </div>
@@ -2189,7 +2189,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Booking alert trace</h2>
             <p className="muted">
-              Reservation-specific notification history for first-pick, marketplace partner visibility,
+              Booking-specific notification history for first-pick, marketplace partner visibility,
               retries, and disabled device checks.
             </p>
           </div>
@@ -8140,12 +8140,12 @@ function bookingMvpAuthorityContract({
     },
     {
       contract: 'On-demand service rules',
-      scope: 'No schedule picker, no customer extra-payment flow',
+      scope: 'No schedule picker, no customer tip/gratuity flow',
       status: terminal ? 'Closeout record' : 'On-demand active',
       tone: 'pill-success',
-      evidence: `${financeTrace.serviceOption} / payment ${booking.payment?.method ?? 'NONE'} / no customer extra-payment lane.`,
+      evidence: `${financeTrace.serviceOption} / payment ${booking.payment?.method ?? 'NONE'} / no customer tip or gratuity lane.`,
       operatorUse:
-        'Keep scheduling and customer extra-payment decisions out of MVP booking flow; use policy/admin closeout records.',
+        'Keep scheduling, customer tips, and gratuity decisions out of MVP booking flow; use policy/admin closeout records.',
       href: '#service',
     },
   ];
@@ -9375,7 +9375,7 @@ function bookingOperationalPolicySnapshot(
     customerConfirmMode && customerChoiceCandidates.length > 0 && !selected ? 'pill-warn' : 'pill-success';
   const decisionDetail = customerConfirmMode
     ? customerChoiceCandidates.length > 0 && !selected
-      ? 'A partner joined or accepted, but the customer still needs to confirm the final partner before chat is unlocked.'
+      ? 'A partner joined or accepted, but the customer still needs to confirm the final partner before matched chat opens.'
       : 'Preferred partner acceptance keeps the request open until the customer confirms the final partner.'
     : 'Preferred partner acceptance immediately locks the booking to that partner.';
 

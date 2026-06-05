@@ -444,7 +444,7 @@ function checkAdminDashboardOperationsCoverage() {
   requireMarkers('apps/admin_web/app/page.tsx', dashboard, requiredKpis);
   requireMarkers('docs/architecture/operations-dashboard.md', dashboardDoc, [
     'Admin home page is the first shift screen',
-    'Total reservation volume',
+    'Total booking volume',
     'Current matching pressure',
     'Completed services',
     'Cancelled reservations',

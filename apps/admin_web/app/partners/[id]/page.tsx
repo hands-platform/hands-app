@@ -1051,7 +1051,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner booking evidence bundles</h2>
             <p className="muted">
-              Reservation-by-reservation partner work bundle for operators. Each row connects the partner
+              Booking-by-booking partner work bundle for operators. Each row connects the partner
               role, customer address snapshot, chat archive, payment, earning, payout/wallet records,
               location, and staff task records as factual history only.
             </p>
@@ -5262,7 +5262,7 @@ function buildPartnerBookingOpsLedgerRows(
         serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
         status: booking.status ?? 'UNKNOWN',
         noteStatus: latestNote ? 'Manual note saved' : 'No manual note',
-        noteDetail: latestNote ?? 'No booking-level staff note has been saved for this reservation.',
+        noteDetail: latestNote ?? 'No booking-level staff note has been saved for this booking.',
         taskStatus: tasks.length ? `${tasks.length} task row(s)` : 'No staff task',
         taskDetail: latestTask
           ? `${latestTask.status} ${latestTask.type} / ${latestTask.note ?? 'No task note'} / ${

@@ -22,7 +22,7 @@ The dashboard answers these shift questions:
 
 | Operating need | Dashboard KPI or section | Operator action |
 | --- | --- | --- |
-| Total reservation volume | `Total bookings` | Confirm the loaded admin snapshot size before making shift decisions. |
+| Total booking volume | `Total bookings` | Confirm the loaded admin snapshot size before making shift decisions. |
 | Current matching pressure | `Open matching`, `Matching control room` | Open Booking Monitor and protect waiting customers before the response window expires. |
 | Completed services | `Completed bookings`, `Closeout follow-up` | Confirm capture, earning, tax, fee, wallet, review, and notification closeout. |
 | Cancelled reservations | `Cancelled bookings` | Check refund or payment release outcome. |
