@@ -186,6 +186,6 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
     if (reference != null)
       'Use reference $reference when sending the deposit or requesting admin offset.',
     'After admin confirms the deposit or offset, refresh wallet status.',
-    'Marketplace participation and payout release unlock when the wallet is no longer negative.',
+    'Marketplace participation and payout release resume when the wallet is no longer negative.',
   ];
 }

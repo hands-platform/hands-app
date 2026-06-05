@@ -423,7 +423,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Total bookings',
       rangeBookings.length.toString(),
-      `${selectedRangeLabel} reservations in the selected dashboard window.`,
+      `${selectedRangeLabel} bookings in the selected dashboard window.`,
     ],
     [
       'Open matching',
@@ -449,7 +449,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'No-show records',
       bookingOps.noShowSignal.toString(),
-      `${selectedRangeLabel} formal NO_SHOW reservations plus overdue matched bookings without chat records.`,
+      `${selectedRangeLabel} formal NO_SHOW bookings plus overdue matched bookings without chat records.`,
     ],
     [
       'Closeout checks',
@@ -1052,7 +1052,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div>
             <h2>Daily operations snapshot</h2>
             <p className="muted">
-              One-screen view of today&apos;s reservations, matching wait, app presence, partner supply, cash
+              One-screen view of today&apos;s bookings, matching wait, app presence, partner supply, cash
               settlement blocks, and notification delivery.
             </p>
           </div>
@@ -1579,7 +1579,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <span>Total</span>
               <strong>{bookingOps.total}</strong>
-              <small>All reservations</small>
+              <small>All bookings</small>
             </div>
             <div>
               <span>Matching wait</span>
@@ -1639,12 +1639,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <InfoRow
                 label="Live matching customers"
                 value={appPresence.liveOpenMatchingCustomers.toString()}
-                detail="Live customers attached to open matching reservations."
+                detail="Live customers attached to open matching bookings."
               />
               <InfoRow
                 label="Live active-booking customers"
                 value={appPresence.liveActiveBookingCustomers.toString()}
-                detail="Live customers attached to active reservations."
+                detail="Live customers attached to active bookings."
               />
               <InfoRow
                 label="Live app partners"
@@ -1664,7 +1664,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <InfoRow
                 label="Active booking customers"
                 value={appPresence.activeBookingCustomers.toString()}
-                detail="Unique customers attached to open or in-service reservations."
+                detail="Unique customers attached to open or in-service bookings."
               />
               <InfoRow
                 label="Reachable customers"
@@ -1691,7 +1691,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
           <div className="ops-section-header">
             <div>
               <h2>Hourly booking demand</h2>
-              <p className="muted">Reservations grouped by request hour in Vietnam time.</p>
+              <p className="muted">Bookings grouped by request hour in Vietnam time.</p>
             </div>
             <span className="pill pill-info">Asia/Ho_Chi_Minh</span>
           </div>

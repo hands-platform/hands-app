@@ -2036,7 +2036,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               </div>
             ) : (
               <p className="muted">
-                No earnings yet. Payout unlock starts after the first completed service.
+                No earnings yet. Payout eligibility starts after the first completed service.
               </p>
             )}
           </div>
@@ -2922,7 +2922,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             </>
           ) : (
             <p className="muted">
-              Tax profile is not required until payout unlock, and has not been submitted.
+              Tax profile is not required until payout eligibility review, and has not been submitted.
             </p>
           )}
         </div>
@@ -5997,7 +5997,7 @@ function buildPartnerDetailOpsBadges(
       detail: serviceGate?.detail ?? 'Service pricing gate has not been evaluated.',
     },
     {
-      label: payoutOps.status === 'UNLOCKED' ? 'Payout unlocked' : `Payout ${payoutOps.status.toLowerCase()}`,
+      label: payoutOps.status === 'UNLOCKED' ? 'Payout ready' : `Payout ${payoutOps.status.toLowerCase()}`,
       tone: payoutOps.tone,
       detail:
         payoutOps.blockers[0] ??
@@ -6475,7 +6475,7 @@ function buildProviderResubmissionPlan(provider: ProviderDetail) {
       status: 'REJECTED',
       reason: provider.taxProfile.rejectionReason ?? 'No tax rejection reason was saved.',
       providerInstruction:
-        'Ask for the correct MST/tax code, legal name, and registered address before payout unlock.',
+        'Ask for the correct MST/tax code, legal name, and registered address before payout review.',
       operatorAction: 'Tax',
     });
   }

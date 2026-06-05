@@ -163,7 +163,7 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"walletSettlementReference":"HANDS-WALLET-',
     '"displayMessage":"Unpaid HANDS fees must be settled before you can join this marketplace booking."',
     'Marketplace requests stay visible for review, but participation is blocked',
-    'Marketplace participation and payout release unlock',
+    'Marketplace participation and payout release resume',
   ];
   const missingMarkers = requiredMarkers.filter((marker) => !message.includes(marker));
   if (missingMarkers.length) {

@@ -25,7 +25,7 @@ The dashboard answers these shift questions:
 | Total booking volume | `Total bookings` | Confirm the loaded admin snapshot size before making shift decisions. |
 | Current matching pressure | `Open matching`, `Matching control room` | Open Booking Monitor and protect waiting customers before the response window expires. |
 | Completed services | `Completed bookings`, `Closeout follow-up` | Confirm capture, earning, tax, fee, wallet, review, and notification closeout. |
-| Cancelled reservations | `Cancelled bookings` | Check refund or payment release outcome. |
+| Cancelled bookings | `Cancelled bookings` | Check refund or payment release outcome. |
 | No-show follow-up | `No-show signal` | Review payment, customer communication, and partner settlement impact. |
 | Hourly demand | `Hourly booking demand` | Plan partner supply by time slot and identify peak-hour gaps. |
 | Regional demand | `Regional booking demand` | Compare demand by city/district and partner location freshness. |

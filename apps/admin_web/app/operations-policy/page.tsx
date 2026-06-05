@@ -4266,11 +4266,11 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
     },
     {
       step: '6',
-      title: 'Chat and service execution',
-      detail: `After acceptance/service start, chat and operational follow-up continue in-app. Alerts currently follow "${alertChannel}".`,
+      title: 'Matched chat and service execution',
+      detail: `After final partner selection, matched chat and operational follow-up continue in-app. Alerts currently follow "${alertChannel}".`,
       className: 'timeline-done',
       tags: [
-        { label: 'Chat unlock', tone: 'pill-success' },
+        { label: 'Matched chat opens', tone: 'pill-success' },
         { label: alertChannel, tone: 'pill-info' },
       ],
     },

@@ -3967,7 +3967,7 @@ function bookingChatEvidenceDecisionBoard({
     rows: [
       {
         lane: 'Chat room creation',
-        scope: 'Final partner selection should unlock a retained customer-partner room.',
+        scope: 'Final partner selection should create a retained customer-partner room.',
         state: chatRoomReady ? 'Archived' : chatRequired ? 'Repair needed' : 'Waiting for final choice',
         tone: chatRoomReady ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-info',
         record: chatRoomReady
@@ -4122,7 +4122,7 @@ function bookingManualDecisionReadiness({
         ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
         : `${booking.payment?.method ?? 'NONE'} / ${booking.payment?.status ?? 'NONE'}`,
       operatorUse:
-        'If debt exists, confirm company fee deposit or admin offset before marketplace join or payout release is unlocked.',
+        'If debt exists, confirm company fee deposit or admin offset before marketplace join or payout release resumes.',
       href: '#finance',
     },
     {
@@ -5961,7 +5961,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
     return {
       title: 'Settle cash fee debt',
       detail:
-        'Partner collected cash. Confirm company fee deposit or admin offset before marketplace join or payout release is unlocked.',
+        'Partner collected cash. Confirm company fee deposit or admin offset before marketplace join or payout release resumes.',
       href: '#finance',
       hrefLabel: 'Open finance',
     };

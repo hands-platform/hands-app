@@ -1211,7 +1211,7 @@ function buildPayoutReleaseCycleBoard(
       timing: 'Before release',
       status: `${cashDebt.length} held`,
       queue: 'Partner cash-fee wallet debt from cash bookings.',
-      operatorCheck: 'Debt must be settled by deposit evidence or approved offset before marketplace and payout unlock.',
+      operatorCheck: 'Debt must be settled by deposit evidence or approved offset before marketplace join and payout release resume.',
       nextAction: 'Open Cash Settlements for deposit or offset confirmation.',
       pillClass: cashDebt.length ? 'pill-danger' : 'pill-success',
     },

@@ -303,7 +303,7 @@ class ProviderOnboardingCard extends StatelessWidget {
             ),
             ProviderOnboardingStepCard(
               step: '4',
-              title: 'Payout unlock',
+              title: 'Payout eligibility',
               detail: providerTaxProfileStepDetail(
                 completedBookingCount: completedBookingCount,
                 status: taxStatus,

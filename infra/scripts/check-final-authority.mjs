@@ -447,7 +447,7 @@ function checkAdminDashboardOperationsCoverage() {
     'Total booking volume',
     'Current matching pressure',
     'Completed services',
-    'Cancelled reservations',
+    'Cancelled bookings',
     'No-show follow-up',
     'Hourly demand',
     'Regional demand',
