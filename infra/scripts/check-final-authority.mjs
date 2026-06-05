@@ -407,6 +407,7 @@ function checkAdminPeopleManagementIsFactual() {
     'people scoring wording',
     'separate partner activity page wording',
     'operator risk scoring wording',
+    'operator risk exposure wording',
     'List-first partner control view',
     'Customer operating ledger',
     'Partner operating ledger',

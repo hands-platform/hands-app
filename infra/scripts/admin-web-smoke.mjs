@@ -703,6 +703,10 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'separate partner activity page wording', pattern: /\bPartner Activity\b/i },
     { label: 'operator risk scoring wording', pattern: /\b(risk score|risk rating|risk level)\b/i },
     {
+      label: 'operator risk exposure wording',
+      pattern: /\b(payout risk|booking risk|customer risk|partner risk|provider risk)\b/i,
+    },
+    {
       label: 'judgmental account wording',
       pattern: /\b(account misuse|fraud|misuse|abuse controls|suspicious|trusted partner)\b/i,
     },

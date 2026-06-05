@@ -4068,7 +4068,7 @@ function operationsOwnerDecisionBacklog() {
       question:
         'Should cash-fee debt block marketplace join only, or marketplace join plus payout release?',
       evidence:
-        'Review cash settlement speed, repeated debt partners, marketplace participation, and payout risk before changing wallet gate scope.',
+        'Review cash settlement speed, repeated debt partners, marketplace participation, and payout exposure before changing wallet gate scope.',
       options: [
         {
           label: 'Marketplace only',
