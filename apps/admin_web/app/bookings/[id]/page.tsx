@@ -1447,6 +1447,20 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </a>
           ))}
         </div>
+        <div className="setup-stage-list" style={{ marginTop: 14 }}>
+          {marketplaceWalletEvidence.commandStrip.map((command) => (
+            <div className="setup-stage-item" key={command.label}>
+              <span>{command.label}</span>
+              <div>
+                <strong>{command.value}</strong>
+                <p className="muted">{command.helper}</p>
+              </div>
+              <a className="text-link" href={command.href}>
+                Open
+              </a>
+            </div>
+          ))}
+        </div>
         <table className="table" style={{ marginTop: 14 }}>
           <thead>
             <tr>
@@ -8503,6 +8517,41 @@ function bookingMarketplaceWalletEvidence({
             ? `${financeTrace.walletLedger} wallet impact from cash collection.`
             : `${financeTrace.providerPayout} partner payout for non-cash flow.`,
         href: '#finance',
+      },
+    ],
+    commandStrip: [
+      {
+        label: 'Participant evidence boundary',
+        value: `${participants.length} actual row(s)`,
+        helper:
+          'Only partners who entered the booking are retained here; view-only wallet blocks are excluded before participant creation.',
+        href: '#participants',
+      },
+      {
+        label: 'Customer final partner',
+        value: finalPartner ? providerName(finalPartner) : 'Pending customer choice',
+        helper:
+          'No automatic assignment. The final partner must come from the customer selection record.',
+        href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
+      },
+      {
+        label: 'Chat evidence handoff',
+        value: booking.chatRoom
+          ? `${booking.chatRoom.messages?.length ?? 0} retained message(s)`
+          : finalPartner
+            ? 'Chat missing'
+            : 'Not opened yet',
+        helper:
+          'Chat opens after customer final selection and stays retained in Admin even when mobile hides completed-service chat.',
+        href: '#chat',
+      },
+      {
+        label: 'Wallet/cash fee gate',
+        value: walletDebt ? 'Participation blocked' : 'Gate clear',
+        helper: walletDebt
+          ? 'Cash-fee debt blocks marketplace participation before a participant row can be created.'
+          : 'No active cash-fee wallet block is attached to this booking evidence.',
+        href: walletDebt ? '/cash-settlements' : '#finance',
       },
     ],
     rows: [

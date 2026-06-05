@@ -898,6 +898,10 @@ if (bookingLinkMatch) {
   const bookingMarkers = [
     'Booking operations quick rail',
     'Marketplace participation and wallet evidence',
+    'Participant evidence boundary',
+    'Customer final partner',
+    'Chat evidence handoff',
+    'Wallet/cash fee gate',
     'Operator command queue',
     'Operator action availability',
     'Booking gate reason',
