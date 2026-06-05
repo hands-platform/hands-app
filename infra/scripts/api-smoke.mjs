@@ -2645,6 +2645,17 @@ const chatMessage = await postJson(`/chat/rooms/${chatRoomId}/messages`, custome
   body: 'Hello, see you soon.',
 });
 
+const completeBeforeStartError = await expectRequestFailure(
+  'Partner cannot complete before service start',
+  () => postJson(`/provider/bookings/${booking.id}/complete`, providerAuth.accessToken),
+  400,
+);
+if (!completeBeforeStartError.includes('Invalid booking status transition from MATCHED')) {
+  throw new Error(
+    `Completing before service start returned an unexpected error: ${completeBeforeStartError}`,
+  );
+}
+
 await startAndCompleteBooking(booking.id, providerAuth.accessToken);
 
 const completedAdminChatDetail = await getJson(`/admin/bookings/${booking.id}`, adminAuth.accessToken);

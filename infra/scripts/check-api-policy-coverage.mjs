@@ -109,6 +109,14 @@ const requiredCoverage = [
     ],
   },
   {
+    area: 'service lifecycle gate',
+    markers: [
+      'Partner cannot complete before service start',
+      'Invalid booking status transition from MATCHED',
+      'Completing before service start returned an unexpected error',
+    ],
+  },
+  {
     area: 'booking closure metadata',
     markers: [
       'Cancelled booking did not record customer closure metadata',
