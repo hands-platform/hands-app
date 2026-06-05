@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { InfoRow } from '../components/info-row';
 import {
   AdminAuditLog,
   AdminBooking,
@@ -2324,18 +2325,6 @@ function externalSetupHref(category: string) {
   }
 
   return '/setup';
-}
-
-function InfoRow({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <tr>
-      <td>
-        <strong>{label}</strong>
-        <div className="muted">{detail}</div>
-      </td>
-      <td>{value}</td>
-    </tr>
-  );
 }
 
 function buildMatchingControlRoom(

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { InfoRow } from '../../components/info-row';
 import { AdminAppSession, adminGet } from '../../lib/admin-api';
 import { formatDateTime, formatRelativeTime } from '../../lib/admin-format';
 
@@ -318,18 +319,6 @@ function singleParam(value: string | string[] | undefined) {
 
 function isSessionState(value: string | undefined): value is SessionState {
   return value === 'live' || value === 'recent' || value === 'stale' || value === 'expired';
-}
-
-function InfoRow({ label, value, detail }: { label: string; value: string; detail: string }) {
-  return (
-    <tr>
-      <td>
-        <strong>{label}</strong>
-        <div className="muted">{detail}</div>
-      </td>
-      <td>{value}</td>
-    </tr>
-  );
 }
 
 function buildSessionSummary(sessions: AdminAppSession[]): Array<[string, string, string]> {
