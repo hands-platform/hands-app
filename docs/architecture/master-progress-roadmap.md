@@ -70,7 +70,7 @@ Full local smoke needs Docker PostgreSQL and Redis:
 ```powershell
 docker compose up -d
 npm.cmd run local:start
-node infra/scripts/api-smoke.mjs
+npm.cmd run api:smoke
 npm.cmd run admin:web-smoke:critical
 node infra/scripts/admin-web-smoke.mjs
 ```

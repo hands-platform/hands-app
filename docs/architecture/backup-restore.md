@@ -39,4 +39,4 @@ FORCE=1 sh infra/scripts/restore-db.sh backups/massage-vn-YYYYMMDD-HHMMSS.dump
 - Keep off-server backups for real production.
 - Test restore regularly on staging.
 - Back up object storage separately; database backups only preserve `FileAsset` metadata and object keys.
-- Run `node infra/scripts/api-smoke.mjs` after staging restores.
+- Run `npm.cmd run api:smoke` after staging restores.

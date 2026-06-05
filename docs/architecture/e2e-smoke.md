@@ -1,6 +1,6 @@
 # End-to-End Smoke Flow
 
-`infra/scripts/api-smoke.mjs` is the local MVP confidence test. Run it after Postgres, Redis, migrations, seed data, and the API server are available.
+`npm.cmd run api:smoke` is the local MVP confidence test. It runs `infra/scripts/api-smoke.mjs` after Postgres, Redis, migrations, seed data, and the API server are available.
 
 ## Coverage
 
@@ -28,7 +28,7 @@
 
 ```powershell
 $env:API_BASE_URL='http://localhost:3000/api'
-node infra/scripts/api-smoke.mjs
+npm.cmd run api:smoke
 ```
 
 ## Expected Result

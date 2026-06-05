@@ -75,4 +75,4 @@ The script fails on missing required runtime values and warns about recommended 
 - Run Prisma migrations explicitly.
 - Schedule database backups and test restore on staging.
 - Use `infra/scripts/collect-logs.*` when investigating staging or production issues.
-- Run `node infra/scripts/api-smoke.mjs` against staging after deployment.
+- Run `npm.cmd run api:smoke` against staging after deployment.

@@ -65,7 +65,7 @@ $env:DATABASE_URL='postgresql://massage:massage@localhost:5432/massage_vn?schema
 npm.cmd run prisma:migrate --workspace @massage-vn/api
 npm.cmd run prisma:seed --workspace @massage-vn/api
 npm.cmd run dev --workspace @massage-vn/api
-node infra/scripts/api-smoke.mjs
+npm.cmd run api:smoke
 ```
 
 Health checks:

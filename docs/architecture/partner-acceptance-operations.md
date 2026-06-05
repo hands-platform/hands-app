@@ -189,7 +189,7 @@ cd C:\dev\massage-vn-workspace\repo
 npm.cmd run typecheck --workspace @massage-vn/api
 npm.cmd run typecheck --workspace @massage-vn/admin-web
 npm.cmd run build --workspace @massage-vn/admin-web
-node .\infra\scripts\api-smoke.mjs
+npm.cmd run api:smoke
 node .\infra\scripts\admin-web-smoke.mjs
 ```
 
