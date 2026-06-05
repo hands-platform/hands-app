@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MetricCard } from '../../../components/metric-card';
 import { BookingChatBubble } from './booking-chat-bubble';
+import { BookingCashDebtSettlementForm, BookingPaymentAction } from './booking-payment-actions';
 import {
   AdminAuditLog,
   AdminBookingDetail,
@@ -32,7 +33,6 @@ import {
   markBookingNoShow,
   refundBookingPayment,
   releaseBookingPayment,
-  settleBookingCashDebt,
   syncBookingPayment,
   updateBookingOpsTask,
 } from './actions';
@@ -1838,7 +1838,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <div className="action-button-grid">
           {booking.payment?.id ? (
             <>
-              <PaymentAction
+              <BookingPaymentAction
                 action={syncBookingPayment}
                 bookingId={booking.id}
                 paymentId={booking.payment.id}
@@ -1846,7 +1846,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 disabled={!booking.payment.providerRef || isTerminalPayment(booking.payment.status)}
                 readout={actionGateByAction.get('Payment sync')}
               />
-              <PaymentAction
+              <BookingPaymentAction
                 action={captureBookingPayment}
                 bookingId={booking.id}
                 paymentId={booking.payment.id}
@@ -1858,7 +1858,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 }
                 readout={actionGateByAction.get('Payment capture')}
               />
-              <PaymentAction
+              <BookingPaymentAction
                 action={releaseBookingPayment}
                 bookingId={booking.id}
                 paymentId={booking.payment.id}
@@ -1870,7 +1870,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 }
                 readout={actionGateByAction.get('Release or refund')}
               />
-              <PaymentAction
+              <BookingPaymentAction
                 action={refundBookingPayment}
                 bookingId={booking.id}
                 paymentId={booking.payment.id}
@@ -1879,7 +1879,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
                 readout={actionGateByAction.get('Release or refund')}
               />
               {bookingCashDebtNeedsSettlement(booking) && booking.earning?.id && (
-                <CashDebtSettlementForm booking={booking} />
+                <BookingCashDebtSettlementForm booking={booking} />
               )}
             </>
           ) : (
@@ -6039,76 +6039,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
-  );
-}
-
-function PaymentAction({
-  action,
-  bookingId,
-  paymentId,
-  label,
-  disabled,
-  readout,
-}: {
-  action: (...args: [FormData]) => Promise<void>;
-  bookingId: string;
-  paymentId: string;
-  label: string;
-  disabled?: boolean;
-  readout?: BookingActionEvidenceGateRow;
-}) {
-  return (
-    <form action={action} className={`action-button-card ${readout?.className ?? ''}`}>
-      <input type="hidden" name="bookingId" value={bookingId} />
-      <input type="hidden" name="paymentId" value={paymentId} />
-      <div>
-        <span className={`pill ${readout?.pillClass ?? (disabled ? 'pill-neutral' : 'pill-info')}`}>
-          {readout?.status ?? (disabled ? 'Locked' : 'Available')}
-        </span>
-        <strong>{label}</strong>
-        <p className="muted">{readout?.evidence ?? 'Payment action state is derived from the booking.'}</p>
-      </div>
-      <button type="submit" disabled={disabled}>
-        {label}
-      </button>
-      <small>{readout?.operatorRule ?? 'Use retained booking evidence before changing payment state.'}</small>
-    </form>
-  );
-}
-
-function CashDebtSettlementForm({ booking }: { booking: AdminBookingDetail }) {
-  const earning = booking.earning;
-  if (!earning) {
-    return null;
-  }
-
-  const settlementRef = `HANDS-CASH-${shortId(booking.id).toUpperCase()}`;
-  return (
-    <form action={settleBookingCashDebt} className="action-button-card ops-task-blocked">
-      <input type="hidden" name="bookingId" value={booking.id} />
-      <input type="hidden" name="earningId" value={earning.id} />
-      <input type="hidden" name="settlementMethod" value="PARTNER_DEPOSIT" />
-      <div>
-        <span className="pill pill-danger">Settlement needed</span>
-        <strong>Settle cash fee debt</strong>
-        <p className="muted">
-          Partner cash collection created a negative wallet fee. Confirm deposit or admin offset evidence.
-        </p>
-      </div>
-      <input
-        name="settlementRef"
-        defaultValue={settlementRef}
-        placeholder={settlementRef}
-        aria-label="Cash debt settlement reference"
-      />
-      <input
-        name="settlementNotes"
-        defaultValue={`Partner deposited ${money(Math.abs(earning.netAmount), earning.currency)} with ${settlementRef}`}
-        placeholder={`Partner deposited ${money(Math.abs(earning.netAmount), earning.currency)}`}
-        aria-label="Cash debt settlement notes"
-      />
-      <button type="submit">Settle cash debt</button>
-    </form>
   );
 }
 
