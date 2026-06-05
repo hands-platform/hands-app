@@ -3550,7 +3550,7 @@ function buildBookingEvidenceCommandQueue(input: {
           : 'Closeout evidence is clear for terminal booking rows.',
       href: '/bookings?view=all&evidence=closeout',
       tone: evidenceTone(closeoutChecks, 1, 5),
-      checks: ['Final status', 'Chat proof', 'Finance trace'],
+      checks: ['Final status', 'Chat evidence', 'Finance trace'],
       operatorAction: closeoutChecks > 0 ? 'Open closeout evidence queue' : 'Keep closeout monitor',
       sample: bookingEvidenceSample(closeoutRows, 'Closeout sample'),
     },

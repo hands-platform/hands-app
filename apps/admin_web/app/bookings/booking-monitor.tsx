@@ -290,7 +290,7 @@ const bookingGateFilterOptions: Array<{ value: BookingGateFilter; label: string;
   },
   {
     value: 'customer-gps',
-    label: 'Optional GPS proof',
+    label: 'Optional GPS evidence',
     operatorHint:
       'Optional customer GPS evidence rows are retained as support context. Booking authority is the address snapshot.',
   },
@@ -2291,7 +2291,7 @@ function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtecti
         noShowUnresolved.length > 0
           ? 'No-show bookings still need a payment, fee, or customer support decision.'
           : 'No-show bookings have no unresolved payment in the current snapshot.',
-      operatorAction: 'Review chat, arrival/location proof, customer response, then decide payment handling.',
+      operatorAction: 'Review chat, arrival/location evidence, customer response, then decide payment handling.',
       href: '/bookings?view=no-show',
       bookings: noShowUnresolved,
     },
@@ -3186,7 +3186,7 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
   const serviceArea = logs.filter(
     (log) => bookingGateReasonCode(log) === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA',
   );
-  const locationProof = logs.filter((log) =>
+  const locationEvidence = logs.filter((log) =>
     bookingGateReasonCode(log).startsWith('CUSTOMER_CURRENT_LOCATION_'),
   );
   const latest = logs[0];
@@ -3198,14 +3198,14 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
     tone: logs.length > 0 ? 'warn' : 'ok',
     detail:
       logs.length > 0
-        ? `${customerTooFar.length} optional GPS distance, ${partnerTooFar.length} first-pick distance, ${serviceArea.length} service-area, and ${locationProof.length} optional GPS proof attempt(s). Latest ${latestAge}.`
+        ? `${customerTooFar.length} optional GPS distance, ${partnerTooFar.length} first-pick distance, ${serviceArea.length} service-area, and ${locationEvidence.length} optional GPS evidence attempt(s). Latest ${latestAge}.`
         : 'No booking create request has been blocked by the local booking gates.',
     href: '/bookings?view=blocked-create',
     metrics: [
       { label: 'Optional GPS evidence', value: customerTooFar.length.toString() },
       { label: 'First-pick distance', value: partnerTooFar.length.toString() },
       { label: 'Service area', value: serviceArea.length.toString() },
-      { label: 'Optional GPS proof', value: locationProof.length.toString() },
+      { label: 'Optional GPS evidence attempts', value: locationEvidence.length.toString() },
       { label: 'Latest', value: latestAge },
     ],
   };

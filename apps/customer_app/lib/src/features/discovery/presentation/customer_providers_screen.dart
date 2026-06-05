@@ -62,7 +62,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         customerAddress = location.addressText ?? customerAddress;
         customerLocationIsDemo = location.isDemoLocation;
         notice = location.isDemoLocation
-            ? 'Using Ho Chi Minh City fallback for discovery. Customers can browse from anywhere; booking requires a Vietnam service pin.'
+            ? 'Browsing uses a Vietnam demo pin. Customers can browse from anywhere; booking requires a confirmed Vietnam service pin.'
             : null;
       });
     } catch (exception) {
@@ -97,7 +97,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
       customerLng = selected.longitude;
       customerAddress = selected.addressText;
       customerLocationIsDemo = false;
-      notice = 'Service location selected. Refreshing nearby partners.';
+      notice = 'Vietnam service location selected. Refreshing nearby partners.';
       error = null;
     });
 
@@ -121,7 +121,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
     if (mounted) {
       setState(() {
         notice =
-            'Service location selected. Nearby partners are sorted from this pin.';
+            'Vietnam service location selected. Nearby partners are sorted from this pin.';
       });
     }
   }

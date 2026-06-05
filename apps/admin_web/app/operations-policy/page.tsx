@@ -4151,7 +4151,7 @@ function operationsOwnerDecisionBacklog() {
       question:
         'What evidence should be required before no-show closeout or customer fee decisions are reviewed?',
       evidence:
-        'Review chat, arrival timestamp, location proof, customer response, and dispute context before no-show closeout.',
+        'Review chat, arrival timestamp, location evidence, customer response, and dispute context before no-show closeout.',
       options: [
         {
           label: 'Manual evidence review',
@@ -4165,7 +4165,7 @@ function operationsOwnerDecisionBacklog() {
         },
       ],
       recommendation:
-        'Keep manual review until service-start, arrival, chat, and location proof are consistently captured.',
+        'Keep manual review until service-start, arrival, chat, and location evidence are consistently captured.',
       decisionTrigger:
         'Revisit when no-show dispute rate is measurable and evidence completeness is above 95%.',
       href: '/bookings?view=no-show',
@@ -4675,7 +4675,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'No-show review',
       title: 'Controls no-show evidence and payment review posture',
       detail:
-        'Admin-review mode keeps no-show and fee decisions manual. Evidence mode records required proof in notes and audit logs for consistent review.',
+        'Admin-review mode keeps no-show and fee decisions manual. Evidence mode records required evidence in notes and audit logs for consistent review.',
       saveChecks: [
         {
           label: 'No-show board',

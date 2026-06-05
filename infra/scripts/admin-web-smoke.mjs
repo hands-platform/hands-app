@@ -187,7 +187,7 @@ const pages = [
   { path: '/bookings?view=refund-review', markers: ['Booking Monitor', 'Refund review'] },
   {
     path: '/bookings?view=blocked-create&gate=customer-gps',
-    markers: ['Booking Monitor', 'Create gate filter', 'Customer GPS proof'],
+    markers: ['Booking Monitor', 'Create gate filter', 'Optional GPS evidence'],
   },
   { path: '/bookings?view=address', markers: ['Booking Monitor', 'Address check'] },
   { path: '/bookings?view=manual-decision', markers: ['Booking Monitor', 'Manual decision'] },

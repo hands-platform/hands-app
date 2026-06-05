@@ -966,8 +966,8 @@ function buildCashSettlementHandoffMap(
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
     },
     {
-      title: 'Deposit or offset proof',
-      status: missingReferenceRows.length ? `${missingReferenceRows.length} ref needed` : 'Proof linked',
+      title: 'Deposit or offset evidence',
+      status: missingReferenceRows.length ? `${missingReferenceRows.length} ref needed` : 'Evidence linked',
       detail: missingReferenceRows.length
         ? 'Finance still needs a bank deposit reference or an approved admin offset memo.'
         : `${rowsWithLedgerRefs.length} row(s) already have a settlement or wallet ledger reference.`,

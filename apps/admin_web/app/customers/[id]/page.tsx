@@ -3119,7 +3119,7 @@ function buildCustomerBookingGateAttemptRows(
       const detailParts = [
         addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing',
         currentLocationRecordedAt
-          ? `GPS proof: ${formatDate(currentLocationRecordedAt)}`
+          ? `Optional GPS evidence: ${formatDate(currentLocationRecordedAt)}`
           : 'No optional GPS timestamp',
         serviceId ? `Service ${shortId(serviceId)}` : null,
         preferredProviderId ? `First-pick partner ${shortId(preferredProviderId)}` : null,

@@ -4476,7 +4476,7 @@ function buildPartnerBookingGateAttemptRows(
       const detailParts = [
         addressText ? `Address: ${addressText}` : 'Address snapshot metadata missing',
         currentLocationRecordedAt
-          ? `Optional customer GPS proof: ${formatDate(currentLocationRecordedAt)}`
+          ? `Optional customer GPS evidence: ${formatDate(currentLocationRecordedAt)}`
           : 'No optional GPS timestamp',
         serviceId ? `Service ${shortRecordId(serviceId)}` : null,
         customerProfileId ? `Customer ${shortRecordId(customerProfileId)}` : null,
