@@ -5769,7 +5769,7 @@ function partnerAppBlockMessage(
     return 'Partner can receive and finalize booking requests.';
   }
   if (bookingAcceptance.cashDebt > 0) {
-    return 'Unpaid HANDS fees must be settled before joining marketplace bookings.';
+    return 'Unpaid HANDS fees must be settled before you can join this marketplace booking.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
     return 'Account requires admin review before receiving work.';
