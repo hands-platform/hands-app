@@ -128,6 +128,7 @@ function Invoke-Api {
 function Invoke-Admin {
   Invoke-Check "admin typecheck" "npm.cmd run typecheck --workspace @massage-vn/admin-web"
   Invoke-Check "admin lint" "npm.cmd run lint --workspace @massage-vn/admin-web"
+  Invoke-Check "admin query guards" "npm.cmd run admin:query-guards"
   if ($SkipBuild) {
     Add-Result "admin build" "SKIP" "SkipBuild was set."
   } else {
