@@ -540,6 +540,37 @@ const adminServiceCatalogSelect = {
   _count: { select: { providers: true, bookings: true } },
 } satisfies Prisma.MassageServiceSelect;
 
+const adminServiceMutationSelect = {
+  id: true,
+  serviceGroupKey: true,
+  name: true,
+  description: true,
+  durationMin: true,
+  basePrice: true,
+  priceStep: true,
+  displayOrder: true,
+  active: true,
+} satisfies Prisma.MassageServiceSelect;
+
+const adminServicePayoutRuleMutationSelect = {
+  id: true,
+  serviceId: true,
+  customerPrice: true,
+  providerPayoutAmount: true,
+  vatBps: true,
+  otherCostAmount: true,
+  currency: true,
+  active: true,
+  notes: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ServicePayoutRuleSelect;
+
+const adminServicePayoutRuleWithServiceSelect = {
+  ...adminServicePayoutRuleMutationSelect,
+  service: { select: adminServiceMutationSelect },
+} satisfies Prisma.ServicePayoutRuleSelect;
+
 const adminRefundSummarySelect = {
   id: true,
   bookingId: true,
@@ -2806,7 +2837,7 @@ export class AdminService {
       });
       const service = await tx.massageService.create({
         data,
-        include: { payoutRules: true },
+        select: adminServiceMutationSelect,
       });
       await tx.adminAuditLog.create({
         data: {
@@ -2887,7 +2918,7 @@ export class AdminService {
         ) as Prisma.MassageServiceUncheckedCreateInput;
         const service = await tx.massageService.create({
           data: serviceData,
-          include: { payoutRules: true },
+          select: adminServiceMutationSelect,
         });
         const providerPayoutAmount = row.providerPayoutAmount;
         if (providerPayoutAmount !== undefined && providerPayoutAmount !== null) {
@@ -2927,7 +2958,7 @@ export class AdminService {
       return tx.massageService.findMany({
         where: { id: { in: created } },
         orderBy: { durationMin: 'asc' },
-        include: { payoutRules: { orderBy: { customerPrice: 'asc' } } },
+        select: adminServiceMutationSelect,
       });
     });
   }
@@ -2946,7 +2977,10 @@ export class AdminService {
       active?: boolean;
     },
   ) {
-    const existing = await this.prisma.massageService.findUniqueOrThrow({ where: { id: serviceId } });
+    const existing = await this.prisma.massageService.findUniqueOrThrow({
+      where: { id: serviceId },
+      select: adminServiceMutationSelect,
+    });
     const data = normalizeServiceInput(input, false, existing) as Prisma.MassageServiceUncheckedUpdateInput;
     return this.prisma.$transaction(async (tx) => {
       await ensureServiceDurationIsUnique(tx, {
@@ -2960,10 +2994,7 @@ export class AdminService {
       const service = await tx.massageService.update({
         where: { id: serviceId },
         data,
-        include: {
-          payoutRules: { orderBy: [{ active: 'desc' }, { customerPrice: 'asc' }] },
-          _count: { select: { providers: true, bookings: true } },
-        },
+        select: adminServiceMutationSelect,
       });
       let adjustedProviderPrices = 0;
       const nextBasePrice = typeof data.basePrice === 'number' ? data.basePrice : undefined;
@@ -3003,7 +3034,10 @@ export class AdminService {
       notes?: string | null;
     },
   ) {
-    const service = await this.prisma.massageService.findUniqueOrThrow({ where: { id: serviceId } });
+    const service = await this.prisma.massageService.findUniqueOrThrow({
+      where: { id: serviceId },
+      select: adminServiceMutationSelect,
+    });
     const data = normalizeServicePayoutRuleInput(service, input, true);
     const existingRule = await this.prisma.servicePayoutRule.findUnique({
       where: {
@@ -3012,6 +3046,7 @@ export class AdminService {
           customerPrice: data.customerPrice,
         },
       },
+      select: adminServicePayoutRuleMutationSelect,
     });
     const rule = await this.prisma.servicePayoutRule.upsert({
       where: {
@@ -3025,6 +3060,7 @@ export class AdminService {
         ...data,
         serviceId,
       },
+      select: adminServicePayoutRuleMutationSelect,
     });
     await this.writeAudit(
       actorId,
@@ -3057,7 +3093,10 @@ export class AdminService {
       }>;
     },
   ) {
-    const service = await this.prisma.massageService.findUniqueOrThrow({ where: { id: serviceId } });
+    const service = await this.prisma.massageService.findUniqueOrThrow({
+      where: { id: serviceId },
+      select: adminServiceMutationSelect,
+    });
     const rows = input.rules ?? [];
     if (rows.length === 0) {
       throw new BadRequestException('At least one payout rule is required');
@@ -3077,6 +3116,7 @@ export class AdminService {
     return this.prisma.$transaction(async (tx) => {
       const existingRules = await tx.servicePayoutRule.findMany({
         where: { serviceId, customerPrice: { in: data.map((row) => row.customerPrice) } },
+        select: adminServicePayoutRuleMutationSelect,
       });
       const existingByPrice = new Map(existingRules.map((rule) => [rule.customerPrice, rule]));
       const saved = [];
@@ -3093,6 +3133,7 @@ export class AdminService {
             ...row,
             serviceId,
           },
+          select: adminServicePayoutRuleMutationSelect,
         });
         saved.push(rule);
       }
@@ -3140,13 +3181,13 @@ export class AdminService {
   ) {
     const existing = await this.prisma.servicePayoutRule.findUniqueOrThrow({
       where: { id: ruleId },
-      include: { service: true },
+      select: adminServicePayoutRuleWithServiceSelect,
     });
     const data = normalizeServicePayoutRuleInput(existing.service, input, false, existing);
     const rule = await this.prisma.servicePayoutRule.update({
       where: { id: ruleId },
       data,
-      include: { service: true },
+      select: adminServicePayoutRuleWithServiceSelect,
     });
     await this.writeAudit(
       actorId,
