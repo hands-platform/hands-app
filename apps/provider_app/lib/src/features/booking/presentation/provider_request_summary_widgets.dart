@@ -81,7 +81,7 @@ class RequestQueueSummary extends StatelessWidget {
             Expanded(
               child: RequestSummaryCard(
                 label: 'Marketplace',
-                value: '$marketplaceRequests standby',
+                value: '$marketplaceRequests marketplace',
                 tone: const Color(0xFFFBF0DE),
               ),
             ),

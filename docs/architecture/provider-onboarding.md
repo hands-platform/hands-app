@@ -76,7 +76,7 @@ Rules may target:
 
 Each rule stores `rateBps` and optional `fixedAmount`. The code stores the policy/rule snapshot used for each calculation in `ProviderTaxLog.ruleSnapshot`, so later policy changes do not rewrite history.
 
-To keep tax calculation deterministic, the API rejects risky active rule setups:
+To keep tax calculation deterministic, the API rejects ambiguous active rule setups:
 
 - More than one active `DEFAULT` rule in the same policy version.
 - More than one active `SERVICE_TYPE` rule for the same service type in the same policy version.

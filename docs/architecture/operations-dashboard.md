@@ -27,7 +27,7 @@ The dashboard answers these shift questions:
 | Completed services | `Completed bookings`, `Closeout follow-up` | Confirm capture, earning, tax, fee, wallet, review, and notification closeout. |
 | Cancelled bookings | `Cancelled bookings` | Check refund or payment release outcome. |
 | No-show follow-up | `No-show signal` | Review payment, customer communication, and partner settlement impact. |
-| Hourly demand | `Hourly booking demand` | Plan partner supply by time slot and identify peak-hour gaps. |
+| Hourly demand | `Hourly booking demand` | Plan partner supply by hour window and identify peak-hour gaps. |
 | Regional demand | `Regional booking demand` | Compare demand by city/district and partner location freshness. |
 | Active app presence | `Customers in app`, `Partners in app`, `Active customers` | Distinguish live app demand/supply from stale users. |
 | Partner supply | `Online partners`, `Partner dispatch control` | Review direct-ready, marketplace-ready, blocked, or stale partners. |

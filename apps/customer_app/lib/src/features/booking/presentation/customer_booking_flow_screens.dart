@@ -1340,7 +1340,7 @@ class PartnerSelectionCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'This partner can replace your preferred partner if you want to switch.',
+                      'You can choose this partner as your final partner if this option works better.',
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
