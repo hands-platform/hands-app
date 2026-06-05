@@ -17,7 +17,7 @@ import {
   apiGet,
   adminGet,
 } from '../lib/admin-api';
-import { formatMoney, shortId as formatShortId } from '../lib/admin-format';
+import { formatMoney, readPlainRecord, shortId as formatShortId } from '../lib/admin-format';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -2819,13 +2819,6 @@ function matchingRowNextAction(input: {
     return `Nudge ${input.freshEligibleCount} eligible nearby partner(s) to join the customer shortlist.`;
   }
   return `Monitor first-pick response from ${input.firstPickName ?? 'the preferred partner'} while marketplace supply stays ready.`;
-}
-
-function readPlainRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
 }
 
 function readOptionalNumber(value: unknown) {

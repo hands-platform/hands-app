@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MetricCard } from '../../../components/metric-card';
 import {
+  compactValue,
   formatDateTime as formatDate,
   formatMoney as money,
+  readPlainRecord,
   shortId,
 } from '../../../lib/admin-format';
 import {
@@ -664,13 +666,6 @@ function refundSummary(payment: AdminPaymentDetail) {
     .join(' / ');
 }
 
-function readPlainRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
-}
-
 function addressLabel(address: unknown) {
   if (typeof address === 'string' && address.trim()) {
     return address.trim();
@@ -693,14 +688,4 @@ function coordinateLabel(lat?: string | number | null, lng?: string | number | n
     return 'No pin';
   }
   return `${parsedLat.toFixed(4)}, ${parsedLng.toFixed(4)}`;
-}
-
-function compactValue(value: unknown) {
-  if (value === null || value === undefined) {
-    return 'null';
-  }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  return JSON.stringify(value).slice(0, 160);
 }

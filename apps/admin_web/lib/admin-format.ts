@@ -69,6 +69,23 @@ export function shortId(
   return ellipsis ? `${value.slice(0, length)}...` : value.slice(0, length);
 }
 
+export function readPlainRecord(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return null;
+}
+
+export function compactValue(value: unknown, maxLength = 160) {
+  if (value === null || value === undefined) {
+    return 'null';
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return JSON.stringify(value).slice(0, maxLength);
+}
+
 export function formatRelativeTime(
   value?: string | null,
   options: {

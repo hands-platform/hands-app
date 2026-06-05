@@ -14,7 +14,13 @@ import {
   AdminProviderWalletLedgerEntry,
   adminGet,
 } from '../../../lib/admin-api';
-import { formatDateTime, formatMoney, shortId as formatShortId } from '../../../lib/admin-format';
+import {
+  formatDateTime,
+  formatDistanceMeters,
+  formatMoney,
+  readPlainRecord,
+  shortId as formatShortId,
+} from '../../../lib/admin-format';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import {
@@ -10008,20 +10014,6 @@ function humanizeNotificationType(type: string) {
       .map((part) => (part === 'backup' ? 'Marketplace' : part.charAt(0).toUpperCase() + part.slice(1)))
       .join(' '),
   );
-}
-
-function formatDistanceMeters(value: number) {
-  if (value >= 1000) {
-    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
-  }
-  return `${Math.round(value).toLocaleString()} m`;
-}
-
-function readPlainRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
 }
 
 function readOptionalNumber(value: unknown) {

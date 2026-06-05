@@ -7,7 +7,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
-import { formatDateTime, formatMoney, formatRelativeTime } from '../../lib/admin-format';
+import { formatDateTime, formatMoney, formatRelativeTime, readPlainRecord } from '../../lib/admin-format';
 import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -4870,13 +4870,6 @@ function bookingWalletLedgerTotal(booking: AdminBooking) {
     (total, entry) => total + Number(entry.amount ?? 0),
     0,
   );
-}
-
-function readPlainRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
-  }
-  return null;
 }
 
 function readOptionalNumber(value: unknown) {

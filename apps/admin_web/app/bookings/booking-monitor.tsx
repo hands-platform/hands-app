@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
-import { formatMoney, shortId as formatShortId } from '../../lib/admin-format';
+import { formatMoney, readPlainRecord, shortId as formatShortId } from '../../lib/admin-format';
 import {
   type AdminLiveOperationsPolicy,
   formatPolicyDistance,
@@ -4268,13 +4268,6 @@ function readAmount(value: unknown) {
   if (typeof value === 'string') {
     const parsed = Number(value);
     return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
-function readPlainRecord(value: unknown): Record<string, unknown> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
   }
   return null;
 }
