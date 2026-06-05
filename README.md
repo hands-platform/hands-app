@@ -17,7 +17,7 @@ Read `docs/README.md` first. It explains which documents are authoritative, whic
 - MVP bookings are immediate/on-demand. Scheduled booking and calendar booking UX are not exposed.
 - Tips, gratuity, VIP, people scoring, and ranking programs are not part of the MVP.
 - Customer cancellation after direct matching is not a normal app action in MVP. Cancellation and no-show outcomes are admin decisions based on chat/evidence.
-- Partner negative wallet balances do not affect customers. Partners may see marketplace requests, but marketplace join/participation and downstream booking gates are blocked until settlement.
+- Partner negative wallet balances do not affect customers. Partners may see marketplace requests, but marketplace join/participation and payout release are blocked until settlement.
 - Admin is an Operations Command Center, not a CRM.
 - Internal code may still use `Provider` names for compatibility. Visible product and admin copy should say `Partner`.
 
