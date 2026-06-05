@@ -50,11 +50,11 @@ class OpenBookingCard extends StatelessWidget {
     final hasPreferredProvider = preferredProvider != null;
     final hasChat = isProviderAppChatVisible(booking);
     final isMatched = booking['status'] == 'MATCHED';
-    final walletBlocksMarketplaceJoin = providerWalletBlocksMarketplaceJoin(
+    final walletBlocksMarketplaceParticipation =
+        providerWalletBlocksMarketplaceParticipation(
       walletBlocked: walletBlocked,
       isPreferredRequest: isPreferredRequest,
       isMatched: isMatched,
-      joined: joined,
     );
     final isCashBooking = providerBookingIsCash(booking);
     final customerAmount = payment?['amount'] ?? service?['basePrice'];
@@ -257,7 +257,7 @@ class OpenBookingCard extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(guidance.contextMessage),
-            if (walletBlocksMarketplaceJoin) ...[
+            if (walletBlocksMarketplaceParticipation) ...[
               const SizedBox(height: 12),
               const MarketplaceJoinLockCard(),
             ] else ...[
@@ -319,18 +319,20 @@ class OpenBookingCard extends StatelessWidget {
               )
             else if (isPreferredRequest && hasChat)
               const InfoCard(text: 'Chat is ready. Continue from the Chat tab.')
+            else if (walletBlocksMarketplaceParticipation)
+              FilledButton.icon(
+                onPressed: null,
+                icon: const Icon(Icons.lock_outline),
+                label: const Text(providerMarketplaceJoinBlockedButtonLabel),
+              )
             else if (!joined)
               FilledButton.icon(
-                onPressed:
-                    loading || walletBlocksMarketplaceJoin ? null : onJoin,
-                icon: Icon(
-                  walletBlocksMarketplaceJoin
-                      ? Icons.lock_outline
-                      : Icons.add_circle_outline,
-                ),
+                onPressed: loading ? null : onJoin,
+                icon: const Icon(Icons.add_circle_outline),
                 label: Text(
                   providerMarketplaceJoinButtonLabel(
-                    walletBlocksMarketplaceJoin: walletBlocksMarketplaceJoin,
+                    walletBlocksMarketplaceParticipation:
+                        walletBlocksMarketplaceParticipation,
                     hasPreferredProvider: hasPreferredProvider,
                   ),
                 ),

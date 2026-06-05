@@ -150,4 +150,73 @@ void main() {
 
     expect(joinTapped, isFalse);
   });
+
+  testWidgets('locks joined marketplace participation when wallet is negative',
+      (tester) async {
+    var rejectTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: OpenBookingCard(
+              booking: {
+                'id': 'booking-marketplace-wallet-lock-joined',
+                'status': 'OPEN_MATCHING',
+                'createdAt': '2026-06-04T00:00:00.000Z',
+                'updatedAt': '2026-06-04T00:00:00.000Z',
+                'preferredProvider': {'displayName': 'Linh Wellness'},
+                'participants': [
+                  {'status': 'JOINED'}
+                ],
+                'payment': {
+                  'method': 'CASH',
+                  'amount': 450000,
+                },
+                'address': {
+                  'name': 'Demo Customer',
+                  'phone': '0865907184',
+                  'line1': 'District 1, Ho Chi Minh City',
+                },
+                'services': [
+                  {
+                    'service': {
+                      'name': 'Foot Massage',
+                      'durationMin': 60,
+                      'basePrice': 450000,
+                    },
+                  },
+                ],
+              },
+              isPreferredRequest: false,
+              joined: true,
+              loading: false,
+              walletBlocked: true,
+              onJoin: () {},
+              onAccept: () {},
+              onReject: () => rejectTapped = true,
+              onStart: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Marketplace visible, join locked'), findsOneWidget);
+    expect(
+      find.text(
+          'You are visible to the customer now. Wait for the final selection.'),
+      findsNothing,
+    );
+    expect(
+        find.text(providerMarketplaceJoinBlockedButtonLabel), findsOneWidget);
+
+    await tester.ensureVisible(
+      find.text(providerMarketplaceJoinBlockedButtonLabel),
+    );
+    await tester.tap(find.text(providerMarketplaceJoinBlockedButtonLabel));
+    await tester.pump();
+
+    expect(rejectTapped, isFalse);
+  });
 }

@@ -260,7 +260,7 @@ void main() {
     expect(guidance.contextMessage, contains('unpaid HANDS fees'));
     expect(
       providerMarketplaceJoinButtonLabel(
-        walletBlocksMarketplaceJoin: true,
+        walletBlocksMarketplaceParticipation: true,
         hasPreferredProvider: true,
       ),
       providerMarketplaceJoinBlockedButtonLabel,
@@ -280,49 +280,48 @@ void main() {
     );
   });
 
-  test('wallet gate only blocks joining marketplace before participation', () {
+  test('wallet gate blocks marketplace participation before final matching',
+      () {
     expect(
-      providerWalletBlocksMarketplaceJoin(
+      providerWalletBlocksMarketplaceParticipation(
         walletBlocked: true,
         isPreferredRequest: false,
         isMatched: false,
-        joined: false,
       ),
       isTrue,
     );
     expect(
-      providerWalletBlocksMarketplaceJoin(
+      providerWalletBlocksMarketplaceParticipation(
         walletBlocked: true,
         isPreferredRequest: true,
         isMatched: false,
-        joined: false,
       ),
       isFalse,
-      reason: 'Direct first-pick accept/reject is not marketplace join.',
+      reason:
+          'Direct first-pick accept/reject is not marketplace participation.',
     );
     expect(
-      providerWalletBlocksMarketplaceJoin(
+      providerWalletBlocksMarketplaceParticipation(
         walletBlocked: true,
         isPreferredRequest: false,
         isMatched: false,
-        joined: true,
       ),
-      isFalse,
-      reason: 'Already joined participants stay visible for customer choice.',
+      isTrue,
+      reason:
+          'Joined marketplace participants must still settle wallet debt before customer selection.',
     );
     expect(
-      providerWalletBlocksMarketplaceJoin(
+      providerWalletBlocksMarketplaceParticipation(
         walletBlocked: true,
         isPreferredRequest: false,
         isMatched: true,
-        joined: false,
       ),
       isFalse,
       reason: 'Already matched bookings are handled by service workflow.',
     );
     expect(
       providerMarketplaceJoinButtonLabel(
-        walletBlocksMarketplaceJoin: false,
+        walletBlocksMarketplaceParticipation: false,
         hasPreferredProvider: true,
       ),
       'Offer marketplace support',

@@ -8,20 +8,19 @@ const providerWalletBlockHintClean =
 
 const providerMarketplaceJoinBlockedButtonLabel = 'Fee settlement required';
 
-bool providerWalletBlocksMarketplaceJoin({
+bool providerWalletBlocksMarketplaceParticipation({
   required bool walletBlocked,
   required bool isPreferredRequest,
   required bool isMatched,
-  required bool joined,
 }) {
-  return walletBlocked && !isPreferredRequest && !isMatched && !joined;
+  return walletBlocked && !isPreferredRequest && !isMatched;
 }
 
 String providerMarketplaceJoinButtonLabel({
-  required bool walletBlocksMarketplaceJoin,
+  required bool walletBlocksMarketplaceParticipation,
   required bool hasPreferredProvider,
 }) {
-  if (walletBlocksMarketplaceJoin) {
+  if (walletBlocksMarketplaceParticipation) {
     return providerMarketplaceJoinBlockedButtonLabel;
   }
   return hasPreferredProvider

@@ -48,11 +48,10 @@ ProviderRequestGuidance providerRequestGuidance({
       preferredProvider?['displayName']?.toString().trim();
   final hasChat = isProviderAppChatVisible(booking);
   final isMatched = booking['status'] == 'MATCHED';
-  final actionBlockedByWallet = providerWalletBlocksMarketplaceJoin(
+  final actionBlockedByWallet = providerWalletBlocksMarketplaceParticipation(
     walletBlocked: walletBlocked,
     isPreferredRequest: isPreferredRequest,
     isMatched: isMatched,
-    joined: joined,
   );
   final responseWindowLabel = providerMatchingWindowText(booking);
   final backupRadiusLabel = providerBackupRadiusText(booking);
