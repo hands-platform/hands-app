@@ -686,6 +686,225 @@ const adminCustomerDetailSelect = {
   },
 } satisfies Prisma.CustomerProfileSelect;
 
+const adminProviderDetailUserSelect = {
+  ...adminUserAuthSelect,
+  pushDevices: {
+    orderBy: { createdAt: 'desc' },
+    select: adminPushDeviceSummarySelect,
+  },
+  fileAssets: {
+    where: {
+      purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+      visibility: FileVisibility.PUBLIC,
+      uploadStatus: FileUploadStatus.UPLOADED,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 8,
+    select: adminProviderPublicMediaSelect,
+  },
+} satisfies Prisma.UserSelect;
+
+const adminProviderVerificationDetailSelect = {
+  id: true,
+  status: true,
+  submittedAt: true,
+  reviewedAt: true,
+  rejectionReason: true,
+  files: {
+    select: adminProviderVerificationFileSelect,
+  },
+} satisfies Prisma.ProviderVerificationSelect;
+
+const adminProviderReportDetailSelect = {
+  ...adminProviderReportSummarySelect,
+  booking: { select: { id: true, status: true } },
+  reporterUser: { select: { phone: true, fullName: true } },
+  assignedAdmin: { select: { phone: true, fullName: true } },
+  sanctions: {
+    orderBy: { createdAt: 'desc' },
+    select: adminProviderSanctionSummarySelect,
+  },
+} satisfies Prisma.ProviderReportSelect;
+
+const adminProviderSanctionDetailSelect = {
+  ...adminProviderSanctionSummarySelect,
+  report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
+  issuedBy: { select: { phone: true, fullName: true } },
+  liftedBy: { select: { phone: true, fullName: true } },
+} satisfies Prisma.ProviderSanctionSelect;
+
+const adminProviderDetailBookingSelect = {
+  ...adminCustomerDetailBookingSelect,
+} satisfies Prisma.BookingSelect;
+
+const adminProviderDetailEarningSelect = {
+  ...adminEarningSummarySelect,
+  booking: {
+    select: {
+      id: true,
+      status: true,
+      scheduledStartAt: true,
+      payment: {
+        select: {
+          id: true,
+          method: true,
+          status: true,
+          amount: true,
+          currency: true,
+        },
+      },
+      services: { select: adminBookingServiceSummarySelect },
+    },
+  },
+} satisfies Prisma.ProviderEarningSelect;
+
+const adminProviderPayoutBatchSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  totalNetAmount: true,
+  currency: true,
+  status: true,
+  transferRef: true,
+  notes: true,
+  createdAt: true,
+  paidAt: true,
+} satisfies Prisma.ProviderPayoutBatchSelect;
+
+const adminLocationSnapshotSummarySelect = {
+  id: true,
+  bookingId: true,
+  providerProfileId: true,
+  lat: true,
+  lng: true,
+  recordedAt: true,
+} satisfies Prisma.LocationSnapshotSelect;
+
+const adminProviderVerificationLogSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  actorId: true,
+  action: true,
+  fromStatus: true,
+  toStatus: true,
+  metadata: true,
+  createdAt: true,
+  actor: { select: { phone: true, fullName: true } },
+} satisfies Prisma.ProviderVerificationLogSelect;
+
+const adminProviderDetailSelect = {
+  id: true,
+  userId: true,
+  displayName: true,
+  legalName: true,
+  dateOfBirth: true,
+  gender: true,
+  facebookId: true,
+  activityNickname: true,
+  bio: true,
+  experienceYears: true,
+  specialties: true,
+  languages: true,
+  serviceStyle: true,
+  residentialAddress: true,
+  city: true,
+  serviceArea: true,
+  level: true,
+  status: true,
+  ratingAvg: true,
+  reviewCount: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  nextAvailableAt: true,
+  blockedAt: true,
+  blockedReason: true,
+  trustedAt: true,
+  updatedAt: true,
+  user: { select: adminProviderDetailUserSelect },
+  verification: { select: adminProviderVerificationDetailSelect },
+  kyc: { select: adminProviderKycSummarySelect },
+  documents: {
+    orderBy: { createdAt: 'desc' },
+    select: adminProviderDocumentSummarySelect,
+  },
+  bankAccounts: {
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+    select: adminProviderBankAccountSummarySelect,
+  },
+  taxProfile: { select: adminProviderTaxProfileSummarySelect },
+  reports: {
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: adminProviderReportDetailSelect,
+  },
+  sanctions: {
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: adminProviderSanctionDetailSelect,
+  },
+  agreements: {
+    orderBy: { acceptedAt: 'desc' },
+    select: adminProviderAgreementSummarySelect,
+  },
+  services: {
+    select: adminProviderServiceSummarySelect,
+  },
+  preferredBookings: {
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    select: adminProviderDetailBookingSelect,
+  },
+  selectedBookings: {
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    select: adminProviderDetailBookingSelect,
+  },
+  participants: {
+    orderBy: { joinedAt: 'desc' },
+    take: 10,
+    select: {
+      id: true,
+      providerProfileId: true,
+      status: true,
+      distanceMeters: true,
+      providerStatusAtJoin: true,
+      joinedAt: true,
+      respondedAt: true,
+      booking: { select: adminProviderDetailBookingSelect },
+    },
+  },
+  locationSnapshots: {
+    orderBy: { recordedAt: 'desc' },
+    take: 10,
+    select: adminLocationSnapshotSummarySelect,
+  },
+  earnings: {
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    select: adminProviderDetailEarningSelect,
+  },
+  payoutBatches: {
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    select: adminProviderPayoutBatchSummarySelect,
+  },
+  sessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 10,
+    select: adminProviderSessionSummarySelect,
+  },
+  devices: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 10,
+    select: adminProviderDeviceSummarySelect,
+  },
+  verificationLogs: {
+    orderBy: { createdAt: 'desc' },
+    take: 20,
+    select: adminProviderVerificationLogSummarySelect,
+  },
+} satisfies Prisma.ProviderProfileSelect;
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -1038,98 +1257,7 @@ export class AdminService {
   async getProviderDetail(providerProfileId: string) {
     const provider = await this.prisma.providerProfile.findUnique({
       where: { id: providerProfileId },
-      include: {
-        user: {
-          include: {
-            pushDevices: {
-              orderBy: { createdAt: 'desc' },
-              select: adminPushDeviceSummarySelect,
-            },
-            fileAssets: {
-              where: {
-                purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
-                visibility: FileVisibility.PUBLIC,
-                uploadStatus: FileUploadStatus.UPLOADED,
-              },
-              orderBy: { createdAt: 'desc' },
-              take: 8,
-            },
-          },
-        },
-        verification: { include: { files: true } },
-        kyc: true,
-        documents: { include: { fileAsset: true }, orderBy: { createdAt: 'desc' } },
-        bankAccounts: { orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }] },
-        taxProfile: true,
-        reports: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-          include: {
-            booking: { select: { id: true, status: true } },
-            reporterUser: { select: { phone: true, fullName: true } },
-            assignedAdmin: { select: { phone: true, fullName: true } },
-            sanctions: { orderBy: { createdAt: 'desc' } },
-          },
-        },
-        sanctions: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-          include: {
-            report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
-            issuedBy: { select: { phone: true, fullName: true } },
-            liftedBy: { select: { phone: true, fullName: true } },
-          },
-        },
-        agreements: { orderBy: { acceptedAt: 'desc' } },
-        services: {
-          include: {
-            service: {
-              include: {
-                payoutRules: {
-                  where: { active: true },
-                  orderBy: { customerPrice: 'asc' },
-                },
-              },
-            },
-          },
-        },
-        preferredBookings: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-          include: this.providerBookingInclude(),
-        },
-        selectedBookings: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-          include: this.providerBookingInclude(),
-        },
-        participants: {
-          orderBy: { joinedAt: 'desc' },
-          take: 10,
-          include: {
-            booking: {
-              include: this.providerBookingInclude(),
-            },
-          },
-        },
-        locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
-        earnings: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-          include: {
-            booking: { include: { payment: true } },
-            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-          },
-        },
-        payoutBatches: { orderBy: { createdAt: 'desc' }, take: 10 },
-        sessions: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
-        devices: { orderBy: { lastSeenAt: 'desc' }, take: 10 },
-        verificationLogs: {
-          orderBy: { createdAt: 'desc' },
-          take: 20,
-          include: { actor: { select: { phone: true, fullName: true } } },
-        },
-      },
+      select: adminProviderDetailSelect,
     });
     if (!provider) {
       throw new NotFoundException('Partner not found');
@@ -1151,7 +1279,13 @@ export class AdminService {
           },
           orderBy: { lastSeenAt: 'desc' },
           take: 20,
-          include: {
+          select: {
+            id: true,
+            deviceId: true,
+            platform: true,
+            enabled: true,
+            lastSeenAt: true,
+            blockedAt: true,
             providerProfile: {
               select: {
                 id: true,
@@ -1224,34 +1358,6 @@ export class AdminService {
     );
 
     return { ok: true, auditLog };
-  }
-
-  private providerBookingInclude() {
-    return {
-      customerProfile: {
-        include: {
-          user: { select: { phone: true, fullName: true } },
-        },
-      },
-      services: { include: { service: true } },
-      addressSnapshot: true,
-      participants: true,
-      chatRoom: {
-        include: {
-          messages: {
-            orderBy: { createdAt: 'desc' as const },
-            take: 100,
-            include: { sender: { select: { phone: true, fullName: true, roles: true } } },
-          },
-        },
-      },
-      opsTasks: {
-        orderBy: { updatedAt: 'desc' as const },
-        include: { actor: { select: { id: true, phone: true, fullName: true } } },
-      },
-      payment: true,
-      review: true,
-    };
   }
 
   async enablePushDevice(actorId: string, pushDeviceId: string) {
