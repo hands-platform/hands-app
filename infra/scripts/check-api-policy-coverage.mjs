@@ -117,6 +117,14 @@ const requiredCoverage = [
     ],
   },
   {
+    area: 'partner response lifecycle gate',
+    markers: [
+      'Partner response after matching is blocked',
+      'Booking is not open for partner responses',
+      'Partner response after matching returned an unexpected error',
+    ],
+  },
+  {
     area: 'booking closure metadata',
     markers: [
       'Cancelled booking did not record customer closure metadata',

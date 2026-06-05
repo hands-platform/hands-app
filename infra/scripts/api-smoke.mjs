@@ -2631,6 +2631,17 @@ const partnerAliasBookings = await getJson('/partner/bookings', providerAuth.acc
 const partnerAliasOnboarding = await getJson('/partner/onboarding', providerAuth.accessToken);
 const chatRoomId = matched.booking.chatRoom.id;
 
+const partnerResponseAfterMatchError = await expectRequestFailure(
+  'Partner response after matching is blocked',
+  () => postJson(`/provider/bookings/${booking.id}/reject`, providerAuth.accessToken),
+  400,
+);
+if (!partnerResponseAfterMatchError.includes('Booking is not open for partner responses')) {
+  throw new Error(
+    `Partner response after matching returned an unexpected error: ${partnerResponseAfterMatchError}`,
+  );
+}
+
 if (partnerAliasMe.id !== providerAuth.user.id) {
   throw new Error(`Partner alias /partner/me returned the wrong user: ${JSON.stringify(partnerAliasMe)}`);
 }
