@@ -25,7 +25,7 @@ class CustomerLocationContextCard extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final title = isDemoLocation ? 'Demo discovery pin' : 'Service location';
     final subtitle = isDemoLocation
-        ? 'Choose the real service location before booking.'
+        ? 'Browse partners from anywhere. Choose a Vietnam service pin before booking.'
         : addressText;
 
     return Card(

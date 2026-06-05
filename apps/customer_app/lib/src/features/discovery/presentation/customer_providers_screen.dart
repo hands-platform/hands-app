@@ -62,7 +62,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         customerAddress = location.addressText ?? customerAddress;
         customerLocationIsDemo = location.isDemoLocation;
         notice = location.isDemoLocation
-            ? 'Using Ho Chi Minh City fallback location for nearby partner discovery.'
+            ? 'Using Ho Chi Minh City fallback for discovery. Customers can browse from anywhere; booking requires a Vietnam service pin.'
             : null;
       });
     } catch (exception) {

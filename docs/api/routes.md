@@ -31,6 +31,8 @@ Local MVP auth uses `POST /auth/verify-otp` with dev OTP `123456`.
 
 Legacy customer aliases `/customer/providers/nearby` and `/customer/providers/:id` remain active for older app builds.
 
+`GET /customer/partners/nearby` accepts optional `lat` and `lng` query parameters for distance sorting. If the customer is outside Vietnam, has denied GPS, or sends no coordinates, the API falls back to the default Vietnam service-area browse pin so customers can still view partner supply from any country. Booking creation remains stricter: `POST /customer/bookings` requires a confirmed service address inside the active HANDS service area and stores it as `BookingAddressSnapshot`.
+
 ## Partner
 
 - `GET /partner/me`

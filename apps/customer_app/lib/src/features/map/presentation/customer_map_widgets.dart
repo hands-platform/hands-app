@@ -306,7 +306,7 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
       selectedAddress =
           location.isDemoLocation ? demoCustomerAddress : selectedAddress;
       statusMessage = location.isDemoLocation
-          ? 'GPS unavailable or outside Vietnam. Using Ho Chi Minh City as a fallback; search or drag the map to adjust.'
+          ? 'GPS unavailable or outside Vietnam. You can browse partners from anywhere, but booking needs a Vietnam service pin.'
           : 'Current GPS location loaded. Drag the map to fine tune the pin.';
     });
     if (!initialLoad || location.isDemoLocation == false) {
@@ -347,6 +347,14 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
 
   void confirmSelection() {
     FocusScope.of(context).unfocus();
+    if (!isVietnamCoordinate(selectedPoint.latitude, selectedPoint.longitude)) {
+      setState(() {
+        error =
+            'HANDS service locations must be inside Vietnam. Search a Vietnam address or move the pin inside Vietnam before booking.';
+        statusMessage = null;
+      });
+      return;
+    }
     Navigator.of(context).pop(
       SelectedCustomerLocation(
         latitude: selectedPoint.latitude,

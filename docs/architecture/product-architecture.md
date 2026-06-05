@@ -19,7 +19,8 @@ flowchart LR
 
 ## Realtime Matching
 
-- A booking starts as `CREATED`.
+- Customers can browse partner profiles from any country. If GPS is unavailable or outside Vietnam, discovery uses a default Vietnam service-area browse pin for distance sorting.
+- A customer must confirm a Vietnam service address before booking. The API stores that immutable `BookingAddressSnapshot` and uses it for marketplace radius checks.
 - Payment is authorized or marked cash-pending.
 - Booking moves to `OPEN_MATCHING`.
 - A customer may choose a first-pick partner first. That partner has a 10 minute response window.
