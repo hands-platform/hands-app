@@ -6,6 +6,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
+import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime, formatMoney, formatRelativeTime } from '../../lib/admin-format';
 import { updateOperationalPolicy } from './actions';
 
@@ -2301,7 +2302,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       detail: 'Marketplace partners are prioritized by customer distance before alerts and operator review.',
       api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
       server:
-        'BookingsService.findEligibleBackupProviders -> canProviderSeeOpenBooking -> requireProviderWithinMatchingRadius',
+        'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
       verify: 'Verify from Operations Policy simulator and Partner Controls location freshness records.',
     },
     {
@@ -2310,7 +2311,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       detail:
         'Partners with stale or missing last location are flagged before marketplace participation and shown as dispatch checks.',
       api: 'POST /provider/location, GET /provider/bookings/open',
-      server: 'BookingsService.findEligibleBackupProviders -> providerLocationFreshEnough',
+      server: 'Marketplace eligibility pipeline -> providerLocationFreshEnough',
       verify:
         'Verify by opening App Sessions and Partner Controls after a partner app sends or misses a location heartbeat.',
     },
@@ -4315,63 +4316,6 @@ function policyDisplayValue(setting: AdminOperationalPolicySetting, recommended 
     setting.options?.find((option) => option.value === value)?.label ??
       formatPolicyValue(value, setting.unit),
   );
-}
-
-function displayOperationalWording(value: string | null | undefined) {
-  if (!value) return '';
-  return value
-    .replaceAll('backupNotificationTraces', 'candidate alert traces')
-    .replaceAll('backup-radius', 'marketplace-radius')
-    .replaceAll('backup-open', 'marketplace-open')
-    .replaceAll('Backup partner', 'Marketplace partner')
-    .replaceAll('backup partner', 'marketplace partner')
-    .replaceAll('Backup participation', 'Marketplace participation')
-    .replaceAll('backup participation', 'marketplace participation')
-    .replaceAll('Backup visibility', 'Marketplace visibility')
-    .replaceAll('backup visibility', 'marketplace visibility')
-    .replaceAll('Backup notification', 'Marketplace notification')
-    .replaceAll('backup notification', 'marketplace notification')
-    .replaceAll('Backup invite', 'Candidate alert')
-    .replaceAll('backup invite', 'candidate alert')
-    .replaceAll('Backup request', 'Marketplace request')
-    .replaceAll('backup request', 'marketplace request')
-    .replaceAll('Backup shortlist', 'Marketplace shortlist')
-    .replaceAll('backup shortlist', 'marketplace shortlist')
-    .replaceAll('Backup lane', 'Marketplace lane')
-    .replaceAll('backup lane', 'marketplace lane')
-    .replaceAll('Backup join', 'Marketplace join')
-    .replaceAll('backup join', 'marketplace join')
-    .replaceAll('Open backups', 'Open marketplace')
-    .replaceAll('open backups', 'open marketplace')
-    .replaceAll('Immediate backup', 'Immediate marketplace')
-    .replaceAll('immediate backup', 'immediate marketplace')
-    .replaceAll('Delayed backup', 'Delayed marketplace')
-    .replaceAll('delayed backup', 'delayed marketplace')
-    .replaceAll('Delay backup', 'Delay marketplace')
-    .replaceAll('delay backup', 'delay marketplace')
-    .replaceAll('backup partners', 'marketplace partners')
-    .replaceAll('Backup partners', 'Marketplace partners')
-    .replaceAll('backup alerts', 'marketplace alerts')
-    .replaceAll('Backup alerts', 'Marketplace alerts')
-    .replaceAll('backup open mode', 'marketplace open mode')
-    .replaceAll('Backup open mode', 'Marketplace open mode')
-    .replaceAll('backup mode', 'marketplace mode')
-    .replaceAll('Backup mode', 'Marketplace mode')
-    .replaceAll('backup list', 'marketplace list')
-    .replaceAll('Backup list', 'Marketplace list')
-    .replaceAll('backup_', 'marketplace_')
-    .replaceAll('.backup', '.marketplace')
-    .replaceAll('-backup-', '-marketplace-')
-    .replaceAll('-backup', '-marketplace')
-    .replace(/backup/g, 'marketplace')
-    .replace(/Backup/g, 'Marketplace')
-    .replaceAll('customer or partner penalty', 'customer or partner closeout decision')
-    .replaceAll('customer or partner penalties', 'customer or partner closeout decisions')
-    .replaceAll('false penalties', 'incorrect automatic decisions')
-    .replaceAll('penalties', 'closeout decisions')
-    .replaceAll('penalty', 'closeout decision')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
 }
 
 type PolicySaveCheck = {

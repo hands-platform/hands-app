@@ -6,6 +6,7 @@ import {
   AdminProviderSanction,
   adminGet,
 } from '../../lib/admin-api';
+import { marketplaceDisplayText as partnerDisplayText } from '../../lib/admin-copy';
 import {
   formatDateTime,
   formatMoney,
@@ -2013,14 +2014,6 @@ function providerNameOrId(
   fallbackId: string,
 ) {
   return partnerDisplayText(provider?.displayName || provider?.user?.fullName || provider?.user?.phone || fallbackId);
-}
-
-function partnerDisplayText(value: string) {
-  return value
-    .replace(/\bbackup\b/g, 'marketplace')
-    .replace(/\bBackup\b/g, 'Marketplace')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
 }
 
 function reportAgeHours(report: AdminProviderReport) {

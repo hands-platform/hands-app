@@ -15,6 +15,7 @@ import {
   adminGet,
 } from '../../../lib/admin-api';
 import { formatDateTime, formatMoney, shortId as formatShortId } from '../../../lib/admin-format';
+import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import {
   addBookingOpsNote,
@@ -10007,14 +10008,6 @@ function humanizeNotificationType(type: string) {
       .map((part) => (part === 'backup' ? 'Marketplace' : part.charAt(0).toUpperCase() + part.slice(1)))
       .join(' '),
   );
-}
-
-function marketplaceDisplayText(value: string) {
-  return value
-    .replace(/\bbackup\b/g, 'marketplace')
-    .replace(/\bBackup\b/g, 'Marketplace')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
 }
 
 function formatDistanceMeters(value: number) {

@@ -1,4 +1,5 @@
 import { AdminNotification, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
+import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { formatDateTime, formatRelativeTime, shortId } from '../../lib/admin-format';
 import Link from 'next/link';
 import { readSearchParam } from '../../lib/date-range';
@@ -542,14 +543,6 @@ function humanizeType(type: string) {
     .split(/[_\-.]/g)
     .map((part) => (part === 'backup' ? 'Marketplace' : part.charAt(0).toUpperCase() + part.slice(1)))
     .join(' ');
-}
-
-function marketplaceDisplayText(value: string) {
-  return value
-    .replace(/\bbackup\b/g, 'marketplace')
-    .replace(/\bBackup\b/g, 'Marketplace')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
 }
 
 function notificationUserLabel(notification: AdminNotification) {

@@ -18,6 +18,7 @@ import {
 import { formatDateTime, formatMoney, shortId as formatShortId } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
+import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
 import { addOperationsHandoffNote } from './actions';
 
 const activeBookingStatuses = new Set([
@@ -1562,13 +1563,6 @@ function stringValue(value: unknown) {
 
 function humanizeAction(action: string) {
   return action.replace(/[._]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function operatorDisplayText(value?: string | null) {
-  return (value ?? '')
-    .replace(/\bPROVIDER\(S\)\b/g, 'PARTNER(S)')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
 }
 
 function shortId(id?: string | null) {

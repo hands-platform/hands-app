@@ -437,6 +437,7 @@ export type AdminBooking = {
   };
   participants?: Array<{
     id: string;
+    providerProfileId?: string | null;
     status: string;
     distanceMeters?: number | null;
     providerStatusAtJoin?: string | null;

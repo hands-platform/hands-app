@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
+import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
 import { formatMoney, shortId as formatShortId } from '../../lib/admin-format';
 import {
   type AdminLiveOperationsPolicy,
@@ -3951,10 +3952,6 @@ function shortId(id: string) {
   return formatShortId(id);
 }
 
-function displayMarketplaceText(value: string) {
-  return value.replace(/\bbackup\b/g, 'marketplace').replace(/\bBackup\b/g, 'Marketplace');
-}
-
 function bookingServiceOptionLabel(booking: AdminBooking) {
   const bookedService = booking.services?.[0];
   const service = bookedService?.service;
@@ -4356,13 +4353,7 @@ function bookingProviderLabel(booking: AdminBooking) {
 }
 
 function partnerDisplayName(provider?: { displayName?: string | null } | null, fallback = 'Partner') {
-  return provider?.displayName
-    ? provider.displayName
-        .replace(/\bbackup\b/g, 'marketplace')
-        .replace(/\bBackup\b/g, 'Marketplace')
-        .replace(/\bProvider\b/g, 'Partner')
-        .replace(/\bprovider\b/g, 'partner')
-    : fallback;
+  return displayMarketplaceText(provider?.displayName ?? fallback);
 }
 
 function isSelectedProviderParticipant(booking: AdminBooking) {

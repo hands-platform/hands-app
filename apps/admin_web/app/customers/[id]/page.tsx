@@ -10,6 +10,7 @@ import {
   AdminNotification,
   adminGet,
 } from '../../../lib/admin-api';
+import { marketplaceDisplayText as displayMarketplaceText } from '../../../lib/admin-copy';
 import {
   formatDateTime,
   formatDistanceMeters,
@@ -3678,14 +3679,6 @@ function readNumber(value: unknown) {
 
 function compactText(value: string, maxLength: number) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
-}
-
-function displayMarketplaceText(value?: string | null) {
-  return (value ?? '')
-    .replace(/\bbackup\b/g, 'marketplace')
-    .replace(/\bBackup\b/g, 'Marketplace')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
 }
 
 function bookingPartnerDisplayName(booking: AdminBookingDetail) {

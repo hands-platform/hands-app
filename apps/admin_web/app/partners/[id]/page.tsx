@@ -13,6 +13,7 @@ import {
   formatDistanceMeters,
   formatMoney as formatAdminMoney,
 } from '../../../lib/admin-format';
+import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -2996,14 +2997,6 @@ function InfoLine({ label, value }: { label: string; value?: string | null }) {
       <strong>{label}:</strong> {value && value.trim() ? marketplaceDisplayText(value) : 'Missing'}
     </p>
   );
-}
-
-function marketplaceDisplayText(value: string) {
-  return value
-    .replace(/\bbackup\b/g, 'marketplace')
-    .replace(/\bBackup\b/g, 'Marketplace')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
 }
 
 function displaySessionCheckText(value?: string | null) {

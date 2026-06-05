@@ -25,6 +25,7 @@ import {
   normalizeDateRange,
   readSearchParam,
 } from '../lib/date-range';
+import { marketplaceDisplayText as displayOperationalWording } from '../lib/admin-copy';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -5959,20 +5960,6 @@ function policyOptionLabel(setting: AdminOperationalPolicySetting, useRecommende
     setting.options?.find((option) => option.value === value)?.label ??
       formatPolicyValue(value, setting.unit),
   );
-}
-
-function displayOperationalWording(value: string) {
-  return value
-    .replaceAll('backup partners', 'marketplace partners')
-    .replaceAll('Backup partners', 'Marketplace partners')
-    .replaceAll('backup partner', 'marketplace partner')
-    .replaceAll('Backup partner', 'Marketplace partner')
-    .replaceAll('backup participation', 'marketplace participation')
-    .replaceAll('Backup participation', 'Marketplace participation')
-    .replaceAll('backup visibility', 'marketplace visibility')
-    .replaceAll('Backup visibility', 'Marketplace visibility')
-    .replaceAll('Open backups', 'Open marketplace')
-    .replaceAll('Delay backup', 'Delay marketplace');
 }
 
 function formatPolicyValue(value: unknown, unit?: string | null) {

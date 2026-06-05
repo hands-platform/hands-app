@@ -5,6 +5,7 @@ import {
   AdminOperationalPolicySetting,
   adminGet,
 } from '../../lib/admin-api';
+import { partnerDisplayText } from '../../lib/admin-copy';
 import { formatMoney, shortId as formatShortId } from '../../lib/admin-format';
 import {
   type AdminDateRange,
@@ -1570,10 +1571,6 @@ function cashSettlementRowAgeHours(row: CashSettlementRow) {
 
 function providerSettlementReference(providerProfileId: string) {
   return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;
-}
-
-function partnerDisplayText(value: string) {
-  return value.replace(/\bProvider\b/g, 'Partner').replace(/\bprovider\b/g, 'partner');
 }
 
 function buildCashSettlementFilters(

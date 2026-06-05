@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MetricCard } from '../../components/metric-card';
 import { AdminBookingDetail, AdminChatMessage, adminGet } from '../../lib/admin-api';
+import { partnerDisplayText } from '../../lib/admin-copy';
 import { formatDateTime as formatDate, shortId } from '../../lib/admin-format';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
@@ -637,10 +638,6 @@ function senderRole(message: AdminChatMessage) {
 
 function senderLabel(message: AdminChatMessage) {
   return partnerDisplayText(message.sender?.fullName ?? message.sender?.phone ?? senderRole(message));
-}
-
-function partnerDisplayText(value: string) {
-  return value.replace(/\bProvider\b/g, 'Partner').replace(/\bprovider\b/g, 'partner');
 }
 
 function bookingServiceLabel(booking: AdminBookingDetail) {

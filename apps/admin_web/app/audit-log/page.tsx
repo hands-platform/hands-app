@@ -1,4 +1,5 @@
 import { AdminAuditLog, adminGet } from '../../lib/admin-api';
+import { marketplaceDisplayText as operationalDisplayText } from '../../lib/admin-copy';
 import {
   formatDateTime,
   formatDistanceMeters,
@@ -748,14 +749,6 @@ function policyAuditKeyLabel(key: string) {
     .map((part) => part.replace(/_/g, ' '))
     .map((part) => operationalDisplayText(part))
     .join(' / ');
-}
-
-function operationalDisplayText(value: string) {
-  return value
-    .replace(/\bbackup\b/g, 'marketplace')
-    .replace(/\bBackup\b/g, 'Marketplace')
-    .replace(/\bProvider\b/g, 'Partner')
-    .replace(/\bprovider\b/g, 'partner');
 }
 
 function compactAuditValue(value: unknown) {
