@@ -84,7 +84,7 @@ class _BookingConfirmationPageState
         !widget.initialCustomerLocationIsDemo;
     if (widget.initialCustomerLocationIsDemo) {
       locationMessage =
-          'Nearby partners used a demo city pin. Choose the exact service location before booking.';
+          'Nearby partners used a fallback city pin. Choose the exact service location before booking.';
     }
     if (customerLat == null || customerLng == null) {
       unawaited(loadCustomerLocation());

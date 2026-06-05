@@ -62,7 +62,7 @@ class _ProvidersScreenState extends ConsumerState<ProvidersScreen> {
         customerAddress = location.addressText ?? customerAddress;
         customerLocationIsDemo = location.isDemoLocation;
         notice = location.isDemoLocation
-            ? 'Using demo Ho Chi Minh City location for nearby partner discovery.'
+            ? 'Using Ho Chi Minh City fallback location for nearby partner discovery.'
             : null;
       });
     } catch (exception) {

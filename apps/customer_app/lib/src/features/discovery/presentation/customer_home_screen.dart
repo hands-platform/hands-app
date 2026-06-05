@@ -145,7 +145,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         customerAddress = location.addressText ?? customerAddress;
         customerLocationIsDemo = location.isDemoLocation;
         notice = location.isDemoLocation
-            ? 'Using demo Ho Chi Minh City location for discovery only. Confirm your exact service pin before booking.'
+            ? 'Using Ho Chi Minh City fallback location for discovery only. Confirm your exact service pin before booking.'
             : null;
       });
     } catch (exception) {

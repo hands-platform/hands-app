@@ -306,7 +306,7 @@ class _LocationSelectionPageState extends ConsumerState<LocationSelectionPage> {
       selectedAddress =
           location.isDemoLocation ? demoCustomerAddress : selectedAddress;
       statusMessage = location.isDemoLocation
-          ? 'GPS unavailable or outside Vietnam. Using demo Ho Chi Minh City; search or drag the map to adjust.'
+          ? 'GPS unavailable or outside Vietnam. Using Ho Chi Minh City as a fallback; search or drag the map to adjust.'
           : 'Current GPS location loaded. Drag the map to fine tune the pin.';
     });
     if (!initialLoad || location.isDemoLocation == false) {
