@@ -290,15 +290,15 @@ const bookingGateFilterOptions: Array<{ value: BookingGateFilter; label: string;
   },
   {
     value: 'customer-gps',
-    label: 'Customer GPS proof',
+    label: 'Optional GPS proof',
     operatorHint:
-      'Historical customer GPS evidence rows are retained as support context. New booking creation is address based.',
+      'Optional customer GPS evidence rows are retained as support context. Booking authority is the address snapshot.',
   },
   {
     value: 'customer-distance',
-    label: 'Legacy GPS distance',
+    label: 'Optional GPS distance',
     operatorHint:
-      'Historical customer GPS distance rows are retained only as support evidence, not current booking authority.',
+      'Optional customer GPS distance rows are retained only as support evidence, not booking authority.',
   },
   {
     value: 'first-pick-distance',
@@ -1904,7 +1904,7 @@ const bookingViewOptions: Array<{
     label: 'Blocked create',
     description: 'booking create attempts rejected before payment authorization and matching.',
     operatorHint:
-      'Use this to debug customer GPS, service address, and first-pick partner distance gates before support follow-up.',
+      'Use this to debug optional GPS evidence, service address, and first-pick partner distance gates before support follow-up.',
   },
   {
     view: 'address',
@@ -3198,14 +3198,14 @@ function buildBookingGateRejectionLane(logs: AdminAuditLog[], nowMs: number): Bo
     tone: logs.length > 0 ? 'warn' : 'ok',
     detail:
       logs.length > 0
-        ? `${customerTooFar.length} customer distance, ${partnerTooFar.length} first-pick distance, ${serviceArea.length} service-area, and ${locationProof.length} customer GPS proof attempt(s). Latest ${latestAge}.`
+        ? `${customerTooFar.length} optional GPS distance, ${partnerTooFar.length} first-pick distance, ${serviceArea.length} service-area, and ${locationProof.length} optional GPS proof attempt(s). Latest ${latestAge}.`
         : 'No booking create request has been blocked by the local booking gates.',
     href: '/bookings?view=blocked-create',
     metrics: [
-      { label: 'Legacy GPS evidence', value: customerTooFar.length.toString() },
+      { label: 'Optional GPS evidence', value: customerTooFar.length.toString() },
       { label: 'First-pick distance', value: partnerTooFar.length.toString() },
       { label: 'Service area', value: serviceArea.length.toString() },
-      { label: 'Customer GPS proof', value: locationProof.length.toString() },
+      { label: 'Optional GPS proof', value: locationProof.length.toString() },
       { label: 'Latest', value: latestAge },
     ],
   };
@@ -3362,7 +3362,7 @@ function bookingGateRejectionInfo(log: AdminAuditLog) {
 
 function bookingGateReasonLabel(reasonCode: string) {
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Legacy customer GPS distance';
+    return 'Optional customer GPS distance evidence';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
     return 'First-pick partner too far';
@@ -3371,10 +3371,10 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'Address outside service area';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Legacy customer GPS stale';
+    return 'Optional customer GPS stale';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Legacy customer GPS missing';
+    return 'Optional customer GPS missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
     return 'Optional customer GPS timestamp missing';

@@ -1945,11 +1945,11 @@ function policyRecommendationPosture(
       Number.isFinite(numericRecommended) &&
       numericValue > numericRecommended;
     return {
-      status: looser ? 'Wide GPS evidence range' : 'Baseline GPS evidence range',
+      status: looser ? 'Wide optional GPS evidence range' : 'Baseline optional GPS evidence range',
       detail:
-        'This records the legacy customer GPS evidence threshold. Current booking creation is address based and should not be blocked by customer GPS distance.',
+        'This records the optional customer GPS evidence threshold. Booking creation authority is the confirmed service address snapshot.',
       operatorAction:
-        'Review historical customer GPS rows only as support context. Keep booking decisions tied to the immutable address snapshot.',
+        'Review optional customer GPS rows only as support context. Keep booking decisions tied to the immutable address snapshot.',
       alignedAction:
         'Customer GPS evidence is optional while global browsing and address-based booking stay open.',
       className: looser ? 'ops-task-pending' : 'ops-task-done',
@@ -3641,7 +3641,7 @@ function bookingGateReasonCounts(logs: AdminAuditLog[]) {
 
 function bookingGateReasonLabel(reasonCode: string) {
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Legacy customer GPS distance';
+    return 'Optional customer GPS distance evidence';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
     return 'First-pick partner too far';
@@ -3650,16 +3650,16 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'Outside service area';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Legacy stale customer GPS';
+    return 'Optional stale customer GPS';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Legacy missing customer GPS';
+    return 'Optional missing customer GPS';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Legacy missing GPS timestamp';
+    return 'Optional missing GPS timestamp';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Legacy invalid GPS timestamp';
+    return 'Optional invalid GPS timestamp';
   }
   return displayOperationalWording(reasonCode.replace(/_/g, ' ').toLowerCase());
 }
@@ -4373,12 +4373,12 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'booking.max_customer_current_to_booking_address_km': {
       area: 'Booking create gate',
-      title: 'Records legacy customer GPS-to-service-address evidence',
+      title: 'Records optional customer GPS-to-service-address evidence',
       detail:
-        'Historical customer GPS distance threshold. Current booking creation is address based, so this row is support context only.',
+        'Optional customer GPS distance threshold. Current booking creation is address based, so this row is support context only.',
       saveChecks: [
         {
-          label: 'Legacy GPS rows',
+          label: 'Optional GPS rows',
           detail:
             'Review historical rejected booking attempts where optional customer GPS evidence looked far from the booking address.',
           href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',

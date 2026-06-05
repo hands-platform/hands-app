@@ -691,7 +691,7 @@ function bookingGateRejectionHighlights(log: AdminAuditLog): MetadataHighlight[]
 
 function bookingGateReasonLabel(reasonCode: string) {
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'legacy customer GPS distance';
+    return 'optional customer GPS distance evidence';
   }
   if (reasonCode === 'PREFERRED_PARTNER_TOO_FAR') {
     return 'first-pick partner too far';
@@ -700,16 +700,16 @@ function bookingGateReasonLabel(reasonCode: string) {
     return 'address outside service area';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'legacy customer GPS stale';
+    return 'optional customer GPS stale';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'legacy customer GPS missing';
+    return 'optional customer GPS missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'legacy GPS timestamp missing';
+    return 'optional GPS timestamp missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'legacy GPS timestamp invalid';
+    return 'optional GPS timestamp invalid';
   }
   return reasonCode.replace(/_/g, ' ').toLowerCase();
 }

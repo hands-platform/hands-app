@@ -4518,8 +4518,8 @@ function partnerBookingGateFilter(reasonCode: string) {
 
 function partnerBookingGateLabel(gate: string) {
   if (gate === 'service-area') return 'Service area';
-  if (gate === 'customer-gps') return 'Legacy GPS evidence';
-  if (gate === 'customer-distance') return 'Legacy GPS distance';
+  if (gate === 'customer-gps') return 'Optional GPS evidence';
+  if (gate === 'customer-distance') return 'Optional GPS distance';
   if (gate === 'first-pick-distance') return 'First-pick distance';
   return 'Unknown gate';
 }
@@ -4529,22 +4529,22 @@ function partnerBookingGateReasonLabel(reasonCode: string) {
     return 'Partner was outside the first-pick distance gate';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TOO_FAR') {
-    return 'Legacy customer GPS distance row';
+    return 'Optional customer GPS distance evidence';
   }
   if (reasonCode === 'BOOKING_ADDRESS_OUTSIDE_SERVICE_AREA') {
     return 'Selected service address was outside enabled service area';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_STALE') {
-    return 'Legacy customer GPS evidence was stale';
+    return 'Optional customer GPS evidence was stale';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_MISSING') {
-    return 'Legacy customer GPS evidence was missing';
+    return 'Optional customer GPS evidence was missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_MISSING') {
-    return 'Legacy customer GPS timestamp was missing';
+    return 'Optional customer GPS timestamp was missing';
   }
   if (reasonCode === 'CUSTOMER_CURRENT_LOCATION_TIMESTAMP_INVALID') {
-    return 'Legacy customer GPS timestamp was invalid';
+    return 'Optional customer GPS timestamp was invalid';
   }
   return reasonCode.replace(/_/g, ' ').toLowerCase();
 }

@@ -459,7 +459,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     [
       'Blocked create attempts',
       rangeBookingCreateRejections.length.toString(),
-      `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerGpsGate} legacy GPS evidence, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
+      `${selectedRangeLabel} stopped before payment and matching: ${rangeBookingCreateGateSummary.customerGpsGate} optional GPS evidence, ${rangeBookingCreateGateSummary.firstPickDistanceGate} first-pick distance.`,
     ],
     [
       'Online partners',
@@ -762,7 +762,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <strong>{bookingCreateRejections.length}</strong>
             <small>
               <Link className="text-link" href="/bookings?view=blocked-create">
-                {bookingCreateGateSummary.customerGpsGate} legacy GPS evidence,{' '}
+                {bookingCreateGateSummary.customerGpsGate} optional GPS evidence,{' '}
                 {bookingCreateGateSummary.firstPickDistanceGate} first-pick distance
               </Link>
             </small>
@@ -5234,13 +5234,13 @@ function buildOpsQueue(input: {
       area: 'Booking',
       href: '/bookings?view=blocked-create',
       label: 'Booking create attempts blocked',
-      detail: `${input.bookingCreateRejections.length} stopped before payment: ${createGateSummary.customerGpsGate} legacy GPS evidence row(s), ${createGateSummary.firstPickDistanceGate} first-pick distance gate.`,
+      detail: `${input.bookingCreateRejections.length} stopped before payment: ${createGateSummary.customerGpsGate} optional GPS evidence row(s), ${createGateSummary.firstPickDistanceGate} first-pick distance gate.`,
       severity:
         createGateSummary.customerGpsGate || createGateSummary.firstPickDistanceGate ? 'medium' : 'low',
       owner: 'Support',
       priority: 64,
       recommendedAction:
-        'Open blocked create attempts and guide customers to refresh GPS, correct address, or choose a closer first-pick partner.',
+        'Open blocked create attempts and guide customers to confirm the service address snapshot or choose a closer first-pick partner.',
     });
   }
 
