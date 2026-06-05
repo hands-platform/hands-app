@@ -1,5 +1,5 @@
 import { AdminNotification, AdminOperationalPolicySetting, adminGet } from '../../lib/admin-api';
-import { shortId } from '../../lib/admin-format';
+import { formatDateTime, formatRelativeTime, shortId } from '../../lib/admin-format';
 import Link from 'next/link';
 import { readSearchParam } from '../../lib/date-range';
 import { enablePushDevice, retryNotification } from './actions';
@@ -214,8 +214,10 @@ export default async function NotificationsPage({
             {notifications.map((notification) => (
               <tr key={notification.id}>
                 <td>
-                  <div>{new Date(notification.createdAt).toLocaleString()}</div>
-                  <div className="muted">{relativeTime(notification.createdAt)}</div>
+                  <div>{formatDateTime(notification.createdAt)}</div>
+                  <div className="muted">
+                    {formatRelativeTime(notification.createdAt, { justNow: 'Updated just now' })}
+                  </div>
                 </td>
                 <td>
                   <div>{notificationUserLabel(notification)}</div>
@@ -266,7 +268,7 @@ export default async function NotificationsPage({
                           </div>
                           <div className="muted" style={{ marginTop: 4 }}>
                             {delivery.pushDevice?.enabled === false ? 'Device disabled' : 'Device enabled'} -
-                            Attempted {new Date(delivery.attemptedAt).toLocaleString()}
+                            Attempted {formatDateTime(delivery.attemptedAt)}
                           </div>
                           <div className="muted" style={{ marginTop: 4 }}>
                             Failure {readFailureCode(delivery) ?? '-'} / HTTP{' '}
@@ -532,26 +534,6 @@ function readFailureReason(delivery: NonNullable<AdminNotification['deliveries']
     readString(firstDetail?.errorCode) ??
     errors
   );
-}
-
-function relativeTime(value: string) {
-  const diffMs = Date.now() - Date.parse(value);
-  if (!Number.isFinite(diffMs)) {
-    return 'Unknown time';
-  }
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) {
-    return 'Updated just now';
-  }
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
 }
 
 function humanizeType(type: string) {

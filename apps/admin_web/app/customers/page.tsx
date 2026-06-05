@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { MetricCard } from '../../components/metric-card';
 import { AdminCustomer, adminGet } from '../../lib/admin-api';
-import { formatDateTime as formatDate } from '../../lib/admin-format';
+import { formatDateTime as formatDate, formatMoney } from '../../lib/admin-format';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { readSearchParam } from '../../lib/date-range';
 
@@ -1093,12 +1093,4 @@ function compactJson(value: unknown) {
   } catch {
     return 'Metadata unavailable';
   }
-}
-
-function formatMoney(value: number, currency = 'VND') {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
 }
