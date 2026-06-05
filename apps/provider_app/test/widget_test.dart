@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider_app/main.dart';
 import 'package:provider_app/src/core/api_client.dart';
+import 'package:provider_app/src/features/booking/presentation/provider_requests_list_section.dart';
 
 void main() {
   testWidgets('renders partner requests screen', (tester) async {
@@ -39,6 +40,40 @@ void main() {
     expect(providerWalletStatusLabel(summary), 'Settlement required');
     expect(providerWalletSettlementSteps(summary).first,
         'Settle 120.000 VND for unpaid HANDS fees.');
+  });
+
+  testWidgets('shows marketplace-only wallet hold banner in request list',
+      (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ProviderRequestsListSection(
+              isOnline: true,
+              authUserId: 'provider-user-1',
+              bookingItems: const [],
+              visibleBookings: const [],
+              requestView: 'action',
+              joinedBookingIds: const {},
+              loading: false,
+              walletBlocked: true,
+              onRequestViewChanged: (_) {},
+              onJoin: (_) {},
+              onAccept: (_) {},
+              onReject: (_) {},
+              onStart: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.text(
+        '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible for review, and direct first-pick requests can still be answered.',
+      ),
+      findsOneWidget,
+    );
   });
 
   test('partner booking gate errors are converted to readable action blocks',
@@ -137,7 +172,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Marketplace visible, participation locked'), findsOneWidget);
+    expect(
+        find.text('Marketplace visible, participation locked'), findsOneWidget);
     expect(find.text(providerWalletBlockFallbackReasonClean), findsOneWidget);
     expect(
         find.text(providerMarketplaceJoinBlockedButtonLabel), findsOneWidget);
@@ -202,7 +238,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Marketplace visible, participation locked'), findsOneWidget);
+    expect(
+        find.text('Marketplace visible, participation locked'), findsOneWidget);
     expect(
       find.text(
           'You are visible to the customer now. Wait for the final selection.'),

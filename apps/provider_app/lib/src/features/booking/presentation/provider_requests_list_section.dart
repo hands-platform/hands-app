@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../earnings/presentation/provider_wallet_gate_helpers.dart';
 import '../../provider_profile/presentation/provider_feedback_cards.dart';
 import 'provider_request_cards.dart';
 import 'provider_request_guidance_helpers.dart';
@@ -66,6 +67,13 @@ class ProviderRequestsListSection extends StatelessWidget {
           chatReady: bookingItems.where(isProviderAppChatVisible).length,
         ),
         const SizedBox(height: 16),
+        if (walletBlocked) ...[
+          const InfoCard(
+            text:
+                '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible for review, and direct first-pick requests can still be answered.',
+          ),
+          const SizedBox(height: 16),
+        ],
         _RequestViewFilter(
           requestView: requestView,
           onChanged: onRequestViewChanged,
