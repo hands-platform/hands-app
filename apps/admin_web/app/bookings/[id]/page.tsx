@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MetricCard } from '../../../components/metric-card';
+import { BookingChatBubble } from './booking-chat-bubble';
 import {
   AdminAuditLog,
   AdminBookingDetail,
@@ -2908,7 +2909,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </p>
           <div className="stack">
             {messages.map((message) => (
-              <ChatBubble key={message.id} message={message} />
+              <BookingChatBubble key={message.id} message={message} />
             ))}
             {messages.length === 0 && <p className="muted">No chat messages yet.</p>}
           </div>
@@ -6037,17 +6038,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
     <div className="info-row">
       <span>{label}</span>
       <strong>{value}</strong>
-    </div>
-  );
-}
-
-function ChatBubble({ message }: { message: AdminChatMessage }) {
-  return (
-    <div className="chat-bubble">
-      <strong>{message.body}</strong>
-      <div className="muted">
-        {message.sender?.fullName ?? message.sender?.phone ?? 'Sender'} - {formatDate(message.createdAt)}
-      </div>
     </div>
   );
 }
