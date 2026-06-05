@@ -86,6 +86,25 @@ const adminPushDeviceSummarySelect = {
   },
 } satisfies Prisma.PushDeviceSelect;
 
+const adminNotificationPushDeviceSelect = {
+  id: true,
+  platform: true,
+  enabled: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.PushDeviceSelect;
+
+const adminNotificationDeliverySelect = {
+  id: true,
+  notificationId: true,
+  pushDeviceId: true,
+  provider: true,
+  status: true,
+  response: true,
+  attemptedAt: true,
+  pushDevice: { select: adminNotificationPushDeviceSelect },
+} satisfies Prisma.NotificationDeliverySelect;
+
 const adminUserListPushDeviceSelect = {
   id: true,
   platform: true,
@@ -3166,7 +3185,10 @@ export class AdminService {
             providerProfile: { select: { id: true, displayName: true, status: true } },
           },
         },
-        deliveries: { include: { pushDevice: true }, orderBy: { attemptedAt: 'desc' } },
+        deliveries: {
+          orderBy: { attemptedAt: 'desc' },
+          select: adminNotificationDeliverySelect,
+        },
       },
     });
   }
