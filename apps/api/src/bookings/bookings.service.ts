@@ -779,6 +779,9 @@ export class BookingsService {
     if (!participant || !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)) {
       throw new BadRequestException('Partner must join or accept before customer selection');
     }
+    if (providerId !== ownedBooking.preferredProviderId) {
+      await this.ensureProviderWalletCanJoinMarketplace(providerId);
+    }
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
       data: {
@@ -938,6 +941,10 @@ export class BookingsService {
         await this.recordBackupNotificationTrace(bookingId, backupNotificationTrace);
         return updated;
       }
+    }
+
+    if (status === ParticipantStatus.ACCEPTED) {
+      await this.ensureProviderWalletCanJoinMarketplace(provider.id);
     }
 
     const updatedParticipant = await this.prisma.bookingParticipant.update({
