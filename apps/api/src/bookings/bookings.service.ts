@@ -546,6 +546,8 @@ export class BookingsService {
       booking.status === BookingStatus.COMPLETED ||
       booking.status === BookingStatus.IN_SERVICE ||
       booking.status === BookingStatus.CANCELLED ||
+      booking.status === BookingStatus.NO_SHOW ||
+      booking.status === BookingStatus.EXPIRED ||
       booking.status === BookingStatus.REFUNDED
     ) {
       throw new BadRequestException('Booking cannot be cancelled in its current state');

@@ -2174,6 +2174,14 @@ if (
     `No-show should notify the preferred partner: ${JSON.stringify(noShowPartnerNotifications)}`,
   );
 }
+const noShowCustomerCancelError = await expectRequestFailure(
+  'No-show booking customer direct cancel is blocked',
+  () => postJson(`/customer/bookings/${noShowBooking.id}/cancel`, customerAuth.accessToken),
+  400,
+);
+if (!noShowCustomerCancelError.includes('Booking cannot be cancelled in its current state')) {
+  throw new Error(`No-show booking direct cancel returned an unexpected error: ${noShowCustomerCancelError}`);
+}
 
 const manuallyExpiredBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -2203,6 +2211,14 @@ if (
   throw new Error(
     `Admin expiry action did not record closure metadata: ${JSON.stringify(expiredByAdminBooking)}`,
   );
+}
+const expiredCustomerCancelError = await expectRequestFailure(
+  'Expired booking customer direct cancel is blocked',
+  () => postJson(`/customer/bookings/${manuallyExpiredBooking.id}/cancel`, customerAuth.accessToken),
+  400,
+);
+if (!expiredCustomerCancelError.includes('Booking cannot be cancelled in its current state')) {
+  throw new Error(`Expired booking direct cancel returned an unexpected error: ${expiredCustomerCancelError}`);
 }
 
 await postJson(`/provider/bookings/${booking.id}/join`, providerAuth.accessToken);

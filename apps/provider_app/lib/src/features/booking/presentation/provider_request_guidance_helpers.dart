@@ -2,7 +2,7 @@ import '../../../core/provider_value_helpers.dart';
 import '../../earnings/presentation/provider_wallet_gate_helpers.dart';
 
 bool isProviderClosedBooking(Map<String, dynamic> booking) {
-  return const {'COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED'}
+  return const {'COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'}
       .contains(booking['status']);
 }
 

@@ -248,11 +248,18 @@ void main() {
       'status': 'COMPLETED',
       'chatRoom': {'id': 'room-archive'},
     };
+    final noShowBooking = {
+      'status': 'NO_SHOW',
+      'chatRoom': {'id': 'room-no-show'},
+    };
 
     expect(isCustomerAppChatVisible(liveBooking), isTrue);
     expect(isCustomerAppChatVisible(completedBooking), isFalse);
+    expect(isCustomerAppChatVisible(noShowBooking), isFalse);
     expect(customerBookingNextAction(completedBooking),
         'Service complete. Review when ready.');
+    expect(customerBookingNextAction(noShowBooking),
+        contains('No-show recorded by HANDS operations'));
   });
 
   test('customer discovery falls back to Vietnam when selected pin is overseas',

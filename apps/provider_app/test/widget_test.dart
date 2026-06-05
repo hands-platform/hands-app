@@ -74,6 +74,20 @@ void main() {
         'Bank account approval required');
   });
 
+  test('partner chat is hidden after operations closes no-show booking', () {
+    final liveBooking = {
+      'status': 'IN_SERVICE',
+      'chatRoom': {'id': 'room-live'},
+    };
+    final noShowBooking = {
+      'status': 'NO_SHOW',
+      'chatRoom': {'id': 'room-no-show'},
+    };
+
+    expect(isProviderAppChatVisible(liveBooking), isTrue);
+    expect(isProviderAppChatVisible(noShowBooking), isFalse);
+  });
+
   testWidgets('locks marketplace join action when wallet is negative',
       (tester) async {
     var joinTapped = false;

@@ -88,7 +88,7 @@ bool isCustomerActiveBooking(Map<String, dynamic> booking) {
 }
 
 bool isCustomerClosedBooking(Map<String, dynamic> booking) {
-  return const {'COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED'}
+  return const {'COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'}
       .contains(booking['status']);
 }
 
@@ -184,6 +184,8 @@ String customerBookingNextAction(Map<String, dynamic> booking) {
     'COMPLETED' => 'Service complete. Review when ready.',
     'CANCELLED' => 'Cancelled. Any payment hold should be released.',
     'REFUNDED' => 'Refund recorded. Check payment status if needed.',
+    'NO_SHOW' =>
+      'No-show recorded by HANDS operations. Chat evidence remains available to support review.',
     _ => 'Review this booking status before taking action.',
   };
 }

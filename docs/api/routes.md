@@ -33,6 +33,8 @@ Legacy customer aliases `/customer/providers/nearby` and `/customer/providers/:i
 
 `GET /customer/partners/nearby` accepts optional `lat` and `lng` query parameters for distance sorting. If the customer is outside Vietnam, has denied GPS, or sends no coordinates, the API falls back to the default Vietnam service-area browse pin so customers can still view partner supply from any country. Booking creation remains stricter: `POST /customer/bookings` requires a confirmed service address inside the active HANDS service area and stores it as `BookingAddressSnapshot`.
 
+`POST /customer/bookings/:id/cancel` is only a pre-commitment customer action. Once a partner has accepted, been selected, or the booking is matched/on the way/arrived/in service, direct customer cancellation is blocked and the booking must be reviewed through retained chat evidence by HANDS operations.
+
 ## Partner
 
 - `GET /partner/me`
@@ -156,3 +158,4 @@ Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUND
 - `POST /partner/bookings/:id/join` records a marketplace participant and stores the server-calculated distance snapshot.
 - Negative-wallet partners can still see marketplace requests in `GET /partner/bookings/open`, but `POST /partner/bookings/:id/join` is blocked until settlement or admin offset. Blocked join attempts do not create participant records.
 - Chat is created after the booking is matched. `POST /partner/bookings/:id/start` advances service lifecycle state.
+- Customer direct cancellation is not available after partner commitment. Cancellation and no-show outcomes after matching are HANDS operations decisions based on chat, location, payment, and booking evidence.
