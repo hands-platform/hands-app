@@ -8,6 +8,38 @@ const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
 const violations = [];
 
 const adminServiceSource = readFileSync(adminServicePath, 'utf8');
+if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 500;')) {
+  violations.push({
+    area: 'admin app session query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'App session list query must keep the 500-row operations guard.',
+  });
+}
+
+if (!adminServiceSource.includes('take: ADMIN_APP_SESSION_LIST_LIMIT,')) {
+  violations.push({
+    area: 'admin app session query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'App session list query must apply ADMIN_APP_SESSION_LIST_LIMIT.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_LIMIT = 500;')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list query must keep the 500-row operations guard.',
+  });
+}
+
+if (!adminServiceSource.includes('take: ADMIN_CUSTOMER_LIST_LIMIT,')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list query must apply ADMIN_CUSTOMER_LIST_LIMIT.',
+  });
+}
+
 if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;')) {
   violations.push({
     area: 'admin provider query',
@@ -46,7 +78,7 @@ for (const file of listFiles(adminWebAppRoot)) {
 const result = {
   ok: violations.length === 0,
   purpose:
-    'Static guard for Admin Operations partner list query size and Admin Web compact partner list usage.',
+    'Static guard for Admin Operations app session, customer, and partner list query size.',
   violations,
 };
 

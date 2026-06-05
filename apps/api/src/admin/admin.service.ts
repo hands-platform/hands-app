@@ -35,6 +35,8 @@ import { RedisStateService } from '../redis/redis-state.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 
 const PRICE_STEP_UNIT_VND = 100000;
+const ADMIN_APP_SESSION_LIST_LIMIT = 500;
+const ADMIN_CUSTOMER_LIST_LIMIT = 500;
 const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
 
 const adminUserSummarySelect = {
@@ -1371,7 +1373,7 @@ export class AdminService {
   listCustomers() {
     return this.prisma.customerProfile.findMany({
       orderBy: { id: 'desc' },
-      take: 500,
+      take: ADMIN_CUSTOMER_LIST_LIMIT,
       select: {
         id: true,
         userId: true,
@@ -1491,7 +1493,7 @@ export class AdminService {
   listAppSessions() {
     return this.prisma.appSession.findMany({
       orderBy: { lastSeenAt: 'desc' },
-      take: 500,
+      take: ADMIN_APP_SESSION_LIST_LIMIT,
       select: adminAppSessionListSelect,
     });
   }
