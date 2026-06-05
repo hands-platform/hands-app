@@ -104,7 +104,7 @@ export default async function PartnerControlsPage({
       </div>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner control command center</h2>
             <p className="muted">
@@ -141,7 +141,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Next operator actions</h2>
             <p className="muted">
@@ -181,7 +181,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner control board</h2>
             <p className="muted">
@@ -247,7 +247,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Marketplace and payout unblock board</h2>
             <p className="muted">
@@ -299,7 +299,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Marketplace and payout unblock playbook</h2>
             <p className="muted">
@@ -350,7 +350,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner operating block matrix</h2>
             <p className="muted">
@@ -395,7 +395,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header" style={{ marginBottom: 12 }}>
+        <div className="ops-section-header" style={{ marginBottom: 12 }}>
           <div>
             <h2>Control filters</h2>
             <p className="muted">
@@ -468,7 +468,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>System control checklist</h2>
             <p className="muted">
@@ -550,7 +550,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Create partner report</h2>
             <p className="muted">
@@ -614,7 +614,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Reports</h2>
             <p className="muted">
@@ -722,7 +722,7 @@ export default async function PartnerControlsPage({
       </section>
 
       <section className="card">
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Account controls</h2>
             <p className="muted">

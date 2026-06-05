@@ -52,7 +52,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
     <>
       <h1>Partner Payouts</h1>
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout date range</h2>
             <p className="muted">
@@ -113,7 +113,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout batch release policy desk</h2>
             <p className="muted">
@@ -125,7 +125,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             Batch policy
           </Link>
         </div>
-        <div className="risk-watch-header" style={{ marginTop: 14 }}>
+        <div className="ops-section-header" style={{ marginTop: 14 }}>
           <div>
             <h3>Applied operations policy</h3>
             <p className="muted">
@@ -156,7 +156,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             </div>
           ))}
         </div>
-        <div className="risk-watch-header" style={{ marginTop: 16 }}>
+        <div className="ops-section-header" style={{ marginTop: 16 }}>
           <div>
             <h3>Payout release cycle board</h3>
             <p className="muted">
@@ -196,7 +196,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
             </tbody>
           </table>
         </div>
-        <div className="risk-watch-header" style={{ marginTop: 16 }}>
+        <div className="ops-section-header" style={{ marginTop: 16 }}>
           <div>
             <h3>Marketplace and payout unblock bridge</h3>
             <p className="muted">
@@ -224,7 +224,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       </section>
 
       <div className="card" id="release-blocker-queue" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout money flow</h2>
             <p className="muted">
@@ -260,7 +260,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout command queue</h2>
             <p className="muted">
@@ -287,7 +287,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout inclusion audit</h2>
             <p className="muted">
@@ -336,7 +336,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Release blocker queue</h2>
             <p className="muted">
@@ -390,7 +390,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       </div>
 
       <div className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout service evidence</h2>
             <p className="muted">
@@ -490,7 +490,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout status lanes</h2>
             <p className="muted">
@@ -503,7 +503,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
         <div className="detail-grid" style={{ marginTop: 16 }}>
           {payoutLanes.map((lane) => (
             <div key={lane.title}>
-              <div className="risk-watch-header">
+              <div className="ops-section-header">
                 <h3>{lane.title}</h3>
                 <span className={`pill ${lane.pillClass}`}>{lane.batches.length}</span>
               </div>

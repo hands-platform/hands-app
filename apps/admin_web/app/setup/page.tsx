@@ -450,7 +450,7 @@ export default async function SetupPage() {
 
       <section className="detail-grid" style={{ marginBottom: 16 }}>
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Master progress control</h2>
               <p className="muted">
@@ -473,7 +473,7 @@ export default async function SetupPage() {
         </div>
 
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Verified baseline</h2>
               <p className="muted">
@@ -502,7 +502,7 @@ export default async function SetupPage() {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>External registration handoff</h2>
             <p className="muted">
@@ -537,7 +537,7 @@ export default async function SetupPage() {
 
       <section className="detail-grid" style={{ marginBottom: 16 }}>
         <div className="card" id="live-readiness">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Next operator actions</h2>
               <p className="muted">
@@ -661,7 +661,7 @@ export default async function SetupPage() {
       </section>
 
       <section className="card" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>What still needs external registration</h2>
             <p className="muted">
@@ -694,7 +694,7 @@ export default async function SetupPage() {
           );
           return (
             <div className="card" id={group.id} key={group.id}>
-              <div className="risk-watch-header">
+              <div className="ops-section-header">
                 <div>
                   <h2>{group.title}</h2>
                   <p className="muted">

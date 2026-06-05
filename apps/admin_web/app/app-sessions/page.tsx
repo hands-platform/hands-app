@@ -58,7 +58,7 @@ export default async function AppSessionsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Session scope</h2>
             <p className="muted">
@@ -93,7 +93,7 @@ export default async function AppSessionsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Session command board</h2>
             <p className="muted">
@@ -160,7 +160,7 @@ export default async function AppSessionsPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Session check queue</h2>
             <p className="muted">
@@ -188,7 +188,7 @@ export default async function AppSessionsPage({
       </section>
 
       <section className="card">
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Latest app sessions</h2>
             <p className="muted">

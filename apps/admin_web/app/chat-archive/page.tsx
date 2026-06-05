@@ -180,7 +180,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Chat integrity repair queue</h2>
             <p className="muted">
@@ -282,7 +282,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Chat archive index</h2>
             <p className="muted">
@@ -362,7 +362,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
       </section>
 
       <section className="card">
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Message transcript preview</h2>
             <p className="muted">
@@ -375,7 +375,7 @@ export default async function ChatArchivePage({ searchParams }: { searchParams?:
         <div className="setup-stage-list" style={{ marginTop: 16 }}>
           {rooms.slice(0, 12).map((room) => (
             <article className="card" key={`${room.roomId}-messages`}>
-              <div className="risk-watch-header">
+              <div className="ops-section-header">
                 <div>
                   <h3>
                     {room.customerName} / {room.partnerName}

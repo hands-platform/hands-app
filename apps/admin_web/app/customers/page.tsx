@@ -305,7 +305,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Current filter summary</h2>
             <p className="muted">
@@ -371,7 +371,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer activity board</h2>
             <p className="muted">
@@ -451,7 +451,7 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
       </section>
 
       <section className="card">
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>All customers</h2>
             <p className="muted">

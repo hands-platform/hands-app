@@ -64,7 +64,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </p>
 
       <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Cash settlement date range</h2>
             <p className="muted">
@@ -164,7 +164,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Cash settlement execution desk</h2>
             <p className="muted">
@@ -188,7 +188,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             </div>
           ))}
         </div>
-        <div className="risk-watch-header" style={{ marginTop: 16 }}>
+        <div className="ops-section-header" style={{ marginTop: 16 }}>
           <div>
             <h3>Settlement priority board</h3>
             <p className="muted">
@@ -259,7 +259,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Cash fee operating rules</h2>
             <p className="muted">
@@ -271,7 +271,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             Wallet policy
           </Link>
         </div>
-        <div className="risk-watch-header" style={{ marginTop: 14 }}>
+        <div className="ops-section-header" style={{ marginTop: 14 }}>
           <div>
             <h3>Applied operations policy</h3>
             <p className="muted">
@@ -305,7 +305,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </section>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Debt cause board</h2>
             <p className="muted">
@@ -332,7 +332,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Wallet recovery workflow</h2>
             <p className="muted">
@@ -359,7 +359,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </div>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Cash settlement handoff map</h2>
             <p className="muted">
@@ -387,7 +387,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </section>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Settlement command queue</h2>
             <p className="muted">
@@ -414,7 +414,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </div>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Cash settlement evidence checklist</h2>
             <p className="muted">
@@ -441,7 +441,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </section>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner wallet debt groups</h2>
             <p className="muted">
@@ -457,7 +457,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
           <div className="detail-grid" style={{ marginTop: 16 }}>
             {providers.map((provider) => (
               <div key={provider.providerProfileId}>
-                <div className="risk-watch-header">
+                <div className="ops-section-header">
                   <h3>{provider.providerName}</h3>
                   <span className="pill pill-danger">
                     {formatMoney(provider.debtAmount, provider.currency)}
@@ -484,7 +484,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       </div>
 
       <div className="card" style={{ overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Open cash fee debt rows</h2>
             <p className="muted">

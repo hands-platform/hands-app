@@ -63,7 +63,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
     <>
       <h1>Partner Earnings</h1>
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Earnings date range</h2>
             <p className="muted">
@@ -98,7 +98,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       </section>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Money flow command center</h2>
             <p className="muted">
@@ -134,7 +134,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Finance queue</h2>
             <p className="muted">
@@ -161,7 +161,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       </div>
 
       <div className="card" style={{ marginTop: 20, overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Service to earnings bridge</h2>
             <p className="muted">
@@ -309,7 +309,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner payout queue</h2>
             <p className="muted">
@@ -369,7 +369,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Cash fee debt queue</h2>
             <p className="muted">
@@ -466,7 +466,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Earning batch state filters</h2>
             <p className="muted">
@@ -501,7 +501,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
       </div>
 
       <div className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Recent earnings ledger</h2>
             <p className="muted">

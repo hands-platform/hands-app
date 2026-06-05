@@ -64,7 +64,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Audit command board</h2>
             <p className="muted">

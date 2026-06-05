@@ -669,7 +669,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Core operating counters</h2>
             <p className="muted">
@@ -707,7 +707,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Operations command board</h2>
             <p className="muted">
@@ -744,7 +744,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Evidence drilldown</h2>
             <p className="muted">
@@ -825,7 +825,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking evidence command queue</h2>
             <p className="muted">
@@ -870,7 +870,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Dashboard date range</h2>
             <p className="muted">
@@ -912,7 +912,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Live operations radar</h2>
             <p className="muted">
@@ -951,7 +951,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Admin menu map</h2>
             <p className="muted">
@@ -986,7 +986,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Today operator order</h2>
             <p className="muted">
@@ -1016,7 +1016,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Shift operating route</h2>
             <p className="muted">
@@ -1048,7 +1048,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Daily operations snapshot</h2>
             <p className="muted">
@@ -1076,7 +1076,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Policy outcome pulse</h2>
             <p className="muted">
@@ -1110,7 +1110,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Shift command briefing</h2>
             <p className="muted">
@@ -1173,7 +1173,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Opening shift checklist</h2>
             <p className="muted">
@@ -1215,7 +1215,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Matching control room</h2>
             <p className="muted">
@@ -1243,7 +1243,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
         <div className="detail-grid" style={{ marginTop: 14 }}>
           <div className="ops-task-note">
-            <div className="risk-watch-header">
+            <div className="ops-section-header">
               <div>
                 <h3>Open matching queue</h3>
                 <p className="muted">
@@ -1281,7 +1281,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           </div>
           <div className="ops-task-note">
-            <div className="risk-watch-header">
+            <div className="ops-section-header">
               <div>
                 <h3>Supply and policy checks</h3>
                 <p className="muted">
@@ -1305,7 +1305,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Operations policy snapshot</h2>
             <p className="muted">
@@ -1433,7 +1433,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <section className="detail-grid" style={{ marginTop: 20 }}>
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Booking attention cockpit</h2>
               <p className="muted">
@@ -1503,7 +1503,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
 
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Service and payment mix</h2>
               <p className="muted">
@@ -1563,7 +1563,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <section className="detail-grid" style={{ marginTop: 20 }}>
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Booking status control</h2>
               <p className="muted">
@@ -1620,7 +1620,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
 
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Customer app presence</h2>
               <p className="muted">
@@ -1688,7 +1688,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <section className="detail-grid" style={{ marginTop: 20 }}>
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Hourly booking demand</h2>
               <p className="muted">Reservations grouped by request hour in Vietnam time.</p>
@@ -1711,7 +1711,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
 
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Regional booking demand</h2>
               <p className="muted">Top service areas inferred from booking address text.</p>
@@ -1741,7 +1741,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <section className="detail-grid" style={{ marginTop: 20 }}>
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Partner supply snapshot</h2>
               <p className="muted">
@@ -1797,7 +1797,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
 
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Partner readiness funnel</h2>
               <p className="muted">
@@ -1847,7 +1847,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner dispatch control</h2>
             <p className="muted">
@@ -1914,7 +1914,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Marketplace unblock quick order</h2>
             <p className="muted">
@@ -1949,7 +1949,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       </section>
 
       <section className="card" style={{ marginTop: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Today command lanes</h2>
             <p className="muted">
@@ -2022,7 +2022,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
 
       <section className="detail-grid" style={{ marginTop: 20 }}>
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Operations checklist queue</h2>
               <p className="muted">
@@ -2101,7 +2101,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
 
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>External setup readiness</h2>
               <p className="muted">

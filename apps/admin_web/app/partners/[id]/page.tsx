@@ -640,7 +640,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </section>
 
       <div className="card" id="partner-operator-first-read" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner operator first read</h2>
             <p className="muted">
@@ -670,7 +670,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-operations-quick-rail" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner operations quick rail</h2>
             <p className="muted">
@@ -692,7 +692,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-activity-command-snapshot" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner command snapshot</h2>
             <p className="muted">
@@ -714,7 +714,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-recent-operations-timeline" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner recent operations timeline</h2>
             <p className="muted">
@@ -754,7 +754,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-operations-digest" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner operations digest</h2>
             <p className="muted">
@@ -788,7 +788,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-booking-journey" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner booking journey</h2>
             <p className="muted">
@@ -840,7 +840,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-booking-create-gates" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner booking create gate evidence</h2>
             <p className="muted">
@@ -907,7 +907,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-connected-operations-records" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner connected operations records</h2>
             <p className="muted">
@@ -932,7 +932,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-operator-command-queue" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner operator command queue</h2>
             <p className="muted">
@@ -969,7 +969,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card ops-note-panel" id="partner-operator-notes" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner operator notes</h2>
             <p className="muted">
@@ -1025,7 +1025,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-master-facts" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner master facts</h2>
             <p className="muted">
@@ -1047,7 +1047,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-booking-evidence-bundles" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner booking evidence bundles</h2>
             <p className="muted">
@@ -1125,7 +1125,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-full-record-index" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner full record index</h2>
             <p className="muted">
@@ -1166,7 +1166,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-operating-ledger" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner operating ledger</h2>
             <p className="muted">
@@ -1203,7 +1203,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-operating-checklist" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner operating checklist</h2>
             <p className="muted">
@@ -1231,7 +1231,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="record-date-filter" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Record date filter</h2>
             <p className="muted">
@@ -1327,7 +1327,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-chat-retention-ledger" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner chat retention ledger</h2>
             <p className="muted">
@@ -1410,7 +1410,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="booking-chat-records" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking and chat records</h2>
             <p className="muted">
@@ -1517,7 +1517,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-booking-ops-ledger" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operations note ledger</h2>
             <p className="muted">
@@ -1581,7 +1581,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="app-activity" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Recent app and operations activity</h2>
             <p className="muted">
@@ -1629,7 +1629,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="partner-daily-digest" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner daily activity digest</h2>
             <p className="muted">
@@ -1687,7 +1687,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       />
 
       <div className={`card ${cardClass(bookingAcceptance.tone)}`} style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Marketplace booking gate decision</h2>
             <p className="muted">
@@ -1760,7 +1760,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       />
 
       <div className={`card ${hasCashFeeDebt ? 'card-danger' : ''}`} id="cash-debt-origin" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Cash debt origin and settlement</h2>
             <p className="muted">
@@ -1853,7 +1853,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" id="payout" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner marketplace/payout unblock playbook</h2>
             <p className="muted">
@@ -1897,7 +1897,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner ops command center</h2>
             <p className="muted">
@@ -1926,7 +1926,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout operations</h2>
             <p className="muted">
@@ -1978,7 +1978,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         ) : null}
         <div className="detail-grid" style={{ marginTop: 16 }}>
           <div>
-            <div className="risk-watch-header">
+            <div className="ops-section-header">
               <h3>Recent earnings</h3>
               <div className="actions">
                 {hasCashFeeDebt ? (
@@ -2041,7 +2041,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             )}
           </div>
           <div>
-            <div className="risk-watch-header">
+            <div className="ops-section-header">
               <h3>Recent payout batches</h3>
               <Link className="text-link" href="/payouts">
                 Open payouts
@@ -2074,7 +2074,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Approval checklist</h2>
             <p className="muted">
@@ -2100,7 +2100,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner registration dossier</h2>
             <p className="muted">
@@ -2129,7 +2129,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Device and session activity</h2>
             <p className="muted">
@@ -2251,7 +2251,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Reports and account controls</h2>
             <p className="muted">
@@ -2300,7 +2300,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
         </form>
         <div className="ops-task-card ops-task-pending" style={{ marginBottom: 16 }}>
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h3>Manual account control</h3>
               <p className="muted">
@@ -2471,7 +2471,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Partner level path</h2>
             <p className="muted">
@@ -2497,7 +2497,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Resubmission guidance</h2>
             <p className="muted">
@@ -2538,7 +2538,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       </div>
 
       <div className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Review history</h2>
             <p className="muted">
@@ -3387,7 +3387,7 @@ function PartnerDetailReadinessSnapshot({
 
   return (
     <div className="card" style={{ marginBottom: 16 }}>
-      <div className="risk-watch-header">
+      <div className="ops-section-header">
         <div>
           <h2>Partner readiness snapshot</h2>
           <p className="muted">
@@ -3435,7 +3435,7 @@ function PartnerAcceptanceRepairCommandPanel({
 
   return (
     <div className={`card ${cardClass(command.tone)}`} style={{ marginBottom: 16 }}>
-      <div className="risk-watch-header">
+      <div className="ops-section-header">
         <div>
           <h2>Marketplace repair command</h2>
           <p className="muted">

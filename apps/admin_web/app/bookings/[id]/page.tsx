@@ -689,7 +689,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-operator-first-read" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operator first read</h2>
             <p className="muted">
@@ -736,7 +736,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-operations-quick-rail" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operations quick rail</h2>
             <p className="muted">
@@ -759,7 +759,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="matching-rule-snapshot" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Matching rule snapshot</h2>
             <p className="muted">
@@ -791,7 +791,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="mvp-authority-contract" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>MVP authority contract</h2>
             <p className="muted">
@@ -837,7 +837,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-recent-operations-timeline" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking recent operations timeline</h2>
             <p className="muted">
@@ -864,7 +864,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-priority-briefing" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking priority briefing</h2>
             <p className="muted">
@@ -900,7 +900,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-decision-evidence-guardrails" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Decision evidence guardrails</h2>
             <p className="muted">
@@ -944,7 +944,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-evidence-packet" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Evidence packet for admin decision</h2>
             <p className="muted">
@@ -985,7 +985,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-chat-evidence-decision-board" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Chat evidence decision board</h2>
             <p className="muted">
@@ -1042,7 +1042,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="manual-decision-readiness" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Manual outcome decision readiness</h2>
             <p className="muted">
@@ -1089,7 +1089,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </tbody>
         </table>
         <div className="ops-task-note" style={{ marginTop: 14 }}>
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <strong>Decision note presets</strong>
               <p className="muted">
@@ -1119,7 +1119,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-full-evidence-bundle" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking full evidence bundle</h2>
             <p className="muted">
@@ -1163,7 +1163,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-closeout-checklist" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking closeout checklist</h2>
             <p className="muted">
@@ -1195,7 +1195,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="connected-operations-records" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Connected operations records</h2>
             <p className="muted">
@@ -1220,7 +1220,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="operator-command-queue" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Operator command queue</h2>
             <p className="muted">
@@ -1254,7 +1254,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="operator-action-availability" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Operator action availability</h2>
             <p className="muted">
@@ -1296,7 +1296,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-handoff-checklist" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking handoff checklist</h2>
             <p className="muted">
@@ -1327,7 +1327,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="payment-actions" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking full record index</h2>
             <p className="muted">
@@ -1427,7 +1427,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="marketplace-wallet-evidence" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Marketplace participation and wallet evidence</h2>
             <p className="muted">
@@ -1475,7 +1475,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-operating-ledger" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operating ledger</h2>
             <p className="muted">
@@ -1512,7 +1512,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-closeout-readiness" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Closeout readiness</h2>
             <p className="muted">
@@ -1541,7 +1541,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           ))}
         </div>
         <div className="ops-task-note" style={{ marginTop: 14 }}>
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <strong>Closeout exception register</strong>
               <p className="muted">
@@ -1587,7 +1587,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="operating-snapshot" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operating snapshot</h2>
             <p className="muted">
@@ -1620,7 +1620,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="operating-timeline" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Operating timeline</h2>
             <p className="muted">
@@ -1645,7 +1645,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="communication-movement-handoff" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Communication and movement handoff</h2>
             <p className="muted">
@@ -1699,7 +1699,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="structured-ops-status" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Chat lifecycle and retention</h2>
             <p className="muted">
@@ -1756,7 +1756,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
         </div>
         <div className="ops-task-note" style={{ marginTop: 14 }}>
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <strong>Action evidence gate</strong>
               <p className="muted">
@@ -1879,7 +1879,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="alerts" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking stage snapshot</h2>
             <p className="muted">
@@ -1919,7 +1919,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="audit" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer wait and matching decision</h2>
             <p className="muted">
@@ -1960,7 +1960,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="backup-supply" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Applied operations policy</h2>
             <p className="muted">
@@ -2006,7 +2006,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="address-radius-contract" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking address radius contract</h2>
             <p className="muted">
@@ -2037,7 +2037,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Dispatch candidate decision matrix</h2>
             <p className="muted">
@@ -2124,7 +2124,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Marketplace partner supply for this booking</h2>
             <p className="muted">
@@ -2185,7 +2185,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking alert trace</h2>
             <p className="muted">
@@ -2244,7 +2244,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Operations audit trace</h2>
             <p className="muted">
@@ -2297,7 +2297,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card risk-watch" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Attention checks</h2>
             <p className="muted">Automatic operational checks for bookings that need operator attention.</p>
@@ -2316,7 +2316,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card risk-watch" id="finance" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Finance command center</h2>
             <p className="muted">
@@ -2346,7 +2346,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="payout-batch-eligibility" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout batch eligibility</h2>
             <p className="muted">
@@ -2375,7 +2375,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="service-pricing-snapshot" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Service pricing snapshot</h2>
             <p className="muted">
@@ -2399,7 +2399,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Dispatch checklist</h2>
             <p className="muted">
@@ -2428,7 +2428,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Structured ops status</h2>
             <p className="muted">
@@ -2618,7 +2618,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card" id="customer">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <h2>Customer</h2>
             {booking.customerProfile?.id && (
               <Link className="text-link" href={`/customers/${booking.customerProfile.id}`}>
@@ -2654,7 +2654,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card" id="handoff">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <h2>Partner handoff</h2>
             {finalProvider?.id && (
               <Link className="text-link" href={`/partners/${finalProvider.id}`}>
@@ -2682,7 +2682,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <section className="detail-grid" style={{ marginTop: 16 }}>
         <div className="card" id="participants">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Actual marketplace participant ledger</h2>
               <p className="muted">
@@ -2815,7 +2815,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
 
         <div className="card">
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Cash fee settlement path</h2>
               <p className="muted">
@@ -2917,7 +2917,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="booking-activity" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking chronological activity</h2>
             <p className="muted">

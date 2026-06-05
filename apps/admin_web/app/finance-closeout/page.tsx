@@ -72,7 +72,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       </p>
 
       <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Finance date range</h2>
             <p className="muted">
@@ -126,7 +126,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Closeout reconciliation board</h2>
             <p className="muted">
@@ -153,7 +153,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payment-to-earning checks</h2>
             <p className="muted">
@@ -190,7 +190,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Cash debt handoff</h2>
             <p className="muted">
@@ -214,7 +214,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Finance closeout evidence checklist</h2>
             <p className="muted">
@@ -241,7 +241,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Shift close action map</h2>
             <p className="muted">
@@ -268,7 +268,7 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
       </section>
 
       <section className="card" style={{ overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payout release checks</h2>
             <p className="muted">

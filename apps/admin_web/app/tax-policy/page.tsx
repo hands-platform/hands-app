@@ -34,7 +34,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Policy checklist</h2>
             <p className="muted">
@@ -61,7 +61,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Withholding preview</h2>
             <p className="muted">

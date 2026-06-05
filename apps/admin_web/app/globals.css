@@ -835,7 +835,7 @@ a {
   color: #334155;
 }
 
-.risk-watch-header {
+.ops-section-header {
   align-items: flex-start;
   display: flex;
   gap: 16px;
@@ -1046,7 +1046,7 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
-  .risk-watch-header,
+  .ops-section-header,
   .risk-item {
     display: grid;
     grid-template-columns: 1fr;

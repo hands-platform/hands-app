@@ -101,7 +101,7 @@ export default async function PaymentDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="payment-action-map" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payment action execution map</h2>
             <p className="muted">
@@ -149,7 +149,7 @@ export default async function PaymentDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="callback-timeline" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Gateway callback attempt timeline</h2>
             <p className="muted">
@@ -236,7 +236,7 @@ export default async function PaymentDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="chat-payment-evidence" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Chat and operation evidence</h2>
             <p className="muted">
@@ -265,7 +265,7 @@ export default async function PaymentDetailPage({ params }: PageProps) {
       </section>
 
       <section className="card" id="payment-audit-log">
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payment audit trail</h2>
             <p className="muted">Admin actions tied to this payment or linked booking.</p>

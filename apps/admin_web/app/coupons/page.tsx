@@ -39,7 +39,7 @@ export default async function CouponsPage() {
         <SummaryCard label="Needs review" value={String(needsReview.length)} hint="Expired active codes or paused campaigns." />
       </section>
       <section className="card" style={{ marginBottom: 20 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Campaign command board</h2>
             <p className="muted">

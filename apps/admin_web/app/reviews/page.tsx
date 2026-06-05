@@ -37,7 +37,7 @@ export default async function ReviewsPage({ searchParams }: { searchParams?: Rev
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Feedback command board</h2>
             <p className="muted">

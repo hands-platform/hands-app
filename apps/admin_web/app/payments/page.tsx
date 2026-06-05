@@ -66,7 +66,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
         </div>
       </section>
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payment operation filters</h2>
             <p className="muted">
@@ -116,7 +116,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
         </div>
       </section>
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Payment callback attempt ledger</h2>
             <p className="muted">

@@ -455,7 +455,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-operator-first-read" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer operator first read</h2>
             <p className="muted">
@@ -527,7 +527,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-operations-quick-rail" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer operations quick rail</h2>
             <p className="muted">
@@ -549,7 +549,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-recent-operations-timeline" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer recent operations timeline</h2>
             <p className="muted">
@@ -593,7 +593,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-operations-digest" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer operations digest</h2>
             <p className="muted">
@@ -627,7 +627,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-connected-operations-records" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer connected operations records</h2>
             <p className="muted">
@@ -652,7 +652,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-booking-create-gates" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer blocked create attempts</h2>
             <p className="muted">
@@ -719,7 +719,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-booking-evidence-bundles" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer booking evidence bundles</h2>
             <p className="muted">
@@ -792,7 +792,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-operator-command-queue" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer operator command queue</h2>
             <p className="muted">
@@ -831,7 +831,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-booking-journey" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer booking journey</h2>
             <p className="muted">
@@ -883,7 +883,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-full-record-index" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer full record index</h2>
             <p className="muted">
@@ -933,7 +933,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-operating-ledger" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer operating ledger</h2>
             <p className="muted">
@@ -970,7 +970,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="record-date-filter" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Record date filter</h2>
             <p className="muted">
@@ -1066,7 +1066,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer activity action panel</h2>
             <p className="muted">
@@ -1139,7 +1139,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-info" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer information</h2>
             <p className="muted">Identity, contact, reachability, and app activity for support operators.</p>
@@ -1185,7 +1185,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-account-facts" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer account facts</h2>
             <p className="muted">
@@ -1251,7 +1251,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="booking-history" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking and cancellation history</h2>
             <p className="muted">
@@ -1331,7 +1331,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-chat-retention-ledger" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer chat retention ledger</h2>
             <p className="muted">
@@ -1408,7 +1408,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-booking-ops-ledger" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operations note ledger</h2>
             <p className="muted">
@@ -1472,7 +1472,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="chat-history" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Chat history</h2>
             <p className="muted">
@@ -1486,7 +1486,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
           {filteredChatBookings.length > 0 ? (
             filteredChatBookings.map((booking) => (
               <div className="card" key={booking.id}>
-                <div className="risk-watch-header">
+                <div className="ops-section-header">
                   <div>
                     <strong>
                       {shortId(booking.id)} / {bookingServiceLabel(booking)}
@@ -1533,7 +1533,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-activity" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer chronological activity</h2>
             <p className="muted">
@@ -1586,7 +1586,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="customer-daily-digest" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer daily activity digest</h2>
             <p className="muted">
@@ -1676,7 +1676,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="notifications">
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Recent customer notifications</h2>
             <p className="muted">
@@ -1711,7 +1711,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
       </section>
 
       <section className="card" id="audit-trail" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer audit trail</h2>
             <p className="muted">Recent operator notes and system actions attached to this customer.</p>

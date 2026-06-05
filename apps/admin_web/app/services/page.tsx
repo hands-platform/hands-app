@@ -105,7 +105,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
             background: actionNotice.tone === 'success' ? '#f4fbf1' : '#fff5f3',
           }}
         >
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>{actionNotice.title}</h2>
               <p className="muted">{actionNotice.detail}</p>
@@ -118,7 +118,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       ) : null}
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer booking exposure guard</h2>
             <p className="muted">
@@ -164,7 +164,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Recent pricing audit trail</h2>
             <p className="muted">
@@ -229,7 +229,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Pricing health</h2>
             <p className="muted">
@@ -256,7 +256,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking readiness queue</h2>
             <p className="muted">
@@ -295,7 +295,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Duration pricing matrix</h2>
             <p className="muted">
@@ -408,7 +408,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Service payout ledger</h2>
             <p className="muted">
@@ -486,7 +486,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Price policy change preview</h2>
             <p className="muted">
@@ -607,7 +607,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Recent booking finance trace</h2>
             <p className="muted">
@@ -1387,7 +1387,7 @@ function ProviderPriceImpact({
 
   return (
     <div className="service-impact-card">
-      <div className="risk-watch-header">
+      <div className="ops-section-header">
         <div>
           <h3>Partner price impact</h3>
           <p className="muted">

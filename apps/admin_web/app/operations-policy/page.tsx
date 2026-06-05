@@ -173,7 +173,7 @@ export default async function OperationsPolicyPage({
             background: notice.tone === 'success' ? '#f4fbf1' : '#fff5f3',
           }}
         >
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>{notice.title}</h2>
               <p className="muted">{notice.detail}</p>
@@ -186,7 +186,7 @@ export default async function OperationsPolicyPage({
       ) : null}
 
       <section className="card" id="action-gate-policy-checklist" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Action gate policy checklist</h2>
             <p className="muted">
@@ -228,7 +228,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking create gate controls</h2>
             <p className="muted">
@@ -278,7 +278,7 @@ export default async function OperationsPolicyPage({
             </tbody>
           </table>
         </div>
-        <div className="risk-watch-header" style={{ marginTop: 18 }}>
+        <div className="ops-section-header" style={{ marginTop: 18 }}>
           <div>
             <h3>Recent blocked create attempts</h3>
             <p className="muted">
@@ -313,7 +313,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Recommended value review</h2>
             <p className="muted">
@@ -349,7 +349,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Final partner choice control matrix</h2>
             <p className="muted">
@@ -381,7 +381,7 @@ export default async function OperationsPolicyPage({
             </div>
           ))}
         </div>
-        <div className="risk-watch-header" style={{ marginTop: 18 }}>
+        <div className="ops-section-header" style={{ marginTop: 18 }}>
           <div>
             <h3>Current partner acceptance impact</h3>
             <p className="muted">
@@ -405,7 +405,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Policy sensitivity preview</h2>
             <p className="muted">
@@ -490,7 +490,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" id="matching-stage-impact" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Matching stage impact preview</h2>
             <p className="muted">
@@ -555,7 +555,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Policy outcome effect</h2>
             <p className="muted">
@@ -639,7 +639,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Policy enforcement trace</h2>
             <p className="muted">
@@ -664,7 +664,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Live matching policy</h2>
             <p className="muted">
@@ -695,7 +695,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Live policy simulator</h2>
             <p className="muted">
@@ -737,7 +737,7 @@ export default async function OperationsPolicyPage({
             </div>
           </div>
           <div className="ops-task-note">
-            <div className="risk-watch-header">
+            <div className="ops-section-header">
               <div>
                 <h3>Eligible partner preview</h3>
                 <p className="muted">
@@ -783,7 +783,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Policy change impact</h2>
             <p className="muted">
@@ -848,7 +848,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Policy impact drill-down</h2>
             <p className="muted">
@@ -866,7 +866,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16, overflowX: 'auto' }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Recent policy audit trail</h2>
             <p className="muted">
@@ -926,7 +926,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking matching playbook</h2>
             <p className="muted">
@@ -955,7 +955,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Operator decisions</h2>
             <p className="muted">
@@ -1015,7 +1015,7 @@ export default async function OperationsPolicyPage({
       </section>
 
       <section className="card" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Owner decision backlog</h2>
             <p className="muted">
@@ -1026,7 +1026,7 @@ export default async function OperationsPolicyPage({
           <span className="pill pill-info">Review weekly</span>
         </div>
         <div className="ops-task-note" style={{ marginTop: 14 }}>
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h3>Current decision pressure</h3>
               <p className="muted">
@@ -1111,7 +1111,7 @@ function PolicyForm({
     >
       <input type="hidden" name="key" value={setting.key} />
       <input type="hidden" name="valueType" value={valueType} />
-      <div className="risk-watch-header">
+      <div className="ops-section-header">
         <div>
           <h3>{displayOperationalWording(setting.label)}</h3>
           <p className="muted">{displayOperationalWording(setting.description)}</p>

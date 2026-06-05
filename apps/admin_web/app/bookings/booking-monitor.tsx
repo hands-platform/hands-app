@@ -708,7 +708,7 @@ export function BookingMonitor({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operations command summary</h2>
             <p className="muted">
@@ -737,7 +737,7 @@ export function BookingMonitor({
       </section>
 
       <section className="card" style={{ marginBottom: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operations route map</h2>
             <p className="muted">
@@ -777,7 +777,7 @@ export function BookingMonitor({
       </div>
 
       <section className="card" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking command center</h2>
             <p className="muted">
@@ -809,7 +809,7 @@ export function BookingMonitor({
       </section>
 
       <section className="card" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Matching escalation board</h2>
             <p className="muted">
@@ -821,7 +821,7 @@ export function BookingMonitor({
             Change matching rules
           </Link>
         </div>
-        <div className="risk-watch-header" style={{ marginTop: 14 }}>
+        <div className="ops-section-header" style={{ marginTop: 14 }}>
           <div>
             <h3>Applied operations policy</h3>
             <p className="muted">
@@ -926,7 +926,7 @@ export function BookingMonitor({
         <div className="participant-list" style={{ marginTop: 14 }}>
           {matchingEscalationRows.slice(0, 6).map((item) => (
             <Link className="card" href={`/bookings/${item.booking.id}`} key={`matching-${item.booking.id}`}>
-              <div className="risk-watch-header">
+              <div className="ops-section-header">
                 <div>
                   <p>
                     {shortId(item.booking.id)} / {bookingCustomerLabel(item.booking)}
@@ -959,7 +959,7 @@ export function BookingMonitor({
       </section>
 
       <section className="card" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Next operator actions</h2>
             <p className="muted">
@@ -973,7 +973,7 @@ export function BookingMonitor({
         <div className="participant-list" style={{ marginTop: 12 }}>
           {nextActions.map((item) => (
             <Link className="card" href={item.href} key={`${item.booking.id}-${item.title}`}>
-              <div className="risk-watch-header">
+              <div className="ops-section-header">
                 <div>
                   <p>
                     {shortId(item.booking.id)} / {bookingServiceOptionLabel(item.booking)}
@@ -1015,7 +1015,7 @@ export function BookingMonitor({
       </section>
 
       <section className="card" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Customer protection closeout board</h2>
             <p className="muted">
@@ -1059,7 +1059,7 @@ export function BookingMonitor({
       </section>
 
       <section className="card" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Booking operation filters</h2>
             <p className="muted">
@@ -1150,7 +1150,7 @@ export function BookingMonitor({
 
       {view === 'blocked-create' && (
         <section className="card" style={{ marginTop: 16 }}>
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h2>Blocked booking attempts</h2>
               <p className="muted">
@@ -1250,7 +1250,7 @@ export function BookingMonitor({
       )}
 
       <section className="card" style={{ marginTop: 16 }}>
-        <div className="risk-watch-header">
+        <div className="ops-section-header">
           <div>
             <h2>Marketplace participant ledger</h2>
             <p className="muted">
@@ -1265,7 +1265,7 @@ export function BookingMonitor({
           </span>
         </div>
         <section className="card" style={{ marginTop: 14 }}>
-          <div className="risk-watch-header">
+          <div className="ops-section-header">
             <div>
               <h3>Marketplace operating queue</h3>
               <p className="muted">
