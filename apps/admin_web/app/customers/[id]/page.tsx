@@ -12,6 +12,7 @@ import {
 } from '../../../lib/admin-api';
 import {
   formatDateTime,
+  formatDistanceMeters,
   formatMoney as formatAdminMoney,
   shortId as formatShortId,
 } from '../../../lib/admin-format';
@@ -3708,9 +3709,7 @@ function formatDate(value?: string | null) {
 }
 
 function formatDistance(value: number) {
-  if (!Number.isFinite(value)) return '?';
-  if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(1)} km`;
-  return `${Math.round(value)} m`;
+  return formatDistanceMeters(value);
 }
 
 function formatMoney(value: number, currency = 'VND') {

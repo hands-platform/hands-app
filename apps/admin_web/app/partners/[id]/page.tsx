@@ -8,7 +8,11 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../../lib/admin-api';
-import { formatDateTime, formatMoney as formatAdminMoney } from '../../../lib/admin-format';
+import {
+  formatDateTime,
+  formatDistanceMeters,
+  formatMoney as formatAdminMoney,
+} from '../../../lib/admin-format';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -7089,10 +7093,7 @@ function formatBytes(value: number) {
 }
 
 function formatDistance(value: number) {
-  if (value >= 1000) {
-    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
-  }
-  return `${value.toLocaleString('en')} m`;
+  return formatDistanceMeters(value);
 }
 
 function locationAgeMinutes(value?: string | null) {

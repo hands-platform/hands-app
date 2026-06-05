@@ -1,5 +1,10 @@
 import { AdminAuditLog, adminGet } from '../../lib/admin-api';
-import { formatDateTime, formatMoney as money, formatRelativeTime } from '../../lib/admin-format';
+import {
+  formatDateTime,
+  formatDistanceMeters,
+  formatMoney as money,
+  formatRelativeTime,
+} from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import Link from 'next/link';
 
@@ -903,13 +908,7 @@ function formatBps(value: number | null) {
 }
 
 function formatDistance(value: number) {
-  if (!Number.isFinite(value)) {
-    return '-';
-  }
-  if (Math.abs(value) >= 1000) {
-    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`;
-  }
-  return `${Math.round(value).toLocaleString('en')}m`;
+  return formatDistanceMeters(value, '-');
 }
 
 function reviewPriorityLabel(action: string) {

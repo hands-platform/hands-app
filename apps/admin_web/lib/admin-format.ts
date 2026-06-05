@@ -8,6 +8,18 @@ export function formatMoney(amount?: number | null, currency = 'VND', fallback =
   return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(amount)} ${currency}`;
 }
 
+export function formatDistanceMeters(value?: number | null, fallback = '?') {
+  if (value === undefined || value === null || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  if (Math.abs(value) >= 1000) {
+    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(value / 1000)} km`;
+  }
+
+  return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(value))} m`;
+}
+
 export function formatDateTime(value?: string | null, fallback = 'Not set') {
   if (!value) {
     return fallback;

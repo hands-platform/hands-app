@@ -7,7 +7,7 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
-import { formatDateTime } from '../../lib/admin-format';
+import { formatDateTime, formatDistanceMeters as formatAdminDistanceMeters } from '../../lib/admin-format';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import {
   approveProvider,
@@ -5089,10 +5089,7 @@ function hasProviderCoordinate(provider: AdminProvider) {
 }
 
 function formatDistanceMeters(distanceMeters: number) {
-  if (distanceMeters >= 1000) {
-    return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(distanceMeters / 1000)}km`;
-  }
-  return `${new Intl.NumberFormat('en-US').format(distanceMeters)}m`;
+  return formatAdminDistanceMeters(distanceMeters);
 }
 
 function providerLocationLabel(status: ProviderLocationState) {
