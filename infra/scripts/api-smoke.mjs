@@ -161,7 +161,7 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"walletSettlementRequired":true',
     '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
     '"walletSettlementReference":"HANDS-WALLET-',
-    '"displayMessage":"수수료를 입금하지 않아 예약에 참여할 수 없습니다."',
+    '"displayMessage":"Unpaid HANDS fees must be settled before you can join this booking."',
     'Marketplace requests stay visible for review, but participation is blocked',
     'Marketplace participation and payout release unlock',
   ];
@@ -2383,7 +2383,7 @@ if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWall
 }
 if (
   walletDebtProviderEarningsSummary.walletBlockDisplayMessage !==
-  '수수료를 입금하지 않아 예약에 참여할 수 없습니다.'
+  'Unpaid HANDS fees must be settled before you can join this booking.'
 ) {
   throw new Error(
     `Negative wallet summary should include the partner-app marketplace block message: ${JSON.stringify(

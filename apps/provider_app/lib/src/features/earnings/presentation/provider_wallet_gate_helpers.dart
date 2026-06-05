@@ -1,11 +1,12 @@
 import '../../../core/provider_value_helpers.dart';
 
-const providerWalletBlockFallbackReasonClean = '수수료를 입금하지 않아 예약에 참여할 수 없습니다.';
+const providerWalletBlockFallbackReasonClean =
+    'Unpaid HANDS fees must be settled before you can join this booking.';
 
 const providerWalletBlockHintClean =
     'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before joining marketplace requests.';
 
-const providerMarketplaceJoinBlockedButtonLabel = '수수료 정산 필요';
+const providerMarketplaceJoinBlockedButtonLabel = 'Fee settlement required';
 
 bool providerWalletBlocksMarketplaceJoin({
   required bool walletBlocked,

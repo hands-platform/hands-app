@@ -930,7 +930,7 @@ if (bookingLinkMatch) {
     'Policy pin source',
     '10km participation rule',
     'Marketplace radius',
-    'Partner app message: 수수료를 입금하지 않아 예약에 참여할 수 없습니다.',
+    'Partner app message: Unpaid HANDS fees must be settled before you can join this booking.',
     'Payment and refund',
     'Cash fee settlement path',
     'Service feedback',

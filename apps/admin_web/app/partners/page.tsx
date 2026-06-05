@@ -745,7 +745,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </p>
                     {row.walletBalance < 0 ? (
                       <p className="muted" style={{ marginTop: 8 }}>
-                        Partner app message: 수수료를 입금하지 않아 예약에 참여할 수 없습니다.
+                        Partner app message: Unpaid HANDS fees must be settled before you can join this booking.
                       </p>
                     ) : null}
                   </td>

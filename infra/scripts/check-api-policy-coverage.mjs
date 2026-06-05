@@ -320,8 +320,8 @@ function checkNegativeWalletBookingFunctionBoundaries() {
 function checkProviderMobileWalletGateBoundaries() {
   const providerSource = readFileSync(providerWalletGateHelperPath, 'utf8');
   const providerWalletGateTest = readFileSync(providerWalletGateTestPath, 'utf8');
-  const walletBlockDisplayMessage = '수수료를 입금하지 않아 예약에 참여할 수 없습니다.';
-  const walletBlockButtonLabel = '수수료 정산 필요';
+  const walletBlockDisplayMessage = 'Unpaid HANDS fees must be settled before you can join this booking.';
+  const walletBlockButtonLabel = 'Fee settlement required';
   const missingMarkers = [];
 
   for (const [label, marker] of [

@@ -981,7 +981,7 @@ function buildCashSettlementHandoffMap(
       detail: hasOpenDebt
         ? 'Partners may see marketplace demand, but cannot join marketplace bookings while wallet debt remains.'
         : 'Cleared partner wallets can join eligible marketplace bookings again.',
-      operatorRule: 'Partner app message: 수수료를 입금하지 않아 예약에 참여할 수 없습니다.',
+      operatorRule: 'Partner app message: Unpaid HANDS fees must be settled before you can join this booking.',
       href: '/bookings?view=marketplace',
       className: hasOpenDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',

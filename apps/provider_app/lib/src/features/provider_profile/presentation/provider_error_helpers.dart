@@ -141,7 +141,7 @@ ProviderActionBlockCopy? providerActionBlockCopy(String value) {
   if (normalized.contains('wallet') ||
       normalized.contains('settlement') ||
       normalized.contains('hands fee') ||
-      value.contains('수수료를 입금하지 않아') ||
+      normalized.contains('unpaid hands fees') ||
       normalized.contains('unpaid hands cash-service fees')) {
     return const ProviderActionBlockCopy(
       title: 'Fee settlement required',

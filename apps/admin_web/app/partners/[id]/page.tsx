@@ -5771,7 +5771,7 @@ function partnerAppBlockMessage(
     return 'Partner can receive and finalize booking requests.';
   }
   if (bookingAcceptance.cashDebt > 0) {
-    return '수수료를 입금하지 않아 예약에 참여할 수 없습니다.';
+    return 'Unpaid HANDS fees must be settled before you can join this booking.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
     return 'Account requires admin review before receiving work.';

@@ -109,7 +109,7 @@ The API separates operator reason from partner-facing app copy:
 - Internal reason in `walletBlockReason`/`message`:
   `Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
 - Partner app display copy in `walletBlockDisplayMessage`/`displayMessage`:
-  `수수료를 입금하지 않아 예약에 참여할 수 없습니다.`
+  `Unpaid HANDS fees must be settled before you can join this booking.`
 
 Vietnamese localization should replace the display fallback after the final UI language pass, but the API smoke test keeps both the internal reason and display message stable so the booking guard cannot silently drift.
 
