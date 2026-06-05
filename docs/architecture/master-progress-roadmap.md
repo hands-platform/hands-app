@@ -98,13 +98,13 @@ npm.cmd run external:check:production
 | Partners admin | Active | Partner list/detail, KYC, wallet, payout, tax, device/session, document, activity evidence are present. Legacy `/providers` routes stay as redirects only. | Continue improving partner list/detail depth without rebuilding separate partner-risk pages. |
 | Booking and marketplace | Active | Address snapshot, first-pick, 10km marketplace, customer final selection, negative wallet blocking, chat evidence closeout are guarded by smoke tests. | Decide next audit slice: API policy consistency or mobile E2E consistency. |
 | Payments and gateway callbacks | Active | Payment callback audit, payment detail view, gateway reference wording, capture/release/refund/cash settlement actions are present. | Decide gateway sandbox E2E order: MoMo first, VNPay first, or keep both deferred. |
-| Cash fee debt and wallet | Active | Cash bookings can create partner company receivable; negative wallet blocks marketplace participation. | Decide exact operator settlement screen priority versus mobile partner debt UX. |
+| Cash fee debt and wallet | Active | Cash bookings can create partner company receivable; negative wallet blocks marketplace visibility only at list level, blocks marketplace participation, and blocks payout release until settlement or approved offset. Partner app block copy is aligned. | Decide finance SLA and deposit evidence requirements for production operations. |
 | Service pricing | Active | Admin service names, duration options, minimum price, price step, partner price, payout rules, and booking price snapshots are modeled. | Decide if service catalog should be frozen before final mobile UI. |
 | Earnings and payouts | Active | Earnings, payout batches, payout holds, tax/fee logs, and payout pages exist. | Decide weekly/monthly/manual payout default for first Vietnam launch. |
 | Chat archive | Active | Matched bookings open chat; admin keeps chat evidence. | Decide retention/export policy for disputes before production. |
 | Notifications | Active | In-app notification path is active; push delivery abstraction exists. | External wait for OneSignal production E2E. |
 | Mobile customer app | Active | MVP scaffold supports address, discovery, partner detail, booking, matching, final selection, chat, and maps. | Decide whether to audit mobile flow before Admin consolidation. |
-| Mobile partner app | Active | MVP scaffold supports online/location, requests, marketplace, accept/start/chat/complete, earnings/wallet. | Decide partner debt UX wording and first login/onboarding flow. |
+| Mobile partner app | Active | MVP scaffold supports online/location, requests, marketplace, accept/start/chat/complete, earnings/wallet, and negative-wallet marketplace participation blocking. | Decide first login/onboarding flow before final mobile UI pass. |
 | Final design and localization | Later | Figma and multilingual customer/partner/admin copy are intentionally deferred. | Resume after backend/admin/mobile flows stop changing. |
 
 ## Decision Backlog
@@ -172,8 +172,8 @@ Do not implement these automatically. Propose the selected slice first, then pro
 3. Mobile paired E2E audit
    - Walk customer and partner apps through one booking from address selection to chat and completion.
 
-4. Cash settlement UX proposal
-   - Align partner negative wallet messaging, company receivable records, settlement actions, and partner app blocked participation message.
+4. Cash settlement operations proposal
+   - Decide production finance SLA, accepted deposit evidence, admin offset approval rule, and customer-support wording for partner settlement delays.
 
 5. External integration plan
    - Prepare exact account/credential checklist for Vonage, OneSignal, MoMo, VNPay, storage/CDN, and deployment.
