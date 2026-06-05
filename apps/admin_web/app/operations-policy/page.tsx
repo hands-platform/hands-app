@@ -6,6 +6,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
+import { MetricCard } from '../../components/metric-card';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime, formatMoney, formatRelativeTime, readPlainRecord } from '../../lib/admin-format';
 import { updateOperationalPolicy } from './actions';
@@ -1383,16 +1384,6 @@ function DecisionHint({
       <strong>{title}</strong>
       <p>{recommendation}</p>
       <p className="muted">{detail}</p>
-    </div>
-  );
-}
-
-function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
-  return (
-    <div className="metric-card">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{helper}</small>
     </div>
   );
 }
