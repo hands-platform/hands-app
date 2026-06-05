@@ -387,6 +387,29 @@ const adminRefundSummarySelect = {
   createdAt: true,
 } satisfies Prisma.RefundSelect;
 
+const adminRefundListSelect = {
+  ...adminRefundSummarySelect,
+  payment: {
+    select: {
+      id: true,
+      bookingId: true,
+      method: true,
+      status: true,
+      amount: true,
+      currency: true,
+      providerRef: true,
+    },
+  },
+  booking: {
+    select: {
+      id: true,
+      status: true,
+      customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+      selectedProvider: { select: adminProviderSummarySelect },
+    },
+  },
+} satisfies Prisma.RefundSelect;
+
 const adminPaymentSummarySelect = {
   id: true,
   bookingId: true,
@@ -2568,15 +2591,7 @@ export class AdminService {
     return this.prisma.refund.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: {
-        payment: true,
-        booking: {
-          include: {
-            customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
-            selectedProvider: { select: adminProviderSummarySelect },
-          },
-        },
-      },
+      select: adminRefundListSelect,
     });
   }
 
