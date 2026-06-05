@@ -153,10 +153,12 @@ function Invoke-Harness {
   Invoke-Check "script syntax: realtime smoke" "node --check infra\scripts\realtime-smoke.mjs"
   Invoke-Check "script syntax: final authority" "node --check infra\scripts\check-final-authority.mjs"
   Invoke-Check "script syntax: admin sensitive exposure" "node --check infra\scripts\check-admin-sensitive-exposure.mjs"
+  Invoke-Check "script syntax: vietnam scope" "node --check infra\scripts\check-vietnam-scope.mjs"
 }
 
 function Invoke-Docs {
   Invoke-Check "final authority check" "npm.cmd run authority:check"
+  Invoke-Check "vietnam scope check" "npm.cmd run scope:vietnam"
   Invoke-Check "mobile visible copy check" "npm.cmd run mobile:visible-copy"
   Add-Result "markdown lint" "SKIP" "No markdown lint tool is configured in this repo."
 }
