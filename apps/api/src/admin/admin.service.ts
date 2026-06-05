@@ -2357,8 +2357,8 @@ export class AdminService {
           include: {
             booking: {
               include: {
-                customerProfile: { include: { user: { select: adminUserSummarySelect } } },
-                selectedProvider: true,
+                customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+                selectedProvider: { select: adminProviderSummarySelect },
               },
             },
           },
@@ -2375,8 +2375,8 @@ export class AdminService {
         payment: true,
         booking: {
           include: {
-            customerProfile: { include: { user: { select: adminUserSummarySelect } } },
-            selectedProvider: true,
+            customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+            selectedProvider: { select: adminProviderSummarySelect },
           },
         },
       },
@@ -2910,9 +2910,14 @@ export class AdminService {
       orderBy: { createdAt: 'desc' },
       take: 100,
       include: {
-        booking: true,
-        customerProfile: { include: { user: { select: adminUserSummarySelect } } },
-        providerProfile: true,
+        booking: {
+          select: {
+            id: true,
+            services: { select: { service: { select: { id: true, name: true, durationMin: true } } } },
+          },
+        },
+        customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+        providerProfile: { select: adminProviderSummarySelect },
       },
     });
   }
