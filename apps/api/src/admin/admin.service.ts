@@ -35,6 +35,7 @@ import { RedisStateService } from '../redis/redis-state.service';
 import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 
 const PRICE_STEP_UNIT_VND = 100000;
+const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
 
 const adminUserSummarySelect = {
   id: true,
@@ -1514,6 +1515,7 @@ export class AdminService {
 
     return this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
+      ...(compact ? { take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT } : {}),
       include: {
         user: {
           select: {
