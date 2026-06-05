@@ -723,7 +723,7 @@ function assertNoLegacyVisibleLanguage(path, body) {
     { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
     {
       label: 'people scoring wording',
-      pattern: /\b(score|scoring|ranking|ranked|VIP|tip|tips|penalty|penalties)\b/i,
+      pattern: /\b(score|scoring|ranking|ranked|VIP|tip|tips|gratuity|penalty|penalties)\b/i,
     },
     { label: 'partner average feedback wording', pattern: /\bFeedback value\b/i },
     { label: 'person-rating wording', pattern: /\b(stars? or below|star \/)\b/i },

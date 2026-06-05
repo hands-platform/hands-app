@@ -11,9 +11,9 @@ const dartFiles = [
 const textFiles = ['apps/customer_app/README.md', 'apps/provider_app/README.md'];
 
 const bannedPatterns = [
-  { label: 'non-English Hangul visible copy', pattern: /[가-힣]/ },
+  { label: 'non-English Hangul visible copy', pattern: /[\u3131-\u318e\uac00-\ud7a3]/u },
   { label: 'legacy backup wording', pattern: /\bbackup\b/i },
-  { label: 'tip wording', pattern: /\btips?\b/i },
+  { label: 'tip wording', pattern: /\b(tips?|gratuity)\b/i },
   { label: 'VIP wording', pattern: /\bVIP\b/i },
   { label: 'people scoring wording', pattern: /\b(scoring|score)\b/i },
   { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },

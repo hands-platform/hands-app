@@ -373,9 +373,11 @@ function checkMobileVisibleCopyGuardIsStrict() {
   const source = read('infra/scripts/check-mobile-visible-copy.mjs');
   requireMarkers('infra/scripts/check-mobile-visible-copy.mjs', source, [
     'non-English Hangul visible copy',
+    '\\u3131-\\u318e\\uac00-\\ud7a3',
     'legacy provider display wording',
     'legacy backup wording',
     'tip wording',
+    'gratuity',
     'people scoring wording',
     'partner hierarchy wording',
   ]);
@@ -412,6 +414,7 @@ function checkAdminPeopleManagementIsFactual() {
   ]);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
     'non-English Hangul visible copy',
+    'gratuity',
     'people scoring wording',
     'separate partner activity page wording',
     'operator risk scoring wording',
