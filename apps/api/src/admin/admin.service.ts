@@ -560,6 +560,132 @@ const adminCustomerBookingListSelect = {
   chatRoom: { select: { id: true } },
 } satisfies Prisma.BookingSelect;
 
+const adminBookingOpsTaskSummarySelect = {
+  id: true,
+  bookingId: true,
+  type: true,
+  status: true,
+  note: true,
+  actorId: true,
+  createdAt: true,
+  updatedAt: true,
+  actor: { select: { id: true, phone: true, fullName: true } },
+} satisfies Prisma.BookingOpsTaskSelect;
+
+const adminChatMessageSummarySelect = {
+  id: true,
+  chatRoomId: true,
+  senderId: true,
+  body: true,
+  attachments: true,
+  createdAt: true,
+  sender: { select: { id: true, phone: true, fullName: true, roles: true } },
+} satisfies Prisma.ChatMessageSelect;
+
+const adminCustomerNotificationSelect = {
+  id: true,
+  userId: true,
+  type: true,
+  title: true,
+  body: true,
+  data: true,
+  readAt: true,
+  createdAt: true,
+  deliveries: {
+    orderBy: { attemptedAt: 'desc' },
+    take: 5,
+    select: adminNotificationDeliverySelect,
+  },
+} satisfies Prisma.NotificationSelect;
+
+const adminCustomerDetailBookingSelect = {
+  ...adminBookingListSelect,
+  review: true,
+  walletLedgerEntries: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: {
+      id: true,
+      type: true,
+      sourceKey: true,
+      amount: true,
+      currency: true,
+      reference: true,
+      notes: true,
+      createdAt: true,
+    },
+  },
+  opsTasks: {
+    orderBy: { updatedAt: 'desc' },
+    select: adminBookingOpsTaskSummarySelect,
+  },
+  chatRoom: {
+    select: {
+      id: true,
+      messages: {
+        orderBy: { createdAt: 'asc' },
+        take: 100,
+        select: adminChatMessageSummarySelect,
+      },
+    },
+  },
+} satisfies Prisma.BookingSelect;
+
+const adminCustomerDetailSelect = {
+  id: true,
+  userId: true,
+  addresses: true,
+  user: {
+    select: {
+      ...adminUserSummarySelect,
+      appSessions: {
+        orderBy: { lastSeenAt: 'desc' },
+        take: 20,
+        select: adminAppSessionSummarySelect,
+      },
+      pushDevices: {
+        orderBy: { updatedAt: 'desc' },
+        select: adminPushDeviceSummarySelect,
+      },
+      notifications: {
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: adminCustomerNotificationSelect,
+      },
+    },
+  },
+  selectedLocations: {
+    orderBy: { createdAt: 'desc' },
+    take: 25,
+    select: {
+      id: true,
+      latitude: true,
+      longitude: true,
+      addressText: true,
+      createdAt: true,
+    },
+  },
+  bookings: {
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+    select: adminCustomerDetailBookingSelect,
+  },
+  reviews: {
+    orderBy: { createdAt: 'desc' },
+    take: 25,
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      status: true,
+      reportReason: true,
+      createdAt: true,
+      providerProfile: { select: adminProviderSummarySelect },
+      booking: { select: { id: true, services: { select: adminBookingServiceSummarySelect } } },
+    },
+  },
+} satisfies Prisma.CustomerProfileSelect;
+
 @Injectable()
 export class AdminService {
   constructor(
@@ -623,80 +749,7 @@ export class AdminService {
   async getCustomerDetail(customerProfileId: string) {
     const customer = await this.prisma.customerProfile.findUnique({
       where: { id: customerProfileId },
-      include: {
-        user: {
-          include: {
-            appSessions: {
-              orderBy: { lastSeenAt: 'desc' },
-              take: 20,
-            },
-            pushDevices: {
-              orderBy: { updatedAt: 'desc' },
-              select: adminPushDeviceSummarySelect,
-            },
-            notifications: {
-              orderBy: { createdAt: 'desc' },
-              take: 50,
-              include: {
-                deliveries: {
-                  orderBy: { attemptedAt: 'desc' },
-                  take: 5,
-                },
-              },
-            },
-          },
-        },
-        selectedLocations: {
-          orderBy: { createdAt: 'desc' },
-          take: 25,
-        },
-        bookings: {
-          orderBy: { createdAt: 'desc' },
-          take: 100,
-          include: {
-            services: { include: { service: true } },
-            addressSnapshot: true,
-            payment: { include: { refunds: true } },
-            refunds: true,
-            review: true,
-            earning: {
-              include: {
-                platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-                taxLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-                walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-              },
-            },
-            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-            preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
-            selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
-            participants: {
-              orderBy: { joinedAt: 'asc' },
-              include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } },
-            },
-            opsTasks: {
-              orderBy: { updatedAt: 'desc' },
-              include: { actor: { select: { id: true, phone: true, fullName: true } } },
-            },
-            chatRoom: {
-              include: {
-                messages: {
-                  orderBy: { createdAt: 'asc' },
-                  take: 100,
-                  include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
-                },
-              },
-            },
-          },
-        },
-        reviews: {
-          orderBy: { createdAt: 'desc' },
-          take: 25,
-          include: {
-            providerProfile: { include: { user: { select: adminUserSummarySelect } } },
-            booking: { include: { services: { include: { service: true } } } },
-          },
-        },
-      },
+      select: adminCustomerDetailSelect,
     });
 
     if (!customer) {
