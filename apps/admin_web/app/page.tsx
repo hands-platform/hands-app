@@ -975,7 +975,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               <small>{group.helper}</small>
               <div className="actions" style={{ marginTop: 10 }}>
                 {group.links.map(([label, href]) => (
-                  <Link className="text-link" href={href} key={href}>
+                  <Link className="text-link" href={href} key={`${group.label}-${label}-${href}`}>
                     {label}
                   </Link>
                 ))}
@@ -2077,11 +2077,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             </div>
           )}
           <div className="risk-list">
-            {queue.slice(0, 10).map((item) => (
+            {queue.slice(0, 10).map((item, index) => (
               <Link
                 className={`risk-item risk-${item.severity}`}
                 href={item.href}
-                key={`${item.area}-${item.label}-${item.href}`}
+                key={`${item.area}-${item.label}-${item.href}-${index}`}
               >
                 <div>
                   <span className="muted">
