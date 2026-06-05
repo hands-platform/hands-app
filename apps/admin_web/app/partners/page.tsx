@@ -1741,8 +1741,11 @@ function ProviderPublicMediaQueueCell({ provider }: { provider: AdminProvider })
 }
 
 function maskToken(token: string) {
+  if (token.length <= 4) {
+    return '*'.repeat(token.length);
+  }
   if (token.length <= 10) {
-    return token;
+    return `${token.slice(0, 2)}...${token.slice(-2)}`;
   }
   return `${token.slice(0, 6)}...${token.slice(-4)}`;
 }

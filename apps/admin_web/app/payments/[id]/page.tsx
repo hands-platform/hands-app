@@ -531,12 +531,41 @@ function PayloadDetails({ value }: { value: unknown }) {
           <div className="setup-stage-item" key={key}>
             <span className="pill pill-neutral">{key}</span>
             <div>
-              <strong>{compactValue(record[key])}</strong>
+              <strong>{redactPaymentPayloadValue(record[key], key)}</strong>
             </div>
           </div>
         ))}
       </div>
     </details>
+  );
+}
+
+const PAYMENT_PAYLOAD_SECRET_KEY_PATTERN =
+  /(authorization|credential|private[_-]?key|secret|service[_-]?role|signature|secure[_-]?hash|token|access[_-]?key|checksum|password|jwt)/i;
+
+function redactPaymentPayloadValue(value: unknown, key?: string): string {
+  if (key && PAYMENT_PAYLOAD_SECRET_KEY_PATTERN.test(key)) {
+    return '[redacted]';
+  }
+  if (!value || typeof value !== 'object') {
+    return compactValue(value);
+  }
+  return compactValue(redactPaymentPayloadObject(value));
+}
+
+function redactPaymentPayloadObject(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => redactPaymentPayloadObject(item));
+  }
+  const record = readPlainRecord(value);
+  if (!record) {
+    return value;
+  }
+  return Object.fromEntries(
+    Object.entries(record).map(([entryKey, entryValue]) => [
+      entryKey,
+      PAYMENT_PAYLOAD_SECRET_KEY_PATTERN.test(entryKey) ? '[redacted]' : redactPaymentPayloadObject(entryValue),
+    ]),
   );
 }
 

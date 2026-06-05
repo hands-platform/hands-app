@@ -7,6 +7,7 @@ const violations = [];
 checkAdminServicePushDeviceSelects();
 checkAdminApiTypes();
 checkAdminUiTokenAccess();
+checkAdminPaymentPayloadRedaction();
 
 console.log(
   JSON.stringify(
@@ -83,6 +84,24 @@ function checkAdminUiTokenAccess() {
       'Admin UI must not mask raw push device tokens; tokens should not reach the browser.',
     );
   }
+}
+
+function checkAdminPaymentPayloadRedaction() {
+  const file = 'apps/admin_web/app/payments/[id]/page.tsx';
+  const source = read(file);
+
+  if (!source.includes('PAYMENT_PAYLOAD_SECRET_KEY_PATTERN')) {
+    fail(file, 'Payment callback raw payload display must define a sensitive-key redaction pattern.');
+  }
+  if (!source.includes('redactPaymentPayloadValue(record[key], key)')) {
+    fail(file, 'Payment callback raw payload values must pass through redaction before rendering.');
+  }
+  reject(
+    file,
+    source,
+    'compactValue(record[key])',
+    'Payment callback raw payload values must not be rendered directly.',
+  );
 }
 
 function reject(file, source, marker, message) {
