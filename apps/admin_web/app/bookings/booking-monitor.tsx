@@ -1293,6 +1293,44 @@ export function BookingMonitor({
         <section className="card" style={{ marginTop: 14 }}>
           <div className="ops-section-header">
             <div>
+              <h3>Marketplace record boundary</h3>
+              <p className="muted">
+                Operator shorthand for what is retained as evidence, what is blocked before a row is
+                created, and where the customer final choice is verified.
+              </p>
+            </div>
+            <span className="pill pill-info">Booking-address marketplace radius</span>
+          </div>
+          <div className="ops-task-grid" style={{ marginTop: 12 }}>
+            <article className="ops-task-card">
+              <span className="signal signal-info">Actual participation rows</span>
+              <h3>{marketplaceLedgerSummary.total}</h3>
+              <p>
+                First-pick, marketplace participation, accepted, declined, and customer-selected rows
+                stay in this ledger as the operational evidence trail.
+              </p>
+            </article>
+            <article className="ops-task-card">
+              <span className="signal signal-warn">View-only wallet blocks</span>
+              <h3>Not participant rows</h3>
+              <p>
+                A negative-wallet partner can see marketplace demand, but the join gate blocks
+                participation before a participant row is created.
+              </p>
+            </article>
+            <article className="ops-task-card">
+              <span className="signal signal-ok">Customer choice evidence</span>
+              <h3>{marketplaceLedgerSummary.selected}</h3>
+              <p>
+                Final partner selection is customer-owned. Operators verify the selected participant row
+                and retained chat evidence; HANDS never auto-assigns the final partner.
+              </p>
+            </article>
+          </div>
+        </section>
+        <section className="card" style={{ marginTop: 14 }}>
+          <div className="ops-section-header">
+            <div>
               <h3>Marketplace operating queue</h3>
               <p className="muted">
                 Practical dispatch sequence for first-pick timer control, partner participation pool,
