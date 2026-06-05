@@ -370,8 +370,8 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
     });
     try {
       await ref.read(providerRepositoryProvider).startBooking(bookingId);
-      setState(
-          () => statusMessage = 'Service started. The chat room is now live.');
+      setState(() =>
+          statusMessage = 'Service started. Continue from the matched chat.');
       await loadOpenBookings();
     } catch (exception) {
       setState(() => error = providerAppErrorMessage(exception));

@@ -816,7 +816,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
       'booking.matched': 'Your partner confirmed the booking.',
       'booking.opened': 'The request is still open for partner responses.',
       'booking.expired': 'This booking expired or was cancelled.',
-      'service.started': 'Service started. Chat is now available.',
+      'service.started': 'Service started. Matched chat remains available.',
       'service.completed': 'Service completed. You can review the booking.',
     };
 

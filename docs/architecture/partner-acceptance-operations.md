@@ -13,7 +13,7 @@ Default operating policy:
 - Marketplace partners can join while the preferred partner is still deciding.
 - Customers always choose the final partner.
 - No automatic final matching.
-- Service start unlocks the active chat workflow.
+- Matched bookings open chat immediately; service start keeps the matched chat available.
 - Route calculation and live navigation APIs are not required for MVP.
 
 ## Partner Eligibility

@@ -13,7 +13,7 @@ The first MVP flow is intentionally simple:
 - the first-pick partner has a 10 minute response window
 - marketplace partners within the configured radius can join during that same window
 - the customer always selects the final partner
-- chat opens after the matched partner starts the service flow
+- matched chat opens after the customer selects the final partner
 
 This is the primary Phase 1 direction.
 

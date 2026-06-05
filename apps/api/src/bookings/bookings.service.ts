@@ -1382,7 +1382,7 @@ export class BookingsService {
         userId: updated.customerProfile.userId,
         type: 'service.started',
         title: 'Service started',
-        body: 'Your partner started the service. Chat is now available.',
+        body: 'Your partner started the service. Continue in the matched chat if needed.',
         data: { bookingId, chatRoomId: updated.chatRoom?.id },
       });
       if (updated.selectedProvider?.userId) {
@@ -1390,7 +1390,7 @@ export class BookingsService {
           userId: updated.selectedProvider.userId,
           type: 'service.started',
           title: 'Service started',
-          body: 'Chat with the customer is now available.',
+          body: 'Continue with the customer in the matched chat if needed.',
           data: { bookingId, chatRoomId: updated.chatRoom?.id },
         });
       }
