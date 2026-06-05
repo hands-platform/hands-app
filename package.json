@@ -31,6 +31,7 @@
     "api:smoke": "node infra/scripts/api-smoke.mjs",
     "api:domain-smoke": "node infra/scripts/api-domain-smoke.mjs",
     "api:policy-coverage": "node infra/scripts/check-api-policy-coverage.mjs",
+    "policy:coverage": "node infra/scripts/check-api-policy-coverage.mjs",
     "supabase:schema:check": "node infra/scripts/check-supabase-schema.mjs",
     "supabase:sql:pack": "node infra/scripts/prepare-supabase-sql-pack.mjs",
     "mobile:architecture:check": "node infra/scripts/check-flutter-architecture.mjs",

@@ -5599,7 +5599,6 @@ function buildProviderBookingAcceptance(
       : 'Direct first-pick gates are clear.');
 
   return {
-    canAccept: blockers.length === 0,
     canJoinMarketplace: blockers.length === 0,
     canDirectFirstPick: directFirstPickBlockers.length === 0,
     status: blockers.length === 0 ? 'CAN ACCEPT' : `${blockers.length} BLOCKER(S)`,
