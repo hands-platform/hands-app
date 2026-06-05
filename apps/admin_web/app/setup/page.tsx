@@ -1,5 +1,6 @@
 import { AdminExternalReadiness, apiGet } from '../../lib/admin-api';
 import { formatDateTime as formatDate } from '../../lib/admin-format';
+import { MetricCard } from '../../components/metric-card';
 
 const setupOrder = [
   {
@@ -421,27 +422,27 @@ export default async function SetupPage() {
       </section>
 
       <section className="grid" style={{ marginBottom: 16 }}>
-        <SummaryCard
+        <MetricCard
           label="Current blockers"
           value={currentStage.blockers}
           helper={currentStage.helper}
         />
-        <SummaryCard
+        <MetricCard
           label="Ready"
           value={summary.ready}
           helper="External groups configured enough for local/E2E use."
         />
-        <SummaryCard
+        <MetricCard
           label="Partial"
           value={summary.partial}
           helper="Some values exist, but production values are missing."
         />
-        <SummaryCard
+        <MetricCard
           label="Blocked"
           value={summary.blocked}
           helper="Cannot run real E2E until required values are set."
         />
-        <SummaryCard
+        <MetricCard
           label="Missing values"
           value={summary.missing}
           helper="Secret values are never displayed here."
@@ -746,16 +747,6 @@ export default async function SetupPage() {
         })}
       </section>
     </>
-  );
-}
-
-function SummaryCard({ label, value, helper }: { label: string; value: number; helper: string }) {
-  return (
-    <div className="card">
-      <p>{label}</p>
-      <h2>{value}</h2>
-      <p className="muted">{helper}</p>
-    </div>
   );
 }
 

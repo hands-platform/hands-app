@@ -1,5 +1,6 @@
 import { AdminCoupon, adminGet } from '../../lib/admin-api';
 import { formatDateTime as formatDate } from '../../lib/admin-format';
+import { MetricCard } from '../../components/metric-card';
 import Link from 'next/link';
 import { createCoupon, toggleCoupon } from './actions';
 
@@ -31,12 +32,12 @@ export default async function CouponsPage() {
           marginBottom: 20,
         }}
       >
-        <SummaryCard label="Total" value={String(orderedCoupons.length)} hint="Coupons loaded for admin review." />
-        <SummaryCard label="Live now" value={String(liveCoupons.length)} hint="Can be used in customer checkout." />
-        <SummaryCard label="Active" value={String(activeCoupons.length)} hint="Live or upcoming discounts." />
-        <SummaryCard label="Scheduled" value={String(scheduledCoupons.length)} hint="Approved, but start time is still ahead." />
-        <SummaryCard label="Expired" value={String(expiredCoupons.length)} hint="Candidates for pause or cleanup." />
-        <SummaryCard label="Needs review" value={String(needsReview.length)} hint="Expired active codes or paused campaigns." />
+        <MetricCard label="Total" value={orderedCoupons.length} helper="Coupons loaded for admin review." />
+        <MetricCard label="Live now" value={liveCoupons.length} helper="Can be used in customer checkout." />
+        <MetricCard label="Active" value={activeCoupons.length} helper="Live or upcoming discounts." />
+        <MetricCard label="Scheduled" value={scheduledCoupons.length} helper="Approved, but start time is still ahead." />
+        <MetricCard label="Expired" value={expiredCoupons.length} helper="Candidates for pause or cleanup." />
+        <MetricCard label="Needs review" value={needsReview.length} helper="Expired active codes or paused campaigns." />
       </section>
       <section className="card" style={{ marginBottom: 20 }}>
         <div className="ops-section-header">
@@ -158,16 +159,6 @@ export default async function CouponsPage() {
         </table>
       </section>
     </>
-  );
-}
-
-function SummaryCard({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <section className="card" style={{ marginTop: 0 }}>
-      <div style={{ color: '#6b7280', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
-      <div style={{ fontSize: 32, fontWeight: 700, marginTop: 8 }}>{value}</div>
-      <div style={{ color: '#6b7280', marginTop: 8 }}>{hint}</div>
-    </section>
   );
 }
 
