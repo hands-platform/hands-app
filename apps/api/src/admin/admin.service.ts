@@ -308,6 +308,15 @@ const adminProviderDeviceSummarySelect = {
   updatedAt: true,
 } satisfies Prisma.ProviderDeviceSelect;
 
+const adminAuditLogSelect = {
+  id: true,
+  action: true,
+  target: true,
+  metadata: true,
+  createdAt: true,
+  actor: { select: { id: true, phone: true, fullName: true } },
+} satisfies Prisma.AdminAuditLogSelect;
+
 const adminAddressSnapshotSelect = {
   id: true,
   bookingId: true,
@@ -1295,7 +1304,7 @@ export class AdminService {
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
-      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+      select: adminAuditLogSelect,
     });
 
     return { ...customer, auditLogs };
@@ -1617,7 +1626,7 @@ export class AdminService {
       },
       orderBy: { createdAt: 'desc' },
       take: 75,
-      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+      select: adminAuditLogSelect,
     });
 
     return { ...provider, sharedDeviceMatches, auditLogs };
@@ -2253,7 +2262,7 @@ export class AdminService {
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
-      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+      select: adminAuditLogSelect,
     });
 
     return { ...booking, auditLogs };
@@ -2667,7 +2676,7 @@ export class AdminService {
       },
       orderBy: { createdAt: 'desc' },
       take: 75,
-      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+      select: adminAuditLogSelect,
     });
 
     return { ...payment, callbackAttempts, auditLogs };
@@ -3275,7 +3284,7 @@ export class AdminService {
     return this.prisma.adminAuditLog.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: { actor: { select: { id: true, phone: true, fullName: true } } },
+      select: adminAuditLogSelect,
     });
   }
 
