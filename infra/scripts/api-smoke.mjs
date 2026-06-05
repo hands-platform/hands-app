@@ -2073,7 +2073,7 @@ const cancellationAfterMatchBeforeSmoke = await getOperationalPolicyValue(
 await patchOperationalPolicyValue(
   adminAuth.accessToken,
   'cancellation.after_match_policy',
-  'AUTO_FEE_AFTER_MATCH',
+  'ADMIN_FEE_REVIEW_AFTER_MATCH',
 );
 try {
   afterMatchCancellationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {

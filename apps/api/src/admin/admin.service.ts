@@ -25,7 +25,7 @@ import { SupabaseAdminService } from '../auth/supabase-admin.service';
 import { EarningsService } from '../earnings/earnings.service';
 import {
   NO_SHOW_ADMIN_REVIEW_REQUIRED,
-  NO_SHOW_AUTO_AFTER_EVIDENCE,
+  NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW,
   NO_SHOW_PARTNER_REPORT_POLICY_KEY,
   OPERATIONAL_POLICY_DEFINITIONS,
 } from '../matching/matching.policy';
@@ -1894,8 +1894,8 @@ export class AdminService {
       NO_SHOW_ADMIN_REVIEW_REQUIRED,
     );
     const policyNote =
-      noShowPolicy === NO_SHOW_AUTO_AFTER_EVIDENCE
-        ? 'Policy: evidence-backed no-show automation is active; verify evidence trail before payment closeout.'
+      noShowPolicy === NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW
+        ? 'Policy: evidence-assisted admin review is active; verify evidence trail before payment closeout.'
         : 'Policy: admin review required before any payment or closeout decision.';
     const entry = `[${new Date().toISOString()}] No-show marked by operations${
       reason ? `: ${reason}. ` : '. '
@@ -1903,8 +1903,8 @@ export class AdminService {
     const notes = booking.notes?.trim() ? `${booking.notes.trim()}\n${entry}` : entry;
     const paymentReviewNote =
       reason ??
-      (noShowPolicy === NO_SHOW_AUTO_AFTER_EVIDENCE
-        ? 'No-show marked; evidence-backed policy active, verify evidence before closeout.'
+      (noShowPolicy === NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW
+        ? 'No-show marked; evidence-assisted admin review active, verify evidence before closeout.'
         : 'No-show requires payment and customer communication review.');
 
     const updated = await this.prisma.booking.update({

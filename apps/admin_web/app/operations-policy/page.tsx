@@ -4130,13 +4130,13 @@ function operationsOwnerDecisionBacklog() {
             'Protects early customer confidence and lets support learn real patterns, but increases manual workload.',
         },
         {
-          label: 'Auto fee',
+          label: 'Admin fee review',
           tradeoff:
-            'Faster and more consistent, but mistakes can quickly damage customer and partner confidence.',
+            'More consistent than ad hoc handling, while still keeping the final fee decision with operations.',
         },
       ],
       recommendation:
-        'Use admin review during MVP and only automate once arrival evidence and cancellation reasons are reliable.',
+        'Use admin review during MVP. Tighten evidence requirements before considering any automation later.',
       decisionTrigger:
         'Revisit when support has at least 100 reviewed after-match cancellations with clear reason categories.',
       href: '/refunds',

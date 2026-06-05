@@ -134,7 +134,7 @@ Current MVP behavior:
 - The booking detail page shows no-show notification count in the booking alert trace.
 - `/notifications?review=no-show` shows all customer and partner no-show communication rows.
 
-Keep every no-show outcome as an admin closeout decision in the MVP. Operators should use arrival evidence, location proof, chat history, and dispute context to decide payment release, refund, capture, fee, or manual wallet adjustment. If the policy later changes to evidence-assisted automation, the no-show policy snapshot must still be saved on each alert and audit row.
+Keep every no-show outcome as an admin closeout decision in the MVP. Operators should use arrival evidence, location proof, chat history, and dispute context to decide payment release, refund, capture, fee, or manual wallet adjustment. If the policy later changes to stricter evidence-assisted admin review, the no-show policy snapshot must still be saved on each alert and audit row.
 
 ## Implementation Pointers
 

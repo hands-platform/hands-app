@@ -10,6 +10,7 @@ checkNoContradictoryNegativeWalletWording();
 checkOnDemandBookingContract();
 checkAddressBasedBookingContract();
 checkCustomerFinalSelectionContract();
+checkNoAutomaticCloseoutPolicies();
 checkNoTipContract();
 checkPayoutBatchContract();
 checkSupabaseDraftContract();
@@ -187,6 +188,46 @@ function checkCustomerFinalSelectionContract() {
     'Stage 3 choice',
     'Customer Choice',
     'legacy Provider wording',
+  ]);
+}
+
+function checkNoAutomaticCloseoutPolicies() {
+  const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
+  const adminService = read('apps/api/src/admin/admin.service.ts');
+  const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
+  const smoke = read('infra/scripts/api-smoke.mjs');
+  const partnerAcceptance = read('docs/architecture/partner-acceptance-operations.md');
+
+  for (const [file, source] of [
+    ['apps/api/src/matching/matching.policy.ts', matchingPolicy],
+    ['apps/api/src/admin/admin.service.ts', adminService],
+    ['apps/admin_web/app/operations-policy/page.tsx', operationsPolicy],
+    ['infra/scripts/api-smoke.mjs', smoke],
+    ['docs/architecture/partner-acceptance-operations.md', partnerAcceptance],
+  ]) {
+    for (const marker of [
+      'AUTO_FEE_AFTER_MATCH',
+      'AUTO_NO_SHOW_AFTER_EVIDENCE',
+      'CANCELLATION_AUTO_FEE_AFTER_MATCH',
+      'NO_SHOW_AUTO_AFTER_EVIDENCE',
+      'Auto fee after match',
+      'Auto no-show after evidence',
+      'evidence-backed no-show automation',
+      'evidence-assisted automation',
+    ]) {
+      rejectMarker(file, source, marker);
+    }
+  }
+
+  requireMarkers('apps/api/src/matching/matching.policy.ts', matchingPolicy, [
+    "export const CANCELLATION_ADMIN_FEE_REVIEW_AFTER_MATCH = 'ADMIN_FEE_REVIEW_AFTER_MATCH';",
+    "export const NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW = 'EVIDENCE_ASSISTED_ADMIN_REVIEW';",
+    'Admin fee review after match',
+    'Evidence-assisted admin review',
+  ]);
+  requireMarkers('apps/api/src/admin/admin.service.ts', adminService, [
+    'evidence-assisted admin review is active',
+    'No-show marked; evidence-assisted admin review active',
   ]);
 }
 

@@ -27,10 +27,10 @@ export const BACKUP_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
 export const BACKUP_OPEN_AFTER_FIRST_PICK_DELAY = 'AFTER_FIRST_PICK_DELAY';
 export const CANCELLATION_AFTER_MATCH_POLICY_KEY = 'cancellation.after_match_policy';
 export const CANCELLATION_ADMIN_REVIEW_FOR_MVP = 'ADMIN_REVIEW_FOR_MVP';
-export const CANCELLATION_AUTO_FEE_AFTER_MATCH = 'AUTO_FEE_AFTER_MATCH';
+export const CANCELLATION_ADMIN_FEE_REVIEW_AFTER_MATCH = 'ADMIN_FEE_REVIEW_AFTER_MATCH';
 export const NO_SHOW_PARTNER_REPORT_POLICY_KEY = 'no_show.partner_report_policy';
 export const NO_SHOW_ADMIN_REVIEW_REQUIRED = 'ADMIN_REVIEW_REQUIRED';
-export const NO_SHOW_AUTO_AFTER_EVIDENCE = 'AUTO_NO_SHOW_AFTER_EVIDENCE';
+export const NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW = 'EVIDENCE_ASSISTED_ADMIN_REVIEW';
 export const NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY = 'notification.partner_alert_channel';
 export const PARTNER_ALERT_IN_APP_WITH_PUSH_LATER = 'IN_APP_WITH_PUSH_LATER';
 export const PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
@@ -398,9 +398,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         tradeoff: 'Safest while operations learn real cancellation reasons and edge cases.',
       },
       {
-        value: CANCELLATION_AUTO_FEE_AFTER_MATCH,
-        label: 'Auto fee after match',
-        tradeoff: 'Protects partner time, but needs clear customer-facing rules and refund handling.',
+        value: CANCELLATION_ADMIN_FEE_REVIEW_AFTER_MATCH,
+        label: 'Admin fee review after match',
+        tradeoff: 'Protects partner time without automatic penalties; operators review chat, arrival, and refund context.',
       },
     ],
     enforced: true,
@@ -419,9 +419,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         tradeoff: 'Reduces incorrect automatic decisions while the marketplace is young.',
       },
       {
-        value: NO_SHOW_AUTO_AFTER_EVIDENCE,
-        label: 'Auto no-show after evidence',
-        tradeoff: 'Faster operations, but requires strong evidence upload and dispute flows.',
+        value: NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW,
+        label: 'Evidence-assisted admin review',
+        tradeoff: 'Keeps the final decision in Admin while requiring stronger chat, alert, location, or note evidence.',
       },
     ],
     enforced: true,
