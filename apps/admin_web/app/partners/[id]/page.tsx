@@ -8,7 +8,7 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../../lib/admin-api';
-import { formatDateTime } from '../../../lib/admin-format';
+import { formatDateTime, formatMoney as formatAdminMoney } from '../../../lib/admin-format';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -7119,8 +7119,7 @@ function maskDeviceId(value?: string | null) {
 
 function formatCurrency(value?: number | string | null, currency = 'VND') {
   const amount = amountValue(value);
-  if (!amount) return `0 ${currency}`;
-  return `${amount.toLocaleString('vi-VN')} ${currency}`;
+  return formatAdminMoney(amount, currency, `0 ${currency}`);
 }
 
 function amountValue(value?: number | string | null) {

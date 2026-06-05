@@ -10,7 +10,11 @@ import {
   AdminNotification,
   adminGet,
 } from '../../../lib/admin-api';
-import { formatDateTime, shortId as formatShortId } from '../../../lib/admin-format';
+import {
+  formatDateTime,
+  formatMoney as formatAdminMoney,
+  shortId as formatShortId,
+} from '../../../lib/admin-format';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -3710,9 +3714,5 @@ function formatDistance(value: number) {
 }
 
 function formatMoney(value: number, currency = 'VND') {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
+  return formatAdminMoney(value, currency, `0 ${currency}`);
 }

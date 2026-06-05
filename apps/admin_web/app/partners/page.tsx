@@ -1353,7 +1353,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                           ) : null}
                           {readLastAttempt(device) ? (
                             <p className="muted" style={{ marginBottom: 4 }}>
-                              Last attempt: {new Date(readLastAttempt(device) as string).toLocaleString()}
+                              Last attempt: {formatDateTime(readLastAttempt(device))}
                             </p>
                           ) : null}
                           {!device.enabled ? (
