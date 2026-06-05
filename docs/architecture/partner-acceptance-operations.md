@@ -153,7 +153,7 @@ Admin visibility:
 - `apps/admin_web/app/partners/page.tsx`
 - `apps/admin_web/app/partner-controls/page.tsx`
 
-Legacy `/providers`, `/partner-risk`, and `/provider-risk` pages redirect to canonical partner routes so older links keep working. New admin work should link to `/partners` or `/partner-controls`.
+Legacy `/providers` and `/providers/:id` pages redirect to canonical partner routes so older links keep working. New admin work should link to `/partners`, `/partners/:id`, or `/partner-controls`. Do not rebuild separate partner-risk pages; partner activity and account facts belong in the partner list and partner detail pages.
 
 Partner mobile behavior:
 
