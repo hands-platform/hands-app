@@ -267,13 +267,13 @@ void main() {
     );
     expect(
       providerWalletBlockFallbackReasonClean,
-      '수수료를 입금하지 않아 예약에 참여 할수 없습니다.',
+      '수수료를 입금하지 않아 예약에 참여할 수 없습니다.',
     );
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
     expect(providerActionBlockCopy(guidance.detailMessage)?.title,
         'Fee settlement required');
     expect(
-      providerActionBlockCopy('수수료를 입금하지 않아 예약에 참여 할수 없습니다.')?.detail,
+      providerActionBlockCopy('수수료를 입금하지 않아 예약에 참여할 수 없습니다.')?.detail,
       providerWalletBlockFallbackReasonClean,
     );
   });
@@ -342,7 +342,7 @@ void main() {
     expect(guidance.nextAction, contains('Settle unpaid HANDS fees'));
     expect(guidance.contextMessage, contains('visible'));
     expect(guidance.contextMessage, contains('before you can join'));
-    expect(guidance.detailMessage, '수수료를 입금하지 않아 예약에 참여 할수 없습니다.');
+    expect(guidance.detailMessage, '수수료를 입금하지 않아 예약에 참여할 수 없습니다.');
   });
 
   test('explains marketplace opportunities after preferred partner exists', () {

@@ -8537,8 +8537,8 @@ function bookingMarketplaceWalletEvidence({
         tone: walletDebt ? 'pill-danger' : 'pill-success',
         record: financeTrace.walletLedger,
         operatorUse: walletDebt
-          ? 'Partner app message: 수수료를 입금하지 않아 예약에 참여 할수 없습니다. Collect the HANDS fee deposit or apply an approved offset before this partner can join new marketplace bookings.'
-          : 'Partner app message: 수수료를 입금하지 않아 예약에 참여 할수 없습니다. No cash-fee wallet debt from this booking is currently gating marketplace participation.',
+          ? 'Partner app message: 수수료를 입금하지 않아 예약에 참여할 수 없습니다. Collect the HANDS fee deposit or apply an approved offset before this partner can join new marketplace bookings.'
+          : 'Partner app message: 수수료를 입금하지 않아 예약에 참여할 수 없습니다. No cash-fee wallet debt from this booking is currently gating marketplace participation.',
       },
       {
         lane: 'Cash fee accounting',

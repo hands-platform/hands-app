@@ -5,7 +5,10 @@ const root = resolve(process.argv.find((arg) => arg.startsWith('--root='))?.slic
 const smokePath = resolve(root, 'infra/scripts/api-smoke.mjs');
 const source = readFileSync(smokePath, 'utf8');
 const apiSourceRoot = resolve(root, 'apps/api/src');
-const providerAppMainPath = resolve(root, 'apps/provider_app/lib/main.dart');
+const providerWalletGateHelperPath = resolve(
+  root,
+  'apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_gate_helpers.dart',
+);
 const providerWalletGateTestPath = resolve(root, 'apps/provider_app/test/provider_wallet_gate_test.dart');
 
 const requiredCoverage = [
@@ -299,9 +302,9 @@ function checkNegativeWalletBookingFunctionBoundaries() {
 }
 
 function checkProviderMobileWalletGateBoundaries() {
-  const providerSource = readFileSync(providerAppMainPath, 'utf8');
+  const providerSource = readFileSync(providerWalletGateHelperPath, 'utf8');
   const providerWalletGateTest = readFileSync(providerWalletGateTestPath, 'utf8');
-  const walletBlockDisplayMessage = '수수료를 입금하지 않아 예약에 참여 할수 없습니다.';
+  const walletBlockDisplayMessage = '수수료를 입금하지 않아 예약에 참여할 수 없습니다.';
   const walletBlockButtonLabel = '수수료 정산 필요';
   const missingMarkers = [];
 

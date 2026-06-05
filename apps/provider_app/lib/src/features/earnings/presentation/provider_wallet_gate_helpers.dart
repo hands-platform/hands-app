@@ -1,6 +1,6 @@
 import '../../../core/provider_value_helpers.dart';
 
-const providerWalletBlockFallbackReasonClean = '수수료를 입금하지 않아 예약에 참여 할수 없습니다.';
+const providerWalletBlockFallbackReasonClean = '수수료를 입금하지 않아 예약에 참여할 수 없습니다.';
 
 const providerWalletBlockHintClean =
     'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before joining marketplace requests.';

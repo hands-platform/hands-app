@@ -4583,7 +4583,7 @@ function buildMarketplaceOperatingQueue(
       status: cashDebtBookings.length ? 'Fee settlement' : 'Clear',
       tone: cashDebtBookings.length ? 'danger' : 'ok',
       detail:
-        'Negative wallet partners can see marketplace demand but cannot participate. App message: 수수료를 입금하지 않아 예약에 참여 할수 없습니다.',
+        'Negative wallet partners can see marketplace demand but cannot participate. App message: 수수료를 입금하지 않아 예약에 참여할 수 없습니다.',
       operatorAction:
         'Confirm HANDS fee deposit or approved admin offset before marketplace participation and payout release reopen.',
       href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',
