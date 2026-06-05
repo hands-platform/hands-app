@@ -39,6 +39,34 @@ class BookingSectionCard extends StatelessWidget {
   }
 }
 
+class ServiceTag extends StatelessWidget {
+  const ServiceTag({
+    super.key,
+    required this.label,
+  });
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFE6E0D2)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context)
+            .textTheme
+            .bodyMedium
+            ?.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+}
+
 int customerBookingTimestamp(Map<String, dynamic> booking) {
   final value = booking['updatedAt'] ??
       booking['createdAt'] ??

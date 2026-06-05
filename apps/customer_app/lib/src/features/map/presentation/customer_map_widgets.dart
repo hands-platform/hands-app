@@ -776,3 +776,87 @@ class MapPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+
+class ProviderThumbnail extends StatelessWidget {
+  const ProviderThumbnail({
+    super.key,
+    required this.name,
+    required this.size,
+    this.imageUrl,
+  });
+
+  final String name;
+  final double size;
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = name.isEmpty
+        ? 'P'
+        : name
+            .trim()
+            .split(RegExp(r'\s+'))
+            .take(2)
+            .map((word) => word.characters.first.toUpperCase())
+            .join();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: size,
+        height: size,
+        color: const Color(0xFFE8E1D3),
+        alignment: Alignment.center,
+        child: imageUrl == null || imageUrl!.isEmpty
+            ? ProviderInitials(initials: initials, size: size)
+            : Image.network(
+                imageUrl!,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    ProviderInitials(initials: initials, size: size),
+              ),
+      ),
+    );
+  }
+}
+
+class ProviderInitials extends StatelessWidget {
+  const ProviderInitials({
+    super.key,
+    required this.initials,
+    required this.size,
+  });
+
+  final String initials;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      initials,
+      style: TextStyle(
+        fontSize: size * 0.28,
+        fontWeight: FontWeight.w800,
+        color: const Color(0xFF5E8E4A),
+      ),
+    );
+  }
+}
+
+String? providerProfileImageUrl(Map<String, dynamic> provider) {
+  final direct = provider['profileImageUrl']?.toString();
+  if (direct != null && direct.isNotEmpty) {
+    return direct;
+  }
+
+  final gallery = provider['galleryImageUrls'];
+  if (gallery is List && gallery.isNotEmpty) {
+    final first = gallery.first?.toString();
+    if (first != null && first.isNotEmpty) {
+      return first;
+    }
+  }
+  return null;
+}
