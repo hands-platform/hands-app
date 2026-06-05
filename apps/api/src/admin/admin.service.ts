@@ -403,6 +403,46 @@ const adminPaymentSummarySelect = {
   },
 } satisfies Prisma.PaymentSelect;
 
+const adminPaymentCallbackAttemptSummarySelect = {
+  id: true,
+  paymentId: true,
+  method: true,
+  providerRef: true,
+  outcome: true,
+  signatureVerified: true,
+  verificationMode: true,
+  providerStatus: true,
+  gatewayTransactionId: true,
+  callbackAmount: true,
+  errorCode: true,
+  errorMessage: true,
+  rawPayload: true,
+  createdAt: true,
+} satisfies Prisma.PaymentCallbackAttemptSelect;
+
+const adminPaymentCallbackAttemptListSelect = {
+  ...adminPaymentCallbackAttemptSummarySelect,
+  payment: {
+    select: {
+      id: true,
+      bookingId: true,
+      method: true,
+      status: true,
+      amount: true,
+      currency: true,
+      providerRef: true,
+      booking: {
+        select: {
+          id: true,
+          status: true,
+          customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
+          selectedProvider: { select: adminProviderSummarySelect },
+        },
+      },
+    },
+  },
+} satisfies Prisma.PaymentCallbackAttemptSelect;
+
 const adminPlatformFeeLogSummarySelect = {
   id: true,
   providerProfileId: true,
@@ -932,6 +972,15 @@ const adminBookingDetailSelect = {
     },
   },
 } satisfies Prisma.BookingSelect;
+
+const adminPaymentDetailSelect = {
+  ...adminPaymentSummarySelect,
+  booking: { select: adminBookingDetailSelect },
+  refunds: {
+    orderBy: { createdAt: 'desc' },
+    select: adminRefundSummarySelect,
+  },
+} satisfies Prisma.PaymentSelect;
 
 const adminProviderDetailSelect = {
   id: true,
@@ -2066,10 +2115,14 @@ export class AdminService {
   }
 
   async getBookingDetail(id: string) {
-    const booking = await this.prisma.booking.findUniqueOrThrow({
+    const booking = await this.prisma.booking.findUnique({
       where: { id },
       select: adminBookingDetailSelect,
     });
+    if (!booking) {
+      throw new NotFoundException('Booking not found');
+    }
+
     const auditLogs = await this.prisma.adminAuditLog.findMany({
       where: {
         OR: [
@@ -2458,22 +2511,7 @@ export class AdminService {
         callbackAttempts: {
           orderBy: { createdAt: 'desc' },
           take: 5,
-          select: {
-            id: true,
-            paymentId: true,
-            method: true,
-            providerRef: true,
-            outcome: true,
-            signatureVerified: true,
-            verificationMode: true,
-            providerStatus: true,
-            gatewayTransactionId: true,
-            callbackAmount: true,
-            errorCode: true,
-            errorMessage: true,
-            rawPayload: true,
-            createdAt: true,
-          },
+          select: adminPaymentCallbackAttemptSummarySelect,
         },
       },
     });
@@ -2482,76 +2520,7 @@ export class AdminService {
   async getPaymentDetail(paymentId: string) {
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
-      include: {
-        booking: {
-          include: {
-            customerProfile: {
-              include: {
-                user: {
-                  include: {
-                    appSessions: { orderBy: { lastSeenAt: 'desc' }, take: 5 },
-                    pushDevices: {
-                      orderBy: { updatedAt: 'desc' },
-                      take: 5,
-                      select: adminPushDeviceSummarySelect,
-                    },
-                  },
-                },
-              },
-            },
-            preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
-            selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
-            participants: {
-              orderBy: { joinedAt: 'asc' },
-              include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } },
-            },
-            services: {
-              include: {
-                service: {
-                  include: {
-                    payoutRules: {
-                      where: { active: true },
-                      orderBy: { customerPrice: 'asc' },
-                    },
-                  },
-                },
-              },
-            },
-            addressSnapshot: true,
-            chatRoom: {
-              include: {
-                messages: {
-                  orderBy: { createdAt: 'asc' },
-                  take: 100,
-                  include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
-                },
-              },
-            },
-            refunds: true,
-            opsTasks: {
-              orderBy: { updatedAt: 'desc' },
-              include: { actor: { select: { id: true, phone: true, fullName: true } } },
-            },
-            snapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
-            earning: {
-              include: {
-                platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
-                taxLogs: {
-                  orderBy: { createdAt: 'desc' },
-                  take: 10,
-                  include: { withholdingLogs: { orderBy: { createdAt: 'desc' }, take: 10 } },
-                },
-                walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 10 },
-                payoutBatch: true,
-              },
-            },
-            platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
-            taxLogs: { orderBy: { createdAt: 'desc' }, take: 10 },
-            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 10 },
-          },
-        },
-        refunds: true,
-      },
+      select: adminPaymentDetailSelect,
     });
 
     if (!payment) {
@@ -2567,6 +2536,7 @@ export class AdminService {
       },
       orderBy: { createdAt: 'desc' },
       take: 50,
+      select: adminPaymentCallbackAttemptSummarySelect,
     });
 
     const auditLogs = await this.prisma.adminAuditLog.findMany({
@@ -2590,18 +2560,7 @@ export class AdminService {
     return this.prisma.paymentCallbackAttempt.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: {
-        payment: {
-          include: {
-            booking: {
-              include: {
-                customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
-                selectedProvider: { select: adminProviderSummarySelect },
-              },
-            },
-          },
-        },
-      },
+      select: adminPaymentCallbackAttemptListSelect,
     });
   }
 
