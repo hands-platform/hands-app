@@ -4655,7 +4655,7 @@ function marketplaceBookingNextAction(booking: AdminBooking, nowMs: number) {
 }
 
 function bookingCreatedTimestamp(booking: AdminBooking) {
-  const value = booking.createdAt ?? booking.scheduledStartAt ?? booking.updatedAt;
+  const value = booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt;
   if (!value) {
     return 0;
   }

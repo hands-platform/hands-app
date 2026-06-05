@@ -9483,7 +9483,7 @@ function bookingOperationalPolicySnapshot(
           String(payoutBatchCyclePolicy?.value) === 'ADMIN_SELECTED_DAY_BATCH'
             ? 'Positive partner earnings remain pending until the admin-selected payout day batch is released.'
             : String(payoutBatchCyclePolicy?.value) === 'HYBRID_ADMIN_REVIEW'
-              ? 'Positive partner earnings are grouped into scheduled batches with admin exception review before release.'
+              ? 'Positive partner earnings are grouped into planned payout batches with admin exception review before release.'
               : 'Positive partner earnings are settled through weekly or monthly payout batches, not booking-by-booking release.',
         enforced: false,
       }),

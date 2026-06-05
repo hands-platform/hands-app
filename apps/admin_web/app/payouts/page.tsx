@@ -960,7 +960,7 @@ function buildPayoutMoneyFlowCards(
     {
       label: 'Partner payout',
       amount: summary.totalNetAmount,
-      detail: 'Batch net amount scheduled for partner transfer.',
+      detail: 'Batch net amount planned for partner transfer.',
     },
     {
       label: 'Partner net evidence',

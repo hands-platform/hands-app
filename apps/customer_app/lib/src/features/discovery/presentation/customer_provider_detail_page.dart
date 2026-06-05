@@ -229,7 +229,7 @@ class ProviderDetailPage extends StatelessWidget {
                                 label: '$experienceYears year(s) experience',
                               ),
                             const DetailFactChip(
-                              icon: Icons.schedule_outlined,
+                              icon: Icons.timer_outlined,
                               label: 'Typical response within minutes',
                             ),
                             DetailFactChip(

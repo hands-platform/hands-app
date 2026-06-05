@@ -280,7 +280,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const cashDebtAmount = cashSettlementSummary.totalDebtAmount;
   const queueSummary = buildOpsQueueSummary(queue);
   const rangeBookings = bookings.filter((booking) =>
-    isInDateRange(booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt, filters.range),
+    isInDateRange(booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt, filters.range),
   );
   const rangePayments = payments.filter((payment) =>
     isInDateRange(payment.booking?.createdAt ?? payment.refunds?.[0]?.createdAt, filters.range),
@@ -2942,7 +2942,7 @@ function buildDailyOperationsSnapshot(input: {
   activePayoutBatches: AdminPayoutBatch[];
 }): DailyOperationsSnapshotItem[] {
   const todayBookings = input.bookings.filter((booking) =>
-    isInDateRange(booking.scheduledStartAt ?? booking.createdAt, 'today'),
+    isInDateRange(booking.createdAt ?? booking.scheduledStartAt, 'today'),
   );
   const completedToday = input.bookings.filter(
     (booking) =>
@@ -4626,7 +4626,7 @@ function buildHourlyBookingDemand(bookings: AdminBooking[]) {
   >();
 
   for (const booking of bookings) {
-    const timestamp = booking.scheduledStartAt ?? booking.createdAt;
+    const timestamp = booking.createdAt ?? booking.scheduledStartAt;
     if (!timestamp) continue;
     const hour = `${hourFormatter.format(new Date(timestamp))}:00`;
     const bucket = buckets.get(hour) ?? { hour, total: 0, active: 0, completed: 0, cancelled: 0 };
@@ -4685,10 +4685,11 @@ function isNoShowSignal(booking: AdminBooking) {
   if (booking.status === 'EXPIRED') {
     return true;
   }
-  if (booking.status !== 'MATCHED' || !booking.scheduledStartAt) {
+  const requestedAtValue = booking.createdAt ?? booking.scheduledStartAt;
+  if (booking.status !== 'MATCHED' || !requestedAtValue) {
     return false;
   }
-  const requestedAt = Date.parse(booking.scheduledStartAt);
+  const requestedAt = Date.parse(requestedAtValue);
   return Number.isFinite(requestedAt) && requestedAt + 30 * 60_000 < Date.now() && !booking.chatRoom;
 }
 

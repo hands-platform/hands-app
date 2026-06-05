@@ -290,7 +290,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
   const filteredPartnerBookingArchive = orderPartnerBookingArchive(
     partnerBookingArchive.filter((record) =>
-      isWithinDetailDateFilter(record.booking.scheduledStartAt ?? record.booking.createdAt, dateFilters),
+      isWithinDetailDateFilter(record.booking.createdAt ?? record.booking.scheduledStartAt, dateFilters),
     ),
     activityOrder,
   );
@@ -1433,7 +1433,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   </strong>
                   <p className="muted">
                     Customer {partnerBookingCustomer(record.booking)} / requested{' '}
-                    {formatDate(record.booking.scheduledStartAt)}
+                    {formatDate(record.booking.createdAt ?? record.booking.scheduledStartAt)}
                   </p>
                   <p className="muted">
                     Payment {record.booking.payment?.method ?? 'UNKNOWN'} /{' '}
@@ -3281,8 +3281,8 @@ function orderPartnerActivityRecords<T extends { at?: string | null }>(
 
 function orderPartnerBookingArchive(records: PartnerBookingArchiveRecord[], order: DetailActivityOrder) {
   return [...records].sort((left, right) => {
-    const leftAt = left.booking.scheduledStartAt ?? left.booking.createdAt;
-    const rightAt = right.booking.scheduledStartAt ?? right.booking.createdAt;
+    const leftAt = left.booking.createdAt ?? left.booking.scheduledStartAt;
+    const rightAt = right.booking.createdAt ?? right.booking.scheduledStartAt;
     return order === 'oldest'
       ? dateValue(leftAt) - dateValue(rightAt)
       : dateValue(rightAt) - dateValue(leftAt);
@@ -3765,8 +3765,8 @@ function buildPartnerBookingArchive(provider: ProviderDetail): PartnerBookingArc
 
   return [...records.values()].sort(
     (left, right) =>
-      dateValue(right.booking.scheduledStartAt ?? right.booking.createdAt) -
-      dateValue(left.booking.scheduledStartAt ?? left.booking.createdAt),
+      dateValue(right.booking.createdAt ?? right.booking.scheduledStartAt) -
+      dateValue(left.booking.createdAt ?? left.booking.scheduledStartAt),
   );
 }
 
@@ -3810,7 +3810,7 @@ function buildPartnerBookingEvidenceRows(
       id: booking.id,
       relation: record.relation,
       bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
-        booking.scheduledStartAt ?? booking.createdAt,
+        booking.createdAt ?? booking.scheduledStartAt,
       )}`,
       serviceLabel: `${bookingServiceLabel(booking)} / ${formatCurrency(bookingTotal(booking))}`,
       status: booking.status ?? 'UNKNOWN',
@@ -3979,7 +3979,7 @@ function buildPartnerActivityRecords(
     records.push({
       id: bookingRecord.booking.id,
       type: 'BOOKING',
-      at: bookingRecord.booking.scheduledStartAt ?? bookingRecord.booking.createdAt ?? '',
+      at: bookingRecord.booking.createdAt ?? bookingRecord.booking.scheduledStartAt ?? '',
       title: `${bookingRecord.relation} booking ${shortRecordId(bookingRecord.booking.id)}`,
       detail: `${bookingServiceLabel(bookingRecord.booking)} / ${bookingRecord.booking.status ?? 'UNKNOWN'} / customer ${partnerBookingCustomer(
         bookingRecord.booking,
@@ -4344,7 +4344,7 @@ function buildPartnerActivityCommandSnapshot(
       value: `${completedBookings.length} booking(s)`,
       helper: latestCompletedBooking
         ? `Latest ${bookingServiceLabel(latestCompletedBooking)} / ${formatDate(
-            latestCompletedBooking.scheduledStartAt ?? latestCompletedBooking.createdAt,
+            latestCompletedBooking.updatedAt ?? latestCompletedBooking.createdAt ?? latestCompletedBooking.scheduledStartAt,
           )}`
         : 'No completed booking in this filter.',
       href: latestCompletedBooking ? `/bookings/${latestCompletedBooking.id}` : '#partner-booking-journey',
@@ -5183,7 +5183,7 @@ function buildPartnerChatRetentionRows(records: PartnerBookingArchiveRecord[]): 
       id: booking.id,
       relation: record.relation,
       bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
-        booking.scheduledStartAt ?? booking.createdAt,
+        booking.createdAt ?? booking.scheduledStartAt,
       )}`,
       serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
       status: booking.status ?? 'UNKNOWN',
@@ -5257,7 +5257,7 @@ function buildPartnerBookingOpsLedgerRows(
         id: booking.id,
         relation: record.relation,
         bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
-          booking.scheduledStartAt ?? booking.createdAt,
+          booking.createdAt ?? booking.scheduledStartAt,
         )}`,
         serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
         status: booking.status ?? 'UNKNOWN',

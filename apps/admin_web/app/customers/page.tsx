@@ -832,14 +832,14 @@ function buildCustomerRow(customer: AdminCustomer) {
     .filter((booking) => booking.status === 'COMPLETED')
     .sort(
       (left, right) =>
-        dateMs(right.updatedAt ?? right.scheduledStartAt ?? right.createdAt) -
-        dateMs(left.updatedAt ?? left.scheduledStartAt ?? left.createdAt),
+        dateMs(right.updatedAt ?? right.createdAt ?? right.scheduledStartAt) -
+        dateMs(left.updatedAt ?? left.createdAt ?? left.scheduledStartAt),
     );
   const lastCompletedBooking = completedRows[0];
   const lastCompletedAt =
     lastCompletedBooking?.updatedAt ??
-    lastCompletedBooking?.scheduledStartAt ??
-    lastCompletedBooking?.createdAt;
+    lastCompletedBooking?.createdAt ??
+    lastCompletedBooking?.scheduledStartAt;
   const commonService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
   const commonArea = mostCommonLabel(
     bookings

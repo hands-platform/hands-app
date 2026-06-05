@@ -112,13 +112,13 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   const customerActivityRecords = buildCustomerActivityRecords(customer, bookings, addresses);
   const recentAuditLogs = customer.auditLogs ?? [];
   const filteredBookings = bookings.filter((booking) =>
-    isWithinDetailDateFilter(booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt, dateFilters),
+    isWithinDetailDateFilter(booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt, dateFilters),
   );
   const filteredChatBookings = bookings.filter((booking) => {
     if (!booking.chatRoom) return false;
     return (
       isWithinDetailDateFilter(
-        booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt,
+        booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt,
         dateFilters,
       ) ||
       readChatMessages(booking).some((message) => isWithinDetailDateFilter(message.createdAt, dateFilters))
@@ -1277,7 +1277,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <tr key={booking.id}>
                 <td>
                   <strong>{shortId(booking.id)}</strong>
-                  <p className="muted">{formatDate(booking.scheduledStartAt ?? booking.createdAt)}</p>
+                  <p className="muted">{formatDate(booking.createdAt ?? booking.scheduledStartAt)}</p>
                 </td>
                 <td>
                   <strong>{bookingServiceLabel(booking)}</strong>
@@ -2369,7 +2369,7 @@ function buildCustomerOperatingLedger({
       status: latestBooking ? latestBooking.status : 'No booking',
       evidence: latestBooking
         ? `${shortId(latestBooking.id)} / ${bookingServiceLabel(latestBooking)} / ${formatDate(
-            latestBooking.scheduledStartAt ?? latestBooking.createdAt,
+            latestBooking.createdAt ?? latestBooking.scheduledStartAt,
           )}`
         : 'No booking record loaded for this customer.',
       href: latestBooking ? `/bookings/${latestBooking.id}` : `/customers/${customer.id}#booking-history`,
@@ -2643,7 +2643,7 @@ function buildCustomerActivityPlan(
         title: 'Last completed work',
         value: lastCompletedBooking ? shortId(lastCompletedBooking.id) : 'None',
         detail: lastCompletedBooking
-          ? `${bookingServiceLabel(lastCompletedBooking)} / ${formatDate(lastCompletedBooking.updatedAt ?? lastCompletedBooking.scheduledStartAt ?? lastCompletedBooking.createdAt)}`
+          ? `${bookingServiceLabel(lastCompletedBooking)} / ${formatDate(lastCompletedBooking.updatedAt ?? lastCompletedBooking.createdAt ?? lastCompletedBooking.scheduledStartAt)}`
           : 'No finished service record',
         href: lastCompletedBooking ? `/bookings/${lastCompletedBooking.id}` : '/bookings',
       },
@@ -3223,7 +3223,7 @@ function buildCustomerBookingEvidenceRows(bookings: AdminBookingDetail[]): Custo
     return {
       id: booking.id,
       bookingLabel: `${shortId(booking.id)} / ${formatDate(
-        booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt,
+        booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt,
       )}`,
       serviceLabel: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
       status: booking.status,
@@ -3270,8 +3270,8 @@ function buildCustomerBookingJourneyRows(bookings: AdminBookingDetail[]): Custom
       latestMessage?.createdAt ??
       booking.updatedAt ??
       booking.closedAt ??
-      booking.scheduledStartAt ??
-      booking.createdAt;
+      booking.createdAt ??
+      booking.scheduledStartAt;
     const moneyValue = booking.payment
       ? `${booking.payment.status} ${formatMoney(
           Number(booking.payment.amount ?? 0),
@@ -3373,7 +3373,7 @@ function buildCustomerBookingOpsLedgerRows(bookings: AdminBookingDetail[]): Cust
       return {
         id: booking.id,
         bookingLabel: `${shortId(booking.id)} / ${formatDate(
-          booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt,
+          booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt,
         )}`,
         serviceLabel: `${bookingServiceLabel(booking)} / ${formatMoney(bookingTotal(booking))}`,
         status: booking.status,
@@ -3421,7 +3421,7 @@ function buildCustomerChatRetentionRows(bookings: AdminBookingDetail[]): Custome
     return {
       id: booking.id,
       bookingLabel: `${shortId(booking.id)} / ${formatDate(
-        booking.scheduledStartAt ?? booking.createdAt ?? booking.updatedAt,
+        booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt,
       )}`,
       serviceLabel: `${bookingServiceLabel(booking)} / ${bookingPartnerDisplayName(booking)}`,
       status: booking.status,

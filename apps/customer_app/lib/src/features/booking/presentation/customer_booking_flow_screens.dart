@@ -1109,7 +1109,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                                     'Booking ${shortCode(currentBooking?['id'])}',
                               ),
                               BookingTimelineChip(
-                                icon: Icons.schedule_rounded,
+                                icon: Icons.timer_outlined,
                                 label: status == 'OPEN_MATCHING'
                                     ? timeLeft
                                     : waitingStepLabel(status),
