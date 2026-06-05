@@ -12,7 +12,7 @@
 - Private verification file read-url.
 - Booking creation with cash payment.
 - Provider online/location update.
-- Provider joins open matching job.
+- Partner participates in an open marketplace booking.
 - Customer selects final partner.
 - Chat message creation.
 - Service completion.

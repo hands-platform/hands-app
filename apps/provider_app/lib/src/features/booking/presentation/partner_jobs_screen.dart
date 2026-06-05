@@ -118,7 +118,7 @@ class _PartnerJobsScreenState extends ConsumerState<PartnerJobsScreen> {
             const InfoCard(text: 'Login first to load your partner job queue.')
           else if (items.isEmpty)
             const InfoCard(
-              text: 'No assigned, joined, or completed bookings yet.',
+              text: 'No assigned, participating, or completed bookings yet.',
             )
           else
             for (final booking in items) PartnerJobsCard(booking: booking),

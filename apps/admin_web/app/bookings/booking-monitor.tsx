@@ -630,7 +630,7 @@ export function BookingMonitor({
     {
       label: 'Marketplace pool',
       value: `${bookingViewCounts.get('marketplace') ?? 0}`,
-      detail: 'Partners within the booking-address radius can join and remain visible to the customer.',
+      detail: 'Partners within the booking-address radius can participate and remain visible to the customer.',
       owner: 'Dispatch',
       action: 'Confirm 10km partner participation is healthy.',
       href: '/bookings?view=marketplace',
@@ -1280,14 +1280,14 @@ export function BookingMonitor({
           <div>
             <h2>Marketplace participant ledger</h2>
             <p className="muted">
-              All joined partners by booking, including first-pick, marketplace participants, declined
+              All participant records by booking, including first-pick, marketplace participants, declined
               responses, and the customer final choice. This is the operations record of who entered the
               request. Wallet-blocked partners who only viewed marketplace demand are blocked before
               participation and are not participant rows.
             </p>
           </div>
           <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
-            All joined partners {marketplaceLedgerSummary.total}
+            All participant records {marketplaceLedgerSummary.total}
           </span>
         </div>
         <section className="card" style={{ marginTop: 14 }}>
@@ -1331,9 +1331,9 @@ export function BookingMonitor({
             <div>
               <h3>Marketplace booking coverage board</h3>
               <p className="muted">
-                Booking-level view of first-pick timer, 10 km alert trace, joined partner history,
+                Booking-level view of first-pick timer, 10 km alert trace, participant history,
                 customer-selectable partners, wallet gate, and final customer selection. This board
-                shows bookings with and without participants before drilling into the joined partner
+                shows bookings with and without participants before drilling into the participant
                 ledger.
               </p>
             </div>
@@ -1348,7 +1348,7 @@ export function BookingMonitor({
                     : 'pill-success'
                 }`}
               >
-                Bookings without joined partners {marketplaceBookingCoverageSummary.withoutParticipants}
+                Bookings without participants {marketplaceBookingCoverageSummary.withoutParticipants}
               </span>
               <span
                 className={`pill ${
@@ -1399,7 +1399,7 @@ export function BookingMonitor({
                       <div className="muted">{bookingMatchingWindowLabel(row.booking, currentTimeMs)}</div>
                     </td>
                     <td>
-                      <strong>{row.participantCount} joined partner(s)</strong>
+                      <strong>{row.participantCount} participant record(s)</strong>
                       <div className="muted">
                         {row.marketplaceParticipantCount} marketplace / {row.selectableCount} selectable
                       </div>
@@ -1448,7 +1448,7 @@ export function BookingMonitor({
           </span>
           <span className="pill pill-info">Declined responses {marketplaceLedgerSummary.declined}</span>
           <span className="pill">Customer final choice</span>
-          <span className="pill">Joined partner evidence</span>
+          <span className="pill">Participant evidence</span>
           <span className="pill">Marketplace participation gate</span>
         </div>
         <div className="ops-task-grid" style={{ marginTop: 14 }}>
@@ -1462,7 +1462,7 @@ export function BookingMonitor({
         </div>
         {marketplaceLedgerRows.length === 0 ? (
           <div className="empty-state" style={{ marginTop: 14 }}>
-            No joined partner records match the current booking filters.
+            No participant records match the current booking filters.
           </div>
         ) : (
           <table className="table" style={{ marginTop: 14 }}>
@@ -1471,12 +1471,12 @@ export function BookingMonitor({
                 <th>Booking</th>
                 <th>Customer / service</th>
                 <th>Partner</th>
-                <th>Joined partner evidence</th>
+                <th>Participant evidence</th>
                 <th>Status</th>
                 <th>Distance</th>
                 <th>Window / alerts</th>
                 <th>Wallet signal</th>
-                <th>Joined / response</th>
+                <th>Participation / response</th>
                 <th>Customer choice</th>
               </tr>
             </thead>
@@ -1528,7 +1528,7 @@ export function BookingMonitor({
               {marketplaceLedgerRows.length > 40 && (
                 <tr>
                   <td colSpan={10}>
-                    Showing first 40 joined partner records. Narrow the booking filters to inspect the rest.
+                    Showing first 40 participant records. Narrow the booking filters to inspect the rest.
                   </td>
                 </tr>
               )}
@@ -1633,7 +1633,7 @@ export function BookingMonitor({
                     <div className="muted">{bookingBackupAlertTraceLabel(booking, currentTimeMs)}</div>
                   </td>
                   <td>
-                    <strong>{booking.participants?.length ?? 0} joined</strong>
+                    <strong>{booking.participants?.length ?? 0} participant row(s)</strong>
                     <div className="muted">
                       First-pick {partnerDisplayName(booking.preferredProvider, 'none')}
                     </div>
@@ -1836,14 +1836,14 @@ const bookingViewOptions: Array<{
   {
     view: 'marketplace',
     label: 'Stage 2 marketplace',
-    description: 'open bookings where marketplace partners can join or need a dispatch nudge.',
+    description: 'open bookings where marketplace partners can participate or need a dispatch nudge.',
     operatorHint:
       'Use this to manage the marketplace participant pool, stale location checks, and availability alert delivery.',
   },
   {
     view: 'customer-choice',
     label: 'Stage 3 choice',
-      description: 'open bookings with joined/accepted partners waiting for customer final selection.',
+      description: 'open bookings with participating/accepted partners waiting for customer final selection.',
     operatorHint:
       'Use this when customer support should guide the customer to choose one final partner before matched chat opens.',
   },
@@ -1859,7 +1859,7 @@ const bookingViewOptions: Array<{
     label: 'No supply',
     description: 'open matching bookings with no partner participation yet.',
     operatorHint:
-      'Use this when customers are waiting but no partner has joined. Call/notify nearby partners or review location/service pricing.',
+      'Use this when customers are waiting but no partner participation is recorded. Call/notify nearby partners or review location/service pricing.',
   },
   {
     view: 'blocked-create',
@@ -1893,9 +1893,9 @@ const bookingViewOptions: Array<{
   {
     view: 'cash-debt',
     label: 'Cash debt',
-    description: 'cash bookings that created partner fee/tax debt and can block marketplace join or payout release.',
+    description: 'cash bookings that created partner fee/tax debt and can block marketplace participation or payout release.',
     operatorHint:
-      'Use this with Cash Settlements to confirm deposit or admin offset before the partner joins marketplace demand again.',
+      'Use this with Cash Settlements to confirm deposit or admin offset before the partner participates in marketplace demand again.',
   },
   {
     view: 'closeout',
@@ -2275,7 +2275,7 @@ function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtecti
       tone: cashDebt.length ? 'danger' : 'ok',
       detail:
         cashDebt.length > 0
-          ? 'Cash bookings created negative wallet balances that require settlement before marketplace join or payout release.'
+          ? 'Cash bookings created negative wallet balances that require settlement before marketplace participation or payout release.'
           : 'No cash booking currently creates an unpaid HANDS fee debt blocker.',
       operatorAction: 'Collect partner fee deposit or settle from available earnings before new marketplace participation.',
       href: '/bookings?view=cash-debt',
@@ -2337,10 +2337,10 @@ function buildMatchingEscalationBoard(
       tone: customerFinalSelection.length > 0 ? 'warn' : 'ok',
       detail:
         customerFinalSelection.length > 0
-      ? 'At least one partner joined or accepted; the customer still needs to lock the final partner.'
+        ? 'At least one partner is participating or accepted; the customer still needs to lock the final partner.'
           : 'No open request is waiting on customer final selection.',
       operatorAction:
-      'Guide support to nudge the customer when joined/accepted partners are waiting and the booking is still open.',
+      'Guide support to nudge the customer when participating/accepted partners are waiting and the booking is still open.',
       href: '/bookings?view=matching',
       bookings: customerFinalSelection,
       metrics: [
@@ -2410,7 +2410,7 @@ function buildBookingDispatchPartnerShortcuts(
     {
       title: 'Cash fee debt',
       value: cashDebt.length.toString(),
-      detail: 'Cash bookings can create negative partner wallets that block marketplace join and payout release.',
+      detail: 'Cash bookings can create negative partner wallets that block marketplace participation and payout release.',
       href: '/cash-settlements',
       tone: cashDebt.length ? 'danger' : 'ok',
     },
@@ -2727,7 +2727,7 @@ function buildMatchingEscalationRows(
         return {
           booking,
           title: 'First-pick pending with no marketplace option',
-          detail: 'The preferred partner is still deciding and no marketplace partner has joined.',
+          detail: 'The preferred partner is still deciding and no marketplace partner participation is recorded.',
           operatorAction:
             'Check push delivery and eligible partners within the configured radius before the customer loses patience.',
           tone: 'warn',
@@ -2756,7 +2756,7 @@ function buildMatchingEscalationRows(
         return {
           booking,
           title: 'Open request has no partner supply',
-          detail: 'No partner has joined the request yet.',
+          detail: 'No partner participation is recorded for the request yet.',
           operatorAction: 'Review location, service price, radius policy, and partner alert delivery.',
           tone: 'warn',
           tags: baseTags,
@@ -3083,7 +3083,7 @@ function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): Boo
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Confirm partner wallet debt and request company fee settlement before marketplace join or payout release resumes.';
+    return 'Confirm partner wallet debt and request company fee settlement before marketplace participation or payout release resumes.';
   }
   if (bookingCompletedCloseoutNeedsOps(booking)) {
     return 'Run closeout reconciliation so payment, earning, tax, fee, and wallet records match.';
@@ -3417,7 +3417,7 @@ function emptyBookingMessage(view: BookingView) {
     return 'No Stage 2 marketplace bookings need partner participation review right now.';
   }
   if (view === 'customer-choice') {
-  return 'No Stage 3 customer choice bookings are waiting. Joined/accepted partners are not blocked on customer selection.';
+  return 'No Stage 3 customer choice bookings are waiting. Participating/accepted partners are not blocked on customer selection.';
   }
   if (view === 'handoff-repair') {
     return 'No Stage 4 handoff repair bookings are missing chat.';
@@ -3571,7 +3571,7 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
     flags.push({ severity: 'high', title: 'No-show payment unresolved' });
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    flags.push({ severity: 'high', title: 'Cash fee debt blocks marketplace join' });
+    flags.push({ severity: 'high', title: 'Cash fee debt blocks marketplace participation' });
   }
   const pricingPolicy = bookingPricingPolicySignal(booking);
   if (pricingPolicy.status === 'blocked') {
@@ -3895,7 +3895,7 @@ function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingLi
     {
       label: cashDebtNeedsOps ? 'Cash debt' : 'Cash clear',
       detail: cashDebtNeedsOps
-        ? 'Partner cash fee debt must be settled before marketplace join or payout release resumes.'
+        ? 'Partner cash fee debt must be settled before marketplace participation or payout release resumes.'
         : 'No partner cash fee debt is visible for this booking.',
       tone: cashDebtNeedsOps ? 'pill-danger' : 'pill-success',
       href: '/bookings?view=cash-debt',
@@ -3926,7 +3926,7 @@ function bookingFinalGateReason(booking: AdminBooking) {
     return {
       label: 'Wallet debt gate',
       detail:
-        'Partner can view marketplace requests, but marketplace join and payout release wait for cash fee settlement.',
+        'Partner can view marketplace requests, but marketplace participation and payout release wait for cash fee settlement.',
       tone: 'pill-danger',
       href: '/cash-settlements',
     };
@@ -3970,7 +3970,7 @@ function bookingFinalGateReason(booking: AdminBooking) {
     return {
       label: 'Partner supply wait',
       detail:
-        'No eligible 10km marketplace partner has joined yet. Check partner alerts, app inbox, and saved location freshness.',
+        'No eligible 10km marketplace partner participation is recorded yet. Check partner alerts, app inbox, and saved location freshness.',
       tone: 'pill-warn',
       href: '/bookings?view=no-supply',
     };
@@ -4048,7 +4048,7 @@ function nextAction(booking: AdminBooking) {
     return 'Refund is recorded. Check the refund board and customer communication.';
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner joins marketplace demand again or receives payout release.';
+    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner participates in marketplace demand again or receives payout release.';
   }
   if (
     booking.status === 'OPEN_MATCHING' &&
@@ -4188,7 +4188,7 @@ function bookingMatchingRuleSnapshot(booking: AdminBooking, nowMs: number): Book
     sourceTone: policy ? 'pill-info' : 'pill-warn',
     windowLabel: `First-pick window: ${responseWindow}m / ${windowState}`,
     radiusLabel: `Marketplace radius: ${formatMeters(marketplaceRadius)} from booking address`,
-    supplyLabel: `Marketplace supply: ${marketplaceCount} joined / ${selectableCount} selectable / ${alertSummary.totalNotified} notified`,
+    supplyLabel: `Marketplace supply: ${marketplaceCount} participants / ${selectableCount} selectable / ${alertSummary.totalNotified} notified`,
     customerChoiceLabel: `${customerChoice}; no automatic assignment`,
     operatorAction: bookingMatchingRuleOperatorAction(
       booking,
@@ -4220,7 +4220,7 @@ function bookingMatchingRuleOperatorAction(
     return 'Marketplace partners are visible. Monitor customer shortlist and partner response evidence.';
   }
   if (notifiedCount > 0) {
-    return 'Push invitations were sent. Watch for partner joins before the first-pick window closes.';
+    return 'Push invitations were sent. Watch for partner participation before the first-pick window closes.';
   }
   return 'No marketplace supply is visible yet. Check partner radius, location freshness, and notification trace.';
 }
@@ -4255,7 +4255,7 @@ function customerVisibleStateLabel(booking: AdminBooking) {
     }`;
   }
   if (selectableCount > 0) {
-    return `Customer screen: ${selectableCount} joined/accepted partner(s) ready for final choice`;
+    return `Customer screen: ${selectableCount} participating/accepted partner(s) ready for final choice`;
   }
   if (
     booking.status === 'OPEN_MATCHING' &&
@@ -4683,7 +4683,7 @@ function buildMarketplaceParticipantLedgerRows(
         ),
         joinedLabel: participant.joinedAt
           ? `${formatDate(participant.joinedAt)} / ${relativeTimeLabel(participant.joinedAt, nowMs)}`
-          : 'Join time not saved',
+          : 'Participation time not saved',
         respondedLabel: participant.respondedAt
           ? `Responded ${formatDate(participant.respondedAt)}`
           : 'No response time saved',
@@ -4735,12 +4735,12 @@ function buildMarketplaceOperationsCards(
     {
       title: 'Customer choice',
       value: `${customerChoiceWaiting.length}`,
-      detail: 'Joined or accepted partners are visible and the customer has not selected a final partner yet.',
+      detail: 'Participating or accepted partners are visible and the customer has not selected a final partner yet.',
       tone: customerChoiceWaiting.length > 0 ? 'pill-info' : 'pill-neutral',
       href: '/bookings?view=customer-choice',
     },
     {
-      title: 'No joined supply',
+      title: 'No participant supply',
       value: `${noMarketplaceSupply.length}`,
       detail: 'Open requests with no marketplace participant in the ledger.',
       tone: noMarketplaceSupply.length > 0 ? 'pill-warn' : 'pill-success',
@@ -4808,11 +4808,11 @@ function buildMarketplaceOperatingQueue(
     {
       step: '2. Partner participation pool',
       title: 'Partner participation pool',
-      value: `${marketplaceJoined.length} with joined partners`,
+      value: `${marketplaceJoined.length} with participant records`,
       status: noJoinedSupply.length ? 'Supply gap' : marketplaceJoined.length ? 'Visible' : 'Clear',
       tone: noJoinedSupply.length ? 'warn' : marketplaceJoined.length ? 'info' : 'ok',
       detail:
-        'Partners inside the booking-address marketplace radius can join. Joined, accepted, declined, and selected rows stay as operations evidence.',
+        'Partners inside the booking-address marketplace radius can participate. Participating, accepted, declined, and selected rows stay as operations evidence.',
       operatorAction:
         'When supply is thin, check location freshness, app presence, alert delivery, service price, and partner wallet gate before changing policy.',
       href: noJoinedSupply.length ? '/bookings?view=no-supply' : '/bookings?view=marketplace',
@@ -4870,7 +4870,7 @@ function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
     {
       label: 'Marketplace radius',
       value: formatPolicyDistance(policy.marketplaceRadiusMeters),
-      helper: 'Partners inside the booking-address radius can join when other gates pass.',
+      helper: 'Partners inside the booking-address radius can participate when other gates pass.',
     },
     {
       label: 'Location freshness',
@@ -4885,7 +4885,7 @@ function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
     {
       label: 'Wallet gate',
       value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative partner wallet blocks marketplace join; customers never carry this debt.',
+      helper: 'Negative partner wallet blocks marketplace participation; customers never carry this debt.',
     },
   ];
 }
@@ -4928,7 +4928,7 @@ function marketplaceParticipantEvidenceState(booking: AdminBooking, participant:
   }
 
   return {
-    evidenceLabel: 'Marketplace join row',
+    evidenceLabel: 'Marketplace participation row',
     evidenceDetail: 'Partner entered the customer shortlist from booking-address marketplace participation.',
     evidenceTone: 'pill-info',
   };
@@ -4945,7 +4945,7 @@ function marketplaceParticipantStatusLabel(status: string) {
     return 'Declined';
   }
   if (status === 'JOINED') {
-    return 'Joined';
+    return 'Participating';
   }
   return status.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (letter) => letter.toUpperCase());
 }

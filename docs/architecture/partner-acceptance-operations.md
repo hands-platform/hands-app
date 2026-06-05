@@ -10,7 +10,7 @@ Default operating policy:
 
 - Preferred partner response window: 10 minutes.
 - Marketplace partner radius: 10km from the booking location.
-- Marketplace partners can join while the preferred partner is still deciding.
+- Marketplace partners can participate while the preferred partner is still deciding.
 - Customers always choose the final partner.
 - No automatic final matching.
 - Matched bookings open chat immediately; service start keeps the matched chat available.
@@ -25,7 +25,7 @@ A partner can accept or join only when the operational gates pass:
 - Location is available and inside the configured radius for marketplace matching.
 - Partner is online or available soon.
 - Partner offers the requested service and duration.
-- Wallet is not negative for marketplace join or payout release.
+- Wallet is not negative for marketplace participation or payout release.
 - Required app notification state is healthy enough for the selected notification policy.
 
 The API remains the final guard. Mobile and admin UI warnings are advisory, but the API must reject unsafe finalization attempts.
@@ -38,7 +38,7 @@ When that wallet becomes negative:
 
 - The partner can still see marketplace opportunities so customer supply stays visible, but cannot join until settlement is confirmed.
 - Marketplace requests can remain visible, but marketplace participation is blocked until settlement.
-- Marketplace join, marketplace acceptance, and customer final selection of that marketplace partner stay blocked until settlement.
+- Marketplace participation, marketplace acceptance, and customer final selection of that marketplace partner stay blocked until settlement.
 - Payout release stays blocked until the debt is settled.
 - The partner app displays the localized settlement-block message from `apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_gate_helpers.dart`.
 - Admin finance can settle the debt through cash settlement, earning, payout, payment, or booking detail workflows.
@@ -79,7 +79,7 @@ Operators should use these screens together:
 
 ## Acceptance Unblock Playbook
 
-When a partner cannot join marketplace demand or receive payout release, operators should resolve blockers in this order:
+When a partner cannot participate in marketplace demand or receive payout release, operators should resolve blockers in this order:
 
 1. Clear negative wallet first.
    - Owner: Finance.
@@ -130,7 +130,7 @@ Current MVP behavior:
 - The booking is moved to `NO_SHOW`.
 - A payment-review ops task is blocked until support decides release, refund, capture, fee, or manual adjustment.
 - The customer receives a `booking.no_show` notification.
-- The selected partner, preferred partner, and joined participants receive a `booking.no_show` notification.
+- The selected partner, preferred partner, and marketplace participants receive a `booking.no_show` notification.
 - The booking detail page shows no-show notification count in the booking alert trace.
 - `/notifications?review=no-show` shows all customer and partner no-show communication rows.
 
@@ -174,7 +174,7 @@ These should stay configurable instead of being hardcoded:
 - Marketplace partner radius.
 - Whether marketplace partners can appear immediately or only after a delay.
 - Whether preferred partner acceptance requires customer final confirmation.
-- Negative-wallet partner list visibility is view-only. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace join, marketplace acceptance, and customer final marketplace selection until settlement or approved offset clears the debt.
+- Negative-wallet partner list visibility is view-only. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace participation, marketplace acceptance, and customer final marketplace selection until settlement or approved offset clears the debt.
 - No-show review thresholds and settlement decision options.
 - Cash settlement deadline.
 - Notification retry and fallback contact rules.

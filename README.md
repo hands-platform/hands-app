@@ -12,12 +12,12 @@ Read `docs/README.md` first. It explains which documents are authoritative, whic
 - Customer discovery is address-based. Customers may browse partners from any country, but booking creation requires a confirmed HANDS service address.
 - Every booking stores an immutable `BookingAddressSnapshot`.
 - First-pick partner response window is 10 minutes.
-- Marketplace partners can join only when they are eligible within the configured booking-address radius, currently 10km by default.
+- Marketplace partners can participate only when they are eligible within the configured booking-address radius, currently 10km by default.
 - Customers always select the final partner. There is no automatic assignment.
 - MVP bookings are immediate/on-demand. Scheduled booking and calendar booking UX are not exposed.
 - Tips, gratuity, VIP, people scoring, and ranking programs are not part of the MVP.
 - Customer cancellation after direct matching is not a normal app action in MVP. Cancellation and no-show outcomes are admin decisions based on chat/evidence.
-- Partner negative wallet balances do not affect customers. Partners may see marketplace requests, but marketplace join/participation and payout release are blocked until settlement.
+- Partner negative wallet balances do not affect customers. Partners may see marketplace requests, but marketplace participation and payout release are blocked until settlement.
 - Admin is an Operations Command Center, not a CRM.
 - Internal code may still use `Provider` names for compatibility. Visible product and admin copy should say `Partner`.
 
@@ -173,7 +173,7 @@ Dedicated installer for Git, Docker Desktop, and Flutter:
 powershell -ExecutionPolicy Bypass -File .\infra\scripts\install-dev-tools-admin.ps1
 ```
 
-The smoke script covers demo OTP login, partner verification file presign/read-url, admin verification approval, booking creation, partner join, customer selection, chat, completion, review/feedback, partner earnings, payout batch creation, admin refund, and notification reads.
+The smoke script covers demo OTP login, partner verification file presign/read-url, admin verification approval, booking creation, partner marketplace participation, customer selection, chat, completion, review/feedback, partner earnings, payout batch creation, admin refund, and notification reads.
 
 This repository is structured for small, commit-ready phases. Phase 1 includes reports, architecture docs, Docker, Prisma schema, backend skeleton, and starter mobile/admin UI.
 

@@ -6,14 +6,14 @@
 - `provider:{providerId}:location` - latest provider location, 10 minute TTL.
 - `matching:active` - set of active matching booking ids.
 - `matching:{bookingId}` - active matching payload, 10 minute TTL by default.
-- `matching:{bookingId}:participants` - providers who joined a booking.
+- `matching:{bookingId}:participants` - partners with actual marketplace participation records for a booking.
 
 ## Matching Policy
 
 - First-pick partner response window: 10 minutes.
 - Marketplace partner radius: 10km from the booking location.
 - Marketplace eligibility uses the partner's last stored location; the MVP does not run route or live navigation APIs.
-- Eligible marketplace partners receive a marketplace availability notification and can join through `POST /partner/bookings/:id/join`.
+- Eligible marketplace partners receive a marketplace availability notification and can participate through `POST /partner/bookings/:id/join`.
 - Customer final selection remains the source of truth. The first-pick partner can accept first, but
   the customer still confirms the final partner before the booking is matched.
 

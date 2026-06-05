@@ -47,7 +47,7 @@ function checkRequiredAuthorityDoc() {
     'Every booking must preserve an immutable `BookingAddressSnapshot`',
     'Customers may browse partners from any country',
     'Preferred partner gets the first-pick window, currently 10 minutes',
-    'default 10km, can join during the matching window',
+    'default 10km, can participate during the matching window',
     'The customer always chooses the final partner',
     'There is no automatic partner assignment',
     'Do not expose scheduled booking or calendar booking UX',
@@ -70,7 +70,7 @@ function checkNoContradictoryOperationsDocs() {
   requireMarkers('docs/architecture/partner-acceptance-operations.md', partnerAcceptance, [
     'The partner can still see marketplace opportunities',
     'Marketplace requests can remain visible, but marketplace participation is blocked until settlement.',
-    'Marketplace join, marketplace acceptance, and customer final selection of that marketplace partner stay blocked until settlement.',
+    'Marketplace participation, marketplace acceptance, and customer final selection of that marketplace partner stay blocked until settlement.',
   ]);
 
   const reviews = read('docs/architecture/reviews.md');
@@ -512,7 +512,7 @@ function checkOperationsPolicyControlPlane() {
     "href: '/operations-policy#policy-matching-marketplace-provider-radius-meters'",
     'id={policySettingAnchor(setting.key)}',
     'Keep customer final confirmation as the operating rule.',
-    'The preferred partner can accept quickly, marketplace partners can still join the shortlist, and the customer chooses the final partner.',
+    'The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner.',
   ]);
   requireMarkers('infra/scripts/check-api-policy-coverage.mjs', apiPolicyCoverage, [
     'operational policy metadata',
@@ -520,7 +520,7 @@ function checkOperationsPolicyControlPlane() {
     "'matching.backup_provider_radius_meters'",
     "'wallet.negative_balance_gate'",
     'matching policy marketplace window',
-    'marketplace radius join guard',
+    'marketplace radius participation guard',
     'negative wallet marketplace participation policy',
   ]);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
@@ -547,7 +547,7 @@ function checkMarketplaceCompatibilityCopy() {
     'Marketplace partner radius',
     'Marketplace partner location freshness',
     'Marketplace partner invitation limit',
-    'When marketplace partners can join',
+    'When marketplace partners can participate',
   ]);
   requireMarkers('apps/admin_web/lib/admin-copy.ts', adminCopy, [
     "replaceAll('backup partner', 'marketplace partner')",

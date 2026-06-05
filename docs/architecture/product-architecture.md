@@ -24,7 +24,7 @@ flowchart LR
 - Payment is authorized or marked cash-pending.
 - Booking moves to `OPEN_MATCHING`.
 - A customer may choose a first-pick partner first. That partner has a 10 minute response window.
-- During that same 10 minute window, other online partners within the configured radius can join as marketplace candidates.
+- During that same 10 minute window, other online partners within the configured radius can participate as marketplace candidates.
 - Eligible marketplace partners receive a notification and can also see the request in the Partner app open-request list.
 - Partners join as `BookingParticipant` records with the server-calculated distance snapshot.
 - Partners are sorted by server-side distance and availability.

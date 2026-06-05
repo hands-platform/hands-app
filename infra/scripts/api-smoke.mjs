@@ -1668,7 +1668,7 @@ if (
   );
 }
 const marketplaceAcceptWithoutJoinError = await expectRequestFailure(
-  'Marketplace partner accept requires join',
+  'Marketplace partner accept requires participation',
   () => postJson(`/provider/bookings/${hybridBooking.id}/accept`, backupProviderAuth.accessToken),
   400,
 );
@@ -1678,7 +1678,7 @@ if (
   )
 ) {
   throw new Error(
-    `Marketplace accept-before-join returned an unexpected error: ${marketplaceAcceptWithoutJoinError}`,
+    `Marketplace accept-before-participation returned an unexpected error: ${marketplaceAcceptWithoutJoinError}`,
   );
 }
 const hybridAdminBooking = await getJson(`/admin/bookings/${hybridBooking.id}`, adminAuth.accessToken);
@@ -1832,7 +1832,7 @@ try {
     );
   }
   const narrowRadiusJoinError = await expectRequestFailure(
-    'Narrow marketplace radius partner join',
+    'Narrow marketplace radius partner participation',
     () => postJson(`/provider/bookings/${narrowRadiusBooking.id}/join`, backupProviderAuth.accessToken),
     400,
   );
@@ -1886,7 +1886,7 @@ try {
     );
   }
   await expectRequestFailure(
-    'Delayed marketplace partner join',
+    'Delayed marketplace partner participation',
     () => postJson(`/provider/bookings/${delayedBackupBooking.id}/join`, backupProviderAuth.accessToken),
     400,
   );
@@ -2315,7 +2315,7 @@ if (cashOpenBooking?.payment?.method !== 'CASH') {
 }
 if (typeof cashOpenBooking.distanceMeters !== 'number' || cashOpenBooking.distanceMeters > 10000) {
   throw new Error(
-    `Provider open bookings must expose only joinable 10km requests with distance metadata: ${JSON.stringify(
+    `Provider open bookings must expose only eligible 10km marketplace requests with distance metadata: ${JSON.stringify(
       cashOpenBooking,
     )}`,
   );
@@ -2469,7 +2469,7 @@ if (
   negativeWalletVisibleMarketplaceBooking.distanceMeters > 10000
 ) {
   throw new Error(
-    `Negative wallet partner should still see marketplace request before settlement, but cannot join: ${JSON.stringify(
+    `Negative wallet partner should still see marketplace request before settlement, but cannot participate: ${JSON.stringify(
       {
         expectedBookingId: blockedOpenMatchingBooking.id,
         visibleBooking: negativeWalletVisibleMarketplaceBooking,

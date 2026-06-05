@@ -602,7 +602,7 @@ export default async function OperationsPolicyPage({
                   </td>
                   <td>
                     <strong>{row.avgBackupInvites}</strong>
-                    <p className="muted">{row.avgParticipants} joined avg</p>
+                    <p className="muted">{row.avgParticipants} participant avg</p>
                   </td>
                   <td>
                     <span className={`pill ${row.outcomePill}`}>{row.outcomeLabel}</span>
@@ -668,7 +668,7 @@ export default async function OperationsPolicyPage({
           <div>
             <h2>Live matching policy</h2>
             <p className="muted">
-              These settings are enforced by booking creation, marketplace partner discovery, and partner join
+              These settings are enforced by booking creation, marketplace partner discovery, and partner participation
               eligibility. Existing open bookings keep their stored expiry time, while new bookings use the
               latest policy.
             </p>
@@ -700,7 +700,7 @@ export default async function OperationsPolicyPage({
             <h2>Live policy simulator</h2>
             <p className="muted">
               Uses the current policy values, the latest booking/customer coordinate, and current partner
-              locations to preview who would see or join a new direct booking request.
+              locations to preview who would see or participate in a new direct booking request.
             </p>
           </div>
           <span className={`pill ${policySimulation.ready ? 'pill-success' : 'pill-warn'}`}>
@@ -788,7 +788,7 @@ export default async function OperationsPolicyPage({
             <h2>Policy change impact</h2>
             <p className="muted">
               Before changing a setting, use this view to see whether it only affects new bookings or also
-              changes live partner visibility, join checks, and operational review work.
+              changes live partner visibility, participation checks, and operational review work.
             </p>
           </div>
           <span className="pill pill-info">{bookings.length} booking(s) sampled</span>
@@ -979,7 +979,7 @@ export default async function OperationsPolicyPage({
           <DecisionHint
             title="First-pick partner acceptance"
             recommendation="Keep customer final confirmation as the operating rule."
-            detail="The preferred partner can accept quickly, marketplace partners can still join the shortlist, and the customer chooses the final partner."
+            detail="The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner."
           />
           <DecisionHint
             title="Marketplace participation"
@@ -988,7 +988,7 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Negative wallet gate"
-            recommendation="Keep marketplace visibility open, but block marketplace join and payout release."
+            recommendation="Keep marketplace visibility open, but block marketplace participation and payout release."
             detail="Cash services create company-fee debt. Partners can still see demand, while marketplace participation and payout release wait for settlement."
           />
           <DecisionHint
@@ -1565,7 +1565,7 @@ function buildPolicySimulation(
           ? 'Marketplace list opens immediately'
           : 'Marketplace list waits unless declined',
         detail: immediateBackup
-          ? `${invitedPartners.length}/${eligiblePartners.length} partner(s) can see or join while the first partner decides under current policy.`
+          ? `${invitedPartners.length}/${eligiblePartners.length} partner(s) can see or participate while the first partner decides under current policy.`
           : `Marketplace partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick partner declines.`,
         className: immediateBackup ? 'timeline-active' : 'timeline-warn',
         tags: [
@@ -1838,8 +1838,8 @@ function policyRecommendationPosture(
     return {
       status: narrower ? 'Narrow supply' : 'Wide supply',
       detail: narrower
-        ? 'Fewer partners can join marketplace matching, so customer alternatives may look empty.'
-        : 'More partners can join, but distance and arrival quality need closer monitoring.',
+        ? 'Fewer partners can participate in marketplace matching, so customer alternatives may look empty.'
+        : 'More partners can participate, but distance and arrival quality need closer monitoring.',
       operatorAction: `${liveContext} Monitor ignored marketplace alerts and late arrivals by city.`,
       alignedAction:
         'Radius is at the default operating range; keep reviewing city density before making it dynamic.',
@@ -1857,7 +1857,7 @@ function policyRecommendationPosture(
       status: looser ? 'Allows older locations' : 'Stricter freshness',
       detail: looser
         ? 'Marketplace alerts may reach partners whose last known location is no longer reliable.'
-        : 'Only recently refreshed partner locations are eligible for marketplace alerts and joins.',
+        : 'Only recently refreshed partner locations are eligible for marketplace alerts and participation.',
       operatorAction: `${liveContext} Check partner app location refresh failures before loosening this.`,
       alignedAction:
         'Freshness is at the 30-minute baseline; this fits the 10-minute periodic location update rule.',
@@ -1901,10 +1901,10 @@ function policyRecommendationPosture(
       status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Marketplace hold' : 'Recovery supervision',
       detail:
         value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Cash-debt exposure is contained at marketplace join and payout release gates.'
+          ? 'Cash-debt exposure is contained at marketplace participation and payout release gates.'
           : 'Recovery supervision keeps debt visible while operators manage configured marketplace/payout exceptions.',
       operatorAction:
-        'Keep marketplace list visibility open; use settlement evidence before marketplace join or payout release.',
+        'Keep marketplace list visibility open; use settlement evidence before marketplace participation or payout release.',
       alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: value === recommended ? 'pill-success' : 'pill-danger',
@@ -2055,7 +2055,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       detail: `Marketplace partner location freshness is checked at ${backupLocationFreshnessMinutes} minute(s) for operator confidence.`,
       operatorAction: baselineLocationFreshness
         ? 'This matches the partner app rule that refreshes location every 10 minutes while open.'
-        : 'If this is loosened, monitor stale-location joins and partner no-response rates.',
+        : 'If this is loosened, monitor stale-location participation and partner no-response rates.',
       className: baselineLocationFreshness ? 'ops-task-done' : 'ops-task-pending',
       pillClass: baselineLocationFreshness ? 'pill-success' : 'pill-warn',
       blocking: !baselineLocationFreshness,
@@ -2103,7 +2103,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       title: 'Negative wallet gate',
       status: hardWalletBlock ? 'Marketplace hold' : 'Recovery supervision',
       detail: hardWalletBlock
-        ? 'Partners with unpaid cash-service fee debt can stay visible, but marketplace join and payout release wait for settlement.'
+        ? 'Partners with unpaid cash-service fee debt can stay visible, but marketplace participation and payout release wait for settlement.'
         : 'Operators can supervise configured marketplace/payout exceptions while debt collection remains visible.',
       operatorAction: hardWalletBlock
         ? 'This protects HANDS cash-fee collection without removing marketplace visibility.'
@@ -2220,7 +2220,7 @@ function buildPolicySupplySensitivity(
       {
         label: 'Marketplace/payout held in radius',
         value: currentFinalGateHeld.length.toString(),
-        helper: 'Marketplace join or payout release may wait for settlement, identity, bank, or account controls.',
+        helper: 'Marketplace participation or payout release may wait for settlement, identity, bank, or account controls.',
       },
       {
         label: 'Stale excluded',
@@ -2298,7 +2298,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
         'Verify with a new booking, then open the booking detail timeline and matching policy snapshot.',
     },
     {
-      scope: 'Marketplace join',
+      scope: 'Marketplace participation',
       title: `${formatDistance(backupRadiusMeters)} marketplace alert policy`,
       detail: 'Marketplace partners are prioritized by customer distance before alerts and operator review.',
       api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
@@ -2333,7 +2333,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       scope: 'Marketplace timing',
       title:
         backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
-          ? 'Marketplace partners can join during the wait'
+          ? 'Marketplace partners can participate during the wait'
           : 'Marketplace partners wait until timer or decline',
       detail:
         'This controls whether marketplace partners can participate during the first-pick response window.',
@@ -2345,14 +2345,14 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       scope: 'Wallet gate',
       title:
         walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Negative wallet gates marketplace join'
+          ? 'Negative wallet gates marketplace participation'
           : 'Recovery supervision mode is enabled',
       detail:
-        'Cash-service company fee debt is enforced before marketplace join and payout release.',
+        'Cash-service company fee debt is enforced before marketplace participation and payout release.',
       api: 'POST /provider/bookings/:id/join, POST /admin/payout-batches',
       server: 'BookingsService.joinBooking wallet guard -> EarningsService wallet release guards',
       verify:
-        'Verify from Cash Settlements, Partner Controls, and a blocked marketplace join attempt in the partner app.',
+        'Verify from Cash Settlements, Partner Controls, and a blocked marketplace participation attempt in the partner app.',
     },
   ];
 }
@@ -2649,7 +2649,7 @@ function buildPartnerAcceptancePolicyImpact(
       label: 'Cash debt gate',
       value: walletGateHeld.length.toString(),
       helper: policy.hardWalletBlock
-        ? 'Negative wallet gates marketplace join and payout release.'
+        ? 'Negative wallet gates marketplace participation and payout release.'
         : 'Negative wallet stays visible while recovery supervision is enabled.',
     },
     {
@@ -2865,7 +2865,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           (value) => `${value} min`,
         ),
         operatorMeaning:
-          'Controls whether stale partner locations are excluded from marketplace alerts and join attempts.',
+          'Controls whether stale partner locations are excluded from marketplace alerts and participation attempts.',
       },
       {
         policy: 'Partner accept mode',
@@ -2889,7 +2889,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           (value) => formatSnapshotPolicyValue(settings, 'matching.backup_open_mode', value),
         ),
         operatorMeaning:
-          'Explains whether marketplace partners were allowed to join during the first-pick response window.',
+          'Explains whether marketplace partners were allowed to participate during the first-pick response window.',
       },
       {
         policy: 'Travel buffer',
@@ -2920,11 +2920,11 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         scope: 'Live matching',
         title: immediateBackup
-          ? 'Marketplace partners can join during the first window'
+          ? 'Marketplace partners can participate during the first window'
           : 'Marketplace partners wait until the first window closes',
         detail: immediateBackup
           ? 'Eligible partners can appear while the first-pick partner is still deciding.'
-          : 'Marketplace visibility and join checks stay delayed until the first-pick response window passes.',
+          : 'Marketplace visibility and participation checks stay delayed until the first-pick response window passes.',
         operatorAction: customerConfirm
           ? 'Customer confirmation mode is active, so accepted partners still require customer final choice.'
           : 'Legacy auto-match value is ignored; reset the policy to customer final-choice mode for clean operations.',
@@ -2935,7 +2935,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'Partner controls',
         title: 'Negative wallet gate protects cash-fee debt',
         detail:
-          'Partners with unpaid cash-fee debt can still see marketplace demand, but marketplace join and payout release wait until settlement is posted.',
+          'Partners with unpaid cash-fee debt can still see marketplace demand, but marketplace participation and payout release wait until settlement is posted.',
         operatorAction:
           negativeCashDebtBookings.length > 0
             ? `${negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
@@ -3061,7 +3061,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
         scope: 'Evidence',
         title: sampledBookings.length ? 'Policy snapshots are measurable' : 'Create more measured bookings',
         detail: sampledBookings.length
-          ? 'Each booking opened under a saved policy can now be compared against outcome, partner joins, and candidate alert batches.'
+          ? 'Each booking opened under a saved policy can now be compared against outcome, partner participation, and candidate alert batches.'
           : 'The dashboard needs bookings with metadata.matchingPolicy before it can compare policy outcomes.',
         operatorAction: sampledBookings.length
           ? 'Use these cohorts before changing response window, marketplace radius, invite cap, or accept mode.'
@@ -3312,7 +3312,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
         { label: booking.status, className: 'pill-neutral' },
       ],
       operatorAction:
-        'Recent wallet entries are negative. Confirm settlement before marketplace join or payout release.',
+        'Recent wallet entries are negative. Confirm settlement before marketplace participation or payout release.',
     }));
 
   const lists: PolicyDrilldownListView[] = [
@@ -3337,7 +3337,7 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     {
       key: 'wallet-gate',
       title: 'Wallet gate queue',
-      helper: 'Partners with negative recent wallet ledger entries that may hold marketplace join or payout release.',
+      helper: 'Partners with negative recent wallet ledger entries that may hold marketplace participation or payout release.',
       className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
       emptyText: 'No negative recent wallet ledger was found in the current booking sample.',
@@ -3374,7 +3374,7 @@ function bookingPartnerLabel(booking: AdminBooking) {
     partner?.displayName ??
     partner?.user?.fullName ??
     partner?.user?.phone ??
-    (booking.participants?.length ? 'Joined partner' : 'No partner yet')
+    (booking.participants?.length ? 'Participating partner' : 'No partner yet')
   );
 }
 
@@ -3429,7 +3429,7 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
           label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry',
           className: 'pill-info',
         },
-        { label: `${booking.participants?.length ?? 0} joined`, className: 'pill-neutral' },
+        { label: `${booking.participants?.length ?? 0} participant row(s)`, className: 'pill-neutral' },
       ],
     });
   }
@@ -3481,7 +3481,7 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
     return policyRelatedBookingRecordSet({
       title: 'Cash-fee debt records',
       helper:
-        'Negative wallet records can hold marketplace join or payout release.',
+        'Negative wallet records can hold marketplace participation or payout release.',
       href: '/cash-settlements',
       emptyText: 'No negative wallet booking record is currently loaded.',
       bookings: walletRows,
@@ -4068,14 +4068,14 @@ function operationsOwnerDecisionBacklog() {
       owner: 'Finance',
       title: 'Negative wallet marketplace policy',
       question:
-        'Should cash-fee debt block marketplace join only, or marketplace join plus payout release?',
+        'Should cash-fee debt block marketplace participation only, or marketplace participation plus payout release?',
       evidence:
         'Review cash settlement speed, repeated debt partners, marketplace participation, and payout exposure before changing wallet gate scope.',
       options: [
         {
           label: 'Marketplace only',
           tradeoff:
-            'Keeps payout decisions separate, while settlement is required before joining new marketplace demand.',
+            'Keeps payout decisions separate, while settlement is required before participating in new marketplace demand.',
         },
         {
           label: 'Marketplace + payout',
@@ -4084,7 +4084,7 @@ function operationsOwnerDecisionBacklog() {
         },
       ],
       recommendation:
-        'Keep marketplace list visibility open; apply settlement checks at marketplace join and payout release.',
+        'Keep marketplace list visibility open; apply settlement checks at marketplace participation and payout release.',
       decisionTrigger:
         'Revisit after cash-settlement median collection time is under 24 hours for two consecutive weeks.',
       href: '/cash-settlements',
@@ -4235,7 +4235,7 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
     {
       step: '3',
       title: 'Marketplace partners can participate by policy',
-      detail: `Up to ${backupLimit} partners inside ${backupRadius} can see or join the marketplace lane according to "${backupOpenMode}".`,
+      detail: `Up to ${backupLimit} partners inside ${backupRadius} can see or participate in the marketplace lane according to "${backupOpenMode}".`,
       className: 'timeline-active',
       tags: [
         { label: backupRadius, tone: 'pill-info' },
@@ -4247,7 +4247,7 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
       step: '4',
       title: 'Customer sees available partner choices',
       detail:
-        'Accepted or joined partners appear in the customer waiting screen so the customer can confirm the final partner when customer-confirm mode is active.',
+        'Accepted or participating partners appear in the customer waiting screen so the customer can confirm the final partner when customer-confirm mode is active.',
       className: 'timeline-active',
       tags: [
         { label: 'Customer shortlist', tone: 'pill-success' },
@@ -4450,9 +4450,9 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
     },
     'matching.backup_provider_radius_meters': {
       area: 'Partner supply',
-      title: 'Controls who can see and join marketplace requests',
+      title: 'Controls who can see and participate in marketplace requests',
       detail:
-        'Partner open-booking lists, join validation, marketplace notifications, and customer shortlist visibility use this radius.',
+        'Partner open-booking lists, participation validation, marketplace notifications, and customer shortlist visibility use this radius.',
       saveChecks: [
         {
           label: 'Stage impact preview',
@@ -4461,7 +4461,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'Marketplace ready',
-          detail: 'Review partners that can actually receive and join marketplace requests.',
+          detail: 'Review partners that can actually receive and participate in marketplace requests.',
           href: '/partners?review=marketplace-ready',
         },
       ],
@@ -4479,7 +4479,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'Marketplace shortlist',
-          detail: 'Confirm the customer shortlist will stay readable when more partners can join.',
+          detail: 'Confirm the customer shortlist will stay readable when more partners can participate.',
           href: '/bookings?view=marketplace',
         },
       ],
@@ -4524,7 +4524,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Marketplace flow',
       title: 'Controls when other partners can participate',
       detail:
-        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks marketplace join until the first-pick response window passes, but opens immediately after first-pick decline.',
+        'Immediate mode notifies eligible partners right away. Delayed mode hides and blocks marketplace participation until the first-pick response window passes, but opens immediately after first-pick decline.',
       saveChecks: [
         {
           label: 'Open matching timeline',
@@ -4548,7 +4548,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         {
           label: 'Cash debt queue',
           detail:
-            'Review partners held from marketplace join or payout release by unpaid HANDS cash fees before changing settlement gates.',
+            'Review partners held from marketplace participation or payout release by unpaid HANDS cash fees before changing settlement gates.',
           href: '/partners?review=cash-debt',
         },
         {
@@ -4591,7 +4591,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'Partner cash holds',
-          detail: 'Check partners blocked from marketplace join or payout release by unpaid platform fees.',
+          detail: 'Check partners blocked from marketplace participation or payout release by unpaid platform fees.',
           href: '/partners?review=cash-debt',
         },
       ],
@@ -4746,7 +4746,7 @@ function policyNotice(params: Record<string, string | string[] | undefined>) {
     return {
       tone: 'success' as const,
       title: 'Operational policy saved',
-      detail: `Updated ${reason}. New bookings and partner join checks will use the latest enforced settings.`,
+      detail: `Updated ${reason}. New bookings and partner participation checks will use the latest enforced settings.`,
     };
   }
   if (status === 'blocked') {

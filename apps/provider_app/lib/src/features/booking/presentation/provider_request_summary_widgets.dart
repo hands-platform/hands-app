@@ -196,7 +196,7 @@ class ProviderWalletGateCard extends StatelessWidget {
             Text(
               settlementView.blocked
                   ? settlementView.reasonLabel
-                  : 'You can join marketplace and direct booking requests.',
+                  : 'You can participate in marketplace requests and receive direct booking requests.',
             ),
             if (settlementView.blocked) ...[
               const SizedBox(height: 8),

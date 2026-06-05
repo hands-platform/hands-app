@@ -382,7 +382,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       value: latestPartnerBooking ? shortRecordId(latestPartnerBooking.id) : 'None',
       detail: latestPartnerBooking
         ? `${latestPartnerBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(latestPartnerBooking)}`
-        : 'No preferred, selected, or joined booking loaded.',
+        : 'No preferred, selected, or marketplace participation booking loaded.',
       href: latestPartnerBooking ? `/bookings/${latestPartnerBooking.id}` : '#booking-chat-records',
       tone: latestPartnerBooking ? 'pill-info' : 'pill-neutral',
     },
@@ -1140,7 +1140,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <a href="#booking-chat-records">
             <span>Booking and chat</span>
             <strong>{partnerBookingArchive.length}</strong>
-            <small>Preferred, selected, and joined requests.</small>
+            <small>Preferred, selected, and marketplace participation requests.</small>
           </a>
           <a href="#payout">
             <span>Wallet and payout</span>
@@ -1304,7 +1304,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <span>Filtered booking archive</span>
             <strong>{filteredPartnerBookingArchive.length}</strong>
-            <small>Preferred, selected, and joined records.</small>
+            <small>Preferred, selected, and marketplace participation records.</small>
           </div>
           <div>
             <span>Filtered activity</span>
@@ -1691,7 +1691,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Marketplace booking gate decision</h2>
             <p className="muted">
-              Operator-facing decision for whether this partner can join marketplace demand or continue
+              Operator-facing decision for whether this partner can participate in marketplace demand or continue
               marketplace/payout operations right now.
             </p>
           </div>
@@ -1786,8 +1786,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <div>
             <span>Marketplace</span>
-            <strong>{hasCashFeeDebt ? 'Join blocked' : 'Join open'}</strong>
-            <small>Partner can view marketplace demand; only the join action is blocked.</small>
+            <strong>{hasCashFeeDebt ? 'Participation blocked' : 'Participation open'}</strong>
+            <small>Partner can view marketplace demand; only marketplace participation is blocked.</small>
           </div>
           <div>
             <span>Direct first-pick</span>
@@ -1819,7 +1819,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   </p>
                   <p className="muted">
                     Marketplace reopen rule: once deposit reference or admin offset clears this debt, the
-                    partner can join marketplace demand again.
+                    partner can participate in marketplace demand again.
                   </p>
                   <div className="participant-list">
                     <span className="pill pill-danger">
@@ -3407,7 +3407,7 @@ function PartnerDetailReadinessSnapshot({
       <div className="setup-stage-item" style={{ marginTop: 16 }}>
         <span>{bookingAcceptance.canJoinMarketplace ? 'GO' : 'HOLD'}</span>
         <div>
-          <strong>{bookingAcceptance.canJoinMarketplace ? 'Marketplace join ready' : 'Marketplace join blocker'}</strong>
+          <strong>{bookingAcceptance.canJoinMarketplace ? 'Marketplace participation ready' : 'Marketplace participation blocker'}</strong>
           <p className="muted">{bookingAcceptance.primaryReason}</p>
         </div>
         <small>
@@ -3541,7 +3541,7 @@ function buildPartnerOperatorCommandQueue({
       id: 'cash-fee-debt',
       label: 'CASH',
       title: 'Cash fee debt blocks marketplace participation',
-      detail: `${formatCurrency(cashDebt)} must be settled before this partner joins marketplace demand or receives payout release. Customers never carry this wallet debt.`,
+      detail: `${formatCurrency(cashDebt)} must be settled before this partner participates in marketplace demand or receives payout release. Customers never carry this wallet debt.`,
       owner: 'Finance',
       tone: 'blocked',
       action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },
@@ -3798,7 +3798,7 @@ function buildPartnerBookingEvidenceRows(
     ];
     const opsParts = [
       `participant ${participant?.status ?? 'not linked'}`,
-      participant?.joinedAt ? `joined ${formatDate(participant.joinedAt)}` : 'join time not stored',
+      participant?.joinedAt ? `participated ${formatDate(participant.joinedAt)}` : 'participation time not stored',
       participant?.respondedAt
         ? `responded ${formatDate(participant.respondedAt)}`
         : 'response time not stored',
@@ -3864,7 +3864,7 @@ function buildPartnerBookingJourneyRows(
         ? `${dispatchPolicy.responseWindowMinutes} min first-pick`
         : isFinalPartner
           ? 'Customer selected'
-          : 'Marketplace join';
+          : 'Marketplace participation';
     const marketplaceValue =
       record.relation === 'Joined'
         ? `Within ${formatDistance(dispatchPolicy.backupRadiusMeters)} policy`
@@ -3920,7 +3920,7 @@ function buildPartnerBookingJourneyRows(
           value: participant?.respondedAt
             ? `${participant.status} ${formatDate(participant.respondedAt)}`
             : participant?.joinedAt
-              ? `${participant.status} joined`
+              ? `${participant.status} participation`
               : 'No response row',
           tone: participant?.respondedAt
             ? 'pill-success'
@@ -4263,7 +4263,7 @@ function buildPartnerActivitySummary(records: PartnerActivityRecord[]) {
     {
       label: 'Bookings',
       value: count((record) => record.type === 'BOOKING').toString(),
-      helper: 'Preferred, selected, and joined booking records.',
+      helper: 'Preferred, selected, and marketplace participation booking records.',
     },
     {
       label: 'Chat',
@@ -4357,7 +4357,7 @@ function buildPartnerActivityCommandSnapshot(
     },
     {
       label: 'Marketplace records',
-      value: `${joinedBookings} joined`,
+      value: `${joinedBookings} participation record(s)`,
       helper: `${preferredBookings} preferred / ${selectedBookings} selected booking relation(s).`,
       href: '#partner-booking-journey',
     },
@@ -4709,9 +4709,9 @@ function buildPartnerOperatingChecklist(
     },
     {
       area: 'Booking',
-      status: bookingAcceptance.canJoinMarketplace ? 'Marketplace join clear' : 'Marketplace join on hold',
+      status: bookingAcceptance.canJoinMarketplace ? 'Marketplace participation clear' : 'Marketplace participation on hold',
       detail: bookingAcceptance.primaryReason,
-      nextAction: bookingAcceptance.canJoinMarketplace ? 'Ready for marketplace join' : 'Resolve marketplace join gate',
+      nextAction: bookingAcceptance.canJoinMarketplace ? 'Ready for marketplace participation' : 'Resolve marketplace participation gate',
       href: `/partners/${provider.id}#booking-chat-records`,
       tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
     },
@@ -4873,7 +4873,7 @@ function buildPartnerOperationsDigest({
     },
     {
       lane: 'Activity gate',
-      status: bookingAcceptance.canJoinMarketplace ? 'Marketplace join clear' : 'Marketplace join on hold',
+      status: bookingAcceptance.canJoinMarketplace ? 'Marketplace participation clear' : 'Marketplace participation on hold',
       detail: bookingAcceptance.primaryReason,
       href: '#final-booking-gate',
       latestAt: latestBooking?.createdAt,
@@ -4889,7 +4889,7 @@ function buildPartnerOperationsDigest({
       status: `${bookingArchive.length} total`,
       detail: latestBooking
         ? `Latest ${latestBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(latestBooking)}.`
-        : 'No preferred, selected, or joined booking is loaded.',
+        : 'No preferred, selected, or marketplace participation booking is loaded.',
       href: '#booking-chat-records',
       latestAt: latestBooking?.createdAt,
       tone: activeBookings.length ? 'pill-info' : completedBookings.length ? 'pill-success' : 'pill-neutral',
@@ -5325,7 +5325,7 @@ function partnerRoleRetentionDetail(record: PartnerBookingArchiveRecord) {
   if (record.relation === 'Preferred') {
     return 'Customer first picked this partner before marketplace participation.';
   }
-  return 'Partner joined the marketplace shortlist for customer final choice.';
+  return 'Partner participated in the marketplace shortlist for customer final choice.';
 }
 
 function partnerBookingRequiresRetainedChat(booking: PartnerDetailBooking) {
@@ -5515,7 +5515,7 @@ function buildProviderBookingAcceptance(
           : 'No open negative wallet debt is visible.',
       action:
         cashDebt > 0
-          ? 'Record partner deposit or admin offset before marketplace join and payout release resume.'
+          ? 'Record partner deposit or admin offset before marketplace participation and payout release resume.'
           : 'Clear',
     },
     {
@@ -5631,19 +5631,19 @@ function buildPartnerAcceptanceRepairCommand(
   const customerImpact = bookingAcceptance.canJoinMarketplace
     ? 'Can appear in customer booking flow and final partner choice.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Customer balances are unaffected; this wallet gate blocks marketplace join until settlement.'
+      ? 'Customer balances are unaffected; this wallet gate blocks marketplace participation until settlement.'
     : hasHardVisibilityBlock
       ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
       : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
   const operatorDecision = bookingAcceptance.canJoinMarketplace
     ? 'No manual repair required. Monitor service quality and response speed.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Finance must clear cash debt before marketplace join or payout release.'
+      ? 'Finance must clear cash debt before marketplace participation or payout release.'
     : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
   const marketplaceRouting = bookingAcceptance.canJoinMarketplace
     ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
     : hasWalletBlock
-      ? 'Partner can view marketplace demand, but the join action is blocked until cash fee debt is settled or offset.'
+      ? 'Partner can view marketplace demand, but marketplace participation is blocked until cash fee debt is settled or offset.'
     : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
 
   const steps = blockedGates.map((gate) => partnerAcceptanceRepairStep(provider, gate));
@@ -5952,11 +5952,11 @@ function buildPartnerDetailOpsBadges(
       detail: bookingAcceptance.directFirstPickReason,
     },
     {
-      label: bookingAcceptance.canJoinMarketplace ? 'Marketplace join ready' : 'Marketplace join blocked',
+      label: bookingAcceptance.canJoinMarketplace ? 'Marketplace participation ready' : 'Marketplace participation blocked',
       tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
       detail: bookingAcceptance.canJoinMarketplace
-        ? `Can join marketplace demand inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
-        : 'Marketplace join uses wallet, account, identity, bank, reachability, location, and pricing gates.',
+        ? `Can participate in marketplace demand inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
+        : 'Marketplace participation uses wallet, account, identity, bank, reachability, location, and pricing gates.',
     },
     {
       label: cashDebt > 0 ? 'Cash debt' : 'Wallet clear',

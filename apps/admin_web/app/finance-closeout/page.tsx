@@ -599,7 +599,7 @@ function buildHandoffRows(reconciliation: ReturnType<typeof buildReconciliation>
       count: reconciliation.cashPending.length,
       amount: formatMoney(reconciliation.cashDebtAmount, reconciliation.currency),
       nextAction:
-        'Collect partner deposit or approve documented offset before marketplace join or payout release.',
+        'Collect partner deposit or approve documented offset before marketplace participation or payout release.',
       href: '/cash-settlements',
     },
     {

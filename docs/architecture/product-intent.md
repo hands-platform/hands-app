@@ -11,7 +11,7 @@ The first MVP flow is intentionally simple:
 - the customer reviews profile, factual feedback records, and services
 - the customer chooses one service and sends one first-pick booking request
 - the first-pick partner has a 10 minute response window
-- marketplace partners within the configured radius can join during that same window
+- marketplace partners within the configured radius can participate during that same window
 - the customer always selects the final partner
 - matched chat opens after the customer selects the final partner
 
@@ -48,7 +48,7 @@ We are keeping the first live workflow easy to understand because it is:
 - easier to test with real users
 - easier to operate than automatic marketplace matching
 
-The customer still keeps control: partners can join as marketplace candidates, but HANDS does not automatically assign the final partner.
+The customer still keeps control: partners can participate as marketplace candidates, but HANDS does not automatically assign the final partner.
 
 ## UX Direction Before Figma
 

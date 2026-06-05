@@ -8,7 +8,7 @@ void main() {
       'walletBalance': -120000,
       'walletBlocked': true,
       'walletBlockReason': 'Custom settlement message',
-      'walletSettlementInstruction': 'Pay the HANDS fee to join bookings.',
+      'walletSettlementInstruction': 'Pay the HANDS fee to participate in bookings.',
       'walletSettlementReference': 'HANDS-WALLET-TEST1234',
     };
 
@@ -18,7 +18,7 @@ void main() {
     expect(providerWalletStatusLabel(summary), 'Settlement required');
     expect(
       providerWalletSettlementInstruction(summary),
-      'Pay the HANDS fee to join bookings.',
+      'Pay the HANDS fee to participate in bookings.',
     );
     expect(
       providerWalletSettlementSteps(summary),
@@ -153,12 +153,12 @@ void main() {
         contains('Cash booking fees are settled.'));
   });
 
-  test('prefers explicit marketplace join policy from API summary', () {
+  test('prefers explicit marketplace participation policy from API summary', () {
     final explicitOpen = <String, dynamic>{
       'walletBalance': -120000,
       'walletBlocked': true,
       'marketplaceJoinBlocked': false,
-      'walletBlockReason': 'Wallet needs settlement, but policy allows join.',
+      'walletBlockReason': 'Wallet needs settlement, but policy allows participation.',
     };
     final explicitBlocked = <String, dynamic>{
       'walletBalance': 20000,
@@ -244,7 +244,7 @@ void main() {
     expect(guidance.infoMessage, contains('Accept or decline'));
   });
 
-  test('blocks marketplace join guidance when wallet is negative', () {
+  test('blocks marketplace participation guidance when wallet is negative', () {
     final guidance = providerRequestGuidance(
       booking: {
         'status': 'OPEN_MATCHING',
@@ -308,7 +308,7 @@ void main() {
       ),
       isTrue,
       reason:
-          'Joined marketplace participants must still settle wallet debt before customer selection.',
+          'Partners with negative wallet debt can view marketplace requests, but cannot participate before settlement.',
     );
     expect(
       providerWalletBlocksMarketplaceParticipation(
@@ -360,7 +360,7 @@ void main() {
 
     expect(guidance.modeLabel, 'Marketplace opportunity');
     expect(guidance.roleLabel, 'Marketplace option');
-    expect(guidance.decisionLabel, 'Can join');
+    expect(guidance.decisionLabel, 'Can participate');
     expect(guidance.detailMessage, contains('Linh Wellness'));
     expect(guidance.infoMessage, contains('10 km'));
   });

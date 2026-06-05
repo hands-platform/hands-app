@@ -252,7 +252,7 @@ class _RequestsScreenState extends ConsumerState<RequestsScreen> {
       setState(() {
         joinedBookingIds = {...joinedBookingIds, bookingId};
         statusMessage =
-            'You joined this request. Waiting for the customer to choose a partner.';
+            'You are visible for this request. Waiting for the customer to choose a partner.';
       });
       await loadOpenBookings();
     } catch (exception) {

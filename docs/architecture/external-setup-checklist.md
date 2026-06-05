@@ -97,4 +97,4 @@ powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithS
 - Keep `AUTH_BACKEND=nest` until production SMS OTP is verified.
 - Keep `PUSH_PROVIDER=in_app_only` until OS-level push E2E is intentionally tested.
 - Customers never carry negative wallet balances in MVP.
-- Partner cash-fee debt can create a negative wallet and block marketplace join/participation plus payout release until settlement.
+- Partner cash-fee debt can create a negative wallet and block marketplace participation plus payout release until settlement.

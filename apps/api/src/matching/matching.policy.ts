@@ -112,7 +112,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Matching',
     label: 'Marketplace partner radius',
     description:
-      'Maximum distance from the confirmed booking address for marketplace partners that can see and join an open request.',
+      'Maximum distance from the confirmed booking address for marketplace partners that can see and participate in an open request.',
     value: DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
     recommendedValue: DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
     unit: 'meters',
@@ -236,9 +236,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: MATCHING_BACKUP_OPEN_MODE_KEY,
     category: 'Decision',
-    label: 'When marketplace partners can join',
+    label: 'When marketplace partners can participate',
     description:
-      'Choose whether nearby marketplace partners can join during the first-pick response window, or only after the timer passes. If the first-pick partner declines, marketplace partners open immediately.',
+      'Choose whether nearby marketplace partners can participate during the first-pick response window, or only after the timer passes. If the first-pick partner declines, marketplace partners open immediately.',
     value: BACKUP_OPEN_IMMEDIATE,
     recommendedValue: BACKUP_OPEN_IMMEDIATE,
     options: [
@@ -269,7 +269,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
         label: 'Block marketplace participation while negative',
         tradeoff:
-          'Keeps marketplace requests visible for review, but blocks join and payout release while debt is open.',
+          'Keeps marketplace requests visible for review, but blocks marketplace participation and payout release while debt is open.',
       },
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,

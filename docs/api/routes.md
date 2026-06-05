@@ -150,12 +150,12 @@ Manual admin refunds move the payment to `REFUNDED`, mark the booking as `REFUND
 - `POST /customer/bookings` can include an optional `providerId` for the first MVP direct-booking flow. The field name remains `providerId` for API compatibility, but product copy should say partner.
 - When `providerId` is present, the booking is treated as a preferred first-pick partner request, but the booking still opens the Open Matching Marketplace.
 - A direct first-pick request waits 10 minutes by default.
-- Marketplace participants can join before the customer selects the final partner. Distance can rank requests and alert delivery, but it is not the source of final assignment.
+- Marketplace participants can participate before the customer selects the final partner. Distance can rank requests and alert delivery, but it is not the source of final assignment.
 - `GET /partner/bookings/open` returns:
   - direct requests targeted to the authenticated partner
   - open marketplace requests where the authenticated partner can participate
 - `POST /partner/bookings/:id/accept` confirms a direct request.
 - `POST /partner/bookings/:id/join` records a marketplace participant and stores the server-calculated distance snapshot.
-- Negative-wallet partners can still see marketplace requests in `GET /partner/bookings/open`, but `POST /partner/bookings/:id/join` is blocked until settlement or admin offset. Blocked join attempts do not create participant records.
+- Negative-wallet partners can still see marketplace requests in `GET /partner/bookings/open`, but `POST /partner/bookings/:id/join` is blocked until settlement or admin offset. Blocked participation attempts do not create participant records.
 - Chat is created after the booking is matched. `POST /partner/bookings/:id/start` advances service lifecycle state.
 - Customer direct cancellation is not available after partner commitment. Cancellation and no-show outcomes after matching are HANDS operations decisions based on chat, location, payment, and booking evidence.

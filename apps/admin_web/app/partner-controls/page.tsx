@@ -251,7 +251,7 @@ export default async function PartnerControlsPage({
           <div>
             <h2>Marketplace and payout unblock board</h2>
             <p className="muted">
-              Shows which partners cannot join marketplace bookings now, which issues only affect payout, and
+              Shows which partners cannot participate in marketplace bookings now, which issues only affect payout, and
               exactly where staff should clear the blocker.
             </p>
           </div>
@@ -1099,7 +1099,7 @@ function buildPartnerOperatingBlocks(watchlist: PartnerControlWatchItem[]) {
         impact: 'MARKETPLACE BLOCK',
         severity: 'Wallet debt',
         tone: 'pill-danger',
-        title: `${partner} cannot join marketplace bookings`,
+        title: `${partner} cannot participate in marketplace bookings`,
         reason: `${formatMoney(Math.abs(item.walletBalance))} cash/company fee debt is still open.`,
         operatorAction: `Confirm partner deposit, admin offset, or finance adjustment using ${cashDebtSettlementReference(item.provider.id)}.`,
         href: '/cash-settlements',
@@ -1252,10 +1252,10 @@ function buildBookingAcceptanceUnblockBoard(
   return [
     {
       id: 'wallet-debt',
-      title: 'Cash fee debt gates marketplace join',
+      title: 'Cash fee debt gates marketplace participation',
       status: cashDebtItems.length ? 'BLOCKING' : 'CLEAR',
       detail: cashDebtItems.length
-        ? 'Partners with negative wallet balance can stay visible but cannot join marketplace requests or receive payout release until HANDS fee debt is settled.'
+        ? 'Partners with negative wallet balance can stay visible but cannot participate in marketplace requests or receive payout release until HANDS fee debt is settled.'
         : 'No partner is currently blocked by cash-service fee debt.',
       operatorScript:
         'Tell the partner their unpaid HANDS fee must be deposited or offset before marketplace participation or payout release unlocks.',
@@ -1410,7 +1410,7 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'Negative wallet is the strongest marketplace gate because cash bookings create unpaid HANDS fee debt.',
       bookingImpact:
-        'Keeps marketplace visibility available, but marketplace join waits until deposit, admin offset, or earning offset is recorded.',
+        'Keeps marketplace visibility available, but marketplace participation waits until deposit, admin offset, or earning offset is recorded.',
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:

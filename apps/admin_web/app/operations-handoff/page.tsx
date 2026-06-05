@@ -900,7 +900,7 @@ function buildImmediateActionQueue(input: {
       owner: 'Finance',
       title: 'Cash fee wallet gate',
       detail:
-        'Partners with negative wallet from cash bookings can stay visible, but marketplace join and payout release wait for settlement.',
+        'Partners with negative wallet from cash bookings can stay visible, but marketplace participation and payout release wait for settlement.',
       href: '/cash-settlements',
       count: input.cashSummary.providerCount,
       countLabel: `${input.cashSummary.providerCount} partner(s)`,

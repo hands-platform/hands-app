@@ -4,7 +4,7 @@ const providerWalletBlockFallbackReasonClean =
     'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.';
 
 const providerWalletBlockHintClean =
-    'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before joining marketplace requests.';
+    'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before participating in marketplace requests.';
 
 const providerMarketplaceJoinBlockedButtonLabel = 'Fee settlement required';
 
@@ -25,7 +25,7 @@ String providerMarketplaceJoinButtonLabel({
   }
   return hasPreferredProvider
       ? 'Offer marketplace support'
-      : 'Join open matching';
+      : 'Participate in open matching';
 }
 
 num providerWalletBalance(Map<String, dynamic> summary) {
@@ -173,7 +173,7 @@ List<String> providerWalletSettlementSteps(Map<String, dynamic> summary) {
   if (providerWalletBlockReason(summary) == null) {
     return const [
       'Cash booking fees are settled.',
-      'You can join marketplace requests.',
+      'You can participate in marketplace requests.',
       'Payout still needs tax, bank, and agreement checks.',
     ];
   }

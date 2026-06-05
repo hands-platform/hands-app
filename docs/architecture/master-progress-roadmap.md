@@ -167,7 +167,7 @@ Deferred for production-like E2E:
 Do not implement these automatically. Propose the selected slice first, then proceed after owner confirmation.
 
 1. Backend policy consistency pass
-   - Check booking creation, first-pick, marketplace join, customer final selection, negative wallet gates, payment callbacks, and closeout actions against final authority.
+   - Check booking creation, first-pick, marketplace participation, customer final selection, negative wallet gates, payment callbacks, and closeout actions against final authority.
 
 2. Admin lane depth
    - Continue improving existing Command, Bookings, Partners, Customers, Finance, Policy, and Evidence/System lanes without deleting working pages.

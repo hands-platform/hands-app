@@ -140,7 +140,7 @@ const setupOrder = [
     ],
     notes: [
       'Env values are seed/default hints; day-to-day changes should be made from /operations-policy so updates are audited.',
-      'MVP rule: selected first partner gets the configured response window, and marketplace participants can still join the shortlist.',
+      'MVP rule: selected first partner gets the configured response window, and marketplace participants can still enter the shortlist.',
       'Customers always make the final partner selection; no automatic final matching.',
       'Partners with negative wallet balance can view marketplace requests, but marketplace participation and payout release wait for settlement.',
     ],

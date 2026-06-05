@@ -88,7 +88,7 @@ void main() {
     expect(isProviderAppChatVisible(noShowBooking), isFalse);
   });
 
-  testWidgets('locks marketplace join action when wallet is negative',
+  testWidgets('locks marketplace participation action when wallet is negative',
       (tester) async {
     var joinTapped = false;
 
@@ -137,7 +137,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Marketplace visible, join locked'), findsOneWidget);
+    expect(find.text('Marketplace visible, participation locked'), findsOneWidget);
     expect(find.text(providerWalletBlockFallbackReasonClean), findsOneWidget);
     expect(
         find.text(providerMarketplaceJoinBlockedButtonLabel), findsOneWidget);
@@ -151,7 +151,7 @@ void main() {
     expect(joinTapped, isFalse);
   });
 
-  testWidgets('locks joined marketplace participation when wallet is negative',
+  testWidgets('locks participating marketplace card when wallet is negative',
       (tester) async {
     var rejectTapped = false;
 
@@ -202,7 +202,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Marketplace visible, join locked'), findsOneWidget);
+    expect(find.text('Marketplace visible, participation locked'), findsOneWidget);
     expect(
       find.text(
           'You are visible to the customer now. Wait for the final selection.'),

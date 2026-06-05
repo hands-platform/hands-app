@@ -603,7 +603,7 @@ function paymentOpsHint(payment: AdminPayment) {
     return `Cash was collected by the partner. Settle ${money(
       debt,
       payment.currency,
-    )} HANDS fee/tax debt from Earnings before marketplace join or payout release proceeds.`;
+    )} HANDS fee/tax debt from Earnings before marketplace participation or payout release proceeds.`;
   }
   if (payment.status === 'AUTHORIZED') {
     return 'Keep this on hold until the partner completes the service, then capture or refund.';
@@ -719,7 +719,7 @@ function paymentActionExecutionMap(payment: AdminPayment): PaymentActionExecutio
           ? 'This cash payment has no open partner wallet debt on the linked earning.'
           : 'This payment is not a cash collection case.',
       operatorRule:
-        'Settle with a deposit reference or approved admin offset before marketplace join or payout release.',
+        'Settle with a deposit reference or approved admin offset before marketplace participation or payout release.',
       pillClass: cashDebt ? 'pill-danger' : payment.method === 'CASH' ? 'pill-success' : 'pill-neutral',
     },
   ];

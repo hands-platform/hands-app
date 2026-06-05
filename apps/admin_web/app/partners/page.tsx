@@ -410,7 +410,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               <option value="">All</option>
               <option value="active-booking">Has active booking</option>
               <option value="first-pick">First-pick booking</option>
-              <option value="marketplace-joined">Marketplace joined</option>
+              <option value="marketplace-joined">Marketplace participant</option>
               <option value="final-partner">Customer final choice</option>
               <option value="chat-live">Chat room opened</option>
               <option value="chat-missing">Matched but chat missing</option>
@@ -1993,7 +1993,7 @@ function buildPartnerOperationRow(
         ? 'Marketplace blocked by wallet'
         : 'Marketplace held',
     marketplaceAccessDetail: backupEligibility.eligible
-      ? `Can join marketplace bookings within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} when the booking address matches policy.`
+      ? `Can participate in marketplace bookings within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} when the booking address matches policy.`
       : walletBalance < 0
         ? 'Partner may see marketplace demand, but the Partner app must block participation until HANDS fee settlement is posted.'
         : backupEligibility.detail,
@@ -2032,7 +2032,7 @@ function buildPartnerMatchingFlow(
       {
         label: 'Marketplace',
         status: marketplaceCount
-          ? `${marketplaceCount} joined`
+          ? `${marketplaceCount} participation record(s)`
           : marketplaceEligibility.eligible
             ? 'ready'
             : 'blocked',
@@ -2352,7 +2352,7 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
       label: backupEligibility.eligible ? 'Marketplace ready' : 'Marketplace blocked',
       tone: backupEligibility.eligible ? 'success' : 'warn',
       detail: backupEligibility.eligible
-        ? `Can join marketplace matching within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)}.`
+        ? `Can participate in marketplace matching within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)}.`
         : backupEligibility.blockers.map((blocker) => blocker.label).join(', ') ||
           'Marketplace matching is blocked by policy.',
     },
@@ -4124,7 +4124,7 @@ function buildPartnerFilterSummary(
     {
       label: 'Marketplace ready',
       value: backupReady.toString(),
-      detail: 'Can join open marketplace matching under current operating policy',
+      detail: 'Can participate in open marketplace matching under current operating policy',
       href: '/partners?review=marketplace-ready',
     },
     {
@@ -4633,7 +4633,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Booking flow is narrowed to partners that were the preferred first-pick partner.';
   }
   if (kind === 'bookingFlow' && value === 'marketplace-joined') {
-    return 'Booking flow is narrowed to partners that joined an open matching request.';
+    return 'Booking flow is narrowed to partners that participated in an open matching request.';
   }
   if (kind === 'bookingFlow' && value === 'final-partner') {
     return 'Booking flow is narrowed to partners selected by the customer as final partner.';
@@ -4778,7 +4778,7 @@ function partnerBookingFlowFilterLabel(flow: string) {
   const labels: Record<string, string> = {
     'active-booking': 'Has active booking',
     'first-pick': 'First-pick booking',
-    'marketplace-joined': 'Marketplace joined',
+    'marketplace-joined': 'Marketplace participant',
     'final-partner': 'Customer final choice',
     'chat-live': 'Chat room opened',
     'chat-missing': 'Matched but chat missing',

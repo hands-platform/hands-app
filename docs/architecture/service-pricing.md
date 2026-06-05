@@ -96,7 +96,7 @@ If the partner wallet is negative:
 
 - The partner can still see marketplace requests, but cannot join/participate while the wallet is negative.
 - The same debt gate blocks payout release until settlement or admin offset clears the debt.
-- Blocked marketplace view/attempt events are not participant records. Actual joined/accepted/rejected/selected participants remain in Admin booking records.
+- Blocked marketplace view/attempt events are not participant records. Actual participating/accepted/rejected/selected participants remain in Admin booking records.
 - Admin finance can mark the cash fee as settled from Earnings, Payments, or Booking Detail after deposit or offset.
 - The settlement action requires a deposit reference or offset reference on the earning row.
 - The Partner app Earnings screen shows the debt amount and settlement instruction

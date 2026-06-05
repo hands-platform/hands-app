@@ -144,7 +144,7 @@ ProviderRequestGuidance providerRequestGuidance({
       nextAction: 'Stay visible and wait for the customer to choose you.',
       contextMessage: hasPreferredProvider
           ? 'Another partner was chosen first. You are visible as a marketplace option.'
-          : 'You joined this open request. The customer will pick the final partner.',
+          : 'You are visible in this open request. The customer will pick the final partner.',
       detailMessage:
           'You are in the shortlist. Keep the app open and wait for customer selection.',
       infoMessage:
@@ -160,14 +160,14 @@ ProviderRequestGuidance providerRequestGuidance({
       modeLabel: modeLabel,
       priorityLabel: priorityLabel,
       roleLabel: roleLabel,
-      decisionLabel: 'Can join',
+      decisionLabel: 'Can participate',
       nextAction: 'Offer marketplace support if you can cover this request.',
       contextMessage:
-          'Another partner was chosen first. You can still join as an alternative option within the $backupRadiusLabel marketplace radius.',
+          'Another partner was chosen first. You can still participate as an alternative option within the $backupRadiusLabel marketplace radius.',
       detailMessage:
-          'The guest is still waiting on $name. Join now to appear as a marketplace option.',
+          'The guest is still waiting on $name. Participate now to appear as a marketplace option.',
       infoMessage:
-          'Preferred partner: $name. Only partners inside $backupRadiusLabel can join this request.',
+          'Preferred partner: $name. Only partners inside $backupRadiusLabel can participate in this request.',
     );
   }
 
@@ -175,12 +175,12 @@ ProviderRequestGuidance providerRequestGuidance({
     modeLabel: modeLabel,
     priorityLabel: priorityLabel,
     roleLabel: roleLabel,
-    decisionLabel: 'Can join',
-    nextAction: 'Join this open request to enter the customer shortlist.',
+    decisionLabel: 'Can participate',
+    nextAction: 'Participate in this open request to enter the customer shortlist.',
     contextMessage:
         'This request is open to nearby partners inside $backupRadiusLabel. The customer will pick the final partner.',
     detailMessage:
-        'No preferred partner was set. Nearby partners can join and wait for the guest selection.',
+        'No preferred partner was set. Nearby partners can participate and wait for the guest selection.',
     infoMessage:
         'Customer is waiting and nearby partners may volunteer for this request.',
   );

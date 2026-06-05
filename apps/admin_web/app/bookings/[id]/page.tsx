@@ -534,8 +534,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: '#participants',
       label: 'Marketplace',
-      value: `${booking.participants?.length ?? 0} joined`,
-      detail: 'Only actual joined partners are retained as booking participants.',
+      value: `${booking.participants?.length ?? 0} participant row(s)`,
+      detail: 'Only actual participant records are retained as booking participants.',
     },
     {
       href: '#chat',
@@ -606,8 +606,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
     {
       href: '#participants',
-      label: 'Marketplace joins',
-      value: `${booking.participants?.length ?? 0} joined`,
+      label: 'Marketplace participants',
+      value: `${booking.participants?.length ?? 0} participant row(s)`,
       detail: 'Only actual partner participation rows are retained for this booking.',
     },
     {
@@ -715,7 +715,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         <MetricCard label="Payment" value={booking.payment?.status ?? 'NONE'} helper={paymentHint(booking)} />
         <MetricCard
           label="Partners"
-          value={`${booking.participants?.length ?? 0} joined`}
+          value={`${booking.participants?.length ?? 0} participant row(s)`}
           helper={providerHint(booking)}
         />
         <MetricCard
@@ -1431,7 +1431,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Marketplace participation and wallet evidence</h2>
             <p className="muted">
-              One booking view for actual joined partners, customer final choice, marketplace alert batches,
+              One booking view for actual participant records, customer final choice, marketplace alert batches,
               and cash-fee wallet impact. View-only marketplace exposure is not stored as participation.
               Partner app message when wallet debt blocks participation: Unpaid HANDS fees must be settled before you can participate in this marketplace booking.
             </p>
@@ -1965,7 +1965,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <h2>Applied operations policy</h2>
             <p className="muted">
               The live admin policy that operators should use when handling this booking. Existing bookings
-              keep their saved timeout, while partner visibility and join checks use the latest policy.
+              keep their saved timeout, while partner visibility and participation checks use the latest policy.
             </p>
           </div>
           <Link className="text-link" href="/operations-policy">
@@ -2101,7 +2101,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
           <div className="card">
             <h3>Excluded partner groups</h3>
-            <p className="muted">Grouped by the first operational reason they cannot join this booking.</p>
+            <p className="muted">Grouped by the first operational reason they cannot participate in this booking.</p>
             <div className="setup-stage-list" style={{ marginTop: 12 }}>
               {backupSupply.excludedGroups.map((group) => (
                 <div className="setup-stage-item" key={group.label}>
@@ -2128,7 +2128,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <div>
             <h2>Marketplace partner supply for this booking</h2>
             <p className="muted">
-              Booking-pin view of who can join as a marketplace partner, and exactly why others are excluded.
+              Booking-pin view of who can participate as a marketplace partner, and exactly why others are excluded.
             </p>
           </div>
           <span className={`pill ${backupSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>
@@ -2172,7 +2172,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               </div>
               <div>
                 <span className={`pill ${row.eligible ? 'pill-success' : 'pill-warn'}`}>
-                  {row.eligible ? 'Can join' : 'Excluded'}
+                  {row.eligible ? 'Can participate' : 'Excluded'}
                 </span>
                 <div className="muted">{row.distance}</div>
               </div>
@@ -2686,7 +2686,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <div>
               <h2>Actual marketplace participant ledger</h2>
               <p className="muted">
-                Every partner who actually joined, accepted, rejected, or became the customer-selected final
+                Every partner who actually participated, accepted, rejected, or became the customer-selected final
                 partner stays here as booking evidence. Wallet-blocked partners who only viewed the
                 marketplace list are not tracked as participants.
               </p>
@@ -2749,7 +2749,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <thead>
               <tr>
                 <th>Partner</th>
-                <th>Joined evidence</th>
+                <th>Participation evidence</th>
                 <th>Role and status</th>
                 <th>Timing and distance</th>
                 <th>Operations record</th>
@@ -2788,7 +2788,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
               ))}
               {participantLedger.rows.length === 0 && (
                 <tr>
-                  <td colSpan={5}>No partner has actually joined this booking yet.</td>
+                  <td colSpan={5}>No partner participation has been recorded for this booking yet.</td>
                 </tr>
               )}
             </tbody>
@@ -3088,7 +3088,7 @@ function bookingOperatorCommandQueue({
       label: 'SUPPLY',
       title: 'Check nearby partner supply',
       detail:
-        'No partner has joined yet. Review marketplace candidates and notification delivery before widening operations policy.',
+        'No partner participation is recorded yet. Review marketplace candidates and notification delivery before widening operations policy.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#backup-supply', label: 'Open supply' },
@@ -3333,7 +3333,7 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       status: cashDebt ? 'Available' : 'Locked',
       tone: cashDebt ? 'pill-danger' : 'pill-neutral',
       evidence: cashDebt
-        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} keeps marketplace join and payout release blocked.`
+        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} keeps marketplace participation and payout release blocked.`
         : booking.payment?.method === 'CASH'
           ? 'Cash booking has no active negative wallet block.'
           : `${booking.payment?.method ?? 'No method'} booking.`,
@@ -3450,7 +3450,7 @@ function bookingOperatorPriorityBriefing({
       {
         label: 'Partner state',
         value: partnerLabel,
-        helper: `${participantCount} joined / ${providerHint(booking)}`,
+        helper: `${participantCount} participant record(s) / ${providerHint(booking)}`,
       },
       {
         label: 'Chat archive',
@@ -3838,7 +3838,7 @@ function bookingDecisionEvidenceGuardrails({
       id: 'finance-cash-debt',
       title: 'Finance: cash fee debt gate',
       scope:
-        'Cash bookings can create partner fee debt; negative wallet blocks marketplace join and payout release.',
+        'Cash bookings can create partner fee debt; negative wallet blocks marketplace participation and payout release.',
       status: cashDebt
         ? 'Settlement required'
         : booking.payment?.method === 'CASH'
@@ -4111,7 +4111,7 @@ function bookingManualDecisionReadiness({
     },
     {
       lane: 'Cash fee settlement',
-      scope: 'Cash bookings can create partner fee debt; debt blocks marketplace join and payout release until settled.',
+      scope: 'Cash bookings can create partner fee debt; debt blocks marketplace participation and payout release until settled.',
       status: cashDebt
         ? 'Settlement required'
         : booking.payment?.method === 'CASH'
@@ -4122,7 +4122,7 @@ function bookingManualDecisionReadiness({
         ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
         : `${booking.payment?.method ?? 'NONE'} / ${booking.payment?.status ?? 'NONE'}`,
       operatorUse:
-        'If debt exists, confirm company fee deposit or admin offset before marketplace join or payout release resumes.',
+        'If debt exists, confirm company fee deposit or admin offset before marketplace participation or payout release resumes.',
       href: '#finance',
     },
     {
@@ -4247,7 +4247,7 @@ function bookingDecisionNotePresets({
       detail:
         'Use when cash collection created a partner wallet debt that should be cleared by deposit or offset.',
       preset:
-        'Cash settlement note: partner cash-fee debt remains open; marketplace join and payout release should stay blocked until company deposit or admin offset is verified.',
+        'Cash settlement note: partner cash-fee debt remains open; marketplace participation and payout release should stay blocked until company deposit or admin offset is verified.',
     });
   }
 
@@ -4483,7 +4483,7 @@ function buildBookingCloseoutChecklist({
       status: finalPartner ? 'Selected' : customerChoiceCandidates ? 'Choice pending' : 'Waiting',
       detail: finalPartner
         ? `${providerName(finalPartner)} is linked as the selected partner for this booking.`
-        : `${customerChoiceCandidates} joined/accepted partner(s) are available for the customer decision step.`,
+        : `${customerChoiceCandidates} participating/accepted partner(s) are available for the customer decision step.`,
       operatorRule: 'No automatic partner assignment; customer selection is the final matching authority.',
       href: finalPartner?.id ? `/partners/${finalPartner.id}` : '#participants',
       className: finalPartner
@@ -4519,7 +4519,7 @@ function buildBookingCloseoutChecklist({
         ? `${financeTrace.walletLedger}. Partner can view marketplace requests, but participation is held until settled or offset.`
         : `${booking.payment?.method ?? 'NONE'} payment / customer ${financeTrace.customerPrice} / partner ${financeTrace.providerPayout}.`,
       operatorRule:
-        'Cash fee debt must be resolved before marketplace join or payout batch release.',
+        'Cash fee debt must be resolved before marketplace participation or payout batch release.',
       href: cashDebt ? '/cash-settlements' : '#finance',
       className: cashDebt ? 'ops-task-blocked' : booking.payment ? 'ops-task-done' : 'ops-task-warning',
       pillClass: cashDebt ? 'pill-danger' : booking.payment ? 'pill-success' : 'pill-warn',
@@ -4692,7 +4692,7 @@ function bookingPayoutBatchEligibility({
         ? `${financeTrace.walletLedger}. Settle company fee debt before batch release.`
         : `Wallet impact ${financeTrace.walletLedger}.`,
       operatorRule:
-        'Negative wallet partners can see the marketplace list, but cannot join marketplace bookings or receive payout release until deposit or admin offset evidence clears the debt.',
+        'Negative wallet partners can see the marketplace list, but cannot participate in marketplace bookings or receive payout release until deposit or admin offset evidence clears the debt.',
       href: cashDebt ? '/cash-settlements' : '#finance',
       className: cashDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: cashDebt ? 'pill-danger' : 'pill-success',
@@ -4754,7 +4754,7 @@ function buildBookingFinalGateReason({
   if (bookingCashDebtNeedsSettlement(booking)) {
     return {
       title: 'Wallet debt gate',
-      detail: `${financeTrace.walletLedger}. Partner can see marketplace requests, but marketplace join and payout release wait for settlement or approved offset.`,
+      detail: `${financeTrace.walletLedger}. Partner can see marketplace requests, but marketplace participation and payout release wait for settlement or approved offset.`,
       operatorRule:
         'Collect the HANDS cash fee deposit or approve a documented offset before reopening marketplace participation or payout release.',
       className: 'ops-task-blocked',
@@ -4803,7 +4803,7 @@ function buildBookingFinalGateReason({
     return {
       title: 'Partner supply wait',
       detail:
-        'No joined/accepted partner is selectable yet. Check 10km marketplace eligibility, partner app inbox, push delivery, and latest saved locations.',
+        'No participating/accepted partner is selectable yet. Check 10km marketplace eligibility, partner app inbox, push delivery, and latest saved locations.',
       operatorRule: 'Use factual alert, location, and participant records before support follow-up.',
       className: 'ops-task-warning',
       pillClass: 'pill-warn',
@@ -5058,7 +5058,7 @@ function bookingHandoffChecklist(
     ? `${booking.payment.method} / ${booking.payment.status} / ${money(booking.payment.amount, booking.payment.currency)}`
     : 'No payment record';
   const cashDebtLabel = bookingCashDebtNeedsSettlement(booking)
-    ? 'Cash fee debt must be settled before the partner joins marketplace demand again or receives payout release.'
+    ? 'Cash fee debt must be settled before the partner participates in marketplace demand again or receives payout release.'
     : 'No cash fee debt block on this booking.';
   const chatDetail = booking.chatRoom
     ? `${messageCount} retained message(s). Admin keeps the archive even if mobile hides chat after completion.`
@@ -5080,7 +5080,7 @@ function bookingHandoffChecklist(
       id: 'partner-response',
       label: 'Partner',
       title: finalPartner ? providerName(finalPartner) : 'Waiting for partner response',
-      detail: `${participantCount} partner(s) joined / ${selectableCount} customer-selectable. The customer remains the final decision maker.`,
+      detail: `${participantCount} participant record(s) / ${selectableCount} customer-selectable. The customer remains the final decision maker.`,
       status: 'Partner shortlist',
       href: '#participants',
     },
@@ -5090,7 +5090,7 @@ function bookingHandoffChecklist(
       title: booking.selectedProvider ? 'Final partner selected' : 'Customer choice pending',
       detail: booking.selectedProvider
         ? `${providerName(booking.selectedProvider)} is recorded as the final partner.`
-        : 'Keep the customer waiting screen synced with joined/accepted partner options.',
+        : 'Keep the customer waiting screen synced with participating/accepted partner options.',
       status: 'Customer screen',
       href: '#audit',
     },
@@ -5227,7 +5227,7 @@ function bookingCloseoutReadiness({
       label: 'Cash',
       status: cashDebtNeedsSettlement ? 'Cash fee settlement required' : 'No cash fee block',
       detail: cashDebtNeedsSettlement
-        ? 'Partner cash collection created company-fee debt; settle before marketplace join or payout release.'
+        ? 'Partner cash collection created company-fee debt; settle before marketplace participation or payout release.'
         : 'No negative cash-fee wallet block is active for this booking.',
       owner: 'Finance',
       href: '#finance',
@@ -5429,12 +5429,12 @@ function bookingOperatingTimeline({
     addItem({
       id: `participant-joined-${participant.id}`,
       type: 'JOIN',
-      title: `${partnerName} joined shortlist`,
+      title: `${partnerName} entered shortlist`,
       detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
         participant.providerStatusAtJoin ?? 'status unknown'
       }`,
       at: participant.joinedAt,
-      status: 'Joined',
+      status: 'Participating',
     });
     if (participant.respondedAt) {
       addItem({
@@ -5939,7 +5939,7 @@ function bookingOperatingSnapshot({
       },
       {
         label: 'Marketplace supply',
-        value: `${participants.length} joined / ${customerChoiceCandidates.length} selectable`,
+        value: `${participants.length} participant record(s) / ${customerChoiceCandidates.length} selectable`,
         helper: 'Partners can participate while the customer waits.',
       },
       {
@@ -5961,7 +5961,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
     return {
       title: 'Settle cash fee debt',
       detail:
-        'Partner collected cash. Confirm company fee deposit or admin offset before marketplace join or payout release resumes.',
+        'Partner collected cash. Confirm company fee deposit or admin offset before marketplace participation or payout release resumes.',
       href: '#finance',
       hrefLabel: 'Open finance',
     };
@@ -5972,8 +5972,8 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
         ? 'Monitor customer final selection'
         : 'Monitor partner participation',
       detail: booking.participants?.length
-        ? 'Joined or accepted partners should be visible to the customer so the customer can choose the final partner.'
-        : 'Keep the first-pick window and marketplace participation visible until a partner joins or the booking expires.',
+        ? 'Participating or accepted partners should be visible to the customer so the customer can choose the final partner.'
+        : 'Keep the first-pick window and marketplace participation visible until a partner participates or the booking expires.',
       href: '#alerts',
       hrefLabel: 'Open matching',
     };
@@ -6162,7 +6162,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
       id: `${participant.id}-joined`,
       type: 'PARTNER',
       at: participant.joinedAt ?? booking.createdAt ?? '',
-      title: `${providerName(participant.providerProfile)} joined shortlist`,
+      title: `${providerName(participant.providerProfile)} entered shortlist`,
       detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
         participant.providerStatusAtJoin ?? 'status unknown'
       }`,
@@ -6174,7 +6174,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
         type: 'PARTNER',
         at: participant.respondedAt,
         title: `${providerName(participant.providerProfile)} responded`,
-        detail: `${participant.status} / customer can select from joined or accepted partners.`,
+        detail: `${participant.status} / customer can select from participating or accepted partners.`,
         href: participant.providerProfile?.id
           ? `/partners/${participant.providerProfile.id}`
           : '#participants',
@@ -6516,7 +6516,7 @@ function primaryOpsInstruction(booking: AdminBookingDetail) {
     return 'Service is complete. Capture the authorized payment or refund if there was a dispute.';
   }
   if (bookingCashDebtNeedsSettlement(booking)) {
-    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner joins marketplace demand again or receives payout release.';
+    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner participates in marketplace demand again or receives payout release.';
   }
   if (booking.payment?.status === 'AUTHORIZED') {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';
@@ -6638,7 +6638,7 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
         Math.abs(booking.earning?.netAmount ?? 0),
         booking.earning?.currency,
       )}.`,
-      action: 'Confirm the partner deposit or admin offset before marketplace join or payout release resumes.',
+      action: 'Confirm the partner deposit or admin offset before marketplace participation or payout release resumes.',
     });
   }
 
@@ -6670,7 +6670,7 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
     flags.push({
       severity: 'medium',
       title: 'No partner supply',
-      detail: 'No partner has joined the request yet.',
+      detail: 'No partner participation is recorded for the request yet.',
       action: 'Check nearby online partners and consider operational outreach.',
     });
   }
@@ -6829,7 +6829,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     steps.push({
       priority: 'Monitor',
       title: 'Supply monitor',
-      detail: 'No partner has joined yet. Keep partner availability and notification delivery visible.',
+      detail: 'No partner participation is recorded yet. Keep partner availability and notification delivery visible.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       actionHref: '/partners',
@@ -7133,7 +7133,7 @@ function paymentHint(booking: AdminBookingDetail) {
     return 'No-show requires payment decision before closing.';
   }
   if (bookingCashDebtNeedsSettlement(booking)) {
-    return 'Cash fee debt is still unsettled; marketplace join and payout release are blocked.';
+    return 'Cash fee debt is still unsettled; marketplace participation and payout release are blocked.';
   }
   if (booking.payment.status === 'AUTHORIZED') {
     return 'Hold is active; capture after service completion.';
@@ -7284,7 +7284,7 @@ function bookingCashFeeSettlementPath(
         label: 'Wallet debt',
         value: cashDebt ? money(settlementAmount, financeTrace.currency) : financeTrace.walletLedger,
         helper: cashDebt
-          ? 'Marketplace join and payout release stay blocked until settlement evidence clears this.'
+          ? 'Marketplace participation and payout release stay blocked until settlement evidence clears this.'
           : 'No active negative wallet block is visible on this booking.',
         href: cashDebt ? '/cash-settlements' : '#finance',
       },
@@ -7354,7 +7354,7 @@ function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinan
   const walletHelper =
     financeTrace.paymentMethod === 'CASH'
       ? financeTrace.walletTotalAmount < 0
-        ? 'Cash fee debt gates marketplace join and payout release.'
+        ? 'Cash fee debt gates marketplace participation and payout release.'
         : 'Cash settlement ledger is not negative.'
       : 'Non-cash booking should create payout credit after completion.';
 
@@ -7454,7 +7454,7 @@ function bookingFinanceFlags(
       detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} owes ${money(
         Math.abs(booking.earning?.netAmount ?? financeTrace.walletTotalAmount),
         financeTrace.currency,
-      )} before marketplace join or payout release can continue.`,
+      )} before marketplace participation or payout release can continue.`,
       action: 'Collect the HANDS fee deposit or offset it in an admin settlement.',
     });
   }
@@ -7875,7 +7875,7 @@ function bookingBackupPartnerSupply(
     decisionTitle: hasCustomerPin
       ? eligibleCount
         ? 'Marketplace matching has usable nearby supply'
-        : 'No evaluated partner can join under current policy'
+        : 'No evaluated partner can participate under current policy'
       : 'Customer pin is required before partner radius can be checked',
     decisionDetail: hasCustomerPin
       ? eligibleCount
@@ -7949,7 +7949,7 @@ function bookingAddressRadiusContract(
       {
         label: 'Marketplace radius',
         value: formatDistanceMeters(backupSupply.radiusMeters),
-        helper: 'Partners outside this booking-address radius cannot join marketplace matching.',
+        helper: 'Partners outside this booking-address radius cannot participate in marketplace matching.',
       },
       {
         label: 'Legacy coordinate drift',
@@ -8099,7 +8099,7 @@ function bookingMvpAuthorityContract({
       tone: pinReady ? (backupSupply.eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
       evidence: `${backupSupply.eligibleCount} eligible / ${backupSupply.rows.length} partner row(s) sampled.`,
       operatorUse:
-        'Only partners within booking-address radius and fresh-location policy should join the shortlist.',
+        'Only partners within booking-address radius and fresh-location policy should enter the shortlist.',
       href: '#marketplace-supply',
     },
     {
@@ -8357,7 +8357,7 @@ function bookingDetailMatchingRuleSnapshot({
         : customerChoiceCandidates.length
           ? 'Customer must select the final partner; operators should not assign one for them.'
           : booking.status === 'OPEN_MATCHING'
-            ? 'Monitor first-pick, marketplace joins, and partner alert evidence.'
+            ? 'Monitor first-pick, marketplace participants, and partner alert evidence.'
             : 'Continue from the current booking status and retained evidence.';
 
   return {
@@ -8382,7 +8382,7 @@ function bookingDetailMatchingRuleSnapshot({
       {
         label: 'Marketplace radius',
         value: formatDistanceMeters(radiusMeters),
-        helper: `${backupSupply.eligibleCount} eligible partner(s), ${participants.length} joined, ${customerChoiceCandidates.length} customer-selectable.`,
+        helper: `${backupSupply.eligibleCount} eligible partner(s), ${participants.length} participant row(s), ${customerChoiceCandidates.length} customer-selectable.`,
       },
       {
         label: 'Customer choice',
@@ -8407,7 +8407,7 @@ function bookingDetailMatchingRuleSnapshot({
         label: 'Wallet gate',
         value: walletBlocked ? 'Settlement needed' : 'Clear',
         helper: walletBlocked
-          ? 'Negative cash-fee debt can block marketplace join and payout release until settled or offset.'
+          ? 'Negative cash-fee debt can block marketplace participation and payout release until settled or offset.'
           : 'No cash-fee debt block is visible for this booking.',
       },
     ],
@@ -8447,8 +8447,8 @@ function bookingMarketplaceWalletEvidence({
     : customerChoiceCandidates.length
       ? 'Customer choice pending'
       : participants.length
-        ? 'Joined partners visible'
-        : 'Waiting for join';
+        ? 'Participating partners visible'
+        : 'Waiting for participation';
   const tone = finalPartner
     ? 'pill-success'
     : customerChoiceCandidates.length
@@ -8463,7 +8463,7 @@ function bookingMarketplaceWalletEvidence({
     cards: [
       {
         label: 'Actual participants',
-        value: `${participants.length} joined`,
+        value: `${participants.length} participant row(s)`,
         helper: `${acceptedParticipants.length} accepted / ${rejectedParticipants.length} rejected / ${selectedParticipants.length} selected row(s).`,
         href: '#participants',
       },
@@ -8508,7 +8508,7 @@ function bookingMarketplaceWalletEvidence({
     rows: [
       {
         lane: 'Participation ledger',
-        scope: 'Only actual joined, accepted, rejected, or final partner rows are stored as participants.',
+        scope: 'Only actual participating, accepted, rejected, or final partner rows are stored as participants.',
         status: `${participants.length} participant row(s)`,
         tone: participants.length ? 'pill-info' : 'pill-neutral',
         record: participants.length
@@ -8516,7 +8516,7 @@ function bookingMarketplaceWalletEvidence({
               .slice(0, 4)
               .map((participant) => `${providerName(participant.providerProfile)} ${participant.status}`)
               .join(' / ')
-          : 'No partner has joined this booking yet.',
+          : 'No partner participation has been recorded for this booking yet.',
         operatorUse:
           'Use this lane to confirm who actually entered the customer shortlist. Wallet-blocked view attempts are not stored here.',
       },
@@ -8550,7 +8550,7 @@ function bookingMarketplaceWalletEvidence({
         tone: walletDebt ? 'pill-danger' : 'pill-success',
         record: financeTrace.walletLedger,
         operatorUse: walletDebt
-          ? 'Partner app message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking. Collect the HANDS fee deposit or apply an approved offset before this partner can join new marketplace bookings.'
+          ? 'Partner app message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking. Collect the HANDS fee deposit or apply an approved offset before this partner can participate in new marketplace bookings.'
           : 'Partner app message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking. No cash-fee wallet debt from this booking is currently gating marketplace participation.',
       },
       {
@@ -8639,7 +8639,7 @@ function bookingParticipantLedger(
         label: 'First-pick partner',
         value: booking.preferredProvider ? providerName(booking.preferredProvider) : 'Not set',
         helper: firstPickParticipant
-          ? `${firstPickParticipant.status} / joined ${formatDate(firstPickParticipant.joinedAt)}`
+          ? `${firstPickParticipant.status} / participated ${formatDate(firstPickParticipant.joinedAt)}`
           : booking.preferredProvider
             ? 'Waiting for the first-pick partner response window.'
             : 'This booking was not opened with a preferred partner.',
@@ -8647,7 +8647,7 @@ function bookingParticipantLedger(
       },
       {
         label: 'Marketplace participants',
-        value: `${marketplaceParticipants.length} joined`,
+        value: `${marketplaceParticipants.length} participant row(s)`,
         helper: `${marketplaceCustomerSelectable.length} customer-selectable / ${marketplaceEvidenceOnly.length} evidence-only / ${rejectedParticipants.length} rejected row(s).`,
         href: '#participants',
       },
@@ -8715,7 +8715,7 @@ function bookingParticipantLedger(
         tone: customerSelectableParticipants.length ? 'pill-warn' : 'pill-info',
         value: `${customerSelectableParticipants.length} customer-selectable`,
         helper:
-          'Selectable means accepted first-pick partner, marketplace partner who joined/accepted, or the retained final selected row. Evidence-only rows are not customer choices.',
+          'Selectable means accepted first-pick partner, marketplace partner who participated/accepted, or the retained final selected row. Evidence-only rows are not customer choices.',
       },
       {
         label: '4. Final match',
@@ -8747,7 +8747,7 @@ function bookingParticipantLedger(
           : 'pill-neutral',
         evidence: booking.preferredProvider
           ? firstPickParticipant
-            ? `${providerName(firstPickParticipant.providerProfile)} / joined ${formatDate(
+            ? `${providerName(firstPickParticipant.providerProfile)} / participated ${formatDate(
                 firstPickParticipant.joinedAt,
               )} / responded ${formatDate(firstPickParticipant.respondedAt)}`
             : `${providerName(booking.preferredProvider)} has no participant response row yet.`
@@ -8762,7 +8762,7 @@ function bookingParticipantLedger(
           ? `${marketplaceParticipants.length} marketplace row(s)`
           : 'No marketplace row',
         tone: marketplaceParticipants.length ? 'pill-info' : 'pill-neutral',
-        evidence: `${marketplaceCustomerSelectable.length} customer-selectable / ${acceptedParticipants.length} accepted / ${joinedParticipants.length} joined / ${rejectedParticipants.length} rejected.`,
+        evidence: `${marketplaceCustomerSelectable.length} customer-selectable / ${acceptedParticipants.length} accepted / ${joinedParticipants.length} participating / ${rejectedParticipants.length} rejected.`,
         operatorUse:
           'Use the rows below as the factual list of partners who entered the booking; view-only blocked wallets are not logged here.',
       },
@@ -8848,11 +8848,11 @@ function bookingParticipantLedger(
         choiceTone,
         decision,
         distance: distanceLabel(participant.distanceMeters),
-        timing: `Joined ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
+        timing: `Participated ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
         operatorUse: `Participant ${shortId(participant.id)} is retained as actual booking evidence. ${
           isPreferred
-            ? 'First-pick JOINED is not customer-selectable until partner acceptance.'
-            : 'Marketplace JOINED/ACCEPTED can appear in the customer shortlist.'
+            ? 'First-pick participation is not customer-selectable until partner acceptance.'
+            : 'Marketplace participating/accepted partners can appear in the customer shortlist.'
         }`,
       };
     }),
@@ -8905,7 +8905,7 @@ function bookingParticipantEvidenceState(input: {
   }
 
   return {
-    evidenceLabel: 'Marketplace join row',
+    evidenceLabel: 'Marketplace participation row',
     evidenceDetail:
       'Partner entered the customer shortlist from booking-address marketplace participation.',
     evidenceTone: 'pill-info',
@@ -8998,9 +8998,9 @@ function bookingCustomerWaitPanel(
   } else if (waitingForCustomerChoice) {
     signalStatus = 'Customer choice';
     signalTone = 'pill-warn';
-    headline = 'A joined or accepted partner is ready for customer final selection.';
+    headline = 'A participating or accepted partner is ready for customer final selection.';
     detail =
-      'Make sure the customer app shows the joined/accepted partner shortlist and opens matched chat after selection.';
+      'Make sure the customer app shows the participating/accepted partner shortlist and opens matched chat after selection.';
     nextActionLabel = 'Check participants';
   } else if (waitingForPartnerJoin && backupSupply.eligibleCount === 0) {
     signalStatus = 'Supply gap';
@@ -9013,7 +9013,7 @@ function bookingCustomerWaitPanel(
   } else if (waitingForPartnerJoin && backupWindowOpen) {
     signalStatus = 'Nudge partners';
     signalTone = 'pill-warn';
-    headline = 'Customer is waiting and marketplace partners can join.';
+    headline = 'Customer is waiting and marketplace partners can participate.';
     detail = `${backupSupply.eligibleCount} nearby partner(s) can be nudged into the shortlist.`;
     nextActionHref = '/partners?review=marketplace-ready';
     nextActionLabel = 'Open marketplace-ready partners';
@@ -9041,7 +9041,7 @@ function bookingCustomerWaitPanel(
       detail: timer.detail,
       action: firstPickParticipant
         ? `${providerName(firstPick)} responded as ${firstPickParticipant.status}.`
-        : `${providerName(firstPick)} has not joined/responded yet.`,
+        : `${providerName(firstPick)} has not participated/responded yet.`,
       className: timer.className,
       pillClass: timer.pillClass,
     },
@@ -9051,8 +9051,8 @@ function bookingCustomerWaitPanel(
       detail: selected
         ? `Final partner: ${providerName(booking.selectedProvider ?? booking.preferredProvider)}.`
         : waitingForCustomerChoice
-          ? `${customerChoiceCandidates.length} joined/accepted partner(s) are ready for customer selection.`
-          : 'No joined/accepted partner is ready for final customer selection yet.',
+          ? `${customerChoiceCandidates.length} participating/accepted partner(s) are ready for customer selection.`
+          : 'No participating/accepted partner is ready for final customer selection yet.',
       action: customerConfirmMode
         ? 'Customer selects the final partner before matched chat opens.'
         : 'Policy conflicts with HANDS final-choice flow; return to customer-confirm mode.',
@@ -9067,7 +9067,7 @@ function bookingCustomerWaitPanel(
       title: 'Marketplace participation',
       status: backupWindowOpen ? 'Open' : 'Held',
       detail: backupWindowOpen
-        ? `${backupSupply.eligibleCount} eligible marketplace partner(s) can join under current/saved policy.`
+        ? `${backupSupply.eligibleCount} eligible marketplace partner(s) can participate under current/saved policy.`
         : 'Marketplace partners are held until first-pick delay, decline, or timeout.',
       action: firstPickRejected
         ? 'First-pick declined, so marketplace recovery should be active.'
@@ -9107,7 +9107,7 @@ function bookingCustomerWaitPanel(
     {
       label: `${customerChoiceCandidates.length} selectable`,
       tone: customerChoiceCandidates.length ? 'pill-success' : 'pill-neutral',
-      detail: 'Partners who joined or accepted and can be shown for final customer choice.',
+      detail: 'Partners who participated or accepted and can be shown for final customer choice.',
     },
     {
       label: `${rejectedParticipants.length} rejected`,
@@ -9200,7 +9200,7 @@ function bookingStageSnapshot(
     stage = 'Stage 3 - Customer choice';
     pillClass = 'pill-warn';
     noteClassName = 'ops-task-pending';
-    headline = 'Joined or accepted partner(s) are waiting for customer final selection.';
+    headline = 'Participating or accepted partner(s) are waiting for customer final selection.';
     detail = customerWaitPanel.detail;
     actionHref = `/bookings/${booking.id}#participants`;
     actionLabel = 'Review shortlist';
@@ -9209,7 +9209,7 @@ function bookingStageSnapshot(
     pillClass = 'pill-warn';
     noteClassName = 'ops-task-pending';
     headline = 'The marketplace partner window has usable supply.';
-    detail = `${backupSupply.eligibleCount} partner(s) can join or be nudged while the customer waits.`;
+    detail = `${backupSupply.eligibleCount} partner(s) can participate or be nudged while the customer waits.`;
     actionHref = '/partners?review=marketplace-ready';
     actionLabel = 'Open marketplace partners';
   } else if (status === 'OPEN_MATCHING') {
@@ -9375,7 +9375,7 @@ function bookingOperationalPolicySnapshot(
     customerConfirmMode && customerChoiceCandidates.length > 0 && !selected ? 'pill-warn' : 'pill-success';
   const decisionDetail = customerConfirmMode
     ? customerChoiceCandidates.length > 0 && !selected
-      ? 'A partner joined or accepted, but the customer still needs to confirm the final partner before matched chat opens.'
+      ? 'A partner participated or accepted, but the customer still needs to confirm the final partner before matched chat opens.'
       : 'Preferred partner acceptance keeps the request open until the customer confirms the final partner.'
     : 'Preferred partner acceptance immediately locks the booking to that partner.';
 
@@ -9392,7 +9392,7 @@ function bookingOperationalPolicySnapshot(
         helper:
           String(backupOpenMode?.value) === 'AFTER_FIRST_PICK_DELAY'
             ? 'Marketplace partners are hidden until the preferred partner window passes, but open immediately if that partner declines.'
-            : 'Eligible nearby partners can join while the preferred partner is still deciding.',
+            : 'Eligible nearby partners can participate while the preferred partner is still deciding.',
         enforced: true,
       }),
       bookingPolicyDecisionCard({
@@ -9515,7 +9515,7 @@ function bookingOperationalPolicySnapshot(
         helper: bookingPolicySnapshotHelper(
           savedMatchingPolicy.backupProviderRadiusMeters,
           backupRadius,
-          'Nearby partners outside this distance cannot join.',
+          'Nearby partners outside this distance cannot participate.',
         ),
       },
       {
@@ -9528,7 +9528,7 @@ function bookingOperationalPolicySnapshot(
         helper: bookingPolicySnapshotHelper(
           savedMatchingPolicy.backupProviderLocationMaxAgeMinutes,
           backupLocationFreshness,
-          'Marketplace partners with older locations cannot join.',
+          'Marketplace partners with older locations cannot participate.',
         ),
       },
       {

@@ -23,13 +23,13 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 - Every booking must preserve an immutable `BookingAddressSnapshot`.
 - Discovery can show partners beyond the Open Matching radius, but Open Matching participation is gated by booking address distance.
 - Preferred partner gets the first-pick window, currently 10 minutes.
-- Eligible marketplace partners within configured radius, default 10km, can join during the matching window.
+- Eligible marketplace partners within configured radius, default 10km, can participate during the matching window.
 - The customer always chooses the final partner.
 - There is no automatic partner assignment.
 - MVP bookings are immediate/on-demand. Do not expose scheduled booking or calendar booking UX.
 - Tips are not part of the MVP.
 - After matching, customers do not directly cancel through a normal cancel button. Cancellation and no-show outcomes are chat-evidence based and admin judged.
-- Negative partner wallet balances allow marketplace list visibility only; marketplace join/participation and payout release are blocked until settlement.
+- Negative partner wallet balances allow marketplace list visibility only; marketplace participation and payout release are blocked until settlement.
 - Partner payouts are weekly, monthly, or admin-selected batch cycles.
 - Admin is an Operations Command Center, not a CRM.
 - Internal code may keep `Provider` names for compatibility, but visible product copy should use `Partner`.
@@ -43,7 +43,7 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 5. Preferred partner is notified.
 6. Eligible partners within the configured Open Matching radius can see/join.
 7. Preferred partner acceptance does not automatically complete matching.
-8. Customer reviews joined/accepted partners and selects the final partner.
+8. Customer reviews participating/accepted partners and selects the final partner.
 9. Chat opens when the booking is matched.
 
 ## Settlement Model

@@ -103,7 +103,7 @@ class OpenBookingCard extends StatelessWidget {
                             ?.copyWith(color: Colors.black54),
                       ),
                       Text(
-                        '${booking['status']} - ${participants.length} partner(s) joined',
+                        '${booking['status']} - ${participants.length} marketplace participant(s)',
                       ),
                     ],
                   ),
@@ -382,7 +382,7 @@ class MarketplaceJoinLockCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Marketplace visible, join locked',
+                  'Marketplace visible, participation locked',
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: colorScheme.onErrorContainer,
                     fontWeight: FontWeight.w800,
