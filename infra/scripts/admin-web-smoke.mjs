@@ -143,6 +143,8 @@ const pages = [
     markers: [
       'Booking Monitor',
       'Stage 2 marketplace',
+      'Marketplace booking coverage board',
+      'Bookings with participant history',
       'Marketplace participant ledger',
       'Marketplace operating queue',
       'First-pick timer control',

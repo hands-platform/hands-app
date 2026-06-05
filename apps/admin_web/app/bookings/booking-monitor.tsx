@@ -212,6 +212,24 @@ type MarketplaceOperatingQueueItem = {
   bookings: AdminBooking[];
 };
 
+type MarketplaceBookingCoverageRow = {
+  booking: AdminBooking;
+  firstPickLabel: string;
+  firstPickTone: string;
+  participantCount: number;
+  marketplaceParticipantCount: number;
+  selectableCount: number;
+  selectedPartnerLabel: string;
+  selectedPartnerTone: string;
+  alertLabel: string;
+  alertTone: string;
+  alertDetail: string;
+  walletLabel: string;
+  walletTone: string;
+  nextAction: string;
+  nextActionTone: string;
+};
+
 export type BookingEvidenceFilter =
   | 'all'
   | 'address'
@@ -468,6 +486,14 @@ export function BookingMonitor({
   const marketplaceLedgerRows = useMemo(
     () => buildMarketplaceParticipantLedgerRows(visibleBookings, currentTimeMs),
     [currentTimeMs, visibleBookings],
+  );
+  const marketplaceBookingCoverageRows = useMemo(
+    () => buildMarketplaceBookingCoverageRows(visibleBookings, currentTimeMs),
+    [currentTimeMs, visibleBookings],
+  );
+  const marketplaceBookingCoverageSummary = useMemo(
+    () => buildMarketplaceBookingCoverageSummary(marketplaceBookingCoverageRows),
+    [marketplaceBookingCoverageRows],
   );
   const marketplaceLedgerSummary = useMemo(() => {
     const selected = marketplaceLedgerRows.filter((row) => row.choiceLabel === 'Selected by customer');
@@ -1299,6 +1325,112 @@ export function BookingMonitor({
               </Link>
             ))}
           </div>
+        </section>
+        <section className="card" style={{ marginTop: 14, overflowX: 'auto' }}>
+          <div className="ops-section-header">
+            <div>
+              <h3>Marketplace booking coverage board</h3>
+              <p className="muted">
+                Booking-level view of first-pick timer, 10 km alert trace, joined partner history,
+                customer-selectable partners, wallet gate, and final customer selection. This board
+                shows bookings with and without participants before drilling into the joined partner
+                ledger.
+              </p>
+            </div>
+            <div className="actions">
+              <span className="pill pill-info">
+                Bookings with participant history {marketplaceBookingCoverageSummary.withParticipants}
+              </span>
+              <span
+                className={`pill ${
+                  marketplaceBookingCoverageSummary.withoutParticipants > 0
+                    ? 'pill-warn'
+                    : 'pill-success'
+                }`}
+              >
+                Bookings without joined partners {marketplaceBookingCoverageSummary.withoutParticipants}
+              </span>
+              <span
+                className={`pill ${
+                  marketplaceBookingCoverageSummary.waitingChoice > 0 ? 'pill-warn' : 'pill-neutral'
+                }`}
+              >
+                Waiting customer choice {marketplaceBookingCoverageSummary.waitingChoice}
+              </span>
+            </div>
+          </div>
+          <div className="participant-list" style={{ marginTop: 12 }}>
+            <span className="pill">Booking rows, not view-only attempts</span>
+            <span className="pill">Wallet gate blocks join only</span>
+            <span className="pill">No auto assignment</span>
+            <span className="pill">Final partner selected {marketplaceBookingCoverageSummary.selected}</span>
+          </div>
+          {marketplaceBookingCoverageRows.length === 0 ? (
+            <div className="empty-state" style={{ marginTop: 14 }}>
+              No marketplace booking rows match the current filters.
+            </div>
+          ) : (
+            <table className="table" style={{ marginTop: 14 }}>
+              <thead>
+                <tr>
+                  <th>Booking</th>
+                  <th>First-pick window</th>
+                  <th>Participant history</th>
+                  <th>Customer choice</th>
+                  <th>10 km alert trace</th>
+                  <th>Wallet gate</th>
+                  <th>Next action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {marketplaceBookingCoverageRows.slice(0, 30).map((row) => (
+                  <tr key={row.booking.id}>
+                    <td>
+                      <strong>
+                        <Link className="text-link" href={`/bookings/${row.booking.id}`}>
+                          {shortId(row.booking.id)}
+                        </Link>
+                      </strong>
+                      <div className="muted">{bookingCustomerLabel(row.booking)}</div>
+                      <div className="muted">{bookingServiceOptionLabel(row.booking)}</div>
+                    </td>
+                    <td>
+                      <span className={`pill ${row.firstPickTone}`}>{row.firstPickLabel}</span>
+                      <div className="muted">{bookingMatchingWindowLabel(row.booking, currentTimeMs)}</div>
+                    </td>
+                    <td>
+                      <strong>{row.participantCount} joined partner(s)</strong>
+                      <div className="muted">
+                        {row.marketplaceParticipantCount} marketplace / {row.selectableCount} selectable
+                      </div>
+                    </td>
+                    <td>
+                      <span className={`pill ${row.selectedPartnerTone}`}>
+                        {row.selectedPartnerLabel}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`pill ${row.alertTone}`}>{row.alertLabel}</span>
+                      <div className="muted">{row.alertDetail}</div>
+                    </td>
+                    <td>
+                      <span className={`pill ${row.walletTone}`}>{row.walletLabel}</span>
+                    </td>
+                    <td>
+                      <span className={`pill ${row.nextActionTone}`}>{row.nextAction}</span>
+                    </td>
+                  </tr>
+                ))}
+                {marketplaceBookingCoverageRows.length > 30 && (
+                  <tr>
+                    <td colSpan={7}>
+                      Showing first 30 booking coverage rows. Narrow filters to inspect the rest.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
         </section>
         <div className="participant-list" style={{ marginTop: 12 }}>
           <span className="pill pill-info">Participant rows only</span>
@@ -4381,6 +4513,154 @@ function marketplaceParticipants(booking: AdminBooking) {
       participant.providerProfile?.id &&
       participant.providerProfile.id !== preferredId,
   );
+}
+
+function buildMarketplaceBookingCoverageRows(
+  bookings: AdminBooking[],
+  nowMs: number,
+): MarketplaceBookingCoverageRow[] {
+  return bookings
+    .map((booking) => {
+      const participants = booking.participants ?? [];
+      const marketplace = marketplaceParticipants(booking);
+      const selectable = customerSelectableParticipants(booking);
+      const selectedPartnerLabel = booking.selectedProvider
+        ? partnerDisplayName(booking.selectedProvider)
+        : selectable.length > 0
+          ? 'Awaiting customer choice'
+          : 'No final partner';
+      const selectedPartnerTone = booking.selectedProvider
+        ? 'pill-success'
+        : selectable.length > 0
+          ? 'pill-warn'
+          : 'pill-neutral';
+      const trace = bookingBackupAlertTraceSummary(booking, nowMs);
+      const alertLabel =
+        trace.batchCount === 0
+          ? booking.status === 'OPEN_MATCHING'
+            ? 'No alert batch'
+            : 'No alert trace'
+          : `${trace.totalNotified} notified`;
+      const alertTone =
+        trace.batchCount === 0 && booking.status === 'OPEN_MATCHING'
+          ? 'pill-danger'
+          : trace.totalNotified > 0
+            ? 'pill-success'
+            : trace.batchCount > 0
+              ? 'pill-warn'
+              : 'pill-neutral';
+      const alertDetail = trace.batchCount
+        ? `${trace.batchCount} batch(es), latest ${trace.lastStage ?? 'stage not saved'}${
+            trace.lastAge ? ` / ${trace.lastAge}` : ''
+          }`
+        : 'Marketplace notification trace is not saved for this booking.';
+      const firstPick = firstPickCoverageState(booking, nowMs);
+      const wallet = bookingMarketplaceWalletSignal(booking);
+      const next = marketplaceBookingNextAction(booking, nowMs);
+
+      return {
+        booking,
+        firstPickLabel: firstPick.label,
+        firstPickTone: firstPick.tone,
+        participantCount: participants.length,
+        marketplaceParticipantCount: marketplace.length,
+        selectableCount: selectable.length,
+        selectedPartnerLabel,
+        selectedPartnerTone,
+        alertLabel,
+        alertTone,
+        alertDetail,
+        walletLabel: wallet.walletLabel,
+        walletTone: wallet.walletTone,
+        nextAction: next.label,
+        nextActionTone: next.tone,
+      };
+    })
+    .sort((left, right) => {
+      const priority = (row: MarketplaceBookingCoverageRow) => {
+        if (row.nextActionTone === 'pill-danger') {
+          return 0;
+        }
+        if (row.nextActionTone === 'pill-warn') {
+          return 1;
+        }
+        if (row.selectedPartnerTone === 'pill-warn') {
+          return 2;
+        }
+        return 3;
+      };
+
+      return (
+        priority(left) - priority(right) ||
+        bookingCreatedTimestamp(right.booking) - bookingCreatedTimestamp(left.booking)
+      );
+    });
+}
+
+function buildMarketplaceBookingCoverageSummary(rows: MarketplaceBookingCoverageRow[]) {
+  return {
+    total: rows.length,
+    withParticipants: rows.filter((row) => row.participantCount > 0).length,
+    withoutParticipants: rows.filter((row) => row.participantCount === 0).length,
+    selected: rows.filter((row) => row.booking.selectedProvider).length,
+    waitingChoice: rows.filter((row) => row.selectableCount > 0 && !row.booking.selectedProvider).length,
+  };
+}
+
+function firstPickCoverageState(booking: AdminBooking, nowMs: number) {
+  if (!booking.preferredProvider) {
+    return { label: 'Open marketplace', tone: 'pill-neutral' };
+  }
+  if (isBackupSelected(booking)) {
+    return { label: 'Marketplace selected', tone: 'pill-success' };
+  }
+  if (booking.status === 'MATCHED') {
+    return { label: 'First-pick matched', tone: 'pill-success' };
+  }
+  if (preferredProviderStateLabel(booking) === 'declined') {
+    return { label: 'First-pick declined', tone: 'pill-info' };
+  }
+  if (bookingMatchingWindowExpired(booking, nowMs)) {
+    return { label: 'First-pick overdue', tone: 'pill-danger' };
+  }
+  if (isPreferredAwaitingDecision(booking)) {
+    return { label: 'First-pick pending', tone: 'pill-warn' };
+  }
+  return { label: 'First-pick recorded', tone: 'pill-info' };
+}
+
+function marketplaceBookingNextAction(booking: AdminBooking, nowMs: number) {
+  if (bookingCashDebtNeedsOps(booking)) {
+    return { label: 'Clear cash fee debt', tone: 'pill-danger' };
+  }
+  if (bookingChatRepairNeedsOps(booking)) {
+    return { label: 'Repair chat handoff', tone: 'pill-danger' };
+  }
+  if (booking.status === 'OPEN_MATCHING' && bookingMatchingWindowExpired(booking, nowMs)) {
+    return { label: 'Review expired timer', tone: 'pill-danger' };
+  }
+  if (booking.status === 'OPEN_MATCHING' && bookingHasCustomerSelectablePartner(booking)) {
+    return { label: 'Customer final choice', tone: 'pill-warn' };
+  }
+  if (booking.status === 'OPEN_MATCHING' && marketplaceParticipants(booking).length === 0) {
+    return { label: 'Nudge marketplace supply', tone: 'pill-warn' };
+  }
+  if (booking.status === 'OPEN_MATCHING' && isPreferredAwaitingDecision(booking)) {
+    return { label: 'Wait for first-pick', tone: 'pill-warn' };
+  }
+  if (booking.selectedProvider) {
+    return { label: 'Monitor handoff', tone: 'pill-success' };
+  }
+  return { label: 'Monitor', tone: 'pill-info' };
+}
+
+function bookingCreatedTimestamp(booking: AdminBooking) {
+  const value = booking.createdAt ?? booking.scheduledStartAt ?? booking.updatedAt;
+  if (!value) {
+    return 0;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
 }
 
 function buildMarketplaceParticipantLedgerRows(
