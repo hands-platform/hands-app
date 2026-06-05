@@ -10,7 +10,7 @@ import {
   AdminNotification,
   adminGet,
 } from '../../../lib/admin-api';
-import { shortId as formatShortId } from '../../../lib/admin-format';
+import { formatDateTime, shortId as formatShortId } from '../../../lib/admin-format';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -3700,12 +3700,7 @@ function dateMs(value?: string | null) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return 'Not set';
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(new Date(value));
+  return formatDateTime(value, 'Not set');
 }
 
 function formatDistance(value: number) {

@@ -8,6 +8,7 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../../lib/admin-api';
+import { formatDateTime } from '../../../lib/admin-format';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -7031,8 +7032,7 @@ function missingApprovedRequiredKycDocuments(provider: ProviderDetail) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) return 'Missing';
-  return new Date(value).toLocaleString();
+  return formatDateTime(value, 'Missing');
 }
 
 function formatDateOnly(value?: string | null) {

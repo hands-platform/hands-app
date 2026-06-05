@@ -14,7 +14,7 @@ import {
   AdminProviderWalletLedgerEntry,
   adminGet,
 } from '../../../lib/admin-api';
-import { formatMoney, shortId as formatShortId } from '../../../lib/admin-format';
+import { formatDateTime, formatMoney, shortId as formatShortId } from '../../../lib/admin-format';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import {
   addBookingOpsNote,
@@ -10289,10 +10289,7 @@ function money(amount?: number | null, currency = 'VND') {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return 'Not set';
-  }
-  return new Date(value).toLocaleString();
+  return formatDateTime(value, 'Not set');
 }
 
 function safeTime(value?: string | null) {

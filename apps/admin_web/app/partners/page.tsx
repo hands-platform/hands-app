@@ -1383,7 +1383,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                         <p className="muted">
                           {file.contentType}
                           {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
-                          {file.uploadedAt ? ` / uploaded ${new Date(file.uploadedAt).toLocaleString()}` : ''}
+                          {file.uploadedAt ? ` / uploaded ${formatDateTime(file.uploadedAt)}` : ''}
                         </p>
                         <p className="muted">
                           {file.key}
@@ -1547,9 +1547,7 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
               <p className="muted" style={{ marginBottom: 6 }}>
                 {document.fileAsset?.contentType ?? 'unknown file'}
                 {document.fileAsset?.sizeBytes ? ` / ${formatBytes(document.fileAsset.sizeBytes)}` : ''}
-                {document.fileAsset?.uploadedAt
-                  ? ` / uploaded ${new Date(document.fileAsset.uploadedAt).toLocaleString()}`
-                  : ''}
+                {document.fileAsset?.uploadedAt ? ` / uploaded ${formatDateTime(document.fileAsset.uploadedAt)}` : ''}
               </p>
               <p className="muted" style={{ marginBottom: 6 }}>
                 {marketplaceDisplayText(document.fileAsset?.key ?? 'No file key')}
@@ -1691,7 +1689,7 @@ function ProviderPublicMediaQueueCell({ provider }: { provider: AdminProvider })
           <p className="muted" style={{ marginBottom: 6 }}>
             {file.contentType}
             {file.sizeBytes ? ` / ${formatBytes(file.sizeBytes)}` : ''}
-            {file.uploadedAt ? ` / uploaded ${new Date(file.uploadedAt).toLocaleString()}` : ''}
+            {file.uploadedAt ? ` / uploaded ${formatDateTime(file.uploadedAt)}` : ''}
           </p>
           <p className="muted" style={{ marginBottom: 6 }}>
             {file.url ? (

@@ -15,7 +15,7 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
-import { formatMoney, shortId as formatShortId } from '../../lib/admin-format';
+import { formatDateTime, formatMoney, shortId as formatShortId } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { addOperationsHandoffNote } from './actions';
@@ -469,7 +469,7 @@ export default async function OperationsHandoffPage({
               <tr key={item.id}>
                 <td>
                   <div>{relativeTime(item.createdAt)}</div>
-                  <small className="muted">{new Date(item.createdAt).toLocaleString()}</small>
+                  <small className="muted">{formatDateTime(item.createdAt)}</small>
                 </td>
                 <td>
                   <span className={item.className}>{item.area}</span>
