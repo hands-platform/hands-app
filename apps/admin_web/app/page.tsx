@@ -2076,10 +2076,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </Link>
             </div>
           )}
-          <div className="risk-list">
+          <div className="ops-check-list">
             {queue.slice(0, 10).map((item, index) => (
               <Link
-                className={`risk-item risk-${item.severity}`}
+                className={`ops-check-item ops-check-${item.severity}`}
                 href={item.href}
                 key={`${item.area}-${item.label}-${item.href}-${index}`}
               >

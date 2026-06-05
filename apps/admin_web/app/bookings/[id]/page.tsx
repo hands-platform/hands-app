@@ -2221,9 +2221,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
           ))}
         </div>
         {notificationTrace.backupBatches.length > 0 ? (
-          <div className="risk-list">
+          <div className="ops-check-list">
             {notificationTrace.backupBatches.map((batch) => (
-              <div className="risk-item" key={batch.id}>
+              <div className="ops-check-item" key={batch.id}>
                 <span className="signal signal-info">{batch.signal}</span>
                 <div>
                   <h3>{batch.title}</h3>
@@ -2236,9 +2236,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
         ) : null}
         {notificationTrace.rows.length > 0 ? (
-          <div className="risk-list">
+          <div className="ops-check-list">
             {notificationTrace.rows.map((row) => (
-              <div className="risk-item" key={row.id}>
+              <div className="ops-check-item" key={row.id}>
                 <span className={`signal ${row.signalClass}`}>{row.signal}</span>
                 <div>
                   <h3>{row.title}</h3>
@@ -2291,9 +2291,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
           </div>
         </div>
         {operationsTrace.rows.length > 0 ? (
-          <div className="risk-list">
+          <div className="ops-check-list">
             {operationsTrace.rows.map((row) => (
-              <div className="risk-item" key={row.id}>
+              <div className="ops-check-item" key={row.id}>
                 <span className={`signal ${row.signalClass}`}>{row.signal}</span>
                 <div>
                   <h3>{row.title}</h3>
@@ -2310,7 +2310,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      <section className="card risk-watch" style={{ marginBottom: 16 }}>
+      <section className="card ops-watch" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
           <div>
             <h2>Attention checks</h2>
@@ -2319,7 +2319,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           <span className={`pill ${attentionSummary.tone}`}>{attentionSummary.label}</span>
         </div>
         {attentionFlags.length > 0 ? (
-          <div className="risk-list">
+          <div className="ops-check-list">
             {attentionFlags.map((flag) => (
               <AttentionItem flag={flag} key={`${flag.severity}-${flag.title}`} />
             ))}
@@ -2329,7 +2329,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         )}
       </section>
 
-      <section className="card risk-watch" id="finance" style={{ marginBottom: 16 }}>
+      <section className="card ops-watch" id="finance" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
           <div>
             <h2>Finance command center</h2>
@@ -2347,7 +2347,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
           ))}
         </div>
         {financeFlags.length > 0 ? (
-          <div className="risk-list">
+          <div className="ops-check-list">
             {financeFlags.map((flag) => (
               <AttentionItem flag={flag} key={`${flag.severity}-${flag.title}`} />
             ))}
@@ -6499,7 +6499,7 @@ type DispatchStep = {
 
 function AttentionItem({ flag }: { flag: AttentionFlag }) {
   return (
-    <div className={`risk-item risk-${flag.severity}`}>
+    <div className={`ops-check-item ops-check-${flag.severity}`}>
       <div>
         <span className={`pill ${attentionToneClass(flag.severity)}`}>
           {checkSeverityLabel(flag.severity)}

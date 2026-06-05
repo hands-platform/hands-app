@@ -4695,7 +4695,6 @@ function readParam(value: string | string[] | undefined) {
 }
 
 function normalizePartnerReviewFilter(value: string) {
-  if (value === 'risk') return 'reports';
   if (value === 'backup-ready') return 'marketplace-ready';
   if (value === 'backup-blocked') return 'marketplace-blocked';
   return value;
