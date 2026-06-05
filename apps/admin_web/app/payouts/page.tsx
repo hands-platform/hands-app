@@ -6,7 +6,12 @@ import {
   AdminPayoutBatch,
   adminGet,
 } from '../../lib/admin-api';
-import { formatMoney, formatRelativeTime, shortId as formatShortId } from '../../lib/admin-format';
+import {
+  formatDateTime,
+  formatMoney,
+  formatRelativeTime,
+  shortId as formatShortId,
+} from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
@@ -664,7 +669,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                     <div className="muted">{batch.withholdingLogs?.length ?? 0} tax log(s)</div>
                   </td>
                   <td>
-                    <div>{batch.paidAt ? new Date(batch.paidAt).toLocaleString() : '-'}</div>
+                    <div>{formatDateTime(batch.paidAt, '-')}</div>
                     <div className="muted">
                       {batch.paidAt ? relativeTime(batch.paidAt) : 'Awaiting settlement'}
                     </div>
@@ -1929,7 +1934,7 @@ function payoutChecklist(batch: AdminPayoutBatch) {
       label: batch.paidAt ? 'Paid date' : batch.status === 'PAID' ? 'No paid date' : 'Date later',
       ok: paidDateReady,
       detail: batch.paidAt
-        ? `Paid at ${new Date(batch.paidAt).toLocaleString()}.`
+        ? `Paid at ${formatDateTime(batch.paidAt)}.`
         : batch.status === 'PAID'
           ? 'Paid batches need a paid timestamp.'
           : 'Paid timestamp is expected only after settlement.',

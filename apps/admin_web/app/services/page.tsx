@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
 import { AdminAuditLog, AdminServiceCatalogItem, AdminTaxPolicyVersion, adminGet } from '../../lib/admin-api';
-import { formatMoney, formatRelativeTime } from '../../lib/admin-format';
+import { formatDateTime, formatMoney, formatRelativeTime } from '../../lib/admin-format';
 import {
   bulkUpsertPayoutRules,
   createService,
@@ -193,7 +193,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
                 <tr key={row.id}>
                   <td>
                     <strong>{relativeTime(row.createdAt)}</strong>
-                    <p className="muted">{new Date(row.createdAt).toLocaleString()}</p>
+                    <p className="muted">{formatDateTime(row.createdAt)}</p>
                   </td>
                   <td>
                     <span className="pill pill-warn">{humanizeAuditAction(row.action)}</span>

@@ -575,7 +575,7 @@ function amountBandsOverlap(left: AdminTaxRule, right: AdminTaxRule) {
 }
 
 function formatBand(rule: AdminTaxRule) {
-  return `${rule.minGrossAmount ?? 0}-${rule.maxGrossAmount ?? 'no max'}`;
+  return `${formatMoney(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatMoney(rule.maxGrossAmount) : 'no max'}`;
 }
 
 function formatBps(value: number) {

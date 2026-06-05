@@ -1,5 +1,5 @@
 import { AdminPayment, AdminPaymentCallbackAttempt, adminGet } from '../../lib/admin-api';
-import { formatMoney as money, shortId } from '../../lib/admin-format';
+import { formatDateTime, formatMoney as money, shortId } from '../../lib/admin-format';
 import {
   AdminDateRange,
   dateRangeLabel,
@@ -140,7 +140,7 @@ export default async function PaymentsPage({ searchParams }: { searchParams?: Pa
           <tbody>
             {visibleCallbackAttempts.slice(0, 10).map((attempt) => (
               <tr id={`callback-attempt-${attempt.id}`} key={attempt.id}>
-                <td>{new Date(attempt.createdAt).toLocaleString()}</td>
+                <td>{formatDateTime(attempt.createdAt)}</td>
                 <td>{attempt.method}</td>
                 <td>
                   <span className={`pill ${paymentCallbackAttemptPill(attempt)}`}>{attempt.outcome}</span>
@@ -465,7 +465,7 @@ function paymentRecordDate(payment: AdminPayment) {
 
 function paymentRecordDateLabel(payment: AdminPayment) {
   const value = paymentRecordDate(payment);
-  return value ? `Record date ${new Date(value).toLocaleString()}` : 'No payment record date';
+  return value ? `Record date ${formatDateTime(value)}` : 'No payment record date';
 }
 
 function paymentFilterDescription(review: string) {
@@ -870,7 +870,7 @@ function PaymentCallbackEvidence({ payment }: { payment: AdminPayment }) {
         <div className="setup-stage-item">
           <span className="pill pill-info">Received</span>
           <div>
-            <strong>{new Date(callback.receivedAt).toLocaleString()}</strong>
+            <strong>{formatDateTime(callback.receivedAt)}</strong>
             <p className="muted">Verification mode: {callback.mode ?? 'unknown'}</p>
           </div>
         </div>
