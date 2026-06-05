@@ -276,7 +276,7 @@ export default async function NotificationsPage({
                             Reason {readFailureReason(delivery) ?? '-'}
                           </div>
                           <div className="muted" style={{ marginTop: 4 }}>
-                            Token {delivery.pushDevice?.token ? maskToken(delivery.pushDevice.token) : '-'}
+                            Token hidden
                           </div>
                           {delivery.pushDevice?.enabled === false && delivery.pushDevice.id ? (
                             <form action={enablePushDevice} style={{ marginTop: 6 }}>
@@ -532,13 +532,6 @@ function readFailureReason(delivery: NonNullable<AdminNotification['deliveries']
     readString(firstDetail?.errorCode) ??
     errors
   );
-}
-
-function maskToken(token: string) {
-  if (token.length <= 10) {
-    return token;
-  }
-  return `${token.slice(0, 6)}...${token.slice(-4)}`;
 }
 
 function relativeTime(value: string) {
