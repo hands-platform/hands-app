@@ -40,7 +40,7 @@ When that wallet becomes negative:
 - Marketplace requests can remain visible, but join is blocked until settlement.
 - Marketplace join stays blocked until settlement.
 - Payout release stays blocked until the debt is settled.
-- The partner app displays the localized settlement-block message from `apps/provider_app/lib/main.dart`.
+- The partner app displays the localized settlement-block message from `apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_gate_helpers.dart`.
 - Admin finance can settle the debt through cash settlement, earning, payout, payment, or booking detail workflows.
 - Settlement must keep a reference or admin audit note.
 
@@ -157,7 +157,8 @@ Legacy `/providers`, `/partner-risk`, and `/provider-risk` pages redirect to can
 
 Partner mobile behavior:
 
-- `apps/provider_app/lib/main.dart`
+- `apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_gate_helpers.dart`
+- `apps/provider_app/lib/src/features/booking/presentation/provider_marketplace_booking_card.dart`
 - `apps/provider_app/test/provider_wallet_gate_test.dart`
 
 Smoke coverage:

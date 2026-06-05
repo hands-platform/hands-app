@@ -1426,8 +1426,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
             <p className="muted">
               One booking view for actual joined partners, customer final choice, marketplace alert batches,
               and cash-fee wallet impact. View-only marketplace exposure is not stored as participation.
-              Partner app message when wallet debt blocks participation: 수수료를 입금하지 않아 예약에
-              참여 할수 없습니다.
+              Partner app message when wallet debt blocks participation: 수수료를 입금하지 않아 예약에 참여할 수 없습니다.
             </p>
           </div>
           <span className={`pill ${marketplaceWalletEvidence.tone}`}>{marketplaceWalletEvidence.status}</span>
