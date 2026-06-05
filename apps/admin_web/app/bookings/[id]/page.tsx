@@ -2693,6 +2693,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
             </div>
             <span className={`pill ${participantLedger.tone}`}>{participantLedger.status}</span>
           </div>
+          <div className="participant-list" style={{ marginTop: 12 }}>
+            <span className="pill pill-info">Participant rows only</span>
+            <span className="pill pill-warn">Blocked wallet attempts are not participant records</span>
+            <span className="pill">Partners may view marketplace demand before join gate</span>
+            <span className="pill">Customer-selected final partner only</span>
+            <span className="pill">No automatic final assignment</span>
+          </div>
           <div className="service-trace-summary" style={{ marginTop: 12 }}>
             {participantLedger.cards.map((card) => (
               <a href={card.href} key={card.label}>

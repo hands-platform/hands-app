@@ -1301,6 +1301,11 @@ export function BookingMonitor({
           </div>
         </section>
         <div className="participant-list" style={{ marginTop: 12 }}>
+          <span className="pill pill-info">Participant rows only</span>
+          <span className="pill pill-warn">Blocked wallet attempts are not participant records</span>
+          <span className="pill">Partners may view marketplace demand before join gate</span>
+          <span className="pill">Customer-selected final partner only</span>
+          <span className="pill">No automatic final assignment</span>
           <span className="pill">First-pick partners {marketplaceLedgerSummary.firstPick}</span>
           <span className="pill">Marketplace participants {marketplaceLedgerSummary.marketplace}</span>
           <span className="pill pill-success">
