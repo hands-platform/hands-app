@@ -6,7 +6,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
+import { formatDateTime, formatMoney, formatRelativeTime } from '../../lib/admin-format';
 import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -895,7 +895,7 @@ export default async function OperationsPolicyPage({
                 <tr key={row.id}>
                   <td>
                     <strong>{relativeTime(row.createdAt)}</strong>
-                    <p className="muted">{new Date(row.createdAt).toLocaleString()}</p>
+                    <p className="muted">{formatDate(row.createdAt)}</p>
                   </td>
                   <td>
                     <strong>{displayOperationalWording(row.label)}</strong>
@@ -4787,29 +4787,11 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat('en', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  }).format(new Date(value));
+  return formatDateTime(value);
 }
 
 function relativeTime(value: string) {
-  const timestamp = Date.parse(value);
-  if (Number.isNaN(timestamp)) {
-    return 'Unknown time';
-  }
-  const diffMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000));
-  if (diffMinutes < 1) {
-    return 'Just now';
-  }
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  }
-  const diffHours = Math.floor(diffMinutes / 60);
-  if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  }
-  return `${Math.floor(diffHours / 24)}d ago`;
+  return formatRelativeTime(value, { justNow: 'Just now', includeFuture: true });
 }
 
 function policyNotice(params: Record<string, string | string[] | undefined>) {

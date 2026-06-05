@@ -1,5 +1,5 @@
 import { AdminAuditLog, adminGet } from '../../lib/admin-api';
-import { formatMoney as money } from '../../lib/admin-format';
+import { formatDateTime, formatMoney as money, formatRelativeTime } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import Link from 'next/link';
 
@@ -90,7 +90,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
                 <div className="stack">
                   {item.logs.slice(0, 3).map((log) => (
                     <span className="muted" key={`${item.title}-${log.id}`}>
-                      {humanizeAction(log.action)} / {shortTarget(log.target)} / {relativeTime(log.createdAt)}
+                      {humanizeAction(log.action)} / {shortTarget(log.target)} / {auditRelativeTime(log.createdAt)}
                     </span>
                   ))}
                 </div>
@@ -183,8 +183,8 @@ export default async function AuditLogPage({ searchParams }: { searchParams?: Au
             {logs.map((log) => (
               <tr key={log.id}>
                 <td>
-                  <div>{new Date(log.createdAt).toLocaleString()}</div>
-                  <div className="muted">{relativeTime(log.createdAt)}</div>
+                  <div>{formatDateTime(log.createdAt)}</div>
+                  <div className="muted">{auditRelativeTime(log.createdAt)}</div>
                 </td>
                 <td>
                   <div style={{ marginBottom: 6 }}>{humanizeAction(log.action)}</div>
@@ -926,24 +926,8 @@ function reviewPriorityLabel(action: string) {
   return 'Reference event';
 }
 
-function relativeTime(value: string) {
-  const diffMs = Date.now() - Date.parse(value);
-  if (!Number.isFinite(diffMs)) {
-    return 'Unknown time';
-  }
-  const minutes = Math.floor(diffMs / 60000);
-  if (minutes < 1) {
-    return 'Updated just now';
-  }
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) {
-    return `${hours}h ago`;
-  }
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+function auditRelativeTime(value: string) {
+  return formatRelativeTime(value, { justNow: 'Updated just now' });
 }
 
 function opsHint(action: string, target: string) {
