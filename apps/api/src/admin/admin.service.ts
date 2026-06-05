@@ -204,6 +204,7 @@ const adminUserListSelect = {
 
 const adminProviderSummarySelect = {
   id: true,
+  userId: true,
   displayName: true,
   status: true,
   ratingAvg: true,
@@ -1447,7 +1448,7 @@ export class AdminService {
 
     const customer = await this.prisma.customerProfile.findUnique({
       where: { id: customerProfileId },
-      include: { user: { select: { id: true, phone: true, fullName: true } } },
+      select: { id: true, userId: true, user: { select: { id: true, phone: true, fullName: true } } },
     });
     if (!customer) {
       throw new NotFoundException('Customer not found');
@@ -1963,7 +1964,7 @@ export class AdminService {
         reporterUserId: actorId,
         assignedAdminId: actorId,
       },
-      include: { providerProfile: true, sanctions: true },
+      select: adminProviderReportListSelect,
     });
 
     await this.writeAudit(actorId, 'provider_report.create', `provider_report:${report.id}`, {
@@ -2182,7 +2183,12 @@ export class AdminService {
   async syncProviderSupabaseRole(actorId: string, providerProfileId: string) {
     const provider = await this.prisma.providerProfile.findUniqueOrThrow({
       where: { id: providerProfileId },
-      include: { user: { select: adminUserAuthSelect }, verification: true },
+      select: {
+        id: true,
+        userId: true,
+        user: { select: adminUserAuthSelect },
+        verification: { select: { status: true } },
+      },
     });
 
     if (provider.verification?.status !== VerificationStatus.APPROVED) {
@@ -2219,7 +2225,14 @@ export class AdminService {
   ) {
     const file = await this.prisma.fileAsset.findUnique({
       where: { id: fileId },
-      include: { owner: { include: { providerProfile: true } } },
+      select: {
+        id: true,
+        purpose: true,
+        visibility: true,
+        uploadStatus: true,
+        ownerUserId: true,
+        owner: { select: { providerProfile: { select: { id: true } } } },
+      },
     });
     if (!file) {
       throw new NotFoundException('File not found');
@@ -2392,7 +2405,12 @@ export class AdminService {
     const reason = normalizeNullable(input.reason);
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
-      include: { payment: true },
+      select: {
+        id: true,
+        status: true,
+        notes: true,
+        payment: { select: { id: true, status: true } },
+      },
     });
 
     const noShowEligibleStatuses: BookingStatus[] = [
@@ -2449,15 +2467,7 @@ export class AdminService {
           },
         },
       },
-      include: {
-        payment: true,
-        customerProfile: { include: { user: { select: adminUserSummarySelect } } },
-        selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
-        preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
-        services: { include: { service: true } },
-        participants: { include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } } },
-        opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
-      },
+      select: adminBookingDetailSelect,
     });
 
     await this.writeAudit(actorId, 'booking.no_show.mark', `booking:${bookingId}`, {
@@ -2508,7 +2518,12 @@ export class AdminService {
     const reason = normalizeNullable(input.reason);
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
-      include: { payment: true },
+      select: {
+        id: true,
+        status: true,
+        notes: true,
+        payment: { select: { id: true, status: true } },
+      },
     });
 
     if (booking.status !== BookingStatus.OPEN_MATCHING) {
@@ -2560,15 +2575,7 @@ export class AdminService {
             },
           },
         },
-        include: {
-          payment: true,
-          customerProfile: { include: { user: { select: adminUserSummarySelect } } },
-          selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
-          preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
-          services: { include: { service: true } },
-          participants: { include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } } },
-          opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
-        },
+        select: adminBookingDetailSelect,
       });
     });
 
@@ -2588,7 +2595,13 @@ export class AdminService {
     const note = normalizeNullable(input.note);
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id: bookingId },
-      include: { payment: true, earning: true, selectedProvider: true },
+      select: {
+        id: true,
+        status: true,
+        notes: true,
+        selectedProviderId: true,
+        payment: { select: { id: true, status: true } },
+      },
     });
 
     if (booking.status !== BookingStatus.COMPLETED) {
@@ -2633,22 +2646,7 @@ export class AdminService {
           },
         },
       },
-      include: {
-        payment: true,
-        earning: {
-          include: {
-            platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-            taxLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-          },
-        },
-        customerProfile: { include: { user: { select: adminUserSummarySelect } } },
-        selectedProvider: { include: { user: { select: adminUserSummarySelect } } },
-        preferredProvider: { include: { user: { select: adminUserSummarySelect } } },
-        services: { include: { service: true } },
-        participants: { include: { providerProfile: { include: { user: { select: adminUserSummarySelect } } } } },
-        opsTasks: { include: { actor: { select: { phone: true, fullName: true } } } },
-      },
+      select: adminBookingDetailSelect,
     });
 
     await this.writeAudit(actorId, 'booking.completed.closeout', `booking:${bookingId}`, {

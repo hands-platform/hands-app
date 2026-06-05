@@ -16,6 +16,10 @@ type ResponseLike = {
 
 type Next = () => void;
 
+function requestPathWithoutQuery(req: RequestLike) {
+  return (req.originalUrl ?? req.url ?? '').split('?')[0];
+}
+
 export function requestIdMiddleware(req: RequestLike, res: ResponseLike, next: Next) {
   const incoming = req.headers?.['x-request-id'];
   const requestId = Array.isArray(incoming) ? incoming[0] : incoming || randomUUID();
@@ -30,7 +34,7 @@ export function requestIdMiddleware(req: RequestLike, res: ResponseLike, next: N
       event: 'http_request',
       requestId,
       method: req.method,
-      path: req.originalUrl ?? req.url,
+      path: requestPathWithoutQuery(req),
       statusCode: res.statusCode,
       durationMs: Date.now() - startedAt,
       userAgent: req.headers?.['user-agent'],

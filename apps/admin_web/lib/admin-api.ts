@@ -102,6 +102,7 @@ export type AdminCustomerDetail = AdminCustomer & {
 
 export type AdminProvider = {
   id: string;
+  userId?: string;
   displayName: string;
   level?: string;
   legalName?: string | null;
