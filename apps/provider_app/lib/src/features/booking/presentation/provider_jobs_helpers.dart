@@ -23,7 +23,8 @@ bool isProviderActiveBooking(Map<String, dynamic> booking) {
 String partnerJobNextAction(Map<String, dynamic> booking) {
   return switch (booking['status']) {
     'OPEN_MATCHING' => 'Waiting for the guest to confirm a partner.',
-    'MATCHED' => 'Prepare to start the service and unlock chat.',
+    'MATCHED' =>
+      'Use chat to coordinate details, then start the service when ready.',
     'PROVIDER_ON_THE_WAY' => 'Keep location sharing active until arrival.',
     'ARRIVED' => 'Mark the service started when the guest is ready.',
     'IN_SERVICE' => 'Complete the service after work is finished.',

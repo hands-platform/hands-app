@@ -176,7 +176,7 @@ String customerBookingNextAction(Map<String, dynamic> booking) {
     'OPEN_MATCHING' =>
       'Waiting for the selected partner or marketplace partners to respond.',
     'MATCHED' =>
-      'Partner confirmed. Chat opens when the partner starts the service.',
+      'Partner confirmed. Chat is ready to coordinate service start.',
     'PROVIDER_ON_THE_WAY' =>
       'Track the partner location and keep your phone nearby.',
     'ARRIVED' => 'Partner arrived. Confirm details before service starts.',

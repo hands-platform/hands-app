@@ -240,6 +240,10 @@ void main() {
   });
 
   test('customer app hides service chat after booking is closed', () {
+    final matchedBooking = {
+      'status': 'MATCHED',
+      'chatRoom': {'id': 'room-matched'},
+    };
     final liveBooking = {
       'status': 'IN_SERVICE',
       'chatRoom': {'id': 'room-live'},
@@ -253,6 +257,8 @@ void main() {
       'chatRoom': {'id': 'room-no-show'},
     };
 
+    expect(customerBookingNextAction(matchedBooking),
+        'Partner confirmed. Chat is ready to coordinate service start.');
     expect(isCustomerAppChatVisible(liveBooking), isTrue);
     expect(isCustomerAppChatVisible(completedBooking), isFalse);
     expect(isCustomerAppChatVisible(noShowBooking), isFalse);

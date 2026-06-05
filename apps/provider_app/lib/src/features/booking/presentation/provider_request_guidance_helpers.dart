@@ -98,7 +98,7 @@ ProviderRequestGuidance providerRequestGuidance({
           'The customer picked your profile first and the service chat is now live.',
       detailMessage:
           'You were chosen first and the service chat is already live.',
-      infoMessage: 'Service started. Chat is ready.',
+      infoMessage: 'Chat is ready for this matched booking.',
     );
   }
 
@@ -108,12 +108,14 @@ ProviderRequestGuidance providerRequestGuidance({
       priorityLabel: priorityLabel,
       roleLabel: roleLabel,
       decisionLabel: 'Accepted',
-      nextAction: 'Start the service when you are ready to unlock chat.',
+      nextAction:
+          'Open chat to coordinate arrival, then start the service when ready.',
       contextMessage:
-          'The customer picked your profile first and is waiting for you to start the service.',
+          'The customer picked your profile and chat should already be ready.',
       detailMessage:
-          'You were chosen first. Start service when you are ready to move this booking into chat.',
-      infoMessage: 'You accepted this request. Start service to unlock chat.',
+          'You were chosen first. Use chat to coordinate details before starting the service.',
+      infoMessage:
+          'Chat is ready after matching. Start service when work begins.',
     );
   }
 

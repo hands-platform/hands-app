@@ -378,7 +378,7 @@ void main() {
 
     expect(guidance.decisionLabel, 'Chat live');
     expect(guidance.nextAction, contains('Continue'));
-    expect(guidance.infoMessage, 'Service started. Chat is ready.');
+    expect(guidance.infoMessage, 'Chat is ready for this matched booking.');
   });
 
   test('partner app hides service chat after booking is closed', () {

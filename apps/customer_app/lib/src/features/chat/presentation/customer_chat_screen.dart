@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -127,9 +127,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         'OPEN_MATCHING' =>
           '$providerName has not been locked in yet. Stay on the waiting screen until a partner is selected.',
         'MATCHED' =>
-          '$providerName is confirmed. Chat opens when the partner starts the service.',
+          '$providerName is confirmed. Chat should be ready now; refresh bookings if it is not visible.',
         'PROVIDER_ON_THE_WAY' =>
-          '$providerName is on the way. Chat will open as soon as service start is triggered.',
+          '$providerName is on the way. Chat should already be ready for location details.',
         'IN_SERVICE' =>
           'The service is already in progress. Reload chat to join the live room.',
         'COMPLETED' =>
@@ -138,7 +138,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         'EXPIRED' ||
         'REFUNDED' =>
           'This booking is closed. Chat is archived for admin records.',
-        _ => 'No service chat yet. The partner has to start the service first.',
+        _ => 'No matched booking chat yet. Wait until a partner is selected.',
       };
       setState(() => statusMessage = nextMessage);
       return;
@@ -229,7 +229,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           if (chatRoomId == null)
             const EmptyPanel(
                 text:
-                    'Chat opens after a partner is selected and the service start step begins.')
+                    'Chat opens after a partner is selected. Completed or closed booking chats are archived for admin records.')
           else ...[
             Text('Room $chatRoomId',
                 style: Theme.of(context).textTheme.titleMedium),

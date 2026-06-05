@@ -104,7 +104,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ? 'You were picked first. Accept the request from Requests to move this booking forward.'
             : 'No chat yet. Join or stay visible in Requests until the guest picks you.',
         'MATCHED' => isFinalProvider
-            ? 'The guest picked you. Start the service from Requests to unlock chat.'
+            ? 'The guest picked you. Chat should be ready now; refresh Requests if it is not visible.'
             : 'A partner was selected already, so this chat room is not yours.',
         'IN_SERVICE' =>
           'Service is already in progress. Reload chat to join the live room.',
@@ -190,7 +190,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Text(
             auth == null
                 ? 'Login to load your latest service chat.'
-                : 'Realtime messages with the customer during service.',
+                : 'Realtime messages with the customer for matched bookings.',
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 16),
@@ -216,7 +216,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           if (chatRoomId == null)
             const InfoCard(
                 text:
-                    'Chat opens after the guest confirms you and the service start step begins.')
+                    'Chat opens after the guest confirms you. Completed or closed booking chats are archived for admin records.')
           else ...[
             Text('Room $chatRoomId',
                 style: Theme.of(context).textTheme.titleMedium),

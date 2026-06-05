@@ -312,7 +312,7 @@ class _BookingConfirmationPageState
                     children: const [
                       ServiceTag(label: 'Direct request'),
                       ServiceTag(label: 'Marketplace matching if needed'),
-                      ServiceTag(label: 'Chat after service start'),
+                      ServiceTag(label: 'Chat after match'),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -994,7 +994,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
             ? 'Waiting for nearby partners to respond...'
             : 'Waiting for ${preferredProvider['displayName'] ?? 'your partner'} to confirm. Marketplace partners may join too.')
         : status == 'MATCHED'
-            ? 'Partner accepted. Waiting for service start...'
+            ? 'Partner confirmed. Chat is ready for coordination...'
             : status == 'IN_SERVICE'
                 ? 'Service started. Continue in Chat.'
                 : 'Status: $status';
@@ -1617,7 +1617,7 @@ class WaitingStagePanel extends StatelessWidget {
       WaitingStageItem(
         title: status == 'MATCHED' ? 'Confirmed' : 'Auto-close timer',
         body: status == 'MATCHED'
-            ? 'The partner is confirmed. Next step is service start and chat.'
+            ? 'The partner is confirmed. Chat is ready while service start is coordinated.'
             : 'This request closes automatically at ${formatExpiry(expiresAt)} if no partner is selected.',
         accent: const Color(0xFF2563EB),
         caption: status == 'MATCHED'

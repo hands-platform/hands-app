@@ -315,7 +315,7 @@ class OpenBookingCard extends StatelessWidget {
               FilledButton.icon(
                 onPressed: loading ? null : onStart,
                 icon: const Icon(Icons.play_arrow_outlined),
-                label: const Text('Start service chat'),
+                label: const Text('Start service'),
               )
             else if (isPreferredRequest && hasChat)
               const InfoCard(text: 'Chat is ready. Continue from the Chat tab.')
