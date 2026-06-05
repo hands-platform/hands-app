@@ -3265,11 +3265,32 @@ export class AdminService {
     return this.prisma.review.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: {
+      select: {
+        id: true,
+        bookingId: true,
+        customerProfileId: true,
+        providerProfileId: true,
+        rating: true,
+        comment: true,
+        status: true,
+        reportReason: true,
+        moderatedAt: true,
+        createdAt: true,
         booking: {
           select: {
             id: true,
-            services: { select: { service: { select: { id: true, name: true, durationMin: true } } } },
+            services: {
+              select: {
+                id: true,
+                service: {
+                  select: {
+                    id: true,
+                    name: true,
+                    durationMin: true,
+                  },
+                },
+              },
+            },
           },
         },
         customerProfile: { select: { id: true, user: { select: adminUserSummarySelect } } },
