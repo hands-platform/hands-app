@@ -1845,7 +1845,7 @@ const bookingViewOptions: Array<{
     label: 'Stage 3 choice',
       description: 'open bookings with joined/accepted partners waiting for customer final selection.',
     operatorHint:
-      'Use this when customer support should guide the customer to choose one final partner before chat unlocks.',
+      'Use this when customer support should guide the customer to choose one final partner before matched chat opens.',
   },
   {
     view: 'handoff-repair',

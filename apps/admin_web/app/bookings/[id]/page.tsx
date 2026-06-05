@@ -602,7 +602,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       value: finalProvider?.id ? providerName(finalProvider) : 'Pending',
       detail: finalProvider?.id
         ? 'Final partner exists; confirm chat handoff before service coordination.'
-        : 'Customer must choose the final partner before chat unlocks.',
+        : 'Customer must choose the final partner before matched chat opens.',
     },
     {
       href: '#participants',
@@ -8114,7 +8114,7 @@ function bookingMvpAuthorityContract({
       evidence: selectedPartner
         ? providerName(selectedPartner)
         : `${customerChoiceCandidates.length} customer-selectable partner(s), ${booking.participants?.length ?? 0} participant(s).`,
-      operatorUse: 'Do not auto-assign; keep the customer selection step visible before chat unlocks.',
+      operatorUse: 'Do not auto-assign; keep the customer selection step visible before matched chat opens.',
       href: '#participants',
     },
     {
@@ -9000,7 +9000,7 @@ function bookingCustomerWaitPanel(
     signalTone = 'pill-warn';
     headline = 'A joined or accepted partner is ready for customer final selection.';
     detail =
-      'Make sure the customer app shows the joined/accepted partner shortlist and can unlock chat after selection.';
+      'Make sure the customer app shows the joined/accepted partner shortlist and opens matched chat after selection.';
     nextActionLabel = 'Check participants';
   } else if (waitingForPartnerJoin && backupSupply.eligibleCount === 0) {
     signalStatus = 'Supply gap';
@@ -9054,7 +9054,7 @@ function bookingCustomerWaitPanel(
           ? `${customerChoiceCandidates.length} joined/accepted partner(s) are ready for customer selection.`
           : 'No joined/accepted partner is ready for final customer selection yet.',
       action: customerConfirmMode
-        ? 'Customer selects the final partner before chat unlocks.'
+        ? 'Customer selects the final partner before matched chat opens.'
         : 'Policy conflicts with HANDS final-choice flow; return to customer-confirm mode.',
       className: selected
         ? 'ops-task-done'
