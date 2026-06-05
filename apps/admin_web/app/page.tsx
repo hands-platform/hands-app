@@ -2943,17 +2943,17 @@ function buildDailyOperationsSnapshot(input: {
   activePayoutBatches: AdminPayoutBatch[];
 }): DailyOperationsSnapshotItem[] {
   const todayBookings = input.bookings.filter((booking) =>
-    isVietnamToday(booking.scheduledStartAt ?? booking.createdAt),
+    isInDateRange(booking.scheduledStartAt ?? booking.createdAt, 'today'),
   );
   const completedToday = input.bookings.filter(
     (booking) =>
       booking.status === 'COMPLETED' &&
-      isVietnamToday(booking.updatedAt ?? booking.scheduledEndAt ?? booking.createdAt),
+      isInDateRange(booking.updatedAt ?? booking.scheduledEndAt ?? booking.createdAt, 'today'),
   );
   const closedToday = input.bookings.filter(
     (booking) =>
       ['CANCELLED', 'EXPIRED', 'NO_SHOW', 'REFUNDED'].includes(booking.status) &&
-      isVietnamToday(booking.updatedAt ?? booking.createdAt),
+      isInDateRange(booking.updatedAt ?? booking.createdAt, 'today'),
   );
   const onlinePartners = input.providers.filter((provider) => provider.status.startsWith('ONLINE'));
   const freshPartnerPins = onlinePartners.filter((provider) => {
@@ -3892,22 +3892,6 @@ function buildLiveOperationsRadar(input: {
       ],
     },
   ];
-}
-
-function isVietnamToday(value?: string | null) {
-  if (!value) return false;
-  const timestamp = Date.parse(value);
-  if (Number.isNaN(timestamp)) return false;
-  return vietnamDateKey(new Date(timestamp)) === vietnamDateKey(new Date());
-}
-
-function vietnamDateKey(date: Date) {
-  return new Intl.DateTimeFormat('en-CA', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    timeZone: 'Asia/Ho_Chi_Minh',
-  }).format(date);
 }
 
 function timeUntilLabel(value: string) {

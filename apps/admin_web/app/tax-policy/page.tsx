@@ -1,5 +1,5 @@
 import { AdminTaxPolicyVersion, AdminTaxRule, adminGet } from '../../lib/admin-api';
-import { formatDateTime } from '../../lib/admin-format';
+import { formatDateTime, formatMoney } from '../../lib/admin-format';
 import { createTaxPolicyVersion, createTaxRule, updateTaxPolicyVersion, updateTaxRule } from './actions';
 
 const statusOptions = ['DRAFT', 'ACTIVE', 'INACTIVE', 'ARCHIVED'];
@@ -109,7 +109,7 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
               <strong>{preview.rule ? taxRuleLabel(preview.rule) : 'No matching active rule'}</strong>
               <p className="muted">
                 {preview.rule
-                  ? `${formatBps(preview.rule.rateBps)} plus ${formatCurrency(preview.rule.fixedAmount)} VND fixed amount.`
+                  ? `${formatBps(preview.rule.rateBps)} plus ${formatMoney(preview.rule.fixedAmount, 'VND', '0 VND')} fixed amount.`
                   : 'Withholding preview returns 0 until a matching default/service/amount-band rule exists.'}
               </p>
             </div>
@@ -118,9 +118,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
           <div className="setup-stage-item">
             <span>TAX</span>
             <div>
-              <strong>{formatCurrency(preview.withholdingAmount)} VND withholding</strong>
+              <strong>{formatMoney(preview.withholdingAmount)} withholding</strong>
               <p className="muted">
-                Gross {formatCurrency(preview.grossAmount)} VND / service type{' '}
+                Gross {formatMoney(preview.grossAmount)} / service type{' '}
                 {preview.serviceType || 'not set'}.
               </p>
             </div>
@@ -227,9 +227,9 @@ export default async function TaxPolicyPage({ searchParams }: { searchParams?: T
                     </strong>
                     <p className="muted">
                       {formatBps(rule.rateBps)}
-                      {rule.fixedAmount ? ` + ${formatCurrency(rule.fixedAmount)} VND` : ''}
+                      {rule.fixedAmount ? ` + ${formatMoney(rule.fixedAmount)}` : ''}
                       {rule.scope === 'AMOUNT_BAND'
-                        ? ` / ${formatCurrency(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatCurrency(rule.maxGrossAmount) : 'no max'} VND`
+                        ? ` / ${formatMoney(rule.minGrossAmount ?? 0)}-${rule.maxGrossAmount ? formatMoney(rule.maxGrossAmount) : 'no max'}`
                         : ''}
                     </p>
                     <form action={updateTaxRule} className="form-grid compact-form">
@@ -580,8 +580,4 @@ function formatBand(rule: AdminTaxRule) {
 
 function formatBps(value: number) {
   return `${(value / 100).toFixed(2)}%`;
-}
-
-function formatCurrency(value: number) {
-  return value.toLocaleString('vi-VN');
 }
