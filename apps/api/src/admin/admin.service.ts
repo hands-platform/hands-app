@@ -541,18 +541,6 @@ const adminServiceCatalogSelect = {
   _count: { select: { providers: true, bookings: true } },
 } satisfies Prisma.MassageServiceSelect;
 
-const adminServiceMutationSelect = {
-  id: true,
-  serviceGroupKey: true,
-  name: true,
-  description: true,
-  durationMin: true,
-  basePrice: true,
-  priceStep: true,
-  displayOrder: true,
-  active: true,
-} satisfies Prisma.MassageServiceSelect;
-
 const adminServicePayoutRuleMutationSelect = {
   id: true,
   serviceId: true,
@@ -566,6 +554,22 @@ const adminServicePayoutRuleMutationSelect = {
   createdAt: true,
   updatedAt: true,
 } satisfies Prisma.ServicePayoutRuleSelect;
+
+const adminServiceMutationSelect = {
+  id: true,
+  serviceGroupKey: true,
+  name: true,
+  description: true,
+  durationMin: true,
+  basePrice: true,
+  priceStep: true,
+  displayOrder: true,
+  active: true,
+  payoutRules: {
+    orderBy: [{ active: 'desc' }, { customerPrice: 'asc' }],
+    select: adminServicePayoutRuleMutationSelect,
+  },
+} satisfies Prisma.MassageServiceSelect;
 
 const adminServicePayoutRuleWithServiceSelect = {
   ...adminServicePayoutRuleMutationSelect,
