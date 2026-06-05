@@ -28,6 +28,7 @@
     "scope:vietnam": "node infra/scripts/check-vietnam-scope.mjs",
     "check:vietnam-scope": "node infra/scripts/check-vietnam-scope.mjs",
     "authority:check": "node infra/scripts/check-final-authority.mjs",
+    "api:smoke": "node infra/scripts/api-smoke.mjs",
     "api:domain-smoke": "node infra/scripts/api-domain-smoke.mjs",
     "api:policy-coverage": "node infra/scripts/check-api-policy-coverage.mjs",
     "supabase:schema:check": "node infra/scripts/check-supabase-schema.mjs",
