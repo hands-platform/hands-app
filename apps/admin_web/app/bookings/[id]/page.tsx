@@ -3622,7 +3622,7 @@ function bookingEvidencePacket({
           : 'No immutable address snapshot is attached yet.',
         evidence: booking.addressSnapshot
           ? `Pin ${coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)}`
-          : 'Legacy or missing booking address needs operator review.',
+          : 'Stored-address fallback or missing booking address needs operator review.',
         href: '#address-radius-contract',
       },
       {
@@ -5398,7 +5398,7 @@ function bookingOperatingTimeline({
     title: booking.addressSnapshot ? 'Address snapshot locked' : 'Address snapshot missing',
     detail: booking.addressSnapshot
       ? `${compactActivityText(addressLine, 84)} / pin ${addressPin}`
-      : 'This booking is still using legacy address data. Confirm before dispatch.',
+      : 'This booking is still using older address data. Confirm before dispatch.',
     at: booking.addressSnapshot?.createdAt,
     status: booking.addressSnapshot ? 'Locked' : 'Pending',
   });
@@ -5906,7 +5906,7 @@ function bookingOperatingSnapshot({
       : 'Customer selection pending';
   const addressSource = booking.addressSnapshot
     ? `${booking.addressSnapshot.source ?? 'booking_confirmation'} / ${formatDate(booking.addressSnapshot.createdAt)}`
-    : 'Legacy booking address';
+    : 'Stored booking address';
   const next = bookingOperatingNextAction(booking);
   const checks = bookingAttentionFlags(booking);
   const tone = checks.some((check) => check.severity === 'high')
@@ -7940,7 +7940,7 @@ function bookingAddressRadiusContract(
   const bookingGate = readBookingGateSnapshot(booking);
   const snapshotLocked = Boolean(booking.addressSnapshot && pin.source === 'BookingAddressSnapshot');
   const driftMeters = pin.legacyDriftMeters;
-  const driftLabel = driftMeters === null ? 'No legacy comparison' : distanceLabel(Math.round(driftMeters));
+  const driftLabel = driftMeters === null ? 'No stored-coordinate comparison' : distanceLabel(Math.round(driftMeters));
   const driftOk = driftMeters === null || driftMeters <= 100;
   const pinReady = Number.isFinite(pin.lat) && Number.isFinite(pin.lng);
 
@@ -7953,7 +7953,7 @@ function bookingAddressRadiusContract(
         value: pin.source,
         helper: snapshotLocked
           ? 'Marketplace distance is measured from the immutable booking address snapshot.'
-          : 'Legacy booking coordinates are being used because the snapshot is missing.',
+          : 'Stored booking coordinates are being used because the snapshot is missing.',
       },
       {
         label: 'Policy pin',
@@ -7966,11 +7966,11 @@ function bookingAddressRadiusContract(
         helper: 'Partners outside this booking-address radius cannot participate in marketplace matching.',
       },
       {
-        label: 'Legacy coordinate drift',
+        label: 'Stored coordinate drift',
         value: driftLabel,
         helper: driftOk
-          ? 'Snapshot and legacy coordinates are aligned.'
-          : 'Snapshot and legacy coordinates differ.',
+          ? 'Snapshot and stored coordinates are aligned.'
+          : 'Snapshot and stored coordinates differ.',
       },
       {
         label: 'Optional customer GPS evidence',
@@ -8010,7 +8010,7 @@ function bookingAddressRadiusContract(
         title: 'Coordinate consistency',
         status: driftOk ? 'Aligned' : 'Drift found',
         detail: driftOk
-          ? 'Legacy booking coordinates do not conflict with the address snapshot.'
+          ? 'Stored booking coordinates do not conflict with the address snapshot.'
           : 'Operators should verify customer address before extending the wait window.',
         action: `Drift ${driftLabel}`,
         className: driftOk ? 'ops-task-done' : 'ops-task-warning',
@@ -8087,7 +8087,7 @@ function bookingMvpAuthorityContract({
     {
       contract: 'Booking address snapshot',
       scope: 'Required dispatch pin',
-      status: addressSnapshotReady ? 'Snapshot ready' : pinReady ? 'Legacy pin only' : 'Missing pin',
+      status: addressSnapshotReady ? 'Snapshot ready' : pinReady ? 'Stored pin only' : 'Missing pin',
       tone: addressSnapshotReady ? 'pill-success' : pinReady ? 'pill-warn' : 'pill-danger',
       evidence: `${bookingAddressSnapshotLabel(booking)} / ${backupSupply.policyPin.label}`,
       operatorUse: 'Marketplace distance and evidence review should use the immutable booking address.',
@@ -8181,7 +8181,7 @@ function bookingDispatchPin(booking: AdminBookingDetail) {
   return {
     lat,
     lng,
-    source: hasSnapshotPin ? 'BookingAddressSnapshot' : 'Legacy booking pin',
+    source: hasSnapshotPin ? 'BookingAddressSnapshot' : 'Stored booking pin',
     label: coordinateLabel(lat, lng),
     legacyDriftMeters,
   };
@@ -9413,7 +9413,7 @@ function bookingOperationalPolicySnapshot(
 
   const decisionTitle = customerConfirmMode
     ? 'Customer final confirmation mode'
-    : 'Legacy accept mode ignored';
+    : 'Historical accept mode ignored';
   const decisionStatus =
     customerConfirmMode && customerChoiceCandidates.length > 0 && !selected
       ? 'Customer action needed'
@@ -9450,7 +9450,7 @@ function bookingOperationalPolicySnapshot(
         label: 'Wallet debt gate',
         helper:
           String(walletGate?.value) === 'ALLOW_ONE_RECOVERY_BOOKING'
-            ? 'Legacy recovery mode is visible for audit only; current operations should settle debt before marketplace participation.'
+            ? 'Historical recovery mode is visible for audit only; current operations should settle debt before marketplace participation.'
             : 'Negative wallet partners can see marketplace requests, but marketplace participation and payout release are blocked.',
         enforced: false,
       }),
@@ -9643,7 +9643,7 @@ function readBookingGateSnapshot(booking: AdminBookingDetail) {
   const customerDistanceLabel =
     customerDistance === null
       ? 'No optional GPS snapshot'
-      : `${distanceLabel(Math.round(customerDistance))} / legacy limit ${distanceLabel(Math.round(customerLimit ?? 0))}`;
+      : `${distanceLabel(Math.round(customerDistance))} / historical support limit ${distanceLabel(Math.round(customerLimit ?? 0))}`;
   const preferredPartnerDistanceLabel =
     preferredDistance === null
       ? 'No preferred partner distance'

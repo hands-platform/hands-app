@@ -3844,7 +3844,7 @@ function bookingAddressSnapshotState(booking: AdminBooking) {
   if (legacyAddress) {
     const pin = coordinatePairLabel(booking.lat, booking.lng);
     return {
-      label: 'Legacy address',
+      label: 'Stored address fallback',
       detail: displayMarketplaceText(legacyAddress),
       pin: pin ? `Pin ${pin}` : 'No locked pin snapshot',
       tone: 'pill-warn',
@@ -4195,7 +4195,7 @@ function matchingPolicySummaryLabel(snapshot: BookingMatchingPolicySnapshot | nu
     snapshot.preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
       ? 'customer final'
       : snapshot.preferredAcceptMode === 'AUTO_MATCH_ON_ACCEPT'
-        ? 'legacy auto ignored'
+        ? 'historical auto ignored'
         : 'accept ?';
   return `Saved policy: ${timer} / ${radius} / ${freshness} / ${inviteLimit} / ${backupMode} / ${acceptMode}`;
 }

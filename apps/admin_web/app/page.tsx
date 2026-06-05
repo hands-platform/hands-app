@@ -2507,7 +2507,7 @@ function buildMatchingControlRoom(
         operatorAction:
           openMatchingWithPolicySnapshot.length === openMatching.length
             ? 'Use each booking row and detail page as the source of truth for manual dispatch.'
-            : 'Legacy open bookings without snapshots should be reviewed against current policy and audit notes.',
+            : 'Older open bookings without snapshots should be reviewed against current policy and audit notes.',
         className:
           openMatching.length === 0 || openMatchingWithPolicySnapshot.length === openMatching.length
             ? 'ops-task-done'

@@ -1553,7 +1553,7 @@ function buildPolicySimulation(
         className: 'timeline-done',
         tags: [
           {
-            label: customerFinalConfirm ? 'Customer final choice' : 'Legacy value ignored',
+            label: customerFinalConfirm ? 'Customer final choice' : 'Historical value ignored',
             tone: 'pill-info',
           },
           { label: `${responseWindowMinutes} min`, tone: 'pill-success' },
@@ -1758,7 +1758,7 @@ function buildBookingCreateGateReview(
         defaultValue: '20 km',
         operatorMeaning:
           'A customer can browse globally and book from a confirmed Vietnam service address. GPS distance is retained only as optional evidence.',
-        evidence: `${reasonCounts.get('CUSTOMER_CURRENT_LOCATION_TOO_FAR') ?? 0} legacy row(s)`,
+        evidence: `${reasonCounts.get('CUSTOMER_CURRENT_LOCATION_TOO_FAR') ?? 0} historical row(s)`,
         href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION_TOO_FAR',
         pillClass: customerDistanceKm === 20 ? 'pill-success' : 'pill-warn',
       },
@@ -1780,7 +1780,7 @@ function buildBookingCreateGateReview(
         defaultValue: '10 min',
         operatorMeaning:
           'Fresh customer GPS can be stored as optional support evidence when available. Booking authority remains the confirmed service address.',
-        evidence: `${bookingGateCurrentLocationRejectCount(reasonCounts)} legacy row(s)`,
+        evidence: `${bookingGateCurrentLocationRejectCount(reasonCounts)} historical row(s)`,
         href: '/audit-log?query=CUSTOMER_CURRENT_LOCATION',
         pillClass: freshnessMinutes === 10 ? 'pill-success' : 'pill-warn',
       },
@@ -1868,10 +1868,10 @@ function policyRecommendationPosture(
 
   if (setting.key === 'matching.preferred_accept_mode') {
     return {
-      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Legacy value ignored' : 'Customer choice',
+      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Historical value ignored' : 'Customer choice',
       detail:
         value === 'AUTO_MATCH_ON_ACCEPT'
-          ? 'The API now ignores this legacy value and keeps the request open until the customer chooses the final partner.'
+          ? 'The API now ignores this historical value and keeps the request open until the customer chooses the final partner.'
           : 'Customer final-choice mode is required for the HANDS MVP flow.',
       operatorAction: 'Keep customer-confirm mode active before scaling marketplace partner shortlist UX.',
       alignedAction:
@@ -2794,7 +2794,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           'Expected when Admin policy changed after a booking opened; use booking detail before manual action.',
       },
       {
-        label: 'Legacy bookings',
+        label: 'Older bookings',
         value: String(withoutSnapshot.length),
         helper: 'Older bookings without metadata fall back to live policy explanations.',
       },
@@ -2813,7 +2813,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         value: `${openMatchingWithSnapshot.length}/${openMatching.length}`,
         helper:
           openMatchingWithoutSnapshot > 0
-            ? `${openMatchingWithoutSnapshot} open legacy booking(s) still need manual policy interpretation.`
+            ? `${openMatchingWithoutSnapshot} open booking(s) without snapshots still need manual policy interpretation.`
             : 'Every open matching booking in this sample has a saved policy snapshot.',
       },
       {
@@ -2927,7 +2927,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           : 'Marketplace visibility and participation checks stay delayed until the first-pick response window passes.',
         operatorAction: customerConfirm
           ? 'Customer confirmation mode is active, so accepted partners still require customer final choice.'
-          : 'Legacy auto-match value is ignored; reset the policy to customer final-choice mode for clean operations.',
+          : 'Historical auto-match value is ignored; reset the policy to customer final-choice mode for clean operations.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
@@ -4506,7 +4506,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Customer choice',
       title: 'Requires customer final partner choice',
       detail:
-        'Partner response keeps the booking open after partner accept so the customer can make the final choice. Legacy auto-match values are ignored by the API.',
+        'Partner response keeps the booking open after partner accept so the customer can make the final choice. Historical auto-match values are ignored by the API.',
       saveChecks: [
         {
           label: 'Customer choice queue',
