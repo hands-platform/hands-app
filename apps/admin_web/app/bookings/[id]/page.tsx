@@ -6150,7 +6150,7 @@ function buildBookingActivityRecords(booking: AdminBookingDetail, notifications:
   const requestOpenedAt = booking.createdAt ?? booking.scheduledStartAt;
   if (requestOpenedAt) {
     records.push({
-      id: `${booking.id}-opened`,
+      id: `${booking.id}-request-timestamp`,
       type: 'BOOKING',
       at: requestOpenedAt,
       title: 'Request timestamp',

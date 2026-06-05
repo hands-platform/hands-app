@@ -911,6 +911,7 @@ if (bookingLinkMatch) {
     'customer final partner choice',
     'wallet gate',
     'Booking recent operations timeline',
+    'Request timestamp',
     'Evidence packet for admin decision',
     'Chat evidence decision board',
     'Retained chat evidence is the first place operators should look',
