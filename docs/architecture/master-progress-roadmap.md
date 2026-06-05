@@ -1,6 +1,6 @@
 # HANDS MVP Master Progress Roadmap
 
-Last checked: 2026-06-05
+Last checked: 2026-06-06
 
 This is the single working board for day-to-day MVP execution. If this file conflicts with `docs/architecture/hands-mvp-final-authority.md`, the final authority file wins.
 
@@ -53,7 +53,7 @@ Known checks used for stable steps:
 ```powershell
 npm.cmd run setup:doctor
 npm.cmd run authority:check
-npm.cmd run api:policy-coverage
+npm.cmd run policy:coverage
 npm.cmd run api:domain-smoke
 npm.cmd run security:secrets
 npm.cmd run typecheck
