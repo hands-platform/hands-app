@@ -187,6 +187,129 @@ void main() {
     expect(joinTapped, isFalse);
   });
 
+  testWidgets('allows first-pick request response when wallet is negative',
+      (tester) async {
+    var acceptTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: OpenBookingCard(
+              booking: {
+                'id': 'booking-first-pick-wallet-negative',
+                'status': 'OPEN_MATCHING',
+                'createdAt': '2026-06-04T00:00:00.000Z',
+                'updatedAt': '2026-06-04T00:00:00.000Z',
+                'preferredProvider': {'displayName': 'Linh Wellness'},
+                'participants': <dynamic>[],
+                'payment': {
+                  'method': 'CASH',
+                  'amount': 450000,
+                },
+                'address': {
+                  'name': 'Demo Customer',
+                  'phone': '0865907184',
+                  'line1': 'District 1, Ho Chi Minh City',
+                },
+                'services': [
+                  {
+                    'service': {
+                      'name': 'Foot Massage',
+                      'durationMin': 60,
+                      'basePrice': 450000,
+                    },
+                  },
+                ],
+              },
+              isPreferredRequest: true,
+              joined: false,
+              loading: false,
+              walletBlocked: true,
+              onJoin: () {},
+              onAccept: () => acceptTapped = true,
+              onReject: () {},
+              onStart: () {},
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+        find.text('Marketplace visible, participation locked'), findsNothing);
+    expect(find.text('Accept request'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Accept request'));
+    await tester.tap(find.text('Accept request'));
+    await tester.pump();
+
+    expect(acceptTapped, isTrue);
+  });
+
+  testWidgets('allows matched first-pick service start when wallet is negative',
+      (tester) async {
+    var startTapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: OpenBookingCard(
+              booking: {
+                'id': 'booking-first-pick-matched-wallet-negative',
+                'status': 'MATCHED',
+                'createdAt': '2026-06-04T00:00:00.000Z',
+                'updatedAt': '2026-06-04T00:00:00.000Z',
+                'preferredProvider': {'displayName': 'Linh Wellness'},
+                'selectedProvider': {'displayName': 'Linh Wellness'},
+                'participants': [
+                  {'status': 'SELECTED'}
+                ],
+                'payment': {
+                  'method': 'CASH',
+                  'amount': 450000,
+                },
+                'address': {
+                  'name': 'Demo Customer',
+                  'phone': '0865907184',
+                  'line1': 'District 1, Ho Chi Minh City',
+                },
+                'services': [
+                  {
+                    'service': {
+                      'name': 'Foot Massage',
+                      'durationMin': 60,
+                      'basePrice': 450000,
+                    },
+                  },
+                ],
+              },
+              isPreferredRequest: true,
+              joined: false,
+              loading: false,
+              walletBlocked: true,
+              onJoin: () {},
+              onAccept: () {},
+              onReject: () {},
+              onStart: () => startTapped = true,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+        find.text('Marketplace visible, participation locked'), findsNothing);
+    expect(find.text('Start service'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Start service'));
+    await tester.tap(find.text('Start service'));
+    await tester.pump();
+
+    expect(startTapped, isTrue);
+  });
+
   testWidgets('locks participating marketplace card when wallet is negative',
       (tester) async {
     var rejectTapped = false;
