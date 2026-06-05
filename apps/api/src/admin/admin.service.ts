@@ -112,6 +112,66 @@ const adminUserListPushDeviceSelect = {
   updatedAt: true,
 } satisfies Prisma.PushDeviceSelect;
 
+const adminAppSessionListSelect = {
+  id: true,
+  userId: true,
+  role: true,
+  deviceId: true,
+  platform: true,
+  appVersion: true,
+  ipAddress: true,
+  active: true,
+  lastSeenAt: true,
+  expiresAt: true,
+  createdAt: true,
+  updatedAt: true,
+  user: {
+    select: {
+      ...adminUserSummarySelect,
+      customerProfile: { select: { id: true, userId: true, addresses: true } },
+      providerProfile: {
+        select: {
+          id: true,
+          displayName: true,
+          status: true,
+          currentLocationUpdatedAt: true,
+          blockedAt: true,
+        },
+      },
+      pushDevices: {
+        orderBy: { updatedAt: 'desc' },
+        take: 3,
+        select: adminUserListPushDeviceSelect,
+      },
+    },
+  },
+} satisfies Prisma.AppSessionSelect;
+
+const adminNotificationUserSelect = {
+  id: true,
+  phone: true,
+  fullName: true,
+  roles: true,
+  customerProfile: { select: { id: true } },
+  providerProfile: { select: { id: true, displayName: true, status: true } },
+} satisfies Prisma.UserSelect;
+
+const adminNotificationListSelect = {
+  id: true,
+  userId: true,
+  type: true,
+  title: true,
+  body: true,
+  data: true,
+  readAt: true,
+  createdAt: true,
+  user: { select: adminNotificationUserSelect },
+  deliveries: {
+    orderBy: { attemptedAt: 'desc' },
+    select: adminNotificationDeliverySelect,
+  },
+} satisfies Prisma.NotificationSelect;
+
 const adminUserListSessionSelect = {
   id: true,
   userId: true,
@@ -1363,28 +1423,7 @@ export class AdminService {
     return this.prisma.appSession.findMany({
       orderBy: { lastSeenAt: 'desc' },
       take: 500,
-      include: {
-        user: {
-          select: {
-            ...adminUserSummarySelect,
-            customerProfile: { select: { id: true, userId: true, addresses: true } },
-            providerProfile: {
-              select: {
-                id: true,
-                displayName: true,
-                status: true,
-                currentLocationUpdatedAt: true,
-                blockedAt: true,
-              },
-            },
-            pushDevices: {
-              orderBy: { updatedAt: 'desc' },
-              take: 3,
-              select: adminUserListPushDeviceSelect,
-            },
-          },
-        },
-      },
+      select: adminAppSessionListSelect,
     });
   }
 
@@ -3452,22 +3491,7 @@ export class AdminService {
     return this.prisma.notification.findMany({
       orderBy: { createdAt: 'desc' },
       take: 100,
-      include: {
-        user: {
-          select: {
-            id: true,
-            phone: true,
-            fullName: true,
-            roles: true,
-            customerProfile: { select: { id: true } },
-            providerProfile: { select: { id: true, displayName: true, status: true } },
-          },
-        },
-        deliveries: {
-          orderBy: { attemptedAt: 'desc' },
-          select: adminNotificationDeliverySelect,
-        },
-      },
+      select: adminNotificationListSelect,
     });
   }
 
