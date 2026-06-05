@@ -56,7 +56,7 @@ class ProviderFirstRevenuePayoutSetupPanel extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$completedBookingCount completed service(s). Finish tax, address, and payout agreements before withdrawal. You can still receive bookings unless the HANDS wallet is negative.',
+                      '$completedBookingCount completed service(s). Finish tax, address, and payout agreements before withdrawal. A negative HANDS wallet blocks marketplace participation and payout release until settlement.',
                     ),
                   ],
                 ),

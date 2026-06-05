@@ -39,6 +39,8 @@ export const NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY = 'notification.partner_aler
 export const PARTNER_ALERT_IN_APP_WITH_PUSH_LATER = 'IN_APP_WITH_PUSH_LATER';
 export const PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
 export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';
+// Compatibility: the stored policy value keeps the earlier "accepts" wording,
+// but HANDS MVP behavior blocks marketplace participation and payout release.
 export const WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
 export const WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
 export const DECISION_ACTION_EVIDENCE_GATE_MODE_KEY = 'decision.action_evidence_gate_mode';
