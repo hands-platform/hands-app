@@ -71,8 +71,11 @@ Full local smoke needs Docker PostgreSQL and Redis:
 docker compose up -d
 npm.cmd run local:start
 node infra/scripts/api-smoke.mjs
+npm.cmd run admin:web-smoke:critical
 node infra/scripts/admin-web-smoke.mjs
 ```
+
+Use `npm.cmd run admin:web-smoke:critical` during daily development for the high-signal Operations Command Center routes. Keep the full Admin smoke for larger Admin route changes, release checks, and overnight/full verification windows.
 
 External setup status:
 

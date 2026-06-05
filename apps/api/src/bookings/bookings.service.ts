@@ -777,7 +777,7 @@ export class BookingsService {
       where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
     });
     if (!participant || !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)) {
-      throw new BadRequestException('Partner must join or accept before customer selection');
+      throw new BadRequestException('Partner must participate or accept before customer selection');
     }
     if (providerId !== ownedBooking.preferredProviderId) {
       await this.ensureProviderWalletCanJoinMarketplace(providerId);
@@ -846,7 +846,7 @@ export class BookingsService {
       throw new BadRequestException(
         booking.preferredProviderId === provider.id
           ? 'Preferred partner invitation is not available for this booking'
-          : 'Partner must join this marketplace booking before responding',
+          : 'Partner must participate in this marketplace booking before responding',
       );
     }
 
@@ -1274,11 +1274,11 @@ export class BookingsService {
     }
     if (!this.isBackupWindowOpen(booking, policy)) {
       throw new BadRequestException(
-        'Marketplace partners can join after the first-pick response window opens',
+        'Marketplace partners can participate after the first-pick response window opens',
       );
     }
     if (distanceMeters === null) {
-      throw new BadRequestException('Partner location is required before joining this booking');
+      throw new BadRequestException('Partner location is required before marketplace participation');
     }
     if (
       !providerLocationFreshEnough(
@@ -1287,12 +1287,12 @@ export class BookingsService {
       )
     ) {
       throw new BadRequestException(
-        `Partner location must be refreshed within ${policy.backupProviderLocationMaxAgeMinutes} minutes before joining marketplace bookings`,
+        `Partner location must be refreshed within ${policy.backupProviderLocationMaxAgeMinutes} minutes before marketplace participation`,
       );
     }
     if (distanceMeters > policy.backupProviderRadiusMeters) {
       throw new BadRequestException(
-        `Only partners within ${formatMatchingRadius(policy.backupProviderRadiusMeters)} can join this booking`,
+        `Only partners within ${formatMatchingRadius(policy.backupProviderRadiusMeters)} can participate in this booking`,
       );
     }
     return distanceMeters;

@@ -1674,7 +1674,7 @@ const marketplaceAcceptWithoutJoinError = await expectRequestFailure(
 );
 if (
   !marketplaceAcceptWithoutJoinError.includes(
-    'Partner must join this marketplace booking before responding',
+    'Partner must participate in this marketplace booking before responding',
   )
 ) {
   throw new Error(
@@ -1758,7 +1758,7 @@ try {
       ),
     400,
   );
-  if (!preferredBeforeAcceptSelectionError.includes('Partner must join or accept before customer selection')) {
+  if (!preferredBeforeAcceptSelectionError.includes('Partner must participate or accept before customer selection')) {
     throw new Error(
       `Preferred partner selection before acceptance returned an unexpected error: ${preferredBeforeAcceptSelectionError}`,
     );
@@ -1836,7 +1836,7 @@ try {
     () => postJson(`/provider/bookings/${narrowRadiusBooking.id}/join`, backupProviderAuth.accessToken),
     400,
   );
-  if (!narrowRadiusJoinError.includes('Only partners within 1km can join this booking')) {
+  if (!narrowRadiusJoinError.includes('Only partners within 1km can participate in this booking')) {
     throw new Error(`Narrow marketplace radius returned an unexpected error: ${narrowRadiusJoinError}`);
   }
 } finally {
@@ -1922,7 +1922,7 @@ try {
       ),
     400,
   );
-  if (!rejectedMarketplaceSelectionError.includes('Partner must join or accept before customer selection')) {
+  if (!rejectedMarketplaceSelectionError.includes('Partner must participate or accept before customer selection')) {
     throw new Error(
       `Rejected marketplace participant should not be selectable by customer: ${rejectedMarketplaceSelectionError}`,
     );
