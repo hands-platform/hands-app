@@ -982,7 +982,7 @@ function buildCashSettlementHandoffMap(
       detail: hasOpenDebt
         ? 'Partners may see marketplace demand, but cannot join marketplace bookings while wallet debt remains.'
         : 'Cleared partner wallets can join eligible marketplace bookings again.',
-      operatorRule: 'Partner app message: Unpaid HANDS fees must be settled before you can join this marketplace booking.',
+      operatorRule: 'Partner app message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking.',
       href: '/bookings?view=marketplace',
       className: hasOpenDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
@@ -1411,7 +1411,7 @@ function buildDebtCauseCards(rows: CashSettlementRow[], summary: CashSettlementS
         rows.reduce((sum, row) => sum + row.platformFee, 0),
         summary.currency,
       )} HANDS fee remains open across visible rows.`,
-      action: 'This is the main reason marketplace join is blocked while the wallet is negative.',
+      action: 'This is the main reason marketplace participation is blocked while the wallet is negative.',
       className: rows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: rows.length ? 'pill-danger' : 'pill-success',
     },

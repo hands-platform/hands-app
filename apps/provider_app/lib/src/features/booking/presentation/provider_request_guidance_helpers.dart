@@ -79,9 +79,9 @@ ProviderRequestGuidance providerRequestGuidance({
       roleLabel: roleLabel,
       decisionLabel: 'Settlement required',
       nextAction:
-          'Settle unpaid HANDS fees before joining this marketplace booking.',
+          'Settle unpaid HANDS fees before marketplace participation.',
       contextMessage:
-          'This marketplace booking is visible, but unpaid HANDS fees must be settled before you can join it.',
+          'This marketplace booking is visible, but unpaid HANDS fees must be settled before marketplace participation.',
       detailMessage: providerWalletBlockFallbackReasonClean,
       infoMessage: providerWalletBlockHintClean,
     );

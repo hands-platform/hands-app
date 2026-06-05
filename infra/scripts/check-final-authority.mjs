@@ -69,8 +69,8 @@ function checkNoContradictoryOperationsDocs() {
   );
   requireMarkers('docs/architecture/partner-acceptance-operations.md', partnerAcceptance, [
     'The partner can still see marketplace opportunities',
-    'Marketplace join stays blocked until settlement',
-    'Marketplace requests can remain visible, but join is blocked until settlement.',
+    'Marketplace requests can remain visible, but marketplace participation is blocked until settlement.',
+    'Marketplace join, marketplace acceptance, and customer final selection of that marketplace partner stay blocked until settlement.',
   ]);
 
   const reviews = read('docs/architecture/reviews.md');

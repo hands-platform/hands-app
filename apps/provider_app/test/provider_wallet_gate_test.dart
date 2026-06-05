@@ -49,7 +49,7 @@ void main() {
     expect(
       view.steps,
       contains(
-          'Marketplace participation and payout release unlock when the wallet is no longer negative.'),
+          'Marketplace participation and payout release resume when the wallet is no longer negative.'),
     );
   });
 
@@ -267,14 +267,14 @@ void main() {
     );
     expect(
       providerWalletBlockFallbackReasonClean,
-      'Unpaid HANDS fees must be settled before you can join this marketplace booking.',
+      'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.',
     );
     expect(guidance.detailMessage, providerWalletBlockFallbackReasonClean);
     expect(providerActionBlockCopy(guidance.detailMessage)?.title,
         'Fee settlement required');
     expect(
       providerActionBlockCopy(
-              'Unpaid HANDS fees must be settled before you can join this marketplace booking.')
+              'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.')
           ?.detail,
       providerWalletBlockFallbackReasonClean,
     );
@@ -328,7 +328,7 @@ void main() {
     );
   });
 
-  test('keeps marketplace booking visible but explains join is blocked', () {
+  test('keeps marketplace booking visible but explains participation is blocked', () {
     final guidance = providerRequestGuidance(
       booking: {
         'status': 'OPEN_MATCHING',
@@ -342,9 +342,9 @@ void main() {
     expect(guidance.modeLabel, 'Marketplace opportunity');
     expect(guidance.nextAction, contains('Settle unpaid HANDS fees'));
     expect(guidance.contextMessage, contains('visible'));
-    expect(guidance.contextMessage, contains('before you can join'));
+    expect(guidance.contextMessage, contains('before marketplace participation'));
     expect(guidance.detailMessage,
-        'Unpaid HANDS fees must be settled before you can join this marketplace booking.');
+        'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.');
   });
 
   test('explains marketplace opportunities after preferred partner exists', () {

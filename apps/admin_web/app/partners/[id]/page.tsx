@@ -502,7 +502,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       href: '#cash-debt-origin',
       label: 'Cash debt',
       value: formatCurrency(cashFeeDebtAmount(provider)),
-      detail: `${openCashDebtEarnings.length} unpaid cash fee earning row(s). Marketplace join is blocked until settled.`,
+      detail: `${openCashDebtEarnings.length} unpaid cash fee earning row(s). Marketplace participation is blocked until settled.`,
     },
     {
       href: '#payout',
@@ -5769,7 +5769,7 @@ function partnerAppBlockMessage(
     return 'Partner can receive and finalize booking requests.';
   }
   if (bookingAcceptance.cashDebt > 0) {
-    return 'Unpaid HANDS fees must be settled before you can join this marketplace booking.';
+    return 'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
     return 'Account requires admin review before receiving work.';
@@ -5818,8 +5818,8 @@ function buildPartnerAcceptanceUnblockPlaybook(
       status: walletGate?.ok ? 'CLEAR' : 'BLOCKING',
       detail: walletGate?.detail ?? 'Wallet gate was not evaluated.',
       bookingImpact: walletGate?.ok
-        ? 'Partner can pass the cash-debt marketplace join gate.'
-        : 'Marketplace join is blocked; direct first-pick and already-matched service flow are not retroactively blocked by wallet debt.',
+        ? 'Partner can pass the cash-debt marketplace participation gate.'
+        : 'Marketplace participation and final marketplace selection are blocked; direct first-pick and already-matched service flow are not retroactively blocked by wallet debt.',
       payoutImpact: 'Finance should not release payout while HANDS fee/tax debt is still open.',
       action: walletGate?.ok ? 'Open cash settlement history' : 'Settle cash debt',
       href: '/cash-settlements',

@@ -41,8 +41,8 @@ Additional targeted checks also passed: `npm.cmd audit --audit-level=moderate`, 
 ## Current Backend Position
 
 - Customer booking cancellation is blocked after partner commitment and routed to admin review.
-- Negative partner wallets block marketplace join and payout release.
-- Negative partner wallets do not create marketplace participant records when a join is blocked.
+- Negative partner wallets block marketplace participation and payout release.
+- Negative partner wallets do not create marketplace participant records for blocked marketplace participation attempts.
 - Real marketplace participants remain stored for admin visibility.
 - Marketplace accept/reject responses now require an existing participant record, so partners must join before responding unless they are the first-pick invitee.
 - Payment callbacks are public by necessity. MoMo/VNPay signature verification now runs when gateway secrets are configured, and production rejects missing callback secrets.

@@ -112,7 +112,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Matching',
     label: 'Marketplace partner radius',
     description:
-      'Maximum distance from the customer for nearby partners that can see and join an open request.',
+      'Maximum distance from the confirmed booking address for marketplace partners that can see and join an open request.',
     value: DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
     recommendedValue: DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
     unit: 'meters',

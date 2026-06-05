@@ -1,7 +1,7 @@
 import '../../../core/provider_value_helpers.dart';
 
 const providerWalletBlockFallbackReasonClean =
-    'Unpaid HANDS fees must be settled before you can join this marketplace booking.';
+    'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.';
 
 const providerWalletBlockHintClean =
     'Cash jobs are paid directly to you. Deposit the unpaid HANDS fee or wait for an admin offset, then refresh wallet status before joining marketplace requests.';

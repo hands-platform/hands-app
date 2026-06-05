@@ -4851,7 +4851,7 @@ function buildMarketplaceOperatingQueue(
       status: cashDebtBookings.length ? 'Fee settlement' : 'Clear',
       tone: cashDebtBookings.length ? 'danger' : 'ok',
       detail:
-        'Negative wallet partners can see marketplace demand but cannot participate. App message: Unpaid HANDS fees must be settled before you can join this marketplace booking.',
+        'Negative wallet partners can see marketplace demand but cannot participate. App message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking.',
       operatorAction:
         'Confirm HANDS fee deposit or approved admin offset before marketplace participation and payout release reopen.',
       href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',

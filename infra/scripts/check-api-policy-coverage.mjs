@@ -189,7 +189,7 @@ const requiredCoverage = [
       'Cash booking did not create a negative provider wallet',
       'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
       'Negative wallet should not block preferred direct request acceptance',
-      'Negative wallet should not block customer final selection after a partner already joined',
+      'Negative provider wallet blocks customer final selection of marketplace participant',
       'Negative wallet should not block starting a booking that is already matched',
       'Negative wallet partner should still see marketplace request before settlement',
       'Negative provider wallet blocks marketplace participation',
@@ -205,7 +205,7 @@ const requiredCoverage = [
       'wallet.negative_balance_gate',
       'Negative wallet partner should still see marketplace request before settlement',
       'Negative provider wallet blocks marketplace participation',
-      'Negative wallet should not block customer final selection after a partner already joined',
+      'Negative provider wallet blocks customer final selection of marketplace participant',
       'Negative wallet should not block starting a booking that is already matched',
       'marketplace participation',
       'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET',
@@ -301,14 +301,17 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   if (!joinBooking.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
     missingMarkers.push('joinBooking must keep the negative-wallet marketplace join gate');
   }
-  for (const [name, block] of [
-    ['selectProvider', selectProvider],
-    ['updateParticipant', updateParticipant],
-    ['updateProviderBookingStatus', lifecycleStatus],
-  ]) {
-    if (block.includes('ensureProviderWalletCanJoinMarketplace') || block.includes('throwProviderWalletBlocked')) {
-      missingMarkers.push(`${name} must not apply the negative-wallet marketplace join gate`);
-    }
+  if (!selectProvider.includes('await this.ensureProviderWalletCanJoinMarketplace(providerId);')) {
+    missingMarkers.push('selectProvider must keep the negative-wallet marketplace final selection gate');
+  }
+  if (!updateParticipant.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
+    missingMarkers.push('updateParticipant must keep the negative-wallet marketplace acceptance gate');
+  }
+  if (
+    lifecycleStatus.includes('ensureProviderWalletCanJoinMarketplace') ||
+    lifecycleStatus.includes('throwProviderWalletBlocked')
+  ) {
+    missingMarkers.push('updateProviderBookingStatus must not apply the negative-wallet marketplace gate');
   }
 
   return {
@@ -322,7 +325,7 @@ function checkNegativeWalletBookingFunctionBoundaries() {
 function checkProviderMobileWalletGateBoundaries() {
   const providerSource = readFileSync(providerWalletGateHelperPath, 'utf8');
   const providerWalletGateTest = readFileSync(providerWalletGateTestPath, 'utf8');
-  const walletBlockDisplayMessage = 'Unpaid HANDS fees must be settled before you can join this marketplace booking.';
+  const walletBlockDisplayMessage = 'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.';
   const walletBlockButtonLabel = 'Fee settlement required';
   const missingMarkers = [];
 
@@ -331,7 +334,7 @@ function checkProviderMobileWalletGateBoundaries() {
     ['partner app cash-fee blocked button label', walletBlockButtonLabel],
     [
       'partner app marketplace-only gate expression',
-      'return walletBlocked && !isPreferredRequest && !isMatched && !joined;',
+      'return walletBlocked && !isPreferredRequest && !isMatched;',
     ],
     ['partner app honors explicit server marketplace join flag', "summary['marketplaceJoinBlocked']"],
     ['partner app renders wallet settlement guidance', 'providerWalletBlockHintClean'],
@@ -344,10 +347,13 @@ function checkProviderMobileWalletGateBoundaries() {
   for (const [label, marker] of [
     [
       'partner app wallet gate boundary test',
-      'wallet gate only blocks joining marketplace before participation',
+      'wallet gate blocks marketplace participation before final matching',
     ],
-    ['direct first-pick remains unblocked', 'Direct first-pick accept/reject is not marketplace join.'],
-    ['already-joined participant remains selectable', 'Already joined participants stay visible for customer choice.'],
+    ['direct first-pick remains unblocked', 'Direct first-pick accept/reject is not marketplace participation.'],
+    [
+      'joined marketplace participant remains blocked until settlement',
+      'Joined marketplace participants must still settle wallet debt before customer selection.',
+    ],
     ['already-matched workflow remains unblocked', 'Already matched bookings are handled by service workflow.'],
     ['partner app exact cash-fee block copy test', walletBlockDisplayMessage],
   ]) {

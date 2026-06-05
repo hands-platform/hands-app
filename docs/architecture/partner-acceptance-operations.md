@@ -37,8 +37,8 @@ Cash bookings are collected directly by the partner. HANDS records platform fee,
 When that wallet becomes negative:
 
 - The partner can still see marketplace opportunities so customer supply stays visible, but cannot join until settlement is confirmed.
-- Marketplace requests can remain visible, but join is blocked until settlement.
-- Marketplace join stays blocked until settlement.
+- Marketplace requests can remain visible, but marketplace participation is blocked until settlement.
+- Marketplace join, marketplace acceptance, and customer final selection of that marketplace partner stay blocked until settlement.
 - Payout release stays blocked until the debt is settled.
 - The partner app displays the localized settlement-block message from `apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_gate_helpers.dart`.
 - Admin finance can settle the debt through cash settlement, earning, payout, payment, or booking detail workflows.
@@ -84,7 +84,7 @@ When a partner cannot join marketplace demand or receive payout release, operato
 1. Clear negative wallet first.
    - Owner: Finance.
    - Why: cash bookings can create unpaid HANDS fee/tax debt.
-   - Booking impact: marketplace requests can remain visible, but join is blocked until settlement.
+   - Booking impact: marketplace requests can remain visible, but marketplace participation is blocked until settlement.
    - Payout impact: finance should not release payout while the partner still owes HANDS settlement.
 
 2. Resolve account and sanction controls.
@@ -174,7 +174,7 @@ These should stay configurable instead of being hardcoded:
 - Marketplace partner radius.
 - Whether marketplace partners can appear immediately or only after a delay.
 - Whether preferred partner acceptance requires customer final confirmation.
-- Negative-wallet partner list visibility is view-only. The app should show settlement guidance before any marketplace participation attempt, and the API blocks join until settlement or approved offset clears the debt.
+- Negative-wallet partner list visibility is view-only. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace join, marketplace acceptance, and customer final marketplace selection until settlement or approved offset clears the debt.
 - No-show review thresholds and settlement decision options.
 - Cash settlement deadline.
 - Notification retry and fallback contact rules.
