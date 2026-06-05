@@ -507,6 +507,7 @@ const adminBookingListSelect = {
     orderBy: { joinedAt: 'asc' },
     select: {
       id: true,
+      providerProfileId: true,
       status: true,
       distanceMeters: true,
       providerStatusAtJoin: true,
@@ -1734,6 +1735,7 @@ export class AdminService {
           orderBy: { joinedAt: 'asc' },
           select: {
             id: true,
+            providerProfileId: true,
             status: true,
             joinedAt: true,
             respondedAt: true,
@@ -3058,12 +3060,16 @@ export class AdminService {
 
     return OPERATIONAL_POLICY_DEFINITIONS.map((definition) => {
       const saved = savedByKey.get(definition.key);
+      const savedValue =
+        saved && this.isOperationalPolicyValueSupported(definition, saved.value)
+          ? saved.value
+          : definition.value;
       return {
         ...definition,
-        value: saved?.value ?? definition.value,
-        recommendedValue: saved?.recommendedValue ?? definition.recommendedValue,
-        options: saved?.options ?? definition.options ?? null,
-        requiresRestart: saved?.requiresRestart ?? definition.requiresRestart ?? false,
+        value: savedValue,
+        recommendedValue: definition.recommendedValue,
+        options: definition.options ?? null,
+        requiresRestart: definition.requiresRestart ?? false,
         updatedAt: saved?.updatedAt ?? null,
         updatedBy: saved?.updatedBy ?? null,
       };
@@ -3162,6 +3168,29 @@ export class AdminService {
     }
 
     return String(value ?? '').trim();
+  }
+
+  private isOperationalPolicyValueSupported(
+    definition: (typeof OPERATIONAL_POLICY_DEFINITIONS)[number],
+    value: unknown,
+  ) {
+    if (typeof definition.value === 'number') {
+      const parsed = Number(value);
+      const min = definition.min ?? Number.MIN_SAFE_INTEGER;
+      const max = definition.max ?? Number.MAX_SAFE_INTEGER;
+      return Number.isInteger(parsed) && parsed >= min && parsed <= max;
+    }
+
+    if (definition.options?.length) {
+      const raw = String(value ?? '').trim();
+      return definition.options.some((option) => option.value === raw);
+    }
+
+    if (typeof definition.value === 'boolean') {
+      return value === true || value === false || value === 'true' || value === 'false';
+    }
+
+    return typeof value === 'string';
   }
 
   listNotifications() {

@@ -1,6 +1,7 @@
 param(
   [switch]$WithServices,
-  [switch]$SkipBuild
+  [switch]$SkipBuild,
+  [switch]$UseExistingApi
 )
 
 $ErrorActionPreference = "Continue"
@@ -347,12 +348,14 @@ if (Test-CommandExists "docker") {
     Invoke-Check "prisma seed" "`$env:DATABASE_URL='postgresql://massage:massage@localhost:5432/massage_vn?schema=public'; npm.cmd run prisma:seed --workspace @massage-vn/api"
 
     $existingHandsApiReady = $false
-    try {
-      Invoke-RestMethod "http://localhost:3000/api/health/ready" | Out-Null
-      $existingHandsApiReady = $true
-    } catch {}
+    if ($UseExistingApi) {
+      try {
+        Invoke-RestMethod "http://localhost:3000/api/health/ready" | Out-Null
+        $existingHandsApiReady = $true
+      } catch {}
+    }
 
-    if ($existingHandsApiReady) {
+    if ($UseExistingApi -and $existingHandsApiReady) {
       Add-Result "api runtime source" "PASS" "Using existing HANDS local API on http://localhost:3000/api"
       Invoke-SmokeWithApi -ApiBaseUrl "http://localhost:3000/api" -SocketBaseUrl "http://localhost:3000"
     } else {
