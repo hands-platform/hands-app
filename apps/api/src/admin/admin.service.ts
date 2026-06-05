@@ -992,8 +992,40 @@ const adminProviderReportDetailSelect = {
   },
 } satisfies Prisma.ProviderReportSelect;
 
+const adminProviderReportListSelect = {
+  ...adminProviderReportSummarySelect,
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: { phone: true, fullName: true } },
+    },
+  },
+  booking: { select: { id: true, status: true, scheduledStartAt: true } },
+  reporterUser: { select: { phone: true, fullName: true } },
+  assignedAdmin: { select: { phone: true, fullName: true } },
+  sanctions: {
+    orderBy: { createdAt: 'desc' },
+    select: adminProviderSanctionSummarySelect,
+  },
+} satisfies Prisma.ProviderReportSelect;
+
 const adminProviderSanctionDetailSelect = {
   ...adminProviderSanctionSummarySelect,
+  report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
+  issuedBy: { select: { phone: true, fullName: true } },
+  liftedBy: { select: { phone: true, fullName: true } },
+} satisfies Prisma.ProviderSanctionSelect;
+
+const adminProviderSanctionListSelect = {
+  ...adminProviderSanctionSummarySelect,
+  providerProfile: {
+    select: {
+      id: true,
+      displayName: true,
+      user: { select: { phone: true, fullName: true } },
+    },
+  },
   report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
   issuedBy: { select: { phone: true, fullName: true } },
   liftedBy: { select: { phone: true, fullName: true } },
@@ -1859,13 +1891,7 @@ export class AdminService {
     return this.prisma.providerReport.findMany({
       orderBy: [{ status: 'asc' }, { severity: 'desc' }, { createdAt: 'desc' }],
       take: 250,
-      include: {
-        providerProfile: { include: { user: { select: { phone: true, fullName: true } } } },
-        booking: { select: { id: true, status: true, scheduledStartAt: true } },
-        reporterUser: { select: { phone: true, fullName: true } },
-        assignedAdmin: { select: { phone: true, fullName: true } },
-        sanctions: { orderBy: { createdAt: 'desc' } },
-      },
+      select: adminProviderReportListSelect,
     });
   }
 
@@ -1960,12 +1986,7 @@ export class AdminService {
     return this.prisma.providerSanction.findMany({
       orderBy: [{ status: 'asc' }, { startsAt: 'desc' }],
       take: 100,
-      include: {
-        providerProfile: { include: { user: { select: { phone: true, fullName: true } } } },
-        report: { select: { id: true, category: true, severity: true, status: true, summary: true } },
-        issuedBy: { select: { phone: true, fullName: true } },
-        liftedBy: { select: { phone: true, fullName: true } },
-      },
+      select: adminProviderSanctionListSelect,
     });
   }
 
