@@ -202,6 +202,19 @@ type BookingEvidenceCommandQueueItem = {
   };
 };
 
+type MarketplaceParticipantSnapshot = {
+  participantRows: number;
+  marketplaceRows: number;
+  firstPickRows: number;
+  customerSelectableRows: number;
+  customerSelectedRows: number;
+  declinedRows: number;
+  openBookingsWithoutParticipants: number;
+  bookingsWithParticipantHistory: number;
+  latestParticipantLabel: string;
+  latestParticipantHref: string;
+};
+
 type DashboardPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 type DashboardFilters = {
@@ -309,6 +322,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
     cashSettlementSummary,
     failedNotifications,
   });
+  const marketplaceParticipantSnapshot = buildMarketplaceParticipantSnapshot(bookings);
   const appPresence = buildAppPresence(users, bookings, appSessions);
   const hourlyDemand = buildHourlyBookingDemand(rangeBookings);
   const regionalDemand = buildRegionalBookingDemand(rangeBookings);
@@ -740,6 +754,68 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
               </div>
             </Link>
           ))}
+        </div>
+      </section>
+
+      <section className="card" style={{ marginTop: 20 }}>
+        <div className="ops-section-header">
+          <div>
+            <h2>Marketplace participant snapshot</h2>
+            <p className="muted">
+              Actual booking participant records only. Partners with negative wallets can see marketplace
+              demand, but the join gate blocks participation before a participant row is created.
+            </p>
+          </div>
+          <Link className="text-link" href="/bookings?view=marketplace">
+            Open participant ledger
+          </Link>
+        </div>
+        <div className="service-trace-summary" style={{ marginTop: 12 }}>
+          <div>
+            <span>Participant rows</span>
+            <strong>{marketplaceParticipantSnapshot.participantRows}</strong>
+            <small>First-pick, marketplace, accepted, declined, and selected records.</small>
+          </div>
+          <div>
+            <span>Marketplace participants</span>
+            <strong>{marketplaceParticipantSnapshot.marketplaceRows}</strong>
+            <small>Rows from partners beyond the preferred first-pick partner.</small>
+          </div>
+          <div>
+            <span>Customer-selectable</span>
+            <strong>{marketplaceParticipantSnapshot.customerSelectableRows}</strong>
+            <small>Accepted or selected rows that can support customer final choice.</small>
+          </div>
+          <div>
+            <span>Customer selected</span>
+            <strong>{marketplaceParticipantSnapshot.customerSelectedRows}</strong>
+            <small>Final partner decisions owned by the customer.</small>
+          </div>
+          <div>
+            <span>No participants yet</span>
+            <strong>{marketplaceParticipantSnapshot.openBookingsWithoutParticipants}</strong>
+            <small>Open matching rows where the customer is still waiting for partner options.</small>
+          </div>
+          <div>
+            <span>Latest participant</span>
+            <strong>
+              <Link className="text-link" href={marketplaceParticipantSnapshot.latestParticipantHref}>
+                {marketplaceParticipantSnapshot.latestParticipantLabel}
+              </Link>
+            </strong>
+            <small>{marketplaceParticipantSnapshot.declinedRows} declined response row(s) retained.</small>
+          </div>
+        </div>
+        <div className="actions" style={{ marginTop: 12 }}>
+          <Link className="text-link" href="/bookings?view=marketplace">
+            Marketplace bookings
+          </Link>
+          <Link className="text-link" href="/bookings?view=customer-choice">
+            Customer choice
+          </Link>
+          <Link className="text-link" href="/cash-settlements">
+            Negative wallet settlement
+          </Link>
         </div>
       </section>
 
@@ -3567,6 +3643,74 @@ function buildBookingEvidenceCommandQueue(input: {
     if (toneDelta !== 0) return toneDelta;
     return Number.parseInt(right.value, 10) - Number.parseInt(left.value, 10);
   });
+}
+
+function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): MarketplaceParticipantSnapshot {
+  const participantRows = bookings.flatMap((booking) =>
+    (booking.participants ?? []).map((participant) => ({ booking, participant })),
+  );
+  const marketplaceRows = participantRows.filter(
+    (row) => {
+      const participantProviderId = dashboardParticipantProviderId(row.participant);
+      const preferredProviderId = dashboardBookingPreferredProviderId(row.booking);
+      return Boolean(participantProviderId) && participantProviderId !== preferredProviderId;
+    },
+  );
+  const firstPickRows = participantRows.filter(
+    (row) => {
+      const participantProviderId = dashboardParticipantProviderId(row.participant);
+      const preferredProviderId = dashboardBookingPreferredProviderId(row.booking);
+      return Boolean(participantProviderId && preferredProviderId) && participantProviderId === preferredProviderId;
+    },
+  );
+  const customerSelectableRows = participantRows.filter((row) =>
+    ['JOINED', 'ACCEPTED', 'SELECTED'].includes(row.participant.status),
+  );
+  const customerSelectedRows = participantRows.filter(
+    (row) =>
+      row.participant.status === 'SELECTED' ||
+      Boolean(
+        row.booking.selectedProviderId &&
+          dashboardParticipantProviderId(row.participant) === row.booking.selectedProviderId,
+      ),
+  );
+  const declinedRows = participantRows.filter((row) => row.participant.status === 'REJECTED');
+  const openBookingsWithoutParticipants = bookings.filter(
+    (booking) => booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0,
+  ).length;
+  const bookingsWithParticipantHistory = bookings.filter((booking) => (booking.participants?.length ?? 0) > 0)
+    .length;
+  const latest = participantRows.sort(
+    (left, right) => bookingParticipantSnapshotTime(right.participant) - bookingParticipantSnapshotTime(left.participant),
+  )[0];
+
+  return {
+    participantRows: participantRows.length,
+    marketplaceRows: marketplaceRows.length,
+    firstPickRows: firstPickRows.length,
+    customerSelectableRows: customerSelectableRows.length,
+    customerSelectedRows: customerSelectedRows.length,
+    declinedRows: declinedRows.length,
+    openBookingsWithoutParticipants,
+    bookingsWithParticipantHistory,
+    latestParticipantLabel: latest
+      ? `${bookingServiceLabel(latest.booking)} / ${shortId(latest.booking.id)}`
+      : 'No participant row',
+    latestParticipantHref: latest ? `/bookings/${latest.booking.id}#participants` : '/bookings?view=marketplace',
+  };
+}
+
+function dashboardParticipantProviderId(participant: NonNullable<AdminBooking['participants']>[number]) {
+  return participant.providerProfileId ?? participant.providerProfile?.id ?? null;
+}
+
+function dashboardBookingPreferredProviderId(booking: AdminBooking) {
+  return booking.preferredProviderId ?? booking.preferredProvider?.id ?? null;
+}
+
+function bookingParticipantSnapshotTime(participant: NonNullable<AdminBooking['participants']>[number]) {
+  const timestamp = Date.parse(participant.respondedAt ?? participant.joinedAt ?? '');
+  return Number.isNaN(timestamp) ? 0 : timestamp;
 }
 
 function bookingEvidenceSample(bookings: AdminBooking[], label: string): BookingEvidenceCommandQueueItem['sample'] {
