@@ -1518,9 +1518,10 @@ function buildPolicySimulation(
       {
         label: 'First response window',
         value: `${responseWindowMinutes} min`,
-        helper: `A request created now would auto-close around ${expiresAt.toLocaleTimeString([], {
+        helper: `A request created now would auto-close around ${expiresAt.toLocaleTimeString('en-GB', {
           hour: '2-digit',
           minute: '2-digit',
+          timeZone: 'Asia/Ho_Chi_Minh',
         })}.`,
       },
       {
