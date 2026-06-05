@@ -6,6 +6,86 @@ import '../../../app_state.dart';
 import '../../../core/customer_value_helpers.dart';
 import '../../map/presentation/customer_location_helpers.dart';
 
+class BookingSectionCard extends StatelessWidget {
+  const BookingSectionCard({
+    super.key,
+    required this.title,
+    required this.child,
+  });
+
+  final String title;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w700)),
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+int customerBookingTimestamp(Map<String, dynamic> booking) {
+  final value = booking['updatedAt'] ??
+      booking['createdAt'] ??
+      booking['scheduledStartAt'];
+  if (value is String) {
+    return DateTime.tryParse(value)?.millisecondsSinceEpoch ?? 0;
+  }
+  return 0;
+}
+
+bool isCustomerActiveBooking(Map<String, dynamic> booking) {
+  return const {
+    'OPEN_MATCHING',
+    'MATCHED',
+    'PROVIDER_ON_THE_WAY',
+    'ARRIVED',
+    'IN_SERVICE'
+  }.contains(booking['status']);
+}
+
+bool isCustomerClosedBooking(Map<String, dynamic> booking) {
+  return const {'COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED'}
+      .contains(booking['status']);
+}
+
+bool isCustomerAppChatVisible(Map<String, dynamic>? booking) {
+  if (booking == null) {
+    return false;
+  }
+  return asMap(booking['chatRoom']) != null &&
+      !isCustomerClosedBooking(booking);
+}
+
+bool canCustomerDirectlyCancelBooking(Map<String, dynamic>? booking) {
+  if (booking == null || booking['status'] != 'OPEN_MATCHING') {
+    return false;
+  }
+  if (asMap(booking['selectedProvider']) != null) {
+    return false;
+  }
+  final participants = asList(booking['participants']);
+  return !participants.whereType<Map<String, dynamic>>().any((participant) {
+    return participant['status'] == 'ACCEPTED' ||
+        participant['status'] == 'SELECTED';
+  });
+}
+
 bool customerParticipantSelectableForFinalChoice(
   Map<String, dynamic> participant, {
   String? preferredProviderId,
