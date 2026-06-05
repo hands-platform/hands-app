@@ -762,12 +762,22 @@ export class AdminService {
       take: 500,
       include: {
         user: {
-          include: {
-            customerProfile: true,
-            providerProfile: true,
+          select: {
+            ...adminUserSummarySelect,
+            customerProfile: { select: { id: true, userId: true, addresses: true } },
+            providerProfile: {
+              select: {
+                id: true,
+                displayName: true,
+                status: true,
+                currentLocationUpdatedAt: true,
+                blockedAt: true,
+              },
+            },
             pushDevices: {
               orderBy: { updatedAt: 'desc' },
               take: 3,
+              select: adminUserListPushDeviceSelect,
             },
           },
         },
