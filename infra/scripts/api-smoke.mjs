@@ -362,6 +362,8 @@ if (customerAppSession.role !== 'CUSTOMER' || providerAppSession.role !== 'PROVI
   );
 }
 
+const pushRegistrationStartedAt = Date.now() - 5_000;
+
 await patchJson('/notifications/device-token/register', customerAuth.accessToken, {
   token: 'demo-customer-device-token',
   platform: 'android',
@@ -3172,7 +3174,7 @@ if (legacyAdminProvider?.id !== adminPartner.id) {
     })}`,
   );
 }
-if (!adminPartner?.user?.pushDevices?.some((device) => device.token === 'demo-provider-device-token')) {
+if (!hasFreshEnabledPushDevice(adminPartner?.user?.pushDevices, pushRegistrationStartedAt)) {
   throw new Error(`Admin partner payload is missing registered push device: ${JSON.stringify(adminPartner)}`);
 }
 if (
@@ -3234,11 +3236,7 @@ if (
 const adminBackupPartner = adminPartners.find(
   (item) => item.id === backupProviderAuth.user.providerProfile.id,
 );
-if (
-  !adminBackupPartner?.user?.pushDevices?.some(
-    (device) => device.token === 'demo-backup-provider-device-token',
-  )
-) {
+if (!hasFreshEnabledPushDevice(adminBackupPartner?.user?.pushDevices, pushRegistrationStartedAt)) {
   throw new Error(
     `Admin marketplace partner payload is missing registered push device: ${JSON.stringify(adminBackupPartner)}`,
   );
@@ -3303,6 +3301,20 @@ const serviceFinanceTraceReady = Boolean(
 );
 if (!serviceFinanceTraceReady) {
   throw new Error(`Admin service finance trace is incomplete: ${JSON.stringify(tracedAdminService)}`);
+}
+
+function hasFreshEnabledPushDevice(devices, registeredAfterMs) {
+  return Boolean(
+    devices?.some((device) => {
+      const lastSeenMs = Date.parse(device.updatedAt ?? device.createdAt ?? '');
+      return (
+        device.platform === 'android' &&
+        device.enabled === true &&
+        Number.isFinite(lastSeenMs) &&
+        lastSeenMs >= registeredAfterMs
+      );
+    }),
+  );
 }
 
 console.log({

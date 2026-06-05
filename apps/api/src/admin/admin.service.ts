@@ -403,6 +403,51 @@ const adminPaymentSummarySelect = {
   },
 } satisfies Prisma.PaymentSelect;
 
+const adminPlatformFeeLogSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  bookingId: true,
+  earningId: true,
+  policyVersionId: true,
+  grossAmount: true,
+  platformFeeAmount: true,
+  currency: true,
+  ruleSnapshot: true,
+  createdAt: true,
+} satisfies Prisma.ProviderPlatformFeeLogSelect;
+
+const adminProviderTaxLogSummarySelect = {
+  id: true,
+  providerProfileId: true,
+  bookingId: true,
+  earningId: true,
+  taxProfileId: true,
+  policyVersionId: true,
+  grossAmount: true,
+  taxableAmount: true,
+  withholdingAmount: true,
+  currency: true,
+  ruleSnapshot: true,
+  createdAt: true,
+} satisfies Prisma.ProviderTaxLogSelect;
+
+const adminProviderWalletLedgerEntrySummarySelect = {
+  id: true,
+  providerProfileId: true,
+  bookingId: true,
+  earningId: true,
+  payoutBatchId: true,
+  type: true,
+  sourceKey: true,
+  amount: true,
+  currency: true,
+  reference: true,
+  notes: true,
+  metadata: true,
+  createdAt: true,
+  updatedAt: true,
+} satisfies Prisma.ProviderWalletLedgerEntrySelect;
+
 const adminEarningSummarySelect = {
   id: true,
   providerProfileId: true,
@@ -423,41 +468,36 @@ const adminEarningSummarySelect = {
   platformFeeLogs: {
     orderBy: { createdAt: 'desc' },
     take: 3,
-    select: {
-      id: true,
-      grossAmount: true,
-      platformFeeAmount: true,
-      currency: true,
-      ruleSnapshot: true,
-      createdAt: true,
-    },
+    select: adminPlatformFeeLogSummarySelect,
   },
   taxLogs: {
     orderBy: { createdAt: 'desc' },
     take: 3,
-    select: {
-      id: true,
-      grossAmount: true,
-      taxableAmount: true,
-      withholdingAmount: true,
-      currency: true,
-      ruleSnapshot: true,
-      createdAt: true,
-    },
+    select: adminProviderTaxLogSummarySelect,
   },
   walletLedgerEntries: {
     orderBy: { createdAt: 'desc' },
     take: 3,
-    select: {
-      id: true,
-      type: true,
-      sourceKey: true,
-      amount: true,
-      currency: true,
-      reference: true,
-      notes: true,
-      createdAt: true,
-    },
+    select: adminProviderWalletLedgerEntrySummarySelect,
+  },
+} satisfies Prisma.ProviderEarningSelect;
+
+const adminEarningDetailSelect = {
+  ...adminEarningSummarySelect,
+  platformFeeLogs: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminPlatformFeeLogSummarySelect,
+  },
+  taxLogs: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminProviderTaxLogSummarySelect,
+  },
+  walletLedgerEntries: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminProviderWalletLedgerEntrySummarySelect,
   },
 } satisfies Prisma.ProviderEarningSelect;
 
@@ -790,6 +830,108 @@ const adminProviderVerificationLogSummarySelect = {
   createdAt: true,
   actor: { select: { phone: true, fullName: true } },
 } satisfies Prisma.ProviderVerificationLogSelect;
+
+const adminBookingDetailProviderSelect = {
+  ...adminProviderSummarySelect,
+  locationSnapshots: {
+    orderBy: { recordedAt: 'desc' },
+    take: 1,
+    select: adminLocationSnapshotSummarySelect,
+  },
+} satisfies Prisma.ProviderProfileSelect;
+
+const adminBookingDetailSelect = {
+  id: true,
+  customerProfileId: true,
+  preferredProviderId: true,
+  selectedProviderId: true,
+  status: true,
+  scheduledStartAt: true,
+  scheduledEndAt: true,
+  address: true,
+  lat: true,
+  lng: true,
+  notes: true,
+  metadata: true,
+  travelBufferMin: true,
+  earlyAcceptMin: true,
+  openedAt: true,
+  expiresAt: true,
+  closedAt: true,
+  closedByRole: true,
+  closedReason: true,
+  closedNote: true,
+  createdAt: true,
+  updatedAt: true,
+  customerProfile: {
+    select: {
+      id: true,
+      userId: true,
+      addresses: true,
+      user: { select: adminUserSummarySelect },
+    },
+  },
+  preferredProvider: { select: adminBookingDetailProviderSelect },
+  selectedProvider: { select: adminBookingDetailProviderSelect },
+  participants: {
+    orderBy: { joinedAt: 'asc' },
+    select: {
+      id: true,
+      bookingId: true,
+      providerProfileId: true,
+      status: true,
+      distanceMeters: true,
+      providerStatusAtJoin: true,
+      joinedAt: true,
+      respondedAt: true,
+      providerProfile: { select: adminBookingDetailProviderSelect },
+    },
+  },
+  services: { select: adminBookingServiceSummarySelect },
+  payment: { select: adminPaymentSummarySelect },
+  refunds: {
+    orderBy: { createdAt: 'desc' },
+    select: adminRefundSummarySelect,
+  },
+  review: true,
+  addressSnapshot: { select: adminAddressSnapshotSelect },
+  earning: { select: adminEarningDetailSelect },
+  platformFeeLogs: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminPlatformFeeLogSummarySelect,
+  },
+  taxLogs: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminProviderTaxLogSummarySelect,
+  },
+  walletLedgerEntries: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminProviderWalletLedgerEntrySummarySelect,
+  },
+  opsTasks: {
+    orderBy: { updatedAt: 'desc' },
+    select: adminBookingOpsTaskSummarySelect,
+  },
+  snapshots: {
+    orderBy: { recordedAt: 'desc' },
+    take: 10,
+    select: adminLocationSnapshotSummarySelect,
+  },
+  chatRoom: {
+    select: {
+      id: true,
+      createdAt: true,
+      messages: {
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: adminChatMessageSummarySelect,
+      },
+    },
+  },
+} satisfies Prisma.BookingSelect;
 
 const adminProviderDetailSelect = {
   id: true,
@@ -1926,72 +2068,7 @@ export class AdminService {
   async getBookingDetail(id: string) {
     const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id },
-      include: {
-        customerProfile: { include: { user: { select: adminUserSummarySelect } } },
-        preferredProvider: {
-          include: {
-            user: { select: adminUserSummarySelect },
-            locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 1 },
-          },
-        },
-        selectedProvider: {
-          include: {
-            user: { select: adminUserSummarySelect },
-            locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 1 },
-          },
-        },
-        participants: {
-          orderBy: { joinedAt: 'asc' },
-          include: {
-            providerProfile: {
-              include: {
-                user: { select: adminUserSummarySelect },
-                locationSnapshots: { orderBy: { recordedAt: 'desc' }, take: 1 },
-              },
-            },
-          },
-        },
-        services: {
-          include: {
-            service: {
-              include: {
-                payoutRules: {
-                  where: { active: true },
-                  orderBy: { customerPrice: 'asc' },
-                },
-              },
-            },
-          },
-        },
-        payment: { include: { refunds: true } },
-        refunds: true,
-        review: true,
-        addressSnapshot: true,
-        earning: {
-          include: {
-            platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-            taxLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-            walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-          },
-        },
-        platformFeeLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-        taxLogs: { orderBy: { createdAt: 'desc' }, take: 5 },
-        walletLedgerEntries: { orderBy: { createdAt: 'desc' }, take: 5 },
-        opsTasks: {
-          orderBy: { updatedAt: 'desc' },
-          include: { actor: { select: { phone: true, fullName: true } } },
-        },
-        snapshots: { orderBy: { recordedAt: 'desc' }, take: 10 },
-        chatRoom: {
-          include: {
-            messages: {
-              orderBy: { createdAt: 'desc' },
-              take: 100,
-              include: { sender: { select: { id: true, phone: true, fullName: true, roles: true } } },
-            },
-          },
-        },
-      },
+      select: adminBookingDetailSelect,
     });
     const auditLogs = await this.prisma.adminAuditLog.findMany({
       where: {
