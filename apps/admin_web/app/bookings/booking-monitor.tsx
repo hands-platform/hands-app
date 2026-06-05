@@ -7,6 +7,7 @@ import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
 import {
   formatDistanceMeters,
+  formatDateTime,
   formatMoney,
   readPlainRecord,
   shortId as formatShortId,
@@ -254,11 +255,6 @@ const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_
 const STALE_LOCATION_MINUTES = 30;
 const EXPIRED_LOCATION_HOURS = 24;
 const displayTimeZone = 'Asia/Ho_Chi_Minh';
-const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-  timeZone: displayTimeZone,
-});
 const clockFormatter = new Intl.DateTimeFormat('en-GB', {
   hour: '2-digit',
   minute: '2-digit',
@@ -4456,10 +4452,7 @@ function readOptionalString(value: unknown) {
 }
 
 function formatDate(value?: string | null) {
-  if (!value) {
-    return 'No request time';
-  }
-  return dateTimeFormatter.format(new Date(value));
+  return formatDateTime(value, 'No request time');
 }
 
 function formatClockTime(value: Date) {

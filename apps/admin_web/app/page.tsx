@@ -18,6 +18,7 @@ import {
   adminGet,
 } from '../lib/admin-api';
 import {
+  formatDateTime,
   formatDistanceMeters,
   formatMoney,
   readPlainRecord,
@@ -3747,21 +3748,8 @@ function bookingEvidenceStatusRank(status?: string | null) {
 }
 
 function dashboardDateLabel(value?: string | null) {
-  if (!value) {
-    return 'unknown';
-  }
-  const timestamp = Date.parse(value);
-  if (Number.isNaN(timestamp)) {
-    return 'unknown';
-  }
-  return dashboardDateTimeFormatter.format(new Date(timestamp));
+  return formatDateTime(value, 'unknown');
 }
-
-const dashboardDateTimeFormatter = new Intl.DateTimeFormat('en-GB', {
-  dateStyle: 'medium',
-  timeStyle: 'short',
-  timeZone: 'Asia/Ho_Chi_Minh',
-});
 
 function dashboardDateValue(value?: string | null) {
   if (!value) {

@@ -9,6 +9,7 @@ import {
   providerDocumentReviewHint,
 } from '../../../lib/admin-api';
 import {
+  formatDateOnly as formatAdminDateOnly,
   formatDateTime,
   formatDistanceMeters,
   formatMoney as formatAdminMoney,
@@ -7032,10 +7033,7 @@ function formatDate(value?: string | null) {
 }
 
 function formatDateOnly(value?: string | null) {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleDateString();
+  return value ? formatAdminDateOnly(value, value) : null;
 }
 
 function buildPartnerDispatchPolicy(settings: AdminOperationalPolicySetting[]): PartnerDispatchPolicy {

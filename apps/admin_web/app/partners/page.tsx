@@ -11,6 +11,7 @@ import {
   formatDateTime,
   formatDistanceMeters as formatAdminDistanceMeters,
   formatMoney as formatProviderMoney,
+  formatRelativeTime,
 } from '../../lib/admin-format';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { buildCsvDataHref } from '../../lib/csv-export';
@@ -5158,17 +5159,9 @@ function dateMs(value?: string | null) {
 }
 
 function formatRelativeAge(value?: string | null) {
-  if (!value) {
-    return 'with no timestamp';
-  }
-  const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) {
-    return 'at an invalid time';
-  }
-  const diffMinutes = Math.max(0, Math.round((Date.now() - timestamp) / 60_000));
-  if (diffMinutes < 1) return 'just now';
-  if (diffMinutes < 60) return `${diffMinutes}m ago`;
-  const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  return `${Math.round(diffHours / 24)}d ago`;
+  return formatRelativeTime(value, {
+    emptyFallback: 'with no timestamp',
+    invalidFallback: 'at an invalid time',
+    justNow: 'just now',
+  });
 }
