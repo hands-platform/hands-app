@@ -273,7 +273,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       },
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,
-        label: 'Legacy recovery supervision',
+        label: 'Recovery supervision',
         tradeoff:
           'Reserved for audited recovery workflows; HANDS MVP still blocks marketplace participation while the wallet is negative.',
       },

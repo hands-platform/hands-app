@@ -24,7 +24,7 @@ export const PROVIDER_AGREEMENT_VERSION = process.env.PROVIDER_AGREEMENT_VERSION
 
 export const PROVIDER_LEVEL_REQUIREMENTS = {
   [ProviderLevel.LEVEL_1_SIGNUP]: ['Phone login linked', 'Basic public profile started'],
-  [ProviderLevel.LEVEL_2_ACTIVE]: ['KYC or legacy verification approved', 'Bank account approved'],
+  [ProviderLevel.LEVEL_2_ACTIVE]: ['KYC or approved verification record', 'Bank account approved'],
   [ProviderLevel.LEVEL_3_PAYOUT_ENABLED]: [
     'At least one completed service',
     'Tax profile approved',

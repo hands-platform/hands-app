@@ -174,7 +174,7 @@ export class BookingsService {
     const customerPrice = this.resolveCustomerPrice(service, providerService?.price);
     await this.ensureServicePayoutRuleConfigured(service.id, customerPrice);
     const coupon = input.couponCode ? await this.resolveCoupon(input.couponCode) : null;
-    // HANDS MVP is on-demand only. Keep the legacy DB field as the immutable request timestamp.
+    // HANDS MVP is on-demand only. Keep the existing DB field as the immutable request timestamp.
     const scheduledStartAt = new Date();
     const scheduledEndAt = new Date(scheduledStartAt.getTime() + service.durationMin * 60_000);
     const selectedLocation = input.selectedLocationId
