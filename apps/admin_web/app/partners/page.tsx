@@ -7,7 +7,11 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
-import { formatDateTime, formatDistanceMeters as formatAdminDistanceMeters } from '../../lib/admin-format';
+import {
+  formatDateTime,
+  formatDistanceMeters as formatAdminDistanceMeters,
+  formatMoney as formatProviderMoney,
+} from '../../lib/admin-format';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import {
@@ -2922,10 +2926,6 @@ function numberValue(value: unknown) {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') return Number(value) || 0;
   return 0;
-}
-
-function formatProviderMoney(value: number, currency = 'VND') {
-  return `${new Intl.NumberFormat('vi-VN').format(value)} ${currency}`;
 }
 
 function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {

@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
-import { formatMoney, readPlainRecord, shortId as formatShortId } from '../../lib/admin-format';
+import {
+  formatDistanceMeters,
+  formatMoney,
+  readPlainRecord,
+  shortId as formatShortId,
+} from '../../lib/admin-format';
 import {
   type AdminLiveOperationsPolicy,
   formatPolicyDistance,
@@ -3241,13 +3246,7 @@ function formatGateDistance(label: string, distance: number | null, limit: numbe
 }
 
 function formatMeters(value: number | null) {
-  if (value === null) {
-    return '?';
-  }
-  if (value >= 1000) {
-    return `${(value / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
-  }
-  return `${Math.round(value).toLocaleString()} m`;
+  return formatDistanceMeters(value);
 }
 
 function readFirstNumber(values: unknown[]) {

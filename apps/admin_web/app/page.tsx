@@ -17,7 +17,12 @@ import {
   apiGet,
   adminGet,
 } from '../lib/admin-api';
-import { formatMoney, readPlainRecord, shortId as formatShortId } from '../lib/admin-format';
+import {
+  formatDistanceMeters,
+  formatMoney,
+  readPlainRecord,
+  shortId as formatShortId,
+} from '../lib/admin-format';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -3904,10 +3909,7 @@ function timeUntilLabel(value: string) {
 }
 
 function formatDistance(meters: number) {
-  if (meters < 1000) {
-    return `${Math.round(meters)} m`;
-  }
-  return `${(meters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+  return formatDistanceMeters(meters);
 }
 
 function buildBookingOpsInsights(bookings: AdminBooking[]) {
@@ -5960,7 +5962,7 @@ function formatPolicyValue(value: unknown, unit?: string | null) {
     return '-';
   }
   if (unit === 'meters') {
-    return `${(Number(value) / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
+    return formatDistanceMeters(Number(value));
   }
   if (unit === 'minutes') {
     return `${value} min`;
