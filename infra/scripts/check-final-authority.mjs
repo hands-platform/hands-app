@@ -100,6 +100,8 @@ function checkNoContradictoryNegativeWalletWording() {
     'blocked only at configured final',
     'not a marketplace visibility blocker',
     'not a marketplace visibility gate',
+    'Monitor open matching, quiet chat rooms, and partner assignment.',
+    'Partner must stay hidden from assignment until account-control review is resolved.',
   ];
 
   for (const file of [
@@ -369,6 +371,7 @@ function checkLegacyRiskRoutesAreRedirectOnly() {
 function checkMobileVisibleCopyGuardIsStrict() {
   const source = read('infra/scripts/check-mobile-visible-copy.mjs');
   requireMarkers('infra/scripts/check-mobile-visible-copy.mjs', source, [
+    'non-English Hangul visible copy',
     'legacy provider display wording',
     'legacy backup wording',
     'tip wording',
@@ -407,6 +410,7 @@ function checkAdminPeopleManagementIsFactual() {
     'Mobile apps can hide completed-service chats',
   ]);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
+    'non-English Hangul visible copy',
     'people scoring wording',
     'separate partner activity page wording',
     'operator risk scoring wording',

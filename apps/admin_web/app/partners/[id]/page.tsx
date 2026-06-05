@@ -5835,7 +5835,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
       detail: accountGate?.detail ?? 'Account gate was not evaluated.',
       bookingImpact: accountGate?.ok
         ? 'No account-level restriction is blocking work.'
-        : 'Partner must stay hidden from assignment until account-control review is resolved.',
+        : 'Partner must stay hidden from customer selection and marketplace participation until account-control review is resolved.',
       payoutImpact: 'Active account controls can hold payout until support closes the case.',
       action: accountGate?.ok ? 'Open partner report history' : 'Open reports',
       href: `/partner-controls?q=${encodeURIComponent(provider.id)}`,

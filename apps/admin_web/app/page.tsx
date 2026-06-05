@@ -3384,7 +3384,7 @@ function buildOperationsCommandBoard(input: {
       detail:
         input.cashSettlementSummary.providerCount > 0
           ? 'Negative wallet keeps marketplace list visibility, but participation waits for cash fee settlement.'
-          : 'Completed work, cash settlement, and payout batch rows are visible for scheduled closeout.',
+          : 'Completed work, cash settlement, and payout batch rows are visible for batch closeout.',
       href: financeRows ? '/finance-closeout' : '/earnings',
       tone: financeRows ? 'warn' : 'ok',
       checks: [
@@ -4844,7 +4844,7 @@ function buildDashboardCommandSignals(input: {
         : `${openMatching.length} OPEN`,
       detail: staleOpenMatching.length
         ? 'Some open matching windows are expired and need operator review.'
-        : 'Monitor open matching, quiet chat rooms, and partner assignment.',
+        : 'Monitor open matching, quiet chat rooms, and customer final-choice handoff.',
       action: 'Open booking monitor',
       href: staleOpenMatching.length || matchedWithoutChat.length ? '/bookings?view=attention' : '/bookings',
       priority: staleOpenMatching.length || matchedWithoutChat.length ? 95 : openMatching.length ? 70 : 25,

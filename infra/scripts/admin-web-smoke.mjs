@@ -691,6 +691,7 @@ function visibleTextFromHtml(body) {
 function assertNoLegacyVisibleLanguage(path, body) {
   const visibleText = visibleTextFromHtml(body);
   const bannedPatterns = [
+    { label: 'non-English Hangul visible copy', pattern: /[가-힣]/ },
     { label: 'legacy Provider wording', pattern: /\bProvider\b|\bPROVIDER\(S\)\b/ },
     { label: 'legacy backup wording', pattern: /\b[Bb]ackup\b/ },
     { label: 'legacy low-rating wording', pattern: /\bLow[- ]rating\b/i },
