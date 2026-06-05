@@ -1025,7 +1025,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
             <span
               className={`pill ${acceptanceBlockerBoard.hardBlocked > 0 ? 'pill-danger' : 'pill-success'}`}
             >
-              {acceptanceBlockerBoard.hardBlocked} direct hard blocked
+              {acceptanceBlockerBoard.hardBlocked} direct request held
             </span>
             <span className="pill pill-info">{acceptanceBlockerBoard.eligibleNow} direct-ready</span>
             <span
@@ -4666,7 +4666,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Cash fee debt highlights partners whose marketplace participation waits until HANDS commission is settled.';
   }
   if (kind === 'review' && value === 'acceptance-blocked') {
-    return 'Direct request held highlights partners who remain visible but cannot receive preferred direct requests yet.';
+    return 'Direct request held highlights partners still waiting on account, identity, bank, device, location, or alert gates before preferred direct requests.';
   }
   if (kind === 'review' && value === 'direct-ready') {
     return 'Direct request ready highlights partners who can receive a preferred customer request immediately.';

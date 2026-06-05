@@ -1260,7 +1260,7 @@ function buildBookingAcceptanceUnblockBoard(
       operatorScript:
         'Tell the partner their unpaid HANDS fee must be deposited or offset before marketplace participation or payout release unlocks.',
       customerImpact:
-        'Customer requests are protected from partners who still owe settlement from previous cash bookings.',
+        'Customers can still see marketplace demand flow normally; the partner cannot participate in marketplace requests until fee settlement is cleared.',
       action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
       href: cashDebtItems.length ? '/cash-settlements' : '/operations-policy',
       className: cashDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',
@@ -1414,7 +1414,7 @@ function buildAcceptanceUnblockPlaybook(
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:
-        'Prevents finalizing customers with partners who still owe settlement from previous cash services.',
+        'Customer final choice stays available only from actual eligible participants; fee-debt partners cannot enter the marketplace shortlist.',
       action: card('wallet-debt')?.action ?? 'Open settlement queue',
       href: card('wallet-debt')?.href ?? '/cash-settlements',
       blockingCount: card('wallet-debt')?.blockingCount ?? 0,
@@ -1447,9 +1447,9 @@ function buildAcceptanceUnblockPlaybook(
       detail:
         'KYC, required CCCD/selfie documents, and bank approval are the Level 2 work gate for paid bookings.',
       bookingImpact:
-        'Blocks paid work access and marketplace participation until the evidence is approved.',
+        'Holds preferred direct requests and marketplace participation until identity evidence and bank readiness are approved.',
       payoutImpact: 'Bank approval is required before payout; tax remains staged until first earning.',
-      customerImpact: 'Keeps customer confidence high while avoiding excessive signup friction.',
+      customerImpact: 'Keeps customer-facing booking flow simple while operators verify partner readiness before work access.',
       action: card('verification-readiness')?.action ?? 'Open acceptance-blocked partners',
       href: card('verification-readiness')?.href ?? '/partners?review=acceptance-blocked',
       blockingCount: card('verification-readiness')?.blockingCount ?? 0,

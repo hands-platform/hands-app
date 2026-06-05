@@ -5851,7 +5851,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
       bookingImpact:
         identityGate?.ok && bankGate?.ok
           ? 'Partner meets the Level 2 active-work gate.'
-          : 'Blocks paid work access until identity evidence and bank readiness are approved.',
+          : 'Holds preferred direct requests and marketplace participation until identity evidence and bank readiness are approved.',
       payoutImpact: 'Approved bank is also required before partner payout can be prepared.',
       action: identityGate?.ok && bankGate?.ok ? 'Review KYC evidence' : 'Finish KYC and bank review',
       href: `/partners/${provider.id}#kyc`,

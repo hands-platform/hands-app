@@ -88,7 +88,7 @@ const pages = [
       'Chat Repair',
       'Failed Alerts',
       'KYC Review',
-      'Acceptance Blocked',
+      'Direct Request Held',
       'Marketplace Ready',
       'Today operator order',
       'Live customer wait',

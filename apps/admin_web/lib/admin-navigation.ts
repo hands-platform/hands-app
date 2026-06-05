@@ -122,8 +122,8 @@ export const adminNavSections: AdminNavSection[] = [
       },
       {
         href: '/partners?review=acceptance-blocked',
-        label: 'Acceptance Blocked',
-        description: 'Partners blocked from accepting final bookings.',
+        label: 'Direct Request Held',
+        description: 'Partners held from preferred direct requests by account, identity, bank, device, location, or alert gates.',
       },
       {
         href: '/partners?review=marketplace-ready',
