@@ -3541,7 +3541,7 @@ function buildPartnerOperatorCommandQueue({
       id: 'cash-fee-debt',
       label: 'CASH',
       title: 'Cash fee debt blocks marketplace participation',
-      detail: `${formatCurrency(cashDebt)} must be settled before this partner joins marketplace demand or receives payout release. Direct first-pick and already-matched work are not retroactively blocked.`,
+      detail: `${formatCurrency(cashDebt)} must be settled before this partner joins marketplace demand or receives payout release. Customers never carry this wallet debt.`,
       owner: 'Finance',
       tone: 'blocked',
       action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },
@@ -5631,14 +5631,14 @@ function buildPartnerAcceptanceRepairCommand(
   const customerImpact = bookingAcceptance.canJoinMarketplace
     ? 'Can appear in customer booking flow and final partner choice.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Customer direct first-pick can remain available; only marketplace join is wallet-blocked.'
+      ? 'Customer balances are unaffected; this wallet gate blocks marketplace join until settlement.'
     : hasHardVisibilityBlock
       ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
       : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
   const operatorDecision = bookingAcceptance.canJoinMarketplace
     ? 'No manual repair required. Monitor service quality and response speed.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Finance must clear cash debt before marketplace join or payout release; do not retroactively block already-matched work.'
+      ? 'Finance must clear cash debt before marketplace join or payout release.'
     : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
   const marketplaceRouting = bookingAcceptance.canJoinMarketplace
     ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`

@@ -5954,7 +5954,7 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
     return {
       title: 'Settle cash fee debt',
       detail:
-        'Partner collected cash. Confirm company fee deposit or admin offset before unlocking future accepted work.',
+        'Partner collected cash. Confirm company fee deposit or admin offset before marketplace join or payout release is unlocked.',
       href: '#finance',
       hrefLabel: 'Open finance',
     };

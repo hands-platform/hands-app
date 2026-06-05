@@ -2946,7 +2946,7 @@ function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): Boo
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Confirm partner wallet debt and request company fee settlement before marketplace participation or booking handoff resumes.';
+    return 'Confirm partner wallet debt and request company fee settlement before marketplace join or payout release resumes.';
   }
   if (bookingCompletedCloseoutNeedsOps(booking)) {
     return 'Run closeout reconciliation so payment, earning, tax, fee, and wallet records match.';
@@ -3758,7 +3758,7 @@ function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingLi
     {
       label: cashDebtNeedsOps ? 'Cash debt' : 'Cash clear',
       detail: cashDebtNeedsOps
-        ? 'Partner cash fee debt must be settled before marketplace participation or booking handoff resumes.'
+        ? 'Partner cash fee debt must be settled before marketplace join or payout release resumes.'
         : 'No partner cash fee debt is visible for this booking.',
       tone: cashDebtNeedsOps ? 'pill-danger' : 'pill-success',
       href: '/bookings?view=cash-debt',
