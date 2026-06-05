@@ -8135,17 +8135,17 @@ function bookingMvpAuthorityContract({
       tone: walletDebt ? 'pill-danger' : 'pill-success',
       evidence: financeTrace.walletLedger,
       operatorUse:
-        'Cash fee debt blocks marketplace join and payout release until settlement rules clear it.',
+        'Cash fee debt blocks marketplace participation and payout release until settlement rules clear it.',
       href: '#finance',
     },
     {
       contract: 'On-demand service rules',
-      scope: 'No schedule picker, no customer tip/gratuity flow',
+      scope: 'No schedule picker and no optional customer add-on payment flow',
       status: terminal ? 'Closeout record' : 'On-demand active',
       tone: 'pill-success',
-      evidence: `${financeTrace.serviceOption} / payment ${booking.payment?.method ?? 'NONE'} / no customer tip or gratuity lane.`,
+      evidence: `${financeTrace.serviceOption} / payment ${booking.payment?.method ?? 'NONE'} / no optional add-on payment lane.`,
       operatorUse:
-        'Keep scheduling, customer tips, and gratuity decisions out of MVP booking flow; use policy/admin closeout records.',
+        'Keep scheduling and optional customer add-on payment decisions out of MVP booking flow; use policy/admin closeout records.',
       href: '#service',
     },
   ];

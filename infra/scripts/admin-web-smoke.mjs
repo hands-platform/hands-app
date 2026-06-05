@@ -1,6 +1,19 @@
 const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101';
+const rawSmokeArgs = process.argv.slice(2);
+const criticalSmokePaths = [
+  '/',
+  '/bookings?view=marketplace',
+  '/customers',
+  '/partners',
+  '/cash-settlements',
+  '/operations-policy',
+  '/setup',
+];
+const runCriticalSmoke =
+  rawSmokeArgs.includes('--critical') || process.env.ADMIN_WEB_SMOKE_MODE === 'critical';
 const requestedSmokeArgs = process.argv
   .slice(2)
+  .filter((value) => value !== '--critical')
   .flatMap((value) => value.split(','))
   .map((path) => path.trim())
   .filter(Boolean);
@@ -630,10 +643,12 @@ const pages = [
   { path: '/tax-policy', markers: ['Tax policy', 'Policy checklist'] },
 ];
 
-const requestedSmokePaths = ((process.env.ADMIN_WEB_SMOKE_PATHS ?? '') || requestedSmokeArgs.join(','))
+const explicitSmokePaths = ((process.env.ADMIN_WEB_SMOKE_PATHS ?? '') || requestedSmokeArgs.join(','))
   .split(',')
   .map((path) => path.trim())
   .filter(Boolean);
+const requestedSmokePaths =
+  explicitSmokePaths.length > 0 ? explicitSmokePaths : runCriticalSmoke ? criticalSmokePaths : [];
 const smokePages =
   requestedSmokePaths.length > 0 ? pages.filter((page) => requestedSmokePaths.includes(page.path)) : pages;
 const FETCH_TIMEOUT_MS = Number(process.env.ADMIN_WEB_SMOKE_FETCH_TIMEOUT_MS ?? 20_000);
