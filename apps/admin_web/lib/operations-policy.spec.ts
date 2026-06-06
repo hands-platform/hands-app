@@ -44,11 +44,11 @@ describe('admin live operations policy helpers', () => {
     expect(policy.marketplaceRadiusMeters).toBe(10000);
     expect(policy.marketplaceLocationFreshnessMinutes).toBe(30);
     expect(policy.marketplaceInvitationLimit).toBe(50);
-    expect(policy.backupOpenMode).toBe('IMMEDIATE');
-    expect(policy.preferredAcceptMode).toBe('CUSTOMER_CONFIRM');
+    expect(policy.backupOpenMode).toBe('IMMEDIATE_WITHIN_WINDOW');
+    expect(policy.preferredAcceptMode).toBe('CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT');
     expect(policy.walletNegativeGate).toBe('BLOCK_ACCEPTS_WHEN_NEGATIVE');
     expect(policy.cashSettlementClearance).toBe('DEPOSIT_OR_ADMIN_OFFSET_REQUIRED');
-    expect(policy.payoutBatchCycle).toBe('WEEKLY_OR_MONTHLY');
+    expect(policy.payoutBatchCycle).toBe('WEEKLY_OR_MONTHLY_BATCH');
   });
 
   it('formats policy values for operator-facing summaries', () => {

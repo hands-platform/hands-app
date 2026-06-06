@@ -12,6 +12,18 @@ export const OPERATIONAL_POLICY_KEYS = {
   payoutBatchCycle: 'payout.batch_cycle_policy',
 } as const;
 
+export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
+  providerResponseWindowMinutes: 10,
+  marketplaceRadiusMeters: 10_000,
+  marketplaceLocationFreshnessMinutes: 30,
+  marketplaceInvitationLimit: 50,
+  backupOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
+  preferredAcceptMode: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+  walletNegativeGate: 'BLOCK_ACCEPTS_WHEN_NEGATIVE',
+  cashSettlementClearance: 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED',
+  payoutBatchCycle: 'WEEKLY_OR_MONTHLY_BATCH',
+} as const;
+
 export type AdminLiveOperationsPolicy = {
   providerResponseWindowMinutes: number;
   marketplaceRadiusMeters: number;
@@ -29,26 +41,32 @@ export function buildAdminLiveOperationsPolicy(
 ): AdminLiveOperationsPolicy {
   return {
     providerResponseWindowMinutes:
-      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ?? 10,
+      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.providerResponseWindowMinutes,
     marketplaceRadiusMeters:
-      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ?? 10_000,
+      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters,
     marketplaceLocationFreshnessMinutes:
-      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ?? 30,
+      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes,
     marketplaceInvitationLimit:
-      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ?? 50,
+      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceInvitationLimit,
     backupOpenMode:
-      readPolicyString(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ?? 'IMMEDIATE',
+      readPolicyString(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.backupOpenMode,
     preferredAcceptMode:
-      readPolicyString(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ?? 'CUSTOMER_CONFIRM',
+      readPolicyString(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode,
     walletNegativeGate:
       readPolicyString(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
-      'BLOCK_ACCEPTS_WHEN_NEGATIVE',
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate,
     cashSettlementClearance:
       readPolicyString(settings, OPERATIONAL_POLICY_KEYS.cashSettlementClearance) ??
-      'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED',
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.cashSettlementClearance,
     payoutBatchCycle:
       readPolicyString(settings, OPERATIONAL_POLICY_KEYS.payoutBatchCycle) ??
-      'WEEKLY_OR_MONTHLY',
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.payoutBatchCycle,
   };
 }
 
