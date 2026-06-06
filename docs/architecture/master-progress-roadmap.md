@@ -54,6 +54,7 @@ Known checks used for stable steps:
 npm.cmd run setup:doctor
 npm.cmd run authority:check
 npm.cmd run policy:coverage
+npm.cmd run api:test
 npm.cmd run api:domain-smoke
 npm.cmd run security:secrets
 npm.cmd run typecheck

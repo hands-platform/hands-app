@@ -34,6 +34,7 @@
     "authority:check": "node infra/scripts/check-final-authority.mjs",
     "api:smoke": "node infra/scripts/api-smoke.mjs",
     "api:domain-smoke": "node infra/scripts/api-domain-smoke.mjs",
+    "api:test": "npm.cmd run test --workspace @massage-vn/api",
     "api:policy-coverage": "node infra/scripts/check-api-policy-coverage.mjs",
     "policy:coverage": "node infra/scripts/check-api-policy-coverage.mjs",
     "supabase:schema:check": "node infra/scripts/check-supabase-schema.mjs",
