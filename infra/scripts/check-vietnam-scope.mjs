@@ -71,7 +71,11 @@ function extensionOf(filePath) {
 }
 
 function shouldScanFile(filePath) {
-  if (filePath.replace(/\\/g, '/').endsWith('/infra/scripts/check-vietnam-scope.mjs')) {
+  const normalizedPath = filePath.replace(/\\/g, '/');
+  if (
+    normalizedPath.endsWith('/infra/scripts/check-vietnam-scope.mjs') ||
+    normalizedPath.endsWith('/infra/scripts/check-admin-visible-copy.mjs')
+  ) {
     return false;
   }
   return allowedExtensions.has(extensionOf(filePath));
