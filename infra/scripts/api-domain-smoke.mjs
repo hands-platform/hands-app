@@ -4,7 +4,9 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
-const policyDistPath = '../../apps/api/dist/earnings/earnings.policy.js';
+const earningsPolicyDistPath = '../../apps/api/dist/earnings/earnings.policy.js';
+const matchingPolicyDistPath = '../../apps/api/dist/matching/matching.policy.js';
+const providerWalletPolicyDistPath = '../../apps/api/dist/provider-wallet/provider-wallet.policy.js';
 
 const build = spawnSync(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', 'npm.cmd run build --workspace @massage-vn/api'], {
   cwd: fileURLToPath(new URL('../..', import.meta.url)),
@@ -21,7 +23,32 @@ if (build.status !== 0) {
 const {
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
-} = require(policyDistPath);
+} = require(earningsPolicyDistPath);
+const {
+  BACKUP_OPEN_IMMEDIATE,
+  DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
+  DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
+  DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
+  MATCHING_BACKUP_OPEN_MODE_KEY,
+  MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY,
+  MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY,
+  MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY,
+  MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
+  PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
+  resolveMatchingPolicy,
+} = require(matchingPolicyDistPath);
+const {
+  PROVIDER_WALLET_BLOCK_CODE,
+  PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE,
+  PROVIDER_WALLET_SETTLEMENT_METHOD,
+  providerWalletBlockedResponse,
+} = require(providerWalletPolicyDistPath);
+
+const emptyConfig = {
+  get() {
+    return undefined;
+  },
+};
 
 assert.equal(
   calculateProviderWalletDelta({
@@ -105,4 +132,87 @@ assert.equal(
   'empty service lists should not create payout evidence',
 );
 
-console.log('API domain smoke passed: wallet, service payout, VAT, and fee evidence policies.');
+const defaultMatchingPolicy = resolveMatchingPolicy(emptyConfig);
+assert.equal(
+  defaultMatchingPolicy.providerResponseWindowMinutes,
+  DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
+  'first-pick partner response window should default to 10 minutes',
+);
+assert.equal(
+  defaultMatchingPolicy.backupProviderRadiusMeters,
+  DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
+  'marketplace participation radius should default to 10km from booking address',
+);
+assert.equal(
+  defaultMatchingPolicy.backupProviderLocationMaxAgeMinutes,
+  DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
+  'marketplace partner location should default to 30 minutes freshness',
+);
+assert.equal(
+  defaultMatchingPolicy.bookingServiceAreaRequired,
+  true,
+  'booking address snapshots should require an active Vietnam service area by default',
+);
+assert.equal(
+  defaultMatchingPolicy.preferredAcceptMode,
+  PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
+  'customer final partner selection must stay mandatory',
+);
+assert.equal(
+  defaultMatchingPolicy.backupOpenMode,
+  BACKUP_OPEN_IMMEDIATE,
+  'marketplace participation should be visible immediately by default during the first-pick window',
+);
+
+const overriddenMatchingPolicy = resolveMatchingPolicy(emptyConfig, {
+  [MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY]: 12,
+  [MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY]: 15000,
+  [MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY]: 45,
+  [MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY]: 75,
+  [MATCHING_BACKUP_OPEN_MODE_KEY]: BACKUP_OPEN_IMMEDIATE,
+});
+assert.equal(overriddenMatchingPolicy.providerResponseWindowMinutes, 12);
+assert.equal(overriddenMatchingPolicy.backupProviderRadiusMeters, 15000);
+assert.equal(overriddenMatchingPolicy.backupProviderLocationMaxAgeMinutes, 45);
+assert.equal(overriddenMatchingPolicy.backupProviderInvitationLimit, 75);
+
+const invalidMatchingPolicy = resolveMatchingPolicy(emptyConfig, {
+  [MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY]: 60,
+  [MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY]: 500,
+  [MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY]: 0,
+});
+assert.equal(
+  invalidMatchingPolicy.providerResponseWindowMinutes,
+  DEFAULT_PROVIDER_RESPONSE_WINDOW_MINUTES,
+  'out-of-range first-pick windows should fall back to safe defaults',
+);
+assert.equal(
+  invalidMatchingPolicy.backupProviderRadiusMeters,
+  DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
+  'out-of-range marketplace radius should fall back to the 10km default',
+);
+
+const walletBlock = providerWalletBlockedResponse({
+  providerProfileId: 'provider-profile-abc12345',
+  walletBalance: -145000,
+  currency: 'VND',
+});
+assert.equal(walletBlock.code, PROVIDER_WALLET_BLOCK_CODE);
+assert.equal(walletBlock.displayMessage, PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE);
+assert.equal(walletBlock.walletBalance, -145000);
+assert.equal(walletBlock.walletDebtAmount, 145000);
+assert.equal(walletBlock.marketplaceVisibilityBlocked, false);
+assert.equal(walletBlock.marketplaceJoinBlocked, true);
+assert.equal(walletBlock.directFirstPickBlocked, false);
+assert.equal(walletBlock.alreadyMatchedServiceBlocked, false);
+assert.equal(walletBlock.payoutReleaseBlocked, true);
+assert.equal(walletBlock.walletSettlementMethod, PROVIDER_WALLET_SETTLEMENT_METHOD);
+assert.ok(walletBlock.walletSettlementReference.startsWith('HANDS-WALLET-'));
+assert.ok(
+  walletBlock.walletSettlementSteps.some((step) => step.includes(walletBlock.walletSettlementReference)),
+  'wallet block response should include a reusable deposit reference in settlement steps',
+);
+
+console.log(
+  'API domain smoke passed: wallet, service payout, VAT, matching, marketplace, and fee evidence policies.',
+);
