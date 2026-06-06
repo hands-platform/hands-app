@@ -1,9 +1,10 @@
-import { CashFeeSettlementMethod, PaymentMethod } from '@prisma/client';
+import { CashFeeSettlementMethod, PaymentMethod, PayoutBatchStatus } from '@prisma/client';
 
 import {
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
   normalizeCashFeeDebtSettlementInput,
+  normalizePayoutBatchUpdateStatus,
 } from './earnings.policy';
 
 describe('earnings policy', () => {
@@ -130,5 +131,45 @@ describe('earnings policy', () => {
       settlementNotes: 'Partner bank deposit confirmed',
       settlementMethod: CashFeeSettlementMethod.PARTNER_DEPOSIT,
     });
+  });
+
+  it('rejects invalid payout batch update statuses', () => {
+    expect(() =>
+      normalizePayoutBatchUpdateStatus({
+        currentStatus: PayoutBatchStatus.DRAFT,
+        requestedStatus: 'RELEASED',
+        nextTransferRef: 'BANK-001',
+      }),
+    ).toThrow('Invalid payout batch status');
+  });
+
+  it('prevents paid payout batches from moving back to unpaid states', () => {
+    expect(() =>
+      normalizePayoutBatchUpdateStatus({
+        currentStatus: PayoutBatchStatus.PAID,
+        requestedStatus: PayoutBatchStatus.PROCESSING,
+        nextTransferRef: 'BANK-001',
+      }),
+    ).toThrow('Paid payout batches cannot be moved back to an unpaid status');
+  });
+
+  it('requires a transfer reference before marking a payout batch paid', () => {
+    expect(() =>
+      normalizePayoutBatchUpdateStatus({
+        currentStatus: PayoutBatchStatus.PROCESSING,
+        requestedStatus: PayoutBatchStatus.PAID,
+        nextTransferRef: null,
+      }),
+    ).toThrow('Transfer reference is required before marking a payout batch paid');
+  });
+
+  it('normalizes omitted payout batch status updates as metadata-only updates', () => {
+    const nextStatus = normalizePayoutBatchUpdateStatus({
+      currentStatus: PayoutBatchStatus.DRAFT,
+      requestedStatus: null,
+      nextTransferRef: 'BANK-001',
+    });
+
+    expect(nextStatus).toBeUndefined();
   });
 });

@@ -19,6 +19,7 @@ import {
   calculateProviderWalletDelta,
   calculateServicePayoutFeeFromRules,
   normalizeCashFeeDebtSettlementInput,
+  normalizePayoutBatchUpdateStatus,
 } from './earnings.policy';
 import {
   PROVIDER_WALLET_BLOCK_CODE,
@@ -480,20 +481,15 @@ export class EarningsService {
       throw new NotFoundException('Payout batch not found');
     }
 
-    const nextStatus = input.status;
-    if (nextStatus && !Object.values(PayoutBatchStatus).includes(nextStatus)) {
-      throw new BadRequestException('Invalid payout batch status');
-    }
-    if (existing.status === PayoutBatchStatus.PAID && nextStatus && nextStatus !== PayoutBatchStatus.PAID) {
-      throw new BadRequestException('Paid payout batches cannot be moved back to an unpaid status');
-    }
     const nextTransferRef =
       input.transferRef === undefined
         ? normalizeNullable(existing.transferRef)
         : normalizeNullable(input.transferRef);
-    if (nextStatus === PayoutBatchStatus.PAID && !nextTransferRef) {
-      throw new BadRequestException('Transfer reference is required before marking a payout batch paid');
-    }
+    const nextStatus = normalizePayoutBatchUpdateStatus({
+      currentStatus: existing.status,
+      requestedStatus: input.status,
+      nextTransferRef,
+    });
 
     return this.prisma.$transaction(async (tx) => {
       if (nextStatus === PayoutBatchStatus.PROCESSING || nextStatus === PayoutBatchStatus.PAID) {

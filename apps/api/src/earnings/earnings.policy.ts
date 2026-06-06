@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { CashFeeSettlementMethod, PaymentMethod } from '@prisma/client';
+import { CashFeeSettlementMethod, PaymentMethod, PayoutBatchStatus } from '@prisma/client';
 
 export type WalletDeltaInput = {
   paymentMethod?: PaymentMethod | string | null;
@@ -31,6 +31,12 @@ export type CashFeeDebtSettlementInput = {
   settlementMethod?: string | null;
 };
 
+export type PayoutBatchUpdateStatusInput = {
+  currentStatus: PayoutBatchStatus | string;
+  requestedStatus?: PayoutBatchStatus | string | null;
+  nextTransferRef?: string | null;
+};
+
 export function calculateProviderWalletDelta(input: WalletDeltaInput) {
   if (input.paymentMethod === PaymentMethod.CASH || input.paymentMethod === 'CASH') {
     return -(input.platformFee + input.withholdingAmount);
@@ -59,6 +65,27 @@ export function normalizeCashFeeDebtSettlementInput(input: CashFeeDebtSettlement
     settlementNotes,
     settlementMethod,
   };
+}
+
+export function normalizePayoutBatchUpdateStatus(
+  input: PayoutBatchUpdateStatusInput,
+): PayoutBatchStatus | undefined {
+  if (!input.requestedStatus) {
+    return undefined;
+  }
+
+  const nextStatus = input.requestedStatus as PayoutBatchStatus;
+  if (!Object.values(PayoutBatchStatus).includes(nextStatus)) {
+    throw new BadRequestException('Invalid payout batch status');
+  }
+  if (input.currentStatus === PayoutBatchStatus.PAID && nextStatus !== PayoutBatchStatus.PAID) {
+    throw new BadRequestException('Paid payout batches cannot be moved back to an unpaid status');
+  }
+  if (nextStatus === PayoutBatchStatus.PAID && !input.nextTransferRef) {
+    throw new BadRequestException('Transfer reference is required before marking a payout batch paid');
+  }
+
+  return nextStatus;
 }
 
 export function calculateServicePayoutFeeFromRules(input: {

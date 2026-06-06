@@ -91,6 +91,13 @@ Cash fee debt settlement rules are now covered in the earnings policy layer:
 - Allowed methods are limited to partner deposit and admin offset.
 - Valid settlement inputs are normalized before `EarningsService.markPaid` writes the paid earning and wallet ledger entry.
 
+Payout batch update rules are also covered in the same policy layer:
+
+- Invalid payout batch statuses are rejected before Prisma update.
+- Paid payout batches cannot move back to unpaid states.
+- A transfer reference is required before a payout batch can be marked paid.
+- Omitted status updates are treated as metadata-only updates.
+
 ## Follow-Up Before Production
 
 - Set strong `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, and `CORS_ORIGINS` in every production-like environment.
