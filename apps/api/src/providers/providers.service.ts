@@ -198,7 +198,12 @@ export class ProvidersService {
         reviews: { take: 10, orderBy: { createdAt: 'desc' } },
       },
     });
-    return { ...provider, ...publicProviderMedia(provider) };
+    return {
+      ...provider,
+      user: publicProviderUser(provider.user),
+      reviews: publicProviderReviews(provider.reviews),
+      ...publicProviderMedia(provider),
+    };
   }
 
   async updateProfile(userId: string | undefined, input: { displayName?: string; bio?: string }) {
@@ -605,6 +610,16 @@ function publicProviderUser(user?: { fullName: string | null } | null) {
         fullName: user.fullName,
       }
     : null;
+}
+
+function publicProviderReviews(
+  reviews: Array<{ rating: number; comment: string | null; createdAt: Date | string }>,
+) {
+  return reviews.map((review) => ({
+    rating: review.rating,
+    comment: review.comment,
+    createdAt: review.createdAt instanceof Date ? review.createdAt.toISOString() : review.createdAt,
+  }));
 }
 
 function providerPublicBookableServiceSummary(
