@@ -124,6 +124,7 @@ export class ProvidersService {
         const services = publicNearbyProviderServices(provider.services);
         return {
           ...provider,
+          user: publicProviderUser(provider.user),
           services,
           ...publicProviderMedia(provider),
           ...bookableSummary,
@@ -596,6 +597,14 @@ function publicProviderMedia(provider: {
     profileImageUrl: profileImage,
     galleryImageUrls,
   };
+}
+
+function publicProviderUser(user?: { fullName: string | null } | null) {
+  return user
+    ? {
+        fullName: user.fullName,
+      }
+    : null;
 }
 
 function providerPublicBookableServiceSummary(
