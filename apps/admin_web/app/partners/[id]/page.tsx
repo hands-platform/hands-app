@@ -86,6 +86,7 @@ type PartnerDispatchPolicy = {
   backupRadiusMeters: number;
   locationFreshnessMinutes: number;
 };
+type PartnerDetailSection = 'overview' | 'full';
 type PartnerKycEvidence = {
   allRequiredApproved: boolean;
   missingDocuments: string[];
@@ -178,6 +179,11 @@ const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   locationFreshnessMinutes: 30,
 };
 
+function readPartnerDetailSection(params: Record<string, string | string[] | undefined>): PartnerDetailSection {
+  const rawSection = Array.isArray(params.section) ? params.section[0] : params.section;
+  return rawSection === 'full' ? 'full' : 'overview';
+}
+
 type ProviderDetail = AdminProvider & {
   locationSnapshots?: Array<{ id: string; lat: string | number; lng: string | number; recordedAt: string }>;
   earnings?: Array<{
@@ -241,6 +247,7 @@ type ProviderDetail = AdminProvider & {
 export default async function ProviderDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const detailSearchParams = searchParams ? await searchParams : {};
+  const detailSection = readPartnerDetailSection(detailSearchParams);
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, PARTNER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
@@ -253,6 +260,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     notFound();
   }
   const dispatchPolicy = buildPartnerDispatchPolicy(operationalPolicies);
+
+  if (detailSection === 'overview') {
+    return <PartnerDetailFastOverview dispatchPolicy={dispatchPolicy} provider={provider} />;
+  }
 
   const primaryBank = primaryBankAccount(provider);
   const reviewChecklist = buildReviewChecklist(provider, dispatchPolicy);
@@ -2979,6 +2990,210 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
               {earning.settlementRef ? ` / ref ${earning.settlementRef}` : ''}
             </p>
           ))}
+        </div>
+      </section>
+    </>
+  );
+}
+
+function PartnerDetailFastOverview({
+  dispatchPolicy,
+  provider,
+}: {
+  dispatchPolicy: PartnerDispatchPolicy;
+  provider: ProviderDetail;
+}) {
+  const partnerName = marketplaceDisplayText(
+    provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+  );
+  const fullHref = `/partners/${provider.id}?section=full`;
+  const fullSectionHref = (hash: string) => `${fullHref}${hash}`;
+  const primaryBank = primaryBankAccount(provider);
+  const kycEvidence = buildPartnerKycEvidence(provider);
+  const payoutOps = buildProviderPayoutOps(provider);
+  const servicePricing = buildProviderServicePricing(provider);
+  const bookingArchive = buildPartnerBookingArchive(provider);
+  const latestBooking = bookingArchive[0]?.booking;
+  const latestAccessAt = latestPartnerAccessAt(provider);
+  const cashDebt = cashFeeDebtAmount(provider);
+  const locationMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
+  const hasFreshLocation =
+    Number.isFinite(locationMinutes) && locationMinutes <= dispatchPolicy.locationFreshnessMinutes;
+  const completedBookingCount = bookingArchive.filter(
+    (record) => record.booking.status === 'COMPLETED',
+  ).length;
+  const liveBookingCount = bookingArchive.filter((record) => {
+    const status = record.booking.status ?? '';
+    return status !== 'COMPLETED' && !CLOSED_BOOKING_STATUSES.includes(status);
+  }).length;
+  const chatRoomCount = bookingArchive.filter((record) => record.booking.chatRoom).length;
+  const chatMessageCount = bookingArchive.reduce(
+    (sum, record) => sum + readPartnerChatMessages(record.booking).length,
+    0,
+  );
+  const enabledPushDevices = (provider.devices ?? []).filter((device) => device.enabled !== false).length;
+  const overviewCards = [
+    {
+      label: 'KYC',
+      value: provider.kyc?.status ?? provider.verification?.status ?? 'DRAFT',
+      detail: kycEvidence.allRequiredApproved
+        ? 'Required identity evidence is approved.'
+        : `${kycEvidence.missingDocuments.length} required document(s) need approval.`,
+      href: fullSectionHref('#kyc'),
+      tone: kycEvidence.allRequiredApproved ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Wallet',
+      value: cashDebt > 0 ? 'Company fee unpaid' : 'Clear',
+      detail:
+        cashDebt > 0
+          ? `${formatCurrency(cashDebt)} cash-booking fee must be settled before marketplace participation.`
+          : 'No partner cash-fee debt is loaded.',
+      href: fullSectionHref('#cash-debt-origin'),
+      tone: cashDebt > 0 ? 'pill-danger' : 'pill-success',
+    },
+    {
+      label: 'Payout',
+      value: payoutOps.status,
+      detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate is clear or deferred.',
+      href: fullSectionHref('#payout'),
+      tone: pillClass(payoutOps.tone),
+    },
+    {
+      label: 'Bookings',
+      value: `${completedBookingCount} completed`,
+      detail: `${liveBookingCount} active record(s), ${bookingArchive.length} recent linked booking record(s).`,
+      href: fullSectionHref('#partner-booking-journey'),
+      tone: liveBookingCount ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Chat archive',
+      value: `${chatRoomCount} room(s)`,
+      detail: `${chatMessageCount} retained message(s) for admin review.`,
+      href: fullSectionHref('#partner-chat-retention-ledger'),
+      tone: chatRoomCount ? 'pill-info' : 'pill-neutral',
+    },
+    {
+      label: 'Location',
+      value: locationAgeLabel(provider.currentLocationUpdatedAt),
+      detail:
+        provider.currentLat && provider.currentLng
+          ? `${provider.currentLat}, ${provider.currentLng}`
+          : 'No latest partner location pin is saved.',
+      href: fullSectionHref('#location'),
+      tone: hasFreshLocation ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'Services',
+      value: `${servicePricing.readyCount} bookable`,
+      detail: `${servicePricing.rows.length} partner service option(s) loaded.`,
+      href: fullSectionHref('#service-pricing'),
+      tone: servicePricing.readyCount ? 'pill-success' : 'pill-warn',
+    },
+    {
+      label: 'App access',
+      value: latestAccessAt ? formatDate(latestAccessAt) : 'No access',
+      detail: `${provider.sessions?.length ?? 0} session(s), ${enabledPushDevices} enabled device(s).`,
+      href: fullSectionHref('#app-activity'),
+      tone: latestAccessAt ? 'pill-info' : 'pill-neutral',
+    },
+  ];
+
+  return (
+    <>
+      <section className="toolbar">
+        <div>
+          <p className="muted">
+            <Link className="text-link" href="/partners">
+              Back to partners
+            </Link>
+          </p>
+          <h1>{partnerName}</h1>
+          <p className="muted">
+            Fast operations overview / {provider.user?.phone ?? 'No phone'} / {provider.city ?? 'No city'}
+          </p>
+        </div>
+        <div className="actions">
+          <Link className="text-link" href={fullHref}>
+            Open full dossier
+          </Link>
+          <Link className="text-link" href={`/partner-controls?q=${encodeURIComponent(provider.id)}`}>
+            Account controls
+          </Link>
+        </div>
+      </section>
+
+      <section className="grid" style={{ marginBottom: 16 }}>
+        {overviewCards.map((card) => (
+          <div className="card" key={card.label}>
+            <span className={`pill ${card.tone}`}>{card.label}</span>
+            <h2>{card.value}</h2>
+            <p className="muted">{card.detail}</p>
+            <Link className="text-link" href={card.href}>
+              Open section
+            </Link>
+          </div>
+        ))}
+      </section>
+
+      <section className="detail-grid">
+        <div className="card">
+          <h2>Identity</h2>
+          <InfoLine label="Display name" value={partnerName} />
+          <InfoLine label="Legal name" value={provider.legalName} />
+          <InfoLine label="Phone" value={provider.user?.phone} />
+          <InfoLine label="City" value={provider.city} />
+          <InfoLine label="Joined" value={provider.user?.createdAt ? formatDate(provider.user.createdAt) : null} />
+          <InfoLine label="Last access" value={latestAccessAt ? formatDate(latestAccessAt) : null} />
+        </div>
+
+        <div className="card">
+          <h2>Booking command</h2>
+          <InfoLine
+            label="Policy"
+            value={`${dispatchPolicy.responseWindowMinutes}m first-pick / ${Math.round(
+              dispatchPolicy.backupRadiusMeters / 1000,
+            )}km marketplace radius`}
+          />
+          <InfoLine
+            label="Latest booking"
+            value={
+              latestBooking
+                ? `${shortRecordId(latestBooking.id)} / ${latestBooking.status ?? 'UNKNOWN'} / ${bookingServiceLabel(
+                    latestBooking,
+                  )}`
+                : null
+            }
+          />
+          <InfoLine label="Marketplace rows" value={`${provider.participants?.length ?? 0} loaded`} />
+          <InfoLine label="Retained chats" value={`${chatRoomCount} room(s), ${chatMessageCount} message(s)`} />
+        </div>
+
+        <div className="card">
+          <h2>Payout readiness</h2>
+          <InfoLine label="Bank" value={primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null} />
+          <InfoLine label="Tax profile" value={provider.taxProfile?.status ?? 'Deferred until first earning'} />
+          <InfoLine label="Cash fee debt" value={cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear'} />
+          <InfoLine label="Payout status" value={payoutOps.status} />
+        </div>
+
+        <div className="card">
+          <h2>Next operator action</h2>
+          <p className="muted">{kycEvidence.nextAction}</p>
+          <p className="muted">
+            {payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'No payout blocker is loaded for this partner.'}
+          </p>
+          <div className="participant-list">
+            <Link className="pill pill-info" href={fullHref}>
+              Full dossier
+            </Link>
+            <Link className="pill pill-info" href="/cash-settlements">
+              Cash settlements
+            </Link>
+            <Link className="pill pill-info" href="/payouts">
+              Payout batches
+            </Link>
+          </div>
         </div>
       </section>
     </>
