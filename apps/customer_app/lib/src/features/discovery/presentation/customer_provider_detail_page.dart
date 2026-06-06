@@ -378,7 +378,7 @@ class ServiceOptionGroupCard extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             Text(
-              'Choose a time option. The selected partner gets the first response window, and marketplace partner options can open if needed.',
+              'Choose a duration option. The selected partner gets the first response window, and marketplace partner options can open if needed.',
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium

@@ -346,7 +346,7 @@ class OpenBookingCard extends StatelessWidget {
               FilledButton.tonalIcon(
                 onPressed: loading ? null : onReject,
                 icon: const Icon(Icons.close),
-                label: const Text('Withdraw from shortlist'),
+                label: const Text('Withdraw from candidate list'),
               ),
             ],
           ],

@@ -104,7 +104,7 @@ export function bookingMvpAuthorityContract({
       tone: pinReady ? (backupSupply.eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
       evidence: `${backupSupply.eligibleCount} eligible / ${backupSupply.rows.length} partner row(s) sampled.`,
       operatorUse:
-        'Only partners within booking-address radius and fresh-location policy should enter the shortlist.',
+        'Only partners within booking-address radius and fresh-location policy should enter the candidate list.',
       href: '#marketplace-supply',
     },
     {

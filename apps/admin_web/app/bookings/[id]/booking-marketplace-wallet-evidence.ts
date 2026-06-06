@@ -143,7 +143,7 @@ export function bookingMarketplaceWalletEvidence({
               .join(' / ')
           : 'No partner participation has been recorded for this booking yet.',
         operatorUse:
-          'Use this lane to confirm who actually entered the customer shortlist. Wallet-blocked view attempts are not stored here.',
+          'Use this lane to confirm who actually entered the customer choice list. Wallet-blocked view attempts are not stored here.',
       },
       {
         lane: 'Marketplace reach',

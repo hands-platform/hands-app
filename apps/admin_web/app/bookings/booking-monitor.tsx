@@ -2662,7 +2662,7 @@ function bookingListStage(booking: AdminBooking, nowMs: number): BookingListStag
       detail: `${marketplaceCount} marketplace partner(s) are visible while matching stays open.`,
       action:
         bookingBackupAlertTraceSummary(booking).totalNotified > 0
-          ? 'Monitor marketplace alert delivery and customer shortlist quality.'
+          ? 'Monitor marketplace alert delivery and customer choice list quality.'
           : 'Nudge eligible partners or check marketplace alert creation.',
       tone: 'info',
       href: `/bookings/${booking.id}#participants`,
@@ -4251,7 +4251,7 @@ function bookingMatchingRuleOperatorAction(
     return 'Customer must select the final partner; do not auto-assign.';
   }
   if (marketplaceCount > 0) {
-    return 'Marketplace partners are visible. Monitor customer shortlist and partner response evidence.';
+    return 'Marketplace partners are visible. Monitor customer choice list and partner response evidence.';
   }
   if (notifiedCount > 0) {
     return 'Push invitations were sent. Watch for partner participation before the first-pick window closes.';
@@ -4960,7 +4960,7 @@ function marketplaceParticipantEvidenceState(booking: AdminBooking, participant:
 
   return {
     evidenceLabel: 'Marketplace participation row',
-    evidenceDetail: 'Partner entered the customer shortlist from booking-address marketplace participation.',
+    evidenceDetail: 'Partner entered the customer choice list from booking-address marketplace participation.',
     evidenceTone: 'pill-info',
   };
 }

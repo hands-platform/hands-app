@@ -2488,7 +2488,7 @@ function buildMatchingControlRoom(
       {
         label: 'Customer can choose',
         value: String(customerChoiceReady),
-        helper: 'Open bookings with accepted partners visible in the customer shortlist.',
+        helper: 'Open bookings with accepted partners visible in the customer choice list.',
       },
       {
         label: 'Policy timer',
@@ -2866,7 +2866,7 @@ function matchingRowNextAction(input: {
     return 'Confirm the customer service location so distance-based marketplace matching can work.';
   }
   if (input.customerReadyToChoose) {
-    return 'Confirm the customer sees the shortlist and can select the final partner.';
+    return 'Confirm the customer sees the candidate list and can select the final partner.';
   }
   if (input.freshEligibleCount === 0 && input.eligibleCount > 0) {
     return 'Ask nearby partners to refresh location or open the Partner app before widening policy.';
@@ -2875,7 +2875,7 @@ function matchingRowNextAction(input: {
     return 'Check local supply; no fresh nearby partner is currently available for marketplace participation.';
   }
   if (input.backupWindowOpen) {
-    return `Nudge ${input.freshEligibleCount} eligible nearby partner(s) to join the customer shortlist.`;
+    return `Nudge ${input.freshEligibleCount} eligible nearby partner(s) to join the customer choice list.`;
   }
   return `Monitor first-pick response from ${input.firstPickName ?? 'the preferred partner'} while marketplace supply stays ready.`;
 }
@@ -3138,8 +3138,8 @@ function buildTodayCommandOrder(input: {
       value: `${customerChoiceRows} ready`,
       detail:
         customerChoiceRows > 0
-          ? 'At least one customer can select from the shortlist. After match, confirm chat handoff stays archived.'
-          : 'No customer shortlist is currently ready. Keep chat creation checks visible for matched bookings.',
+          ? 'At least one customer can select from the candidate list. After match, confirm chat handoff stays archived.'
+          : 'No customer choice list is currently ready. Keep chat creation checks visible for matched bookings.',
       href: customerChoiceRows ? '/bookings?view=matching' : '/bookings?view=chat',
       tone: customerChoiceRows ? 'info' : 'ok',
     },
@@ -3237,7 +3237,7 @@ function buildShiftOperatingRoute(input: {
       value: `${firstPickRows + marketplaceRows} row(s)`,
       checkpoint:
         firstPickRows + marketplaceRows > 0
-          ? 'Confirm preferred partner response, 10km marketplace supply, and customer shortlist readiness.'
+          ? 'Confirm preferred partner response, 10km marketplace supply, and customer choice list readiness.'
           : 'No first-pick or marketplace row needs active intervention in this snapshot.',
       href: firstPickRows ? '/bookings?view=first-pick' : '/bookings?view=marketplace',
       tone: firstPickRows + marketplaceRows ? 'info' : 'ok',

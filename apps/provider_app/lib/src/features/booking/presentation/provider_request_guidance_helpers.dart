@@ -60,7 +60,7 @@ ProviderRequestGuidance providerRequestGuidance({
       ? 'Direct request'
       : hasPreferredProvider
           ? 'Marketplace opportunity'
-          : 'Open shortlist';
+          : 'Open candidate list';
   final priorityLabel = isPreferredRequest
       ? 'Reply first'
       : hasPreferredProvider
@@ -146,7 +146,7 @@ ProviderRequestGuidance providerRequestGuidance({
           ? 'Another partner was chosen first. You are visible as a marketplace option.'
           : 'You are visible in this open request. The customer will pick the final partner.',
       detailMessage:
-          'You are in the shortlist. Keep the app open and wait for customer selection.',
+          'You are in the candidate list. Keep the app open and wait for customer selection.',
       infoMessage:
           'You are visible to the customer now. Wait for the final selection.',
     );
@@ -176,7 +176,7 @@ ProviderRequestGuidance providerRequestGuidance({
     priorityLabel: priorityLabel,
     roleLabel: roleLabel,
     decisionLabel: 'Can participate',
-    nextAction: 'Participate in this open request to enter the customer shortlist.',
+    nextAction: 'Participate in this open request to enter the customer choice list.',
     contextMessage:
         'This request is open to nearby partners inside $backupRadiusLabel. The customer will pick the final partner.',
     detailMessage:

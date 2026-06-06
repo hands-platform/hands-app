@@ -3053,7 +3053,7 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
         )}.`,
     operatorAction: eligible
       ? 'For a live booking, confirm the booking address is inside radius before asking this partner to join.'
-      : 'Fix identity, account, location, or alert blockers before relying on this partner for marketplace participation or customer shortlist recovery.',
+      : 'Fix identity, account, location, or alert blockers before relying on this partner for marketplace participation or customer choice list recovery.',
   };
 }
 
@@ -3418,7 +3418,7 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Marketplace ready',
         value: backupReady.length.toString(),
-        detail: 'Partners eligible to receive marketplace alerts and join the customer shortlist.',
+        detail: 'Partners eligible to receive marketplace alerts and join the customer choice list.',
         href: '/partners?review=marketplace-ready',
         tone: backupReady.length ? 'ok' : 'warn',
       },
@@ -4308,7 +4308,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       label: 'Marketplace ready',
       count: backupReady,
       href: '/partners?review=marketplace-ready',
-      detail: 'Partners who can receive marketplace alerts and join customer shortlists under current policy.',
+      detail: 'Partners who can receive marketplace alerts and join customer choice lists under current policy.',
     },
   ];
 
@@ -4702,7 +4702,7 @@ function providerFilterDescription(kind: string, value: string) {
     return 'Direct request ready highlights partners who can receive a preferred customer request immediately.';
   }
   if (kind === 'review' && value === 'marketplace-ready') {
-    return 'Marketplace ready highlights partners who can receive availability alerts and join customer shortlists.';
+    return 'Marketplace ready highlights partners who can receive availability alerts and join customer choice lists.';
   }
   if (kind === 'review' && value === 'marketplace-blocked') {
     return 'Marketplace blocked highlights partners excluded from open matching until blockers are resolved.';

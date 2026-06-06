@@ -296,7 +296,7 @@ function bookingBackupCandidateCommand(input: {
       status: 'SUPPLY READY',
       tone: 'pill-success',
       title: 'This booking has usable marketplace partner supply',
-      detail: `${input.eligibleCount} partner(s) can be nudged or exposed to the customer shortlist under current policy.`,
+      detail: `${input.eligibleCount} partner(s) can be nudged or exposed to the customer choice list under current policy.`,
       href: '/partners?review=marketplace-ready',
       action: 'Open marketplace-ready',
     };

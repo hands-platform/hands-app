@@ -150,7 +150,7 @@ export function bookingParticipantLedger(
         helper: `${formatDistanceMeters(backupSupply.radiusMeters)} booking-address radius / ${notificationTrace.backupBatches.length} alert batch(es).`,
       },
       {
-        label: '3. Customer shortlist',
+        label: '3. Customer choice list',
         status: customerSelectableParticipants.length ? 'Selectable' : 'Not ready',
         tone: customerSelectableParticipants.length ? 'pill-warn' : 'pill-info',
         value: `${customerSelectableParticipants.length} customer-selectable`,
@@ -223,7 +223,7 @@ export function bookingParticipantLedger(
           ? `${providerName(booking.selectedProvider)} is saved as selectedProvider.`
           : `${customerSelectableParticipants.length} customer-selectable partner(s) available.`,
         operatorUse:
-          'If final partner is missing, check customer app shortlist visibility instead of manually choosing for the customer.',
+          'If final partner is missing, check customer app candidate-list visibility instead of manually choosing for the customer.',
       },
       {
         stage: '4. Chat and service handoff',
@@ -292,7 +292,7 @@ export function bookingParticipantLedger(
         operatorUse: `Participant ${shortId(participant.id)} is retained as actual booking evidence. ${
           isPreferred
             ? 'First-pick participation is not customer-selectable until partner acceptance.'
-            : 'Marketplace participating/accepted partners can appear in the customer shortlist.'
+            : 'Marketplace participating/accepted partners can appear in the customer choice list.'
         }`,
       };
     }),
@@ -347,7 +347,7 @@ function bookingParticipantEvidenceState(input: {
   return {
     evidenceLabel: 'Marketplace participation row',
     evidenceDetail:
-      'Partner entered the customer shortlist from booking-address marketplace participation.',
+      'Partner entered the customer choice list from booking-address marketplace participation.',
     evidenceTone: 'pill-info',
   };
 }

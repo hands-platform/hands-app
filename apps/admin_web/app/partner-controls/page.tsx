@@ -1414,7 +1414,7 @@ function buildAcceptanceUnblockPlaybook(
       payoutImpact:
         'Debt should be visible before payout so finance does not pay a partner while platform fees are unpaid.',
       customerImpact:
-        'Customer final choice stays available only from actual eligible participants; fee-debt partners cannot enter the marketplace shortlist.',
+        'Customer final choice stays available only from actual eligible participants; fee-debt partners cannot enter the marketplace candidate list.',
       action: card('wallet-debt')?.action ?? 'Open settlement queue',
       href: card('wallet-debt')?.href ?? '/cash-settlements',
       blockingCount: card('wallet-debt')?.blockingCount ?? 0,

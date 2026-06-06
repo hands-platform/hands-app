@@ -331,7 +331,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#participants',
       label: 'Partners',
       value: `${booking.participants?.length ?? 0}`,
-      helper: 'Preferred, final, and marketplace shortlist.',
+      helper: 'Preferred, final, and marketplace candidate list.',
     },
     {
       href: '#chat',
@@ -420,7 +420,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       status: finalProvider?.id ? 'Linked' : 'Not selected',
       evidence: finalProvider
         ? providerName(finalProvider)
-        : `${booking.participants?.length ?? 0} shortlist participant(s)`,
+        : `${booking.participants?.length ?? 0} marketplace candidate(s)`,
       href: '#handoff',
     },
     {
@@ -1087,10 +1087,10 @@ function bookingOperatorCommandQueue({
       id: 'matching-watch',
       label: 'MATCH',
       title: 'Monitor customer choice',
-      detail: `${booking.participants?.length ?? 0} partner(s) are in the shortlist. Customer still chooses the final partner.`,
+      detail: `${booking.participants?.length ?? 0} partner(s) are in the customer choice list. Customer still chooses the final partner.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
-      action: { type: 'link', href: '#participants', label: 'Open shortlist' },
+      action: { type: 'link', href: '#participants', label: 'Open candidate list' },
     });
   }
 
@@ -1779,7 +1779,7 @@ function bookingDecisionEvidenceGuardrails({
       tone: hasFinalPartner ? 'pill-success' : booking.status === 'OPEN_MATCHING' ? 'pill-info' : 'pill-warn',
       evidence: hasFinalPartner
         ? providerName(booking.selectedProvider)
-        : `${booking.participants?.length ?? 0} shortlist participant(s) / preferred ${providerName(
+        : `${booking.participants?.length ?? 0} marketplace candidate(s) / preferred ${providerName(
             booking.preferredProvider,
           )}`,
       nextStep: hasFinalPartner
@@ -3129,7 +3129,7 @@ function bookingHandoffChecklist(
       label: 'Partner',
       title: finalPartner ? providerName(finalPartner) : 'Waiting for partner response',
       detail: `${participantCount} participant record(s) / ${selectableCount} customer-selectable. The customer remains the final decision maker.`,
-      status: 'Partner shortlist',
+      status: 'Partner candidate list',
       href: '#participants',
     },
     {
@@ -3477,7 +3477,7 @@ function bookingOperatingTimeline({
     addItem({
       id: `participant-joined-${participant.id}`,
       type: 'JOIN',
-      title: `${partnerName} entered shortlist`,
+      title: `${partnerName} entered candidate list`,
       detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
         participant.providerStatusAtJoin ?? 'status unknown'
       }`,

@@ -980,7 +980,7 @@ export default async function OperationsPolicyPage({
           <DecisionHint
             title="First-pick partner acceptance"
             recommendation="Keep customer final confirmation as the operating rule."
-            detail="The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner."
+            detail="The preferred partner can accept quickly, marketplace partners can still enter the candidate list, and the customer chooses the final partner."
           />
           <DecisionHint
             title="Marketplace participation"
@@ -1864,7 +1864,7 @@ function policyRecommendationPosture(
         value === 'AUTO_MATCH_ON_ACCEPT'
           ? 'The API now ignores this historical value and keeps the request open until the customer chooses the final partner.'
           : 'Customer final-choice mode is required for the HANDS MVP flow.',
-      operatorAction: 'Keep customer-confirm mode active before scaling marketplace partner shortlist UX.',
+      operatorAction: 'Keep customer-confirm mode active before scaling marketplace partner candidate-list UX.',
       alignedAction:
         'Customer final-choice posture is aligned with the intended direct + marketplace matching model.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
@@ -4247,7 +4247,7 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
         'Accepted or participating partners appear in the customer waiting screen so the customer can confirm the final partner when customer-confirm mode is active.',
       className: 'timeline-active',
       tags: [
-        { label: 'Customer shortlist', tone: 'pill-success' },
+        { label: 'Customer choice list', tone: 'pill-success' },
         { label: preferredAcceptMode, tone: 'pill-info' },
       ],
     },
@@ -4449,7 +4449,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       area: 'Partner supply',
       title: 'Controls who can see and participate in marketplace requests',
       detail:
-        'Partner open-booking lists, participation validation, marketplace notifications, and customer shortlist visibility use this radius.',
+        'Partner open-booking lists, participation validation, marketplace notifications, and customer choice list visibility use this radius.',
       saveChecks: [
         {
           label: 'Stage impact preview',
@@ -4475,8 +4475,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
           href: '/notifications',
         },
         {
-          label: 'Marketplace shortlist',
-          detail: 'Confirm the customer shortlist will stay readable when more partners can participate.',
+          label: 'Marketplace candidate list',
+          detail: 'Confirm the customer choice list will stay readable when more partners can participate.',
           href: '/bookings?view=marketplace',
         },
       ],

@@ -1514,7 +1514,7 @@ function participantNames(booking: AdminBooking) {
 }
 
 function bookingNextAction(booking: AdminBooking) {
-  if (booking.status === 'OPEN_MATCHING') return 'Monitor partner response window and customer shortlist.';
+  if (booking.status === 'OPEN_MATCHING') return 'Monitor partner response window and customer choice list.';
   if (booking.status === 'MATCHED')
     return 'Confirm partner starts service when ready; chat should be available.';
   if (booking.status === 'IN_SERVICE') return 'Keep chat visible until partner completion.';

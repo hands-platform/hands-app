@@ -94,7 +94,7 @@ class _ProviderServicePricingCardState
             ),
             const SizedBox(height: 8),
             Text(
-              'Each service has time options such as 60, 90, and 120 minutes. Your customer price must stay above the HANDS minimum, follow 100.000 VND steps, and match an admin payout rule before customers can book it.',
+              'Each service has duration options such as 60, 90, and 120 minutes. Your customer price must stay above the HANDS minimum, follow 100.000 VND steps, and match an admin payout rule before customers can book it.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
@@ -204,7 +204,7 @@ class _ProviderServicePriceGroupCard extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Each time option needs its own customer price and admin payout rule.',
+                'Each duration option needs its own customer price and admin payout rule.',
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
