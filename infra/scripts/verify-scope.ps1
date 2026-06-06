@@ -116,6 +116,7 @@ function Invoke-Preflight {
 
 function Invoke-Api {
   Invoke-Check "prisma validate" "`$env:DATABASE_URL='postgresql://massage:massage@localhost:5432/massage_vn?schema=public'; npx.cmd prisma validate --schema apps/api/prisma/schema.prisma"
+  Invoke-Check "api test" "npm.cmd run api:test"
   Invoke-Check "api typecheck" "npm.cmd run typecheck --workspace @massage-vn/api"
   Invoke-Check "api lint" "npm.cmd run lint --workspace @massage-vn/api"
   if ($SkipBuild) {

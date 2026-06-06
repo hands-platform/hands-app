@@ -36,6 +36,9 @@ jobs:
           DATABASE_URL: postgresql://massage:massage@localhost:5432/massage_vn?schema=public
         run: npx prisma generate --schema apps/api/prisma/schema.prisma
 
+      - name: Test API
+        run: npm run api:test
+
       - name: Typecheck API
         run: npm run typecheck --workspace @massage-vn/api
 
