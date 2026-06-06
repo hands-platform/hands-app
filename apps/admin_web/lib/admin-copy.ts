@@ -1,6 +1,6 @@
 export function partnerDisplayText(value?: string | null) {
   return (value ?? '')
-    .replace(/\bPROVIDER\(S\)\b/g, 'PARTNER(S)')
+    .replace(/\bPROVIDER\(S\)(?=\W|$)/g, 'PARTNER(S)')
     .replace(/\bProvider\b/g, 'Partner')
     .replace(/\bprovider\b/g, 'partner');
 }

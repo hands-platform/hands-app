@@ -65,7 +65,12 @@ export function readPositivePolicyNumber(settings: AdminOperationalPolicySetting
 
 export function readPolicyString(settings: AdminOperationalPolicySetting[], key: string) {
   const value = settings.find((setting) => setting.key === key)?.value;
-  return typeof value === 'string' && value.trim() ? value : null;
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
 }
 
 export function formatPolicyDistance(meters: number) {
