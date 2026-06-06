@@ -10,6 +10,14 @@ const providerWalletGateHelperPath = resolve(
   'apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_gate_helpers.dart',
 );
 const providerWalletGateTestPath = resolve(root, 'apps/provider_app/test/provider_wallet_gate_test.dart');
+const providerRequestsScreenPath = resolve(
+  root,
+  'apps/provider_app/lib/src/features/booking/presentation/provider_requests_screen.dart',
+);
+const providerOpenBookingCardPath = resolve(
+  root,
+  'apps/provider_app/lib/src/features/booking/presentation/provider_marketplace_booking_card.dart',
+);
 
 const requiredCoverage = [
   {
@@ -332,9 +340,17 @@ function checkNegativeWalletBookingFunctionBoundaries() {
 function checkProviderMobileWalletGateBoundaries() {
   const providerSource = readFileSync(providerWalletGateHelperPath, 'utf8');
   const providerWalletGateTest = readFileSync(providerWalletGateTestPath, 'utf8');
+  const providerRequestsScreen = readFileSync(providerRequestsScreenPath, 'utf8');
+  const providerOpenBookingCard = readFileSync(providerOpenBookingCardPath, 'utf8');
   const walletBlockDisplayMessage = 'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.';
   const walletBlockButtonLabel = 'Fee settlement required';
   const missingMarkers = [];
+  const joinBooking = sliceBetween(providerRequestsScreen, 'Future<void> joinBooking(', 'Future<void> respondToBooking(');
+  const respondToBooking = sliceBetween(
+    providerRequestsScreen,
+    'Future<void> respondToBooking(',
+    'Future<void> handleBookingActionException(',
+  );
 
   for (const [label, marker] of [
     ['partner app cash-fee block message', walletBlockDisplayMessage],
@@ -347,6 +363,30 @@ function checkProviderMobileWalletGateBoundaries() {
     ['partner app renders wallet settlement guidance', 'providerWalletBlockHintClean'],
   ]) {
     if (!providerSource.includes(marker)) {
+      missingMarkers.push(`missing ${label}: ${marker}`);
+    }
+  }
+
+  for (const [label, marker] of [
+    ['partner app marketplace join preflight', 'if (!await ensureWalletCanJoinMarketplace())'],
+    ['partner app marketplace join endpoint path', '.joinBooking(bookingId)'],
+  ]) {
+    if (!joinBooking.includes(marker)) {
+      missingMarkers.push(`missing ${label}: ${marker}`);
+    }
+  }
+
+  if (respondToBooking.includes('ensureWalletCanJoinMarketplace')) {
+    missingMarkers.push('direct first-pick accept/reject must not run marketplace wallet preflight');
+  }
+
+  for (const [label, marker] of [
+    ['preferred request renders accept branch before marketplace wallet lock', 'if (isPreferredRequest && !isMatched)'],
+    ['preferred request accept action is direct response', 'label: const Text(\'Accept request\')'],
+    ['marketplace wallet lock remains a separate branch', 'else if (walletBlocksMarketplaceParticipation)'],
+    ['marketplace action uses join only outside preferred branch', 'onPressed: loading ? null : onJoin'],
+  ]) {
+    if (!providerOpenBookingCard.includes(marker)) {
       missingMarkers.push(`missing ${label}: ${marker}`);
     }
   }
@@ -372,7 +412,7 @@ function checkProviderMobileWalletGateBoundaries() {
   return {
     area: 'partner app negative wallet marketplace-only gate',
     status: missingMarkers.length === 0 ? 'PASS' : 'FAIL',
-    markerCount: 10,
+    markerCount: 16,
     missingMarkers,
   };
 }
