@@ -254,20 +254,6 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   }
   const dispatchPolicy = buildPartnerDispatchPolicy(operationalPolicies);
 
-  const readUrls = new Map<string, string>();
-  await Promise.all(
-    [
-      ...(provider.verification?.files ?? []),
-      ...(provider.documents ?? []).map((document) => document.fileAsset).filter(Boolean),
-    ].map(async (file) => {
-      if (!file?.id) return;
-      const result = await adminGet<{ read?: { url?: string } }>(`/files/${file.id}/read-url`, {});
-      if (result.read?.url) {
-        readUrls.set(file.id, result.read.url);
-      }
-    }),
-  );
-
   const primaryBank = primaryBankAccount(provider);
   const reviewChecklist = buildReviewChecklist(provider, dispatchPolicy);
   const opsSummary = buildProviderOpsSummary(provider, dispatchPolicy);
@@ -2762,10 +2748,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   <p className="muted">Rejection reason: {document.rejectionReason}</p>
                 ) : null}
                 <p className="muted">
-                  {document.fileAsset?.id && readUrls.get(document.fileAsset.id) ? (
+                  {document.fileAsset?.id ? (
                     <a
                       className="text-link"
-                      href={readUrls.get(document.fileAsset.id)}
+                      href={`/files/${document.fileAsset.id}/open`}
                       target="_blank"
                       rel="noreferrer"
                     >

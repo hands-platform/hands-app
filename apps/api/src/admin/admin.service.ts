@@ -49,6 +49,7 @@ const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;
 const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;
 const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 30;
 const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;
+const ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT = 50;
 
 const adminUserSummarySelect = {
   id: true,
@@ -1269,6 +1270,7 @@ const adminProviderDetailSelect = {
   kyc: { select: adminProviderKycSummarySelect },
   documents: {
     orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT,
     select: adminProviderDocumentSummarySelect,
   },
   bankAccounts: {
