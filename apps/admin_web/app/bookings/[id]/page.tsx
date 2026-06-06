@@ -14,6 +14,14 @@ import {
 } from './booking-activity-records';
 import { BookingChatBubble } from './booking-chat-bubble';
 import { BookingCloseoutSections } from './booking-closeout-sections';
+import {
+  BookingAlertTraceSection,
+  BookingAttentionChecksSection,
+  BookingFinanceCommandCenterSection,
+  BookingOperationsAuditTraceSection,
+  BookingPayoutBatchEligibilitySection,
+  BookingServicePricingSnapshotSection,
+} from './booking-finance-trace-sections';
 import { ActionLink, OpsTaskAction, type OperatorCommand } from './booking-operator-actions';
 import { BookingOperatorQueueSections, BookingOpsCommandCenter } from './booking-operator-sections';
 import {
@@ -1128,219 +1136,23 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingMarketplaceSupplySection backupSupply={backupSupply} />
 
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking alert trace</h2>
-            <p className="muted">
-              Booking-specific notification history for first-pick, marketplace partner visibility,
-              retries, and disabled device checks.
-            </p>
-          </div>
-          <Link className="text-link" href={`/notifications?booking=${booking.id}`}>
-            Open notification board
-          </Link>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {notificationTrace.metrics.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        {notificationTrace.backupBatches.length > 0 ? (
-          <div className="ops-check-list">
-            {notificationTrace.backupBatches.map((batch) => (
-              <div className="ops-check-item" key={batch.id}>
-                <span className="signal signal-info">{batch.signal}</span>
-                <div>
-                  <h3>{batch.title}</h3>
-                  <p>{batch.detail}</p>
-                  <small>{batch.meta}</small>
-                  {batch.providers ? <small>{batch.providers}</small> : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-        {notificationTrace.rows.length > 0 ? (
-          <div className="ops-check-list">
-            {notificationTrace.rows.map((row) => (
-              <div className="ops-check-item" key={row.id}>
-                <span className={`signal ${row.signalClass}`}>{row.signal}</span>
-                <div>
-                  <h3>{row.title}</h3>
-                  <p>{row.detail}</p>
-                  <small>{row.meta}</small>
-                  {row.delivery ? <small>{row.delivery}</small> : null}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : notificationTrace.backupBatches.length === 0 ? (
-          <p className="muted" style={{ marginTop: 12 }}>
-            No notification rows are tied to this booking yet. If a partner says they missed the request,
-            check whether the booking created first-pick or marketplace availability alerts.
-          </p>
-        ) : null}
-      </section>
+      <BookingAlertTraceSection bookingId={booking.id} notificationTrace={notificationTrace} />
 
-      <section className="card" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Operations audit trace</h2>
-            <p className="muted">
-              Booking-specific operator actions plus policy updates that happened after this request opened.
-            </p>
-          </div>
-          <Link className="text-link" href={`/audit-log?q=${encodeURIComponent(booking.id)}`}>
-            Open audit log
-          </Link>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {operationsTrace.metrics.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="ops-task-note" style={{ marginTop: 14 }}>
-          <div className="ops-row">
-            <div>
-              <span className={`pill ${operationsTrace.statusTone}`}>{operationsTrace.status}</span>
-              <strong>{operationsTrace.title}</strong>
-              <p className="muted">{operationsTrace.detail}</p>
-            </div>
-            <Link className="text-link" href="/operations-policy">
-              Review policy
-            </Link>
-          </div>
-        </div>
-        {operationsTrace.rows.length > 0 ? (
-          <div className="ops-check-list">
-            {operationsTrace.rows.map((row) => (
-              <div className="ops-check-item" key={row.id}>
-                <span className={`signal ${row.signalClass}`}>{row.signal}</span>
-                <div>
-                  <h3>{row.title}</h3>
-                  <p>{row.detail}</p>
-                  <small>{row.meta}</small>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
-            No operator action has been recorded for this booking yet.
-          </p>
-        )}
-      </section>
+      <BookingOperationsAuditTraceSection bookingId={booking.id} operationsTrace={operationsTrace} />
 
-      <section className="card ops-watch" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Attention checks</h2>
-            <p className="muted">Automatic operational checks for bookings that need operator attention.</p>
-          </div>
-          <span className={`pill ${attentionSummary.tone}`}>{attentionSummary.label}</span>
-        </div>
-        {attentionFlags.length > 0 ? (
-          <div className="ops-check-list">
-            {attentionFlags.map((flag) => (
-              <AttentionItem flag={flag} key={`${flag.severity}-${flag.title}`} />
-            ))}
-          </div>
-        ) : (
-          <p className="muted">No active attention checks. Continue normal monitoring from the timeline.</p>
-        )}
-      </section>
+      <BookingAttentionChecksSection attentionFlags={attentionFlags} attentionSummary={attentionSummary} />
 
-      <section className="card ops-watch" id="finance" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Finance command center</h2>
-            <p className="muted">
-              One-booking money flow from customer price to partner payout, HANDS fee, tax, and wallet impact.
-            </p>
-          </div>
-          <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
-            {financeFlags.length ? `${financeFlags.length} finance check(s)` : 'Finance clear'}
-          </span>
-        </div>
-        <div className="grid" style={{ marginTop: 12 }}>
-          {financeSummaryCards.map((card) => (
-            <MetricCard key={card.label} label={card.label} value={card.value} helper={card.helper} />
-          ))}
-        </div>
-        {financeFlags.length > 0 ? (
-          <div className="ops-check-list">
-            {financeFlags.map((flag) => (
-              <AttentionItem flag={flag} key={`${flag.severity}-${flag.title}`} />
-            ))}
-          </div>
-        ) : (
-          <p className="muted" style={{ marginTop: 12 }}>
-            Customer charge, payout rule, earning, and wallet impact are aligned for this booking.
-          </p>
-        )}
-      </section>
+      <BookingFinanceCommandCenterSection
+        financeFlags={financeFlags}
+        financeSummaryCards={financeSummaryCards}
+      />
 
-      <section className="card" id="payout-batch-eligibility" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Payout batch eligibility</h2>
-            <p className="muted">
-              Booking-level release check before weekly, monthly, or admin-selected partner settlement
-              batches.
-            </p>
-          </div>
-          <span className={`pill ${payoutBatchEligibility.tone}`}>{payoutBatchEligibility.status}</span>
-        </div>
-        <p className="muted" style={{ marginTop: 8 }}>
-          {payoutBatchEligibility.summary}
-        </p>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
-          {payoutBatchEligibility.rows.map((row) => (
-            <div className={`ops-task-card ${row.className}`} key={row.label}>
-              <div>
-                <span className={`pill ${row.pillClass}`}>{row.status}</span>
-                <h3>{row.label}</h3>
-                <p>{row.detail}</p>
-                <small>{row.operatorRule}</small>
-              </div>
-              <ActionLink href={row.href} label="Open" />
-            </div>
-          ))}
-        </div>
-      </section>
+      <BookingPayoutBatchEligibilitySection payoutBatchEligibility={payoutBatchEligibility} />
 
-      <section className="card" id="service-pricing-snapshot" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Service pricing snapshot</h2>
-            <p className="muted">
-              Booking-level price evidence for the selected service duration, partner payout, platform fee,
-              tax, and wallet impact.
-            </p>
-          </div>
-          <span className={`pill ${financeFlags.length ? 'pill-warn' : 'pill-success'}`}>
-            {financeFlags.length ? `${financeFlags.length} pricing check(s)` : 'Pricing aligned'}
-          </span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {servicePricingSnapshotRows.map((row) => (
-            <div key={row.label}>
-              <span>{row.label}</span>
-              <strong>{row.value}</strong>
-              <small>{row.helper}</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      <BookingServicePricingSnapshotSection
+        financeFlags={financeFlags}
+        servicePricingSnapshotRows={servicePricingSnapshotRows}
+      />
 
       <section className="card" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
@@ -4893,21 +4705,6 @@ type DispatchStep = {
   actionLabel?: string;
 };
 
-function AttentionItem({ flag }: { flag: AttentionFlag }) {
-  return (
-    <div className={`ops-check-item ops-check-${flag.severity}`}>
-      <div>
-        <span className={`pill ${attentionToneClass(flag.severity)}`}>
-          {checkSeverityLabel(flag.severity)}
-        </span>
-        <strong>{flag.title}</strong>
-        <p className="muted">{flag.detail}</p>
-      </div>
-      <p>{flag.action}</p>
-    </div>
-  );
-}
-
 function primaryOpsInstruction(booking: AdminBookingDetail) {
   if (booking.status === 'EXPIRED') {
     return booking.payment?.status === 'RELEASED'
@@ -5161,26 +4958,6 @@ function attentionLevel(flags: AttentionFlag[]) {
     return { label: 'Note', helper: `${flags.length} note check(s)`, tone: 'pill-info' };
   }
   return { label: 'Clear', helper: 'No active attention checks', tone: 'pill-success' };
-}
-
-function checkSeverityLabel(severity: AttentionFlag['severity']) {
-  if (severity === 'high') {
-    return 'Action';
-  }
-  if (severity === 'medium') {
-    return 'Monitor';
-  }
-  return 'Note';
-}
-
-function attentionToneClass(severity: AttentionFlag['severity']) {
-  if (severity === 'high') {
-    return 'pill-danger';
-  }
-  if (severity === 'medium') {
-    return 'pill-warn';
-  }
-  return 'pill-info';
 }
 
 function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
