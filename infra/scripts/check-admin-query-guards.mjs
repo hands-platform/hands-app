@@ -96,11 +96,27 @@ if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 
   });
 }
 
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list audit-log memo relations must keep a 3-row per-customer guard.',
+  });
+}
+
 if (!adminServiceSource.includes('take: ADMIN_CUSTOMER_LIST_LIMIT,')) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Customer list query must apply ADMIN_CUSTOMER_LIST_LIMIT.',
+  });
+}
+
+if (!adminServiceSource.includes('take: customers.length * ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list audit-log query must cap rows by customer count and per-customer guard.',
   });
 }
 

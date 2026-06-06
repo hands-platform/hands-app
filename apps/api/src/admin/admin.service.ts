@@ -43,6 +43,7 @@ const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 25;
 const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
 const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
 const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
+const ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT = 3;
 const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
 const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;
 const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;
@@ -1364,8 +1365,8 @@ export class AdminService {
     });
   }
 
-  listCustomers() {
-    return this.prisma.customerProfile.findMany({
+  async listCustomers() {
+    const customers = await this.prisma.customerProfile.findMany({
       orderBy: { id: 'desc' },
       take: ADMIN_CUSTOMER_LIST_LIMIT,
       select: {
@@ -1405,6 +1406,34 @@ export class AdminService {
         },
       },
     });
+
+    if (customers.length === 0) {
+      return customers;
+    }
+
+    const customerTargets = customers.map((customer) => `customer:${customer.id}`);
+    const customerAuditLogs = await this.prisma.adminAuditLog.findMany({
+      where: {
+        target: { in: customerTargets },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: customers.length * ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,
+      select: adminAuditLogSelect,
+    });
+
+    const auditLogsByTarget = new Map<string, typeof customerAuditLogs>();
+    for (const log of customerAuditLogs) {
+      const bucket = auditLogsByTarget.get(log.target) ?? [];
+      if (bucket.length < ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT) {
+        bucket.push(log);
+        auditLogsByTarget.set(log.target, bucket);
+      }
+    }
+
+    return customers.map((customer) => ({
+      ...customer,
+      auditLogs: auditLogsByTarget.get(`customer:${customer.id}`) ?? [],
+    }));
   }
 
   async getCustomerDetail(customerProfileId: string) {
