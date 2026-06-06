@@ -574,6 +574,83 @@ export function resolveMatchingPolicy(
   };
 }
 
+export function resolveMatchingPolicyFromPayload(payload: unknown): MatchingPolicy | undefined {
+  if (!payload || typeof payload !== 'object' || !('matchingPolicy' in payload)) {
+    return undefined;
+  }
+  const policy = payload.matchingPolicy;
+  if (!policy || typeof policy !== 'object') {
+    return undefined;
+  }
+
+  const providerResponseWindowMinutes = readSnapshotInteger(
+    readPayloadValue(policy, 'preferredProviderResponseWindowMinutes') ??
+      readPayloadValue(policy, 'providerResponseWindowMinutes'),
+    3,
+    30,
+  );
+  const backupProviderRadiusMeters = readSnapshotInteger(
+    readPayloadValue(policy, 'backupProviderRadiusMeters'),
+    1000,
+    30000,
+  );
+  const travelBufferMinutes = readSnapshotInteger(readPayloadValue(policy, 'travelBufferMinutes'), 0, 120);
+  const backupProviderLocationMaxAgeMinutes = readSnapshotInteger(
+    readPayloadValue(policy, 'backupProviderLocationMaxAgeMinutes'),
+    5,
+    1440,
+  );
+  const backupProviderInvitationLimit = readSnapshotInteger(
+    readPayloadValue(policy, 'backupProviderInvitationLimit'),
+    1,
+    200,
+  );
+  const preferredAcceptMode = readPreferredAcceptMode(readPayloadValue(policy, 'preferredAcceptMode'));
+  const backupOpenMode = readBackupOpenMode(readPayloadValue(policy, 'backupOpenMode'));
+
+  if (
+    providerResponseWindowMinutes == null ||
+    backupProviderRadiusMeters == null ||
+    travelBufferMinutes == null ||
+    backupProviderLocationMaxAgeMinutes == null ||
+    backupProviderInvitationLimit == null ||
+    preferredAcceptMode == null ||
+    backupOpenMode == null
+  ) {
+    return undefined;
+  }
+
+  return {
+    providerResponseWindowMinutes,
+    backupProviderRadiusMeters,
+    backupProviderLocationMaxAgeMinutes,
+    backupProviderInvitationLimit,
+    bookingMaxCustomerCurrentToAddressKm:
+      readSnapshotInteger(
+        readPayloadValue(policy, 'bookingMaxCustomerCurrentToAddressKm'),
+        1,
+        100,
+      ) ?? DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
+    bookingMaxPreferredProviderDistanceKm:
+      readSnapshotInteger(
+        readPayloadValue(policy, 'bookingMaxPreferredProviderDistanceKm'),
+        1,
+        300,
+      ) ?? DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
+    bookingCurrentLocationFreshnessMinutes:
+      readSnapshotInteger(
+        readPayloadValue(policy, 'bookingCurrentLocationFreshnessMinutes'),
+        1,
+        60,
+      ) ?? DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
+    bookingDistanceGateEnabled: readPayloadBoolean(policy, 'bookingDistanceGateEnabled', true),
+    bookingServiceAreaRequired: readPayloadBoolean(policy, 'bookingServiceAreaRequired', true),
+    travelBufferMinutes,
+    preferredAcceptMode,
+    backupOpenMode,
+  };
+}
+
 export function roundTo100Meters(value: number) {
   return Math.round(value / 100) * 100;
 }
@@ -615,6 +692,30 @@ function readPolicyBoolean(value: unknown, fallback: boolean) {
 function readPreferredAcceptMode(value: unknown): PreferredAcceptMode {
   void value;
   return PREFERRED_ACCEPT_CUSTOMER_CONFIRM;
+}
+
+function readBackupOpenMode(value: unknown) {
+  if (value === BACKUP_OPEN_IMMEDIATE || value === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY) {
+    return value;
+  }
+  return undefined;
+}
+
+function readPayloadValue(source: object, key: string) {
+  return key in source ? (source as Record<string, unknown>)[key] : undefined;
+}
+
+function readPayloadBoolean(source: object, key: string, fallback: boolean) {
+  const value = readPayloadValue(source, key);
+  return typeof value === 'boolean' ? value : fallback;
+}
+
+function readSnapshotInteger(value: unknown, min: number, max: number) {
+  if (value == null || value === '') {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= min && parsed <= max ? parsed : undefined;
 }
 
 function toRadians(value: number) {

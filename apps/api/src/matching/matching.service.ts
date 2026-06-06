@@ -5,12 +5,10 @@ import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisStateService } from '../redis/redis-state.service';
 import {
-  DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
-  DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
-  DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
   MATCHING_BACKUP_OPEN_MODE_KEY,
   MATCHING_PREFERRED_ACCEPT_MODE_KEY,
   resolveMatchingPolicy,
+  resolveMatchingPolicyFromPayload,
 } from './matching.policy';
 
 @Injectable()
@@ -83,7 +81,7 @@ export class MatchingService {
   }
 
   async registerActiveBooking(bookingId: string, payload: unknown) {
-    const policy = getPolicyFromPayload(payload) ?? (await this.getPolicy());
+    const policy = resolveMatchingPolicyFromPayload(payload) ?? (await this.getPolicy());
     await this.redisState.openMatching(bookingId, payload, policy.providerResponseWindowMinutes * 60);
   }
 
@@ -118,96 +116,4 @@ function getRecordId(value: unknown) {
     return value.id;
   }
   return undefined;
-}
-
-function getPolicyFromPayload(
-  payload: unknown,
-): Awaited<ReturnType<MatchingService['getPolicy']>> | undefined {
-  if (!payload || typeof payload !== 'object' || !('matchingPolicy' in payload)) {
-    return undefined;
-  }
-  const policy = payload.matchingPolicy;
-  if (!policy || typeof policy !== 'object') {
-    return undefined;
-  }
-  const providerResponseWindowMinutes = Number(
-    'preferredProviderResponseWindowMinutes' in policy
-      ? policy.preferredProviderResponseWindowMinutes
-      : 'providerResponseWindowMinutes' in policy
-        ? policy.providerResponseWindowMinutes
-        : undefined,
-  );
-  const backupProviderRadiusMeters = Number(
-    'backupProviderRadiusMeters' in policy ? policy.backupProviderRadiusMeters : undefined,
-  );
-  const travelBufferMinutes = Number(
-    'travelBufferMinutes' in policy ? policy.travelBufferMinutes : undefined,
-  );
-  const backupProviderLocationMaxAgeMinutes = Number(
-    'backupProviderLocationMaxAgeMinutes' in policy
-      ? policy.backupProviderLocationMaxAgeMinutes
-      : undefined,
-  );
-  const backupProviderInvitationLimit = Number(
-    'backupProviderInvitationLimit' in policy ? policy.backupProviderInvitationLimit : undefined,
-  );
-  const bookingMaxCustomerCurrentToAddressKm = Number(
-    'bookingMaxCustomerCurrentToAddressKm' in policy
-      ? policy.bookingMaxCustomerCurrentToAddressKm
-      : DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
-  );
-  const bookingMaxPreferredProviderDistanceKm = Number(
-    'bookingMaxPreferredProviderDistanceKm' in policy
-      ? policy.bookingMaxPreferredProviderDistanceKm
-      : DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
-  );
-  const bookingCurrentLocationFreshnessMinutes = Number(
-    'bookingCurrentLocationFreshnessMinutes' in policy
-      ? policy.bookingCurrentLocationFreshnessMinutes
-      : DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
-  );
-  const preferredAcceptMode =
-    'preferredAcceptMode' in policy && typeof policy.preferredAcceptMode === 'string'
-      ? policy.preferredAcceptMode
-      : undefined;
-  const backupOpenMode =
-    'backupOpenMode' in policy && typeof policy.backupOpenMode === 'string'
-      ? policy.backupOpenMode
-      : undefined;
-
-  if (
-    !Number.isFinite(providerResponseWindowMinutes) ||
-    !Number.isFinite(backupProviderRadiusMeters) ||
-    !Number.isFinite(travelBufferMinutes) ||
-    !Number.isFinite(backupProviderLocationMaxAgeMinutes) ||
-    !Number.isFinite(backupProviderInvitationLimit) ||
-    !Number.isFinite(bookingMaxCustomerCurrentToAddressKm) ||
-    !Number.isFinite(bookingMaxPreferredProviderDistanceKm) ||
-    !Number.isFinite(bookingCurrentLocationFreshnessMinutes) ||
-    !preferredAcceptMode ||
-    !backupOpenMode
-  ) {
-    return undefined;
-  }
-
-  return {
-    providerResponseWindowMinutes,
-    backupProviderRadiusMeters,
-    backupProviderLocationMaxAgeMinutes,
-    backupProviderInvitationLimit,
-    bookingMaxCustomerCurrentToAddressKm,
-    bookingMaxPreferredProviderDistanceKm,
-    bookingCurrentLocationFreshnessMinutes,
-    bookingDistanceGateEnabled:
-      'bookingDistanceGateEnabled' in policy && typeof policy.bookingDistanceGateEnabled === 'boolean'
-        ? policy.bookingDistanceGateEnabled
-        : true,
-    bookingServiceAreaRequired:
-      'bookingServiceAreaRequired' in policy && typeof policy.bookingServiceAreaRequired === 'boolean'
-        ? policy.bookingServiceAreaRequired
-        : true,
-    travelBufferMinutes,
-    preferredAcceptMode,
-    backupOpenMode,
-  } as Awaited<ReturnType<MatchingService['getPolicy']>>;
 }

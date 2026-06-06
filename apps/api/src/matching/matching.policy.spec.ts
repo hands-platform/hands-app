@@ -12,6 +12,7 @@ import {
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
   haversineMeters,
   resolveMatchingPolicy,
+  resolveMatchingPolicyFromPayload,
   roundTo100Meters,
 } from './matching.policy';
 
@@ -63,5 +64,48 @@ describe('matching policy', () => {
     const distance = haversineMeters(10.7769, 106.7009, 10.7814, 106.7051);
 
     expect(roundTo100Meters(distance)).toBe(700);
+  });
+
+  it('hydrates matching policy from persisted active matching payload snapshots', () => {
+    const policy = resolveMatchingPolicyFromPayload({
+      matchingPolicy: {
+        preferredProviderResponseWindowMinutes: 12,
+        backupProviderRadiusMeters: 10000,
+        travelBufferMinutes: 30,
+        backupProviderLocationMaxAgeMinutes: 30,
+        backupProviderInvitationLimit: 50,
+        bookingMaxCustomerCurrentToAddressKm: 20,
+        bookingMaxPreferredProviderDistanceKm: 50,
+        bookingCurrentLocationFreshnessMinutes: 10,
+        bookingDistanceGateEnabled: false,
+        bookingServiceAreaRequired: false,
+        preferredAcceptMode: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
+        backupOpenMode: BACKUP_OPEN_IMMEDIATE,
+      },
+    });
+
+    expect(policy?.providerResponseWindowMinutes).toBe(12);
+    expect(policy?.backupProviderRadiusMeters).toBe(10000);
+    expect(policy?.bookingDistanceGateEnabled).toBe(false);
+    expect(policy?.bookingServiceAreaRequired).toBe(false);
+    expect(policy?.preferredAcceptMode).toBe(PREFERRED_ACCEPT_CUSTOMER_CONFIRM);
+  });
+
+  it('ignores malformed active matching policy snapshots so live policy is used instead', () => {
+    expect(resolveMatchingPolicyFromPayload(null)).toBeUndefined();
+    expect(resolveMatchingPolicyFromPayload({ matchingPolicy: null })).toBeUndefined();
+    expect(
+      resolveMatchingPolicyFromPayload({
+        matchingPolicy: {
+          preferredProviderResponseWindowMinutes: null,
+          backupProviderRadiusMeters: 10000,
+          travelBufferMinutes: 30,
+          backupProviderLocationMaxAgeMinutes: 30,
+          backupProviderInvitationLimit: 50,
+          preferredAcceptMode: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
+          backupOpenMode: BACKUP_OPEN_IMMEDIATE,
+        },
+      }),
+    ).toBeUndefined();
   });
 });
