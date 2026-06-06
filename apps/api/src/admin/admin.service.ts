@@ -1413,21 +1413,23 @@ export class AdminService {
     }
 
     const customerTargets = customers.map((customer) => `customer:${customer.id}`);
-    const customerAuditLogs = await this.prisma.adminAuditLog.findMany({
-      where: {
-        target: { in: customerTargets },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: customers.length * ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,
-      select: adminAuditLogSelect,
-    });
-    const customerAuditCounts = await this.prisma.adminAuditLog.groupBy({
-      by: ['target'],
-      where: {
-        target: { in: customerTargets },
-      },
-      _count: { _all: true },
-    });
+    const [customerAuditLogs, customerAuditCounts] = await Promise.all([
+      this.prisma.adminAuditLog.findMany({
+        where: {
+          target: { in: customerTargets },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: customers.length * ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,
+        select: adminAuditLogSelect,
+      }),
+      this.prisma.adminAuditLog.groupBy({
+        by: ['target'],
+        where: {
+          target: { in: customerTargets },
+        },
+        _count: { _all: true },
+      }),
+    ]);
 
     const auditLogsByTarget = new Map<string, typeof customerAuditLogs>();
     for (const log of customerAuditLogs) {
@@ -1534,7 +1536,7 @@ export class AdminService {
   }
 
   async listProviders(options: { compact?: boolean } = {}) {
-    const compact = options.compact ?? false;
+    const compact = options.compact ?? true;
     const bookingListSelect = {
       id: true,
       preferredProviderId: true,
@@ -1721,17 +1723,19 @@ export class AdminService {
     }
 
     const providerAuditTargets = providers.map((provider) => `provider:${provider.id}`);
-    const providerAuditLogs = await this.prisma.adminAuditLog.findMany({
-      where: { target: { in: providerAuditTargets } },
-      orderBy: { createdAt: 'desc' },
-      take: providers.length * ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
-      select: adminAuditLogSelect,
-    });
-    const providerAuditCounts = await this.prisma.adminAuditLog.groupBy({
-      by: ['target'],
-      where: { target: { in: providerAuditTargets } },
-      _count: { _all: true },
-    });
+    const [providerAuditLogs, providerAuditCounts] = await Promise.all([
+      this.prisma.adminAuditLog.findMany({
+        where: { target: { in: providerAuditTargets } },
+        orderBy: { createdAt: 'desc' },
+        take: providers.length * ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
+        select: adminAuditLogSelect,
+      }),
+      this.prisma.adminAuditLog.groupBy({
+        by: ['target'],
+        where: { target: { in: providerAuditTargets } },
+        _count: { _all: true },
+      }),
+    ]);
     const auditLogsByTarget = new Map<string, typeof providerAuditLogs>();
     for (const log of providerAuditLogs) {
       const bucket = auditLogsByTarget.get(log.target) ?? [];

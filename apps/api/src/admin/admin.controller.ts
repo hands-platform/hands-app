@@ -663,5 +663,5 @@ export class AdminController {
 }
 
 function isCompactProviderListView(view?: string) {
-  return view === 'list' || view === 'compact';
+  return view !== 'full' && view !== 'expanded';
 }

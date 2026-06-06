@@ -97,7 +97,7 @@ The retry queue stores DB notifications first. Delivery attempts are recorded in
 ## Admin
 
 - `GET /admin/users`
-- `GET /admin/partners`
+- `GET /admin/partners` - compact operations list by default; use `/admin/partners/:id` for full partner detail.
 - `GET /admin/partners/:id`
 - `POST /admin/partners/:id/approve`
 - `POST /admin/partners/:id/reject`
