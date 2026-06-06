@@ -50,6 +50,18 @@ const PUBLIC_BOOKING_ADDRESS_KEYS = new Set([
   'country',
 ]);
 
+const PARTNER_OPEN_BOOKING_PRIVATE_KEYS = new Set([
+  'address',
+  'addressSnapshot',
+  'customer',
+  'customerId',
+  'customerProfile',
+  'customerProfileId',
+  'customerUserId',
+  'user',
+  'userId',
+]);
+
 export function clientBookingPayment(payment: ClientPaymentInput) {
   if (!payment) {
     return null;
@@ -81,8 +93,12 @@ export function partnerOpenBookingResponse<
     addressSnapshot?: BookingAddressSnapshotInput;
   },
 >(booking: T) {
+  const publicBooking = publicPartnerOpenBookingFields(
+    clientBookingResponse(booking) as Record<string, unknown>,
+  );
+
   return {
-    ...clientBookingResponse(booking),
+    ...publicBooking,
     address: publicBookingAddress(booking.address),
     addressSnapshot: publicBookingAddressSnapshot(booking.addressSnapshot),
   };
@@ -114,6 +130,12 @@ function publicBookingAddress(address: unknown) {
     publicAddress.addressPreview = addressPreview;
   }
   return publicAddress;
+}
+
+function publicPartnerOpenBookingFields(booking: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(booking).filter(([key]) => !PARTNER_OPEN_BOOKING_PRIVATE_KEYS.has(key)),
+  );
 }
 
 function publicBookingAddressSnapshot(snapshot: BookingAddressSnapshotInput) {

@@ -28,6 +28,7 @@ describe('client booking response helpers', () => {
   it('removes customer identity, contact, exact address, and exact coordinates from partner open-booking responses', () => {
     const response = partnerOpenBookingResponse({
       id: 'booking-1',
+      customerProfileId: 'customer-1',
       address: {
         name: 'Demo Customer',
         phone: '0865907184',
@@ -58,6 +59,12 @@ describe('client booking response helpers', () => {
         status: 'AUTHORIZED',
         amount: 450000,
       },
+      customerProfile: {
+        id: 'customer-1',
+        userId: 'secret-customer-user',
+        phone: '0865907184',
+        displayName: 'Demo Customer',
+      },
     });
 
     const serialized = JSON.stringify(response);
@@ -67,6 +74,9 @@ describe('client booking response helpers', () => {
     expect(serialized).not.toContain('123 Nguyen Hue');
     expect(serialized).not.toContain('10.7769000');
     expect(serialized).not.toContain('106.7009000');
+    expect(serialized).not.toContain('customer-1');
+    expect(serialized).not.toContain('secret-customer-user');
+    expect(response).not.toHaveProperty('customerProfile');
     expect(response.address).toEqual({
       district: 'District 1',
       city: 'Ho Chi Minh City',
