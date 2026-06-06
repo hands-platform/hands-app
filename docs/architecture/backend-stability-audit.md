@@ -1,6 +1,6 @@
 # Backend Stability Audit
 
-Last reviewed: 2026-06-04
+Last reviewed: 2026-06-06
 
 ## Scope
 
@@ -41,6 +41,10 @@ Additional targeted checks also passed: `npm.cmd audit --audit-level=moderate`, 
 ## Current Backend Position
 
 - Customer booking cancellation is blocked after partner commitment and routed to admin review.
+- Customer discovery can stay globally accessible, while booking creation is gated by a confirmed Vietnam service address snapshot.
+- Booking creation writes `BookingAddressSnapshot` and records out-of-service-area rejections in admin audit logs.
+- First-pick partner selection requires the partner to accept before the customer can confirm that partner.
+- Marketplace partner selection can use joined marketplace participants, but rejected participants are not customer-selectable.
 - Negative partner wallets block marketplace participation and payout release.
 - Negative partner wallets do not create marketplace participant records for blocked marketplace participation attempts.
 - Real marketplace participants remain stored for admin visibility.
@@ -49,6 +53,25 @@ Additional targeted checks also passed: `npm.cmd audit --audit-level=moderate`, 
 - Firebase push is intentionally not part of the active MVP path; notifications are currently in-app with future OneSignal expansion.
 - Admin currently favors operator visibility over compact code. The largest files are booking detail, partner detail, dashboard, partner list, and booking monitor pages; they should be split into feature widgets and shared formatting helpers before adding another large Admin surface.
 - The heaviest Prisma reads are intentionally on Admin pages, but several `include` trees should be converted to explicit `select` payloads as data grows.
+
+## Policy Consistency Check 2026-06-06
+
+This pass rechecked the active booking/matching/wallet boundaries against the final authority:
+
+- `POST /customer/bookings` allows optional current GPS only as evidence and does not require customer GPS for booking creation.
+- Booking creation rejects non-Vietnam dispatch coordinates when service-area policy is enabled.
+- Preferred partner distance is checked against the booking address, not the customer's transient current GPS.
+- Marketplace visibility and participation use booking-address distance plus the saved booking policy snapshot.
+- Negative-wallet partners can still see eligible marketplace demand but cannot join, accept as a marketplace participant, or be customer-selected as a marketplace final partner.
+- Direct first-pick acceptance and already matched service start remain allowed for a negative-wallet partner.
+- Blocked marketplace wallet attempts are intentionally not stored as participant rows; actual marketplace participation rows remain visible to Admin.
+
+Targeted checks passed:
+
+- `npm.cmd run authority:check`
+- `npm.cmd run policy:coverage`
+- `npm.cmd run admin:visible-copy`
+- `npm.cmd run security:secrets`
 
 ## Follow-Up Before Production
 

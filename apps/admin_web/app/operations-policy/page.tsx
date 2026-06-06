@@ -896,7 +896,7 @@ export default async function OperationsPolicyPage({
               {policyAuditRows.map((row) => (
                 <tr key={row.id}>
                   <td>
-                    <strong>{relativeTime(row.createdAt)}</strong>
+                    <strong>{formatRelativeTime(row.createdAt, { justNow: 'Just now', includeFuture: true })}</strong>
                     <p className="muted">{formatDate(row.createdAt)}</p>
                   </td>
                   <td>
@@ -3258,7 +3258,9 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
             className: participantCount ? 'pill-info' : 'pill-neutral',
           },
           {
-            label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry',
+            label: booking.expiresAt
+              ? `expires ${formatRelativeTime(booking.expiresAt, { justNow: 'Just now', includeFuture: true })}`
+              : 'no expiry',
             className: 'pill-info',
           },
         ],
@@ -3417,7 +3419,9 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
       pillBuilder: (booking) => [
         { label: booking.status, className: 'pill-warn' },
         {
-          label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry',
+          label: booking.expiresAt
+            ? `expires ${formatRelativeTime(booking.expiresAt, { justNow: 'Just now', includeFuture: true })}`
+            : 'no expiry',
           className: 'pill-info',
         },
         { label: `${booking.participants?.length ?? 0} participant row(s)`, className: 'pill-neutral' },
@@ -3551,7 +3555,9 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
       { label: booking.status, className: 'pill-info' },
       { label: bookingPartnerLabel(booking), className: 'pill-neutral' },
       {
-        label: booking.expiresAt ? `expires ${relativeTime(booking.expiresAt)}` : 'no expiry',
+        label: booking.expiresAt
+          ? `expires ${formatRelativeTime(booking.expiresAt, { justNow: 'Just now', includeFuture: true })}`
+          : 'no expiry',
         className: 'pill-info',
       },
     ],
@@ -4724,10 +4730,6 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
 
 function formatDate(value: string) {
   return formatDateTime(value);
-}
-
-function relativeTime(value: string) {
-  return formatRelativeTime(value, { justNow: 'Just now', includeFuture: true });
 }
 
 function policyNotice(params: Record<string, string | string[] | undefined>) {

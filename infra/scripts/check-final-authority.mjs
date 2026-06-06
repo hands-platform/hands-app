@@ -43,6 +43,7 @@ if (violations.length > 0) {
 
 function checkRequiredAuthorityDoc() {
   const source = read('docs/architecture/hands-mvp-final-authority.md');
+  const docsReadme = read('docs/README.md');
   requireMarkers('docs/architecture/hands-mvp-final-authority.md', source, [
     'Supabase is infrastructure. NestJS owns business rules',
     'Every booking must preserve an immutable `BookingAddressSnapshot`',
@@ -58,6 +59,15 @@ function checkRequiredAuthorityDoc() {
     'Partner payouts are weekly, monthly, or admin-selected batch cycles',
     'Admin is an Operations Command Center',
     'visible product copy should use `Partner`',
+  ]);
+  requireMarkers('docs/README.md', docsReadme, [
+    '1. `HANDS_MVP_FINAL_AUTHORITY_RESET_PROMPT.md`',
+    '2. `docs/architecture/hands-mvp-final-authority.md`',
+    '3. `HANDS_CODEX_MASTER_REFACTOR_PROMPT.md`',
+    '4. `docs/architecture/master-progress-roadmap.md`',
+    '5. Current source code and smoke tests',
+    '6. `README.md`',
+    '7. Historical APK/research notes',
   ]);
 }
 

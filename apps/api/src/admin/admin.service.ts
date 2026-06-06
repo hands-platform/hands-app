@@ -38,6 +38,9 @@ const PRICE_STEP_UNIT_VND = 100000;
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
 const ADMIN_CUSTOMER_LIST_LIMIT = 500;
 const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
+const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;
+const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;
+const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 30;
 
 const adminUserSummarySelect = {
   id: true,
@@ -1552,7 +1555,7 @@ export class AdminService {
         },
         preferredBookings: {
           orderBy: { createdAt: 'desc' },
-          take: compact ? 50 : 50,
+          take: compact ? ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT : 50,
           ...(compact
             ? { select: bookingListSelect }
             : {
@@ -1564,7 +1567,7 @@ export class AdminService {
         },
         selectedBookings: {
           orderBy: { createdAt: 'desc' },
-          take: compact ? 100 : 100,
+          take: compact ? ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT : 100,
           ...(compact
             ? { select: bookingListSelect }
             : {
@@ -1577,7 +1580,7 @@ export class AdminService {
         },
         participants: {
           orderBy: { joinedAt: 'desc' },
-          take: compact ? 100 : 100,
+          take: compact ? ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT : 100,
           ...(compact
             ? {
                 select: {
@@ -1624,7 +1627,7 @@ export class AdminService {
         earnings: {
           where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
           orderBy: { createdAt: 'desc' },
-          take: compact ? 50 : 50,
+          take: compact ? ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT : 50,
           ...(compact
             ? {
                 select: {

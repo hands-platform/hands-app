@@ -48,11 +48,43 @@ if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
   });
 }
 
+if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Compact partner list booking relations must keep a 50-row guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Compact partner list participant relations must keep a 50-row guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 30;')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Compact partner list earning relations must keep a 30-row guard.',
+  });
+}
+
 if (!adminServiceSource.includes('...(compact ? { take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT } : {})')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Compact partner list query must apply ADMIN_PROVIDER_COMPACT_LIST_LIMIT.',
+  });
+}
+
+if (adminServiceSource.includes('take: compact ? 100 : 100')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Compact partner list must not load 100 nested booking or participant rows per partner.',
   });
 }
 

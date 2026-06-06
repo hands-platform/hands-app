@@ -8,7 +8,7 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
-import { formatMoney } from '../../lib/admin-format';
+import { formatMoney, formatRelativeTime } from '../../lib/admin-format';
 import {
   AdminDateRange,
   dateRangeLabel,
@@ -208,7 +208,14 @@ export default async function FinanceCloseoutPage({ searchParams }: FinanceClose
           <InfoTile label="Wallet debt" value={formatMoney(reconciliation.cashDebtAmount, currency)} />
           <InfoTile
             label="Oldest open"
-            value={cashSummary?.oldestOpenAt ? relativeTime(cashSummary.oldestOpenAt) : '-'}
+            value={
+              cashSummary?.oldestOpenAt
+                ? formatRelativeTime(cashSummary.oldestOpenAt, {
+                    emptyFallback: '-',
+                    invalidFallback: cashSummary.oldestOpenAt,
+                  })
+                : '-'
+            }
           />
         </div>
       </section>
@@ -663,20 +670,4 @@ function summarizeEarnings(earnings: AdminEarning[], currency: string): AdminEar
       currency,
     },
   );
-}
-
-function relativeTime(value: string) {
-  const diffMs = Date.now() - Date.parse(value);
-  if (!Number.isFinite(diffMs)) {
-    return value;
-  }
-  const minutes = Math.round(diffMs / 60_000);
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.round(minutes / 60);
-  if (hours < 48) {
-    return `${hours}h ago`;
-  }
-  return `${Math.round(hours / 24)}d ago`;
 }

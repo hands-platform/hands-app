@@ -6,7 +6,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
-import { formatMoney, shortId as formatShortId } from '../../lib/admin-format';
+import { formatMoney, formatRelativeTime, shortId as formatShortId } from '../../lib/admin-format';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -740,7 +740,9 @@ function buildCashSettlementRows(earnings: AdminEarning[]): CashSettlementRow[] 
         debtOrigin: cashDebtOriginLabel(earning),
         settlementEvidence: cashDebtEvidenceLabel(earning),
         serviceLabel: bookingServiceLabel(earning),
-        createdAtLabel: earning.createdAt ? relativeTime(earning.createdAt) : 'No created date',
+        createdAtLabel: earning.createdAt
+          ? formatRelativeTime(earning.createdAt)
+          : 'No created date',
         nextAction: `Confirm partner deposit or approved offset before settling ${settlementReference}.`,
       };
     })
@@ -1067,7 +1069,10 @@ function buildProviderGroups(rows: CashSettlementRow[]): CashSettlementProviderG
       taxAmount: 0,
       settlementReference: providerSettlementReference(providerProfileId),
       oldestOpenMs: createdMs,
-      oldestOpenLabel: relativeTime(row.earning.createdAt),
+      oldestOpenLabel: formatRelativeTime(row.earning.createdAt, {
+        emptyFallback: '-',
+        invalidFallback: '-',
+      }),
     };
 
     item.rowCount += 1;
@@ -1076,7 +1081,10 @@ function buildProviderGroups(rows: CashSettlementRow[]): CashSettlementProviderG
     item.taxAmount += row.taxAmount;
     if (createdMs < item.oldestOpenMs) {
       item.oldestOpenMs = createdMs;
-      item.oldestOpenLabel = relativeTime(row.earning.createdAt);
+      item.oldestOpenLabel = formatRelativeTime(row.earning.createdAt, {
+        emptyFallback: '-',
+        invalidFallback: '-',
+      });
     }
 
     grouped.set(providerProfileId, item);
@@ -1098,7 +1106,12 @@ function buildSummary(rows: CashSettlementRow[], providers: CashSettlementProvid
     platformFee: rows.reduce((sum, row) => sum + row.platformFee, 0),
     taxAmount: rows.reduce((sum, row) => sum + row.taxAmount, 0),
     currency: rows[0]?.earning.currency ?? 'VND',
-    oldestOpenLabel: rows.length ? relativeTime(new Date(oldestMs).toISOString()) : '-',
+    oldestOpenLabel: rows.length
+      ? formatRelativeTime(new Date(oldestMs).toISOString(), {
+          emptyFallback: '-',
+          invalidFallback: '-',
+        })
+      : '-',
     staleDebtRowCount: rows.filter((row) => {
       const createdMs = Date.parse(row.earning.createdAt ?? '');
       return Number.isFinite(createdMs) && Date.now() - createdMs > 24 * 60 * 60 * 1000;
@@ -1309,7 +1322,12 @@ function mergeAuthoritativeSummary(
     platformFee: apiSummary.totalPlatformFee,
     taxAmount: apiSummary.totalTaxAmount,
     currency: apiSummary.currency,
-    oldestOpenLabel: apiSummary.oldestOpenAt ? relativeTime(apiSummary.oldestOpenAt) : '-',
+    oldestOpenLabel: apiSummary.oldestOpenAt
+      ? formatRelativeTime(apiSummary.oldestOpenAt, {
+          emptyFallback: '-',
+          invalidFallback: '-',
+        })
+      : '-',
     staleDebtRowCount: apiSummary.staleDebtRowCount,
     highDebtProviderCount: apiSummary.highDebtProviderCount,
     missingPaymentEvidenceCount: apiSummary.missingPaymentEvidenceCount,
@@ -1611,23 +1629,4 @@ function cashSettlementHref(input: { range: AdminDateRange; queue?: CashSettleme
 
 function shortId(value: string) {
   return formatShortId(value, { length: 12 });
-}
-
-function relativeTime(value?: string | null) {
-  if (!value) {
-    return '-';
-  }
-  const diffMs = Date.now() - Date.parse(value);
-  if (!Number.isFinite(diffMs)) {
-    return value;
-  }
-  const minutes = Math.round(diffMs / 60_000);
-  if (minutes < 60) {
-    return `${minutes}m ago`;
-  }
-  const hours = Math.round(minutes / 60);
-  if (hours < 48) {
-    return `${hours}h ago`;
-  }
-  return `${Math.round(hours / 24)}d ago`;
 }

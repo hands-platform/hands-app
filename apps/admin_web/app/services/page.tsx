@@ -328,7 +328,7 @@ export default async function ServicesPage({ searchParams }: { searchParams?: Se
               {pricingAuditRows.map((row) => (
                 <tr key={row.id}>
                   <td>
-                    <strong>{relativeTime(row.createdAt)}</strong>
+                    <strong>{formatRelativeTime(row.createdAt, { justNow: 'Updated just now' })}</strong>
                     <p className="muted">{formatDateTime(row.createdAt)}</p>
                   </td>
                   <td>
@@ -2504,10 +2504,6 @@ function slugify(value: string) {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_+|_+$/g, '');
-}
-
-function relativeTime(value: string) {
-  return formatRelativeTime(value, { justNow: 'Updated just now' });
 }
 
 function formatBps(value: number) {

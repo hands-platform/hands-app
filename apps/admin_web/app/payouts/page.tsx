@@ -583,7 +583,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                 <tr id={batch.id} key={batch.id}>
                   <td>
                     <div>{shortId(batch.id)}</div>
-                    <div className="muted">{relativeTime(batch.createdAt)}</div>
+                    <div className="muted">
+                      {formatRelativeTime(batch.createdAt, { justNow: 'Updated just now' })}
+                    </div>
                   </td>
                   <td>
                     <div>
@@ -671,7 +673,9 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                   <td>
                     <div>{formatDateTime(batch.paidAt, '-')}</div>
                     <div className="muted">
-                      {batch.paidAt ? relativeTime(batch.paidAt) : 'Awaiting settlement'}
+                      {batch.paidAt
+                        ? formatRelativeTime(batch.paidAt, { justNow: 'Updated just now' })
+                        : 'Awaiting settlement'}
                     </div>
                   </td>
                   <td>
@@ -1371,7 +1375,11 @@ function payoutInclusionRow(earning: AdminEarning, status: PayoutInclusionAuditR
     id: earning.id,
     status,
     title: `${providerLabel} / ${formatMoney(earning.netAmount, earning.currency)}`,
-    detail: `${serviceLabel} / ${earning.status} / created ${earning.createdAt ? relativeTime(earning.createdAt) : 'unknown time'}`,
+    detail: `${serviceLabel} / ${earning.status} / created ${
+      earning.createdAt
+        ? formatRelativeTime(earning.createdAt, { justNow: 'Updated just now' })
+        : 'unknown time'
+    }`,
     operatorRule:
       status === 'Ready'
         ? 'Positive completed earning can be included in the next configured payout batch.'
@@ -1958,8 +1966,4 @@ function activePayoutHold(batch: AdminPayoutBatch) {
 
 function shortId(value: string) {
   return formatShortId(value, { length: 12 });
-}
-
-function relativeTime(value: string) {
-  return formatRelativeTime(value, { justNow: 'Updated just now' });
 }

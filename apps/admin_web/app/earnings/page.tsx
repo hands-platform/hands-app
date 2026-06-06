@@ -538,7 +538,9 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                     {shortId(earning.bookingId)}
                   </a>
                   <div className="muted">
-                    {earning.createdAt ? relativeTime(earning.createdAt) : 'No create time'}
+                    {earning.createdAt
+                      ? formatRelativeTime(earning.createdAt, { includeFuture: true })
+                      : 'No create time'}
                   </div>
                   <div className="muted">Payment {earning.booking?.payment?.method ?? 'UNKNOWN'}</div>
                   {earning.settlementRef && (
@@ -1358,7 +1360,9 @@ function earningHint(earning: AdminEarning) {
     return 'Cash fee debt blocks partner wallet until settled';
   }
   if (earning.status === 'PAID') {
-    return earning.paidAt ? `Paid ${relativeTime(earning.paidAt)}` : 'Paid without timestamp';
+    return earning.paidAt
+      ? `Paid ${formatRelativeTime(earning.paidAt, { includeFuture: true })}`
+      : 'Paid without timestamp';
   }
   if (earning.status === 'CANCELLED') {
     return 'Cancelled by refund or booking reversal';
@@ -1367,7 +1371,7 @@ function earningHint(earning: AdminEarning) {
     return 'Follow this from the payout batch screen';
   }
   if (earning.availableAt) {
-    return `Available ${relativeTime(earning.availableAt)}`;
+    return `Available ${formatRelativeTime(earning.availableAt, { includeFuture: true })}`;
   }
   return 'Ready for finance review';
 }
@@ -1464,8 +1468,4 @@ function settlementMethodLabel(method: string) {
 
 function shortId(value: string) {
   return formatShortId(value, { length: 12 });
-}
-
-function relativeTime(value: string) {
-  return formatRelativeTime(value, { includeFuture: true });
 }

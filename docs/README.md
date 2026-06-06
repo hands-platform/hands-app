@@ -6,10 +6,11 @@ This is the active documentation map for HANDS. If two files disagree, follow th
 
 1. `HANDS_MVP_FINAL_AUTHORITY_RESET_PROMPT.md`
 2. `docs/architecture/hands-mvp-final-authority.md`
-3. Current source code and smoke tests
-4. `README.md`
-5. `docs/architecture/master-progress-roadmap.md`
-6. Historical APK/research notes
+3. `HANDS_CODEX_MASTER_REFACTOR_PROMPT.md`
+4. `docs/architecture/master-progress-roadmap.md`
+5. Current source code and smoke tests
+6. `README.md`
+7. Historical APK/research notes
 
 ## Read First
 
