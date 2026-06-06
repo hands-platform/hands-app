@@ -99,6 +99,17 @@ Full local verification:
 npm.cmd run verify:local
 ```
 
+Fast scoped verification during development:
+
+```powershell
+npm.cmd run verify:admin:fast
+npm.cmd run verify:api:fast
+npm.cmd run verify:provider:fast
+npm.cmd run verify:customer:fast
+```
+
+Use scoped verification for isolated work, then run full verification before protected API, DB, payment, wallet, booking, matching, or release chunks.
+
 Mobile Firebase removal check:
 
 ```powershell

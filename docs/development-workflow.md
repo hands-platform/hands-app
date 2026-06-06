@@ -105,12 +105,20 @@ Locked areas require explicit plan, integration review, and Tier 2 plus Tier 3 c
 
 | Tier                  | Command                                                                                   | Purpose                                          | When                                     | Duration       | Skip conditions                   |
 | --------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------ | ---------------------------------------- | -------------- | --------------------------------- |
-| Tier 0 Preflight      | `npm.cmd run verify:scope -- -Scope preflight`                                            | Check repo, branch, tools, and protected changes | before work or after environment changes | fast           | none                              |
-| Tier 1 Fast Local     | `npm.cmd run verify:scope -- -Scope api/admin/customer/provider`                          | Verify one area                                  | during scoped work                       | fast to medium | skip unrelated scopes             |
+| Tier 0 Preflight      | `npm.cmd run verify:preflight`                                                           | Check repo, branch, tools, and protected changes | before work or after environment changes | fast           | none                              |
+| Tier 1 Fast Local     | `npm.cmd run verify:api:fast`, `verify:admin:fast`, `verify:customer:fast`, `verify:provider:fast` | Verify one area                                  | during scoped work                       | fast to medium | skip unrelated scopes             |
 | Tier 1A Worker        | same as Tier 1 by owned scope                                                             | Parallel worker handoff                          | before worker reports done               | fast to medium | skip if read-only                 |
-| Tier 2 Full Local     | `npm.cmd run verify:local`                                                                | Full repo verification without service smoke     | before commit or merge                   | medium to slow | never skip before protected merge |
+| Tier 2 Full Local     | `npm.cmd run verify:full` or `npm.cmd run verify:local`                                   | Full repo verification without service smoke     | before protected merge or release chunk  | medium to slow | never skip before protected merge |
 | Tier 3 Integration    | `powershell -ExecutionPolicy Bypass -File .\infra\scripts\verify-local.ps1 -WithServices` | Docker, migration, seed, API/realtime smoke      | DB/API/shared contract changes           | slow           | skip for docs-only or isolated UI |
 | Tier 4 Heavy Optional | `npm audit --audit-level=moderate`, manual emulator/browser checks                        | Security and UX confidence                       | release prep or suspicious changes       | slow           | optional during normal coding     |
+
+Daily Codex cadence:
+
+- Docs or copy only: use the directly relevant script, or `npm.cmd run verify:preflight` when branch safety matters.
+- Admin-only UI/data shaping: use targeted Jest when a helper changes, then `npm.cmd run verify:admin:fast`.
+- API/booking/matching/payment/wallet changes: use the focused Jest spec first, then `npm.cmd run verify:api:fast`; run Tier 3 when DB/runtime behavior changes.
+- Flutter-only changes: use the touched app test/analyze, or `npm.cmd run verify:customer:fast` / `npm.cmd run verify:provider:fast`.
+- Cross-surface contract changes: use `npm.cmd run verify:node:fast`, the touched Flutter app check, then a full verify before push or release.
 
 ## Review Rules
 
