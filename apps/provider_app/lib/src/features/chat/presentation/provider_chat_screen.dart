@@ -6,6 +6,7 @@ import '../../../core/provider_value_helpers.dart';
 import '../../../core/realtime_socket.dart';
 import '../../booking/presentation/provider_request_guidance_helpers.dart';
 import '../../map/presentation/provider_location_preview.dart';
+import '../../provider_profile/presentation/provider_error_helpers.dart';
 import '../../provider_profile/presentation/provider_feedback_cards.dart';
 import 'provider_chat_location_helpers.dart';
 
@@ -69,7 +70,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
       await loadLatestChat();
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -171,7 +172,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             'Your current location was shared with the customer at ${formatCoordinate(lastSharedLat)} / ${formatCoordinate(lastSharedLng)}.';
       });
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -211,7 +212,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ],
           if (error != null) ...[
             const SizedBox(height: 12),
-            ErrorCard(text: error!),
+            ProviderErrorCard(text: error!),
           ],
           const SizedBox(height: 16),
           if (chatRoomId == null)

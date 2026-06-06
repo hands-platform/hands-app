@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app_state.dart';
+import '../../provider_profile/presentation/provider_error_helpers.dart';
 import '../../provider_profile/presentation/provider_feedback_cards.dart';
 import 'provider_jobs_helpers.dart';
 import 'provider_request_cards.dart';
@@ -32,7 +33,7 @@ class _PartnerJobsScreenState extends ConsumerState<PartnerJobsScreen> {
       }
       await loadJobs(showLoading: false);
     } catch (exception) {
-      setState(() => error = '$exception');
+      setState(() => error = providerAppErrorMessage(exception));
     } finally {
       if (mounted) {
         setState(() => loading = false);
@@ -58,7 +59,7 @@ class _PartnerJobsScreenState extends ConsumerState<PartnerJobsScreen> {
       });
     } catch (exception) {
       if (mounted) {
-        setState(() => error = '$exception');
+        setState(() => error = providerAppErrorMessage(exception));
       }
     } finally {
       if (mounted && showLoading) {
