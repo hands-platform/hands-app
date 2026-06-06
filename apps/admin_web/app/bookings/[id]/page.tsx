@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { MetricCard } from '../../../components/metric-card';
 import {
   BookingActivityPanel,
   BookingFullRecordIndex,
@@ -14,6 +13,16 @@ import {
 } from './booking-activity-records';
 import { BookingChatBubble } from './booking-chat-bubble';
 import { BookingCloseoutSections } from './booking-closeout-sections';
+import {
+  BookingDetailToolbar,
+  BookingMatchingRuleSnapshotSection,
+  BookingMetricGridSection,
+  BookingMvpAuthorityContractSection,
+  BookingOperationsQuickRailSection,
+  BookingOperatorFirstReadSection,
+  BookingPriorityBriefingSection,
+  BookingRecentOperationsTimelineSection,
+} from './booking-command-briefing-sections';
 import {
   BookingAlertTraceSection,
   BookingAttentionChecksSection,
@@ -768,273 +777,58 @@ export default async function BookingDetailPage({ params }: PageProps) {
             )}.`,
     },
   ];
+  const bookingMetricCards = [
+    { label: 'Status', value: booking.status, helper: bookingStatusHint(booking.status) },
+    { label: 'Closure', value: closureSummary.status, helper: closureSummary.detail },
+    { label: 'Payment', value: booking.payment?.status ?? 'NONE', helper: paymentHint(booking) },
+    {
+      label: 'Partners',
+      value: `${booking.participants?.length ?? 0} participant row(s)`,
+      helper: providerHint(booking),
+    },
+    {
+      label: 'Chat',
+      value: booking.chatRoom ? 'Ready' : 'Not ready',
+      helper: `${messages.length} message(s)`,
+    },
+    {
+      label: 'Location',
+      value: providerLocationMetricValue(booking),
+      helper: providerLocationMetricHelper(booking),
+    },
+    {
+      label: 'Attention checks',
+      value: attentionSummary.label,
+      helper: attentionSummary.helper,
+    },
+  ];
 
   return (
     <>
-      <section className="toolbar">
-        <div>
-          <p className="muted">
-            <Link className="text-link" href="/bookings">
-              Back to booking monitor
-            </Link>
-          </p>
-          <h1>Booking {shortId(booking.id)}</h1>
-          <p className="muted">
-            {bookingServiceOptionLabel(booking)} - {booking.status}
-          </p>
-        </div>
-        <div className="actions">
-          {booking.customerProfile?.id && (
-            <Link className="text-link" href={`/customers/${booking.customerProfile.id}`}>
-              Open customer
-            </Link>
-          )}
-          {booking.customerProfile?.id && (
-            <Link
-              className="text-link"
-              href={`/chat-archive?q=${encodeURIComponent(booking.customerProfile.id)}`}
-            >
-              All customer chats
-            </Link>
-          )}
-          {finalProvider?.id && (
-            <Link className="text-link" href={`/partners/${finalProvider.id}`}>
-              Open partner
-            </Link>
-          )}
-          {finalProvider?.id && (
-            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(finalProvider.id)}`}>
-              All partner chats
-            </Link>
-          )}
-          {booking.chatRoom?.id && (
-            <Link className="text-link" href={`/chat-archive?q=${encodeURIComponent(booking.id)}`}>
-              Open chat archive
-            </Link>
-          )}
-          {booking.payment?.id && (
-            <Link className="text-link" href={`/payments#payment-${booking.payment.id}`}>
-              Open payment
-            </Link>
-          )}
-          {booking.refunds?.[0]?.id && (
-            <Link className="text-link" href={`/refunds#refund-${booking.refunds[0].id}`}>
-              Open refund
-            </Link>
-          )}
-        </div>
-      </section>
+      <BookingDetailToolbar
+        bookingId={booking.id}
+        chatRoomId={booking.chatRoom?.id}
+        customerProfileId={booking.customerProfile?.id}
+        finalPartnerId={finalProvider?.id}
+        paymentId={booking.payment?.id}
+        refundId={booking.refunds?.[0]?.id}
+        serviceLabel={bookingServiceOptionLabel(booking)}
+        status={booking.status}
+      />
 
-      <section className="card" id="booking-operator-first-read" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking operator first read</h2>
-            <p className="muted">
-              The first facts an operator checks before opening the full booking evidence record.
-            </p>
-          </div>
-          <span className="pill pill-info">Above-fold summary</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {bookingOperatorFirstRead.map((item) => (
-            <a href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </a>
-          ))}
-        </div>
-      </section>
+      <BookingOperatorFirstReadSection rows={bookingOperatorFirstRead} />
 
-      <section className="grid" style={{ marginBottom: 16 }}>
-        <MetricCard label="Status" value={booking.status} helper={bookingStatusHint(booking.status)} />
-        <MetricCard label="Closure" value={closureSummary.status} helper={closureSummary.detail} />
-        <MetricCard label="Payment" value={booking.payment?.status ?? 'NONE'} helper={paymentHint(booking)} />
-        <MetricCard
-          label="Partners"
-          value={`${booking.participants?.length ?? 0} participant row(s)`}
-          helper={providerHint(booking)}
-        />
-        <MetricCard
-          label="Chat"
-          value={booking.chatRoom ? 'Ready' : 'Not ready'}
-          helper={`${messages.length} message(s)`}
-        />
-        <MetricCard
-          label="Location"
-          value={providerLocationMetricValue(booking)}
-          helper={providerLocationMetricHelper(booking)}
-        />
-        <MetricCard
-          label="Attention checks"
-          value={attentionSummary.label}
-          helper={attentionSummary.helper}
-        />
-      </section>
+      <BookingMetricGridSection metrics={bookingMetricCards} />
 
-      <section className="card" id="booking-operations-quick-rail" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking operations quick rail</h2>
-            <p className="muted">
-              Fast jumps for one booking. This keeps operations centered on address evidence, marketplace
-              participants, customer choice, retained chat, payment, wallet, fee, tax, location, and staff
-              records.
-            </p>
-          </div>
-          <span className="pill pill-info">{bookingOperationsQuickRail.length} shortcuts</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {bookingOperationsQuickRail.map((item) => (
-            <a href={item.href} key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.detail}</small>
-            </a>
-          ))}
-        </div>
-      </section>
+      <BookingOperationsQuickRailSection rows={bookingOperationsQuickRail} />
 
-      <section className="card" id="matching-rule-snapshot" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Matching rule snapshot</h2>
-            <p className="muted">
-              Detail-level rule readout for first-pick wait, booking-address marketplace radius, customer
-              final choice, chat handoff, and wallet gate.
-            </p>
-          </div>
-          <span className={`pill ${matchingRuleSnapshot.tone}`}>{matchingRuleSnapshot.status}</span>
-        </div>
-        <p className="muted" style={{ marginTop: 8 }}>
-          {matchingRuleSnapshot.summary}
-        </p>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {matchingRuleSnapshot.rows.map((row) => (
-            <div key={row.label}>
-              <span>{row.label}</span>
-              <strong>{row.value}</strong>
-              <small>{row.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="actions" style={{ marginTop: 12 }}>
-          {matchingRuleSnapshot.actions.map((action) => (
-            <Link className="text-link" href={action.href} key={action.label}>
-              {action.label}
-            </Link>
-          ))}
-        </div>
-      </section>
+      <BookingMatchingRuleSnapshotSection matchingRuleSnapshot={matchingRuleSnapshot} />
 
-      <section className="card" id="mvp-authority-contract" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>MVP authority contract</h2>
-            <p className="muted">
-              One-screen check against the HANDS MVP policy: NestJS business authority, address snapshot,
-              first-pick, 10km marketplace, customer final partner choice, chat retention, and wallet gate.
-            </p>
-          </div>
-          <Link className="text-link" href="/operations-policy">
-            Open policy controls
-          </Link>
-        </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Contract</th>
-              <th>Current state</th>
-              <th>Evidence</th>
-              <th>Operator use</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mvpAuthorityContract.map((row) => (
-              <tr key={row.contract}>
-                <td>
-                  <strong>{row.contract}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                </td>
-                <td>{row.evidence}</td>
-                <td>{row.operatorUse}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      <BookingMvpAuthorityContractSection rows={mvpAuthorityContract} />
 
-      <section className="card" id="booking-recent-operations-timeline" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking recent operations timeline</h2>
-            <p className="muted">
-              Latest factual booking steps before an operator decides: address, first-pick wait, 10km partner
-              participation, customer final choice, chat, location, payment, cash debt, and closeout.
-            </p>
-          </div>
-          <Link className="text-link" href="#operating-timeline">
-            Open full operating timeline
-          </Link>
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {operatingTimeline.slice(0, 8).map((item) => (
-            <div className="setup-stage-item" key={`recent-${item.id}`}>
-              <span>{item.type}</span>
-              <div>
-                <strong>{item.title}</strong>
-                <p className="muted">{item.detail}</p>
-              </div>
-              <small>{item.at ? formatDate(item.at) : item.status}</small>
-            </div>
-          ))}
-        </div>
-      </section>
+      <BookingRecentOperationsTimelineSection operatingTimeline={operatingTimeline} />
 
-      <section className="card" id="booking-priority-briefing" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking priority briefing</h2>
-            <p className="muted">
-              First-screen operator summary for handoff, chat, location, payment, and closeout. This shows
-              factual state only, not customer or partner judgment.
-            </p>
-          </div>
-          <span className={`pill ${operatorPriorityBriefing.tone}`}>{operatorPriorityBriefing.status}</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {operatorPriorityBriefing.rows.map((row) => (
-            <div key={row.label}>
-              <span>{row.label}</span>
-              <strong>{row.value}</strong>
-              <small>{row.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {operatorPriorityBriefing.steps.map((step) => (
-            <div className="setup-stage-item" key={step.id}>
-              <span>{step.label}</span>
-              <div>
-                <strong>{step.title}</strong>
-                <p className="muted">{step.detail}</p>
-              </div>
-              <Link className="text-link" href={step.href}>
-                {step.linkLabel}
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
+      <BookingPriorityBriefingSection operatorPriorityBriefing={operatorPriorityBriefing} />
 
       <BookingEvidenceSections
         bookingId={booking.id}
