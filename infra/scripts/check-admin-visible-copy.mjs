@@ -14,6 +14,11 @@ const bannedPatterns = [
   { label: 'VIP wording', pattern: /\bVIP\b/i },
   { label: 'people scoring wording', pattern: /\b(scoring|score)\b/i },
   { label: 'partner hierarchy wording', pattern: /\b(trusted badge|trust badge|partner badge|profile badge)\b/i },
+  { label: 'auto final assignment wording', pattern: /\bAuto-lock\b/i },
+  {
+    label: 'disabled customer final selection wording',
+    pattern: /\bCustomer final selection is disabled\b/i,
+  },
 ];
 
 const ignoredTechnicalLiterals = new Set([
@@ -28,6 +33,7 @@ const violations = [];
 
 for (const file of files) {
   const source = readFileSync(file, 'utf8');
+  recordSourceViolations(file, source);
   for (const literal of extractStringLiterals(source)) {
     recordViolations(file, literal.value, literal.line);
   }
@@ -53,9 +59,24 @@ if (violations.length > 0) {
   process.exitCode = 1;
 }
 
+function recordSourceViolations(file, source) {
+  for (const rule of bannedPatterns) {
+    const pattern = new RegExp(rule.pattern.source, rule.pattern.flags.includes('g') ? rule.pattern.flags : `${rule.pattern.flags}g`);
+    for (const match of source.matchAll(pattern)) {
+      violations.push({
+        file,
+        line: lineNumberAt(source, match.index ?? 0),
+        label: rule.label,
+        match: match[0],
+        text: source.slice(match.index ?? 0, (match.index ?? 0) + 180).replace(/\s+/g, ' '),
+      });
+    }
+  }
+}
+
 function recordViolations(file, value, line) {
   const normalized = value.replace(/\s+/g, ' ').trim();
-  if (!normalized || ignoredTechnicalLiterals.has(normalized) || isTechnicalLiteral(normalized)) {
+  if (!normalized || ignoredTechnicalLiterals.has(normalized)) {
     return;
   }
   for (const rule of bannedPatterns) {
@@ -69,6 +90,9 @@ function recordViolations(file, value, line) {
         text: normalized.slice(0, 180),
       });
     }
+  }
+  if (isTechnicalLiteral(normalized)) {
+    return;
   }
 }
 

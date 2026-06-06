@@ -2208,8 +2208,8 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       },
       {
         label: 'Final match',
-        value: customerFinalChoice ? 'Customer chooses' : 'Auto-lock',
-        helper: 'Who makes the final partner decision.',
+        value: customerFinalChoice ? 'Customer chooses' : 'Policy conflict',
+        helper: 'Customer final selection remains the matching authority.',
       },
     ],
     cards,
@@ -2398,9 +2398,9 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       title:
         preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT'
           ? 'Customer keeps final partner selection'
-          : 'Customer final selection is disabled',
+          : 'Customer final selection policy conflict',
       detail:
-        'This controls whether preferred partner acceptance returns control to the customer for the final partner choice.',
+        'HANDS MVP requires customer final partner selection. Treat any policy that removes that step as an operations conflict before rollout.',
       api: 'POST /provider/bookings/:id/accept, POST /customer/bookings/:id/select-provider',
       server: 'BookingsService.updateParticipant -> BookingsService.selectProvider',
       verify:
