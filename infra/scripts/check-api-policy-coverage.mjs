@@ -313,7 +313,10 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   if (!selectProvider.includes('await this.ensureProviderWalletCanJoinMarketplace(providerId);')) {
     missingMarkers.push('selectProvider must keep the negative-wallet marketplace final selection gate');
   }
-  if (!selectProvider.includes('if (providerId !== ownedBooking.preferredProviderId)')) {
+  if (
+    !selectProvider.includes('if (providerId !== ownedBooking.preferredProviderId)') &&
+    !selectProvider.includes('if (isMarketplacePartnerAction(providerId, ownedBooking.preferredProviderId))')
+  ) {
     missingMarkers.push('selectProvider must not block direct first-pick final selection for negative wallet');
   }
   if (!updateParticipant.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
