@@ -8,6 +8,16 @@ const adminWebAppRoot = resolve(root, 'apps/admin_web/app');
 const violations = [];
 
 const adminServiceSource = readFileSync(adminServicePath, 'utf8');
+
+function sourceBetween(startMarker, endMarker) {
+  const start = adminServiceSource.indexOf(startMarker);
+  if (start === -1) return '';
+  const end = adminServiceSource.indexOf(endMarker, start + startMarker.length);
+  return adminServiceSource.slice(start, end === -1 ? undefined : end);
+}
+
+const providerListSource = sourceBetween('async listProviders', 'async getProviderDetail');
+
 if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 500;')) {
   violations.push({
     area: 'admin app session query',
@@ -168,11 +178,35 @@ if (!adminServiceSource.includes('const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;
   });
 }
 
-if (!adminServiceSource.includes('...(compact ? { take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT } : {})')) {
+if (!providerListSource.includes('take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT,')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
-    message: 'Compact partner list query must apply ADMIN_PROVIDER_COMPACT_LIST_LIMIT.',
+    message: 'Partner list query must always apply ADMIN_PROVIDER_COMPACT_LIST_LIMIT.',
+  });
+}
+
+if (!providerListSource.includes('select: adminProviderListSelect,')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Partner list query must use the bounded adminProviderListSelect.',
+  });
+}
+
+if (providerListSource.includes('include:')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Partner list query must not use include; use bounded select fields and detail APIs for deep data.',
+  });
+}
+
+if (providerListSource.includes('compact ?')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Partner list query must not expose full/expanded fetch branches.',
   });
 }
 

@@ -1145,6 +1145,179 @@ const adminProviderOverviewBookingSelect = {
   },
 } satisfies Prisma.BookingSelect;
 
+const adminProviderListUserSelect = {
+  ...adminUserSummarySelect,
+  supabaseUserId: true,
+  pushDevices: {
+    orderBy: { createdAt: 'desc' },
+    take: 2,
+    select: adminPushDeviceSummarySelect,
+  },
+  fileAssets: {
+    where: {
+      purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+      visibility: FileVisibility.PUBLIC,
+      uploadStatus: FileUploadStatus.UPLOADED,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 2,
+    select: adminProviderPublicMediaSelect,
+  },
+} satisfies Prisma.UserSelect;
+
+const adminProviderListBookingSelect = {
+  id: true,
+  customerProfileId: true,
+  preferredProviderId: true,
+  selectedProviderId: true,
+  status: true,
+  scheduledStartAt: true,
+  scheduledEndAt: true,
+  expiresAt: true,
+  closedAt: true,
+  closedByRole: true,
+  closedReason: true,
+  closedNote: true,
+  createdAt: true,
+  updatedAt: true,
+  address: true,
+  lat: true,
+  lng: true,
+  addressSnapshot: { select: adminAddressSnapshotSelect },
+  chatRoom: {
+    select: {
+      id: true,
+      createdAt: true,
+    },
+  },
+} satisfies Prisma.BookingSelect;
+
+const adminProviderListEarningSelect = {
+  id: true,
+  providerProfileId: true,
+  bookingId: true,
+  grossAmount: true,
+  platformFee: true,
+  withholdingAmount: true,
+  netAmount: true,
+  currency: true,
+  status: true,
+  availableAt: true,
+  paidAt: true,
+  payoutBatchId: true,
+  settlementRef: true,
+  settlementNotes: true,
+  settlementMethod: true,
+  createdAt: true,
+  booking: { select: { id: true, status: true, scheduledStartAt: true } },
+} satisfies Prisma.ProviderEarningSelect;
+
+const adminProviderListParticipantSelect = {
+  id: true,
+  providerProfileId: true,
+  status: true,
+  distanceMeters: true,
+  providerStatusAtJoin: true,
+  joinedAt: true,
+  respondedAt: true,
+  booking: { select: adminProviderListBookingSelect },
+} satisfies Prisma.BookingParticipantSelect;
+
+const adminProviderListSelect = {
+  id: true,
+  userId: true,
+  displayName: true,
+  legalName: true,
+  dateOfBirth: true,
+  gender: true,
+  facebookId: true,
+  activityNickname: true,
+  bio: true,
+  experienceYears: true,
+  specialties: true,
+  languages: true,
+  serviceStyle: true,
+  residentialAddress: true,
+  city: true,
+  serviceArea: true,
+  level: true,
+  status: true,
+  ratingAvg: true,
+  reviewCount: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  nextAvailableAt: true,
+  blockedAt: true,
+  blockedReason: true,
+  trustedAt: true,
+  deletedAt: true,
+  updatedAt: true,
+  user: { select: adminProviderListUserSelect },
+  verification: { select: adminProviderVerificationSummarySelect },
+  kyc: { select: adminProviderKycSummarySelect },
+  documents: {
+    orderBy: { createdAt: 'desc' },
+    take: 6,
+    select: adminProviderDocumentSummarySelect,
+  },
+  bankAccounts: {
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+    take: 3,
+    select: adminProviderBankAccountSummarySelect,
+  },
+  taxProfile: { select: adminProviderTaxProfileSummarySelect },
+  reports: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminProviderReportSummarySelect,
+  },
+  sanctions: {
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: adminProviderSanctionSummarySelect,
+  },
+  preferredBookings: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT,
+    select: adminProviderListBookingSelect,
+  },
+  selectedBookings: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT,
+    select: adminProviderListBookingSelect,
+  },
+  participants: {
+    orderBy: { joinedAt: 'desc' },
+    take: ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT,
+    select: adminProviderListParticipantSelect,
+  },
+  agreements: {
+    orderBy: { acceptedAt: 'desc' },
+    take: 5,
+    select: adminProviderAgreementSummarySelect,
+  },
+  services: {
+    select: adminProviderServiceSummarySelect,
+  },
+  earnings: {
+    where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT,
+    select: adminProviderListEarningSelect,
+  },
+  sessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 3,
+    select: adminProviderSessionSummarySelect,
+  },
+  devices: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 3,
+    select: adminProviderDeviceSummarySelect,
+  },
+} satisfies Prisma.ProviderProfileSelect;
+
 const adminProviderDetailEarningSelect = {
   ...adminEarningSummarySelect,
   booking: {
@@ -1696,187 +1869,11 @@ export class AdminService {
     });
   }
 
-  async listProviders(options: { compact?: boolean } = {}) {
-    const compact = options.compact ?? true;
-    const bookingListSelect = {
-      id: true,
-      preferredProviderId: true,
-      selectedProviderId: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-      scheduledStartAt: true,
-      scheduledEndAt: true,
-      closedAt: true,
-      closedByRole: true,
-      closedReason: true,
-      chatRoom: { select: { id: true } },
-    } satisfies Prisma.BookingSelect;
-
+  async listProviders() {
     const providers = await this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
-      ...(compact ? { take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT } : {}),
-      include: {
-        user: {
-          select: {
-            ...adminUserSummarySelect,
-            pushDevices: {
-              orderBy: { createdAt: 'desc' },
-              take: compact ? 2 : undefined,
-              select: adminPushDeviceSummarySelect,
-            },
-            fileAssets: {
-              where: {
-                purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
-                visibility: FileVisibility.PUBLIC,
-                uploadStatus: FileUploadStatus.UPLOADED,
-              },
-              orderBy: { createdAt: 'desc' },
-              take: compact ? 2 : 8,
-              ...(compact ? { select: adminProviderPublicMediaSelect } : {}),
-            },
-          },
-        },
-        verification: compact
-          ? { select: adminProviderVerificationSummarySelect }
-          : { include: { files: true } },
-        kyc: compact ? { select: adminProviderKycSummarySelect } : true,
-        documents: {
-          orderBy: { createdAt: 'desc' },
-          take: compact ? 6 : undefined,
-          ...(compact
-            ? { select: adminProviderDocumentSummarySelect }
-            : { include: { fileAsset: true } }),
-        },
-        bankAccounts: {
-          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
-          ...(compact ? { select: adminProviderBankAccountSummarySelect } : {}),
-        },
-        taxProfile: compact ? { select: adminProviderTaxProfileSummarySelect } : true,
-        reports: {
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-          ...(compact ? { select: adminProviderReportSummarySelect } : {}),
-        },
-        sanctions: {
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-          ...(compact ? { select: adminProviderSanctionSummarySelect } : {}),
-        },
-        preferredBookings: {
-          orderBy: { createdAt: 'desc' },
-          take: compact ? ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT : 50,
-          ...(compact
-            ? { select: bookingListSelect }
-            : {
-                include: {
-                  services: { include: { service: true } },
-                  payment: true,
-                },
-              }),
-        },
-        selectedBookings: {
-          orderBy: { createdAt: 'desc' },
-          take: compact ? ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT : 100,
-          ...(compact
-            ? { select: bookingListSelect }
-            : {
-                include: {
-                  services: { include: { service: true } },
-                  payment: true,
-                  review: true,
-                },
-              }),
-        },
-        participants: {
-          orderBy: { joinedAt: 'desc' },
-          take: compact ? ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT : 100,
-          ...(compact
-            ? {
-                select: {
-                  id: true,
-                  status: true,
-                  distanceMeters: true,
-                  providerStatusAtJoin: true,
-                  joinedAt: true,
-                  respondedAt: true,
-                  booking: { select: bookingListSelect },
-                },
-              }
-            : {
-                include: {
-                  booking: {
-                    include: {
-                      services: { include: { service: true } },
-                      payment: true,
-                    },
-                  },
-                },
-              }),
-        },
-        agreements: {
-          orderBy: { acceptedAt: 'desc' },
-          ...(compact ? { select: adminProviderAgreementSummarySelect } : {}),
-        },
-        services: {
-          ...(compact
-            ? { select: adminProviderServiceSummarySelect }
-            : {
-                include: {
-                  service: {
-                    include: {
-                      payoutRules: {
-                        where: { active: true },
-                        orderBy: { customerPrice: 'asc' },
-                      },
-                    },
-                  },
-                },
-              }),
-        },
-        earnings: {
-          where: { status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE, EarningStatus.PAID] } },
-          orderBy: { createdAt: 'desc' },
-          take: compact ? ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT : 50,
-          ...(compact
-            ? {
-                select: {
-                  id: true,
-                  providerProfileId: true,
-                  bookingId: true,
-                  grossAmount: true,
-                  platformFee: true,
-                  withholdingAmount: true,
-                  netAmount: true,
-                  currency: true,
-                  status: true,
-                  availableAt: true,
-                  paidAt: true,
-                  payoutBatchId: true,
-                  settlementRef: true,
-                  settlementNotes: true,
-                  settlementMethod: true,
-                  createdAt: true,
-                  booking: { select: { id: true, status: true, scheduledStartAt: true } },
-                },
-              }
-            : {
-                include: {
-                  booking: { include: { payment: true, services: { include: { service: true } } } },
-                },
-              }),
-        },
-        sessions: {
-          orderBy: { lastSeenAt: 'desc' },
-          take: compact ? 3 : 10,
-          ...(compact ? { select: adminProviderSessionSummarySelect } : {}),
-        },
-        devices: {
-          orderBy: { lastSeenAt: 'desc' },
-          take: compact ? 3 : 10,
-          ...(compact ? { select: adminProviderDeviceSummarySelect } : {}),
-        },
-      },
+      take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT,
+      select: adminProviderListSelect,
     });
 
     if (providers.length === 0) {

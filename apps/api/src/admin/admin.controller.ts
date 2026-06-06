@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import {
   BookingOpsTaskStatus,
   BookingOpsTaskType,
@@ -55,13 +55,13 @@ export class AdminController {
   }
 
   @Get('providers')
-  providers(@Query('view') view?: string) {
-    return this.admin.listProviders({ compact: isCompactProviderListView(view) });
+  providers() {
+    return this.admin.listProviders();
   }
 
   @Get('partners')
-  partners(@Query('view') view?: string) {
-    return this.admin.listProviders({ compact: isCompactProviderListView(view) });
+  partners() {
+    return this.admin.listProviders();
   }
 
   @Get('providers/:id/overview')
@@ -670,8 +670,4 @@ export class AdminController {
   retryNotification(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
     return this.admin.retryNotification(user.id, id);
   }
-}
-
-function isCompactProviderListView(view?: string) {
-  return view !== 'full' && view !== 'expanded';
 }
