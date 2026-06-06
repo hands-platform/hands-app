@@ -376,6 +376,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
     canApproveKyc,
   });
   const partnerOpsNotes = (provider.auditLogs ?? []).filter((log) => log.action === 'provider.ops_note.add');
+  const partnerFirstReadNextAction = nextProviderAction(provider, dispatchPolicy);
   const latestPartnerBooking = partnerBookingArchive[0]?.booking;
   const connectedPartnerRecordLinks = [
     {
@@ -566,6 +567,20 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
       detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
     },
     {
+      href: '#partner-ops-command-center',
+      label: 'Next action',
+      value: partnerFirstReadNextAction.status,
+      detail: partnerFirstReadNextAction.action,
+    },
+    {
+      href: '#partner-operator-notes',
+      label: 'Latest staff note',
+      value: `${partnerOpsNotes.length} note(s)`,
+      detail: partnerOpsNotes[0]
+        ? `${formatDate(partnerOpsNotes[0].createdAt)} / ${auditLogNoteText(partnerOpsNotes[0])}`
+        : 'No manual partner note saved.',
+    },
+    {
       href: '#location',
       label: 'Location',
       value: provider.currentLocationUpdatedAt ? 'Recorded' : 'No pin',
@@ -729,8 +744,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
           {filteredPartnerActivityRecords.length ? (
-            filteredPartnerActivityRecords.slice(0, 8).map((record) => (
-              <div className="setup-stage-item" key={`recent-${record.type}-${record.id}-${record.at}`}>
+            filteredPartnerActivityRecords.slice(0, 8).map((record, index) => (
+              <div className="setup-stage-item" key={`recent-${record.type}-${record.id}-${record.at}-${index}`}>
                 <span>{record.type}</span>
                 <div>
                   <Link className="text-link" href={partnerActivityRecordHref(record)}>
@@ -1603,8 +1618,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         </div>
         <div className="setup-stage-list" style={{ marginTop: 16 }}>
           {filteredPartnerActivityRecords.length ? (
-            filteredPartnerActivityRecords.map((record) => (
-              <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
+            filteredPartnerActivityRecords.map((record, index) => (
+              <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}-${index}`}>
                 <span>{record.type}</span>
                 <div>
                   <strong>{record.title}</strong>
@@ -1651,8 +1666,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     {day.typeCounts.map((item) => `${item.type} ${item.count}`).join(' / ')}
                   </p>
                   <div className="setup-stage-list" style={{ marginTop: 10 }}>
-                    {day.highlights.map((record) => (
-                      <div className="service-matrix-cell" key={`${record.type}-${record.id}-${record.at}`}>
+                    {day.highlights.map((record, index) => (
+                      <div className="service-matrix-cell" key={`${record.type}-${record.id}-${record.at}-${index}`}>
                         <strong>{record.title}</strong>
                         <small>
                           {record.type} / {formatDate(record.at)}
