@@ -23,35 +23,32 @@ import {
   BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
   MatchingPolicy,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
-  haversineMeters,
-  roundTo100Meters,
 } from '../matching/matching.policy';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PaymentsService } from '../payments/payments.service';
 import { REQUIRED_PAYOUT_AGREEMENTS } from '../provider-onboarding/provider-onboarding.policy';
 import { throwProviderWalletBlocked } from '../provider-wallet/provider-wallet.policy';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  addProviderMatchingDistance,
+  assertBookingPaymentMethod,
+  assertBookingServiceId,
+  bookingAddressText,
+  bookingDispatchCoordinates,
+  calculateDistanceMeters,
+  formatMatchingRadius,
+  isCustomerSelectableParticipantForFinalChoice,
+  isVietnamBookingCoordinate,
+  normalizeBookingCoordinate,
+  providerLocationFreshEnough,
+  vietnamBookingCoordinateGateError,
+} from './bookings.policy';
 
 const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
   ProviderDocumentType.CCCD_BACK,
   ProviderDocumentType.SELFIE,
 ];
-
-function isCustomerSelectableParticipantForFinalChoice(
-  participant: { status: ParticipantStatus; providerProfileId: string },
-  preferredProviderId?: string | null,
-) {
-  if (participant.status === ParticipantStatus.ACCEPTED) {
-    return true;
-  }
-
-  if (participant.status === ParticipantStatus.JOINED) {
-    return participant.providerProfileId !== preferredProviderId;
-  }
-
-  return false;
-}
 
 @Injectable()
 export class BookingsService {
@@ -1547,38 +1544,6 @@ export class BookingsService {
   }
 }
 
-function addProviderMatchingDistance<
-  T extends {
-    lat: unknown;
-    lng: unknown;
-    addressSnapshot?: { latitude: unknown; longitude: unknown } | null;
-  },
->(booking: T, provider: { currentLat: unknown; currentLng: unknown }) {
-  const dispatchPin = bookingDispatchCoordinates(booking);
-  return {
-    ...booking,
-    distanceMeters: calculateDistanceMeters(
-      dispatchPin.lat,
-      dispatchPin.lng,
-      provider.currentLat,
-      provider.currentLng,
-    ),
-  };
-}
-
-function bookingDispatchCoordinates(booking: {
-  lat: unknown;
-  lng: unknown;
-  addressSnapshot?: { latitude: unknown; longitude: unknown } | null;
-}) {
-  const snapshotLat = Number(booking.addressSnapshot?.latitude);
-  const snapshotLng = Number(booking.addressSnapshot?.longitude);
-  if (Number.isFinite(snapshotLat) && Number.isFinite(snapshotLng)) {
-    return { lat: snapshotLat, lng: snapshotLng };
-  }
-  return { lat: Number(booking.lat), lng: Number(booking.lng) };
-}
-
 function assertProviderCanReceiveBooking(provider: {
   blockedAt: Date | null;
   blockedReason: string | null;
@@ -1632,43 +1597,6 @@ function assertProviderCanReceiveBooking(provider: {
   }
 }
 
-function calculateDistanceMeters(
-  bookingLat: number,
-  bookingLng: number,
-  providerLat: unknown,
-  providerLng: unknown,
-) {
-  const lat = Number(providerLat);
-  const lng = Number(providerLng);
-  if (
-    !Number.isFinite(bookingLat) ||
-    !Number.isFinite(bookingLng) ||
-    !Number.isFinite(lat) ||
-    !Number.isFinite(lng)
-  ) {
-    return null;
-  }
-  return roundTo100Meters(haversineMeters(bookingLat, bookingLng, lat, lng));
-}
-
-function formatMatchingRadius(radiusMeters: number) {
-  if (radiusMeters >= 1000) {
-    return `${(radiusMeters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`;
-  }
-  return `${radiusMeters.toLocaleString('en')}m`;
-}
-
-function providerLocationFreshEnough(value: Date | string | null | undefined, maxAgeMinutes: number) {
-  if (!value) {
-    return false;
-  }
-  const updatedAt = value instanceof Date ? value.getTime() : new Date(value).getTime();
-  if (!Number.isFinite(updatedAt)) {
-    return false;
-  }
-  return Date.now() - updatedAt <= maxAgeMinutes * 60_000;
-}
-
 function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingService['getPolicy']>>) {
   return {
     providerResponseWindowMinutes: policy.providerResponseWindowMinutes,
@@ -1684,57 +1612,6 @@ function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingServic
     backupOpenMode: policy.backupOpenMode,
     travelBufferMinutes: policy.travelBufferMinutes,
   };
-}
-
-function bookingAddressText(address: Prisma.InputJsonValue | undefined) {
-  if (address && typeof address === 'object' && !Array.isArray(address)) {
-    const record = address as Record<string, unknown>;
-    const knownText =
-      record.addressText ??
-      record.address_text ??
-      record.line1 ??
-      record.addressLine ??
-      record.address ??
-      record.label ??
-      record.text ??
-      record.name;
-    if (typeof knownText === 'string' && knownText.trim()) {
-      return knownText.trim();
-    }
-  }
-  if (typeof address === 'string' && address.trim()) {
-    return address.trim();
-  }
-  return null;
-}
-
-function assertBookingServiceId(serviceId: unknown) {
-  if (typeof serviceId !== 'string' || !serviceId.trim()) {
-    throw new BadRequestException('serviceId is required');
-  }
-}
-
-function assertBookingPaymentMethod(paymentMethod: unknown) {
-  if (!Object.values(PaymentMethod).includes(paymentMethod as PaymentMethod)) {
-    throw new BadRequestException('Valid paymentMethod is required');
-  }
-}
-
-function normalizeBookingCoordinate(value: unknown, fieldName: 'lat' | 'lng') {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
-    throw new BadRequestException(`${fieldName} is required`);
-  }
-  return parsed;
-}
-
-function vietnamBookingCoordinateGateError(lat: number, lng: number) {
-  if (!isVietnamBookingCoordinate(lat, lng)) {
-    return {
-      message: 'Booking address must be inside Vietnam',
-    };
-  }
-  return null;
 }
 
 function assertWorldBookingCoordinate(lat: number, lng: number) {
@@ -1846,10 +1723,6 @@ function bookingDistanceGateSnapshot(input: {
     preferredProviderDistanceLimitMeters: input.matchingPolicy.bookingMaxPreferredProviderDistanceKm * 1000,
     gatePassed: true,
   };
-}
-
-function isVietnamBookingCoordinate(lat: number, lng: number) {
-  return lat >= 8 && lat <= 24 && lng >= 102 && lng <= 110;
 }
 
 function normalizeBookingAddress(address: Prisma.InputJsonValue | undefined, addressText: string) {

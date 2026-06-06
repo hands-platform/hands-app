@@ -1,0 +1,154 @@
+import { BadRequestException } from '@nestjs/common';
+import { ParticipantStatus, PaymentMethod } from '@prisma/client';
+
+import { haversineMeters, roundTo100Meters } from '../matching/matching.policy';
+
+export function isCustomerSelectableParticipantForFinalChoice(
+  participant: { status: ParticipantStatus; providerProfileId: string },
+  preferredProviderId?: string | null,
+) {
+  if (participant.status === ParticipantStatus.ACCEPTED) {
+    return true;
+  }
+
+  if (participant.status === ParticipantStatus.JOINED) {
+    return participant.providerProfileId !== preferredProviderId;
+  }
+
+  return false;
+}
+
+export function addProviderMatchingDistance<
+  T extends {
+    lat: unknown;
+    lng: unknown;
+    addressSnapshot?: { latitude: unknown; longitude: unknown } | null;
+  },
+>(booking: T, provider: { currentLat: unknown; currentLng: unknown }) {
+  const dispatchPin = bookingDispatchCoordinates(booking);
+  return {
+    ...booking,
+    distanceMeters: calculateDistanceMeters(
+      dispatchPin.lat,
+      dispatchPin.lng,
+      provider.currentLat,
+      provider.currentLng,
+    ),
+  };
+}
+
+export function bookingDispatchCoordinates(booking: {
+  lat: unknown;
+  lng: unknown;
+  addressSnapshot?: { latitude: unknown; longitude: unknown } | null;
+}) {
+  const snapshotLat = parseFiniteCoordinate(booking.addressSnapshot?.latitude);
+  const snapshotLng = parseFiniteCoordinate(booking.addressSnapshot?.longitude);
+  if (snapshotLat != null && snapshotLng != null) {
+    return { lat: snapshotLat, lng: snapshotLng };
+  }
+  return {
+    lat: parseFiniteCoordinate(booking.lat) ?? Number.NaN,
+    lng: parseFiniteCoordinate(booking.lng) ?? Number.NaN,
+  };
+}
+
+export function calculateDistanceMeters(
+  bookingLat: number,
+  bookingLng: number,
+  providerLat: unknown,
+  providerLng: unknown,
+) {
+  const lat = parseFiniteCoordinate(providerLat);
+  const lng = parseFiniteCoordinate(providerLng);
+  if (
+    !Number.isFinite(bookingLat) ||
+    !Number.isFinite(bookingLng) ||
+    lat == null ||
+    lng == null
+  ) {
+    return null;
+  }
+  return roundTo100Meters(haversineMeters(bookingLat, bookingLng, lat, lng));
+}
+
+export function formatMatchingRadius(radiusMeters: number) {
+  if (radiusMeters >= 1000) {
+    return `${(radiusMeters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })}km`;
+  }
+  return `${radiusMeters.toLocaleString('en')}m`;
+}
+
+export function providerLocationFreshEnough(value: Date | string | null | undefined, maxAgeMinutes: number) {
+  if (!value) {
+    return false;
+  }
+  const updatedAt = value instanceof Date ? value.getTime() : new Date(value).getTime();
+  if (!Number.isFinite(updatedAt)) {
+    return false;
+  }
+  return Date.now() - updatedAt <= maxAgeMinutes * 60_000;
+}
+
+export function bookingAddressText(address: unknown) {
+  if (address && typeof address === 'object' && !Array.isArray(address)) {
+    const record = address as Record<string, unknown>;
+    const knownText =
+      record.addressText ??
+      record.address_text ??
+      record.line1 ??
+      record.addressLine ??
+      record.address ??
+      record.label ??
+      record.text ??
+      record.name;
+    if (typeof knownText === 'string' && knownText.trim()) {
+      return knownText.trim();
+    }
+  }
+  if (typeof address === 'string' && address.trim()) {
+    return address.trim();
+  }
+  return null;
+}
+
+export function assertBookingServiceId(serviceId: unknown) {
+  if (typeof serviceId !== 'string' || !serviceId.trim()) {
+    throw new BadRequestException('serviceId is required');
+  }
+}
+
+export function assertBookingPaymentMethod(paymentMethod: unknown) {
+  if (!Object.values(PaymentMethod).includes(paymentMethod as PaymentMethod)) {
+    throw new BadRequestException('Valid paymentMethod is required');
+  }
+}
+
+export function normalizeBookingCoordinate(value: unknown, fieldName: 'lat' | 'lng') {
+  const parsed = parseFiniteCoordinate(value);
+  if (parsed == null) {
+    throw new BadRequestException(`${fieldName} is required`);
+  }
+  return parsed;
+}
+
+export function vietnamBookingCoordinateGateError(lat: number, lng: number) {
+  if (!isVietnamBookingCoordinate(lat, lng)) {
+    return {
+      message: 'Booking address must be inside Vietnam',
+    };
+  }
+  return null;
+}
+
+export function isVietnamBookingCoordinate(lat: number, lng: number) {
+  return lat >= 8 && lat <= 24 && lng >= 102 && lng <= 110;
+}
+
+function parseFiniteCoordinate(value: unknown) {
+  if (value == null || value === '') {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
