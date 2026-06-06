@@ -47,7 +47,11 @@ import {
   providerLocationFreshEnough,
   vietnamBookingCoordinateGateError,
 } from './bookings.policy';
-import { clientBookingResponse, clientBookingResponses } from './bookings.response';
+import {
+  clientBookingResponse,
+  clientBookingResponses,
+  partnerOpenBookingResponses,
+} from './bookings.response';
 
 const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
@@ -691,7 +695,7 @@ export class BookingsService {
     }
 
     const fallbackPolicy = await this.matching.getPolicy();
-    return clientBookingResponses(
+    return partnerOpenBookingResponses(
       bookings
         .map((booking) => addProviderMatchingDistance(booking, provider))
         .filter((booking) =>
