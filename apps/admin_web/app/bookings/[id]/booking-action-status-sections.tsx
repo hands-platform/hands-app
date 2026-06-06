@@ -4,6 +4,7 @@ import {
   closeoutCompletedBooking,
   expireBooking,
   markBookingNoShow,
+  repairBookingChatRoom,
 } from './actions';
 
 type DispatchStep = {
@@ -34,6 +35,7 @@ type LiveSignal = {
 
 export function BookingActionStatusSections({
   bookingId,
+  chatRepair,
   closeout,
   dispatchSteps,
   liveSignals,
@@ -43,6 +45,7 @@ export function BookingActionStatusSections({
   opsTaskCards,
 }: {
   bookingId: string;
+  chatRepair: { canSubmit: boolean; status: string; tone: string; helper: string };
   closeout: { canSubmit: boolean; label: string; tone: string };
   dispatchSteps: DispatchStep[];
   liveSignals: LiveSignal[];
@@ -56,11 +59,42 @@ export function BookingActionStatusSections({
       <BookingDispatchChecklistSection dispatchSteps={dispatchSteps} />
       <BookingStructuredOpsStatusSection bookingId={bookingId} opsTaskCards={opsTaskCards} />
       <BookingOperatorNotesSection bookingId={bookingId} notes={notes} />
+      <BookingChatRepairSection bookingId={bookingId} chatRepair={chatRepair} />
       <BookingCompletedCloseoutSection bookingId={bookingId} closeout={closeout} />
       <BookingMatchingExpirySection bookingId={bookingId} matchingExpiry={matchingExpiry} />
       <BookingNoShowHandlingSection bookingId={bookingId} noShow={noShow} />
       <BookingLiveServiceBoardSection liveSignals={liveSignals} />
     </>
+  );
+}
+
+function BookingChatRepairSection({
+  bookingId,
+  chatRepair,
+}: {
+  bookingId: string;
+  chatRepair: { canSubmit: boolean; status: string; tone: string; helper: string };
+}) {
+  return (
+    <section className="card ops-command-center" id="chat-repair" style={{ marginBottom: 16 }}>
+      <div>
+        <h2>Chat room repair</h2>
+        <p className="muted">
+          Create a retained customer-partner chat room only after a final partner exists. This is an
+          operator command, not automatic assignment.
+        </p>
+      </div>
+      {chatRepair.canSubmit ? (
+        <form action={repairBookingChatRoom} className="ops-note-form">
+          <input type="hidden" name="bookingId" value={bookingId} />
+          <button type="submit">Repair chat room</button>
+          <small>{chatRepair.helper}</small>
+        </form>
+      ) : (
+        <span className={`pill ${chatRepair.tone}`}>{chatRepair.status}</span>
+      )}
+      <p className="muted">{chatRepair.helper}</p>
+    </section>
   );
 }
 

@@ -264,6 +264,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const participantLedger = bookingParticipantLedger(booking, backupSupply, notificationTrace);
   const chatLifecycle = bookingChatLifecycle(booking, messages.length);
   const handoffChecklist = bookingHandoffChecklist(booking, messages.length, latestLocation);
+  const chatRepair = bookingChatRepairActionState(booking);
   const closeoutReadiness = bookingCloseoutReadiness({
     booking,
     financeFlags,
@@ -1006,6 +1007,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingActionStatusSections
         bookingId={booking.id}
+        chatRepair={chatRepair}
         closeout={{
           canSubmit: canCloseoutCompletedBooking(booking),
           label: completedCloseoutLabel(booking),
@@ -3025,6 +3027,42 @@ function bookingChatRepairNeedsOps(booking: AdminBookingDetail) {
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status) &&
     !booking.chatRoom
   );
+}
+
+function bookingChatRepairActionState(booking: AdminBookingDetail) {
+  if (booking.chatRoom) {
+    return {
+      canSubmit: false,
+      status: 'Chat ready',
+      tone: 'pill-success',
+      helper: `Room ${shortId(booking.chatRoom.id)} is retained for admin evidence.`,
+    };
+  }
+
+  if (!bookingChatRepairNeedsOps(booking)) {
+    return {
+      canSubmit: false,
+      status: 'Not required',
+      tone: 'pill-neutral',
+      helper: 'Chat opens after customer final partner selection.',
+    };
+  }
+
+  if (!booking.selectedProvider) {
+    return {
+      canSubmit: false,
+      status: 'Final partner missing',
+      tone: 'pill-warn',
+      helper: 'Repair is locked until the customer final partner selection is recorded.',
+    };
+  }
+
+  return {
+    canSubmit: true,
+    status: 'Repair available',
+    tone: 'pill-danger',
+    helper: 'Final partner is recorded, but the retained chat room is missing.',
+  };
 }
 
 function bookingHandoffChecklist(

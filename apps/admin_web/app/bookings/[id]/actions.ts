@@ -59,6 +59,19 @@ export async function addBookingOpsNote(formData: FormData) {
   revalidatePath('/audit-log');
 }
 
+export async function repairBookingChatRoom(formData: FormData) {
+  const bookingId = String(formData.get('bookingId') ?? '');
+  if (!bookingId) {
+    return;
+  }
+
+  await adminPost(`/admin/bookings/${bookingId}/repair-chat-room`, {}, null);
+  revalidatePath(`/bookings/${bookingId}`);
+  revalidatePath('/bookings');
+  revalidatePath('/chat-archive');
+  revalidatePath('/audit-log');
+}
+
 export async function markBookingNoShow(formData: FormData) {
   const bookingId = String(formData.get('bookingId') ?? '');
   const reason = String(formData.get('reason') ?? '');

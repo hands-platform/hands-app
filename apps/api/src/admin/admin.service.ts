@@ -2394,6 +2394,38 @@ export class AdminService {
     return updated;
   }
 
+  async repairBookingChatRoom(actorId: string, bookingId: string) {
+    const booking = await this.prisma.booking.findUniqueOrThrow({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        status: true,
+        selectedProviderId: true,
+        chatRoom: { select: { id: true } },
+      },
+    });
+
+    if (!booking.selectedProviderId) {
+      throw new BadRequestException('Final partner selection is required before repairing chat room');
+    }
+
+    const updated = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { chatRoom: { upsert: { create: {}, update: {} } } },
+      select: adminBookingDetailSelect,
+    });
+
+    await this.writeAudit(actorId, 'booking.chat_room.repair', `booking:${bookingId}`, {
+      bookingId,
+      status: booking.status,
+      selectedProviderId: booking.selectedProviderId,
+      previousChatRoomId: booking.chatRoom?.id ?? null,
+      repairedChatRoomId: updated.chatRoom?.id ?? null,
+    });
+
+    return updated;
+  }
+
   async markBookingNoShow(actorId: string, bookingId: string, input: { reason?: string }) {
     const reason = normalizeNullable(input.reason);
     const booking = await this.prisma.booking.findUniqueOrThrow({

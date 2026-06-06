@@ -328,6 +328,11 @@ export class AdminController {
     return this.admin.addBookingOpsNote(user.id, id, body);
   }
 
+  @Post('bookings/:id/repair-chat-room')
+  repairBookingChatRoom(@CurrentUser() user: AuthenticatedUser, @Param('id') id: string) {
+    return this.admin.repairBookingChatRoom(user.id, id);
+  }
+
   @Post('bookings/:id/no-show')
   markBookingNoShow(
     @CurrentUser() user: AuthenticatedUser,
