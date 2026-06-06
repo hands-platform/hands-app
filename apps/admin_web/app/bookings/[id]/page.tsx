@@ -72,6 +72,7 @@ import {
 } from './booking-formatters';
 import { BookingEvidenceSections } from './booking-evidence-sections';
 import { bookingFinanceTrace } from './booking-finance-trace';
+import { bookingAddressRadiusContract } from './booking-address-radius-contract';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
 import {
   bookingNotificationTrace,
@@ -96,10 +97,7 @@ import {
   bookingPreferredProviderId,
   isCustomerSelectableParticipantForFinalChoice,
 } from './booking-participant-rules';
-import {
-  readBookingGateSnapshot,
-  readBookingMatchingPolicySnapshot,
-} from './booking-policy-snapshots';
+import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import { bookingStageSnapshot, type BookingStageSnapshot } from './booking-stage-snapshot';
 import {
   bookingStatusHint,
@@ -5065,103 +5063,6 @@ function locationTrail(booking: AdminBookingDetail) {
 
   const latest = latestProviderLocation(booking);
   return latest ? [latest] : [];
-}
-
-function bookingAddressRadiusContract(
-  booking: AdminBookingDetail,
-  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>,
-) {
-  const pin = backupSupply.policyPin;
-  const bookingGate = readBookingGateSnapshot(booking);
-  const snapshotLocked = Boolean(booking.addressSnapshot && pin.source === 'BookingAddressSnapshot');
-  const driftMeters = pin.legacyDriftMeters;
-  const driftLabel = driftMeters === null ? 'No stored-coordinate comparison' : distanceLabel(Math.round(driftMeters));
-  const driftOk = driftMeters === null || driftMeters <= 100;
-  const pinReady = Number.isFinite(pin.lat) && Number.isFinite(pin.lng);
-
-  return {
-    status: snapshotLocked && driftOk ? 'Snapshot locked' : pinReady ? 'Review pin' : 'Missing pin',
-    tone: snapshotLocked && driftOk ? 'pill-success' : pinReady ? 'pill-warn' : 'pill-danger',
-    metrics: [
-      {
-        label: 'Policy pin source',
-        value: pin.source,
-        helper: snapshotLocked
-          ? 'Marketplace distance is measured from the immutable booking address snapshot.'
-          : 'Stored booking coordinates are being used because the snapshot is missing.',
-      },
-      {
-        label: 'Policy pin',
-        value: pin.label,
-        helper: bookingAddressSnapshotLabel(booking),
-      },
-      {
-        label: 'Marketplace radius',
-        value: formatDistanceMeters(backupSupply.radiusMeters),
-        helper: 'Partners outside this booking-address radius cannot participate in marketplace matching.',
-      },
-      {
-        label: 'Stored coordinate drift',
-        value: driftLabel,
-        helper: driftOk
-          ? 'Snapshot and stored coordinates are aligned.'
-          : 'Snapshot and stored coordinates differ.',
-      },
-      {
-        label: 'Optional customer GPS evidence',
-        value: bookingGate.customerDistanceLabel,
-        helper: bookingGate.customerDistanceHelper,
-      },
-      {
-        label: 'First-pick distance gate',
-        value: bookingGate.preferredPartnerDistanceLabel,
-        helper: bookingGate.preferredPartnerDistanceHelper,
-      },
-    ],
-    cards: [
-      {
-        title: 'Address snapshot',
-        status: snapshotLocked ? 'Required data ready' : 'Needs review',
-        detail: snapshotLocked
-          ? 'This booking has an immutable BookingAddressSnapshot for audit and dispatch.'
-          : 'Create or repair the address snapshot before relying on partner radius decisions.',
-        action: booking.addressSnapshot?.createdAt
-          ? `Created ${formatDate(booking.addressSnapshot.createdAt)}`
-          : 'No snapshot creation time available.',
-        className: snapshotLocked ? 'ops-task-done' : 'ops-task-blocked',
-        pillClass: snapshotLocked ? 'pill-success' : 'pill-danger',
-      },
-      {
-        title: '10km participation rule',
-        status: pinReady ? 'Enforced by pin' : 'Blocked',
-        detail: `Marketplace partners are evaluated from ${pin.source} and must be within ${formatDistanceMeters(
-          backupSupply.radiusMeters,
-        )}.`,
-        action: `${backupSupply.eligibleCount} eligible / ${backupSupply.rows.length} displayed.`,
-        className: pinReady ? 'ops-task-done' : 'ops-task-blocked',
-        pillClass: pinReady ? 'pill-success' : 'pill-danger',
-      },
-      {
-        title: 'Coordinate consistency',
-        status: driftOk ? 'Aligned' : 'Drift found',
-        detail: driftOk
-          ? 'Stored booking coordinates do not conflict with the address snapshot.'
-          : 'Operators should verify customer address before extending the wait window.',
-        action: `Drift ${driftLabel}`,
-        className: driftOk ? 'ops-task-done' : 'ops-task-warning',
-        pillClass: driftOk ? 'pill-success' : 'pill-warn',
-      },
-      {
-        title: 'Booking creation gate',
-        status: bookingGate.gatePassed ? 'Gate passed' : 'Needs evidence',
-        detail:
-          'Booking creation records the service address snapshot, optional customer GPS evidence, and preferred partner distance before payment and matching open.',
-        action: bookingGate.summary,
-        className: bookingGate.gatePassed ? 'ops-task-done' : 'ops-task-warning',
-        pillClass: bookingGate.gatePassed ? 'pill-success' : 'pill-warn',
-      },
-    ],
-  };
 }
 
 type BookingMvpAuthorityContractRow = {
