@@ -1631,6 +1631,16 @@ const partnerAliasOpenBookings = await getJson('/partner/bookings/open', provide
 if (!partnerAliasOpenBookings.some((item) => item.id === booking.id)) {
   throw new Error(`Partner alias /partner/bookings/open did not include an open booking.`);
 }
+const preMatchChatRepairError = await expectRequestFailure(
+  'Admin chat repair requires final partner selection',
+  () => postJson(`/admin/bookings/${booking.id}/repair-chat-room`, adminAuth.accessToken),
+  400,
+);
+if (!preMatchChatRepairError.includes('Final partner selection is required before repairing chat room')) {
+  throw new Error(
+    `Admin chat repair before matching returned an unexpected error: ${preMatchChatRepairError}`,
+  );
+}
 
 const hybridBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
@@ -2653,6 +2663,27 @@ const partnerAliasMe = await getJson('/partner/me', providerAuth.accessToken);
 const partnerAliasBookings = await getJson('/partner/bookings', providerAuth.accessToken);
 const partnerAliasOnboarding = await getJson('/partner/onboarding', providerAuth.accessToken);
 const chatRoomId = matched.booking.chatRoom.id;
+const repairedMatchedChat = await postJson(
+  `/admin/bookings/${booking.id}/repair-chat-room`,
+  adminAuth.accessToken,
+);
+if (
+  repairedMatchedChat?.id !== booking.id ||
+  repairedMatchedChat?.chatRoom?.id !== chatRoomId ||
+  repairedMatchedChat?.selectedProvider?.id !== providerAuth.user.providerProfile.id
+) {
+  throw new Error(
+    `Admin chat repair should retain the matched chat room: ${JSON.stringify(repairedMatchedChat)}`,
+  );
+}
+const repairedMatchedChatDetail = await getJson(`/admin/bookings/${booking.id}`, adminAuth.accessToken);
+if (!repairedMatchedChatDetail.auditLogs?.some((log) => log.action === 'booking.chat_room.repair')) {
+  throw new Error(
+    `Admin chat repair should leave an audit trail on booking detail: ${JSON.stringify(
+      repairedMatchedChatDetail.auditLogs?.slice(0, 5),
+    )}`,
+  );
+}
 
 const partnerResponseAfterMatchError = await expectRequestFailure(
   'Partner response after matching is blocked',
