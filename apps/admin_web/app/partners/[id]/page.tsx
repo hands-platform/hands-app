@@ -8,12 +8,6 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../../lib/admin-api';
-import {
-  formatDateOnly as formatAdminDateOnly,
-  formatDateTime,
-  formatDistanceMeters,
-  formatMoney as formatAdminMoney,
-} from '../../../lib/admin-format';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   detailDateRangeOptions,
@@ -21,7 +15,6 @@ import {
   readDetailDateFilters,
 } from '../../../lib/detail-date-filter';
 import {
-  DetailActivityTypeOption,
   detailActivityTypeLabel,
   isWithinDetailActivityType,
   readDetailActivityType,
@@ -54,6 +47,35 @@ import {
   liftProviderSanction,
   updateProviderReport,
 } from '../../partner-controls/actions';
+import {
+  DETAIL_ACTIVITY_ORDER_OPTIONS,
+  PARTNER_ACTIVITY_TYPE_OPTIONS,
+  activityOrderLabel,
+  orderPartnerActivityRecords,
+  orderPartnerBookingArchive,
+  readDetailActivityOrder,
+} from './partner-detail-filters';
+import type { DetailActivityOrder } from './partner-detail-filters';
+import {
+  amountValue,
+  dateValue,
+  formatBytes,
+  formatCurrency,
+  formatDate,
+  formatDateOnly,
+  formatDistance,
+  formatJsonList,
+  formatJsonSummary,
+  jsonStringList,
+  locationAgeLabel,
+  locationAgeMinutes,
+  maskDeviceId,
+  metadataPreview,
+  newestDateValue,
+  providerPublicMediaLabel,
+  shortRecordId,
+  walletLedgerLabel,
+} from './partner-detail-format';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -150,32 +172,11 @@ type PartnerDetailChatMessage = NonNullable<
 
 const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
-const DETAIL_ACTIVITY_ORDER_OPTIONS = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-] as const;
-type DetailActivityOrder = (typeof DETAIL_ACTIVITY_ORDER_OPTIONS)[number]['value'];
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
   backupRadiusMeters: 10_000,
   locationFreshnessMinutes: 30,
 };
-const PARTNER_ACTIVITY_TYPE_OPTIONS = [
-  { value: 'all', label: 'All event types', types: [] },
-  { value: 'booking_chat', label: 'Bookings and chat archive', types: ['BOOKING', 'CHAT'] },
-  {
-    value: 'app_device',
-    label: 'Account, app sessions, and devices',
-    types: ['ACCOUNT', 'SESSION', 'DEVICE'],
-  },
-  { value: 'location', label: 'Location snapshots', types: ['LOCATION'] },
-  { value: 'finance', label: 'Earnings and payouts', types: ['EARNING', 'PAYOUT'] },
-  {
-    value: 'verification',
-    label: 'Verification, documents, and operation logs',
-    types: ['VERIFY', 'DOCUMENT', 'BANK', 'TAX', 'AGREEMENT', 'REPORT', 'SANCTION', 'PROFILE', 'OPS'],
-  },
-] satisfies DetailActivityTypeOption[];
 
 type ProviderDetail = AdminProvider & {
   locationSnapshots?: Array<{ id: string; lat: string | number; lng: string | number; recordedAt: string }>;
@@ -3277,34 +3278,6 @@ type PartnerOperatorCommand = {
     | { type: 'approve-tax'; label: string };
 };
 
-function readDetailActivityOrder(params: Record<string, string | string[] | undefined>): DetailActivityOrder {
-  const value = Array.isArray(params.order) ? params.order[0] : params.order;
-  return value === 'oldest' ? 'oldest' : 'newest';
-}
-
-function activityOrderLabel(order: DetailActivityOrder) {
-  return DETAIL_ACTIVITY_ORDER_OPTIONS.find((option) => option.value === order)?.label ?? 'Newest first';
-}
-
-function orderPartnerActivityRecords<T extends { at?: string | null }>(
-  records: T[],
-  order: DetailActivityOrder,
-) {
-  return [...records].sort((left, right) =>
-    order === 'oldest' ? dateValue(left.at) - dateValue(right.at) : dateValue(right.at) - dateValue(left.at),
-  );
-}
-
-function orderPartnerBookingArchive(records: PartnerBookingArchiveRecord[], order: DetailActivityOrder) {
-  return [...records].sort((left, right) => {
-    const leftAt = left.booking.createdAt ?? left.booking.scheduledStartAt;
-    const rightAt = right.booking.createdAt ?? right.booking.scheduledStartAt;
-    return order === 'oldest'
-      ? dateValue(leftAt) - dateValue(rightAt)
-      : dateValue(rightAt) - dateValue(leftAt);
-  });
-}
-
 function partnerActivityRecordHref(record: PartnerActivityRecord) {
   if (['BOOKING', 'CHAT'].includes(record.type)) return '#booking-chat-records';
   if (['EARNING', 'PAYOUT'].includes(record.type)) return '#payout';
@@ -5495,17 +5468,6 @@ function auditLogNoteText(log: AdminAuditLog) {
   return trimText(JSON.stringify(log.metadata ?? { action: log.action }), 140);
 }
 
-function dateValue(value?: string | null) {
-  if (!value) return Number.NaN;
-  return Date.parse(value);
-}
-
-function newestDateValue(values: Array<string | null | undefined>) {
-  return values
-    .filter((value): value is string => Boolean(value) && !Number.isNaN(dateValue(value)))
-    .sort((left, right) => dateValue(right) - dateValue(left))[0];
-}
-
 function buildProviderBookingAcceptance(
   provider: ProviderDetail,
   pricing: ReturnType<typeof buildProviderServicePricing>,
@@ -6686,10 +6648,6 @@ function reportStatusPill(status: string) {
   return 'pill-info';
 }
 
-function shortRecordId(value: string) {
-  return value.length > 12 ? `${value.slice(0, 8)}...` : value;
-}
-
 function payoutBlockers(provider: ProviderDetail) {
   const blockers: string[] = [];
   const agreementsAccepted = provider.agreements?.length ?? 0;
@@ -7043,14 +7001,6 @@ function missingApprovedRequiredKycDocuments(provider: ProviderDetail) {
   return REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
 }
 
-function formatDate(value?: string | null) {
-  return formatDateTime(value, 'Missing');
-}
-
-function formatDateOnly(value?: string | null) {
-  return value ? formatAdminDateOnly(value, value) : null;
-}
-
 function buildPartnerDispatchPolicy(settings: AdminOperationalPolicySetting[]): PartnerDispatchPolicy {
   return {
     responseWindowMinutes:
@@ -7063,80 +7013,6 @@ function buildPartnerDispatchPolicy(settings: AdminOperationalPolicySetting[]): 
       readPositivePolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
       DEFAULT_PARTNER_DISPATCH_POLICY.locationFreshnessMinutes,
   };
-}
-
-function formatJsonSummary(value: unknown) {
-  if (!value) return null;
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) return `${value.length} item(s)`;
-  if (typeof value === 'object') {
-    return Object.keys(value as Record<string, unknown>).length ? JSON.stringify(value).slice(0, 120) : null;
-  }
-  return String(value);
-}
-
-function jsonStringList(value: unknown) {
-  if (!Array.isArray(value)) return [];
-  return value.map((item) => String(item).trim()).filter(Boolean);
-}
-
-function formatJsonList(value: unknown) {
-  const items = jsonStringList(value);
-  return items.length ? items.join(', ') : null;
-}
-
-function providerPublicMediaLabel(purpose?: string | null) {
-  if (purpose === 'PROFILE_IMAGE') return 'Profile image';
-  if (purpose === 'PROVIDER_GALLERY') return 'Work gallery';
-  return purpose ?? 'Public media';
-}
-
-function formatBytes(value: number) {
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function formatDistance(value: number) {
-  return formatDistanceMeters(value);
-}
-
-function locationAgeMinutes(value?: string | null) {
-  if (!value) return Number.POSITIVE_INFINITY;
-  const updatedAt = new Date(value).getTime();
-  if (!Number.isFinite(updatedAt)) return Number.POSITIVE_INFINITY;
-  return Math.max(0, Math.round((Date.now() - updatedAt) / 60_000));
-}
-
-function locationAgeLabel(value?: string | null) {
-  if (!value) return 'missing';
-  const minutes = locationAgeMinutes(value);
-  if (!Number.isFinite(minutes)) return 'invalid';
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m old`;
-  return `${Math.round(minutes / 60)}h old`;
-}
-
-function maskDeviceId(value?: string | null) {
-  if (!value) return 'No device id';
-  if (value.length <= 8) return value;
-  return `${value.slice(0, 4)}...${value.slice(-4)}`;
-}
-
-function formatCurrency(value?: number | string | null, currency = 'VND') {
-  const amount = amountValue(value);
-  return formatAdminMoney(amount, currency, `0 ${currency}`);
-}
-
-function amountValue(value?: number | string | null) {
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : 0;
-  }
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-  return 0;
 }
 
 function providerHasFirstRevenueSignal(provider: ProviderDetail) {
@@ -7174,14 +7050,6 @@ function cashFeeDebtAmount(provider: ProviderDetail) {
     .reduce((total, earning) => total + Math.abs(amountValue(earning.netAmount)), 0);
 }
 
-function walletLedgerLabel(type: string) {
-  return type
-    .split('_')
-    .filter(Boolean)
-    .map((part) => part.charAt(0) + part.slice(1).toLowerCase())
-    .join(' ');
-}
-
 function humanizeProviderLogAction(action: string) {
   return action
     .split(/[._-]/)
@@ -7209,18 +7077,4 @@ function activePayoutHold(provider: ProviderDetail) {
     const expiresAt = Date.parse(sanction.expiresAt);
     return Number.isFinite(expiresAt) && expiresAt > now;
   });
-}
-
-function metadataPreview(metadata?: unknown) {
-  if (!metadata || typeof metadata !== 'object') return null;
-  const record = metadata as Record<string, unknown>;
-  const reason = typeof record.reason === 'string' ? record.reason : null;
-  const documentType = typeof record.documentType === 'string' ? record.documentType : null;
-  const target = typeof record.target === 'string' ? record.target : null;
-  const parts = [
-    reason ? `Reason: ${reason}` : null,
-    documentType ? `Document: ${documentType}` : null,
-    target ? `Target: ${target}` : null,
-  ].filter(Boolean);
-  return parts.join(' / ');
 }
