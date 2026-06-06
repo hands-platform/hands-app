@@ -592,7 +592,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       links: [
         ['All bookings', '/bookings'],
         ['Matching', '/bookings?view=matching'],
-        ['Partner candidates', '/bookings?view=marketplace'],
+        ['Marketplace shortlist', '/bookings?view=marketplace'],
         ['Blocked create', '/bookings?view=blocked-create'],
         ['Chat handoff', '/bookings?view=chat'],
       ],
@@ -616,7 +616,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
       href: '/operations-policy',
       primary: 'Rules operators can change',
       helper:
-        'Matching windows, partner candidate radius, booking gates, service options, price policy, tax policy, and setup checks.',
+        'Matching windows, marketplace radius, booking gates, service options, price policy, tax policy, and setup checks.',
       links: [
         ['Operations policy', '/operations-policy'],
         ['First-pick window', '/operations-policy#policy-matching-provider-response-window-minutes'],
@@ -1523,7 +1523,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <div>
               <span>Matching escalations</span>
               <strong>{bookingDeepDive.matchingEscalations}</strong>
-              <small>First-pick, partner candidates, final choice, or chat handoff</small>
+              <small>First-pick, marketplace participants, final choice, or chat handoff</small>
             </div>
             <div>
               <span>Expired matching</span>
@@ -2496,12 +2496,12 @@ function buildMatchingControlRoom(
         helper: 'New bookings use this value; open rows prefer each saved booking snapshot.',
       },
       {
-        label: 'Candidate radius',
+        label: 'Marketplace radius',
         value: formatDistance(backupRadiusMeters),
         helper: `${averageEligible} average eligible partner(s) using row-level saved radius when available.`,
       },
       {
-        label: 'Candidate invite cap',
+        label: 'Marketplace invite cap',
         value: String(backupInvitationLimit),
         helper: 'Maximum nearest eligible partners opened for marketplace participation on new bookings.',
       },
@@ -2640,7 +2640,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
         helper: 'Cancelled, expired, refunded, or no-show outcomes in measured bookings.',
       },
       {
-        label: 'Avg candidate alerts',
+        label: 'Avg marketplace alerts',
         value: avgInvites,
         helper: 'Read from booking backupNotificationTraces metadata.',
       },
@@ -2662,7 +2662,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
           ? `${dashboardPercentLabel(stats.matchedCount, stats.sampleCount)} matched, ${dashboardPercentLabel(
               stats.failedOutcomeCount,
               stats.sampleCount,
-            )} failed outcome, ${avgInvites} candidate alerts.`
+            )} failed outcome, ${avgInvites} marketplace alert(s).`
           : 'Create measured bookings after policy setup so the dashboard can compare policy to outcomes.',
         operatorAction: outcomeHealthy
           ? 'Keep current policy stable while collecting more district and time-band results.'
@@ -2686,7 +2686,7 @@ function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOp
             : 'Marketplace partners wait until first-pick decline or timer close.',
         operatorAction:
           lowBackupInviteCount > 0
-            ? `${lowBackupInviteCount} open matching booking(s) have no candidate alert trace yet.`
+            ? `${lowBackupInviteCount} open matching booking(s) have no marketplace alert trace yet.`
             : 'Marketplace exposure is traceable in the current measured sample.',
         href: lowBackupInviteCount > 0 ? '/bookings?view=matching' : '/operations-policy',
         className: lowBackupInviteCount > 0 ? 'ops-task-pending' : 'ops-task-done',
@@ -2866,7 +2866,7 @@ function matchingRowNextAction(input: {
     return 'Confirm the customer service location so distance-based marketplace matching can work.';
   }
   if (input.customerReadyToChoose) {
-    return 'Confirm the customer sees the candidate list and can select the final partner.';
+    return 'Confirm the customer sees the shortlist and can select the final partner.';
   }
   if (input.freshEligibleCount === 0 && input.eligibleCount > 0) {
     return 'Ask nearby partners to refresh location or open the Partner app before widening policy.';
@@ -3138,7 +3138,7 @@ function buildTodayCommandOrder(input: {
       value: `${customerChoiceRows} ready`,
       detail:
         customerChoiceRows > 0
-          ? 'At least one customer can select from the candidate list. After match, confirm chat handoff stays archived.'
+          ? 'At least one customer can select from the shortlist. After match, confirm chat handoff stays archived.'
           : 'No customer choice list is currently ready. Keep chat creation checks visible for matched bookings.',
       href: customerChoiceRows ? '/bookings?view=matching' : '/bookings?view=chat',
       tone: customerChoiceRows ? 'info' : 'ok',
@@ -3371,7 +3371,7 @@ function buildOperationsCommandBoard(input: {
       tone: firstPickRows || marketplaceRows ? 'info' : 'ok',
       checks: [
         '10 minute first-pick',
-        input.matchingControl.metrics.find((item) => item.label === 'Candidate radius')?.value ?? '10 km',
+        input.matchingControl.metrics.find((item) => item.label === 'Marketplace radius')?.value ?? '10 km',
         'No auto assignment',
       ],
     },
@@ -3802,7 +3802,7 @@ function buildLiveOperationsRadar(input: {
       status: noFreshSupplyRows ? 'Supply gap' : firstPickRows + marketplaceRows ? 'Monitoring' : 'Clear',
       detail:
         firstPickRows + marketplaceRows > 0
-          ? 'Preferred partner has the first window while 10km marketplace candidates stay visible for customer choice.'
+            ? 'Preferred partner has the first window while 10km marketplace participants stay visible for customer choice.'
           : 'No active first-pick or marketplace lane is visible in the current booking sample.',
       href: noFreshSupplyRows
         ? '/bookings?view=no-supply'
@@ -3812,8 +3812,8 @@ function buildLiveOperationsRadar(input: {
       tone: noFreshSupplyRows ? 'danger' : firstPickRows + marketplaceRows ? 'info' : 'ok',
       checks: [
         `${noFreshSupplyRows} no fresh supply`,
-        `${input.matchingControl.metrics.find((item) => item.label === 'Candidate radius')?.value ?? '10 km'} radius`,
-        `${input.matchingControl.metrics.find((item) => item.label === 'Candidate invite cap')?.value ?? 'cap'} invite cap`,
+        `${input.matchingControl.metrics.find((item) => item.label === 'Marketplace radius')?.value ?? '10 km'} radius`,
+        `${input.matchingControl.metrics.find((item) => item.label === 'Marketplace invite cap')?.value ?? 'cap'} invite cap`,
       ],
     },
     {
@@ -5905,12 +5905,12 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
     ),
     policyMetric(
       byKey.get('matching.backup_provider_radius_meters'),
-      'Candidate radius',
+      'Marketplace radius',
       'Partners inside this radius can participate.',
     ),
     policyMetric(
       byKey.get('matching.backup_provider_invitation_limit'),
-      'Candidate invite cap',
+      'Marketplace invite cap',
       'Nearest eligible partners opened for marketplace participation.',
     ),
     policyMetric(

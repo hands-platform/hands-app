@@ -107,7 +107,7 @@ export function buildBookingActivityRecords({
       id: `${participant.id}-joined`,
       type: 'PARTNER',
       at: participant.joinedAt ?? booking.createdAt ?? '',
-      title: `${providerName(participant.providerProfile)} entered candidate list`,
+      title: `${providerName(participant.providerProfile)} entered marketplace shortlist`,
       detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
         participant.providerStatusAtJoin ?? 'status unknown'
       }`,

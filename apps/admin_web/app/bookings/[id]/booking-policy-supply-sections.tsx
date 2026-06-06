@@ -299,7 +299,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
     <section className="card" style={{ marginBottom: 16 }}>
       <div className="ops-section-header">
         <div>
-          <h2>Dispatch candidate decision matrix</h2>
+          <h2>Dispatch participant decision matrix</h2>
           <p className="muted">
             Booking-specific readout for who can be used now, who is excluded, and what the operator should fix
             before extending customer wait time.
@@ -346,7 +346,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
               <div className="setup-stage-item">
                 <span>NONE</span>
                 <div>
-                  <strong>No usable partner candidate</strong>
+                  <strong>No usable marketplace participant</strong>
                   <p className="muted">
                     Use the exclusion groups to decide whether to refresh location, widen policy, or contact
                     partners.

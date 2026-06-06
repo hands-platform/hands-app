@@ -331,7 +331,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#participants',
       label: 'Partners',
       value: `${booking.participants?.length ?? 0}`,
-      helper: 'Preferred, final, and marketplace candidate list.',
+      helper: 'Preferred, final, and marketplace shortlist.',
     },
     {
       href: '#chat',
@@ -420,7 +420,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       status: finalProvider?.id ? 'Linked' : 'Not selected',
       evidence: finalProvider
         ? providerName(finalProvider)
-        : `${booking.participants?.length ?? 0} marketplace candidate(s)`,
+        : `${booking.participants?.length ?? 0} marketplace participant(s)`,
       href: '#handoff',
     },
     {
@@ -1090,7 +1090,7 @@ function bookingOperatorCommandQueue({
       detail: `${booking.participants?.length ?? 0} partner(s) are in the customer choice list. Customer still chooses the final partner.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
-      action: { type: 'link', href: '#participants', label: 'Open candidate list' },
+      action: { type: 'link', href: '#participants', label: 'Open shortlist' },
     });
   }
 
@@ -1100,7 +1100,7 @@ function bookingOperatorCommandQueue({
       label: 'SUPPLY',
       title: 'Check nearby partner supply',
       detail:
-        'No partner participation is recorded yet. Review marketplace candidates and notification delivery before widening operations policy.',
+        'No partner participation is recorded yet. Review marketplace-ready partners and notification delivery before widening operations policy.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#backup-supply', label: 'Open supply' },
@@ -1505,7 +1505,7 @@ function bookingOperatorPriorityBriefing({
         title: finalPartner ? 'Confirm partner handoff' : 'Keep partner choice visible',
         detail: finalPartner
           ? `${providerName(finalPartner)} is linked. Confirm chat, service pin, and payment handoff are visible.`
-          : 'Customer choice is still pending. Keep candidate list, partner alerts, and marketplace window easy to audit.',
+          : 'Customer choice is still pending. Keep the shortlist, partner alerts, and marketplace window easy to audit.',
         href: '#booking-handoff-checklist',
         linkLabel: 'Open handoff',
       },
@@ -1779,7 +1779,7 @@ function bookingDecisionEvidenceGuardrails({
       tone: hasFinalPartner ? 'pill-success' : booking.status === 'OPEN_MATCHING' ? 'pill-info' : 'pill-warn',
       evidence: hasFinalPartner
         ? providerName(booking.selectedProvider)
-        : `${booking.participants?.length ?? 0} marketplace candidate(s) / preferred ${providerName(
+        : `${booking.participants?.length ?? 0} marketplace participant(s) / preferred ${providerName(
             booking.preferredProvider,
           )}`,
       nextStep: hasFinalPartner
@@ -3129,7 +3129,7 @@ function bookingHandoffChecklist(
       label: 'Partner',
       title: finalPartner ? providerName(finalPartner) : 'Waiting for partner response',
       detail: `${participantCount} participant record(s) / ${selectableCount} customer-selectable. The customer remains the final decision maker.`,
-      status: 'Partner candidate list',
+      status: 'Customer shortlist',
       href: '#participants',
     },
     {
@@ -3477,7 +3477,7 @@ function bookingOperatingTimeline({
     addItem({
       id: `participant-joined-${participant.id}`,
       type: 'JOIN',
-      title: `${partnerName} entered candidate list`,
+      title: `${partnerName} entered marketplace shortlist`,
       detail: `${participant.status} / ${distanceLabel(participant.distanceMeters)} / ${
         participant.providerStatusAtJoin ?? 'status unknown'
       }`,

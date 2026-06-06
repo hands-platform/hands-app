@@ -774,6 +774,16 @@ if (providerLinkMatch) {
   const providerDetailPaths = [`/partners/${providerLinkMatch[1]}`, `/providers/${providerLinkMatch[1]}`];
   for (const providerPath of providerDetailPaths) {
     const providerBody = await fetchPage(providerPath);
+    const overviewMarkers = ['Fast operations overview', 'Open full dossier'];
+    const missingOverviewMarkers = overviewMarkers.filter((marker) => !providerBody.includes(marker));
+    if (missingOverviewMarkers.length > 0) {
+      throw new Error(`${providerPath} is missing expected overview markers: ${missingOverviewMarkers.join(', ')}`);
+    }
+    assertNoLegacyVisibleLanguage(providerPath, providerBody);
+    console.log(`PASS ${providerPath}`);
+
+    const fullProviderPath = `${providerPath}?section=full`;
+    const fullProviderBody = await fetchPage(fullProviderPath);
     const providerMarkers = [
       'Partner operator command queue',
       'Partner command snapshot',
@@ -809,25 +819,26 @@ if (providerLinkMatch) {
       'id="tax"',
       'id="location"',
     ];
-    const missing = providerMarkers.filter((marker) => !providerBody.includes(marker));
+    const missing = providerMarkers.filter((marker) => !fullProviderBody.includes(marker));
     if (missing.length > 0) {
-      throw new Error(`${providerPath} is missing expected markers: ${missing.join(', ')}`);
+      throw new Error(`${fullProviderPath} is missing expected markers: ${missing.join(', ')}`);
     }
-    assertNoLegacyVisibleLanguage(providerPath, providerBody);
-    console.log(`PASS ${providerPath}`);
+    assertNoLegacyVisibleLanguage(fullProviderPath, fullProviderBody);
+    console.log(`PASS ${fullProviderPath}`);
 
-    const filteredProviderBody = await fetchPage(`${providerPath}?range=30d`);
+    const filteredProviderPath = `${providerPath}?section=full&range=30d`;
+    const filteredProviderBody = await fetchPage(filteredProviderPath);
     const filteredProviderMarkers = ['Record date filter', 'Filtered booking archive', 'Filtered activity'];
     const missingFilteredProviderMarkers = filteredProviderMarkers.filter(
       (marker) => !filteredProviderBody.includes(marker),
     );
     if (missingFilteredProviderMarkers.length > 0) {
       throw new Error(
-        `${providerPath}?range=30d is missing expected markers: ${missingFilteredProviderMarkers.join(', ')}`,
+        `${filteredProviderPath} is missing expected markers: ${missingFilteredProviderMarkers.join(', ')}`,
       );
     }
-    assertNoLegacyVisibleLanguage(`${providerPath}?range=30d`, filteredProviderBody);
-    console.log(`PASS ${providerPath}?range=30d`);
+    assertNoLegacyVisibleLanguage(filteredProviderPath, filteredProviderBody);
+    console.log(`PASS ${filteredProviderPath}`);
   }
 }
 
@@ -970,7 +981,7 @@ if (bookingLinkMatch) {
     'Chat transcript',
     'Location trail',
     'Booking alert trace',
-    'Dispatch candidate decision matrix',
+    'Dispatch participant decision matrix',
     'Excluded partner groups',
     'Marketplace partner supply for this booking',
     'Actual marketplace participant ledger',

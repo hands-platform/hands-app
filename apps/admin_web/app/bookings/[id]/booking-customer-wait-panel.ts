@@ -80,7 +80,7 @@ export function bookingCustomerWaitPanel(
     signalTone = 'pill-warn';
     headline = 'A participating or accepted partner is ready for customer final selection.';
     detail =
-      'Make sure the customer app shows the participating/accepted partner candidate list and opens matched chat after selection.';
+      'Make sure the customer app shows the participating/accepted partner shortlist and opens matched chat after selection.';
     nextActionLabel = 'Check participants';
   } else if (waitingForPartnerJoin && backupSupply.eligibleCount === 0) {
     signalStatus = 'Supply gap';
@@ -94,7 +94,7 @@ export function bookingCustomerWaitPanel(
     signalStatus = 'Nudge partners';
     signalTone = 'pill-warn';
     headline = 'Customer is waiting and marketplace partners can participate.';
-    detail = `${backupSupply.eligibleCount} nearby partner(s) can be nudged into the candidate list.`;
+    detail = `${backupSupply.eligibleCount} nearby partner(s) can be nudged into the customer shortlist.`;
     nextActionHref = '/partners?review=marketplace-ready';
     nextActionLabel = 'Open marketplace-ready partners';
   } else if (waitingForPartnerJoin) {

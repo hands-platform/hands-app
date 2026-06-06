@@ -223,7 +223,7 @@ export function bookingParticipantLedger(
           ? `${providerName(booking.selectedProvider)} is saved as selectedProvider.`
           : `${customerSelectableParticipants.length} customer-selectable partner(s) available.`,
         operatorUse:
-          'If final partner is missing, check customer app candidate-list visibility instead of manually choosing for the customer.',
+          'If final partner is missing, check customer app shortlist visibility instead of manually choosing for the customer.',
       },
       {
         stage: '4. Chat and service handoff',

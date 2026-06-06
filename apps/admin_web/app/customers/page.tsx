@@ -118,8 +118,8 @@ export default async function CustomersPage({ searchParams }: { searchParams?: C
           <h1>Customer Management</h1>
           <p className="muted">
             Customer activity board for profile, booking history, completed work, chat archives, wallet view,
-            saved addresses, app sessions, and push reachability. This page records factual customer activity for
-            operator review.
+            saved addresses, last app session state, and push reachability. This page records factual customer activity
+            for operator review.
           </p>
         </div>
         <div className="actions">

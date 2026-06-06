@@ -208,7 +208,7 @@ export default async function OperationsHandoffPage({
         <MetricCard
           label="Matching wait"
           value={matchingBookings.length}
-          helper="Customer can still receive partner candidates"
+          helper="Customer can still receive marketplace participants"
           href="/bookings?view=matching"
         />
         <MetricCard

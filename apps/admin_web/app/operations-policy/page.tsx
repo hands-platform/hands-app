@@ -548,7 +548,7 @@ export default async function OperationsPolicyPage({
         <div className="ops-task-note" style={{ marginTop: 14 }}>
           <strong>How to use this preview</strong>
           <p className="muted">
-            If a candidate value increases Stage 2 marketplace count without increasing stale/no-supply
+            If a tested value increases Stage 2 marketplace count without increasing stale/no-supply
             checks, it may reduce customer waiting anxiety. If it increases overdue or no-supply count,
             improve partner location freshness, push delivery, or city supply before changing policy.
           </p>
@@ -980,7 +980,7 @@ export default async function OperationsPolicyPage({
           <DecisionHint
             title="First-pick partner acceptance"
             recommendation="Keep customer final confirmation as the operating rule."
-            detail="The preferred partner can accept quickly, marketplace partners can still enter the candidate list, and the customer chooses the final partner."
+            detail="The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner."
           />
           <DecisionHint
             title="Marketplace participation"
@@ -1521,7 +1521,7 @@ function buildPolicySimulation(
         helper: `${eligiblePartners.length} visible partner(s), ${freshEligible.length} fresh location(s).`,
       },
       {
-        label: 'Candidate alert cap',
+        label: 'Marketplace alert cap',
         value: `${backupInvitationLimit} partner(s)`,
         helper: `${invitedPartners.length} partner(s) would be invited now after distance sorting.`,
       },
@@ -1864,7 +1864,7 @@ function policyRecommendationPosture(
         value === 'AUTO_MATCH_ON_ACCEPT'
           ? 'The API now ignores this historical value and keeps the request open until the customer chooses the final partner.'
           : 'Customer final-choice mode is required for the HANDS MVP flow.',
-      operatorAction: 'Keep customer-confirm mode active before scaling marketplace partner candidate-list UX.',
+      operatorAction: 'Keep customer-confirm mode active before scaling marketplace partner shortlist UX.',
       alignedAction:
         'Customer final-choice posture is aligned with the intended direct + marketplace matching model.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
@@ -2986,7 +2986,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       globalMatchedRate,
     }),
     ...buildPolicyEffectRows({
-      policy: 'Candidate alert cap',
+      policy: 'Marketplace alert cap',
       settings,
       bookings: sampledBookings,
       settingKey: 'matching.backup_provider_invitation_limit',
@@ -3036,9 +3036,9 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
         helper: `${globalStats.completedCount}/${globalStats.sampleCount} sampled booking(s) completed service.`,
       },
       {
-        label: 'Avg candidate alerts',
+        label: 'Avg marketplace alerts',
         value: avgBackupInvites,
-        helper: 'Uses stored candidate-alert traces from booking metadata, not just live partner supply.',
+        helper: 'Uses stored marketplace alert traces from booking metadata, not just live partner supply.',
       },
       {
         label: 'Cancelled / expired / no-show',
@@ -3052,7 +3052,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
         scope: 'Evidence',
         title: sampledBookings.length ? 'Policy snapshots are measurable' : 'Create more measured bookings',
         detail: sampledBookings.length
-          ? 'Each booking opened under a saved policy can now be compared against outcome, partner participation, and candidate alert batches.'
+          ? 'Each booking opened under a saved policy can now be compared against outcome, partner participation, and marketplace alert batches.'
           : 'The dashboard needs bookings with metadata.matchingPolicy before it can compare policy outcomes.',
         operatorAction: sampledBookings.length
           ? 'Use these cohorts before changing response window, marketplace radius, invite cap, or accept mode.'
@@ -3068,7 +3068,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
         operatorAction:
           globalStats.backupInviteCount > 0
             ? `Current sample averages ${avgBackupInvites} per measured booking.`
-            : 'No candidate alert batch was found in the measured sample yet.',
+            : 'No marketplace alert batch was found in the measured sample yet.',
         className: 'ops-task-pending',
         pillClass: 'pill-info',
       },
@@ -4475,8 +4475,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
           href: '/notifications',
         },
         {
-          label: 'Marketplace candidate list',
-          detail: 'Confirm the customer choice list will stay readable when more partners can participate.',
+          label: 'Marketplace shortlist',
+          detail: 'Confirm the customer choice shortlist will stay readable when more partners can participate.',
           href: '/bookings?view=marketplace',
         },
       ],
@@ -4658,7 +4658,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       saveChecks: [
         {
           label: 'No-show board',
-          detail: 'Review no-show candidates with chat, location, notification, and note evidence visible.',
+          detail: 'Review no-show records with chat, location, notification, and note evidence visible.',
           href: '/bookings?view=no-show',
         },
         {

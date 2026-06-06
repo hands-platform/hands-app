@@ -93,7 +93,7 @@ export function bookingStageSnapshot(
     headline = 'Participating or accepted partner(s) are waiting for customer final selection.';
     detail = customerWaitPanel.detail;
     actionHref = `/bookings/${booking.id}#participants`;
-    actionLabel = 'Review candidate list';
+    actionLabel = 'Review shortlist';
   } else if (status === 'OPEN_MATCHING' && backupSupply.eligibleCount > 0) {
     stage = 'Stage 2 - Marketplace participation';
     pillClass = 'pill-warn';

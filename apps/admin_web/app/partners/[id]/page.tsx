@@ -5517,7 +5517,7 @@ function partnerRoleRetentionDetail(record: PartnerBookingArchiveRecord) {
   if (record.relation === 'Preferred') {
     return 'Customer first picked this partner before marketplace participation.';
   }
-  return 'Partner participated in the marketplace candidate list for customer final choice.';
+  return 'Partner participated in the marketplace shortlist for customer final choice.';
 }
 
 function partnerBookingRequiresRetainedChat(booking: PartnerDetailBooking) {
@@ -5813,7 +5813,7 @@ function buildPartnerAcceptanceRepairCommand(
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
       ? 'Customer balances are unaffected; this wallet gate blocks marketplace participation until settlement.'
     : hasHardVisibilityBlock
-      ? 'Hide or avoid this partner for direct booking and marketplace candidate list until hard blockers are cleared.'
+      ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
       : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
   const operatorDecision = bookingAcceptance.canJoinMarketplace
     ? 'No manual repair required. Monitor service quality and response speed.'

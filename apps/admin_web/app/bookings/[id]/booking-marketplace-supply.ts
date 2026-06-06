@@ -160,7 +160,7 @@ export function bookingBackupPartnerSupply(
       : 'Customer pin is required before partner radius can be checked',
     decisionDetail: hasCustomerPin
       ? eligibleCount
-        ? 'Operators can use the eligible partners as marketplace candidates while the customer waits.'
+        ? 'Operators can use the eligible partners as marketplace participants while the customer waits.'
         : 'Review radius, partner online status, location freshness, and verification before extending the waiting window.'
       : 'Ask the customer to confirm location or edit booking coordinates before dispatching partners.',
     metrics: [
