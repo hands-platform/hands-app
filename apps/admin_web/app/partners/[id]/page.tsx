@@ -4894,7 +4894,7 @@ function buildPartnerOperatingChecklist(
         ? (provider.blockedReason ?? 'Account is held by admin.')
         : 'No account hold is currently recorded.',
       nextAction: provider.blockedAt ? 'Review account hold' : 'No account action',
-      href: `/partners/${provider.id}#admin`,
+      href: `/partners/${provider.id}?section=full#admin`,
       tone: provider.blockedAt ? 'blocked' : 'done',
     },
     {
@@ -4902,7 +4902,7 @@ function buildPartnerOperatingChecklist(
       status: bookingAcceptance.canJoinMarketplace ? 'Marketplace participation clear' : 'Marketplace participation on hold',
       detail: bookingAcceptance.primaryReason,
       nextAction: bookingAcceptance.canJoinMarketplace ? 'Ready for marketplace participation' : 'Resolve marketplace participation gate',
-      href: `/partners/${provider.id}#booking-chat-records`,
+      href: `/partners/${provider.id}?section=full#booking-chat-records`,
       tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
     },
     {
@@ -4927,7 +4927,7 @@ function buildPartnerOperatingChecklist(
           ? `Missing approved document(s): ${missingKycDocs.join(', ')}.`
           : `KYC ${provider.kyc?.status ?? 'DRAFT'} / profile ${provider.verification?.status ?? 'DRAFT'}.`,
       nextAction: missingKycDocs.length > 0 ? 'Review documents' : 'Check verification',
-      href: `/partners/${provider.id}#kyc`,
+      href: `/partners/${provider.id}?section=full#kyc`,
       tone:
         provider.kyc?.status === 'APPROVED' && missingKycDocs.length === 0
           ? 'done'
@@ -4942,7 +4942,7 @@ function buildPartnerOperatingChecklist(
         ? `${marketplaceDisplayText(primaryBank.bankName)} / ${marketplaceDisplayText(primaryBank.accountHolderName)} / ${primaryBank.status}`
         : 'No primary bank account is saved.',
       nextAction: primaryBank?.status === 'APPROVED' ? 'Ready for payout' : 'Review bank account',
-      href: `/partners/${provider.id}#bank`,
+      href: `/partners/${provider.id}?section=full#bank`,
       tone: primaryBank?.status === 'APPROVED' ? 'done' : 'pending',
     },
     {
@@ -4958,7 +4958,7 @@ function buildPartnerOperatingChecklist(
           } / agreements ${agreementsAccepted}.`
         : 'Do not force tax information before the first earning. Policy remains configured in admin.',
       nextAction: hasFirstRevenue && !taxReady ? 'Collect tax profile' : 'Review tax policy',
-      href: hasFirstRevenue ? `/partners/${provider.id}#tax` : '/tax-policy',
+      href: hasFirstRevenue ? `/partners/${provider.id}?section=full#tax` : '/tax-policy',
       tone: hasFirstRevenue && !taxReady ? 'pending' : 'done',
     },
     {
@@ -4966,7 +4966,7 @@ function buildPartnerOperatingChecklist(
       status: payoutOps.status,
       detail: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate is clear or deferred.',
       nextAction: payoutOps.tone === 'done' ? 'No payout action' : 'Review payout gate',
-      href: `/partners/${provider.id}#payout`,
+      href: `/partners/${provider.id}?section=full#payout`,
       tone: payoutOps.tone,
     },
     {
@@ -4978,7 +4978,7 @@ function buildPartnerOperatingChecklist(
       detail: `${providerServicePricing.rows.length} service row(s) loaded. Prices must respect admin minimum and step policy.`,
       nextAction:
         providerServicePricing.readyCount > 0 ? 'Ready for service selection' : 'Fix service pricing',
-      href: `/partners/${provider.id}#service-pricing`,
+      href: `/partners/${provider.id}?section=full#service-pricing`,
       tone: providerServicePricing.readyCount > 0 ? 'done' : 'blocked',
     },
     {
@@ -4988,7 +4988,7 @@ function buildPartnerOperatingChecklist(
         provider.currentLocationUpdatedAt,
       )}; marketplace matching policy allows ${dispatchPolicy.locationFreshnessMinutes}m.`,
       nextAction: locationFresh ? 'Ready for distance checks' : 'Ask app reopen/location update',
-      href: `/partners/${provider.id}#location`,
+      href: `/partners/${provider.id}?section=full#location`,
       tone: locationFresh ? 'done' : 'pending',
     },
     {
@@ -4996,7 +4996,7 @@ function buildPartnerOperatingChecklist(
       status: enabledPushCount > 0 ? 'App reachable' : 'Push device missing',
       detail: `${enabledPushCount} enabled push device(s), ${deviceCount} device row(s), ${sessionCount} session row(s).`,
       nextAction: enabledPushCount > 0 ? 'Can receive alerts' : 'Register device token',
-      href: `/partners/${provider.id}#app-activity`,
+      href: `/partners/${provider.id}?section=full#app-activity`,
       tone: enabledPushCount > 0 ? 'done' : 'pending',
     },
   ];
@@ -5236,7 +5236,7 @@ function buildPartnerOperatingLedger(
       evidence: `${marketplaceDisplayText(provider.legalName ?? 'No legal name')} / ${provider.user?.phone ?? 'No phone'} / ${
         provider.city ?? 'No city'
       }`,
-      href: `/partners/${provider.id}#partner-master-facts`,
+      href: `/partners/${provider.id}?section=full#partner-master-facts`,
     },
     {
       area: 'KYC',
@@ -5248,7 +5248,7 @@ function buildPartnerOperatingLedger(
         missingKycDocs.length > 0
           ? `Missing: ${missingKycDocs.map(providerDocumentLabel).join(', ')}`
           : `KYC ${provider.kyc?.status ?? 'DRAFT'} / profile ${provider.verification?.status ?? 'DRAFT'}`,
-      href: `/partners/${provider.id}#kyc`,
+      href: `/partners/${provider.id}?section=full#kyc`,
     },
     {
       area: 'Documents',
@@ -5257,7 +5257,7 @@ function buildPartnerOperatingLedger(
           ? `${verificationFileCount + documentCount} file(s)`
           : 'No files',
       evidence: `${documentCount} typed document(s) / ${verificationFileCount} verification file(s)`,
-      href: `/partners/${provider.id}#documents`,
+      href: `/partners/${provider.id}?section=full#documents`,
     },
     {
       area: 'Bank',
@@ -5267,7 +5267,7 @@ function buildPartnerOperatingLedger(
             primaryBank.accountNumberMasked ?? primaryBank.accountNumberLast4 ?? 'unmasked'
           }`
         : 'No bank account row',
-      href: `/partners/${provider.id}#bank`,
+      href: `/partners/${provider.id}?section=full#bank`,
     },
     {
       area: 'Tax',
@@ -5278,25 +5278,25 @@ function buildPartnerOperatingLedger(
         : providerHasFirstRevenueSignal(provider)
           ? 'First earning exists; tax profile is required before payout.'
           : 'Tax profile intentionally deferred until first earning.',
-      href: `/partners/${provider.id}#tax`,
+      href: `/partners/${provider.id}?section=full#tax`,
     },
     {
       area: 'Services',
       status: `${providerServicePricing.readyCount}/${providerServicePricing.rows.length} bookable`,
       evidence: 'Prices must match admin minimum, step policy, and payout rule lines.',
-      href: `/partners/${provider.id}#service-pricing`,
+      href: `/partners/${provider.id}?section=full#service-pricing`,
     },
     {
       area: 'Bookings',
       status: `${bookingArchive.length} total`,
       evidence: `${activeBookings} active / ${completedBookings} completed / ${bookingAcceptance.primaryReason}`,
-      href: `/partners/${provider.id}#booking-chat-records`,
+      href: `/partners/${provider.id}?section=full#booking-chat-records`,
     },
     {
       area: 'Chat',
       status: `${chatRooms} room(s)`,
       evidence: `${chatMessages} retained message(s). Admin keeps archive after mobile chat hides.`,
-      href: `/partners/${provider.id}#booking-chat-records`,
+      href: `/partners/${provider.id}?section=full#booking-chat-records`,
     },
     {
       area: 'Wallet',
@@ -5305,13 +5305,13 @@ function buildPartnerOperatingLedger(
         cashDebt > 0
           ? `${formatCurrency(cashDebt)} unpaid company fee from cash booking flow.`
           : 'No negative cash-fee wallet state loaded.',
-      href: `/partners/${provider.id}#payout`,
+      href: `/partners/${provider.id}?section=full#payout`,
     },
     {
       area: 'Payout',
       status: payoutOps.status,
       evidence: payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'Payout gate clear or deferred.',
-      href: `/partners/${provider.id}#payout`,
+      href: `/partners/${provider.id}?section=full#payout`,
     },
     {
       area: 'Location',
@@ -5320,13 +5320,13 @@ function buildPartnerOperatingLedger(
         provider.currentLat && provider.currentLng
           ? `${provider.currentLat}, ${provider.currentLng}`
           : 'No current location pin saved.',
-      href: `/partners/${provider.id}#location`,
+      href: `/partners/${provider.id}?section=full#location`,
     },
     {
       area: 'App devices',
       status: `${enabledPushCount} push-ready`,
       evidence: `${sessionCount} session(s) / ${deviceCount} device(s)`,
-      href: `/partners/${provider.id}#app-activity`,
+      href: `/partners/${provider.id}?section=full#app-activity`,
     },
     {
       area: 'Admin trail',
@@ -5334,7 +5334,7 @@ function buildPartnerOperatingLedger(
       evidence: `${provider.reports?.length ?? 0} report(s) / ${provider.sanctions?.length ?? 0} control row(s) / ${
         provider.auditLogs?.length ?? 0
       } audit row(s)`,
-      href: `/partners/${provider.id}#partner-operator-notes`,
+      href: `/partners/${provider.id}?section=full#partner-operator-notes`,
     },
   ];
 }
@@ -5846,7 +5846,7 @@ function buildPartnerAcceptanceRepairCommand(
         'First earning exists, so tax profile, address, agreements, and payout holds must be reviewed before withdrawal.',
       operatorAction:
         'Do not block the first job retroactively, but keep payout locked until tax and agreement requirements are complete.',
-      href: `/partners/${provider.id}#payout`,
+      href: `/partners/${provider.id}?section=full#payout`,
       actionLabel: 'Open payout gate',
       tone: 'pending',
     });
@@ -5890,13 +5890,13 @@ function partnerAcceptanceRepairStep(
     },
     'Identity and approval': {
       owner: 'KYC',
-      href: `/partners/${provider.id}#kyc`,
+      href: `/partners/${provider.id}?section=full#kyc`,
       actionLabel: 'Open KYC',
       tone: 'blocked',
     },
     'Bank account': {
       owner: 'Finance',
-      href: `/partners/${provider.id}#bank`,
+      href: `/partners/${provider.id}?section=full#bank`,
       actionLabel: 'Open bank',
       tone: 'blocked',
     },
@@ -5908,7 +5908,7 @@ function partnerAcceptanceRepairStep(
     },
     'Location freshness': {
       owner: 'Dispatch',
-      href: `/partners/${provider.id}#location`,
+      href: `/partners/${provider.id}?section=full#location`,
       actionLabel: 'Open location',
       tone: 'pending',
     },
@@ -6033,7 +6033,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
           : 'Holds preferred direct requests and marketplace participation until identity evidence and bank readiness are approved.',
       payoutImpact: 'Approved bank is also required before partner payout can be prepared.',
       action: identityGate?.ok && bankGate?.ok ? 'Review KYC evidence' : 'Finish KYC and bank review',
-      href: `/partners/${provider.id}#kyc`,
+      href: `/partners/${provider.id}?section=full#kyc`,
       tone: identityGate?.ok && bankGate?.ok ? 'done' : 'blocked',
       bookingBlocked: !(identityGate?.ok && bankGate?.ok),
     },
@@ -6049,7 +6049,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
         : 'Partner may be excluded from nearby marketplace matching or show unreliable distance.',
       payoutImpact: 'No direct payout impact, but location history can support dispute review.',
       action: locationGate?.ok ? 'Open location history' : 'Ask partner to open app',
-      href: `/partners/${provider.id}#location`,
+      href: `/partners/${provider.id}?section=full#location`,
       tone: locationGate?.ok ? 'done' : 'pending',
       bookingBlocked: !locationGate?.ok,
     },
@@ -6100,7 +6100,7 @@ function buildPartnerAcceptanceUnblockPlaybook(
         ? 'No tax-related payout blocker is currently visible.'
         : 'Blocks withdrawal or payout until tax profile, address, and required agreements are complete.',
       action: hasFirstRevenue ? 'Open payout and tax gate' : 'Review tax policy',
-      href: hasFirstRevenue ? `/partners/${provider.id}#payout` : '/tax-policy',
+      href: hasFirstRevenue ? `/partners/${provider.id}?section=full#payout` : '/tax-policy',
       tone: payoutGateOpen ? 'done' : 'pending',
       bookingBlocked: false,
     },
