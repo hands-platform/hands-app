@@ -1,4 +1,4 @@
-import { clientBookingPayment, partnerOpenBookingResponse } from './bookings.response';
+import { clientBookingPayment, partnerBookingResponse, partnerOpenBookingResponse } from './bookings.response';
 
 describe('client booking response helpers', () => {
   it('keeps only client-safe payment fields', () => {
@@ -92,5 +92,50 @@ describe('client booking response helpers', () => {
       },
       addressPreview: 'District 1, Ho Chi Minh City, Vietnam',
     });
+  });
+
+  it('only exposes the exact service address to the selected partner booking response', () => {
+    const booking = {
+      id: 'booking-1',
+      selectedProviderId: 'selected-partner',
+      customerProfileId: 'customer-1',
+      addressSnapshot: {
+        address: {
+          name: 'Demo Customer',
+          phone: '0865907184',
+          line1: '123 Nguyen Hue Street, District 1, Ho Chi Minh City, Vietnam',
+          district: 'District 1',
+          city: 'Ho Chi Minh City',
+          country: 'Vietnam',
+        },
+        addressText: '123 Nguyen Hue Street, District 1, Ho Chi Minh City, Vietnam',
+        latitude: '10.7769000',
+        longitude: '106.7009000',
+      },
+      customerProfile: {
+        id: 'customer-1',
+        userId: 'secret-customer-user',
+      },
+      payment: {
+        method: 'CASH',
+        status: 'AUTHORIZED',
+        amount: 450000,
+      },
+    };
+
+    const selectedResponse = partnerBookingResponse(booking, 'selected-partner');
+    const marketplaceResponse = partnerBookingResponse(booking, 'marketplace-partner');
+
+    expect(JSON.stringify(selectedResponse)).toContain('123 Nguyen Hue');
+    expect(JSON.stringify(selectedResponse)).toContain('10.7769000');
+    expect(JSON.stringify(selectedResponse)).not.toContain('customer-1');
+    expect(JSON.stringify(selectedResponse)).not.toContain('secret-customer-user');
+    expect(selectedResponse).not.toHaveProperty('customerProfile');
+
+    const serializedMarketplaceResponse = JSON.stringify(marketplaceResponse);
+    expect(serializedMarketplaceResponse).not.toContain('123 Nguyen Hue');
+    expect(serializedMarketplaceResponse).not.toContain('10.7769000');
+    expect(serializedMarketplaceResponse).not.toContain('Demo Customer');
+    expect(serializedMarketplaceResponse).not.toContain('0865907184');
   });
 });

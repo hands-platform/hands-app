@@ -114,6 +114,39 @@ export function partnerOpenBookingResponses<
   return bookings.map((booking) => partnerOpenBookingResponse(booking));
 }
 
+export function partnerBookingResponse<
+  T extends {
+    payment?: ClientPaymentInput;
+    selectedProviderId?: string | null;
+    address?: unknown;
+    addressSnapshot?: BookingAddressSnapshotInput;
+  },
+>(booking: T, providerProfileId: string) {
+  if (booking.selectedProviderId !== providerProfileId) {
+    return partnerOpenBookingResponse(booking);
+  }
+
+  const publicBooking = publicPartnerOpenBookingFields(
+    clientBookingResponse(booking) as Record<string, unknown>,
+  );
+  return {
+    ...publicBooking,
+    address: booking.address,
+    addressSnapshot: booking.addressSnapshot ?? null,
+  };
+}
+
+export function partnerBookingResponses<
+  T extends {
+    payment?: ClientPaymentInput;
+    selectedProviderId?: string | null;
+    address?: unknown;
+    addressSnapshot?: BookingAddressSnapshotInput;
+  },
+>(bookings: T[], providerProfileId: string) {
+  return bookings.map((booking) => partnerBookingResponse(booking, providerProfileId));
+}
+
 function publicBookingAddress(address: unknown) {
   if (!address || typeof address !== 'object' || Array.isArray(address)) {
     return address;

@@ -61,10 +61,18 @@ class PartnerJobsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final service = providerBookingService(booking);
     final address = asMap(booking['address']);
+    final addressSnapshot = asMap(booking['addressSnapshot']);
+    final snapshotAddress = asMap(addressSnapshot?['address']);
     final payment = asMap(booking['payment']);
     final selectedProvider = asMap(booking['selectedProvider']);
     final isAssigned = selectedProvider != null;
     final amount = payment?['amount'] ?? service?['basePrice'];
+    final serviceAddress = addressSnapshot?['addressText']?.toString() ??
+        snapshotAddress?['line1']?.toString() ??
+        snapshotAddress?['addressPreview']?.toString() ??
+        address?['line1']?.toString() ??
+        address?['addressPreview']?.toString() ??
+        'Guest area pending';
 
     return Card(
       child: Padding(
@@ -106,7 +114,7 @@ class PartnerJobsCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 10),
-            Text(address?['line1']?.toString() ?? 'Guest address pending'),
+            Text(serviceAddress),
             const SizedBox(height: 6),
             Text(
               partnerJobNextAction(booking),

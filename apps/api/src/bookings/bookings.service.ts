@@ -50,6 +50,7 @@ import {
 import {
   clientBookingResponse,
   clientBookingResponses,
+  partnerBookingResponses,
   partnerOpenBookingResponses,
 } from './bookings.response';
 
@@ -716,6 +717,7 @@ export class BookingsService {
       },
       include: {
         services: { include: { service: true } },
+        addressSnapshot: true,
         participants: true,
         preferredProvider: true,
         selectedProvider: true,
@@ -725,7 +727,7 @@ export class BookingsService {
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
-    return clientBookingResponses(bookings);
+    return partnerBookingResponses(bookings, provider.id);
   }
 
   async joinBooking(bookingId: string, providerUserId: string | undefined) {
