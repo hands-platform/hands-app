@@ -186,6 +186,8 @@ type MarketplaceParticipantLedgerRow = {
   respondedLabel: string;
   choiceLabel: string;
   choiceTone: string;
+  choiceReason: string;
+  choiceNextStep: string;
   windowLabel: string;
   alertLabel: string;
   alertTone: string;
@@ -1275,12 +1277,13 @@ export function BookingMonitor({
         <div className="ops-section-header">
           <div>
             <h2>Marketplace participant ledger</h2>
-            <p className="muted">
-              All participant records by booking, including first-pick, marketplace participants, declined
-              responses, and the customer final choice. This is the operations record of who entered the
-              request. Wallet-blocked partners who only viewed marketplace demand are blocked before
-              participation and are not participant rows.
-            </p>
+              <p className="muted">
+                All participant records by booking, including first-pick, marketplace participants, declined
+                responses, and the customer final choice. This is the operations record of who entered the
+                request. It shows the Customer-selectable reason and Why not selectable for evidence-only
+                rows. Wallet-blocked partners who only viewed marketplace demand are blocked before
+                participation and are not participant rows.
+              </p>
           </div>
           <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
             All participant records {marketplaceLedgerSummary.total}
@@ -1556,6 +1559,8 @@ export function BookingMonitor({
                   </td>
                   <td>
                     <span className={`pill ${row.choiceTone}`}>{row.choiceLabel}</span>
+                    <div className="muted">{row.choiceReason}</div>
+                    <small>{row.choiceNextStep}</small>
                   </td>
                 </tr>
               ))}
@@ -4996,16 +5001,57 @@ function marketplaceParticipantStatusTone(status: string) {
 
 function marketplaceParticipantChoiceState(booking: AdminBooking, participant: BookingParticipant) {
   const selectedProviderId = booking.selectedProvider?.id ?? booking.selectedProviderId;
+  const preferredProviderId = booking.preferredProvider?.id ?? booking.preferredProviderId;
+  const partnerId = participant.providerProfile?.id;
   if (selectedProviderId && participant.providerProfile?.id === selectedProviderId) {
-    return { choiceLabel: 'Selected by customer', choiceTone: 'pill-success' };
+    return {
+      choiceLabel: 'Selected by customer',
+      choiceTone: 'pill-success',
+      choiceReason:
+        'Customer already selected this partner as the final match; the row remains in the ledger.',
+      choiceNextStep: 'Keep chat, payment, location, and closeout evidence linked to this selected row.',
+    };
   }
   if (selectedProviderId) {
-    return { choiceLabel: 'Not final choice', choiceTone: 'pill-neutral' };
+    return {
+      choiceLabel: 'Not final choice',
+      choiceTone: 'pill-neutral',
+      choiceReason: 'Why not selectable: the customer already selected another final partner.',
+      choiceNextStep: 'Keep this row as participation history only.',
+    };
   }
   if (isCustomerSelectableMarketplaceParticipant(booking, participant)) {
-    return { choiceLabel: 'Customer-selectable', choiceTone: 'pill-info' };
+    return {
+      choiceLabel: 'Customer-selectable',
+      choiceTone: 'pill-info',
+      choiceReason:
+        'Customer-selectable reason: this partner has an eligible participation status for customer final choice.',
+      choiceNextStep: 'Wait for the customer to choose; do not auto-assign the final partner.',
+    };
   }
-  return { choiceLabel: 'Evidence-only', choiceTone: 'pill-neutral' };
+  if (participant.status === 'REJECTED') {
+    return {
+      choiceLabel: 'Evidence-only',
+      choiceTone: 'pill-neutral',
+      choiceReason: 'Why not selectable: the partner declined or could not take this booking.',
+      choiceNextStep: 'Keep the row as response evidence only.',
+    };
+  }
+  if (partnerId && partnerId === preferredProviderId && participant.status === 'JOINED') {
+    return {
+      choiceLabel: 'Evidence-only',
+      choiceTone: 'pill-warn',
+      choiceReason:
+        'Why not selectable: first-pick participation is retained, but acceptance is required before customer choice.',
+      choiceNextStep: 'Monitor the first-pick response window and marketplace options.',
+    };
+  }
+  return {
+    choiceLabel: 'Evidence-only',
+    choiceTone: 'pill-neutral',
+    choiceReason: `Why not selectable: status ${participant.status} is retained as evidence only.`,
+    choiceNextStep: 'Wait for an eligible participation status or a final selected row.',
+  };
 }
 
 function bookingParticipantTimestamp(participant: BookingParticipant) {

@@ -54,6 +54,10 @@ type ParticipantRow = {
   choiceTone: string;
   choiceState: string;
   decision: string;
+  eligibilityLabel: string;
+  eligibilityTone: string;
+  eligibilityReason: string;
+  eligibilityNextStep: string;
   distance: string;
   timing: string;
   operatorUse: string;
@@ -280,6 +284,52 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
               <td>{row.operatorUse}</td>
             </tr>
           ))}
+        </tbody>
+      </table>
+      <h3 style={{ marginTop: 18 }}>Customer eligibility matrix</h3>
+      <p className="muted">
+        Shows who participated, who is customer-selectable, the Customer-selectable reason, and Why not
+        selectable for evidence-only rows.
+      </p>
+      <table className="table" style={{ marginTop: 10 }}>
+        <thead>
+          <tr>
+            <th>Partner</th>
+            <th>Source</th>
+            <th>Participation</th>
+            <th>Customer eligibility</th>
+            <th>Reason and next step</th>
+          </tr>
+        </thead>
+        <tbody>
+          {participantLedger.rows.map((row) => (
+            <tr key={`eligibility-${row.id}`}>
+              <td>
+                <strong>{row.partner}</strong>
+                <p className="muted">{row.identity}</p>
+              </td>
+              <td>
+                <span className={`pill ${row.roleTone}`}>{row.role}</span>
+              </td>
+              <td>
+                <span className={`pill ${row.statusTone}`}>{row.status}</span>
+                <p className="muted">{row.timing}</p>
+              </td>
+              <td>
+                <span className={`pill ${row.eligibilityTone}`}>{row.eligibilityLabel}</span>
+                <p className="muted">{row.choiceState}</p>
+              </td>
+              <td>
+                <strong>{row.eligibilityReason}</strong>
+                <p className="muted">{row.eligibilityNextStep}</p>
+              </td>
+            </tr>
+          ))}
+          {participantLedger.rows.length === 0 && (
+            <tr>
+              <td colSpan={5}>No participant eligibility rows are available yet.</td>
+            </tr>
+          )}
         </tbody>
       </table>
       <table className="table" style={{ marginTop: 14 }}>

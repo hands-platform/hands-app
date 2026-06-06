@@ -269,6 +269,12 @@ export function bookingParticipantLedger(
             : 'Participant row is retained as evidence, but it is not a customer selection candidate.';
       const providerStatus =
         participant.providerStatusAtJoin ?? participant.providerProfile?.status ?? 'status unknown';
+      const eligibility = bookingParticipantEligibilityState({
+        isFinal,
+        isPreferred,
+        participant,
+        customerSelectable,
+      });
 
       return {
         id: participant.id,
@@ -287,6 +293,10 @@ export function bookingParticipantLedger(
         choiceState,
         choiceTone,
         decision,
+        eligibilityLabel: eligibility.label,
+        eligibilityTone: eligibility.tone,
+        eligibilityReason: eligibility.reason,
+        eligibilityNextStep: eligibility.nextStep,
         distance: distanceLabel(participant.distanceMeters),
         timing: `Participated ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
         operatorUse: `Participant ${shortId(participant.id)} is retained as actual booking evidence. ${
@@ -296,6 +306,67 @@ export function bookingParticipantLedger(
         }`,
       };
     }),
+  };
+}
+
+function bookingParticipantEligibilityState(input: {
+  isFinal: boolean;
+  isPreferred: boolean;
+  participant: BookingDetailParticipant;
+  customerSelectable: boolean;
+}) {
+  if (input.isFinal || input.participant.status === 'SELECTED') {
+    return {
+      label: 'Final selected by customer',
+      tone: 'pill-success',
+      reason: 'Customer already selected this partner as the final match; the row stays in the archive.',
+      nextStep: 'Keep chat, payment, location, and closeout evidence linked to this selected row.',
+    };
+  }
+
+  if (input.customerSelectable) {
+    return {
+      label: 'Customer-selectable',
+      tone: 'pill-info',
+      reason:
+        'Customer-selectable reason: this partner has an eligible participation status for the shortlist.',
+      nextStep: 'Wait for the customer final choice; operators must not assign the final partner manually.',
+    };
+  }
+
+  if (input.participant.status === 'REJECTED') {
+    return {
+      label: 'Not customer-selectable',
+      tone: 'pill-neutral',
+      reason: 'Why not selectable: the partner declined or could not take this booking.',
+      nextStep: 'Keep the row as response evidence only.',
+    };
+  }
+
+  if (input.isPreferred && input.participant.status === 'JOINED') {
+    return {
+      label: 'Not customer-selectable yet',
+      tone: 'pill-warn',
+      reason:
+        'Why not selectable: first-pick participation is retained, but the partner must accept before customer choice.',
+      nextStep: 'Monitor the first-pick response window and marketplace shortlist visibility.',
+    };
+  }
+
+  if (!input.participant.providerProfile?.id) {
+    return {
+      label: 'Not customer-selectable',
+      tone: 'pill-neutral',
+      reason: 'Why not selectable: this participant row is missing a linked partner profile.',
+      nextStep: 'Inspect the booking participant data before exposing the row to the customer.',
+    };
+  }
+
+  return {
+    label: 'Not customer-selectable',
+    tone: 'pill-neutral',
+    reason: `Why not selectable: status ${input.participant.status} is retained as evidence only.`,
+    nextStep: 'Wait for a customer-selectable participant status or a retained final selected row.',
   };
 }
 
