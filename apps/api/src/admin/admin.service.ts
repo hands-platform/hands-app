@@ -50,6 +50,9 @@ const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;
 const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 30;
 const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;
 const ADMIN_PROVIDER_DETAIL_DOCUMENT_LIMIT = 50;
+const ADMIN_PROVIDER_OVERVIEW_DOCUMENT_LIMIT = 12;
+const ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT = 5;
+const ADMIN_PROVIDER_OVERVIEW_CHAT_MESSAGE_LIMIT = 8;
 
 const adminUserSummarySelect = {
   id: true,
@@ -1018,6 +1021,25 @@ const adminProviderDetailUserSelect = {
   },
 } satisfies Prisma.UserSelect;
 
+const adminProviderOverviewUserSelect = {
+  ...adminUserAuthSelect,
+  pushDevices: {
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: adminPushDeviceSummarySelect,
+  },
+  fileAssets: {
+    where: {
+      purpose: { in: [FilePurpose.PROFILE_IMAGE, FilePurpose.PROVIDER_GALLERY] },
+      visibility: FileVisibility.PUBLIC,
+      uploadStatus: FileUploadStatus.UPLOADED,
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: adminProviderPublicMediaSelect,
+  },
+} satisfies Prisma.UserSelect;
+
 const adminProviderVerificationDetailSelect = {
   id: true,
   status: true,
@@ -1083,6 +1105,46 @@ const adminProviderDetailBookingSelect = {
   ...adminCustomerDetailBookingSelect,
 } satisfies Prisma.BookingSelect;
 
+const adminProviderOverviewBookingSelect = {
+  id: true,
+  customerProfileId: true,
+  preferredProviderId: true,
+  selectedProviderId: true,
+  status: true,
+  scheduledStartAt: true,
+  scheduledEndAt: true,
+  expiresAt: true,
+  closedAt: true,
+  closedByRole: true,
+  closedReason: true,
+  closedNote: true,
+  createdAt: true,
+  updatedAt: true,
+  metadata: true,
+  address: true,
+  lat: true,
+  lng: true,
+  customerProfile: {
+    select: {
+      id: true,
+      user: { select: adminUserSummarySelect },
+    },
+  },
+  services: { select: adminBookingServiceSummarySelect },
+  addressSnapshot: { select: adminAddressSnapshotSelect },
+  chatRoom: {
+    select: {
+      id: true,
+      createdAt: true,
+      messages: {
+        orderBy: { createdAt: 'desc' },
+        take: ADMIN_PROVIDER_OVERVIEW_CHAT_MESSAGE_LIMIT,
+        select: adminChatMessageSummarySelect,
+      },
+    },
+  },
+} satisfies Prisma.BookingSelect;
+
 const adminProviderDetailEarningSelect = {
   ...adminEarningSummarySelect,
   booking: {
@@ -1136,6 +1198,103 @@ const adminProviderVerificationLogSummarySelect = {
   createdAt: true,
   actor: { select: { phone: true, fullName: true } },
 } satisfies Prisma.ProviderVerificationLogSelect;
+
+const adminProviderOverviewSelect = {
+  id: true,
+  userId: true,
+  displayName: true,
+  legalName: true,
+  dateOfBirth: true,
+  gender: true,
+  facebookId: true,
+  activityNickname: true,
+  bio: true,
+  experienceYears: true,
+  specialties: true,
+  languages: true,
+  serviceStyle: true,
+  residentialAddress: true,
+  city: true,
+  serviceArea: true,
+  level: true,
+  status: true,
+  ratingAvg: true,
+  reviewCount: true,
+  currentLat: true,
+  currentLng: true,
+  currentLocationUpdatedAt: true,
+  nextAvailableAt: true,
+  blockedAt: true,
+  blockedReason: true,
+  trustedAt: true,
+  updatedAt: true,
+  user: { select: adminProviderOverviewUserSelect },
+  verification: { select: adminProviderVerificationSummarySelect },
+  kyc: { select: adminProviderKycSummarySelect },
+  documents: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_OVERVIEW_DOCUMENT_LIMIT,
+    select: adminProviderDocumentSummarySelect,
+  },
+  bankAccounts: {
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'desc' }],
+    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
+    select: adminProviderBankAccountSummarySelect,
+  },
+  taxProfile: { select: adminProviderTaxProfileSummarySelect },
+  agreements: {
+    orderBy: { acceptedAt: 'desc' },
+    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
+    select: adminProviderAgreementSummarySelect,
+  },
+  services: {
+    select: adminProviderServiceSummarySelect,
+  },
+  preferredBookings: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
+    select: adminProviderOverviewBookingSelect,
+  },
+  selectedBookings: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
+    select: adminProviderOverviewBookingSelect,
+  },
+  participants: {
+    orderBy: { joinedAt: 'desc' },
+    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
+    select: {
+      id: true,
+      providerProfileId: true,
+      status: true,
+      distanceMeters: true,
+      providerStatusAtJoin: true,
+      joinedAt: true,
+      respondedAt: true,
+      booking: { select: adminProviderOverviewBookingSelect },
+    },
+  },
+  earnings: {
+    orderBy: { createdAt: 'desc' },
+    take: ADMIN_PROVIDER_OVERVIEW_RELATION_LIMIT,
+    select: adminProviderDetailEarningSelect,
+  },
+  payoutBatches: {
+    orderBy: { createdAt: 'desc' },
+    take: 3,
+    select: adminProviderPayoutBatchSummarySelect,
+  },
+  sessions: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 3,
+    select: adminProviderSessionSummarySelect,
+  },
+  devices: {
+    orderBy: { lastSeenAt: 'desc' },
+    take: 3,
+    select: adminProviderDeviceSummarySelect,
+  },
+} satisfies Prisma.ProviderProfileSelect;
 
 const adminBookingDetailProviderSelect = {
   ...adminProviderSummarySelect,
@@ -1816,6 +1975,18 @@ export class AdminService {
     });
 
     return { ...provider, sharedDeviceMatches, auditLogs };
+  }
+
+  async getProviderOverview(providerProfileId: string) {
+    const provider = await this.prisma.providerProfile.findUnique({
+      where: { id: providerProfileId },
+      select: adminProviderOverviewSelect,
+    });
+    if (!provider) {
+      throw new NotFoundException('Partner not found');
+    }
+
+    return provider;
   }
 
   async addProviderOpsNote(

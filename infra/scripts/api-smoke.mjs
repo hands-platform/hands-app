@@ -3196,8 +3196,8 @@ if (
     })}`,
   );
 }
-const adminPartners = await getJson('/admin/partners', adminAuth.accessToken);
-const legacyAdminProviders = await getJson('/admin/providers', adminAuth.accessToken);
+const adminPartners = await getJson('/admin/partners?view=list', adminAuth.accessToken);
+const legacyAdminProviders = await getJson('/admin/providers?view=list', adminAuth.accessToken);
 if (legacyAdminProviders.length !== adminPartners.length) {
   throw new Error(
     `Legacy admin provider alias count does not match partner count: ${JSON.stringify({
@@ -3206,15 +3206,19 @@ if (legacyAdminProviders.length !== adminPartners.length) {
     })}`,
   );
 }
-const adminPartner = adminPartners.find((item) => item.id === providerAuth.user.providerProfile.id);
-const legacyAdminProvider = legacyAdminProviders.find(
-  (item) => item.id === providerAuth.user.providerProfile.id,
+const adminPartner = await getJson(
+  `/admin/partners/${providerAuth.user.providerProfile.id}/overview`,
+  adminAuth.accessToken,
+);
+const legacyAdminProvider = await getJson(
+  `/admin/providers/${providerAuth.user.providerProfile.id}/overview`,
+  adminAuth.accessToken,
 );
 if (!adminPartner) {
   throw new Error(
     `Admin partner payload is missing the smoke partner: ${JSON.stringify({
       providerProfileId: providerAuth.user.providerProfile.id,
-      adminPartners: adminPartners.slice(0, 5),
+      listedPartnerIds: adminPartners.slice(0, 5).map((item) => item.id),
     })}`,
   );
 }
@@ -3285,8 +3289,9 @@ if (
     })}`,
   );
 }
-const adminBackupPartner = adminPartners.find(
-  (item) => item.id === backupProviderAuth.user.providerProfile.id,
+const adminBackupPartner = await getJson(
+  `/admin/partners/${backupProviderAuth.user.providerProfile.id}/overview`,
+  adminAuth.accessToken,
 );
 if (!hasFreshEnabledPushDevice(adminBackupPartner?.user?.pushDevices, pushRegistrationStartedAt)) {
   throw new Error(

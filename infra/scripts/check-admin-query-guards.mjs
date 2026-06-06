@@ -120,7 +120,7 @@ if (!adminServiceSource.includes('take: customers.length * ADMIN_CUSTOMER_LIST_A
   });
 }
 
-if (!adminServiceSource.includes('const customerAuditCounts = await this.prisma.adminAuditLog.groupBy')) {
+if (!hasAuditCountGroupBy('customerAuditCounts')) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -192,7 +192,7 @@ if (!adminServiceSource.includes('take: providers.length * ADMIN_PROVIDER_LIST_A
   });
 }
 
-if (!adminServiceSource.includes('const providerAuditCounts = await this.prisma.adminAuditLog.groupBy')) {
+if (!hasAuditCountGroupBy('providerAuditCounts')) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -240,4 +240,16 @@ function listFiles(directory) {
 
 function relativePath(path) {
   return path.replace(root, '').replace(/^[/\\]/, '').replaceAll('\\', '/');
+}
+
+function hasAuditCountGroupBy(resultName) {
+  const escapedName = resultName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const directGroupBy = new RegExp(
+    `const\\s+${escapedName}\\s*=\\s*await\\s+this\\.prisma\\.adminAuditLog\\.groupBy`,
+  );
+  const promiseAllGroupBy = new RegExp(
+    `\\[[^\\]]*${escapedName}[^\\]]*\\]\\s*=\\s*await\\s+Promise\\.all\\(\\[[\\s\\S]*?this\\.prisma\\.adminAuditLog\\.groupBy`,
+  );
+
+  return directGroupBy.test(adminServiceSource) || promiseAllGroupBy.test(adminServiceSource);
 }

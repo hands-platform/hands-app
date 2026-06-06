@@ -64,6 +64,16 @@ export class AdminController {
     return this.admin.listProviders({ compact: isCompactProviderListView(view) });
   }
 
+  @Get('providers/:id/overview')
+  providerOverview(@Param('id') providerProfileId: string) {
+    return this.admin.getProviderOverview(providerProfileId);
+  }
+
+  @Get('partners/:id/overview')
+  partnerOverview(@Param('id') providerProfileId: string) {
+    return this.admin.getProviderOverview(providerProfileId);
+  }
+
   @Get('providers/:id')
   providerDetail(@Param('id') providerProfileId: string) {
     return this.admin.getProviderDetail(providerProfileId);

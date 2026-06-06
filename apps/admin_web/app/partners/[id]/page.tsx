@@ -251,8 +251,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const dateFilters = readDetailDateFilters(detailSearchParams);
   const activityType = readDetailActivityType(detailSearchParams, PARTNER_ACTIVITY_TYPE_OPTIONS);
   const activityOrder = readDetailActivityOrder(detailSearchParams);
+  const providerEndpoint =
+    detailSection === 'overview' ? `/admin/partners/${id}/overview` : `/admin/partners/${id}`;
   const [provider, operationalPolicies] = await Promise.all([
-    adminGet<ProviderDetail | null>(`/admin/partners/${id}`, null),
+    adminGet<ProviderDetail | null>(providerEndpoint, null),
     adminGet<AdminOperationalPolicySetting[]>('/admin/operational-policy', []),
   ]);
 
