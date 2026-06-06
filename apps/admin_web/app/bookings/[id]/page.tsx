@@ -89,6 +89,15 @@ import {
   readBookingGateSnapshot,
   readBookingMatchingPolicySnapshot,
 } from './booking-policy-snapshots';
+import { bookingStageSnapshot, type BookingStageSnapshot } from './booking-stage-snapshot';
+import {
+  bookingStatusHint,
+  latestProviderLocation,
+  latestProviderLocationFreshness,
+  preferredParticipantState,
+  providerLocationAgeMinutes,
+  STALE_LOCATION_MINUTES,
+} from './booking-status-location';
 import {
   AdminAuditLog,
   AdminBookingDetail,
@@ -134,8 +143,6 @@ type BookingTimelineRefundRow =
   | NonNullable<AdminBookingDetail['refunds']>[number]
   | NonNullable<NonNullable<AdminBookingDetail['payment']>['refunds']>[number];
 
-const STALE_LOCATION_MINUTES = 30;
-const EXPIRED_LOCATION_HOURS = 24;
 const TERMINAL_BOOKING_STATUSES = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
 
 export default async function BookingDetailPage({ params }: PageProps) {
@@ -4617,31 +4624,6 @@ function flowStages(booking: AdminBookingDetail) {
   ];
 }
 
-function bookingStatusHint(status: string) {
-  if (status === 'OPEN_MATCHING') {
-    return 'Partner response or customer selection is still pending.';
-  }
-  if (status === 'MATCHED') {
-    return 'Partner is selected; monitor chat and movement.';
-  }
-  if (status === 'IN_SERVICE') {
-    return 'Service is in progress.';
-  }
-  if (status === 'COMPLETED') {
-    return 'Payment, earning, and review should be settled.';
-  }
-  if (status === 'CANCELLED') {
-    return 'Confirm payment release or refund.';
-  }
-  if (status === 'EXPIRED') {
-    return 'Matching closed; confirm payment release and customer communication.';
-  }
-  if (status === 'NO_SHOW') {
-    return 'Review customer/partner communication and payment outcome.';
-  }
-  return 'Monitor the next operational action.';
-}
-
 function paymentHint(booking: AdminBookingDetail) {
   if (!booking.payment) {
     return 'No payment record created.';
@@ -5023,19 +5005,6 @@ function providerDecisionLabel(booking: AdminBookingDetail) {
   return 'Waiting';
 }
 
-function preferredParticipantState(booking: AdminBookingDetail) {
-  const preferredProviderId = bookingPreferredProviderId(booking);
-  if (!preferredProviderId) {
-    return null;
-  }
-
-  return (
-    (booking.participants ?? []).find(
-      (participant) => participant.providerProfile?.id === preferredProviderId,
-    ) ?? null
-  );
-}
-
 function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
   if (!booking.preferredProvider) {
     return false;
@@ -5047,44 +5016,6 @@ function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
   }
 
   return !['ACCEPTED', 'SELECTED', 'REJECTED'].includes(participant.status);
-}
-
-function latestProviderLocation(booking: AdminBookingDetail) {
-  const selected = booking.selectedProvider?.locationSnapshots?.[0];
-  if (selected) {
-    return selected;
-  }
-
-  const participantLocations = (booking.participants ?? [])
-    .map((participant) => participant.providerProfile?.locationSnapshots?.[0])
-    .filter(Boolean) as AdminLocationSnapshot[];
-
-  return (
-    participantLocations.sort(
-      (left, right) => new Date(right.recordedAt).getTime() - new Date(left.recordedAt).getTime(),
-    )[0] ?? null
-  );
-}
-
-function latestProviderLocationFreshness(booking: AdminBookingDetail) {
-  const latest = latestProviderLocation(booking);
-  if (!latest?.recordedAt) {
-    return 'missing';
-  }
-
-  const recordedAt = new Date(latest.recordedAt).getTime();
-  if (!Number.isFinite(recordedAt)) {
-    return 'missing';
-  }
-
-  const ageMs = Date.now() - recordedAt;
-  if (ageMs > EXPIRED_LOCATION_HOURS * 60 * 60_000) {
-    return 'expired';
-  }
-  if (ageMs > STALE_LOCATION_MINUTES * 60_000) {
-    return 'stale';
-  }
-  return 'recent';
 }
 
 function providerLocationMetricValue(booking: AdminBookingDetail) {
@@ -5806,18 +5737,6 @@ function bookingBackupCandidateCommand(input: {
   };
 }
 
-type BookingStageSnapshot = {
-  stage: string;
-  pillClass: string;
-  noteClassName: string;
-  headline: string;
-  detail: string;
-  actionHref: string;
-  actionLabel: string;
-  metrics: Array<{ label: string; value: string; helper: string }>;
-  badges: Array<{ label: string; tone: string }>;
-};
-
 function bookingDetailMatchingRuleSnapshot({
   booking,
   backupSupply,
@@ -6120,158 +6039,6 @@ function bookingMarketplaceWalletEvidence({
       },
     ],
   };
-}
-
-function bookingStageSnapshot(
-  booking: AdminBookingDetail,
-  customerWaitPanel: ReturnType<typeof bookingCustomerWaitPanel>,
-  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>,
-): BookingStageSnapshot {
-  const status = String(booking.status);
-  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
-  );
-  const rejectedParticipants = (booking.participants ?? []).filter(
-    (participant) => participant.status === 'REJECTED',
-  );
-  const selectedPartner =
-    booking.selectedProvider ?? (status === 'MATCHED' ? booking.preferredProvider : null);
-  const preferredParticipant = preferredParticipantState(booking);
-  const locationFreshness = latestProviderLocationFreshness(booking);
-  const customerPinReady = Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng));
-  const terminal = ['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'].includes(status);
-  const chatReady = Boolean(booking.chatRoom);
-
-  let stage = 'Stage 0 - Intake';
-  let pillClass = 'pill-info';
-  let noteClassName = 'ops-task-pending';
-  let headline = 'Booking is created and waiting for operational movement.';
-  let detail = 'Confirm service, customer pin, payment state, and the first partner before matching starts.';
-  let actionHref = `/bookings/${booking.id}`;
-  let actionLabel = 'Review booking';
-
-  if (terminal) {
-    stage = 'Closeout';
-    pillClass = status === 'COMPLETED' ? 'pill-success' : 'pill-warn';
-    noteClassName = status === 'COMPLETED' ? 'ops-task-done' : 'ops-task-pending';
-    headline = 'This booking is in closeout.';
-    detail =
-      'Use finance, refund, no-show, audit, and feedback sections to confirm the operational record is clean.';
-    actionHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : `/bookings/${booking.id}`;
-    actionLabel = booking.payment?.id ? 'Open payment trail' : 'Review closeout';
-  } else if (selectedPartner && chatReady) {
-    stage = 'Stage 4 - Chat handoff';
-    pillClass = 'pill-success';
-    noteClassName = 'ops-task-done';
-    headline = 'Final partner is selected and chat is available.';
-    detail =
-      locationFreshness === 'recent'
-        ? 'Chat and location handoff are live; monitor arrival, service start, completion, and payment closeout.'
-        : 'Chat is ready; ask the partner to refresh location if the customer needs approach visibility.';
-    actionHref = `/bookings/${booking.id}#chat`;
-    actionLabel = 'Review chat';
-  } else if (selectedPartner && !chatReady) {
-    stage = 'Stage 4 - Handoff repair';
-    pillClass = 'pill-danger';
-    noteClassName = 'ops-task-blocked';
-    headline = 'A final partner exists, but the chat handoff is missing.';
-    detail = 'Repair the chat room before the customer and partner lose coordination after match.';
-    actionHref = `/bookings/${booking.id}#chat`;
-    actionLabel = 'Repair chat';
-  } else if (status === 'OPEN_MATCHING' && customerChoiceCandidates.length > 0) {
-    stage = 'Stage 3 - Customer choice';
-    pillClass = 'pill-warn';
-    noteClassName = 'ops-task-pending';
-    headline = 'Participating or accepted partner(s) are waiting for customer final selection.';
-    detail = customerWaitPanel.detail;
-    actionHref = `/bookings/${booking.id}#participants`;
-    actionLabel = 'Review shortlist';
-  } else if (status === 'OPEN_MATCHING' && backupSupply.eligibleCount > 0) {
-    stage = 'Stage 2 - Marketplace participation';
-    pillClass = 'pill-warn';
-    noteClassName = 'ops-task-pending';
-    headline = 'The marketplace partner window has usable supply.';
-    detail = `${backupSupply.eligibleCount} partner(s) can participate or be nudged while the customer waits.`;
-    actionHref = '/partners?review=marketplace-ready';
-    actionLabel = 'Open marketplace partners';
-  } else if (status === 'OPEN_MATCHING') {
-    stage = 'Stage 1 - First-pick response';
-    pillClass = customerPinReady ? 'pill-info' : 'pill-danger';
-    noteClassName = customerPinReady ? 'ops-task-pending' : 'ops-task-blocked';
-    headline = customerPinReady
-      ? 'Preferred partner is still in the first response window.'
-      : 'Customer pin is missing, so radius matching is not reliable.';
-    detail = customerPinReady
-      ? customerWaitPanel.detail
-      : 'Confirm the customer service location before using distance, marketplace, or dispatch decisions.';
-    actionHref = customerPinReady
-      ? `/bookings/${booking.id}#participants`
-      : `/bookings/${booking.id}#customer`;
-    actionLabel = customerPinReady ? 'Monitor first-pick' : 'Fix customer pin';
-  }
-
-  return {
-    stage,
-    pillClass,
-    noteClassName,
-    headline,
-    detail,
-    actionHref,
-    actionLabel,
-    metrics: [
-      {
-        label: 'Status',
-        value: status,
-        helper: bookingStatusHint(status),
-      },
-      {
-        label: 'Preferred partner',
-        value: providerName(booking.preferredProvider),
-        helper: preferredParticipant
-          ? `Partner response: ${preferredParticipant.status}.`
-          : 'No partner response recorded yet.',
-      },
-      {
-        label: 'Shortlist',
-        value: `${customerChoiceCandidates.length} selectable`,
-        helper: `${rejectedParticipants.length} rejected, ${backupSupply.eligibleCount} marketplace eligible.`,
-      },
-      {
-        label: 'Handoff',
-        value: chatReady ? 'Chat ready' : 'Chat locked',
-        helper:
-          locationFreshness === 'recent'
-            ? 'Partner location is recent.'
-            : `Partner location is ${locationFreshness}.`,
-      },
-    ],
-    badges: [
-      {
-        label: customerPinReady ? 'Pin ready' : 'Pin missing',
-        tone: customerPinReady ? 'pill-success' : 'pill-danger',
-      },
-      {
-        label: `${backupSupply.eligibleCount} in marketplace policy`,
-        tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn',
-      },
-      { label: chatReady ? 'Chat ready' : 'Chat pending', tone: chatReady ? 'pill-success' : 'pill-info' },
-      {
-        label: providerName(selectedPartner ?? booking.preferredProvider),
-        tone: selectedPartner ? 'pill-success' : 'pill-neutral',
-      },
-    ],
-  };
-}
-
-function providerLocationAgeMinutes(value?: string | null) {
-  if (!value) {
-    return null;
-  }
-  const timestamp = new Date(value).getTime();
-  if (!Number.isFinite(timestamp)) {
-    return null;
-  }
-  return Math.max(0, Math.round((Date.now() - timestamp) / 60_000));
 }
 
 function bookingOperationalPolicySnapshot(
