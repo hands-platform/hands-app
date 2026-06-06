@@ -1390,7 +1390,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     provider.verification.files.map((file) => (
                       <div key={file.id} className="provider-file-row">
                         <div className="participant-list" style={{ marginBottom: 6 }}>
-                          <span className="pill pill-info">{file.purpose ?? 'PROVIDER_VERIFICATION'}</span>
+                          <span className="pill pill-info">{file.purpose ?? 'Partner verification'}</span>
                           <span
                             className={`pill ${
                               file.uploadStatus === 'UPLOADED' ? 'pill-success' : 'pill-warn'
