@@ -59,9 +59,18 @@ import {
   providerLocationStatus,
 } from './partner-list-ops';
 import type { ProviderLocationState, ProviderOpsPolicy } from './partner-list-ops';
+import {
+  hasApprovedBankAccount,
+  hasHealthyPush,
+  maskToken,
+  providerPublicMedia,
+  providerPublicMediaNeedsReview,
+  publicMediaReviewPillClass,
+  readFailureCode,
+  readFailureStatus,
+  readLastAttempt,
+} from './partner-list-profile';
 
-type AdminPushDevice = NonNullable<NonNullable<AdminProvider['user']>['pushDevices']>[number];
-type AdminProviderPublicMedia = NonNullable<NonNullable<AdminProvider['user']>['fileAssets']>[number];
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 type ProviderCommandLane = {
   title: string;
@@ -1752,52 +1761,6 @@ function ProviderPublicMediaQueueCell({ provider }: { provider: AdminProvider })
       ) : null}
     </div>
   );
-}
-
-function maskToken(token: string) {
-  if (token.length <= 4) {
-    return '*'.repeat(token.length);
-  }
-  if (token.length <= 10) {
-    return `${token.slice(0, 2)}...${token.slice(-2)}`;
-  }
-  return `${token.slice(0, 6)}...${token.slice(-4)}`;
-}
-
-function readFailureCode(device: AdminPushDevice) {
-  return device.deliveries?.[0]?.response?.body?.error?.details?.[0]?.errorCode;
-}
-
-function readFailureStatus(device: AdminPushDevice) {
-  return device.deliveries?.[0]?.status;
-}
-
-function readLastAttempt(device: AdminPushDevice) {
-  return device.deliveries?.[0]?.attemptedAt;
-}
-
-function hasHealthyPush(provider: AdminProvider) {
-  return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
-}
-
-function hasApprovedBankAccount(provider: AdminProvider) {
-  return (provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED');
-}
-
-function providerPublicMedia(provider: AdminProvider): AdminProviderPublicMedia[] {
-  return provider.user?.fileAssets ?? [];
-}
-
-function providerPublicMediaNeedsReview(provider: AdminProvider) {
-  return providerPublicMedia(provider).some((file) =>
-    ['PENDING_REVIEW', 'REJECTED'].includes(file.reviewStatus ?? 'PENDING_REVIEW'),
-  );
-}
-
-function publicMediaReviewPillClass(status?: string) {
-  if (status === 'APPROVED') return 'pill-success';
-  if (status === 'REJECTED') return 'pill-danger';
-  return 'pill-warn';
 }
 
 type ProviderListAction = {
