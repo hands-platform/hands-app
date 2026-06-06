@@ -129,6 +129,7 @@ function Invoke-Admin {
   Invoke-Check "admin typecheck" "npm.cmd run typecheck --workspace @massage-vn/admin-web"
   Invoke-Check "admin lint" "npm.cmd run lint --workspace @massage-vn/admin-web"
   Invoke-Check "admin query guards" "npm.cmd run admin:query-guards"
+  Invoke-Check "admin visible copy" "npm.cmd run admin:visible-copy"
   if ($SkipBuild) {
     Add-Result "admin build" "SKIP" "SkipBuild was set."
   } else {
@@ -154,6 +155,7 @@ function Invoke-Harness {
   Invoke-Check "script syntax: realtime smoke" "node --check infra\scripts\realtime-smoke.mjs"
   Invoke-Check "script syntax: final authority" "node --check infra\scripts\check-final-authority.mjs"
   Invoke-Check "script syntax: admin sensitive exposure" "node --check infra\scripts\check-admin-sensitive-exposure.mjs"
+  Invoke-Check "script syntax: admin visible copy" "node --check infra\scripts\check-admin-visible-copy.mjs"
   Invoke-Check "script syntax: vietnam scope" "node --check infra\scripts\check-vietnam-scope.mjs"
 }
 
@@ -161,6 +163,7 @@ function Invoke-Docs {
   Invoke-Check "final authority check" "npm.cmd run authority:check"
   Invoke-Check "vietnam scope check" "npm.cmd run scope:vietnam"
   Invoke-Check "mobile visible copy check" "npm.cmd run mobile:visible-copy"
+  Invoke-Check "admin visible copy check" "npm.cmd run admin:visible-copy"
   Add-Result "markdown lint" "SKIP" "No markdown lint tool is configured in this repo."
 }
 

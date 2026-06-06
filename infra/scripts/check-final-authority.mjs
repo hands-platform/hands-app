@@ -17,6 +17,7 @@ checkSupabaseDraftContract();
 checkSupabaseBoundary();
 checkLegacyRiskRoutesAreRedirectOnly();
 checkMobileVisibleCopyGuardIsStrict();
+checkAdminVisibleCopyGuardIsStrict();
 checkAdminPeopleManagementIsFactual();
 checkAdminDashboardOperationsCoverage();
 checkBookingDetailIsSourceOfTruth();
@@ -381,6 +382,37 @@ function checkMobileVisibleCopyGuardIsStrict() {
     'people scoring wording',
     'partner hierarchy wording',
   ]);
+}
+
+function checkAdminVisibleCopyGuardIsStrict() {
+  const source = read('infra/scripts/check-admin-visible-copy.mjs');
+  requireMarkers('infra/scripts/check-admin-visible-copy.mjs', source, [
+    'Static Admin visible-copy guard',
+    'non-English Hangul visible copy',
+    'non-Vietnam region default',
+    'tip wording',
+    'legacy therapist wording',
+    'VIP wording',
+    'people scoring wording',
+    'partner hierarchy wording',
+  ]);
+
+  const verifyLocal = read('infra/scripts/verify-local.ps1');
+  requireMarkers('infra/scripts/verify-local.ps1', verifyLocal, [
+    'script syntax: admin visible copy',
+    'admin visible copy',
+    'npm.cmd run admin:visible-copy',
+  ]);
+
+  const verifyScope = read('infra/scripts/verify-scope.ps1');
+  requireMarkers('infra/scripts/verify-scope.ps1', verifyScope, [
+    'admin visible copy',
+    'script syntax: admin visible copy',
+    'admin visible copy check',
+  ]);
+
+  const setupDoctor = read('infra/scripts/setup-doctor.mjs');
+  requireMarkers('infra/scripts/setup-doctor.mjs', setupDoctor, ['admin visible copy guard']);
 }
 
 function checkAdminPeopleManagementIsFactual() {
