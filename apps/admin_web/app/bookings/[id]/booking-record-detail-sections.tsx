@@ -53,6 +53,7 @@ type ParticipantRow = {
   status: string;
   choiceTone: string;
   choiceState: string;
+  operatorStatus: string;
   decision: string;
   eligibilityLabel: string;
   eligibilityTone: string;
@@ -321,6 +322,7 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
               </td>
               <td>
                 <strong>{row.eligibilityReason}</strong>
+                <p className="muted">{row.operatorStatus}</p>
                 <p className="muted">{row.eligibilityNextStep}</p>
               </td>
             </tr>

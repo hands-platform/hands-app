@@ -1,4 +1,5 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
+import { participantReadableDecision } from '../../../lib/admin-participant-ledger-copy';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { distanceLabel, formatDate, providerName, shortId } from './booking-formatters';
 import {
@@ -260,13 +261,12 @@ export function bookingParticipantLedger(
           ? 'Customer-selectable'
           : 'Evidence-only';
       const choiceTone = isFinal ? 'pill-success' : customerSelectable ? 'pill-info' : 'pill-neutral';
-      const decision = isFinal
-        ? 'Customer selected this partner as the final match.'
-        : customerSelectable
-          ? 'Customer can choose this partner as the final match; the system will not auto-assign.'
-          : participant.status === 'REJECTED'
-            ? 'Partner declined or could not take this booking.'
-            : 'Participant row is retained as evidence, but it is not a customer selection candidate.';
+      const readableDecision = participantReadableDecision({
+        isFinal,
+        isPreferred,
+        status: participant.status,
+        customerSelectable,
+      });
       const providerStatus =
         participant.providerStatusAtJoin ?? participant.providerProfile?.status ?? 'status unknown';
       const eligibility = bookingParticipantEligibilityState({
@@ -292,7 +292,8 @@ export function bookingParticipantLedger(
         statusTone,
         choiceState,
         choiceTone,
-        decision,
+        operatorStatus: readableDecision.title,
+        decision: readableDecision.decision,
         eligibilityLabel: eligibility.label,
         eligibilityTone: eligibility.tone,
         eligibilityReason: eligibility.reason,
@@ -300,9 +301,7 @@ export function bookingParticipantLedger(
         distance: distanceLabel(participant.distanceMeters),
         timing: `Participated ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
         operatorUse: `Participant ${shortId(participant.id)} is retained as actual booking evidence. ${
-          isPreferred
-            ? 'First-pick participation is not customer-selectable until partner acceptance.'
-            : 'Marketplace participating/accepted partners can appear in the customer choice list.'
+          readableDecision.nextStep
         }`,
       };
     }),
