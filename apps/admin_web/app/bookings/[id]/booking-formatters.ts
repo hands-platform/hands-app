@@ -1,4 +1,5 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
+import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { formatDateTime, formatMoney, shortId as formatShortId } from '../../../lib/admin-format';
 
 export function readAmount(value: unknown) {
@@ -18,6 +19,10 @@ export function readNullableAmount(value: unknown) {
 
 export function bpsAmount(amount: number, bps?: number | null) {
   return Math.round((amount * Number(bps ?? 0)) / 10000);
+}
+
+export function providerName(provider?: { displayName?: string | null } | null) {
+  return provider?.displayName ? marketplaceDisplayText(provider.displayName) : 'Not selected';
 }
 
 export function bookingServiceOptionLabel(booking: AdminBookingDetail) {
@@ -149,4 +154,8 @@ export function minutesSince(value?: string | null) {
 
 export function shortId(id: string) {
   return formatShortId(id);
+}
+
+export function compactActivityText(value: string, maxLength: number) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }

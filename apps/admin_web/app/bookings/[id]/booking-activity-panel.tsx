@@ -1,21 +1,7 @@
 import Link from 'next/link';
 
+import type { BookingActivityRecord, BookingActivitySummaryItem } from './booking-activity-records';
 import { formatDate, shortId } from './booking-formatters';
-
-export type BookingActivityRecord = {
-  id: string;
-  type: string;
-  at: string;
-  title: string;
-  detail: string;
-  href?: string;
-};
-
-export type BookingActivitySummaryItem = {
-  label: string;
-  value: string;
-  helper: string;
-};
 
 export type BookingRecordIndexCard = {
   href: string;
