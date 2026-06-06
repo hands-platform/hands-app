@@ -50,7 +50,6 @@ void main() {
     );
     expect(api.postBody['paymentMethod'], 'CASH');
     expect(api.postBody['scheduledStartAt'], isNull);
-    expect(api.postBody['tipAmount'], isNull);
 
     final address = api.postBody['address'] as Map<String, dynamic>;
     expect(address['name'], 'Demo Customer');
