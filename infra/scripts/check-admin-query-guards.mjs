@@ -16,6 +16,22 @@ if (!adminServiceSource.includes('const ADMIN_APP_SESSION_LIST_LIMIT = 500;')) {
   });
 }
 
+if (!adminServiceSource.includes('const ADMIN_BOOKING_LIST_LIMIT = 100;')) {
+  violations.push({
+    area: 'admin booking query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Booking list query must keep the 100-row operations guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;')) {
+  violations.push({
+    area: 'admin chat archive query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Chat archive list query must keep the 200-row operations guard.',
+  });
+}
+
 if (!adminServiceSource.includes('take: ADMIN_APP_SESSION_LIST_LIMIT,')) {
   violations.push({
     area: 'admin app session query',
@@ -24,11 +40,59 @@ if (!adminServiceSource.includes('take: ADMIN_APP_SESSION_LIST_LIMIT,')) {
   });
 }
 
+if (!adminServiceSource.includes('take: ADMIN_BOOKING_LIST_LIMIT,')) {
+  violations.push({
+    area: 'admin booking query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Booking list query must apply ADMIN_BOOKING_LIST_LIMIT.',
+  });
+}
+
+if (!adminServiceSource.includes('take: ADMIN_CHAT_ARCHIVE_LIST_LIMIT,')) {
+  violations.push({
+    area: 'admin chat archive query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Chat archive list query must apply ADMIN_CHAT_ARCHIVE_LIST_LIMIT.',
+  });
+}
+
 if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_LIMIT = 500;')) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Customer list query must keep the 500-row operations guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 25;')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list booking relations must keep a 25-row guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list selected-location relations must keep a 5-row guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list app-session relations must keep a 3-row guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list push-device relations must keep a 3-row guard.',
   });
 }
 

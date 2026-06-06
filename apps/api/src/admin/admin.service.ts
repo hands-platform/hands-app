@@ -36,7 +36,13 @@ import { groupServiceCatalogOptions } from '../services/service-catalog-groups';
 
 const PRICE_STEP_UNIT_VND = 100000;
 const ADMIN_APP_SESSION_LIST_LIMIT = 500;
+const ADMIN_BOOKING_LIST_LIMIT = 100;
+const ADMIN_CHAT_ARCHIVE_LIST_LIMIT = 200;
 const ADMIN_CUSTOMER_LIST_LIMIT = 500;
+const ADMIN_CUSTOMER_LIST_BOOKING_LIMIT = 25;
+const ADMIN_CUSTOMER_LIST_LOCATION_LIMIT = 5;
+const ADMIN_CUSTOMER_LIST_SESSION_LIMIT = 3;
+const ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT = 3;
 const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
 const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;
 const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;
@@ -1371,19 +1377,19 @@ export class AdminService {
             ...adminUserSummarySelect,
             appSessions: {
               orderBy: { lastSeenAt: 'desc' },
-              take: 3,
+              take: ADMIN_CUSTOMER_LIST_SESSION_LIMIT,
               select: adminAppSessionSummarySelect,
             },
             pushDevices: {
               orderBy: { updatedAt: 'desc' },
-              take: 3,
+              take: ADMIN_CUSTOMER_LIST_PUSH_DEVICE_LIMIT,
               select: adminPushDeviceSummarySelect,
             },
           },
         },
         selectedLocations: {
           orderBy: { createdAt: 'desc' },
-          take: 5,
+          take: ADMIN_CUSTOMER_LIST_LOCATION_LIMIT,
           select: {
             id: true,
             latitude: true,
@@ -1394,7 +1400,7 @@ export class AdminService {
         },
         bookings: {
           orderBy: { createdAt: 'desc' },
-          take: 25,
+          take: ADMIN_CUSTOMER_LIST_BOOKING_LIMIT,
           select: adminCustomerBookingListSelect,
         },
       },
@@ -2282,7 +2288,7 @@ export class AdminService {
   listBookings() {
     return this.prisma.booking.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: ADMIN_BOOKING_LIST_LIMIT,
       select: adminBookingListSelect,
     });
   }
@@ -2293,7 +2299,7 @@ export class AdminService {
         chatRoom: { isNot: null },
       },
       orderBy: { updatedAt: 'desc' },
-      take: 200,
+      take: ADMIN_CHAT_ARCHIVE_LIST_LIMIT,
       select: {
         id: true,
         customerProfileId: true,
