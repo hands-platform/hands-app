@@ -58,6 +58,42 @@ export function assertPartnerResponseWindowOpen(booking: { status: BookingStatus
   }
 }
 
+export function assertCustomerDirectCancellationAllowed(booking: {
+  status: BookingStatus;
+  selectedProviderId?: string | null;
+  participants?: Array<{ status: ParticipantStatus | string }>;
+}) {
+  const terminalStatuses = new Set<BookingStatus>([
+    BookingStatus.COMPLETED,
+    BookingStatus.IN_SERVICE,
+    BookingStatus.CANCELLED,
+    BookingStatus.NO_SHOW,
+    BookingStatus.EXPIRED,
+    BookingStatus.REFUNDED,
+  ]);
+  if (terminalStatuses.has(booking.status)) {
+    throw new BadRequestException('Booking cannot be cancelled in its current state');
+  }
+
+  const afterPartnerCommitmentStatuses = new Set<BookingStatus>([
+    BookingStatus.MATCHED,
+    BookingStatus.PROVIDER_ON_THE_WAY,
+    BookingStatus.ARRIVED,
+  ]);
+  const hasAcceptedPartner = Boolean(
+    booking.participants?.some((participant) => participant.status === ParticipantStatus.ACCEPTED),
+  );
+  const isAfterPartnerCommitment =
+    afterPartnerCommitmentStatuses.has(booking.status) ||
+    Boolean(booking.selectedProviderId) ||
+    hasAcceptedPartner;
+  if (isAfterPartnerCommitment) {
+    throw new BadRequestException(
+      'Matched bookings cannot be cancelled directly. Use booking chat so HANDS operations can review the evidence.',
+    );
+  }
+}
+
 export function assertProviderLifecycleTransitionAllowed(current: BookingStatus, allowed: BookingStatus[]) {
   if (!allowed.includes(current)) {
     throw new BadRequestException(

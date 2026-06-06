@@ -5,6 +5,7 @@ import {
   addProviderMatchingDistance,
   assertBookingPaymentMethod,
   assertBookingServiceId,
+  assertCustomerDirectCancellationAllowed,
   assertPartnerResponseWindowOpen,
   assertProviderLifecycleTransitionAllowed,
   bookingAddressText,
@@ -204,6 +205,40 @@ describe('booking policy helpers', () => {
     expect(() =>
       assertPartnerResponseWindowOpen({ status: BookingStatus.OPEN_MATCHING, expiresAt: past }),
     ).toThrow(BadRequestException);
+  });
+
+  it('allows customer direct cancellation only before partner commitment', () => {
+    expect(() =>
+      assertCustomerDirectCancellationAllowed({
+        status: BookingStatus.OPEN_MATCHING,
+        selectedProviderId: null,
+        participants: [{ status: ParticipantStatus.JOINED }],
+      }),
+    ).not.toThrow();
+
+    expect(() =>
+      assertCustomerDirectCancellationAllowed({
+        status: BookingStatus.OPEN_MATCHING,
+        selectedProviderId: null,
+        participants: [{ status: ParticipantStatus.ACCEPTED }],
+      }),
+    ).toThrow('Matched bookings cannot be cancelled directly');
+
+    expect(() =>
+      assertCustomerDirectCancellationAllowed({
+        status: BookingStatus.MATCHED,
+        selectedProviderId: 'partner-1',
+        participants: [{ status: ParticipantStatus.ACCEPTED }],
+      }),
+    ).toThrow('Matched bookings cannot be cancelled directly');
+
+    expect(() =>
+      assertCustomerDirectCancellationAllowed({
+        status: BookingStatus.COMPLETED,
+        selectedProviderId: 'partner-1',
+        participants: [],
+      }),
+    ).toThrow('Booking cannot be cancelled in its current state');
   });
 
   it('requires service completion to start from IN_SERVICE', () => {

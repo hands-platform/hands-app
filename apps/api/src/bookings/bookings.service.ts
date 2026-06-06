@@ -33,6 +33,7 @@ import {
   addProviderMatchingDistance,
   assertBookingPaymentMethod,
   assertBookingServiceId,
+  assertCustomerDirectCancellationAllowed,
   assertPartnerResponseWindowOpen,
   assertProviderLifecycleTransitionAllowed,
   bookingAddressText,
@@ -552,34 +553,7 @@ export class BookingsService {
       },
     });
 
-    if (
-      booking.status === BookingStatus.COMPLETED ||
-      booking.status === BookingStatus.IN_SERVICE ||
-      booking.status === BookingStatus.CANCELLED ||
-      booking.status === BookingStatus.NO_SHOW ||
-      booking.status === BookingStatus.EXPIRED ||
-      booking.status === BookingStatus.REFUNDED
-    ) {
-      throw new BadRequestException('Booking cannot be cancelled in its current state');
-    }
-
-    const hasAcceptedPartner = booking.participants.some(
-      (participant) => participant.status === ParticipantStatus.ACCEPTED,
-    );
-    const afterPartnerCommitmentStatuses = new Set<BookingStatus>([
-      BookingStatus.MATCHED,
-      BookingStatus.PROVIDER_ON_THE_WAY,
-      BookingStatus.ARRIVED,
-    ]);
-    const isAfterPartnerCommitment =
-      afterPartnerCommitmentStatuses.has(booking.status) ||
-      Boolean(booking.selectedProviderId) ||
-      hasAcceptedPartner;
-    if (isAfterPartnerCommitment) {
-      throw new BadRequestException(
-        'Matched bookings cannot be cancelled directly. Use booking chat so HANDS operations can review the evidence.',
-      );
-    }
+    assertCustomerDirectCancellationAllowed(booking);
 
     const updated = await this.prisma.booking.update({
       where: { id: bookingId },
