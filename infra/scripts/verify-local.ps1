@@ -286,6 +286,7 @@ Invoke-Check "supabase schema alignment" "node infra\scripts\check-supabase-sche
 Invoke-Check "supabase sql pack" "node infra\scripts\prepare-supabase-sql-pack.mjs"
 Invoke-Check "prisma validate" "`$env:DATABASE_URL='postgresql://massage:massage@localhost:5432/massage_vn?schema=public'; npx.cmd prisma validate --schema apps/api/prisma/schema.prisma"
 Invoke-Check "api typecheck" "npm.cmd run typecheck --workspace @massage-vn/api"
+Invoke-Check "admin test" "npm.cmd run test --workspace @massage-vn/admin-web"
 Invoke-Check "admin typecheck" "npm.cmd run typecheck --workspace @massage-vn/admin-web"
 
 if (-not $SkipBuild) {

@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   BookingActivityPanel,
@@ -102,7 +101,7 @@ import {
   bookingPreferredProviderId,
   isCustomerSelectableParticipantForFinalChoice,
 } from './booking-participant-rules';
-import { bookingStageSnapshot, type BookingStageSnapshot } from './booking-stage-snapshot';
+import { bookingStageSnapshot } from './booking-stage-snapshot';
 import {
   bookingStatusHint,
   latestProviderLocation,
@@ -110,7 +109,6 @@ import {
   preferredParticipantState,
 } from './booking-status-location';
 import {
-  AdminAuditLog,
   AdminBookingDetail,
   AdminChatMessage,
   AdminLocationSnapshot,
@@ -123,7 +121,6 @@ import {
   adminGet,
 } from '../../../lib/admin-api';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
-import { readOptionalString } from './booking-readers';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -4569,16 +4566,6 @@ function bookingOpsTaskCards(booking: AdminBookingDetail) {
         : 'Not checked yet',
     };
   });
-}
-
-function opsTaskTone(status: string) {
-  if (status === 'DONE') {
-    return 'pill-success';
-  }
-  if (status === 'BLOCKED') {
-    return 'pill-danger';
-  }
-  return 'pill-warn';
 }
 
 function liveServiceSignals(booking: AdminBookingDetail) {
