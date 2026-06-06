@@ -1,4 +1,4 @@
-const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://localhost:3101';
+const baseUrl = process.env.ADMIN_WEB_BASE_URL ?? 'http://127.0.0.1:3101';
 const rawSmokeArgs = process.argv.slice(2);
 const criticalSmokePaths = [
   '/',
