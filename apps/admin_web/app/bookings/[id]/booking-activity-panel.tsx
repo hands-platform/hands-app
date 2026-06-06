@@ -1,0 +1,128 @@
+import Link from 'next/link';
+
+import { formatDate, shortId } from './booking-formatters';
+
+export type BookingActivityRecord = {
+  id: string;
+  type: string;
+  at: string;
+  title: string;
+  detail: string;
+  href?: string;
+};
+
+export type BookingActivitySummaryItem = {
+  label: string;
+  value: string;
+  helper: string;
+};
+
+export type BookingRecordIndexCard = {
+  href: string;
+  label: string;
+  value: string;
+  helper: string;
+};
+
+export function BookingFullRecordIndex({
+  bookingId,
+  csvHref,
+  eventCount,
+  cards,
+}: {
+  bookingId: string;
+  csvHref: string;
+  eventCount: number;
+  cards: BookingRecordIndexCard[];
+}) {
+  return (
+    <section className="card" id="payment-actions" style={{ marginBottom: 16 }}>
+      <div className="ops-section-header">
+        <div>
+          <h2>Booking full record index</h2>
+          <p className="muted">
+            One-booking record map for operators. This is factual tracking only: customer, partner,
+            matching, chat, payment, fee, tax, wallet, alerts, location, and audit history.
+          </p>
+        </div>
+        <div className="actions">
+          <a className="text-link" download={`hands-booking-${shortId(bookingId)}-activity.csv`} href={csvHref}>
+            Export activity CSV
+          </a>
+          <span className="pill pill-info">{eventCount} event(s)</span>
+        </div>
+      </div>
+      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        {cards.map((card) => (
+          <a href={card.href} key={`${card.href}-${card.label}`}>
+            <span>{card.label}</span>
+            <strong>{card.value}</strong>
+            <small>{card.helper}</small>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function BookingActivityPanel({
+  records,
+  summary,
+}: {
+  records: BookingActivityRecord[];
+  summary: BookingActivitySummaryItem[];
+}) {
+  return (
+    <section className="card" id="booking-activity" style={{ marginTop: 16 }}>
+      <div className="ops-section-header">
+        <div>
+          <h2>Booking chronological activity</h2>
+          <p className="muted">
+            Date-sorted factual event trail for this booking: booking status, partner participation, chat
+            messages, payment, refund, earning, platform fee, tax, wallet, location, notification, review,
+            and operator audit records.
+          </p>
+        </div>
+        <span className="pill pill-info">{records.length} event(s)</span>
+      </div>
+      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        {summary.map((item) => (
+          <div key={item.label}>
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.helper}</small>
+          </div>
+        ))}
+      </div>
+      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        {records.length ? (
+          records.map((record) => (
+            <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
+              <span>{record.type}</span>
+              <div>
+                {record.href ? (
+                  <Link className="text-link" href={record.href}>
+                    <strong>{record.title}</strong>
+                  </Link>
+                ) : (
+                  <strong>{record.title}</strong>
+                )}
+                <p className="muted">{record.detail}</p>
+              </div>
+              <small>{formatDate(record.at)}</small>
+            </div>
+          ))
+        ) : (
+          <div className="setup-stage-item">
+            <span>NONE</span>
+            <div>
+              <strong>No booking activity has been recorded yet</strong>
+              <p className="muted">Matching, payment, chat, location, and audit events will appear here.</p>
+            </div>
+            <small>0</small>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}

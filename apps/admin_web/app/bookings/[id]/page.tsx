@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { MetricCard } from '../../../components/metric-card';
+import {
+  BookingActivityPanel,
+  BookingFullRecordIndex,
+  type BookingActivityRecord,
+  type BookingRecordIndexCard,
+} from './booking-activity-panel';
 import { BookingChatBubble } from './booking-chat-bubble';
 import {
   ActionLink,
@@ -58,15 +64,6 @@ import {
 
 type PageProps = {
   params: Promise<{ id: string }>;
-};
-
-type BookingActivityRecord = {
-  id: string;
-  type: string;
-  at: string;
-  title: string;
-  detail: string;
-  href?: string;
 };
 
 type BookingRefundLedgerRow = {
@@ -260,6 +257,92 @@ export default async function BookingDetailPage({ params }: PageProps) {
     messages,
     notifications: rawNotifications,
   });
+  const bookingRecordIndexCards: BookingRecordIndexCard[] = [
+    {
+      href: '#customer',
+      label: 'Customer',
+      value: booking.customerProfile?.user?.phone ?? 'No phone',
+      helper: booking.customerProfile?.user?.fullName ?? 'Customer profile',
+    },
+    {
+      href: '#participants',
+      label: 'Partners',
+      value: `${booking.participants?.length ?? 0}`,
+      helper: 'Preferred, final, and marketplace shortlist.',
+    },
+    {
+      href: '#chat',
+      label: 'Chat archive',
+      value: `${messages.length}`,
+      helper: booking.chatRoom ? `Room ${shortId(booking.chatRoom.id)}` : 'No chat room yet',
+    },
+    {
+      href: '#payment',
+      label: 'Payment and wallet',
+      value: booking.payment?.status ?? 'NONE',
+      helper: money(booking.payment?.amount, booking.payment?.currency),
+    },
+    {
+      href: '#finance',
+      label: 'Finance trace',
+      value: financeTrace.providerPayout,
+      helper: `${financeTrace.platformFee} HANDS fee`,
+    },
+    {
+      href: booking.earning?.id ? `/earnings#earning-${booking.earning.id}` : '/earnings',
+      label: 'Earnings ledger',
+      value: booking.earning?.status ?? 'No earning row yet',
+      helper: booking.earning?.id ? shortId(booking.earning.id) : 'Open finance ledger',
+    },
+    {
+      href: '/cash-settlements',
+      label: 'Cash settlement desk',
+      value: bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'Clear or non-cash',
+      helper: booking.payment?.method === 'CASH' ? financeTrace.walletLedger : 'No cash wallet debt',
+    },
+    {
+      href: '/tax-policy',
+      label: 'Tax policy',
+      value: financeTrace.withholding,
+      helper: 'Versioned rules, no hardcoded rates.',
+    },
+    {
+      href: '#service-pricing-snapshot',
+      label: 'Service and pricing',
+      value: financeTrace.payoutRuleStatus,
+      helper: financeTrace.serviceOption,
+    },
+    {
+      href: '#location',
+      label: 'Location trail',
+      value: providerLocationMetricValue(booking),
+      helper: providerLocationMetricHelper(booking),
+    },
+    {
+      href: '#communication-movement-handoff',
+      label: 'Communication and movement',
+      value: communicationMovementHandoff.status,
+      helper: `${messages.length} message(s), ${locationTrail(booking).length} location row(s).`,
+    },
+    {
+      href: '#alerts',
+      label: 'Alerts',
+      value: `${notificationTrace.rows.length}`,
+      helper: `${notificationTrace.backupBatches.length} marketplace alert batch(es).`,
+    },
+    {
+      href: '#operator-notes',
+      label: 'Operator notes',
+      value: `${operatorNoteLines.length}`,
+      helper: 'Internal handling notes retained on this booking.',
+    },
+    {
+      href: '#booking-activity',
+      label: 'Activity timeline',
+      value: `${bookingActivityRecords.length}`,
+      helper: 'Date-ordered operational history.',
+    },
+  ];
   const operatingLedger = [
     {
       area: 'Customer',
@@ -1346,105 +1429,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card" id="payment-actions" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking full record index</h2>
-            <p className="muted">
-              One-booking record map for operators. This is factual tracking only: customer, partner,
-              matching, chat, payment, fee, tax, wallet, alerts, location, and audit history.
-            </p>
-          </div>
-          <div className="actions">
-            <a
-              className="text-link"
-              download={`hands-booking-${shortId(booking.id)}-activity.csv`}
-              href={bookingActivityCsvHref}
-            >
-              Export activity CSV
-            </a>
-            <span className="pill pill-info">{bookingActivityRecords.length} event(s)</span>
-          </div>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          <a href="#customer">
-            <span>Customer</span>
-            <strong>{booking.customerProfile?.user?.phone ?? 'No phone'}</strong>
-            <small>{booking.customerProfile?.user?.fullName ?? 'Customer profile'}</small>
-          </a>
-          <a href="#participants">
-            <span>Partners</span>
-            <strong>{booking.participants?.length ?? 0}</strong>
-            <small>Preferred, final, and marketplace shortlist.</small>
-          </a>
-          <a href="#chat">
-            <span>Chat archive</span>
-            <strong>{messages.length}</strong>
-            <small>{booking.chatRoom ? `Room ${shortId(booking.chatRoom.id)}` : 'No chat room yet'}</small>
-          </a>
-          <a href="#payment">
-            <span>Payment and wallet</span>
-            <strong>{booking.payment?.status ?? 'NONE'}</strong>
-            <small>{money(booking.payment?.amount, booking.payment?.currency)}</small>
-          </a>
-          <a href="#finance">
-            <span>Finance trace</span>
-            <strong>{financeTrace.providerPayout}</strong>
-            <small>{financeTrace.platformFee} HANDS fee</small>
-          </a>
-          <a href={booking.earning?.id ? `/earnings#earning-${booking.earning.id}` : '/earnings'}>
-            <span>Earnings ledger</span>
-            <strong>{booking.earning?.status ?? 'No earning row yet'}</strong>
-            <small>{booking.earning?.id ? shortId(booking.earning.id) : 'Open finance ledger'}</small>
-          </a>
-          <a href="/cash-settlements">
-            <span>Cash settlement desk</span>
-            <strong>
-              {bookingCashDebtNeedsSettlement(booking) ? 'Settlement needed' : 'Clear or non-cash'}
-            </strong>
-            <small>
-              {booking.payment?.method === 'CASH' ? financeTrace.walletLedger : 'No cash wallet debt'}
-            </small>
-          </a>
-          <a href="/tax-policy">
-            <span>Tax policy</span>
-            <strong>{financeTrace.withholding}</strong>
-            <small>Versioned rules, no hardcoded rates.</small>
-          </a>
-          <a href="#service-pricing-snapshot">
-            <span>Service and pricing</span>
-            <strong>{financeTrace.payoutRuleStatus}</strong>
-            <small>{financeTrace.serviceOption}</small>
-          </a>
-          <a href="#location">
-            <span>Location trail</span>
-            <strong>{providerLocationMetricValue(booking)}</strong>
-            <small>{providerLocationMetricHelper(booking)}</small>
-          </a>
-          <a href="#communication-movement-handoff">
-            <span>Communication and movement</span>
-            <strong>{communicationMovementHandoff.status}</strong>
-            <small>
-              {messages.length} message(s), {locationTrail(booking).length} location row(s).
-            </small>
-          </a>
-          <a href="#alerts">
-            <span>Alerts</span>
-            <strong>{notificationTrace.rows.length}</strong>
-            <small>{notificationTrace.backupBatches.length} marketplace alert batch(es).</small>
-          </a>
-          <a href="#operator-notes">
-            <span>Operator notes</span>
-            <strong>{operatorNoteLines.length}</strong>
-            <small>Internal handling notes retained on this booking.</small>
-          </a>
-          <a href="#booking-activity">
-            <span>Activity timeline</span>
-            <strong>{bookingActivityRecords.length}</strong>
-            <small>Date-ordered operational history.</small>
-          </a>
-        </div>
-      </section>
+      <BookingFullRecordIndex
+        bookingId={booking.id}
+        cards={bookingRecordIndexCards}
+        csvHref={bookingActivityCsvHref}
+        eventCount={bookingActivityRecords.length}
+      />
 
       <section className="card" id="marketplace-wallet-evidence" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
@@ -2957,57 +2947,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card" id="booking-activity" style={{ marginTop: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking chronological activity</h2>
-            <p className="muted">
-              Date-sorted factual event trail for this booking: booking status, partner participation, chat
-              messages, payment, refund, earning, platform fee, tax, wallet, location, notification, review,
-              and operator audit records.
-            </p>
-          </div>
-          <span className="pill pill-info">{bookingActivityRecords.length} event(s)</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {bookingActivitySummary.map((item) => (
-            <div key={item.label}>
-              <span>{item.label}</span>
-              <strong>{item.value}</strong>
-              <small>{item.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {bookingActivityRecords.length ? (
-            bookingActivityRecords.map((record) => (
-              <div className="setup-stage-item" key={`${record.type}-${record.id}-${record.at}`}>
-                <span>{record.type}</span>
-                <div>
-                  {record.href ? (
-                    <Link className="text-link" href={record.href}>
-                      <strong>{record.title}</strong>
-                    </Link>
-                  ) : (
-                    <strong>{record.title}</strong>
-                  )}
-                  <p className="muted">{record.detail}</p>
-                </div>
-                <small>{formatDate(record.at)}</small>
-              </div>
-            ))
-          ) : (
-            <div className="setup-stage-item">
-              <span>NONE</span>
-              <div>
-                <strong>No booking activity has been recorded yet</strong>
-                <p className="muted">Matching, payment, chat, location, and audit events will appear here.</p>
-              </div>
-              <small>0</small>
-            </div>
-          )}
-        </div>
-      </section>
+      <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
     </>
   );
 }
