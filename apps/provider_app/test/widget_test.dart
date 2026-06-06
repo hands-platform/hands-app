@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider_app/main.dart';
 import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/src/features/booking/presentation/provider_requests_list_section.dart';
+import 'package:provider_app/src/features/chat/presentation/provider_chat_location_helpers.dart';
 
 void main() {
   testWidgets('renders partner requests screen', (tester) async {
@@ -121,6 +122,30 @@ void main() {
 
     expect(isProviderAppChatVisible(liveBooking), isTrue);
     expect(isProviderAppChatVisible(noShowBooking), isFalse);
+  });
+
+  test('partner chat location reads selected booking address snapshot', () {
+    final booking = {
+      'id': 'booking-selected-chat-location',
+      'addressSnapshot': {
+        'latitude': '10.7769',
+        'longitude': '106.7009',
+      },
+    };
+
+    expect(providerChatCustomerLatitude(booking), 10.7769);
+    expect(providerChatCustomerLongitude(booking), 106.7009);
+  });
+
+  test('partner chat location keeps legacy root coordinate fallback', () {
+    final booking = {
+      'id': 'booking-legacy-chat-location',
+      'lat': '10.775',
+      'lng': '106.701',
+    };
+
+    expect(providerChatCustomerLatitude(booking), 10.775);
+    expect(providerChatCustomerLongitude(booking), 106.701);
   });
 
   testWidgets('locks marketplace participation action when wallet is negative',

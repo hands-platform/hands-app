@@ -7,6 +7,7 @@ import '../../../core/realtime_socket.dart';
 import '../../booking/presentation/provider_request_guidance_helpers.dart';
 import '../../map/presentation/provider_location_preview.dart';
 import '../../provider_profile/presentation/provider_feedback_cards.dart';
+import 'provider_chat_location_helpers.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   const ChatScreen({super.key});
@@ -131,8 +132,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     setState(() {
       chatRoomId = roomId;
       bookingId = booking?['id']?.toString();
-      customerLat = asNum(booking?['lat'])?.toDouble();
-      customerLng = asNum(booking?['lng'])?.toDouble();
+      customerLat = providerChatCustomerLatitude(booking);
+      customerLng = providerChatCustomerLongitude(booking);
       messages = loadedMessages;
       statusMessage = 'Chat is ready for booking ${booking?['id']}.';
     });
