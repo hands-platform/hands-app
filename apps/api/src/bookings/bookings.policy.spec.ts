@@ -9,6 +9,7 @@ import {
   bookingDispatchCoordinates,
   calculateDistanceMeters,
   formatMatchingRadius,
+  isMarketplacePartnerAction,
   isCustomerSelectableParticipantForFinalChoice,
   normalizeBookingCoordinate,
   providerLocationFreshEnough,
@@ -38,6 +39,12 @@ describe('booking policy helpers', () => {
         'first-pick',
       ),
     ).toBe(false);
+  });
+
+  it('applies marketplace wallet gate only to non-preferred partner actions', () => {
+    expect(isMarketplacePartnerAction('first-pick', 'first-pick')).toBe(false);
+    expect(isMarketplacePartnerAction('marketplace-partner', 'first-pick')).toBe(true);
+    expect(isMarketplacePartnerAction('partner-without-first-pick', null)).toBe(true);
   });
 
   it('uses immutable booking address snapshot before mutable booking coordinates for dispatch distance', () => {

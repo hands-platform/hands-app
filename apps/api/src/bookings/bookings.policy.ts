@@ -18,6 +18,13 @@ export function isCustomerSelectableParticipantForFinalChoice(
   return false;
 }
 
+export function isMarketplacePartnerAction(
+  providerProfileId: string,
+  preferredProviderId?: string | null,
+) {
+  return providerProfileId !== preferredProviderId;
+}
+
 export function addProviderMatchingDistance<
   T extends {
     lat: unknown;
