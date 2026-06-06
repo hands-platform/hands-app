@@ -97,7 +97,7 @@ class OpenBookingCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         hasPreferredProvider
-                            ? 'Guest request with marketplace backup'
+                            ? 'Guest request with marketplace alternatives'
                             : 'Marketplace request',
                         style: Theme.of(context)
                             .textTheme
@@ -194,7 +194,7 @@ class OpenBookingCard extends StatelessWidget {
                     child: InlineRequestFact(
                       label: 'Request',
                       value: hasPreferredProvider
-                          ? 'First-pick backup'
+                          ? 'First-pick marketplace'
                           : 'Marketplace',
                     ),
                   ),
