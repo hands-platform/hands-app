@@ -26,6 +26,29 @@ const PRIVATE_BOOKING_ADDRESS_KEYS = new Set([
   'phone_number',
   'contactPhone',
   'contact_phone',
+  'address',
+  'addressLine',
+  'address_line',
+  'addressText',
+  'address_text',
+  'formattedAddress',
+  'formatted_address',
+  'label',
+  'latitude',
+  'longitude',
+  'lat',
+  'lng',
+  'line1',
+  'line2',
+]);
+
+const PUBLIC_BOOKING_ADDRESS_KEYS = new Set([
+  'name',
+  'district',
+  'ward',
+  'city',
+  'province',
+  'country',
 ]);
 
 export function clientBookingPayment(payment: ClientPaymentInput) {
@@ -81,11 +104,17 @@ function publicBookingAddress(address: unknown) {
     return address;
   }
 
-  return Object.fromEntries(
-    Object.entries(address as Record<string, unknown>).filter(
-      ([key]) => !PRIVATE_BOOKING_ADDRESS_KEYS.has(key),
+  const record = address as Record<string, unknown>;
+  const publicAddress = Object.fromEntries(
+    Object.entries(record).filter(
+      ([key]) => PUBLIC_BOOKING_ADDRESS_KEYS.has(key) && !PRIVATE_BOOKING_ADDRESS_KEYS.has(key),
     ),
   );
+  const addressPreview = coarseAddressPreview(record);
+  if (addressPreview) {
+    publicAddress.addressPreview = addressPreview;
+  }
+  return publicAddress;
 }
 
 function publicBookingAddressSnapshot(snapshot: BookingAddressSnapshotInput) {
@@ -95,10 +124,39 @@ function publicBookingAddressSnapshot(snapshot: BookingAddressSnapshotInput) {
 
   const response: Record<string, unknown> = {};
   copySnapshotField(snapshot, response, 'address', publicBookingAddress(snapshot.address));
-  copySnapshotField(snapshot, response, 'addressText', snapshot.addressText);
-  copySnapshotField(snapshot, response, 'latitude', snapshot.latitude);
-  copySnapshotField(snapshot, response, 'longitude', snapshot.longitude);
+  const addressPreview =
+    coarseAddressPreview(snapshot.address) ?? coarseAddressPreview({ addressText: snapshot.addressText });
+  if (addressPreview) {
+    response.addressPreview = addressPreview;
+  }
   return response;
+}
+
+function coarseAddressPreview(value: unknown) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  const record = value as Record<string, unknown>;
+  const parts = [record.ward, record.district, record.city, record.province, record.country]
+    .filter((part): part is string => typeof part === 'string' && Boolean(part.trim()))
+    .map((part) => part.trim());
+  const usefulParts = parts.filter((part, index) => parts.indexOf(part) === index);
+  if (usefulParts.length > 0) {
+    return usefulParts.slice(0, 3).join(', ');
+  }
+
+  const text = record.addressText ?? record.address_text ?? record.line1 ?? record.address;
+  if (typeof text !== 'string') {
+    return null;
+  }
+  const textParts = text
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (textParts.length <= 1) {
+    return textParts[0] ?? null;
+  }
+  return textParts.slice(1, 4).join(', ');
 }
 
 function copySnapshotField(

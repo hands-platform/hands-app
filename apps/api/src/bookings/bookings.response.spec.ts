@@ -25,14 +25,17 @@ describe('client booking response helpers', () => {
     expect(JSON.stringify(payment)).not.toContain('gatewaySecret');
   });
 
-  it('removes customer phone numbers from partner open-booking responses', () => {
+  it('removes customer contact, exact address, and exact coordinates from partner open-booking responses', () => {
     const response = partnerOpenBookingResponse({
       id: 'booking-1',
       address: {
         name: 'Demo Customer',
         phone: '0865907184',
         phone_number: '0865907184',
-        line1: 'District 1, Ho Chi Minh City, Vietnam',
+        line1: '123 Nguyen Hue Street, District 1, Ho Chi Minh City, Vietnam',
+        district: 'District 1',
+        city: 'Ho Chi Minh City',
+        country: 'Vietnam',
       },
       addressSnapshot: {
         customerProfileId: 'customer-1',
@@ -40,9 +43,12 @@ describe('client booking response helpers', () => {
         address: {
           name: 'Demo Customer',
           phone: '0865907184',
-          line1: 'District 1, Ho Chi Minh City, Vietnam',
+          line1: '123 Nguyen Hue Street, District 1, Ho Chi Minh City, Vietnam',
+          district: 'District 1',
+          city: 'Ho Chi Minh City',
+          country: 'Vietnam',
         },
-        addressText: 'District 1, Ho Chi Minh City, Vietnam',
+        addressText: '123 Nguyen Hue Street, District 1, Ho Chi Minh City, Vietnam',
         latitude: '10.7769000',
         longitude: '106.7009000',
       },
@@ -57,18 +63,25 @@ describe('client booking response helpers', () => {
     const serialized = JSON.stringify(response);
 
     expect(serialized).not.toContain('0865907184');
+    expect(serialized).not.toContain('123 Nguyen Hue');
+    expect(serialized).not.toContain('10.7769000');
+    expect(serialized).not.toContain('106.7009000');
     expect(response.address).toEqual({
       name: 'Demo Customer',
-      line1: 'District 1, Ho Chi Minh City, Vietnam',
+      district: 'District 1',
+      city: 'Ho Chi Minh City',
+      country: 'Vietnam',
+      addressPreview: 'District 1, Ho Chi Minh City, Vietnam',
     });
     expect(response.addressSnapshot).toEqual({
       address: {
         name: 'Demo Customer',
-        line1: 'District 1, Ho Chi Minh City, Vietnam',
+        district: 'District 1',
+        city: 'Ho Chi Minh City',
+        country: 'Vietnam',
+        addressPreview: 'District 1, Ho Chi Minh City, Vietnam',
       },
-      addressText: 'District 1, Ho Chi Minh City, Vietnam',
-      latitude: '10.7769000',
-      longitude: '106.7009000',
+      addressPreview: 'District 1, Ho Chi Minh City, Vietnam',
     });
   });
 });

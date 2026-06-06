@@ -59,6 +59,7 @@ class OpenBookingCard extends StatelessWidget {
     final isCashBooking = providerBookingIsCash(booking);
     final customerAmount = payment?['amount'] ?? service?['basePrice'];
     final customerAddress = booking['address'] as Map<String, dynamic>?;
+    final addressPreview = customerAddress?['addressPreview']?.toString();
     final customerName = customerAddress?['name']?.toString() ?? 'Guest';
     final customerPhone = customerAddress?['phone']?.toString();
     final bookingId = booking['id']?.toString() ?? '';
@@ -164,7 +165,7 @@ class OpenBookingCard extends StatelessWidget {
             if (customerAddress != null) ...[
               const SizedBox(height: 4),
               Text(
-                'Guest address: ${customerAddress['line1'] ?? 'Address pending'}',
+                'Guest area: ${addressPreview ?? 'Area pending'}',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
