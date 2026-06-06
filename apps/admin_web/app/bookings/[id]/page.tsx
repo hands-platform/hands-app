@@ -12,7 +12,6 @@ import {
   type BookingActivityRecord,
 } from './booking-activity-records';
 import { BookingActionStatusSections } from './booking-action-status-sections';
-import { BookingChatBubble } from './booking-chat-bubble';
 import { BookingCloseoutSections } from './booking-closeout-sections';
 import {
   BookingDetailToolbar,
@@ -43,6 +42,7 @@ import {
   BookingOperatingSnapshotSection,
   BookingOperatingTimelineSection,
 } from './booking-operating-sections';
+import { BookingRecordDetailSections } from './booking-record-detail-sections';
 import {
   BookingAddressRadiusContractSection,
   BookingAppliedPolicySection,
@@ -797,6 +797,93 @@ export default async function BookingDetailPage({ params }: PageProps) {
       helper: attentionSummary.helper,
     },
   ];
+  const locationTrailRows = locationTrail(booking).map((snapshot) => ({
+    id: snapshot.id,
+    coordinate: coordinateLabel(snapshot.lat, snapshot.lng),
+    recordedAt: formatDate(snapshot.recordedAt),
+  }));
+  const bookingRecordCustomerRows = [
+    { label: 'Name', value: booking.customerProfile?.user?.fullName ?? 'Customer' },
+    { label: 'Phone', value: booking.customerProfile?.user?.phone ?? 'No phone' },
+    { label: 'Address', value: addressLine },
+    { label: 'Pin', value: addressPin },
+    { label: 'Request opened', value: formatDate(booking.createdAt ?? booking.scheduledStartAt) },
+    { label: 'Expires', value: formatDate(booking.expiresAt) },
+  ];
+  const bookingRecordServiceRows = [
+    { label: 'Option', value: bookingServiceOptionLabel(booking) },
+    { label: 'Name', value: service?.service?.name ?? 'Service pending' },
+    { label: 'Duration', value: `${service?.service?.durationMin ?? '-'} min` },
+    {
+      label: 'Booking price',
+      value: money(service?.price ?? booking.payment?.amount, booking.payment?.currency),
+    },
+    {
+      label: 'Admin minimum',
+      value: money(service?.service?.basePrice, booking.payment?.currency),
+    },
+    { label: 'Partner payout rule', value: bookingServicePayoutRuleLabel(booking) },
+    { label: 'Notes', value: booking.notes ?? 'No notes' },
+    { label: 'Created', value: formatDate(booking.createdAt) },
+    { label: 'Updated', value: formatDate(booking.updatedAt) },
+  ];
+  const bookingRecordHandoffRows = [
+    { label: 'Preferred', value: providerName(booking.preferredProvider) },
+    { label: 'Final', value: providerName(finalProvider) },
+    { label: 'Final phone', value: finalProvider?.user?.phone ?? 'No phone' },
+    {
+      label: 'Latest partner pin',
+      value: latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet',
+    },
+    {
+      label: 'Latest pin time',
+      value: latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared',
+    },
+    { label: 'Location freshness', value: providerLocationMetricHelper(booking) },
+  ];
+  const bookingRecordPaymentRows = [
+    { label: 'Payment id', value: booking.payment?.id ?? 'No payment' },
+    { label: 'Method', value: booking.payment?.method ?? 'NONE' },
+    { label: 'Amount', value: money(booking.payment?.amount, booking.payment?.currency) },
+    {
+      label: 'Refund count',
+      value: `${booking.refunds?.length ?? booking.payment?.refunds?.length ?? 0}`,
+    },
+    {
+      label: 'Earning',
+      value: booking.earning
+        ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
+        : 'Not created',
+    },
+    ...(bookingCashDebtNeedsSettlement(booking)
+      ? [
+          {
+            label: 'Cash fee debt',
+            value: `${money(
+              Math.abs(booking.earning?.netAmount ?? 0),
+              booking.earning?.currency,
+            )} / partner blocked`,
+          },
+        ]
+      : []),
+    { label: 'Service feedback', value: booking.review ? 'Submitted' : 'Not submitted' },
+  ];
+  const bookingRecordFinanceRows = [
+    { label: 'Pricing source', value: financeTrace.pricingSource },
+    { label: 'Service option', value: financeTrace.serviceOption },
+    { label: 'Customer price', value: financeTrace.customerPrice },
+    { label: 'Admin minimum', value: financeTrace.adminMinimum },
+    { label: 'Payout rule', value: financeTrace.payoutRuleStatus },
+    { label: 'Rule line', value: financeTrace.payoutRuleLine },
+    { label: 'Partner payout', value: financeTrace.providerPayout },
+    { label: 'Platform fee', value: financeTrace.platformFee },
+    { label: 'VAT / other costs', value: financeTrace.feeCosts },
+    { label: 'Net HANDS fee', value: financeTrace.netHandsFee },
+    { label: 'Withholding', value: financeTrace.withholding },
+    { label: 'Company fee after tax', value: financeTrace.companyFeeAfterTax },
+    { label: 'Wallet ledger', value: financeTrace.walletLedger },
+    { label: 'Partner net', value: financeTrace.providerNet },
+  ];
 
   return (
     <>
@@ -958,325 +1045,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
         opsTaskCards={opsTaskCards}
       />
 
-      <section className="detail-grid">
-        <div className="card" id="flow">
-          <h2>Operations timeline</h2>
-          <div className="timeline">
-            {flowStages(booking).map((stage) => (
-              <div className={`timeline-step ${stage.done ? 'timeline-done' : ''}`} key={stage.label}>
-                <span>{stage.label}</span>
-                <strong>{stage.value}</strong>
-                <p className="muted">{stage.hint}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="card" id="customer">
-          <div className="ops-section-header">
-            <h2>Customer</h2>
-            {booking.customerProfile?.id && (
-              <Link className="text-link" href={`/customers/${booking.customerProfile.id}`}>
-                Open customer record
-              </Link>
-            )}
-          </div>
-          <InfoRow label="Name" value={booking.customerProfile?.user?.fullName ?? 'Customer'} />
-          <InfoRow label="Phone" value={booking.customerProfile?.user?.phone ?? 'No phone'} />
-          <InfoRow label="Address" value={addressLine} />
-          <InfoRow label="Pin" value={addressPin} />
-          <InfoRow label="Request opened" value={formatDate(booking.createdAt ?? booking.scheduledStartAt)} />
-          <InfoRow label="Expires" value={formatDate(booking.expiresAt)} />
-        </div>
-
-        <div className="card" id="service">
-          <h2>Service</h2>
-          <InfoRow label="Option" value={bookingServiceOptionLabel(booking)} />
-          <InfoRow label="Name" value={service?.service?.name ?? 'Service pending'} />
-          <InfoRow label="Duration" value={`${service?.service?.durationMin ?? '-'} min`} />
-          <InfoRow
-            label="Booking price"
-            value={money(service?.price ?? booking.payment?.amount, booking.payment?.currency)}
-          />
-          <InfoRow
-            label="Admin minimum"
-            value={money(service?.service?.basePrice, booking.payment?.currency)}
-          />
-          <InfoRow label="Partner payout rule" value={bookingServicePayoutRuleLabel(booking)} />
-          <InfoRow label="Notes" value={booking.notes ?? 'No notes'} />
-          <InfoRow label="Created" value={formatDate(booking.createdAt)} />
-          <InfoRow label="Updated" value={formatDate(booking.updatedAt)} />
-        </div>
-
-        <div className="card" id="handoff">
-          <div className="ops-section-header">
-            <h2>Partner handoff</h2>
-            {finalProvider?.id && (
-              <Link className="text-link" href={`/partners/${finalProvider.id}`}>
-                Open partner record
-              </Link>
-            )}
-            {!finalProvider?.id && <span className="pill pill-neutral">Partner record link pending</span>}
-          </div>
-          <InfoRow label="Preferred" value={providerName(booking.preferredProvider)} />
-          <InfoRow label="Final" value={providerName(finalProvider)} />
-          <InfoRow label="Final phone" value={finalProvider?.user?.phone ?? 'No phone'} />
-          <InfoRow
-            label="Latest partner pin"
-            value={
-              latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet'
-            }
-          />
-          <InfoRow
-            label="Latest pin time"
-            value={latestLocation ? formatDate(latestLocation.recordedAt) : 'No location shared'}
-          />
-          <InfoRow label="Location freshness" value={providerLocationMetricHelper(booking)} />
-        </div>
-      </section>
-
-      <section className="detail-grid" style={{ marginTop: 16 }}>
-        <div className="card" id="participants">
-          <div className="ops-section-header">
-            <div>
-              <h2>Actual marketplace participant ledger</h2>
-              <p className="muted">
-                Every partner who actually participated, accepted, rejected, or became the customer-selected final
-                partner stays here as booking evidence. Wallet-blocked partners who only viewed the
-                marketplace list are not tracked as participants.
-              </p>
-            </div>
-            <span className={`pill ${participantLedger.tone}`}>{participantLedger.status}</span>
-          </div>
-          <div className="participant-list" style={{ marginTop: 12 }}>
-            <span className="pill pill-info">Participant rows only</span>
-            <span className="pill pill-warn">Blocked wallet attempts are not participant records</span>
-            <span className="pill">Partners may view marketplace demand before join gate</span>
-            <span className="pill">Customer-selected final partner only</span>
-            <span className="pill">No automatic final assignment</span>
-          </div>
-          <div className="service-trace-summary" style={{ marginTop: 12 }}>
-            {participantLedger.cards.map((card) => (
-              <a href={card.href} key={card.label}>
-                <span>{card.label}</span>
-                <strong>{card.value}</strong>
-                <small>{card.helper}</small>
-              </a>
-            ))}
-          </div>
-          <div className="setup-stage-list" style={{ marginTop: 14 }}>
-            {participantLedger.selectionTrace.map((item) => (
-              <div className="setup-stage-item" key={item.label}>
-                <span>{item.label}</span>
-                <div>
-                  <strong>{item.value}</strong>
-                  <p className="muted">{item.helper}</p>
-                </div>
-                <span className={`pill ${item.tone}`}>{item.status}</span>
-              </div>
-            ))}
-          </div>
-          <table className="table" style={{ marginTop: 14 }}>
-            <thead>
-              <tr>
-                <th>Lifecycle stage</th>
-                <th>Current evidence</th>
-                <th>Operator check</th>
-              </tr>
-            </thead>
-            <tbody>
-              {participantLedger.lifecycleRows.map((row) => (
-                <tr key={row.stage}>
-                  <td>
-                    <strong>{row.stage}</strong>
-                    <p className="muted">{row.scope}</p>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.tone}`}>{row.status}</span>
-                    <p className="muted">{row.evidence}</p>
-                  </td>
-                  <td>{row.operatorUse}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <table className="table" style={{ marginTop: 14 }}>
-            <thead>
-              <tr>
-                <th>Partner</th>
-                <th>Participation evidence</th>
-                <th>Role and status</th>
-                <th>Timing and distance</th>
-                <th>Operations record</th>
-              </tr>
-            </thead>
-            <tbody>
-              {participantLedger.rows.map((row) => (
-                <tr key={row.id}>
-                  <td>
-                    <strong>{row.partner}</strong>
-                    <p className="muted">{row.identity}</p>
-                    {row.href && (
-                      <Link className="text-link" href={row.href}>
-                        Open partner record
-                      </Link>
-                    )}
-                  </td>
-                  <td>
-                    <span className={`pill ${row.evidenceTone}`}>{row.evidenceLabel}</span>
-                    <p className="muted">{row.evidenceDetail}</p>
-                  </td>
-                  <td>
-                    <div className="filter-row">
-                      <span className={`pill ${row.roleTone}`}>{row.role}</span>
-                      <span className={`pill ${row.statusTone}`}>{row.status}</span>
-                      <span className={`pill ${row.choiceTone}`}>{row.choiceState}</span>
-                    </div>
-                    <p className="muted">{row.decision}</p>
-                  </td>
-                  <td>
-                    <strong>{row.distance}</strong>
-                    <p className="muted">{row.timing}</p>
-                  </td>
-                  <td>{row.operatorUse}</td>
-                </tr>
-              ))}
-              {participantLedger.rows.length === 0 && (
-                <tr>
-                  <td colSpan={5}>No partner participation has been recorded for this booking yet.</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="card" id="payment">
-          <h2>Payment and refund</h2>
-          <InfoRow label="Payment id" value={booking.payment?.id ?? 'No payment'} />
-          <InfoRow label="Method" value={booking.payment?.method ?? 'NONE'} />
-          <InfoRow label="Amount" value={money(booking.payment?.amount, booking.payment?.currency)} />
-          <InfoRow
-            label="Refund count"
-            value={`${booking.refunds?.length ?? booking.payment?.refunds?.length ?? 0}`}
-          />
-          <InfoRow
-            label="Earning"
-            value={
-              booking.earning
-                ? `${money(booking.earning.netAmount, booking.earning.currency)} / ${booking.earning.status}`
-                : 'Not created'
-            }
-          />
-          {bookingCashDebtNeedsSettlement(booking) && (
-            <InfoRow
-              label="Cash fee debt"
-              value={`${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} / partner blocked`}
-            />
-          )}
-          <InfoRow label="Service feedback" value={booking.review ? 'Submitted' : 'Not submitted'} />
-        </div>
-
-        <div className="card">
-          <div className="ops-section-header">
-            <div>
-              <h2>Cash fee settlement path</h2>
-              <p className="muted">
-                Operational view for cash bookings: customer cash collection, HANDS fee debt, tax/fee logs,
-                partner wallet impact, and the exact unblock path for marketplace participation and payout.
-              </p>
-            </div>
-            <span className={`pill ${cashFeeSettlementPath.tone}`}>{cashFeeSettlementPath.status}</span>
-          </div>
-          <div className="service-trace-summary" style={{ marginTop: 12 }}>
-            {cashFeeSettlementPath.cards.map((card) => (
-              <a href={card.href} key={card.label}>
-                <span>{card.label}</span>
-                <strong>{card.value}</strong>
-                <small>{card.helper}</small>
-              </a>
-            ))}
-          </div>
-          <table className="table" style={{ marginTop: 14 }}>
-            <thead>
-              <tr>
-                <th>Settlement lane</th>
-                <th>Status</th>
-                <th>Evidence</th>
-                <th>Operator next step</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cashFeeSettlementPath.rows.map((row) => (
-                <tr key={row.lane}>
-                  <td>
-                    <strong>{row.lane}</strong>
-                    <p className="muted">{row.scope}</p>
-                  </td>
-                  <td>
-                    <span className={`pill ${row.tone}`}>{row.status}</span>
-                  </td>
-                  <td>{row.evidence}</td>
-                  <td>{row.nextStep}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="card">
-          <h2>Finance trace</h2>
-          <InfoRow label="Pricing source" value={financeTrace.pricingSource} />
-          <InfoRow label="Service option" value={financeTrace.serviceOption} />
-          <InfoRow label="Customer price" value={financeTrace.customerPrice} />
-          <InfoRow label="Admin minimum" value={financeTrace.adminMinimum} />
-          <InfoRow label="Payout rule" value={financeTrace.payoutRuleStatus} />
-          <InfoRow label="Rule line" value={financeTrace.payoutRuleLine} />
-          <InfoRow label="Partner payout" value={financeTrace.providerPayout} />
-          <InfoRow label="Platform fee" value={financeTrace.platformFee} />
-          <InfoRow label="VAT / other costs" value={financeTrace.feeCosts} />
-          <InfoRow label="Net HANDS fee" value={financeTrace.netHandsFee} />
-          <InfoRow label="Withholding" value={financeTrace.withholding} />
-          <InfoRow label="Company fee after tax" value={financeTrace.companyFeeAfterTax} />
-          <InfoRow label="Wallet ledger" value={financeTrace.walletLedger} />
-          <InfoRow label="Partner net" value={financeTrace.providerNet} />
-        </div>
-
-        <div className="card" id="chat">
-          <h2>Chat transcript</h2>
-          <p className="muted">
-            Admin archive for this booking. Customer and partner apps can hide the room after completion, but
-            operations keeps the loaded transcript here.
-          </p>
-          <div className="stack">
-            {messages.map((message) => (
-              <BookingChatBubble key={message.id} message={message} />
-            ))}
-            {messages.length === 0 && <p className="muted">No chat messages yet.</p>}
-          </div>
-        </div>
-
-        <div className="card" id="location">
-          <h2>Location trail</h2>
-          <div className="route-mini">
-            <span className="route-dot route-customer">Customer</span>
-            {latestLocation && <span className="route-dot route-provider">Partner</span>}
-          </div>
-          <div className="stack" style={{ marginTop: 12 }}>
-            {locationTrail(booking).map((snapshot) => (
-              <div className="ops-row" key={snapshot.id}>
-                <div>
-                  <strong>{coordinateLabel(snapshot.lat, snapshot.lng)}</strong>
-                  <div className="muted">{formatDate(snapshot.recordedAt)}</div>
-                </div>
-                <span className="pill">Partner</span>
-              </div>
-            ))}
-            {locationTrail(booking).length === 0 && (
-              <p className="muted">No partner location snapshots linked to this booking yet.</p>
-            )}
-          </div>
-        </div>
-      </section>
+      <BookingRecordDetailSections
+        cashFeeSettlementPath={cashFeeSettlementPath}
+        chatMessages={messages}
+        customerProfileId={booking.customerProfile?.id}
+        customerRows={bookingRecordCustomerRows}
+        finalPartnerId={finalProvider?.id}
+        financeRows={bookingRecordFinanceRows}
+        hasLatestPartnerLocation={Boolean(latestLocation)}
+        handoffRows={bookingRecordHandoffRows}
+        locationTrailRows={locationTrailRows}
+        participantLedger={participantLedger}
+        paymentRows={bookingRecordPaymentRows}
+        serviceRows={bookingRecordServiceRows}
+        timelineStages={flowStages(booking)}
+      />
 
       <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
     </>
@@ -4246,15 +4029,6 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
     href: '#booking-activity',
     hrefLabel: 'Open timeline',
   };
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="info-row">
-      <span>{label}</span>
-      <strong>{value}</strong>
-    </div>
-  );
 }
 
 function bookingClosureSummary(booking: AdminBookingDetail) {
