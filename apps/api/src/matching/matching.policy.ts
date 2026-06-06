@@ -275,9 +275,9 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       },
       {
         value: WALLET_ALLOW_ONE_RECOVERY_BOOKING,
-        label: 'Recovery supervision',
+        label: 'Future exception disabled',
         tradeoff:
-          'Reserved for audited recovery workflows; HANDS MVP still blocks marketplace participation while the wallet is negative.',
+          'Reserved for later audited recovery workflows only. HANDS MVP still blocks marketplace participation and payout release while the wallet is negative.',
       },
     ],
     enforced: true,

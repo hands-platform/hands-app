@@ -14,6 +14,7 @@ const bannedPatterns = [
   { label: 'VIP wording', pattern: /\bVIP\b/i },
   { label: 'people scoring wording', pattern: /\b(scoring|score)\b/i },
   { label: 'partner hierarchy wording', pattern: /\b(trusted badge|trust badge|partner badge|profile badge)\b/i },
+  { label: 'negative wallet exception wording', pattern: /\bRecovery supervision\b/i },
   { label: 'auto final assignment wording', pattern: /\bAuto-lock\b/i },
   {
     label: 'disabled customer final selection wording',

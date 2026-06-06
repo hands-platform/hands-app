@@ -1955,11 +1955,11 @@ function policyRecommendationPosture(
 
   if (setting.key === 'wallet.negative_balance_gate') {
     return {
-      status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Marketplace hold' : 'Recovery supervision',
+      status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Marketplace hold' : 'Future exception disabled',
       detail:
         value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
           ? 'Cash-debt exposure is contained at marketplace participation and payout release gates.'
-          : 'Recovery supervision keeps debt visible while operators manage configured marketplace/payout exceptions.',
+          : 'Historical exception mode is retained for audit only. The MVP still blocks marketplace participation and payout release until settlement.',
       operatorAction:
         'Keep marketplace list visibility open; use settlement evidence before marketplace participation or payout release.',
       alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
@@ -2166,13 +2166,13 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     },
     {
       title: 'Negative wallet gate',
-      status: hardWalletBlock ? 'Marketplace hold' : 'Recovery supervision',
+      status: hardWalletBlock ? 'Marketplace hold' : 'Future exception disabled',
       detail: hardWalletBlock
         ? 'Partners with unpaid cash-service fee debt can stay visible, but marketplace participation and payout release wait for settlement.'
-        : 'Operators can supervise configured marketplace/payout exceptions while debt collection remains visible.',
+        : 'Historical exception mode is retained for audit only. Marketplace participation and payout release should remain blocked until settlement.',
       operatorAction: hardWalletBlock
         ? 'This protects HANDS cash-fee collection without removing marketplace visibility.'
-        : 'Use recovery supervision only with settlement references and audit notes.',
+        : 'Reset to the marketplace hold policy after reviewing the saved setting.',
       className: hardWalletBlock ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: hardWalletBlock ? 'pill-success' : 'pill-danger',
       blocking: !hardWalletBlock,
@@ -2423,7 +2423,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       title:
         walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
           ? 'Negative wallet gates marketplace participation'
-          : 'Recovery supervision mode is enabled',
+          : 'Historical exception mode is not active for MVP',
       detail:
         'Cash-service company fee debt is enforced before marketplace participation and payout release.',
       api: 'POST /provider/bookings/:id/join, POST /admin/payout-batches',
@@ -2732,7 +2732,7 @@ function buildPartnerAcceptancePolicyImpact(
       value: walletGateHeld.length.toString(),
       helper: policy.hardWalletBlock
         ? 'Negative wallet gates marketplace participation and payout release.'
-        : 'Negative wallet stays visible while recovery supervision is enabled.',
+        : 'Negative wallet still needs settlement before marketplace participation and payout release.',
     },
     {
       label: 'Identity block',
