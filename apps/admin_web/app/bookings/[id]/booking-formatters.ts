@@ -159,3 +159,7 @@ export function shortId(id: string) {
 export function compactActivityText(value: string, maxLength: number) {
   return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
 }
+
+export function isTerminalPayment(status?: string) {
+  return status === 'CAPTURED' || status === 'REFUNDED' || status === 'RELEASED';
+}
