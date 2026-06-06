@@ -9,6 +9,7 @@ import {
 import { MetricCard } from '../../components/metric-card';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime, formatMoney, formatRelativeTime, readPlainRecord } from '../../lib/admin-format';
+import { ADMIN_OPERATIONS_POLICY_DEFAULTS, OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
 import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -1494,19 +1495,29 @@ function buildPolicySimulation(
   providers: AdminProvider[],
 ) {
   const responseWindowMinutes =
-    policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
-  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.providerResponseWindowMinutes;
+  const backupRadiusMeters =
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters;
   const backupLocationFreshnessMinutes =
-    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
   const backupInvitationLimit =
-    policyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
-  const travelBufferMinutes = policyNumberValue(settings, 'matching.travel_buffer_minutes') ?? 30;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceInvitationLimit;
+  const travelBufferMinutes =
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.travelBufferMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.travelBufferMinutes;
   const backupOpenMode =
-    policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.backupOpenMode;
   const preferredAcceptMode =
-    policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
   const alertChannel =
-    policyStringValue(settings, 'notification.partner_alert_channel') ?? 'IN_APP_WITH_PUSH_LATER';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.partnerAlertChannel) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.partnerAlertChannel;
   const reference = referenceBookingCoordinate(bookings);
   const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE'));
   const partnerCandidates = onlinePartners
@@ -1733,10 +1744,14 @@ function buildBookingCreateGateReview(
   auditLogs: AdminAuditLog[],
 ): BookingCreateGateReview {
   const customerDistanceKm =
-    policyNumberValue(settings, 'booking.max_customer_current_to_booking_address_km') ?? 20;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.bookingMaxCustomerCurrentToAddressKm) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.bookingMaxCustomerCurrentToAddressKm;
   const preferredPartnerDistanceKm =
-    policyNumberValue(settings, 'booking.max_preferred_partner_distance_km') ?? 50;
-  const freshnessMinutes = policyNumberValue(settings, 'booking.current_location_freshness_minutes') ?? 10;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.bookingMaxPreferredPartnerDistanceKm) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.bookingMaxPreferredPartnerDistanceKm;
+  const freshnessMinutes =
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.bookingCurrentLocationFreshnessMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.bookingCurrentLocationFreshnessMinutes;
   const distanceGateEnabled = policyBooleanValue(settings, 'booking.distance_gate_enabled') ?? true;
   const serviceAreaRequired = policyBooleanValue(settings, 'booking.service_area_required') ?? true;
   const rejections = auditLogs
@@ -2047,18 +2062,26 @@ function policyRecommendationPosture(
 
 function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[], providers: AdminProvider[]) {
   const responseWindowMinutes =
-    policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
-  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.providerResponseWindowMinutes;
+  const backupRadiusMeters =
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters;
   const backupLocationFreshnessMinutes =
-    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
   const preferredAcceptMode =
-    policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
   const backupOpenMode =
-    policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.backupOpenMode;
   const alertChannel =
-    policyStringValue(settings, 'notification.partner_alert_channel') ?? 'IN_APP_WITH_PUSH_LATER';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.partnerAlertChannel) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.partnerAlertChannel;
   const walletGate =
-    policyStringValue(settings, 'wallet.negative_balance_gate') ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate;
 
   const customerFinalChoice = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
@@ -2199,11 +2222,15 @@ function buildPolicySupplySensitivity(
   bookings: AdminBooking[],
   providers: AdminProvider[],
 ): PolicySupplySensitivity {
-  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const backupRadiusMeters =
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters;
   const freshnessMinutes =
-    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
   const walletGate =
-    policyStringValue(settings, 'wallet.negative_balance_gate') ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate;
   const hardWalletBlock = walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
   const reference = referenceBookingCoordinate(bookings);
   const candidates = providers
@@ -2317,16 +2344,23 @@ function buildPolicySupplySensitivity(
 
 function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) {
   const responseWindowMinutes =
-    policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
-  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.providerResponseWindowMinutes;
+  const backupRadiusMeters =
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters;
   const backupLocationFreshnessMinutes =
-    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
   const backupOpenMode =
-    policyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.backupOpenMode;
   const preferredAcceptMode =
-    policyStringValue(settings, 'matching.preferred_accept_mode') ?? 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
   const walletGate =
-    policyStringValue(settings, 'wallet.negative_balance_gate') ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate;
 
   return [
     {
@@ -2406,12 +2440,17 @@ function buildMatchingStageImpactPreview(
   providers: AdminProvider[],
 ): MatchingStageImpactPreview {
   const responseWindowMinutes =
-    policyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
-  const backupRadiusMeters = policyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.providerResponseWindowMinutes;
+  const backupRadiusMeters =
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters;
   const freshnessMinutes =
-    policyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
   const hardWalletBlock =
-    (policyStringValue(settings, 'wallet.negative_balance_gate') ?? 'BLOCK_ACCEPTS_WHEN_NEGATIVE') ===
+    (policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate) ===
     'BLOCK_ACCEPTS_WHEN_NEGATIVE';
   const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const liveHandoff = bookings.filter((booking) =>

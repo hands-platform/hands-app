@@ -1,24 +1,34 @@
 import type { AdminOperationalPolicySetting } from './admin-api';
 
 export const OPERATIONAL_POLICY_KEYS = {
+  travelBufferMinutes: 'matching.travel_buffer_minutes',
   providerResponseWindowMinutes: 'matching.provider_response_window_minutes',
   marketplaceRadiusMeters: 'matching.backup_provider_radius_meters',
   marketplaceLocationFreshnessMinutes: 'matching.backup_provider_location_max_age_minutes',
   marketplaceInvitationLimit: 'matching.backup_provider_invitation_limit',
+  bookingMaxCustomerCurrentToAddressKm: 'booking.max_customer_current_to_booking_address_km',
+  bookingMaxPreferredPartnerDistanceKm: 'booking.max_preferred_partner_distance_km',
+  bookingCurrentLocationFreshnessMinutes: 'booking.current_location_freshness_minutes',
   backupOpenMode: 'matching.backup_open_mode',
   preferredAcceptMode: 'matching.preferred_accept_mode',
+  partnerAlertChannel: 'notification.partner_alert_channel',
   walletNegativeGate: 'wallet.negative_balance_gate',
   cashSettlementClearance: 'cash.settlement_clearance_policy',
   payoutBatchCycle: 'payout.batch_cycle_policy',
 } as const;
 
 export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
+  travelBufferMinutes: 30,
   providerResponseWindowMinutes: 10,
   marketplaceRadiusMeters: 10_000,
   marketplaceLocationFreshnessMinutes: 30,
   marketplaceInvitationLimit: 50,
+  bookingMaxCustomerCurrentToAddressKm: 20,
+  bookingMaxPreferredPartnerDistanceKm: 50,
+  bookingCurrentLocationFreshnessMinutes: 10,
   backupOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
   preferredAcceptMode: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
+  partnerAlertChannel: 'IN_APP_WITH_PUSH_LATER',
   walletNegativeGate: 'BLOCK_ACCEPTS_WHEN_NEGATIVE',
   cashSettlementClearance: 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED',
   payoutBatchCycle: 'WEEKLY_OR_MONTHLY_BATCH',
