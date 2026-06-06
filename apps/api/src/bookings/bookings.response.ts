@@ -43,7 +43,6 @@ const PRIVATE_BOOKING_ADDRESS_KEYS = new Set([
 ]);
 
 const PUBLIC_BOOKING_ADDRESS_KEYS = new Set([
-  'name',
   'district',
   'ward',
   'city',

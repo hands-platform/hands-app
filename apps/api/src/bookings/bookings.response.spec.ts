@@ -25,7 +25,7 @@ describe('client booking response helpers', () => {
     expect(JSON.stringify(payment)).not.toContain('gatewaySecret');
   });
 
-  it('removes customer contact, exact address, and exact coordinates from partner open-booking responses', () => {
+  it('removes customer identity, contact, exact address, and exact coordinates from partner open-booking responses', () => {
     const response = partnerOpenBookingResponse({
       id: 'booking-1',
       address: {
@@ -62,12 +62,12 @@ describe('client booking response helpers', () => {
 
     const serialized = JSON.stringify(response);
 
+    expect(serialized).not.toContain('Demo Customer');
     expect(serialized).not.toContain('0865907184');
     expect(serialized).not.toContain('123 Nguyen Hue');
     expect(serialized).not.toContain('10.7769000');
     expect(serialized).not.toContain('106.7009000');
     expect(response.address).toEqual({
-      name: 'Demo Customer',
       district: 'District 1',
       city: 'Ho Chi Minh City',
       country: 'Vietnam',
@@ -75,7 +75,6 @@ describe('client booking response helpers', () => {
     });
     expect(response.addressSnapshot).toEqual({
       address: {
-        name: 'Demo Customer',
         district: 'District 1',
         city: 'Ho Chi Minh City',
         country: 'Vietnam',
