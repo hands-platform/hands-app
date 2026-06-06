@@ -94,6 +94,7 @@ export type AdminCustomer = {
   bookings?: AdminBooking[];
   reviews?: AdminReview[];
   auditLogs?: AdminAuditLog[];
+  auditLogCount?: number;
 };
 
 export type AdminCustomerDetail = AdminCustomer & {

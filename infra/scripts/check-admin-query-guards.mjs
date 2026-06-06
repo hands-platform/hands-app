@@ -120,6 +120,14 @@ if (!adminServiceSource.includes('take: customers.length * ADMIN_CUSTOMER_LIST_A
   });
 }
 
+if (!adminServiceSource.includes('const customerAuditCounts = await this.prisma.adminAuditLog.groupBy')) {
+  violations.push({
+    area: 'admin customer query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Customer list must compute full audit-log memo counts separately from the latest memo preview rows.',
+  });
+}
+
 if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;')) {
   violations.push({
     area: 'admin provider query',

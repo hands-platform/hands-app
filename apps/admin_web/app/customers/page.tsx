@@ -854,7 +854,7 @@ function buildCustomerRow(customer: AdminCustomer) {
   const latestMemo = [...(customer.auditLogs ?? [])].sort(
     (left, right) => dateMs(right.createdAt) - dateMs(left.createdAt),
   )[0];
-  const memoCount = customer.auditLogs?.length ?? 0;
+  const memoCount = customer.auditLogCount ?? customer.auditLogs?.length ?? 0;
   const activityLabel =
     activeBookings > 0
       ? `${activeBookings} active booking(s)`

@@ -1420,6 +1420,13 @@ export class AdminService {
       take: customers.length * ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,
       select: adminAuditLogSelect,
     });
+    const customerAuditCounts = await this.prisma.adminAuditLog.groupBy({
+      by: ['target'],
+      where: {
+        target: { in: customerTargets },
+      },
+      _count: { _all: true },
+    });
 
     const auditLogsByTarget = new Map<string, typeof customerAuditLogs>();
     for (const log of customerAuditLogs) {
@@ -1429,10 +1436,14 @@ export class AdminService {
         auditLogsByTarget.set(log.target, bucket);
       }
     }
+    const auditLogCountByTarget = new Map(
+      customerAuditCounts.map((row) => [row.target, row._count._all]),
+    );
 
     return customers.map((customer) => ({
       ...customer,
       auditLogs: auditLogsByTarget.get(`customer:${customer.id}`) ?? [],
+      auditLogCount: auditLogCountByTarget.get(`customer:${customer.id}`) ?? 0,
     }));
   }
 
