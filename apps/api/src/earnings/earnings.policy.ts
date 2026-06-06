@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { PaymentMethod } from '@prisma/client';
+import { CashFeeSettlementMethod, PaymentMethod } from '@prisma/client';
 
 export type WalletDeltaInput = {
   paymentMethod?: PaymentMethod | string | null;
@@ -24,12 +24,41 @@ export type ServicePayoutRuleLine = {
   otherCostAmount: number;
 };
 
+export type CashFeeDebtSettlementInput = {
+  netAmount: number;
+  settlementRef?: string | null;
+  settlementNotes?: string | null;
+  settlementMethod?: string | null;
+};
+
 export function calculateProviderWalletDelta(input: WalletDeltaInput) {
   if (input.paymentMethod === PaymentMethod.CASH || input.paymentMethod === 'CASH') {
     return -(input.platformFee + input.withholdingAmount);
   }
 
   return input.grossAmount - input.platformFee - input.withholdingAmount;
+}
+
+export function normalizeCashFeeDebtSettlementInput(input: CashFeeDebtSettlementInput) {
+  const settlementRef = cleanOptionalText(input.settlementRef);
+  const settlementNotes = cleanOptionalText(input.settlementNotes);
+  const settlementMethod = normalizeCashFeeSettlementMethod(input.settlementMethod);
+
+  if (input.netAmount >= 0) {
+    throw new BadRequestException('Positive partner earnings must be paid through payout batches');
+  }
+  if (!settlementRef) {
+    throw new BadRequestException('Settlement reference is required for cash fee debt settlement');
+  }
+  if (!settlementMethod) {
+    throw new BadRequestException('Settlement method is required for cash fee debt settlement');
+  }
+
+  return {
+    settlementRef,
+    settlementNotes,
+    settlementMethod,
+  };
 }
 
 export function calculateServicePayoutFeeFromRules(input: {
@@ -95,4 +124,28 @@ export function calculateServicePayoutFeeFromRules(input: {
       lines: ruleLines,
     },
   };
+}
+
+function cleanOptionalText(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed.slice(0, 240) : null;
+}
+
+function normalizeCashFeeSettlementMethod(
+  value: string | null | undefined,
+): CashFeeSettlementMethod | null {
+  const clean = cleanOptionalText(value);
+  if (!clean) {
+    return null;
+  }
+  if (
+    clean === CashFeeSettlementMethod.PARTNER_DEPOSIT ||
+    clean === CashFeeSettlementMethod.ADMIN_OFFSET
+  ) {
+    return clean;
+  }
+  throw new BadRequestException('Invalid cash fee settlement method');
 }

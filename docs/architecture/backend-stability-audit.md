@@ -82,6 +82,15 @@ The booking policy helpers now directly cover the two timing/order boundaries th
 
 The service still keeps its existing private method names for compatibility, but delegates those decisions to tested policy helpers.
 
+## Cash Settlement Helper Coverage 2026-06-07
+
+Cash fee debt settlement rules are now covered in the earnings policy layer:
+
+- Positive partner earnings cannot be marked paid through manual cash-fee settlement; payout batches remain the release path.
+- Negative cash-fee debt requires a settlement reference and an allowed method.
+- Allowed methods are limited to partner deposit and admin offset.
+- Valid settlement inputs are normalized before `EarningsService.markPaid` writes the paid earning and wallet ledger entry.
+
 ## Follow-Up Before Production
 
 - Set strong `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, and `CORS_ORIGINS` in every production-like environment.

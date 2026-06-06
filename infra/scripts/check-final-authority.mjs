@@ -266,12 +266,12 @@ function checkNoTipContract() {
 }
 
 function checkPayoutBatchContract() {
-  const earnings = read('apps/api/src/earnings/earnings.service.ts');
+  const earningsPolicy = read('apps/api/src/earnings/earnings.policy.ts');
   const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
   const adminEarnings = read('apps/admin_web/app/earnings/page.tsx');
   const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
   const smoke = read('infra/scripts/api-smoke.mjs');
-  requireMarkers('apps/api/src/earnings/earnings.service.ts', earnings, [
+  requireMarkers('apps/api/src/earnings/earnings.policy.ts', earningsPolicy, [
     'Positive partner earnings must be paid through payout batches',
   ]);
   requireMarkers('apps/api/src/matching/matching.policy.ts', matchingPolicy, [

@@ -1,6 +1,10 @@
-import { PaymentMethod } from '@prisma/client';
+import { CashFeeSettlementMethod, PaymentMethod } from '@prisma/client';
 
-import { calculateProviderWalletDelta, calculateServicePayoutFeeFromRules } from './earnings.policy';
+import {
+  calculateProviderWalletDelta,
+  calculateServicePayoutFeeFromRules,
+  normalizeCashFeeDebtSettlementInput,
+} from './earnings.policy';
 
 describe('earnings policy', () => {
   it('credits non-cash bookings after platform fee and withholding', () => {
@@ -82,5 +86,49 @@ describe('earnings policy', () => {
     });
 
     expect(fee).toBeNull();
+  });
+
+  it('rejects positive earnings because payout batches release partner income', () => {
+    expect(() =>
+      normalizeCashFeeDebtSettlementInput({
+        netAmount: 380000,
+        settlementRef: 'HANDS-CASH-001',
+        settlementMethod: CashFeeSettlementMethod.PARTNER_DEPOSIT,
+      }),
+    ).toThrow('Positive partner earnings must be paid through payout batches');
+  });
+
+  it('requires a settlement reference for negative cash fee debt settlement', () => {
+    expect(() =>
+      normalizeCashFeeDebtSettlementInput({
+        netAmount: -120000,
+        settlementMethod: CashFeeSettlementMethod.PARTNER_DEPOSIT,
+      }),
+    ).toThrow('Settlement reference is required for cash fee debt settlement');
+  });
+
+  it('requires an allowed settlement method for negative cash fee debt settlement', () => {
+    expect(() =>
+      normalizeCashFeeDebtSettlementInput({
+        netAmount: -120000,
+        settlementRef: 'HANDS-CASH-001',
+        settlementMethod: 'MANUAL_CREDIT',
+      }),
+    ).toThrow('Invalid cash fee settlement method');
+  });
+
+  it('normalizes valid cash fee debt settlement input', () => {
+    const settlement = normalizeCashFeeDebtSettlementInput({
+      netAmount: -120000,
+      settlementRef: '  HANDS-CASH-001  ',
+      settlementNotes: '  Partner bank deposit confirmed  ',
+      settlementMethod: 'PARTNER_DEPOSIT',
+    });
+
+    expect(settlement).toEqual({
+      settlementRef: 'HANDS-CASH-001',
+      settlementNotes: 'Partner bank deposit confirmed',
+      settlementMethod: CashFeeSettlementMethod.PARTNER_DEPOSIT,
+    });
   });
 });
