@@ -12,24 +12,38 @@ import {
 } from '../../../lib/admin-api';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../../lib/admin-copy';
 import {
-  formatDateTime,
-  formatDistanceMeters,
-  formatMoney as formatAdminMoney,
-  shortId as formatShortId,
-} from '../../../lib/admin-format';
-import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
   readDetailDateFilters,
 } from '../../../lib/detail-date-filter';
 import {
-  DetailActivityTypeOption,
   detailActivityTypeLabel,
   isWithinDetailActivityType,
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import { addCustomerOpsNote } from './actions';
+import {
+  bookingPartnerDisplayName,
+  compactJson,
+  compactText,
+  dateMs,
+  formatDate,
+  formatDistance,
+  formatMoney,
+  readMetadataObject,
+  readNumber,
+  readString,
+  shortId,
+} from './customer-detail-format';
+import {
+  CUSTOMER_ACTIVITY_TYPE_OPTIONS,
+  DETAIL_ACTIVITY_ORDER_OPTIONS,
+  activityOrderLabel,
+  orderCustomerActivityRecords,
+  readDetailActivityOrder,
+} from './customer-detail-filters';
+import type { DetailActivityOrder } from './customer-detail-filters';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -45,28 +59,6 @@ const ACTIVE_STATUSES = [
   'IN_SERVICE',
 ];
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
-const DETAIL_ACTIVITY_ORDER_OPTIONS = [
-  { value: 'newest', label: 'Newest first' },
-  { value: 'oldest', label: 'Oldest first' },
-] as const;
-type DetailActivityOrder = (typeof DETAIL_ACTIVITY_ORDER_OPTIONS)[number]['value'];
-
-const CUSTOMER_ACTIVITY_TYPE_OPTIONS = [
-  { value: 'all', label: 'All event types', types: [] },
-  { value: 'booking_work', label: 'Bookings and completed work', types: ['BOOKING', 'WORK'] },
-  { value: 'chat', label: 'Chat archive', types: ['CHAT'] },
-  { value: 'payment', label: 'Payments and refunds', types: ['PAYMENT', 'REFUND'] },
-  {
-    value: 'address_app',
-    label: 'Account, addresses, sessions, devices',
-    types: ['ACCOUNT', 'ADDRESS', 'SESSION', 'DEVICE'],
-  },
-  {
-    value: 'support',
-    label: 'Notifications, reviews, staff records',
-    types: ['NOTICE', 'REVIEW', 'OPS', 'AUDIT'],
-  },
-] satisfies DetailActivityTypeOption[];
 
 export default async function CustomerDetailPage({ params, searchParams }: PageProps) {
   const { id } = await params;
@@ -1872,24 +1864,6 @@ type CustomerBookingGateAttemptRow = {
   tone: string;
 };
 
-function readDetailActivityOrder(params: Record<string, string | string[] | undefined>): DetailActivityOrder {
-  const value = Array.isArray(params.order) ? params.order[0] : params.order;
-  return value === 'oldest' ? 'oldest' : 'newest';
-}
-
-function activityOrderLabel(order: DetailActivityOrder) {
-  return DETAIL_ACTIVITY_ORDER_OPTIONS.find((option) => option.value === order)?.label ?? 'Newest first';
-}
-
-function orderCustomerActivityRecords<T extends { at?: string | null }>(
-  records: T[],
-  order: DetailActivityOrder,
-) {
-  return [...records].sort((left, right) =>
-    order === 'oldest' ? dateMs(left.at) - dateMs(right.at) : dateMs(right.at) - dateMs(left.at),
-  );
-}
-
 function CustomerOperatorCommandAction({
   customerId,
   command,
@@ -3646,65 +3620,4 @@ function stringifyAddress(value: unknown) {
     return JSON.stringify(value);
   }
   return String(value ?? 'No address');
-}
-
-function shortId(id?: string) {
-  return formatShortId(id, { fallback: 'unknown' });
-}
-
-function compactJson(value: unknown) {
-  if (!value) return 'No metadata';
-  const text = JSON.stringify(value);
-  return text.length > 160 ? `${text.slice(0, 157)}...` : text;
-}
-
-function readMetadataObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function readString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value : null;
-}
-
-function readNumber(value: unknown) {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim()) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-  return null;
-}
-
-function compactText(value: string, maxLength: number) {
-  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
-}
-
-function bookingPartnerDisplayName(booking: AdminBookingDetail) {
-  return displayMarketplaceText(
-    booking.selectedProvider?.displayName ??
-      booking.preferredProvider?.displayName ??
-      booking.selectedProvider?.user?.fullName ??
-      booking.preferredProvider?.user?.fullName ??
-      'No partner',
-  );
-}
-
-function dateMs(value?: string | null) {
-  if (!value) return 0;
-  const ms = new Date(value).getTime();
-  return Number.isFinite(ms) ? ms : 0;
-}
-
-function formatDate(value?: string | null) {
-  return formatDateTime(value, 'Not set');
-}
-
-function formatDistance(value: number) {
-  return formatDistanceMeters(value);
-}
-
-function formatMoney(value: number, currency = 'VND') {
-  return formatAdminMoney(value, currency, `0 ${currency}`);
 }
