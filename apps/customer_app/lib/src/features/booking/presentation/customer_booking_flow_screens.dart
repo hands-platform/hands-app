@@ -24,7 +24,6 @@ class BookingConfirmationPage extends ConsumerStatefulWidget {
     this.initialCustomerLng,
     this.initialCustomerAddress,
     this.initialCustomerLocationIsDemo = false,
-    required this.onConfirm,
   });
 
   final Map<String, dynamic> providerDetail;
@@ -33,17 +32,6 @@ class BookingConfirmationPage extends ConsumerStatefulWidget {
   final double? initialCustomerLng;
   final String? initialCustomerAddress;
   final bool initialCustomerLocationIsDemo;
-  final Future<Map<String, dynamic>> Function({
-    required String customerName,
-    required String customerPhone,
-    required String addressLine,
-    required double lat,
-    required double lng,
-    double? currentLat,
-    double? currentLng,
-    DateTime? currentLocationUpdatedAt,
-  }) onConfirm;
-
   @override
   ConsumerState<BookingConfirmationPage> createState() =>
       _BookingConfirmationPageState();
@@ -286,9 +274,8 @@ class _BookingConfirmationPageState
     final providerName = provider['displayName'] as String? ?? 'Partner';
     final serviceName = customerServiceName(service);
     final durationLabel = customerServiceDurationLabel(service);
-    final platformFee = 0;
     final serviceCount = 1;
-    final rawTotalAmount = servicePrice + platformFee - couponDiscountAmount;
+    final rawTotalAmount = servicePrice - couponDiscountAmount;
     final totalAmount = rawTotalAmount < 0 ? 0 : rawTotalAmount;
     final couponApplied = appliedCouponCode != null && couponDiscountAmount > 0;
     final customerPoint = customerLat == null || customerLng == null
@@ -644,11 +631,6 @@ class _BookingConfirmationPageState
                   BookingSummaryRow(
                     label: 'Service price',
                     value: '${formatCurrency(servicePrice)} VND',
-                  ),
-                  const SizedBox(height: 10),
-                  BookingSummaryRow(
-                    label: 'Platform fee',
-                    value: '${formatCurrency(platformFee)} VND',
                   ),
                   const SizedBox(height: 10),
                   BookingSummaryRow(

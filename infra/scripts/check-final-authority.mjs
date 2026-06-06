@@ -137,9 +137,13 @@ function checkOnDemandBookingContract() {
   const controller = read('apps/api/src/bookings/bookings.controller.ts');
   const service = read('apps/api/src/bookings/bookings.service.ts');
   const smoke = read('infra/scripts/api-smoke.mjs');
+  const customerAppFiles = listFiles('apps/customer_app/lib', '.dart');
 
   rejectMarker('apps/api/src/bookings/bookings.controller.ts', controller, 'scheduledStartAt?:');
   rejectMarker('apps/api/src/bookings/bookings.service.ts', service, 'scheduledStartAt?:');
+  for (const file of customerAppFiles) {
+    rejectMarker(file, read(file), 'scheduledStartAt');
+  }
   requireMarkers('apps/api/src/bookings/bookings.service.ts', service, [
     'HANDS MVP is on-demand only',
     'const scheduledStartAt = new Date();',

@@ -68,9 +68,7 @@ class ServiceTag extends StatelessWidget {
 }
 
 int customerBookingTimestamp(Map<String, dynamic> booking) {
-  final value = booking['updatedAt'] ??
-      booking['createdAt'] ??
-      booking['scheduledStartAt'];
+  final value = booking['updatedAt'] ?? booking['createdAt'];
   if (value is String) {
     return DateTime.tryParse(value)?.millisecondsSinceEpoch ?? 0;
   }

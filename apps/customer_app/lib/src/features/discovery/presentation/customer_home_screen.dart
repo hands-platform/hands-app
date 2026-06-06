@@ -254,30 +254,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   initialCustomerLng: customerLng,
                   initialCustomerAddress: customerAddress,
                   initialCustomerLocationIsDemo: customerLocationIsDemo,
-                  onConfirm: ({
-                    required customerName,
-                    required customerPhone,
-                    required addressLine,
-                    required lat,
-                    required lng,
-                    currentLat,
-                    currentLng,
-                    currentLocationUpdatedAt,
-                  }) =>
-                      ref.read(customerRepositoryProvider).createBooking(
-                            service['id'] as String,
-                            providerId: detail['id'] as String,
-                            selectedLocationId:
-                                ref.read(selectedCustomerLocationProvider)?.id,
-                            customerName: customerName,
-                            customerPhone: customerPhone,
-                            addressLine: addressLine,
-                            lat: lat,
-                            lng: lng,
-                            currentLat: currentLat,
-                            currentLng: currentLng,
-                            currentLocationUpdatedAt: currentLocationUpdatedAt,
-                          ),
                 ),
               ),
             );
