@@ -9,6 +9,20 @@ export type ParticipantChoicePresentationInput = ParticipantReadableDecisionInpu
   anotherFinalPartnerSelected: boolean;
 };
 
+export function marketplaceParticipantLedgerBoundaryCopy() {
+  return {
+    helper:
+      'Partners may view marketplace demand before the wallet join gate. If the wallet is negative, the partner app blocks marketplace participation with an unpaid HANDS fee message before a participant row is created.',
+    pills: [
+      'Actual participant rows only',
+      'Negative wallet blocks marketplace join',
+      'Blocked join attempts are not participant records',
+      'Customer-selected final partner only',
+      'No automatic final assignment',
+    ],
+  };
+}
+
 export function participantReadableDecision(input: ParticipantReadableDecisionInput) {
   if (input.isFinal || input.status === 'SELECTED') {
     return {

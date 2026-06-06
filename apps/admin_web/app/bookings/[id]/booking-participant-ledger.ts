@@ -1,5 +1,8 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
-import { participantReadableDecision } from '../../../lib/admin-participant-ledger-copy';
+import {
+  marketplaceParticipantLedgerBoundaryCopy,
+  participantReadableDecision,
+} from '../../../lib/admin-participant-ledger-copy';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { distanceLabel, formatDate, providerName, shortId } from './booking-formatters';
 import {
@@ -75,6 +78,7 @@ export function bookingParticipantLedger(
   return {
     status,
     tone,
+    boundary: marketplaceParticipantLedgerBoundaryCopy(),
     cards: [
       {
         label: 'First-pick partner',

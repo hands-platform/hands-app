@@ -67,6 +67,10 @@ type ParticipantRow = {
 type ParticipantLedger = {
   status: string;
   tone: string;
+  boundary: {
+    helper: string;
+    pills: string[];
+  };
   cards: SummaryCard[];
   selectionTrace: SelectionTraceRow[];
   lifecycleRows: ParticipantLifecycleRow[];
@@ -244,12 +248,15 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
         <span className={`pill ${participantLedger.tone}`}>{participantLedger.status}</span>
       </div>
       <div className="participant-list" style={{ marginTop: 12 }}>
-        <span className="pill pill-info">Participant rows only</span>
-        <span className="pill pill-warn">Blocked wallet attempts are not participant records</span>
-        <span className="pill">Partners may view marketplace demand before join gate</span>
-        <span className="pill">Customer-selected final partner only</span>
-        <span className="pill">No automatic final assignment</span>
+        {participantLedger.boundary.pills.map((pill, index) => (
+          <span className={index === 1 ? 'pill pill-warn' : index === 0 ? 'pill pill-info' : 'pill'} key={pill}>
+            {pill}
+          </span>
+        ))}
       </div>
+      <p className="muted" style={{ marginTop: 10 }}>
+        {participantLedger.boundary.helper}
+      </p>
       <SummaryCards cards={participantLedger.cards} />
       <div className="setup-stage-list" style={{ marginTop: 14 }}>
         {participantLedger.selectionTrace.map((item) => (

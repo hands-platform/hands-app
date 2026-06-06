@@ -1,4 +1,5 @@
 import {
+  marketplaceParticipantLedgerBoundaryCopy,
   participantChoicePresentation,
   participantReadableDecision,
 } from './admin-participant-ledger-copy';
@@ -54,6 +55,22 @@ describe('participantReadableDecision', () => {
         customerSelectable: false,
       }).title,
     ).toBe('Archived decline evidence');
+  });
+});
+
+describe('marketplaceParticipantLedgerBoundaryCopy', () => {
+  it('explains that negative wallet partners cannot join marketplace bookings', () => {
+    expect(marketplaceParticipantLedgerBoundaryCopy()).toEqual({
+      helper:
+        'Partners may view marketplace demand before the wallet join gate. If the wallet is negative, the partner app blocks marketplace participation with an unpaid HANDS fee message before a participant row is created.',
+      pills: [
+        'Actual participant rows only',
+        'Negative wallet blocks marketplace join',
+        'Blocked join attempts are not participant records',
+        'Customer-selected final partner only',
+        'No automatic final assignment',
+      ],
+    });
   });
 });
 
