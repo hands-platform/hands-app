@@ -17,6 +17,7 @@ import {
   formatPolicyDistance,
   humanizePolicyValue,
 } from '../../lib/operations-policy';
+import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 
 type Props = {
   bookings: AdminBooking[];
@@ -5003,55 +5004,15 @@ function marketplaceParticipantChoiceState(booking: AdminBooking, participant: B
   const selectedProviderId = booking.selectedProvider?.id ?? booking.selectedProviderId;
   const preferredProviderId = booking.preferredProvider?.id ?? booking.preferredProviderId;
   const partnerId = participant.providerProfile?.id;
-  if (selectedProviderId && participant.providerProfile?.id === selectedProviderId) {
-    return {
-      choiceLabel: 'Selected by customer',
-      choiceTone: 'pill-success',
-      choiceReason:
-        'Customer already selected this partner as the final match; the row remains in the ledger.',
-      choiceNextStep: 'Keep chat, payment, location, and closeout evidence linked to this selected row.',
-    };
-  }
-  if (selectedProviderId) {
-    return {
-      choiceLabel: 'Not final choice',
-      choiceTone: 'pill-neutral',
-      choiceReason: 'Why not selectable: the customer already selected another final partner.',
-      choiceNextStep: 'Keep this row as participation history only.',
-    };
-  }
-  if (isCustomerSelectableMarketplaceParticipant(booking, participant)) {
-    return {
-      choiceLabel: 'Customer-selectable',
-      choiceTone: 'pill-info',
-      choiceReason:
-        'Customer-selectable reason: this partner has an eligible participation status for customer final choice.',
-      choiceNextStep: 'Wait for the customer to choose; do not auto-assign the final partner.',
-    };
-  }
-  if (participant.status === 'REJECTED') {
-    return {
-      choiceLabel: 'Evidence-only',
-      choiceTone: 'pill-neutral',
-      choiceReason: 'Why not selectable: the partner declined or could not take this booking.',
-      choiceNextStep: 'Keep the row as response evidence only.',
-    };
-  }
-  if (partnerId && partnerId === preferredProviderId && participant.status === 'JOINED') {
-    return {
-      choiceLabel: 'Evidence-only',
-      choiceTone: 'pill-warn',
-      choiceReason:
-        'Why not selectable: first-pick participation is retained, but acceptance is required before customer choice.',
-      choiceNextStep: 'Monitor the first-pick response window and marketplace options.',
-    };
-  }
-  return {
-    choiceLabel: 'Evidence-only',
-    choiceTone: 'pill-neutral',
-    choiceReason: `Why not selectable: status ${participant.status} is retained as evidence only.`,
-    choiceNextStep: 'Wait for an eligible participation status or a final selected row.',
-  };
+  const isFinal = Boolean(selectedProviderId && partnerId === selectedProviderId);
+
+  return participantChoicePresentation({
+    isFinal,
+    isPreferred: Boolean(partnerId && partnerId === preferredProviderId),
+    status: participant.status,
+    customerSelectable: isCustomerSelectableMarketplaceParticipant(booking, participant),
+    anotherFinalPartnerSelected: Boolean(selectedProviderId && !isFinal),
+  });
 }
 
 function bookingParticipantTimestamp(participant: BookingParticipant) {

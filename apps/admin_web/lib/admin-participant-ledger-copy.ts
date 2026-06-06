@@ -5,6 +5,10 @@ export type ParticipantReadableDecisionInput = {
   customerSelectable: boolean;
 };
 
+export type ParticipantChoicePresentationInput = ParticipantReadableDecisionInput & {
+  anotherFinalPartnerSelected: boolean;
+};
+
 export function participantReadableDecision(input: ParticipantReadableDecisionInput) {
   if (input.isFinal || input.status === 'SELECTED') {
     return {
@@ -46,5 +50,52 @@ export function participantReadableDecision(input: ParticipantReadableDecisionIn
     decision:
       'Participant row is retained as evidence, but it is not a customer selection candidate.',
     nextStep: 'Wait for a customer-selectable participant status or a retained final selected row.',
+  };
+}
+
+export function participantChoicePresentation(input: ParticipantChoicePresentationInput) {
+  const readable = participantReadableDecision(input);
+
+  if (input.isFinal || input.status === 'SELECTED') {
+    return {
+      choiceLabel: 'Selected by customer',
+      choiceTone: 'pill-success',
+      choiceReason: readable.decision,
+      choiceNextStep: readable.nextStep,
+    };
+  }
+
+  if (input.anotherFinalPartnerSelected) {
+    return {
+      choiceLabel: 'Not final choice',
+      choiceTone: 'pill-neutral',
+      choiceReason: 'Customer already selected another final partner.',
+      choiceNextStep: 'Keep this row as participation history only.',
+    };
+  }
+
+  if (input.customerSelectable) {
+    return {
+      choiceLabel: 'Customer-selectable',
+      choiceTone: 'pill-info',
+      choiceReason: readable.decision,
+      choiceNextStep: readable.nextStep,
+    };
+  }
+
+  if (input.isPreferred && input.status === 'JOINED') {
+    return {
+      choiceLabel: 'Evidence-only',
+      choiceTone: 'pill-warn',
+      choiceReason: readable.decision,
+      choiceNextStep: readable.nextStep,
+    };
+  }
+
+  return {
+    choiceLabel: 'Evidence-only',
+    choiceTone: 'pill-neutral',
+    choiceReason: readable.decision,
+    choiceNextStep: readable.nextStep,
   };
 }
