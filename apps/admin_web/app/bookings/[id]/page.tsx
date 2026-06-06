@@ -13,6 +13,7 @@ import {
   type BookingActivityRecord,
 } from './booking-activity-records';
 import { BookingChatBubble } from './booking-chat-bubble';
+import { BookingCloseoutSections } from './booking-closeout-sections';
 import {
   ActionLink,
   OperatorCommandAction,
@@ -39,6 +40,7 @@ import {
   safeTime,
   shortId,
 } from './booking-formatters';
+import { BookingEvidenceSections } from './booking-evidence-sections';
 import {
   AdminAuditLog,
   AdminBookingDetail,
@@ -1017,325 +1019,20 @@ export default async function BookingDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="card" id="booking-decision-evidence-guardrails" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Decision evidence guardrails</h2>
-            <p className="muted">
-              Required, supporting, and finance records for admin-only outcome work. Use this before
-              cancellation, no-show, refund, release, cash settlement, or completed-service closeout.
-            </p>
-          </div>
-          <span className="pill pill-info">{decisionEvidenceGuardrails.length} guardrail row(s)</span>
-        </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Guardrail</th>
-              <th>Status</th>
-              <th>Loaded record</th>
-              <th>Next operator step</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {decisionEvidenceGuardrails.map((row) => (
-              <tr key={row.id}>
-                <td>
-                  <strong>{row.title}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                </td>
-                <td>{row.evidence}</td>
-                <td>{row.nextStep}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      <BookingEvidenceSections
+        bookingId={booking.id}
+        decisionEvidenceGuardrails={decisionEvidenceGuardrails}
+        evidencePacket={evidencePacket}
+        chatEvidenceDecisionBoard={chatEvidenceDecisionBoard}
+        manualDecisionReadiness={manualDecisionReadiness}
+        decisionNotePresets={decisionNotePresets}
+        bookingEvidenceBundleRows={bookingEvidenceBundleRows}
+      />
 
-      <section className="card" id="booking-evidence-packet" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Evidence packet for admin decision</h2>
-            <p className="muted">
-              Cancellation, no-show, refund, and settlement decisions should use retained booking evidence.
-              This packet groups chat, location, payment, alerts, notes, and audit records as factual decision
-              context for the customer and partner.
-            </p>
-          </div>
-          <span className={`pill ${evidencePacket.tone}`}>{evidencePacket.status}</span>
-        </div>
-        <p className="muted" style={{ marginTop: 8 }}>
-          {evidencePacket.summary}
-        </p>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {evidencePacket.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {evidencePacket.records.map((record) => (
-            <div className="setup-stage-item" id={record.id} key={record.id}>
-              <span>{record.label}</span>
-              <div>
-                <strong>{record.title}</strong>
-                <p className="muted">{record.detail}</p>
-                <small>{record.evidence}</small>
-              </div>
-              <a className="text-link" href={record.href}>
-                Open
-              </a>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="card" id="booking-chat-evidence-decision-board" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Chat evidence decision board</h2>
-            <p className="muted">
-              Retained chat evidence is the first place operators should look before cancellation, no-show,
-              refund, release, or completed-work closeout. This board keeps the view limited to factual
-              records and operator context.
-            </p>
-          </div>
-          <span className={`pill ${chatEvidenceDecisionBoard.tone}`}>{chatEvidenceDecisionBoard.status}</span>
-        </div>
-        <p className="muted" style={{ marginTop: 8 }}>
-          {chatEvidenceDecisionBoard.summary}
-        </p>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {chatEvidenceDecisionBoard.metrics.map((metric) => (
-            <div key={metric.label}>
-              <span>{metric.label}</span>
-              <strong>{metric.value}</strong>
-              <small>{metric.helper}</small>
-            </div>
-          ))}
-        </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Evidence lane</th>
-              <th>State</th>
-              <th>Factual record</th>
-              <th>Operator use</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {chatEvidenceDecisionBoard.rows.map((row) => (
-              <tr key={row.lane}>
-                <td>
-                  <strong>{row.lane}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.state}</span>
-                </td>
-                <td>{row.record}</td>
-                <td>{row.operatorUse}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card" id="manual-decision-readiness" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Manual outcome decision readiness</h2>
-            <p className="muted">
-              Operations-only decision board for cancellation, no-show, refund/release, cash fee settlement,
-              and completed closeout. It keeps the decision factual and evidence-based.
-            </p>
-          </div>
-          <div className="actions">
-            <Link className="text-link" href="/bookings?view=manual-decision">
-              Open manual queue
-            </Link>
-            <span className="pill pill-info">{manualDecisionReadiness.length} decision lane(s)</span>
-          </div>
-        </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Decision lane</th>
-              <th>Status</th>
-              <th>Evidence loaded</th>
-              <th>Operator use</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {manualDecisionReadiness.map((row) => (
-              <tr key={row.lane}>
-                <td>
-                  <strong>{row.lane}</strong>
-                  <p className="muted">{row.scope}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                </td>
-                <td>{row.evidence}</td>
-                <td>{row.operatorUse}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="ops-task-note" style={{ marginTop: 14 }}>
-          <div className="ops-section-header">
-            <div>
-              <strong>Decision note presets</strong>
-              <p className="muted">
-                Fast factual notes for missing evidence, payment review, cash fee settlement, and closeout
-                handling. Use these before changing booking outcomes.
-              </p>
-            </div>
-            <span className="pill pill-info">{decisionNotePresets.length} preset(s)</span>
-          </div>
-          <div className="setup-stage-list" style={{ marginTop: 12 }}>
-            {decisionNotePresets.map((preset) => (
-              <div className="setup-stage-item" key={preset.id}>
-                <span>{preset.label}</span>
-                <div>
-                  <strong>{preset.title}</strong>
-                  <p className="muted">{preset.detail}</p>
-                </div>
-                <form action={addBookingOpsNote}>
-                  <input type="hidden" name="bookingId" value={booking.id} />
-                  <input type="hidden" name="preset" value={preset.preset} />
-                  <button type="submit">Add note</button>
-                </form>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="card" id="booking-full-evidence-bundle" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking full evidence bundle</h2>
-            <p className="muted">
-              Single booking command view that ties the customer, partner, address snapshot, chat archive,
-              payment, earning, wallet, location, alerts, and operator notes into one factual bundle.
-            </p>
-          </div>
-          <span className="pill pill-info">{bookingEvidenceBundleRows.length} evidence lane(s)</span>
-        </div>
-        <table className="table" style={{ marginTop: 14 }}>
-          <thead>
-            <tr>
-              <th>Lane</th>
-              <th>Current state</th>
-              <th>Evidence</th>
-              <th>Operator use</th>
-              <th>Open</th>
-            </tr>
-          </thead>
-          <tbody>
-            {bookingEvidenceBundleRows.map((row) => (
-              <tr key={row.lane}>
-                <td>
-                  <strong>{row.lane}</strong>
-                  <p className="muted">{row.recordLabel}</p>
-                </td>
-                <td>
-                  <span className={`pill ${row.tone}`}>{row.status}</span>
-                </td>
-                <td>{row.evidence}</td>
-                <td>{row.operatorUse}</td>
-                <td>
-                  <Link className="text-link" href={row.href}>
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-
-      <section className="card" id="booking-closeout-checklist" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking closeout checklist</h2>
-            <p className="muted">
-              Final operator checklist before payment capture, refund/release, cash fee settlement, no-show,
-              cancellation, or completed-work closeout. It uses factual records only.
-            </p>
-          </div>
-          <div className="actions">
-            <Link className="text-link" href="/bookings?view=manual-decision">
-              Manual decision queue
-            </Link>
-            <Link className="text-link" href="/finance-closeout">
-              Finance closeout
-            </Link>
-          </div>
-        </div>
-        <div className="ops-task-grid" style={{ marginTop: 12 }}>
-          {bookingCloseoutChecklist.map((item) => (
-            <Link className={`ops-task-card ${item.className}`} href={item.href} key={item.title}>
-              <div>
-                <span className={`pill ${item.pillClass}`}>{item.status}</span>
-                <h3>{item.title}</h3>
-                <p className="muted">{item.detail}</p>
-              </div>
-              <small>{item.operatorRule}</small>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="card" id="connected-operations-records" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Connected operations records</h2>
-            <p className="muted">
-              Jump from this booking to the linked customer, partner, chat archive, notification trace,
-              payment, refund, and settlement records.
-            </p>
-          </div>
-          <span className="pill pill-info">{connectedRecordLinks.length} links</span>
-        </div>
-        <div className="service-trace-summary" style={{ marginTop: 12 }}>
-          {connectedRecordLinks.map((record) => (
-            <div key={record.label}>
-              <span>{record.label}</span>
-              <strong>{record.value}</strong>
-              <small>{record.detail}</small>
-              <Link className={`pill ${record.tone}`} href={record.href}>
-                Open
-              </Link>
-            </div>
-          ))}
-        </div>
-      </section>
+      <BookingCloseoutSections
+        bookingCloseoutChecklist={bookingCloseoutChecklist}
+        connectedRecordLinks={connectedRecordLinks}
+      />
 
       <section className="card" id="operator-command-queue" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
