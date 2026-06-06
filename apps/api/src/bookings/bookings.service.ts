@@ -47,6 +47,7 @@ import {
   providerLocationFreshEnough,
   vietnamBookingCoordinateGateError,
 } from './bookings.policy';
+import { clientBookingResponse, clientBookingResponses } from './bookings.response';
 
 const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.CCCD_FRONT,
@@ -354,7 +355,7 @@ export class BookingsService {
       policy: matchingPolicy,
     });
     const result = this.matching.openBooking({
-      booking,
+      booking: clientBookingResponse(booking),
       policy: matchingPolicy,
       payload: {
         eligibleBackupProviderCount: eligibleBackupProviders.length,
@@ -478,8 +479,8 @@ export class BookingsService {
     }
   }
 
-  getBooking(id: string) {
-    return this.prisma.booking.findUniqueOrThrow({
+  async getBooking(id: string) {
+    const booking = await this.prisma.booking.findUniqueOrThrow({
       where: { id },
       include: {
         services: { include: { service: true } },
@@ -490,13 +491,14 @@ export class BookingsService {
         chatRoom: true,
       },
     });
+    return clientBookingResponse(booking);
   }
 
   async getCustomerBooking(id: string, customerUserId: string) {
     const customer = await this.prisma.customerProfile.findUniqueOrThrow({
       where: { userId: customerUserId },
     });
-    return this.prisma.booking.findFirstOrThrow({
+    const booking = await this.prisma.booking.findFirstOrThrow({
       where: { id, customerProfileId: customer.id },
       include: {
         services: { include: { service: true } },
@@ -507,13 +509,14 @@ export class BookingsService {
         chatRoom: true,
       },
     });
+    return clientBookingResponse(booking);
   }
 
   async listCustomerBookings(customerUserId: string) {
     const customer = await this.prisma.customerProfile.findUniqueOrThrow({
       where: { userId: customerUserId },
     });
-    return this.prisma.booking.findMany({
+    const bookings = await this.prisma.booking.findMany({
       where: { customerProfileId: customer.id },
       include: {
         services: { include: { service: true } },
@@ -527,6 +530,7 @@ export class BookingsService {
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
+    return clientBookingResponses(bookings);
   }
 
   async cancelCustomerBooking(bookingId: string, customerUserId: string) {
@@ -627,8 +631,9 @@ export class BookingsService {
         : 'Your request has been cancelled.',
       data: { bookingId },
     });
-    this.matchingGateway.emitBookingExpired(bookingId, result);
-    return result;
+    const clientResult = clientBookingResponse(result);
+    this.matchingGateway.emitBookingExpired(bookingId, clientResult);
+    return clientResult;
   }
 
   private async readOperationalPolicyValue(key: string, fallback: string) {
@@ -682,20 +687,22 @@ export class BookingsService {
     });
 
     if (!provider) {
-      return bookings;
+      return clientBookingResponses(bookings);
     }
 
     const fallbackPolicy = await this.matching.getPolicy();
-    return bookings
-      .map((booking) => addProviderMatchingDistance(booking, provider))
-      .filter((booking) =>
-        this.canProviderSeeOpenBooking(booking, provider, this.bookingPolicy(booking, fallbackPolicy)),
-      );
+    return clientBookingResponses(
+      bookings
+        .map((booking) => addProviderMatchingDistance(booking, provider))
+        .filter((booking) =>
+          this.canProviderSeeOpenBooking(booking, provider, this.bookingPolicy(booking, fallbackPolicy)),
+        ),
+    );
   }
 
   async listProviderBookings(providerUserId: string) {
     const provider = await this.requireProvider(providerUserId);
-    return this.prisma.booking.findMany({
+    const bookings = await this.prisma.booking.findMany({
       where: {
         OR: [
           { preferredProviderId: provider.id },
@@ -714,6 +721,7 @@ export class BookingsService {
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
+    return clientBookingResponses(bookings);
   }
 
   async joinBooking(bookingId: string, providerUserId: string | undefined) {
@@ -800,7 +808,7 @@ export class BookingsService {
     });
 
     await this.matching.closeBooking(bookingId);
-    const result = this.matching.selectFinalProvider(bookingId, booking);
+    const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));
     if (booking.selectedProvider?.userId) {
       await this.notifications.create({
         userId: booking.selectedProvider.userId,
@@ -1388,7 +1396,7 @@ export class BookingsService {
       include: { payment: true, selectedProvider: true },
     });
     await this.earnings.createForCompletedBooking(bookingId, provider.id);
-    const result = this.matching.completeBooking(bookingId, booking);
+    const result = this.matching.completeBooking(bookingId, clientBookingResponse(booking));
     const customerUserId = await this.getCustomerUserIdForBooking(bookingId);
     await this.notifications.create({
       userId: customerUserId,
