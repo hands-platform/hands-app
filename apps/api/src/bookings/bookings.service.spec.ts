@@ -58,6 +58,57 @@ describe('BookingsService marketplace participation', () => {
     });
     expect(bookingParticipantUpsert).not.toHaveBeenCalled();
   });
+
+  it('does not apply the marketplace wallet gate to the preferred first-pick partner', async () => {
+    const bookingParticipantUpsert = jest.fn().mockResolvedValue({
+      id: 'participant-1',
+      bookingId: 'booking-1',
+      providerProfileId: 'partner-1',
+      status: ParticipantStatus.JOINED,
+      distanceMeters: 0,
+      providerProfile: approvedPartner(),
+    });
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValueOnce(openFirstPickBooking())
+          .mockResolvedValueOnce({ customerProfile: { userId: 'customer-user-1' } }),
+      },
+      providerEarning: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
+      },
+      bookingParticipant: {
+        upsert: bookingParticipantUpsert,
+      },
+    };
+    const matching = {
+      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      registerParticipant: jest.fn(),
+      joinBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'provider.joined' }),
+    };
+    const notifications = { create: jest.fn() };
+    const matchingGateway = { emitProviderJoined: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await expect(service.joinBooking('booking-1', 'partner-user-1')).resolves.toEqual({
+      bookingId: 'booking-1',
+      event: 'provider.joined',
+    });
+
+    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+    expect(bookingParticipantUpsert).toHaveBeenCalled();
+  });
 });
 
 function approvedPartner() {
@@ -106,5 +157,23 @@ function openMarketplaceBooking() {
         status: ParticipantStatus.REJECTED,
       },
     ],
+  };
+}
+
+function openFirstPickBooking() {
+  return {
+    ...openMarketplaceBooking(),
+    preferredProviderId: 'partner-1',
+    participants: [],
+  };
+}
+
+function matchingPolicy() {
+  return {
+    providerResponseWindowMinutes: 10,
+    backupProviderRadiusMeters: 10000,
+    backupProviderLocationMaxAgeMinutes: 30,
+    backupProviderInvitationLimit: 20,
+    backupOpenMode: 'IMMEDIATE',
   };
 }
