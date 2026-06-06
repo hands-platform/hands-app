@@ -45,6 +45,21 @@ describe('booking policy helpers', () => {
     ).toBe(false);
   });
 
+  it('does not allow final selection for rejected or expired participants', () => {
+    expect(
+      isCustomerSelectableParticipantForFinalChoice(
+        { status: ParticipantStatus.REJECTED, providerProfileId: 'marketplace-partner' },
+        'first-pick',
+      ),
+    ).toBe(false);
+    expect(
+      isCustomerSelectableParticipantForFinalChoice(
+        { status: ParticipantStatus.EXPIRED, providerProfileId: 'marketplace-partner' },
+        'first-pick',
+      ),
+    ).toBe(false);
+  });
+
   it('applies marketplace wallet gate only to non-preferred partner actions', () => {
     expect(isMarketplacePartnerAction('first-pick', 'first-pick')).toBe(false);
     expect(isMarketplacePartnerAction('marketplace-partner', 'first-pick')).toBe(true);
@@ -149,6 +164,15 @@ describe('booking policy helpers', () => {
     ).toBe(true);
 
     jest.restoreAllMocks();
+  });
+
+  it('keeps delayed marketplace participation closed when opening evidence is missing', () => {
+    expect(
+      isMarketplaceParticipationWindowOpen(
+        { preferredProviderId: 'first-pick', openedAt: null },
+        { backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY, providerResponseWindowMinutes: 10 },
+      ),
+    ).toBe(false);
   });
 
   it('opens marketplace participation when there is no first-pick or first-pick declined', () => {
