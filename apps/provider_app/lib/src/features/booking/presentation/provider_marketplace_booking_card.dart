@@ -60,8 +60,7 @@ class OpenBookingCard extends StatelessWidget {
     final customerAmount = payment?['amount'] ?? service?['basePrice'];
     final customerAddress = booking['address'] as Map<String, dynamic>?;
     final addressPreview = customerAddress?['addressPreview']?.toString();
-    final customerName = customerAddress?['name']?.toString() ?? 'Guest';
-    final customerPhone = customerAddress?['phone']?.toString();
+    final guestArea = addressPreview ?? 'Area pending';
     final bookingId = booking['id']?.toString() ?? '';
     final shortBookingId =
         bookingId.length <= 8 ? bookingId : bookingId.substring(0, 8);
@@ -97,7 +96,9 @@ class OpenBookingCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$customerName${customerPhone == null ? '' : ' - $customerPhone'}',
+                        hasPreferredProvider
+                            ? 'Guest request with marketplace backup'
+                            : 'Marketplace request',
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
@@ -165,7 +166,7 @@ class OpenBookingCard extends StatelessWidget {
             if (customerAddress != null) ...[
               const SizedBox(height: 4),
               Text(
-                'Guest area: ${addressPreview ?? 'Area pending'}',
+                'Guest area: $guestArea',
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
@@ -185,14 +186,16 @@ class OpenBookingCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: InlineRequestFact(
-                      label: 'Guest',
-                      value: customerName,
+                      label: 'Area',
+                      value: guestArea,
                     ),
                   ),
                   Expanded(
                     child: InlineRequestFact(
-                      label: 'Phone',
-                      value: customerPhone ?? 'Pending',
+                      label: 'Request',
+                      value: hasPreferredProvider
+                          ? 'First-pick backup'
+                          : 'Marketplace',
                     ),
                   ),
                   Expanded(
