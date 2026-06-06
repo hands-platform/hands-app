@@ -186,6 +186,57 @@ export default async function OperationsPolicyPage({
         </section>
       ) : null}
 
+      <section className="card" style={{ marginBottom: 16 }}>
+        <div className="ops-section-header">
+          <div>
+            <h2>MVP authority baseline</h2>
+            <p className="muted">
+              These rules are not CRM preferences. They are the operating authority for Vietnam booking,
+              marketplace, and finance actions until a later product decision changes them.
+            </p>
+          </div>
+          <span className="pill pill-success">Command center rules</span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 14 }}>
+          <div className="ops-task-card ops-task-done">
+            <span className="pill pill-success">BookingAddressSnapshot</span>
+            <h3>Address snapshot required</h3>
+            <p>
+              Every booking must keep an immutable service address snapshot before distance matching,
+              marketplace participation, payment evidence, and dispute review.
+            </p>
+            <small>Customers may browse globally; booking requires a confirmed Vietnam service address.</small>
+          </div>
+          <div className="ops-task-card ops-task-done">
+            <span className="pill pill-success">No auto assignment</span>
+            <h3>Customer final choice</h3>
+            <p>
+              Partner acceptance does not auto-match the booking. The customer must choose the final partner
+              from eligible accepted participants.
+            </p>
+            <small>Operators review evidence, but the platform does not automatically assign the partner.</small>
+          </div>
+          <div className="ops-task-card ops-task-done">
+            <span className="pill pill-info">10km marketplace</span>
+            <h3>Booking-address radius</h3>
+            <p>
+              Marketplace participation and alerts are based on the booking address, not the customer's
+              browsing location or current country.
+            </p>
+            <small>The radius is admin-editable and defaults to 10km for Vietnam operations.</small>
+          </div>
+          <div className="ops-task-card ops-task-done">
+            <span className="pill pill-warn">Negative wallet gate</span>
+            <h3>View demand, block participation</h3>
+            <p>
+              A partner with a negative wallet may see marketplace demand, but cannot participate until the
+              unpaid platform fee is settled or cleared by finance.
+            </p>
+            <small>Direct first-pick response and already-matched service flow stay separate from this gate.</small>
+          </div>
+        </div>
+      </section>
+
       <section className="card" id="action-gate-policy-checklist" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
           <div>
@@ -2291,7 +2342,8 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
     {
       scope: 'Marketplace participation',
       title: `${formatDistance(backupRadiusMeters)} marketplace alert policy`,
-      detail: 'Marketplace partners are prioritized by customer distance before alerts and operator review.',
+      detail:
+        'Marketplace partners are prioritized by booking-address distance before alerts and operator review.',
       api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
       server:
         'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',

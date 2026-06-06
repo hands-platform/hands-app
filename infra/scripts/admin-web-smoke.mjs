@@ -303,6 +303,11 @@ const pages = [
     path: '/operations-policy',
     markers: [
       'Operations Policy',
+      'MVP authority baseline',
+      'BookingAddressSnapshot',
+      'No auto assignment',
+      'Booking-address radius',
+      'View demand, block participation',
       'Final partner choice control matrix',
       'Current partner acceptance impact',
       'Policy sensitivity preview',
