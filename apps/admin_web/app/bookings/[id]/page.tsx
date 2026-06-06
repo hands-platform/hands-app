@@ -37,6 +37,7 @@ import {
   BookingChatLifecycleSection,
   BookingCloseoutReadinessSection,
   BookingCommunicationMovementHandoffSection,
+  BookingHandoffChecklistSection,
   BookingMarketplaceWalletEvidenceSection,
   BookingOperatingLedgerSection,
   BookingOperatingSnapshotSection,
@@ -933,36 +934,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         operatorActionMatrix={operatorActionMatrix}
       />
 
-      <section className="card" id="booking-handoff-checklist" style={{ marginBottom: 16 }}>
-        <div className="ops-section-header">
-          <div>
-            <h2>Booking handoff checklist</h2>
-            <p className="muted">
-              One-row-per-stage view of the customer app, partner app, admin archive, location, and finance
-              handoff. This is factual state tracking only.
-            </p>
-          </div>
-          <span className="pill pill-info">{handoffChecklist.length} stage(s)</span>
-        </div>
-        <div className="setup-stage-list" style={{ marginTop: 12 }}>
-          {handoffChecklist.map((item) => (
-            <div className="setup-stage-item" key={item.id}>
-              <span>{item.label}</span>
-              <div>
-                <strong>{item.title}</strong>
-                <p className="muted">{item.detail}</p>
-              </div>
-              {item.href ? (
-                <Link className="text-link" href={item.href}>
-                  {item.status}
-                </Link>
-              ) : (
-                <small>{item.status}</small>
-              )}
-            </div>
-          ))}
-        </div>
-      </section>
+      <BookingHandoffChecklistSection handoffChecklist={handoffChecklist} />
 
       <BookingFullRecordIndex
         bookingId={booking.id}

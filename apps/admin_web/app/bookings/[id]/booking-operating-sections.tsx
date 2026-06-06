@@ -67,6 +67,15 @@ type OperatingTimelineItem = {
   status: string;
 };
 
+type BookingHandoffChecklistItem = {
+  id: string;
+  label: string;
+  title: string;
+  detail: string;
+  status: string;
+  href?: string;
+};
+
 type CommunicationMovementHandoff = {
   status: string;
   tone: string;
@@ -367,6 +376,45 @@ export function BookingOperatingTimelineSection({
               <p className="muted">{item.detail}</p>
             </div>
             <small>{item.at ? formatDate(item.at) : item.status}</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export function BookingHandoffChecklistSection({
+  handoffChecklist,
+}: {
+  handoffChecklist: BookingHandoffChecklistItem[];
+}) {
+  return (
+    <section className="card" id="booking-handoff-checklist" style={{ marginBottom: 16 }}>
+      <div className="ops-section-header">
+        <div>
+          <h2>Booking handoff checklist</h2>
+          <p className="muted">
+            One-row-per-stage view of the customer app, partner app, admin archive, location, and finance
+            handoff. This is factual state tracking only.
+          </p>
+        </div>
+        <span className="pill pill-info">{handoffChecklist.length} stage(s)</span>
+      </div>
+      <div className="setup-stage-list" style={{ marginTop: 12 }}>
+        {handoffChecklist.map((item) => (
+          <div className="setup-stage-item" key={item.id}>
+            <span>{item.label}</span>
+            <div>
+              <strong>{item.title}</strong>
+              <p className="muted">{item.detail}</p>
+            </div>
+            {item.href ? (
+              <Link className="text-link" href={item.href}>
+                {item.status}
+              </Link>
+            ) : (
+              <small>{item.status}</small>
+            )}
           </div>
         ))}
       </div>
