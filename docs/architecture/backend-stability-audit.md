@@ -73,12 +73,20 @@ Targeted checks passed:
 - `npm.cmd run admin:visible-copy`
 - `npm.cmd run security:secrets`
 
+## Policy Helper Coverage 2026-06-07
+
+The booking policy helpers now directly cover the two timing/order boundaries that were still listed as production follow-up:
+
+- Marketplace participation window behavior for immediate mode, delayed first-pick mode, no first-pick bookings, and first-pick declines.
+- Partner response closure after matching/expiry and service completion ordering from `IN_SERVICE`.
+
+The service still keeps its existing private method names for compatibility, but delegates those decisions to tested policy helpers.
+
 ## Follow-Up Before Production
 
 - Set strong `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, and `CORS_ORIGINS` in every production-like environment.
 - Disable development OTP values in production environments.
 - Complete real MoMo/VNPay sandbox E2E after HANDS receives gateway credentials.
-- Add focused unit tests around partner response timing and service-completion ordering.
 - Confirm production storage uses separate private and public buckets.
 - Rotate any external keys that were ever pasted into chat before using staging for real user data.
 - Refactor Admin shared helpers first: `shortId`, `formatMoney`, `formatDate`, `relativeTime`, `bookingServiceLabel`, metadata readers, and reusable metric cards.

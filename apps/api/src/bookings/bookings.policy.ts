@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
-import { ParticipantStatus, PaymentMethod } from '@prisma/client';
+import { BookingStatus, ParticipantStatus, PaymentMethod } from '@prisma/client';
 
-import { haversineMeters, roundTo100Meters } from '../matching/matching.policy';
+import { BACKUP_OPEN_IMMEDIATE, haversineMeters, roundTo100Meters } from '../matching/matching.policy';
 
 export function isCustomerSelectableParticipantForFinalChoice(
   participant: { status: ParticipantStatus; providerProfileId: string },
@@ -23,6 +23,47 @@ export function isMarketplacePartnerAction(
   preferredProviderId?: string | null,
 ) {
   return providerProfileId !== preferredProviderId;
+}
+
+export function isMarketplaceParticipationWindowOpen(
+  booking: {
+    preferredProviderId?: string | null;
+    openedAt?: Date | string | null;
+    participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
+  },
+  policy: {
+    backupOpenMode: string;
+    providerResponseWindowMinutes: number;
+  },
+) {
+  if (policy.backupOpenMode === BACKUP_OPEN_IMMEDIATE) {
+    return true;
+  }
+  if (!booking.preferredProviderId || firstPickPartnerDeclined(booking)) {
+    return true;
+  }
+  const openedAt = booking.openedAt ? new Date(booking.openedAt).getTime() : NaN;
+  if (Number.isNaN(openedAt)) {
+    return false;
+  }
+  return Date.now() >= openedAt + policy.providerResponseWindowMinutes * 60_000;
+}
+
+export function assertPartnerResponseWindowOpen(booking: { status: BookingStatus; expiresAt?: Date | null }) {
+  if (booking.status !== BookingStatus.OPEN_MATCHING) {
+    throw new BadRequestException('Booking is not open for partner responses');
+  }
+  if (booking.expiresAt && booking.expiresAt.getTime() <= Date.now()) {
+    throw new BadRequestException('Booking request is expired');
+  }
+}
+
+export function assertProviderLifecycleTransitionAllowed(current: BookingStatus, allowed: BookingStatus[]) {
+  if (!allowed.includes(current)) {
+    throw new BadRequestException(
+      `Invalid booking status transition from ${current}. Expected one of: ${allowed.join(', ')}`,
+    );
+  }
 }
 
 export function addProviderMatchingDistance<
@@ -158,4 +199,20 @@ function parseFiniteCoordinate(value: unknown) {
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function firstPickPartnerDeclined(booking: {
+  preferredProviderId?: string | null;
+  participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
+}) {
+  if (!booking.preferredProviderId) {
+    return false;
+  }
+  return Boolean(
+    booking.participants?.some(
+      (participant) =>
+        participant.providerProfileId === booking.preferredProviderId &&
+        participant.status === ParticipantStatus.REJECTED,
+    ),
+  );
 }

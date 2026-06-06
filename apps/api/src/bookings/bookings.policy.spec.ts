@@ -1,20 +1,24 @@
 import { BadRequestException } from '@nestjs/common';
-import { ParticipantStatus, PaymentMethod } from '@prisma/client';
+import { BookingStatus, ParticipantStatus, PaymentMethod } from '@prisma/client';
 
 import {
   addProviderMatchingDistance,
   assertBookingPaymentMethod,
   assertBookingServiceId,
+  assertPartnerResponseWindowOpen,
+  assertProviderLifecycleTransitionAllowed,
   bookingAddressText,
   bookingDispatchCoordinates,
   calculateDistanceMeters,
   formatMatchingRadius,
+  isMarketplaceParticipationWindowOpen,
   isMarketplacePartnerAction,
   isCustomerSelectableParticipantForFinalChoice,
   normalizeBookingCoordinate,
   providerLocationFreshEnough,
   vietnamBookingCoordinateGateError,
 } from './bookings.policy';
+import { BACKUP_OPEN_AFTER_FIRST_PICK_DELAY, BACKUP_OPEN_IMMEDIATE } from '../matching/matching.policy';
 
 describe('booking policy helpers', () => {
   it('allows customer final selection for accepted partners and joined marketplace partners', () => {
@@ -110,5 +114,80 @@ describe('booking policy helpers', () => {
   it('formats marketplace radius for partner-facing block messages', () => {
     expect(formatMatchingRadius(10000)).toBe('10km');
     expect(formatMatchingRadius(750)).toBe('750m');
+  });
+
+  it('opens marketplace participation immediately when policy allows it', () => {
+    expect(
+      isMarketplaceParticipationWindowOpen(
+        {
+          preferredProviderId: 'first-pick',
+          openedAt: new Date('2026-06-07T01:00:00.000Z'),
+        },
+        { backupOpenMode: BACKUP_OPEN_IMMEDIATE, providerResponseWindowMinutes: 10 },
+      ),
+    ).toBe(true);
+  });
+
+  it('delays marketplace participation until the first-pick window passes', () => {
+    const openedAt = new Date('2026-06-07T01:00:00.000Z');
+    jest.spyOn(Date, 'now').mockReturnValue(openedAt.getTime() + 9 * 60_000);
+
+    expect(
+      isMarketplaceParticipationWindowOpen(
+        { preferredProviderId: 'first-pick', openedAt },
+        { backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY, providerResponseWindowMinutes: 10 },
+      ),
+    ).toBe(false);
+
+    jest.spyOn(Date, 'now').mockReturnValue(openedAt.getTime() + 10 * 60_000);
+
+    expect(
+      isMarketplaceParticipationWindowOpen(
+        { preferredProviderId: 'first-pick', openedAt },
+        { backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY, providerResponseWindowMinutes: 10 },
+      ),
+    ).toBe(true);
+
+    jest.restoreAllMocks();
+  });
+
+  it('opens marketplace participation when there is no first-pick or first-pick declined', () => {
+    const policy = { backupOpenMode: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY, providerResponseWindowMinutes: 10 };
+
+    expect(isMarketplaceParticipationWindowOpen({ preferredProviderId: null }, policy)).toBe(true);
+    expect(
+      isMarketplaceParticipationWindowOpen(
+        {
+          preferredProviderId: 'first-pick',
+          openedAt: new Date('2026-06-07T01:00:00.000Z'),
+          participants: [{ providerProfileId: 'first-pick', status: ParticipantStatus.REJECTED }],
+        },
+        policy,
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects partner responses after matching closes or the request expires', () => {
+    const future = new Date(Date.now() + 60_000);
+    const past = new Date(Date.now() - 60_000);
+
+    expect(() =>
+      assertPartnerResponseWindowOpen({ status: BookingStatus.OPEN_MATCHING, expiresAt: future }),
+    ).not.toThrow();
+    expect(() =>
+      assertPartnerResponseWindowOpen({ status: BookingStatus.MATCHED, expiresAt: future }),
+    ).toThrow(BadRequestException);
+    expect(() =>
+      assertPartnerResponseWindowOpen({ status: BookingStatus.OPEN_MATCHING, expiresAt: past }),
+    ).toThrow(BadRequestException);
+  });
+
+  it('requires service completion to start from IN_SERVICE', () => {
+    expect(() =>
+      assertProviderLifecycleTransitionAllowed(BookingStatus.IN_SERVICE, [BookingStatus.IN_SERVICE]),
+    ).not.toThrow();
+    expect(() =>
+      assertProviderLifecycleTransitionAllowed(BookingStatus.MATCHED, [BookingStatus.IN_SERVICE]),
+    ).toThrow(BadRequestException);
   });
 });

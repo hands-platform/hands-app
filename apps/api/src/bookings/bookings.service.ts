@@ -33,11 +33,14 @@ import {
   addProviderMatchingDistance,
   assertBookingPaymentMethod,
   assertBookingServiceId,
+  assertPartnerResponseWindowOpen,
+  assertProviderLifecycleTransitionAllowed,
   bookingAddressText,
   bookingDispatchCoordinates,
   calculateDistanceMeters,
   formatMatchingRadius,
   isCustomerSelectableParticipantForFinalChoice,
+  isMarketplaceParticipationWindowOpen,
   isMarketplacePartnerAction,
   isVietnamBookingCoordinate,
   normalizeBookingCoordinate,
@@ -1304,34 +1307,7 @@ export class BookingsService {
     },
     policy: Awaited<ReturnType<MatchingService['getPolicy']>>,
   ) {
-    if (policy.backupOpenMode === BACKUP_OPEN_IMMEDIATE) {
-      return true;
-    }
-    if (!booking.preferredProviderId || this.firstPickPartnerDeclined(booking)) {
-      return true;
-    }
-    const openedAt = booking.openedAt ? new Date(booking.openedAt).getTime() : NaN;
-    if (Number.isNaN(openedAt)) {
-      return false;
-    }
-    const backupOpensAt = openedAt + policy.providerResponseWindowMinutes * 60_000;
-    return Date.now() >= backupOpensAt;
-  }
-
-  private firstPickPartnerDeclined(booking: {
-    preferredProviderId?: string | null;
-    participants?: Array<{ providerProfileId: string; status: ParticipantStatus | string }>;
-  }) {
-    if (!booking.preferredProviderId) {
-      return false;
-    }
-    return Boolean(
-      booking.participants?.some(
-        (participant) =>
-          participant.providerProfileId === booking.preferredProviderId &&
-          participant.status === ParticipantStatus.REJECTED,
-      ),
-    );
+    return isMarketplaceParticipationWindowOpen(booking, policy);
   }
 
   private async ensureProviderWalletCanJoinMarketplace(providerProfileId: string) {
@@ -1520,20 +1496,11 @@ export class BookingsService {
   }
 
   private assertBookingOpenForPartnerResponse(booking: { status: BookingStatus; expiresAt?: Date | null }) {
-    if (booking.status !== BookingStatus.OPEN_MATCHING) {
-      throw new BadRequestException('Booking is not open for partner responses');
-    }
-    if (booking.expiresAt && booking.expiresAt.getTime() <= Date.now()) {
-      throw new BadRequestException('Booking request is expired');
-    }
+    assertPartnerResponseWindowOpen(booking);
   }
 
   private assertProviderLifecycleTransition(current: BookingStatus, allowed: BookingStatus[]) {
-    if (!allowed.includes(current)) {
-      throw new BadRequestException(
-        `Invalid booking status transition from ${current}. Expected one of: ${allowed.join(', ')}`,
-      );
-    }
+    assertProviderLifecycleTransitionAllowed(current, allowed);
   }
 
   private async getCustomerUserIdForBooking(bookingId: string) {
