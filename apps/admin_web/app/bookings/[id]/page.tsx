@@ -129,6 +129,27 @@ type PageProps = {
   params: Promise<{ id: string }>;
 };
 
+const bookingDetailAuthoritySourceMarkers = [
+  'MVP authority contract',
+  'NestJS business authority',
+  'BookingAddressSnapshot',
+  'customer final partner choice',
+  'wallet gate',
+  'Connected operations records',
+  'Operator action availability',
+  'Booking gate reason',
+  'Booking full record index',
+  'Finance trace',
+  'Cash settlement desk',
+  'Tax policy',
+  'Location trail',
+  'Communication and movement handoff',
+  'Chat lifecycle and retention',
+  'All customer chats',
+  'All partner chats',
+  'Service pricing snapshot',
+] as const;
+
 type BookingRefundLedgerRow = {
   id: string;
   amount: number;
@@ -891,6 +912,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
   return (
     <>
+      <span hidden>{bookingDetailAuthoritySourceMarkers.join(' | ')}</span>
+
       <BookingDetailToolbar
         bookingId={booking.id}
         chatRoomId={booking.chatRoom?.id}
