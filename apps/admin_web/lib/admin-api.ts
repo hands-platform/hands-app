@@ -268,6 +268,8 @@ export type AdminProvider = {
     };
   }>;
   earnings?: AdminEarning[];
+  auditLogs?: AdminAuditLog[];
+  auditLogCount?: number;
   user?: {
     id?: string;
     fullName?: string | null;

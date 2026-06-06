@@ -8,6 +8,7 @@ import {
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
 import {
+  compactValue,
   formatDateTime,
   formatDistanceMeters as formatAdminDistanceMeters,
   formatMoney as formatProviderMoney,
@@ -283,6 +284,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       acceptance_detail: operations.acceptanceDetail,
       next_operator_status: operations.nextAction.status,
       next_operator_action: operations.nextAction.operatorAction,
+      admin_memo_count: master.auditLogCount,
+      latest_memo: master.latestAuditTitle,
+      latest_memo_detail: master.latestAuditDetail,
       account_state: master.accountBlocked ? 'Blocked' : 'Open',
       account_note: master.accountNote,
     };
@@ -328,6 +332,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     'acceptance_detail',
     'next_operator_status',
     'next_operator_action',
+    'admin_memo_count',
+    'latest_memo',
+    'latest_memo_detail',
     'account_state',
     'account_note',
   ]);
@@ -562,6 +569,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                 <th>Feedback records</th>
                 <th>Revenue</th>
                 <th>Payout</th>
+                <th>Ops trail</th>
                 <th>Account</th>
                 <th>Open</th>
               </tr>
@@ -635,6 +643,11 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     <p className="muted">Available {formatProviderMoney(row.availablePayout)}</p>
                   </td>
                   <td>
+                    <strong>{row.auditLogCount} memo/event(s)</strong>
+                    <p className="muted">{row.latestAuditTitle}</p>
+                    <p className="muted">{row.latestAuditDetail}</p>
+                  </td>
+                  <td>
                     <span className={`pill ${row.accountBlocked ? 'pill-danger' : 'pill-success'}`}>
                       {row.accountBlocked ? 'Blocked' : 'Open'}
                     </span>
@@ -649,7 +662,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
               ))}
               {partnerMasterRows.length === 0 ? (
                 <tr>
-                  <td colSpan={16}>
+                  <td colSpan={17}>
                     <strong>No partner rows found</strong>
                     <p className="muted">Change the filters or clear search to view partner records.</p>
                   </td>
@@ -1859,6 +1872,9 @@ type PartnerMasterRow = {
   platformFee: number;
   pendingPayout: number;
   availablePayout: number;
+  auditLogCount: number;
+  latestAuditTitle: string;
+  latestAuditDetail: string;
   accountBlocked: boolean;
   accountNote: string;
 };
@@ -2068,6 +2084,7 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
   const latestSessionFacts = partnerLatestSessionFacts(provider);
   const accountBlocked = Boolean(provider.blockedAt);
   const closedRows = bookingRows.filter((booking) => CLOSED_BOOKING_STATUSES.includes(booking.status));
+  const latestAuditLog = latestProviderAuditLog(provider);
 
   return {
     provider,
@@ -2101,9 +2118,21 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
     pendingPayout: providerPendingPayout(provider),
     availablePayout: providerAvailablePayout(provider),
+    auditLogCount: provider.auditLogCount ?? provider.auditLogs?.length ?? 0,
+    latestAuditTitle: latestAuditLog?.action ?? 'No internal note',
+    latestAuditDetail: latestAuditLog
+      ? compactValue(latestAuditLog.metadata, 96)
+      : 'No partner memo or audit event saved yet',
     accountBlocked,
     accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
   };
+}
+
+function latestProviderAuditLog(provider: AdminProvider) {
+  const logs = [...(provider.auditLogs ?? [])].sort(
+    (left, right) => dateMs(right.createdAt) - dateMs(left.createdAt),
+  );
+  return logs.find((log) => log.action === 'provider.ops_note.add') ?? logs[0] ?? null;
 }
 
 function partnerLatestSessionFacts(provider: AdminProvider) {
@@ -4956,6 +4985,9 @@ function providerSearchText(provider: AdminProvider) {
       ?.map((report) => `${report.category} ${report.summary} ${report.details ?? ''}`)
       .join(' '),
     provider.sanctions?.map((sanction) => `${sanction.type} ${sanction.reason}`).join(' '),
+    provider.auditLogs
+      ?.map((log) => `${log.action} ${compactValue(log.metadata, 160)}`)
+      .join(' '),
     provider.services?.map((item) => item.service?.name).join(' '),
   ]
     .filter(Boolean)

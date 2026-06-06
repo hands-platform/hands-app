@@ -48,6 +48,7 @@ const ADMIN_PROVIDER_COMPACT_LIST_LIMIT = 500;
 const ADMIN_PROVIDER_COMPACT_BOOKING_RELATION_LIMIT = 50;
 const ADMIN_PROVIDER_COMPACT_PARTICIPANT_RELATION_LIMIT = 50;
 const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_LIMIT = 30;
+const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;
 
 const adminUserSummarySelect = {
   id: true,
@@ -1532,7 +1533,7 @@ export class AdminService {
     });
   }
 
-  listProviders(options: { compact?: boolean } = {}) {
+  async listProviders(options: { compact?: boolean } = {}) {
     const compact = options.compact ?? false;
     const bookingListSelect = {
       id: true,
@@ -1549,7 +1550,7 @@ export class AdminService {
       chatRoom: { select: { id: true } },
     } satisfies Prisma.BookingSelect;
 
-    return this.prisma.providerProfile.findMany({
+    const providers = await this.prisma.providerProfile.findMany({
       orderBy: { id: 'desc' },
       ...(compact ? { take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT } : {}),
       include: {
@@ -1714,6 +1715,40 @@ export class AdminService {
         },
       },
     });
+
+    if (providers.length === 0) {
+      return providers;
+    }
+
+    const providerAuditTargets = providers.map((provider) => `provider:${provider.id}`);
+    const providerAuditLogs = await this.prisma.adminAuditLog.findMany({
+      where: { target: { in: providerAuditTargets } },
+      orderBy: { createdAt: 'desc' },
+      take: providers.length * ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
+      select: adminAuditLogSelect,
+    });
+    const providerAuditCounts = await this.prisma.adminAuditLog.groupBy({
+      by: ['target'],
+      where: { target: { in: providerAuditTargets } },
+      _count: { _all: true },
+    });
+    const auditLogsByTarget = new Map<string, typeof providerAuditLogs>();
+    for (const log of providerAuditLogs) {
+      const bucket = auditLogsByTarget.get(log.target) ?? [];
+      if (bucket.length < ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT) {
+        bucket.push(log);
+        auditLogsByTarget.set(log.target, bucket);
+      }
+    }
+    const auditLogCountByTarget = new Map(
+      providerAuditCounts.map((entry) => [entry.target, entry._count._all]),
+    );
+
+    return providers.map((provider) => ({
+      ...provider,
+      auditLogs: auditLogsByTarget.get(`provider:${provider.id}`) ?? [],
+      auditLogCount: auditLogCountByTarget.get(`provider:${provider.id}`) ?? 0,
+    }));
   }
 
   async getProviderDetail(providerProfileId: string) {

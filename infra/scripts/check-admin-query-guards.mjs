@@ -160,6 +160,14 @@ if (!adminServiceSource.includes('const ADMIN_PROVIDER_COMPACT_EARNING_RELATION_
   });
 }
 
+if (!adminServiceSource.includes('const ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT = 3;')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Partner list audit-log memo relations must keep a 3-row per-partner guard.',
+  });
+}
+
 if (!adminServiceSource.includes('...(compact ? { take: ADMIN_PROVIDER_COMPACT_LIST_LIMIT } : {})')) {
   violations.push({
     area: 'admin provider query',
@@ -173,6 +181,22 @@ if (adminServiceSource.includes('take: compact ? 100 : 100')) {
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
     message: 'Compact partner list must not load 100 nested booking or participant rows per partner.',
+  });
+}
+
+if (!adminServiceSource.includes('take: providers.length * ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Partner list audit-log query must cap rows by partner count and per-partner guard.',
+  });
+}
+
+if (!adminServiceSource.includes('const providerAuditCounts = await this.prisma.adminAuditLog.groupBy')) {
+  violations.push({
+    area: 'admin provider query',
+    file: 'apps/api/src/admin/admin.service.ts',
+    message: 'Partner list must compute full audit-log memo counts separately from the latest memo preview rows.',
   });
 }
 
