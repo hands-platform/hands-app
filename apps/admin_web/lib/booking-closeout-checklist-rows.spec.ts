@@ -1,0 +1,131 @@
+import { bookingCloseoutChecklistRows } from './booking-closeout-checklist-rows';
+
+const baseInput = {
+  bookingId: 'booking_123',
+  bookingStatus: 'MATCHED',
+  addressReady: true,
+  addressLabel: 'District 1, Ho Chi Minh City',
+  finalPartnerId: 'partner_123',
+  finalPartnerLabel: 'Linh Wellness',
+  customerChoiceCandidates: 1,
+  chatNeeded: true,
+  chatReady: true,
+  chatRoomShortId: 'room_123',
+  chatMessageCount: 3,
+  latestMessageAtLabel: '07 Jun 2026 10:30',
+  cashDebt: false,
+  paymentStatus: 'AUTHORIZED',
+  paymentMethod: 'MOMO',
+  customerPriceLabel: '450.000 VND',
+  partnerPayoutLabel: '380.000 VND',
+  walletLedgerLabel: 'No wallet movement',
+  terminal: false,
+  refundLedgerCount: 0,
+  refundEvidence: 'No refund row',
+  alertCount: 2,
+  failedAlertCount: 0,
+  closeoutStatus: 'Review',
+  closeoutTone: 'pill-warn',
+  closeoutHelper: 'Ready after payment capture.',
+  closeoutOpenItemLabels: ['capture payment'],
+  taxRows: 1,
+  operatorTrailCount: 4,
+  latestLocationLabel: '10.7769, 106.7009 / 07 Jun 2026 10:31',
+  notificationCount: 2,
+};
+
+describe('bookingCloseoutChecklistRows', () => {
+  it('builds the closeout lane order used by the operations page', () => {
+    const rows = bookingCloseoutChecklistRows(baseInput);
+
+    expect(rows.map((row) => row.title)).toEqual([
+      'Address snapshot',
+      'Customer final partner choice',
+      'Chat archive',
+      'Money and wallet gate',
+      'Manual outcome evidence',
+      'Finance closeout',
+      'Location and alert trail',
+    ]);
+  });
+
+  it('blocks closeout when the address snapshot or required chat archive is missing', () => {
+    const rows = bookingCloseoutChecklistRows({
+      ...baseInput,
+      addressReady: false,
+      finalPartnerId: null,
+      finalPartnerLabel: null,
+      customerChoiceCandidates: 0,
+      chatReady: false,
+      chatRoomShortId: null,
+      chatMessageCount: 0,
+      latestMessageAtLabel: null,
+    });
+
+    expect(rows[0]).toMatchObject({
+      title: 'Address snapshot',
+      status: 'Repair needed',
+      className: 'ops-task-blocked',
+      pillClass: 'pill-danger',
+    });
+    expect(rows[1]).toMatchObject({
+      title: 'Customer final partner choice',
+      status: 'Waiting',
+      className: 'ops-task-blocked',
+    });
+    expect(rows[2]).toMatchObject({
+      title: 'Chat archive',
+      status: 'Repair needed',
+      href: '/chat-archive?status=missing-room',
+    });
+  });
+
+  it('holds marketplace participation and payout release when cash debt remains', () => {
+    const rows = bookingCloseoutChecklistRows({
+      ...baseInput,
+      cashDebt: true,
+      walletLedgerLabel: 'Wallet balance -120.000 VND',
+    });
+
+    expect(rows[3]).toMatchObject({
+      title: 'Money and wallet gate',
+      status: 'Settlement needed',
+      href: '/cash-settlements',
+      className: 'ops-task-blocked',
+      pillClass: 'pill-danger',
+    });
+    expect(rows[3].detail).toContain('Partner can view marketplace requests');
+  });
+
+  it('keeps terminal and batch evidence factual for admin decisions', () => {
+    const rows = bookingCloseoutChecklistRows({
+      ...baseInput,
+      bookingStatus: 'CANCELLED',
+      terminal: true,
+      refundLedgerCount: 1,
+      refundEvidence: 'Refund pending',
+      closeoutTone: 'pill-success',
+      closeoutOpenItemLabels: [],
+      latestLocationLabel: null,
+      notificationCount: 0,
+      failedAlertCount: 1,
+    });
+
+    expect(rows[4]).toMatchObject({
+      title: 'Manual outcome evidence',
+      status: 'Terminal review',
+      className: 'ops-task-warning',
+      pillClass: 'pill-warn',
+    });
+    expect(rows[5]).toMatchObject({
+      title: 'Finance closeout',
+      className: 'ops-task-done',
+      pillClass: 'pill-success',
+    });
+    expect(rows[6]).toMatchObject({
+      title: 'Location and alert trail',
+      status: 'Sparse',
+      className: 'ops-task-warning',
+    });
+  });
+});
