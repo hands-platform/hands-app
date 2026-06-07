@@ -122,6 +122,14 @@ describe('BookingsService booking creation', () => {
 
     expect(prisma.booking.create).toHaveBeenCalledWith(
       expect.objectContaining({
+        data: expect.objectContaining({
+          metadata: expect.objectContaining({
+            matchingPolicy: expect.objectContaining({
+              marketplaceRadiusMeters: 10000,
+              backupProviderRadiusMeters: 10000,
+            }),
+          }),
+        }),
         include: expect.objectContaining({
           addressSnapshot: true,
         }),
@@ -135,6 +143,10 @@ describe('BookingsService booking creation', () => {
             latitude: 10.7769,
             longitude: 106.7009,
           }),
+        }),
+        payload: expect.objectContaining({
+          marketplaceRadiusMeters: 10000,
+          backupProviderRadiusMeters: 10000,
         }),
       }),
     );
@@ -929,6 +941,8 @@ describe('BookingsService partner response wallet gates', () => {
         type: 'booking.backup_available',
         data: expect.objectContaining({
           distanceMeters: 0,
+          marketplaceRadiusMeters: 10000,
+          backupProviderRadiusMeters: 10000,
         }),
       }),
     );

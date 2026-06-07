@@ -367,6 +367,8 @@ export class BookingsService {
       policy: matchingPolicy,
       payload: {
         eligibleBackupProviderCount: eligibleBackupProviders.length,
+        marketplaceRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+        marketplaceInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
         backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
         backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
       },
@@ -926,6 +928,8 @@ export class BookingsService {
           policy: matchingPolicy,
           payload: {
             eligibleBackupProviderCount: eligibleBackupProviders.length,
+            marketplaceRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
+            marketplaceInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
             backupProviderRadiusMeters: matchingPolicy.backupProviderRadiusMeters,
             backupProviderInvitationLimit: matchingPolicy.backupProviderInvitationLimit,
             firstPickDeclined: true,
@@ -1013,6 +1017,9 @@ export class BookingsService {
           bookingId: input.bookingId,
           providerProfileId: backupProvider.id,
           distanceMeters: backupProvider.distanceMeters,
+          marketplaceRadiusMeters: input.backupProviderRadiusMeters,
+          marketplaceOpenMode: input.backupOpenMode,
+          marketplaceInvitationLimit: input.backupProviderInvitationLimit,
           backupProviderRadiusMeters: input.backupProviderRadiusMeters,
           backupOpenMode: input.backupOpenMode,
           backupProviderInvitationLimit: input.backupProviderInvitationLimit,
@@ -1034,6 +1041,9 @@ export class BookingsService {
       stage: input.stage,
       createdAt: new Date().toISOString(),
       notifiedCount: notifiedProviders.length,
+      marketplaceRadiusMeters: input.backupProviderRadiusMeters,
+      marketplaceOpenMode: input.backupOpenMode,
+      marketplaceInvitationLimit: input.backupProviderInvitationLimit,
       backupProviderRadiusMeters: input.backupProviderRadiusMeters,
       backupOpenMode: input.backupOpenMode,
       backupProviderInvitationLimit: input.backupProviderInvitationLimit,
@@ -1048,6 +1058,9 @@ export class BookingsService {
       stage: string;
       createdAt: string;
       notifiedCount: number;
+      marketplaceRadiusMeters?: number;
+      marketplaceOpenMode?: string;
+      marketplaceInvitationLimit?: number;
       backupProviderRadiusMeters: number;
       backupOpenMode: string;
       backupProviderInvitationLimit: number;
@@ -1095,16 +1108,16 @@ export class BookingsService {
         fallback.providerResponseWindowMinutes,
       ),
       backupProviderRadiusMeters: readSnapshotInteger(
-        snapshot.backupProviderRadiusMeters,
+        snapshot.marketplaceRadiusMeters ?? snapshot.backupProviderRadiusMeters,
         fallback.backupProviderRadiusMeters,
       ),
       travelBufferMinutes: readSnapshotInteger(snapshot.travelBufferMinutes, fallback.travelBufferMinutes),
       backupProviderLocationMaxAgeMinutes: readSnapshotInteger(
-        snapshot.backupProviderLocationMaxAgeMinutes,
+        snapshot.marketplaceLocationMaxAgeMinutes ?? snapshot.backupProviderLocationMaxAgeMinutes,
         fallback.backupProviderLocationMaxAgeMinutes,
       ),
       backupProviderInvitationLimit: readSnapshotInteger(
-        snapshot.backupProviderInvitationLimit,
+        snapshot.marketplaceInvitationLimit ?? snapshot.backupProviderInvitationLimit,
         fallback.backupProviderInvitationLimit,
       ),
       bookingMaxCustomerCurrentToAddressKm: readSnapshotInteger(
@@ -1132,9 +1145,12 @@ export class BookingsService {
           ? snapshot.preferredAcceptMode
           : PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
       backupOpenMode:
-        snapshot.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY ||
-        snapshot.backupOpenMode === BACKUP_OPEN_IMMEDIATE
-          ? snapshot.backupOpenMode
+        snapshot.marketplaceOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY ||
+        snapshot.marketplaceOpenMode === BACKUP_OPEN_IMMEDIATE
+          ? snapshot.marketplaceOpenMode
+          : snapshot.backupOpenMode === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY ||
+              snapshot.backupOpenMode === BACKUP_OPEN_IMMEDIATE
+            ? snapshot.backupOpenMode
           : fallback.backupOpenMode,
     };
   }
@@ -1574,6 +1590,10 @@ function assertProviderCanReceiveBooking(provider: {
 function bookingMatchingPolicySnapshot(policy: Awaited<ReturnType<MatchingService['getPolicy']>>) {
   return {
     providerResponseWindowMinutes: policy.providerResponseWindowMinutes,
+    marketplaceRadiusMeters: policy.backupProviderRadiusMeters,
+    marketplaceLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
+    marketplaceInvitationLimit: policy.backupProviderInvitationLimit,
+    marketplaceOpenMode: policy.backupOpenMode,
     backupProviderRadiusMeters: policy.backupProviderRadiusMeters,
     backupProviderLocationMaxAgeMinutes: policy.backupProviderLocationMaxAgeMinutes,
     backupProviderInvitationLimit: policy.backupProviderInvitationLimit,

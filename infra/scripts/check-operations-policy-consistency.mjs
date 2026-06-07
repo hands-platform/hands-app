@@ -28,21 +28,21 @@ const requiredPolicies = [
   },
   {
     label: 'marketplace radius',
-    apiKeyConst: 'MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY',
+    apiKeyConst: 'MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY',
     apiDefaultConst: 'DEFAULT_BACKUP_PROVIDER_RADIUS_METERS',
     adminKeyProp: 'marketplaceRadiusMeters',
     adminDefaultProp: 'marketplaceRadiusMeters',
   },
   {
     label: 'marketplace location freshness',
-    apiKeyConst: 'MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY',
+    apiKeyConst: 'MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY',
     apiDefaultConst: 'DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES',
     adminKeyProp: 'marketplaceLocationFreshnessMinutes',
     adminDefaultProp: 'marketplaceLocationFreshnessMinutes',
   },
   {
     label: 'marketplace invitation limit',
-    apiKeyConst: 'MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY',
+    apiKeyConst: 'MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY',
     apiDefaultConst: 'DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT',
     adminKeyProp: 'marketplaceInvitationLimit',
     adminDefaultProp: 'marketplaceInvitationLimit',
@@ -70,7 +70,7 @@ const requiredPolicies = [
   },
   {
     label: 'marketplace open mode',
-    apiKeyConst: 'MATCHING_BACKUP_OPEN_MODE_KEY',
+    apiKeyConst: 'MATCHING_MARKETPLACE_OPEN_MODE_KEY',
     apiDefaultConst: 'BACKUP_OPEN_IMMEDIATE',
     adminKeyProp: 'marketplaceOpenMode',
     adminDefaultProp: 'marketplaceOpenMode',

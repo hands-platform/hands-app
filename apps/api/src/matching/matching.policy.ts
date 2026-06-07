@@ -609,20 +609,23 @@ export function resolveMatchingPolicyFromPayload(payload: unknown): MatchingPoli
     30,
   );
   const backupProviderRadiusMeters = readSnapshotInteger(
-    readPayloadValue(policy, 'marketplacePartnerRadiusMeters') ??
+    readPayloadValue(policy, 'marketplaceRadiusMeters') ??
+      readPayloadValue(policy, 'marketplacePartnerRadiusMeters') ??
       readPayloadValue(policy, 'backupProviderRadiusMeters'),
     1000,
     30000,
   );
   const travelBufferMinutes = readSnapshotInteger(readPayloadValue(policy, 'travelBufferMinutes'), 0, 120);
   const backupProviderLocationMaxAgeMinutes = readSnapshotInteger(
-    readPayloadValue(policy, 'marketplacePartnerLocationMaxAgeMinutes') ??
+    readPayloadValue(policy, 'marketplaceLocationMaxAgeMinutes') ??
+      readPayloadValue(policy, 'marketplacePartnerLocationMaxAgeMinutes') ??
       readPayloadValue(policy, 'backupProviderLocationMaxAgeMinutes'),
     5,
     1440,
   );
   const backupProviderInvitationLimit = readSnapshotInteger(
-    readPayloadValue(policy, 'marketplacePartnerInvitationLimit') ??
+    readPayloadValue(policy, 'marketplaceInvitationLimit') ??
+      readPayloadValue(policy, 'marketplacePartnerInvitationLimit') ??
       readPayloadValue(policy, 'backupProviderInvitationLimit'),
     1,
     200,

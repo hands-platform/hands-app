@@ -126,6 +126,31 @@ describe('matching policy', () => {
     expect(policy?.preferredAcceptMode).toBe(PREFERRED_ACCEPT_CUSTOMER_CONFIRM);
   });
 
+  it('hydrates matching policy from current marketplace payload keys', () => {
+    const policy = resolveMatchingPolicyFromPayload({
+      matchingPolicy: {
+        providerResponseWindowMinutes: 12,
+        marketplaceRadiusMeters: 5000,
+        travelBufferMinutes: 30,
+        marketplaceLocationMaxAgeMinutes: 20,
+        marketplaceInvitationLimit: 25,
+        bookingMaxCustomerCurrentToAddressKm: 20,
+        bookingMaxPreferredProviderDistanceKm: 50,
+        bookingCurrentLocationFreshnessMinutes: 10,
+        bookingDistanceGateEnabled: true,
+        bookingServiceAreaRequired: true,
+        preferredAcceptMode: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
+        marketplaceOpenMode: BACKUP_OPEN_IMMEDIATE,
+      },
+    });
+
+    expect(policy?.providerResponseWindowMinutes).toBe(12);
+    expect(policy?.backupProviderRadiusMeters).toBe(5000);
+    expect(policy?.backupProviderLocationMaxAgeMinutes).toBe(20);
+    expect(policy?.backupProviderInvitationLimit).toBe(25);
+    expect(policy?.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
+  });
+
   it('ignores malformed active matching policy snapshots so live policy is used instead', () => {
     expect(resolveMatchingPolicyFromPayload(null)).toBeUndefined();
     expect(resolveMatchingPolicyFromPayload({ matchingPolicy: null })).toBeUndefined();
