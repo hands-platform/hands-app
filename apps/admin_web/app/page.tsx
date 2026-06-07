@@ -5379,7 +5379,7 @@ function buildOpsQueue(input: {
       owner: 'Finance',
       priority: 98,
       recommendedAction:
-        'Collect the company fee deposit or offset it before this partner participates in marketplace demand again.',
+        'Collect the company fee deposit or offset it before this partner participates in marketplace bookings again.',
     });
   }
 

@@ -761,7 +761,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     {row.walletBalance < 0 ? (
                       <p className="muted" style={{ marginTop: 8 }}>
                         Partner app message: Unpaid HANDS fees must be settled before you can participate in
-                        this marketplace booking.
+                        marketplace bookings.
                       </p>
                     ) : null}
                   </td>
@@ -1028,8 +1028,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner marketplace hold board</h2>
             <p className="muted">
-              Shows why partners cannot participate in marketplace demand before operators rely on them for
-              booking recovery. View-only marketplace demand is not treated as a partner action.
+              Shows why partners cannot join marketplace bookings before operators rely on them for
+              booking recovery. Viewing marketplace requests is not treated as a partner action.
             </p>
           </div>
           <div className="participant-list">
@@ -1964,7 +1964,7 @@ function buildPartnerOperationRow(
     marketplaceAccessDetail: backupEligibility.eligible
       ? `Can participate in marketplace bookings within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} when the booking address matches policy.`
       : walletBalance < 0
-        ? 'Partner may see marketplace demand, but the Partner app must block participation until HANDS fee settlement is posted.'
+        ? 'Partner may see marketplace requests, but the Partner app must block marketplace booking participation until HANDS fee settlement is posted.'
         : backupEligibility.detail,
     marketplaceAccessTone: backupEligibility.eligible ? 'ok' : walletBalance < 0 ? 'danger' : 'warn',
     completedWorkCount,

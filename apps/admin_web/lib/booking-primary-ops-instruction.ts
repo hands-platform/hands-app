@@ -29,7 +29,7 @@ export function primaryBookingOpsInstruction(
     return 'Service is complete. Capture the authorized payment or refund if there was a dispute.';
   }
   if (options.cashDebtNeedsSettlement) {
-    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner participates in marketplace demand again or receives payout release.';
+    return 'Cash was collected by the partner. Finance must settle the HANDS fee debt before this partner participates in marketplace bookings again or receives payout release.';
   }
   if (booking.payment?.status === 'AUTHORIZED') {
     return 'Payment hold is live. Keep it authorized until service completion or cancellation.';

@@ -1154,8 +1154,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <h2>Partner full record index</h2>
             <p className="muted">
               Factual partner record map for operators. Use these links to jump to identity, booking/chat,
-              payout, documents, app activity, agreements, and review history without making a separate
-              activity page.
+              payout, documents, app activity, agreements, and review history inside this partner detail
+              record.
             </p>
           </div>
           <span className="pill pill-info">{partnerBookingArchive.length} booking record(s)</span>
@@ -1718,8 +1718,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Marketplace booking gate decision</h2>
             <p className="muted">
-              Operator-facing decision for whether this partner can participate in marketplace demand or
-              continue marketplace/payout operations right now.
+              Operator-facing decision for whether this partner can join marketplace bookings or continue
+              marketplace/payout operations right now.
             </p>
           </div>
           <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
@@ -1820,7 +1820,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <span>Marketplace</span>
             <strong>{hasCashFeeDebt ? 'Participation blocked' : 'Participation open'}</strong>
-            <small>Partner can view marketplace demand; only marketplace participation is blocked.</small>
+            <small>Partner can view marketplace requests; only marketplace booking participation is blocked.</small>
           </div>
           <div>
             <span>Direct first-pick</span>
@@ -1854,7 +1854,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   </p>
                   <p className="muted">
                     Marketplace reopen rule: once deposit reference or admin offset clears this debt, the
-                    partner can participate in marketplace demand again.
+                    partner can participate in marketplace bookings again.
                   </p>
                   <div className="participant-list">
                     <span className="pill pill-danger">HANDS fee {formatCurrency(earning.platformFee)}</span>
@@ -5858,7 +5858,7 @@ function buildPartnerAcceptanceRepairCommand(
   const customerImpact = bookingAcceptance.canJoinMarketplace
     ? 'Can appear in customer booking flow and final partner choice.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Customer balances are unaffected; this wallet gate blocks marketplace participation until settlement.'
+      ? 'Customer balances are unaffected; this wallet gate blocks marketplace booking participation until settlement.'
       : hasHardVisibilityBlock
         ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
         : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
@@ -5870,7 +5870,7 @@ function buildPartnerAcceptanceRepairCommand(
   const marketplaceRouting = bookingAcceptance.canJoinMarketplace
     ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
     : hasWalletBlock
-      ? 'Partner can view marketplace demand, but marketplace participation is blocked until cash fee debt is settled or offset.'
+      ? 'Partner can view marketplace requests, but marketplace booking participation is blocked until cash fee debt is settled or offset.'
       : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
 
   const steps = blockedGates.map((gate) => partnerAcceptanceRepairStep(provider, gate));
@@ -5996,7 +5996,7 @@ function partnerAppBlockMessage(
     return 'Partner is clear for direct first-pick and marketplace participation.';
   }
   if (bookingAcceptance.cashDebt > 0) {
-    return 'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.';
+    return 'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
     return 'Account requires admin review before receiving work.';
@@ -6184,7 +6184,7 @@ function buildPartnerDetailOpsBadges(
         : 'Marketplace participation blocked',
       tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
       detail: bookingAcceptance.canJoinMarketplace
-        ? `Can participate in marketplace demand inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
+        ? `Can participate in marketplace bookings inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
         : 'Marketplace participation uses wallet, account, identity, bank, reachability, location, and pricing gates.',
     },
     {

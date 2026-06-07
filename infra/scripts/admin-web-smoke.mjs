@@ -981,7 +981,7 @@ if (bookingLinkMatch) {
     'Policy pin source',
     '10km participation rule',
     'Marketplace radius',
-    'Partner app message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking.',
+    'Partner app message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
     'Payment and refund',
     'Cash fee settlement path',
     'Service feedback',

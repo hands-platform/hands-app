@@ -120,7 +120,7 @@ export function BookingMarketplaceWalletEvidenceSection({
             One booking view for actual participant records, customer final choice, marketplace alert batches,
             and cash-fee wallet impact. View-only marketplace exposure is not stored as participation.
             Partner app message when wallet debt blocks participation: Unpaid HANDS fees must be settled before
-            you can participate in this marketplace booking.
+            you can participate in marketplace bookings.
           </p>
         </div>
         <span className={`pill ${marketplaceWalletEvidence.tone}`}>

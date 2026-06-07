@@ -345,7 +345,7 @@ function checkProviderMobileWalletGateBoundaries() {
   const providerWalletGateTest = readFileSync(providerWalletGateTestPath, 'utf8');
   const providerRequestsScreen = readFileSync(providerRequestsScreenPath, 'utf8');
   const providerOpenBookingCard = readFileSync(providerOpenBookingCardPath, 'utf8');
-  const walletBlockDisplayMessage = 'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.';
+  const walletBlockDisplayMessage = 'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.';
   const walletBlockButtonLabel = 'Fee settlement required';
   const missingMarkers = [];
   const joinBooking = sliceBetween(providerRequestsScreen, 'Future<void> joinBooking(', 'Future<void> respondToBooking(');

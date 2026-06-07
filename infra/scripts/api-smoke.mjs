@@ -161,7 +161,7 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"walletSettlementRequired":true',
     '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
     '"walletSettlementReference":"HANDS-WALLET-',
-    '"displayMessage":"Unpaid HANDS fees must be settled before you can participate in this marketplace booking."',
+    '"displayMessage":"Unpaid HANDS fees must be settled before you can participate in marketplace bookings."',
     'Marketplace requests stay visible for review, but participation is blocked',
     'Marketplace participation and payout release resume',
   ];
@@ -2422,7 +2422,7 @@ if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWall
 }
 if (
   walletDebtProviderEarningsSummary.walletBlockDisplayMessage !==
-  'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.'
+  'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.'
 ) {
   throw new Error(
     `Negative wallet summary should include the partner-app marketplace block message: ${JSON.stringify(

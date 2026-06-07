@@ -1978,7 +1978,7 @@ const bookingViewOptions: Array<{
     label: 'Cash debt',
     description: 'cash bookings that created partner fee/tax debt and can block marketplace participation or payout release.',
     operatorHint:
-      'Use this with Cash Settlements to confirm deposit or admin offset before the partner participates in marketplace demand again.',
+      'Use this with Cash Settlements to confirm deposit or admin offset before the partner participates in marketplace bookings again.',
   },
   {
     view: 'closeout',
@@ -4042,7 +4042,7 @@ function nextAction(booking: AdminBooking) {
     return 'Refund is recorded. Check the refund board and customer communication.';
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner participates in marketplace demand again or receives payout release.';
+    return 'Partner collected cash. Finance must settle the HANDS fee debt before this partner participates in marketplace bookings again or receives payout release.';
   }
   if (
     booking.status === 'OPEN_MATCHING' &&
@@ -4834,7 +4834,7 @@ function buildMarketplaceOperatingQueue(
       status: cashDebtBookings.length ? 'Fee settlement' : 'Clear',
       tone: cashDebtBookings.length ? 'danger' : 'ok',
       detail:
-        'Negative wallet partners can see marketplace demand but cannot participate. App message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking.',
+        'Negative wallet partners can see marketplace requests, but cannot join marketplace bookings. App message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
       operatorAction:
         'Confirm HANDS fee deposit or approved admin offset before marketplace participation and payout release reopen.',
       href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',

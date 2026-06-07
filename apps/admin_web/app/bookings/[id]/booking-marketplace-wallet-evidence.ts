@@ -172,8 +172,8 @@ export function bookingMarketplaceWalletEvidence({
         tone: walletDebt ? 'pill-danger' : 'pill-success',
         record: financeTrace.walletLedger,
         operatorUse: walletDebt
-          ? 'Partner app message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking. Collect the HANDS fee deposit or apply an approved offset before this partner can participate in new marketplace bookings.'
-          : 'Partner app message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking. No cash-fee wallet debt from this booking is currently gating marketplace participation.',
+          ? 'Partner app message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings. Collect the HANDS fee deposit or apply an approved offset before this partner can participate in new marketplace bookings.'
+          : 'Partner app message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings. No cash-fee wallet debt from this booking is currently gating marketplace participation.',
       },
       {
         lane: 'Cash fee accounting',

@@ -1531,7 +1531,7 @@ function bookingHandoffChecklist(
     ? `${booking.payment.method} / ${booking.payment.status} / ${money(booking.payment.amount, booking.payment.currency)}`
     : 'No payment record';
   const cashDebtLabel = bookingCashDebtNeedsSettlement(booking)
-    ? 'Cash fee debt must be settled before the partner participates in marketplace demand again or receives payout release.'
+    ? 'Cash fee debt must be settled before the partner participates in marketplace bookings again or receives payout release.'
     : 'No cash fee debt block on this booking.';
   const chatDetail = booking.chatRoom
     ? `${messageCount} retained message(s). Admin keeps the archive even if mobile hides chat after completion.`

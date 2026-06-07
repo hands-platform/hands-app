@@ -62,7 +62,7 @@ partner repayment or an approved admin offset. The API response must separate th
 internal reason from the partner-facing display message:
 
 - Internal reason: `Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
-- Partner app display copy: `Unpaid HANDS fees must be settled before you can participate in this marketplace booking.`
+- Partner app display copy: `Unpaid HANDS fees must be settled before you can participate in marketplace bookings.`
 
 ## Tax Policy Rule
 

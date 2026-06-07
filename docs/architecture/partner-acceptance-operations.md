@@ -79,7 +79,7 @@ Operators should use these screens together:
 
 ## Acceptance Unblock Playbook
 
-When a partner cannot participate in marketplace demand or receive payout release, operators should resolve blockers in this order:
+When a partner cannot join marketplace bookings or receive payout release, operators should resolve blockers in this order:
 
 1. Clear negative wallet first.
    - Owner: Finance.
