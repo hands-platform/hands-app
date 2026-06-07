@@ -29,7 +29,7 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
     return Boolean(participantProviderId && preferredProviderId) && participantProviderId === preferredProviderId;
   });
   const customerSelectableRows = participantRows.filter((row) =>
-    ['JOINED', 'ACCEPTED', 'SELECTED'].includes(row.participant.status),
+    isCustomerSelectableParticipantForSnapshot(row.booking, row.participant),
   );
   const customerSelectedRows = participantRows.filter(
     (row) =>
@@ -71,6 +71,23 @@ function participantProviderIdForSnapshot(participant: NonNullable<AdminBooking[
 
 function preferredProviderIdForSnapshot(booking: AdminBooking) {
   return booking.preferredProviderId ?? booking.preferredProvider?.id ?? null;
+}
+
+function isCustomerSelectableParticipantForSnapshot(
+  booking: AdminBooking,
+  participant: NonNullable<AdminBooking['participants']>[number],
+) {
+  if (participant.status === 'ACCEPTED' || participant.status === 'SELECTED') {
+    return true;
+  }
+
+  if (participant.status !== 'JOINED') {
+    return false;
+  }
+
+  const participantProviderId = participantProviderIdForSnapshot(participant);
+  const preferredProviderId = preferredProviderIdForSnapshot(booking);
+  return Boolean(participantProviderId) && participantProviderId !== preferredProviderId;
 }
 
 function participantSnapshotTime(participant: NonNullable<AdminBooking['participants']>[number]) {

@@ -101,6 +101,33 @@ describe('dashboard marketplace participant snapshot', () => {
     expect(snapshot.customerSelectableRows).toBe(2);
   });
 
+  it('does not count a pending first-pick partner as customer-selectable marketplace supply', () => {
+    const snapshot = buildMarketplaceParticipantSnapshot([
+      booking({
+        id: 'booking-first-pick-pending',
+        preferredProviderId: 'partner-first',
+        participants: [
+          {
+            id: 'participant-first-pending',
+            providerProfileId: 'partner-first',
+            status: 'JOINED',
+            joinedAt: '2026-06-07T01:00:00.000Z',
+          },
+          {
+            id: 'participant-market-ready',
+            providerProfileId: 'partner-market',
+            status: 'JOINED',
+            joinedAt: '2026-06-07T01:01:00.000Z',
+          },
+        ],
+      }),
+    ]);
+
+    expect(snapshot.firstPickRows).toBe(1);
+    expect(snapshot.marketplaceRows).toBe(1);
+    expect(snapshot.customerSelectableRows).toBe(1);
+  });
+
   it('returns operator-safe fallbacks when no participant history exists', () => {
     const snapshot = buildMarketplaceParticipantSnapshot([
       booking({
