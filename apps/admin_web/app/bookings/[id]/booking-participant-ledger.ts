@@ -53,23 +53,36 @@ export function bookingParticipantLedger(
   const selectedParticipant = participants.find(
     (participant) => bookingParticipantProviderId(participant) === selectedProviderId,
   );
+  const finalPartnerRecorded = Boolean(selectedProviderId);
+  const finalPartnerLabel = booking.selectedProvider
+    ? providerName(booking.selectedProvider)
+    : selectedParticipant?.providerProfile
+      ? providerName(selectedParticipant.providerProfile)
+      : selectedProviderId
+        ? `Partner ${shortId(selectedProviderId)}`
+        : 'Not selected';
+  const finalPartnerHref = booking.selectedProvider?.id
+    ? `/partners/${booking.selectedProvider.id}`
+    : selectedProviderId
+      ? `/partners/${selectedProviderId}`
+      : '#participants';
   const firstPickSelectable = firstPickParticipant
     ? isCustomerSelectableParticipantForFinalChoice(firstPickParticipant, preferredProviderId)
     : false;
   const selectedFromMarketplace = Boolean(selectedProviderId && selectedProviderId !== preferredProviderId);
   const chatRequired = Boolean(
-    booking.selectedProvider ||
+    finalPartnerRecorded ||
       ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status),
   );
   const chatMessageCount = booking.chatRoom?.messages?.length ?? 0;
-  const status = booking.selectedProvider
+  const status = finalPartnerRecorded
     ? 'Final choice recorded'
     : customerSelectableParticipants.length
       ? 'Customer choice pending'
       : participants.length
         ? 'Shortlist active'
         : 'Waiting for participants';
-  const tone = booking.selectedProvider
+  const tone = finalPartnerRecorded
     ? 'pill-success'
     : customerSelectableParticipants.length
       ? 'pill-warn'
@@ -100,11 +113,11 @@ export function bookingParticipantLedger(
       },
       {
         label: 'Customer final choice',
-        value: booking.selectedProvider ? providerName(booking.selectedProvider) : 'Not selected',
+        value: finalPartnerLabel,
         helper: selectedParticipant
           ? `${selectedParticipant.status} participant row retained.`
           : 'No automatic assignment; the customer final choice remains required.',
-        href: booking.selectedProvider?.id ? `/partners/${booking.selectedProvider.id}` : '#participants',
+        href: finalPartnerHref,
       },
       {
         label: 'Booking-address radius',
@@ -166,10 +179,10 @@ export function bookingParticipantLedger(
       },
       {
         label: '4. Final match',
-        status: booking.selectedProvider ? 'Customer selected' : 'Pending',
-        tone: booking.selectedProvider ? 'pill-success' : 'pill-neutral',
-        value: booking.selectedProvider ? providerName(booking.selectedProvider) : 'No final partner yet',
-        helper: booking.selectedProvider
+        status: finalPartnerRecorded ? 'Customer selected' : 'Pending',
+        tone: finalPartnerRecorded ? 'pill-success' : 'pill-neutral',
+        value: finalPartnerRecorded ? finalPartnerLabel : 'No final partner yet',
+        helper: finalPartnerRecorded
           ? selectedFromMarketplace
             ? 'Customer selected a marketplace participant instead of the first-pick partner.'
             : 'Customer selected the first-pick partner after acceptance.'
@@ -216,18 +229,18 @@ export function bookingParticipantLedger(
       {
         stage: '3. Customer final choice',
         scope: 'HANDS does not auto-assign. Customer selection is the authority for the final partner.',
-        status: booking.selectedProvider
+        status: finalPartnerRecorded
           ? 'Selected'
           : customerSelectableParticipants.length
             ? 'Waiting customer'
             : 'Not ready',
-        tone: booking.selectedProvider
+        tone: finalPartnerRecorded
           ? 'pill-success'
           : customerSelectableParticipants.length
             ? 'pill-warn'
             : 'pill-neutral',
-        evidence: booking.selectedProvider
-          ? `${providerName(booking.selectedProvider)} is saved as selectedProvider.`
+        evidence: finalPartnerRecorded
+          ? `${finalPartnerLabel} is saved as selectedProvider.`
           : `${customerSelectableParticipants.length} customer-selectable partner(s) available.`,
         operatorUse:
           'If final partner is missing, check customer app shortlist visibility instead of manually choosing for the customer.',

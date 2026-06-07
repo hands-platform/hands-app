@@ -1,0 +1,225 @@
+import type { AdminBookingDetail } from '../../../lib/admin-api';
+import { bookingParticipantLedger } from './booking-participant-ledger';
+
+function booking(input: Partial<AdminBookingDetail>): AdminBookingDetail {
+  return {
+    id: 'booking-test',
+    status: 'OPEN_MATCHING',
+    participants: [],
+    ...input,
+  } as AdminBookingDetail;
+}
+
+const marketplaceSupply = {
+  radiusMeters: 10_000,
+  eligibleCount: 3,
+};
+
+const notificationTrace = {
+  backupBatches: [{ id: 'batch-1' }],
+};
+
+describe('booking participant ledger', () => {
+  it('keeps actual participant evidence while separating customer-selectable partners', () => {
+    const ledger = bookingParticipantLedger(
+      booking({
+        preferredProviderId: 'partner-first',
+        preferredProvider: {
+          id: 'partner-first',
+          displayName: 'First Partner',
+        },
+        selectedProviderId: 'partner-selected',
+        selectedProvider: {
+          id: 'partner-selected',
+          displayName: 'Selected Partner',
+        },
+        participants: [
+          {
+            id: 'participant-first',
+            providerProfileId: 'partner-first',
+            status: 'JOINED',
+            joinedAt: '2026-06-07T01:00:00.000Z',
+            providerProfile: {
+              id: 'partner-first',
+              displayName: 'First Partner',
+            },
+          },
+          {
+            id: 'participant-marketplace',
+            providerProfileId: 'partner-marketplace',
+            status: 'JOINED',
+            joinedAt: '2026-06-07T01:01:00.000Z',
+            providerProfile: {
+              id: 'partner-marketplace',
+              displayName: 'Marketplace Partner',
+            },
+          },
+          {
+            id: 'participant-rejected',
+            providerProfileId: 'partner-rejected',
+            status: 'REJECTED',
+            joinedAt: '2026-06-07T01:02:00.000Z',
+            respondedAt: '2026-06-07T01:03:00.000Z',
+            providerProfile: {
+              id: 'partner-rejected',
+              displayName: 'Rejected Partner',
+            },
+          },
+          {
+            id: 'participant-selected',
+            providerProfileId: 'partner-selected',
+            status: 'SELECTED',
+            joinedAt: '2026-06-07T01:04:00.000Z',
+            respondedAt: '2026-06-07T01:05:00.000Z',
+            providerProfile: {
+              id: 'partner-selected',
+              displayName: 'Selected Partner',
+            },
+          },
+        ],
+      }),
+      marketplaceSupply,
+      notificationTrace,
+    );
+
+    expect(ledger.status).toBe('Final choice recorded');
+    expect(ledger.rows).toHaveLength(4);
+    expect(ledger.cards.find((card) => card.label === 'Marketplace participants')?.helper).toBe(
+      '2 customer-selectable / 1 evidence-only / 1 rejected row(s).',
+    );
+
+    expect(ledger.rows.find((row) => row.id === 'participant-selected')).toMatchObject({
+      role: 'Final partner',
+      choiceState: 'Customer final choice',
+      eligibilityLabel: 'Final selected by customer',
+    });
+    expect(ledger.rows.find((row) => row.id === 'participant-marketplace')).toMatchObject({
+      role: 'Marketplace',
+      choiceState: 'Customer-selectable',
+      eligibilityLabel: 'Customer-selectable',
+    });
+    expect(ledger.rows.find((row) => row.id === 'participant-first')).toMatchObject({
+      role: 'First-pick',
+      choiceState: 'Evidence-only',
+      eligibilityLabel: 'Not customer-selectable yet',
+    });
+    expect(ledger.rows.find((row) => row.id === 'participant-rejected')).toMatchObject({
+      choiceState: 'Evidence-only',
+      evidenceLabel: 'Declined response row',
+      eligibilityLabel: 'Not customer-selectable',
+    });
+  });
+
+  it('does not imply automatic assignment when the customer has not selected a final partner', () => {
+    const ledger = bookingParticipantLedger(
+      booking({
+        preferredProviderId: 'partner-first',
+        preferredProvider: {
+          id: 'partner-first',
+          displayName: 'First Partner',
+        },
+        participants: [
+          {
+            id: 'participant-first',
+            providerProfileId: 'partner-first',
+            status: 'JOINED',
+            providerProfile: {
+              id: 'partner-first',
+              displayName: 'First Partner',
+            },
+          },
+          {
+            id: 'participant-marketplace',
+            providerProfileId: 'partner-marketplace',
+            status: 'JOINED',
+            providerProfile: {
+              id: 'partner-marketplace',
+              displayName: 'Marketplace Partner',
+            },
+          },
+        ],
+      }),
+      marketplaceSupply,
+      notificationTrace,
+    );
+
+    expect(ledger.status).toBe('Customer choice pending');
+    expect(ledger.selectionTrace.find((row) => row.label === '4. Final match')).toMatchObject({
+      status: 'Pending',
+      value: 'No final partner yet',
+      helper: 'No automatic assignment; customer final choice is required before matched service handoff.',
+    });
+    expect(ledger.lifecycleRows.find((row) => row.stage === '3. Customer final choice')).toMatchObject({
+      status: 'Waiting customer',
+      evidence: '1 customer-selectable partner(s) available.',
+    });
+  });
+
+  it('treats selectedProviderId as final choice even when the selected partner relation is omitted', () => {
+    const ledger = bookingParticipantLedger(
+      booking({
+        selectedProviderId: 'partner-selected',
+        participants: [
+          {
+            id: 'participant-selected',
+            providerProfileId: 'partner-selected',
+            status: 'SELECTED',
+            providerProfile: {
+              id: 'partner-selected',
+              displayName: 'Selected Partner',
+            },
+          },
+        ],
+      }),
+      marketplaceSupply,
+      notificationTrace,
+    );
+
+    expect(ledger.status).toBe('Final choice recorded');
+    expect(ledger.cards.find((card) => card.label === 'Customer final choice')).toMatchObject({
+      value: 'Selected Partner',
+      helper: 'SELECTED participant row retained.',
+      href: '/partners/partner-selected',
+    });
+    expect(ledger.selectionTrace.find((row) => row.label === '4. Final match')).toMatchObject({
+      status: 'Customer selected',
+      value: 'Selected Partner',
+    });
+  });
+
+  it('flags missing retained chat after a final partner is selected', () => {
+    const ledger = bookingParticipantLedger(
+      booking({
+        status: 'MATCHED',
+        selectedProviderId: 'partner-selected',
+        selectedProvider: {
+          id: 'partner-selected',
+          displayName: 'Selected Partner',
+        },
+        participants: [
+          {
+            id: 'participant-selected',
+            providerProfileId: 'partner-selected',
+            status: 'SELECTED',
+            providerProfile: {
+              id: 'partner-selected',
+              displayName: 'Selected Partner',
+            },
+          },
+        ],
+        chatRoom: null,
+      }),
+      marketplaceSupply,
+      notificationTrace,
+    );
+
+    expect(ledger.cards.find((card) => card.label === 'Chat archive')).toMatchObject({
+      value: 'Missing',
+      helper: 'Matched bookings should create a retained chat archive for operations evidence.',
+    });
+    expect(ledger.lifecycleRows.find((row) => row.stage === '4. Chat and service handoff')).toMatchObject({
+      status: 'Chat missing',
+      tone: 'pill-danger',
+    });
+  });
+});

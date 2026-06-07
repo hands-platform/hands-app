@@ -1,6 +1,6 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  roots: ['<rootDir>/lib'],
+  roots: ['<rootDir>/lib', '<rootDir>/app'],
   testEnvironment: 'node',
   testMatch: ['**/*.spec.ts'],
   transform: {
