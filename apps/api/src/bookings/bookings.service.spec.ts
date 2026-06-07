@@ -530,6 +530,123 @@ describe('BookingsService marketplace participation', () => {
   });
 });
 
+describe('BookingsService partner response wallet gates', () => {
+  it('blocks a marketplace partner with a negative wallet before accepting the request', async () => {
+    const bookingParticipantUpdate = jest.fn();
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          ...openMarketplaceBooking(),
+          customerProfile: { userId: 'customer-user-1' },
+          preferredProvider: null,
+          selectedProvider: null,
+          chatRoom: null,
+          services: [{ serviceId: 'service-1' }],
+        }),
+      },
+      bookingParticipant: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'participant-1' }),
+        update: bookingParticipantUpdate,
+      },
+      providerEarning: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -90000 } }),
+      },
+    };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.updateParticipant('booking-1', 'partner-user-1', ParticipantStatus.ACCEPTED),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: PROVIDER_WALLET_BLOCK_CODE,
+        marketplaceJoinBlocked: true,
+        marketplaceVisibilityBlocked: false,
+      }),
+    });
+
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith({
+      where: {
+        providerProfileId: 'partner-1',
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+      },
+      _sum: { netAmount: true },
+    });
+    expect(bookingParticipantUpdate).not.toHaveBeenCalled();
+  });
+
+  it('does not apply the marketplace wallet gate to the preferred first-pick acceptance', async () => {
+    const bookingParticipantUpdate = jest.fn();
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          ...openFirstPickBooking(),
+          customerProfile: { userId: 'customer-user-1' },
+          preferredProvider: approvedPartner(),
+          selectedProvider: null,
+          chatRoom: null,
+          services: [{ serviceId: 'service-1' }],
+        }),
+        update: jest.fn().mockResolvedValue({
+          ...openFirstPickBooking(),
+          participants: [{ providerProfileId: 'partner-1', status: ParticipantStatus.ACCEPTED }],
+          preferredProvider: approvedPartner(),
+          selectedProvider: null,
+          chatRoom: null,
+        }),
+      },
+      bookingParticipant: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'participant-1' }),
+        update: bookingParticipantUpdate,
+      },
+      providerEarning: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -90000 } }),
+      },
+    };
+    const notifications = { create: jest.fn() };
+    const matchingGateway = { emitProviderAccepted: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      {} as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await expect(
+      service.updateParticipant('booking-1', 'partner-user-1', ParticipantStatus.ACCEPTED),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        participants: [expect.objectContaining({ status: ParticipantStatus.ACCEPTED })],
+      }),
+    );
+
+    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+    expect(prisma.booking.update).toHaveBeenCalled();
+    expect(bookingParticipantUpdate).not.toHaveBeenCalled();
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'provider.accepted',
+        data: { bookingId: 'booking-1', providerProfileId: 'partner-1' },
+      }),
+    );
+  });
+});
+
 function approvedPartner(overrides: Record<string, unknown> = {}) {
   return {
     id: 'partner-1',
