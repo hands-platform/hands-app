@@ -580,7 +580,9 @@ String responseWindowLabel(Map<String, dynamic> policy) {
 }
 
 String marketplaceRadiusLabel(Map<String, dynamic> policy) {
-  final meters = asNum(policy['backupProviderRadiusMeters'])?.toInt();
+  final meters = (asNum(policy['marketplaceRadiusMeters']) ??
+          asNum(policy['backupProviderRadiusMeters']))
+      ?.toInt();
   if (meters == null || meters <= 0) {
     return 'nearby';
   }

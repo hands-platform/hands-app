@@ -242,6 +242,21 @@ void main() {
     expect(guidance.detailMessage, contains('5 km'));
   });
 
+  test('prefers marketplace radius over legacy radius', () {
+    final booking = {
+      'status': 'OPEN_MATCHING',
+      'metadata': {
+        'matchingPolicy': {
+          'marketplaceRadiusMeters': 5000,
+          'backupProviderRadiusMeters': 10000,
+        },
+      },
+    };
+
+    expect(providerMarketplaceRadiusMeters(booking), 5000);
+    expect(providerMarketplaceRadiusTagLabel(booking), '5 km marketplace');
+  });
+
   test('keeps direct request guidance when wallet is negative', () {
     final guidance = providerRequestGuidance(
       booking: {'status': 'OPEN_MATCHING'},

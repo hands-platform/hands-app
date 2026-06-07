@@ -79,7 +79,7 @@ void main() {
       );
     });
 
-    test('reads partner id from nested provider profile rows', () {
+    test('reads partner id from nested partner profile rows', () {
       expect(
         customerParticipantSelectableForFinalChoice(
           {
@@ -171,6 +171,15 @@ void main() {
   });
 
   group('customer marketplace policy copy', () {
+    test('prefers marketplace radius over legacy radius', () {
+      final policy = {
+        'marketplaceRadiusMeters': 5000,
+        'backupProviderRadiusMeters': 10000,
+      };
+
+      expect(marketplaceRadiusLabel(policy), 'within 5 km');
+    });
+
     test('describes immediate marketplace participation with current wording',
         () {
       final policy = {

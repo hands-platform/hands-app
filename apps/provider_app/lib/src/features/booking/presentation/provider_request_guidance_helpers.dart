@@ -200,7 +200,9 @@ int providerMatchingWindowMinutes(Map<String, dynamic> booking) {
 
 int providerMarketplaceRadiusMeters(Map<String, dynamic> booking) {
   final policy = asMap(asMap(booking['metadata'])?['matchingPolicy']);
-  final value = asNum(policy?['backupProviderRadiusMeters']) ??
+  final value = asNum(policy?['marketplaceRadiusMeters']) ??
+      asNum(policy?['backupProviderRadiusMeters']) ??
+      asNum(booking['marketplaceRadiusMeters']) ??
       asNum(booking['backupProviderRadiusMeters']);
   final meters = value?.round();
   if (meters == null || meters <= 0) {
