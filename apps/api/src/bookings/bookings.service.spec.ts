@@ -543,6 +543,54 @@ describe('BookingsService customer cancellation', () => {
 });
 
 describe('BookingsService marketplace participation', () => {
+  it('keeps marketplace demand visible for negative-wallet partners while participation stays blocked', async () => {
+    const openBooking = {
+      ...openMarketplaceBooking(),
+      services: [{ serviceId: 'service-1', service: massageService(), price: 500000 }],
+      address: { city: 'Ho Chi Minh City', district: 'District 1' },
+      preferredProvider: approvedPartner({ id: 'first-pick-partner' }),
+      selectedProvider: null,
+      payment: {
+        amount: 500000,
+        method: PaymentMethod.CASH,
+        status: PaymentStatus.AUTHORIZED,
+        currency: 'VND',
+      },
+      chatRoom: null,
+    };
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findMany: jest.fn().mockResolvedValue([openBooking]),
+      },
+      providerEarning: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
+      },
+    };
+    const matching = {
+      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.getOpenBookings('partner-user-1')).resolves.toEqual([
+      expect.objectContaining({
+        id: 'booking-1',
+        status: BookingStatus.OPEN_MATCHING,
+      }),
+    ]);
+
+    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+  });
+
   it('blocks a negative-wallet partner before creating a marketplace participant', async () => {
     const bookingParticipantUpsert = jest.fn();
     const prisma = {
