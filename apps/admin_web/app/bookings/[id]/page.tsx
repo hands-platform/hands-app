@@ -121,6 +121,7 @@ import {
   adminGet,
 } from '../../../lib/admin-api';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import {
   canCloseoutCompletedBooking,
   completedCloseoutLabel,
@@ -3326,51 +3327,6 @@ function bookingCloseoutReadiness({
         : `${openItems.map((item) => item.label).join(', ')} should be checked before the next handoff or closeout.`,
     items,
     openItems,
-  };
-}
-
-function bookingChatLifecycle(booking: AdminBookingDetail, messageCount: number) {
-  const roomLabel = booking.chatRoom ? shortId(booking.chatRoom.id) : 'No room yet';
-  const terminalStatuses = new Set(['COMPLETED', 'CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW']);
-
-  if (!booking.chatRoom) {
-    return {
-      status: 'Not created',
-      tone: 'pill-neutral',
-      customerState: 'Locked',
-      customerDetail: 'Customer chat appears after final partner handoff.',
-      partnerState: 'Locked',
-      partnerDetail: 'Partner chat appears after match/service start.',
-      adminState: 'Waiting',
-      adminDetail: 'No transcript exists yet.',
-      roomLabel,
-    };
-  }
-
-  if (terminalStatuses.has(booking.status)) {
-    return {
-      status: 'Admin retained',
-      tone: 'pill-success',
-      customerState: 'Hidden after closeout',
-      customerDetail: 'Customer app can hide the active room when the service record is closed.',
-      partnerState: 'Hidden after closeout',
-      partnerDetail: 'Partner app can hide the active room after completion or closeout.',
-      adminState: 'Archived',
-      adminDetail: `${messageCount} message(s) kept for support, refund, and dispute review.`,
-      roomLabel,
-    };
-  }
-
-  return {
-    status: 'Live',
-    tone: 'pill-info',
-    customerState: 'Visible',
-    customerDetail: 'Customer can coordinate with the assigned partner.',
-    partnerState: 'Visible',
-    partnerDetail: 'Partner can message the customer during handoff and service.',
-    adminState: 'Live archive',
-    adminDetail: `${messageCount} message(s) visible now and retained after closeout.`,
-    roomLabel,
   };
 }
 
