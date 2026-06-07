@@ -4918,6 +4918,11 @@ function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
       helper: 'First-pick partner response timer before operators watch marketplace alternatives.',
     },
     {
+      label: 'Travel buffer',
+      value: `${policy.travelBufferMinutes}m`,
+      helper: 'Partner availability uses this buffer after a completed service before normal matching.',
+    },
+    {
       label: 'Marketplace radius',
       value: formatPolicyDistance(policy.marketplaceRadiusMeters),
       helper: 'Partners inside the booking-address radius can participate when other gates pass.',
