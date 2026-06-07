@@ -285,7 +285,7 @@ function checkPayoutBatchContract() {
   requireMarkers('apps/admin_web/app/operations-policy/page.tsx', operationsPolicy, [
     'Payout batch cycle',
     "'payout.batch_cycle_policy':",
-    'id={policySettingAnchor(setting.key)}',
+    'id={operationalPolicyAnchor(setting.key)}',
   ]);
   requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
     "'payout.batch_cycle_policy'",
@@ -555,11 +555,11 @@ function checkOperationsPolicyControlPlane() {
     'Current partner acceptance impact',
     'Matching stage impact preview',
     'Policy enforcement trace',
-    'policySettingAnchor(setting.key)',
+    'operationalPolicyAnchor(setting.key)',
     "api: 'POST /customer/bookings'",
     "server: 'BookingsService.createBooking -> MatchingService.openBooking'",
-    "href: '/operations-policy#policy-matching-marketplace-provider-radius-meters'",
-    'id={policySettingAnchor(setting.key)}',
+    'href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)',
+    'id={operationalPolicyAnchor(setting.key)}',
     'Keep customer final confirmation as the operating rule.',
     'The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner.',
   ]);
