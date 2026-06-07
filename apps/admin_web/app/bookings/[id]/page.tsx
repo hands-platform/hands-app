@@ -143,6 +143,11 @@ import {
 import { bookingOpsBadges } from '../../../lib/booking-ops-badges';
 import { bookingOpsTaskCards as buildBookingOpsTaskCards } from '../../../lib/booking-ops-task-cards';
 import {
+  bookingOperatorNoteLines,
+  canExpireBooking,
+  canMarkNoShow,
+} from '../../../lib/booking-operator-action-rules';
+import {
   bookingPartnerDecisionLabel,
   bookingPartnerHint,
 } from '../../../lib/booking-partner-decision-copy';
@@ -222,7 +227,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const financeFlags = bookingFinanceFlags(booking, financeTrace);
   const cashFeeSettlementPath = bookingCashFeeSettlementPath(booking, financeTrace);
   const refundLedgerRows = bookingRefundRows(booking);
-  const operatorNoteLines = bookingOperatorNoteLines(booking);
+  const operatorNoteLines = bookingOperatorNoteLines(booking.notes);
   const closureSummary = bookingClosureSummary(booking);
   const servicePricingSnapshotRows = [
     {
@@ -1432,7 +1437,7 @@ function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
       available: true,
       status: 'Available',
       tone: 'pill-info',
-      evidence: `${bookingOperatorNoteLines(booking).length} note line(s) currently retained.`,
+      evidence: `${bookingOperatorNoteLines(booking.notes).length} note line(s) currently retained.`,
       operatorRule:
         'Use notes to record what happened, who was contacted, and what evidence supports the next decision.',
       href: '#operator-notes',
@@ -4231,21 +4236,6 @@ function flowStages(booking: AdminBookingDetail) {
       cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
     }),
   });
-}
-
-function bookingOperatorNoteLines(booking: AdminBookingDetail) {
-  return (booking.notes ?? '')
-    .split('\n')
-    .map((note) => note.trim())
-    .filter(Boolean);
-}
-
-function canMarkNoShow(status: string) {
-  return ['OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED'].includes(status);
-}
-
-function canExpireBooking(status: string) {
-  return status === 'OPEN_MATCHING';
 }
 
 function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinanceTrace>) {
