@@ -66,6 +66,19 @@ void main() {
       );
     });
 
+    test('allows joined marketplace participants for final customer choice', () {
+      expect(
+        customerParticipantSelectableForFinalChoice(
+          {
+            'providerProfileId': 'marketplace-1',
+            'status': 'JOINED',
+          },
+          preferredProviderId: 'preferred-1',
+        ),
+        isTrue,
+      );
+    });
+
     test('rejects blocked or incomplete participant rows', () {
       expect(
         customerParticipantSelectableForFinalChoice({
