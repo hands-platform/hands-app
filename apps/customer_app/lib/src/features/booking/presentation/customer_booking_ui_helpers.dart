@@ -409,8 +409,13 @@ String providerLocationFreshnessLabel(Map<String, dynamic> provider) {
 }
 
 LatLng? deriveBookingLatLng(Map<String, dynamic>? booking) {
-  final lat = asDouble(booking?['lat']);
-  final lng = asDouble(booking?['lng']);
+  final snapshot = asMap(booking?['addressSnapshot']);
+  final lat = asDouble(snapshot?['lat']) ??
+      asDouble(snapshot?['latitude']) ??
+      asDouble(booking?['lat']);
+  final lng = asDouble(snapshot?['lng']) ??
+      asDouble(snapshot?['longitude']) ??
+      asDouble(booking?['lng']);
   if (lat == null || lng == null) {
     return null;
   }

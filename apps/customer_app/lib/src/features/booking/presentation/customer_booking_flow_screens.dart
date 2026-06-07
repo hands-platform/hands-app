@@ -408,7 +408,7 @@ class _BookingConfirmationPageState
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Customer pin: ${formatCoordinate(customerLat)}, ${formatCoordinate(customerLng)}',
+                    'Service pin: ${formatCoordinate(customerLat)}, ${formatCoordinate(customerLng)}',
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium

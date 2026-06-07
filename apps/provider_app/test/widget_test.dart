@@ -137,6 +137,22 @@ void main() {
     expect(providerChatCustomerLongitude(booking), 106.7009);
   });
 
+  test('partner chat location prefers address snapshot over stale root coordinate',
+      () {
+    final booking = {
+      'id': 'booking-stale-root-chat-location',
+      'lat': '13.7563',
+      'lng': '100.5018',
+      'addressSnapshot': {
+        'latitude': '10.7769',
+        'longitude': '106.7009',
+      },
+    };
+
+    expect(providerChatCustomerLatitude(booking), 10.7769);
+    expect(providerChatCustomerLongitude(booking), 106.7009);
+  });
+
   test('partner chat location keeps legacy root coordinate fallback', () {
     final booking = {
       'id': 'booking-legacy-chat-location',

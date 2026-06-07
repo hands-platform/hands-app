@@ -112,4 +112,21 @@ void main() {
       );
     });
   });
+
+  group('booking service address pin', () {
+    test('prefers immutable address snapshot over legacy booking coordinates',
+        () {
+      final point = deriveBookingLatLng({
+        'lat': 13.7563,
+        'lng': 100.5018,
+        'addressSnapshot': {
+          'lat': 10.7769,
+          'lng': 106.7009,
+        },
+      });
+
+      expect(point?.latitude, closeTo(10.7769, 0.000001));
+      expect(point?.longitude, closeTo(106.7009, 0.000001));
+    });
+  });
 }

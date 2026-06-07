@@ -24,11 +24,6 @@ double? _bookingCoordinate(
   required String snapshotKey,
   required String snapshotLegacyKey,
 }) {
-  final direct = asNum(booking?[legacyKey])?.toDouble();
-  if (direct != null) {
-    return direct;
-  }
-
   final snapshot = asMap(booking?['addressSnapshot']);
   final snapshotValue = asNum(snapshot?[snapshotKey])?.toDouble() ??
       asNum(snapshot?[snapshotLegacyKey])?.toDouble();
@@ -37,6 +32,11 @@ double? _bookingCoordinate(
   }
 
   final nestedAddress = asMap(snapshot?['address']);
-  return asNum(nestedAddress?[snapshotKey])?.toDouble() ??
+  final nestedValue = asNum(nestedAddress?[snapshotKey])?.toDouble() ??
       asNum(nestedAddress?[snapshotLegacyKey])?.toDouble();
+  if (nestedValue != null) {
+    return nestedValue;
+  }
+
+  return asNum(booking?[legacyKey])?.toDouble();
 }
