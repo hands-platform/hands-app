@@ -15,7 +15,7 @@ export function marketplaceParticipantLedgerBoundaryCopy() {
       'Marketplace visibility is not an activity record. If the partner wallet is negative, the partner app blocks marketplace participation with an unpaid HANDS fee message before any participant row is created.',
     pills: [
       'Actual participant rows only',
-      'Negative wallet blocks participation',
+      'Negative wallet blocks marketplace participation',
       'No view-only activity log',
       'Customer-selected final partner only',
       'No automatic final assignment',

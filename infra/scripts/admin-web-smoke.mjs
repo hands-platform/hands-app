@@ -995,7 +995,7 @@ if (bookingLinkMatch) {
     'Actual marketplace participant ledger',
     'Participation evidence',
     'Actual participant rows only',
-    'Negative wallet blocks participation',
+    'Negative wallet blocks marketplace participation',
     'No view-only activity log',
     'Customer-selected final partner only',
     'First-pick requirement',

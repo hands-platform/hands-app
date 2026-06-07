@@ -3002,7 +3002,7 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
       ? `Can receive marketplace alerts and join eligible bookings within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )} during the ${opsPolicy.responseWindowMinutes}m first-pick window.`
-      : `Marketplace matching needs the listed blockers resolved. Negative wallet blocks participation until the HANDS fee debt is settled. Distance is still checked per booking within ${formatDistanceMeters(
+      : `Marketplace matching needs the listed blockers resolved. Negative wallet blocks marketplace participation until the HANDS fee debt is settled. Distance is still checked per booking within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )}.`,
     operatorAction: eligible
