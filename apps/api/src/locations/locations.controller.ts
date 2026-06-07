@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { SaveCustomerSelectedLocationDto } from './locations.dto';
 import { LocationsService } from './locations.service';
 
 @Controller()
@@ -16,7 +17,7 @@ export class LocationsController {
   @Roles(Role.CUSTOMER)
   saveSelectedLocation(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { lat: number; lng: number; addressText: string },
+    @Body() body: SaveCustomerSelectedLocationDto,
   ) {
     return this.locations.saveCustomerSelectedLocation(user.id, body);
   }

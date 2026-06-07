@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { UpdateProviderLocationDto } from './providers.dto';
 import { ProvidersService } from './providers.service';
 
 @Controller()
@@ -59,7 +60,7 @@ export class ProvidersController {
   @Post(['partner/location', 'provider/location'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
-  updateLocation(@CurrentUser() user: AuthenticatedUser, @Body() body: { lat: number; lng: number }) {
+  updateLocation(@CurrentUser() user: AuthenticatedUser, @Body() body: UpdateProviderLocationDto) {
     return this.providers.updateLocation(user.id, body);
   }
 
