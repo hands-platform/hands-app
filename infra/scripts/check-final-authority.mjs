@@ -426,7 +426,12 @@ function checkAdminVisibleCopyGuardIsStrict() {
   ]);
 
   const setupDoctor = read('infra/scripts/setup-doctor.mjs');
-  requireMarkers('infra/scripts/setup-doctor.mjs', setupDoctor, ['admin visible copy guard']);
+  requireMarkers('infra/scripts/setup-doctor.mjs', setupDoctor, [
+    'admin visible copy guard',
+    'final authority guard',
+    'vietnam scope guard',
+    'admin query guard',
+  ]);
 }
 
 function checkAdminPeopleManagementIsFactual() {

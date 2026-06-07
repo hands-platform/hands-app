@@ -47,6 +47,18 @@ const steps = [
     command: ['infra/scripts/check-admin-visible-copy.mjs'],
   },
   {
+    name: 'final authority guard',
+    command: ['infra/scripts/check-final-authority.mjs'],
+  },
+  {
+    name: 'vietnam scope guard',
+    command: ['infra/scripts/check-vietnam-scope.mjs'],
+  },
+  {
+    name: 'admin query guard',
+    command: ['infra/scripts/check-admin-query-guards.mjs'],
+  },
+  {
     name: 'api policy coverage guard',
     command: ['infra/scripts/check-api-policy-coverage.mjs'],
   },
