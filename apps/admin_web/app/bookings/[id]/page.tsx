@@ -121,6 +121,11 @@ import {
   adminGet,
 } from '../../../lib/admin-api';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import {
+  bookingRefundLedgerEvidence,
+  bookingRefundRows,
+  type BookingRefundLedgerRow,
+} from '../../../lib/booking-refund-ledger';
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -146,15 +151,6 @@ const bookingDetailAuthoritySourceMarkers = [
   'All partner chats',
   'Service pricing snapshot',
 ] as const;
-
-type BookingRefundLedgerRow = {
-  id: string;
-  amount: number;
-  status: string;
-  createdAt?: string | null;
-  reason?: string | null;
-  payment?: { currency?: string | null } | null;
-};
 
 type BookingTimelineRefundRow =
   | NonNullable<AdminBookingDetail['refunds']>[number]
@@ -4710,31 +4706,6 @@ function paymentHint(booking: AdminBookingDetail) {
     return 'Refund path is active.';
   }
   return `${booking.payment.method} payment is being monitored.`;
-}
-
-function bookingRefundRows(booking: AdminBookingDetail): BookingRefundLedgerRow[] {
-  if (booking.refunds?.length) {
-    return booking.refunds;
-  }
-
-  return (booking.payment?.refunds ?? []).map((refund) => ({
-    ...refund,
-    payment: { currency: booking.payment?.currency ?? 'VND' },
-  }));
-}
-
-function bookingRefundLedgerEvidence(booking: AdminBookingDetail) {
-  const rows = bookingRefundRows(booking);
-  if (!rows.length) {
-    return booking.payment?.status === 'REFUNDED'
-      ? 'Payment is marked refunded but no refund row is loaded.'
-      : 'No refund action has been recorded for this booking.';
-  }
-
-  const latest = [...rows].sort((left, right) => safeTime(right.createdAt) - safeTime(left.createdAt))[0];
-  const currency = latest.payment?.currency ?? booking.payment?.currency ?? 'VND';
-  const reason = latest.reason ? ` / ${latest.reason}` : '';
-  return `${latest.status} / ${money(latest.amount, currency)} / ${formatDate(latest.createdAt)}${reason}`;
 }
 
 function bookingOperatorNoteLines(booking: AdminBookingDetail) {
