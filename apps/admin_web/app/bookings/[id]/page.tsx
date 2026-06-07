@@ -156,6 +156,7 @@ import {
 } from '../../../lib/booking-operator-action-rules';
 import { bookingOperatorActionMatrix as buildBookingOperatorActionMatrix } from '../../../lib/booking-operator-action-matrix';
 import { bookingOperatorCommandQueue as buildBookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
+import { bookingOperatorPriorityBriefing as buildBookingOperatorPriorityBriefing } from '../../../lib/booking-operator-priority-briefing';
 import {
   bookingPartnerDecisionLabel,
   bookingPartnerHint,
@@ -1204,92 +1205,32 @@ function bookingOperatorPriorityBriefing({
     : ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
       ? 'Missing'
       : 'Not required yet';
-  const closeoutLabel =
-    closeoutReadiness.openItems.length > 0
-      ? `${closeoutReadiness.openItems.length} item(s)`
-      : closeoutReadiness.status;
 
-  return {
-    status: primaryCommand.tone === 'pill-success' ? 'Monitoring' : 'Action first',
-    tone: primaryCommand.tone,
-    rows: [
-      {
-        label: 'First action',
-        value: primaryCommand.title,
-        helper: `${primaryCommand.owner}: ${primaryCommand.detail}`,
-      },
-      {
-        label: 'Next operator step',
-        value: nextAction.title,
-        helper: nextAction.detail,
-      },
-      {
-        label: 'Customer',
-        value: customerName,
-        helper: `${customerPhone} / ${bookingAddressSnapshotLabel(booking)}`,
-      },
-      {
-        label: 'Partner state',
-        value: partnerLabel,
-        helper: `${participantCount} participant record(s) / ${bookingPartnerHint(booking)}`,
-      },
-      {
-        label: 'Chat archive',
-        value: booking.chatRoom ? 'Ready' : 'Missing',
-        helper: `${messageCount} retained message(s). Admin keeps chat history after service closeout.`,
-      },
-      {
-        label: 'Location record',
-        value: locationLabel,
-        helper: latestLocation
-          ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
-          : providerLocationMetricHelper(booking),
-      },
-      {
-        label: 'Payment',
-        value: paymentLabel,
-        helper: bookingPaymentHint(booking, {
-          cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-        }),
-      },
-      {
-        label: 'Closeout',
-        value: closeoutLabel,
-        helper:
-          financeFlags.length > 0
-            ? `${financeFlags.length} finance check(s): ${financeFlags.map((flag) => flag.title).join(', ')}`
-            : closeoutReadiness.helper,
-      },
-    ],
-    steps: [
-      {
-        id: 'priority-command',
-        label: '1',
-        title: primaryCommand.title,
-        detail: primaryCommand.detail,
-        href: '#operator-command-queue',
-        linkLabel: 'Open queue',
-      },
-      {
-        id: 'priority-handoff',
-        label: '2',
-        title: finalPartner ? 'Confirm partner handoff' : 'Keep partner choice visible',
-        detail: finalPartner
-          ? `${providerName(finalPartner)} is linked. Confirm chat, service pin, and payment handoff are visible.`
-          : 'Customer choice is still pending. Keep the shortlist, partner alerts, and marketplace window easy to audit.',
-        href: '#booking-handoff-checklist',
-        linkLabel: 'Open handoff',
-      },
-      {
-        id: 'priority-closeout',
-        label: '3',
-        title: closeoutReadiness.status,
-        detail: closeoutReadiness.helper,
-        href: '#booking-closeout-readiness',
-        linkLabel: 'Open closeout',
-      },
-    ],
-  };
+  return buildBookingOperatorPriorityBriefing({
+    primaryCommand,
+    nextAction,
+    customerName,
+    customerPhone,
+    addressSnapshotLabel: bookingAddressSnapshotLabel(booking),
+    partnerLabel,
+    hasFinalPartner: Boolean(finalPartner),
+    participantCount,
+    partnerHint: bookingPartnerHint(booking),
+    hasChatRoom: Boolean(booking.chatRoom),
+    messageCount,
+    locationLabel,
+    locationHelper: latestLocation
+      ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${providerLocationMetricHelper(booking)}`
+      : providerLocationMetricHelper(booking),
+    paymentLabel,
+    paymentHint: bookingPaymentHint(booking, {
+      cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    }),
+    closeoutStatus: closeoutReadiness.status,
+    closeoutHelper: closeoutReadiness.helper,
+    closeoutOpenItemCount: closeoutReadiness.openItems.length,
+    financeFlagTitles: financeFlags.map((flag) => flag.title),
+  });
 }
 
 function bookingEvidencePacket({
