@@ -145,6 +145,7 @@ import {
 import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
 import { bookingFlowStages as buildBookingFlowStages } from '../../../lib/booking-flow-stages';
 import { bookingFinanceSummaryCards as buildBookingFinanceSummaryCards } from '../../../lib/booking-finance-summary-cards';
+import { bookingManualDecisionReadiness as buildBookingManualDecisionReadiness } from '../../../lib/booking-manual-decision-readiness';
 import {
   canCloseoutCompletedBooking,
   completedCloseoutLabel,
@@ -606,14 +607,40 @@ export default async function BookingDetailPage({ params }: PageProps) {
     auditLogCount: booking.auditLogs?.length ?? 0,
     operatorNoteLines,
   });
-  const manualDecisionReadiness = bookingManualDecisionReadiness({
-    booking,
-    messages,
-    latestLocation,
-    notificationTrace,
-    refundLedgerRows,
-    operatorNoteLines,
-    closeoutReadiness,
+  const manualDecisionEvidenceSummary = [
+    messages.length > 0 ? `${messages.length} chat message(s)` : 'no chat messages',
+    latestLocation ? `location ${formatDate(latestLocation.recordedAt)}` : 'no partner pin',
+    notificationTrace.rows.length > 0
+      ? `${notificationTrace.rows.length} alert row(s)`
+      : 'no alert rows',
+    operatorNoteLines.length > 0
+      ? `${operatorNoteLines.length} operator note(s)`
+      : 'no operator notes',
+  ].join(' / ');
+  const cashFeeDebtNeedsSettlement = bookingCashDebtNeedsSettlement(booking);
+  const manualDecisionReadiness = buildBookingManualDecisionReadiness({
+    bookingStatus: booking.status,
+    closureStatus: bookingClosureSummary(booking).status,
+    canMarkNoShow: canMarkNoShow(booking.status),
+    decisionEvidenceReady:
+      messages.length > 0 ||
+      Boolean(latestLocation) ||
+      notificationTrace.rows.length > 0 ||
+      operatorNoteLines.length > 0,
+    evidenceSummary: manualDecisionEvidenceSummary,
+    paymentExists: Boolean(booking.payment),
+    paymentStatus: booking.payment?.status ?? 'NONE',
+    paymentMethod: booking.payment?.method ?? 'NONE',
+    refundRowCount: refundLedgerRows.length,
+    refundEvidence: bookingRefundLedgerEvidence(booking),
+    cashFeeDebtNeedsSettlement,
+    cashDebtEvidenceLabel: cashFeeDebtNeedsSettlement
+      ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
+      : `${booking.payment?.method ?? 'NONE'} / ${booking.payment?.status ?? 'NONE'}`,
+    closeoutStatus: closeoutReadiness.status,
+    closeoutTone: closeoutReadiness.tone,
+    closeoutHelper: closeoutReadiness.helper,
+    closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
   });
   const decisionEvidenceGuardrails = buildBookingDecisionEvidenceGuardrails({
     bookingStatus: booking.status,
@@ -1331,127 +1358,6 @@ function bookingEvidencePacket({
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
   });
-}
-
-function bookingManualDecisionReadiness({
-  booking,
-  messages,
-  latestLocation,
-  notificationTrace,
-  refundLedgerRows,
-  operatorNoteLines,
-  closeoutReadiness,
-}: {
-  booking: AdminBookingDetail;
-  messages: AdminChatMessage[];
-  latestLocation?: AdminLocationSnapshot | null;
-  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
-  refundLedgerRows: BookingRefundLedgerRow[];
-  operatorNoteLines: string[];
-  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
-}) {
-  const chatEvidence = messages.length > 0;
-  const alertEvidence = notificationTrace.rows.length > 0;
-  const noteEvidence = operatorNoteLines.length > 0;
-  const movementEvidence = Boolean(latestLocation);
-  const evidenceSummary = [
-    chatEvidence ? `${messages.length} chat message(s)` : 'no chat messages',
-    movementEvidence ? `location ${formatDate(latestLocation?.recordedAt)}` : 'no partner pin',
-    alertEvidence ? `${notificationTrace.rows.length} alert row(s)` : 'no alert rows',
-    noteEvidence ? `${operatorNoteLines.length} operator note(s)` : 'no operator notes',
-  ].join(' / ');
-  const decisionEvidenceReady = chatEvidence || movementEvidence || alertEvidence || noteEvidence;
-  const paymentStatus = booking.payment?.status ?? 'NONE';
-  const canReviewRefund =
-    Boolean(booking.payment) && !['REFUNDED', 'RELEASED', 'FAILED', 'CANCELLED'].includes(paymentStatus);
-  const cashDebt = bookingCashDebtNeedsSettlement(booking);
-  const terminal = TERMINAL_BOOKING_STATUSES.has(booking.status);
-  const closureTone = terminal
-    ? booking.status === 'NO_SHOW'
-      ? 'pill-danger'
-      : 'pill-info'
-    : 'pill-neutral';
-
-  return [
-    {
-      lane: 'Customer cancellation or closure',
-      scope: 'After direct matching, customer outcome changes are handled by operations evidence review.',
-      status: terminal
-        ? bookingClosureSummary(booking).status
-        : decisionEvidenceReady
-          ? 'Evidence ready'
-          : 'Needs note',
-      tone: terminal ? closureTone : decisionEvidenceReady ? 'pill-success' : 'pill-warn',
-      evidence: evidenceSummary,
-      operatorUse:
-        'Use retained chat, alerts, location, and operator notes before changing customer-facing booking outcome.',
-      href: '#booking-evidence-packet',
-    },
-    {
-      lane: 'No-show decision',
-      scope: 'No-show is an admin decision based on communication and service movement context.',
-      status:
-        booking.status === 'NO_SHOW'
-          ? 'Marked no-show'
-          : canMarkNoShow(booking.status)
-            ? decisionEvidenceReady
-              ? 'Ready to review'
-              : 'Needs evidence'
-            : 'Locked',
-      tone:
-        booking.status === 'NO_SHOW'
-          ? 'pill-danger'
-          : canMarkNoShow(booking.status)
-            ? decisionEvidenceReady
-              ? 'pill-info'
-              : 'pill-warn'
-            : 'pill-neutral',
-      evidence: evidenceSummary,
-      operatorUse: 'Check chat, alert delivery, partner location, and notes before using the no-show action.',
-      href: '#no-show-handling',
-    },
-    {
-      lane: 'Refund or payment release',
-      scope: 'Payment outcome must match booking closure and customer communication.',
-      status: refundLedgerRows.length
-        ? `${refundLedgerRows.length} refund row(s)`
-        : canReviewRefund
-          ? 'Review payment'
-          : 'No payment action',
-      tone: refundLedgerRows.length ? 'pill-warn' : canReviewRefund ? 'pill-info' : 'pill-neutral',
-      evidence: `${paymentStatus} / ${bookingRefundLedgerEvidence(booking)} / ${evidenceSummary}`,
-      operatorUse:
-        'Use payment status, refund rows, and evidence packet before release, refund, or capture decisions.',
-      href: '#payment-actions',
-    },
-    {
-      lane: 'Cash fee settlement',
-      scope: 'Cash bookings can create partner fee debt; debt blocks marketplace participation and payout release until settled.',
-      status: cashDebt
-        ? 'Settlement required'
-        : booking.payment?.method === 'CASH'
-          ? 'Cash ledger clear'
-          : 'Not cash',
-      tone: cashDebt ? 'pill-danger' : booking.payment?.method === 'CASH' ? 'pill-success' : 'pill-neutral',
-      evidence: bookingCashDebtNeedsSettlement(booking)
-        ? `Debt ${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)}`
-        : `${booking.payment?.method ?? 'NONE'} / ${booking.payment?.status ?? 'NONE'}`,
-      operatorUse:
-        'If debt exists, confirm company fee deposit or admin offset before marketplace participation or payout release resumes.',
-      href: '#finance',
-    },
-    {
-      lane: 'Completed work closeout',
-      scope: 'Completed bookings need payment, earning, tax, platform fee, and wallet records aligned.',
-      status: closeoutReadiness.status,
-      tone: closeoutReadiness.tone,
-      evidence: closeoutReadiness.openItems.length
-        ? closeoutReadiness.openItems.map((item) => item.label).join(', ')
-        : closeoutReadiness.helper,
-      operatorUse: 'Use this before weekly/monthly/admin-date settlement batches and payout reporting.',
-      href: '#booking-closeout-readiness',
-    },
-  ];
 }
 
 function bookingDecisionNotePresets({
