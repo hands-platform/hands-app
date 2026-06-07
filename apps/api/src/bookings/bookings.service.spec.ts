@@ -206,6 +206,66 @@ describe('BookingsService final partner selection', () => {
       }),
     );
   });
+
+  it('blocks customer final selection when a marketplace partner wallet becomes negative', async () => {
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+      },
+      booking: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          customerProfileId: 'customer-1',
+          status: BookingStatus.OPEN_MATCHING,
+          preferredProviderId: 'first-pick-partner',
+        }),
+        update: jest.fn(),
+      },
+      bookingParticipant: {
+        findUnique: jest.fn().mockResolvedValue({
+          bookingId: 'booking-1',
+          providerProfileId: 'marketplace-partner',
+          status: ParticipantStatus.JOINED,
+        }),
+      },
+      providerEarning: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -70000 } }),
+      },
+    };
+    const matching = {
+      closeBooking: jest.fn(),
+      selectFinalProvider: jest.fn(),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(
+      service.selectProvider('booking-1', 'customer-user-1', 'marketplace-partner'),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: PROVIDER_WALLET_BLOCK_CODE,
+        marketplaceJoinBlocked: true,
+        marketplaceVisibilityBlocked: false,
+      }),
+    });
+
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith({
+      where: {
+        providerProfileId: 'marketplace-partner',
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+      },
+      _sum: { netAmount: true },
+    });
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(matching.selectFinalProvider).not.toHaveBeenCalled();
+  });
 });
 
 describe('BookingsService service completion', () => {
@@ -423,9 +483,53 @@ describe('BookingsService marketplace participation', () => {
     expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
     expect(bookingParticipantUpsert).toHaveBeenCalled();
   });
+
+  it('blocks marketplace participation outside the booking-address radius', async () => {
+    const bookingParticipantUpsert = jest.fn();
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(
+          approvedPartner({
+            currentLat: 10.0,
+            currentLng: 106.0,
+          }),
+        ),
+      },
+      booking: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue(openMarketplaceBooking()),
+      },
+      providerEarning: {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
+      },
+      bookingParticipant: {
+        upsert: bookingParticipantUpsert,
+      },
+    };
+    const matching = {
+      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      registerParticipant: jest.fn(),
+      joinBooking: jest.fn(),
+    };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+    );
+
+    await expect(service.joinBooking('booking-1', 'partner-user-1')).rejects.toThrow(
+      'Only partners within 10km can participate in this booking',
+    );
+
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalled();
+    expect(bookingParticipantUpsert).not.toHaveBeenCalled();
+    expect(matching.registerParticipant).not.toHaveBeenCalled();
+  });
 });
 
-function approvedPartner() {
+function approvedPartner(overrides: Record<string, unknown> = {}) {
   return {
     id: 'partner-1',
     userId: 'partner-user-1',
@@ -444,6 +548,7 @@ function approvedPartner() {
       approvedDocument(ProviderDocumentType.SELFIE),
     ],
     bankAccounts: [{ status: ProviderBankAccountStatus.APPROVED, deletedAt: null }],
+    ...overrides,
   };
 }
 
