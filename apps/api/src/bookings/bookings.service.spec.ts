@@ -271,6 +271,62 @@ describe('BookingsService service completion', () => {
   });
 });
 
+describe('BookingsService customer cancellation', () => {
+  it('loads the immutable address snapshot before returning a cancelled booking', async () => {
+    const cancelledBooking = cancelledBookingWithAddressSnapshot();
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+      },
+      booking: {
+        findFirstOrThrow: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          customerProfileId: 'customer-1',
+          status: BookingStatus.OPEN_MATCHING,
+          selectedProviderId: null,
+          preferredProvider: null,
+          selectedProvider: null,
+          participants: [],
+          payment: { id: 'payment-1' },
+        }),
+        update: jest.fn().mockResolvedValue(cancelledBooking),
+      },
+    };
+    const matching = { closeBooking: jest.fn() };
+    const matchingGateway = { emitBookingExpired: jest.fn() };
+    const payments = {
+      release: jest.fn().mockResolvedValue(cancelledBooking.payment),
+    };
+    const notifications = { create: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      payments as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await service.cancelCustomerBooking('booking-1', 'customer-user-1');
+
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          addressSnapshot: true,
+        }),
+      }),
+    );
+    expect(matchingGateway.emitBookingExpired).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({
+        addressSnapshot: expect.objectContaining({
+          addressText: 'District 1, Ho Chi Minh City, Vietnam',
+        }),
+      }),
+    );
+  });
+});
+
 describe('BookingsService marketplace participation', () => {
   it('blocks a negative-wallet partner before creating a marketplace participant', async () => {
     const bookingParticipantUpsert = jest.fn();
@@ -453,6 +509,25 @@ function completedBookingWithAddressSnapshot() {
       amount: 500000,
       currency: 'VND',
       status: PaymentStatus.CAPTURED,
+    },
+  };
+}
+
+function cancelledBookingWithAddressSnapshot() {
+  return {
+    ...matchedBookingWithAddressSnapshot(),
+    status: BookingStatus.CANCELLED,
+    selectedProviderId: null,
+    selectedProvider: null,
+    participants: [],
+    chatRoom: null,
+    payment: {
+      id: 'payment-1',
+      bookingId: 'booking-1',
+      method: PaymentMethod.CASH,
+      amount: 500000,
+      currency: 'VND',
+      status: PaymentStatus.RELEASED,
     },
   };
 }

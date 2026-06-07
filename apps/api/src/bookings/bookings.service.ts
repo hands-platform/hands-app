@@ -567,6 +567,7 @@ export class BookingsService {
         closedNote: 'Customer cancelled before partner commitment.',
       },
       include: {
+        addressSnapshot: true,
         preferredProvider: true,
         participants: { include: { providerProfile: true } },
         selectedProvider: true,
