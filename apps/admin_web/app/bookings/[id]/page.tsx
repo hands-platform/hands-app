@@ -122,6 +122,11 @@ import {
 } from '../../../lib/admin-api';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
+  canCloseoutCompletedBooking,
+  completedCloseoutLabel,
+  completedCloseoutTone,
+} from '../../../lib/booking-closeout-policy';
+import {
   bookingRefundLedgerEvidence,
   bookingRefundRows,
   type BookingRefundLedgerRow,
@@ -4721,39 +4726,6 @@ function canMarkNoShow(status: string) {
 
 function canExpireBooking(status: string) {
   return status === 'OPEN_MATCHING';
-}
-
-function canCloseoutCompletedBooking(booking: AdminBookingDetail) {
-  if (booking.status !== 'COMPLETED') {
-    return false;
-  }
-  if (!booking.payment || booking.payment.status !== 'CAPTURED') {
-    return true;
-  }
-  if (!booking.earning) {
-    return true;
-  }
-  const hasTaxLog = (booking.earning.taxLogs?.length ?? 0) > 0;
-  const hasPlatformFeeLog = (booking.earning.platformFeeLogs?.length ?? 0) > 0;
-  const hasWalletLedger = (booking.earning.walletLedgerEntries?.length ?? 0) > 0;
-  return !hasTaxLog || !hasPlatformFeeLog || !hasWalletLedger;
-}
-
-function completedCloseoutLabel(booking: AdminBookingDetail) {
-  if (booking.status !== 'COMPLETED') {
-    return 'Closeout available after completion';
-  }
-  if (!canCloseoutCompletedBooking(booking)) {
-    return 'Completed closeout healthy';
-  }
-  return 'Completed closeout needs reconciliation';
-}
-
-function completedCloseoutTone(booking: AdminBookingDetail) {
-  if (booking.status !== 'COMPLETED') {
-    return 'pill-neutral';
-  }
-  return canCloseoutCompletedBooking(booking) ? 'pill-warn' : 'pill-success';
 }
 
 function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinanceTrace>) {
