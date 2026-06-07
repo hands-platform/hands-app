@@ -23,7 +23,7 @@ import 'package:provider_app/src/features/provider_profile/domain/repositories/p
 import 'package:provider_app/src/features/verification/domain/repositories/provider_verification_repository.dart';
 
 void main() {
-  testWidgets('formats partner jobs API errors with provider-safe copy',
+  testWidgets('formats partner jobs API errors with partner-safe copy',
       (tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -52,7 +52,7 @@ void main() {
     expect(find.textContaining('ApiException'), findsNothing);
   });
 
-  testWidgets('formats provider chat location API errors with provider-safe copy',
+  testWidgets('formats partner chat location API errors with partner-safe copy',
       (tester) async {
     tester.view.physicalSize = const Size(1080, 2200);
     tester.view.devicePixelRatio = 1;
