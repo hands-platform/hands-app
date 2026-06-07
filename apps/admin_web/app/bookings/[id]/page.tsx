@@ -129,6 +129,10 @@ import {
   completedCloseoutTone,
 } from '../../../lib/booking-closeout-policy';
 import { bookingOpsBadges } from '../../../lib/booking-ops-badges';
+import {
+  bookingPartnerDecisionLabel,
+  bookingPartnerHint,
+} from '../../../lib/booking-partner-decision-copy';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
 import {
@@ -813,7 +817,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       label: 'Partners',
       value: `${booking.participants?.length ?? 0} participant row(s)`,
-      helper: providerHint(booking),
+      helper: bookingPartnerHint(booking),
     },
     {
       label: 'Chat',
@@ -1477,7 +1481,7 @@ function bookingOperatorPriorityBriefing({
       {
         label: 'Partner state',
         value: partnerLabel,
-        helper: `${participantCount} participant record(s) / ${providerHint(booking)}`,
+        helper: `${participantCount} participant record(s) / ${bookingPartnerHint(booking)}`,
       },
       {
         label: 'Chat archive',
@@ -4526,8 +4530,8 @@ function flowStages(booking: AdminBookingDetail) {
     },
     {
       label: 'Partner reply',
-      value: providerDecisionLabel(booking),
-      hint: providerHint(booking),
+      value: bookingPartnerDecisionLabel(booking, bookingPreferredProviderId(booking)),
+      hint: bookingPartnerHint(booking),
       done:
         (booking.participants?.length ?? 0) > 0 ||
         ['MATCHED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status),
@@ -4688,33 +4692,6 @@ function bookingFinanceFlags(
   }
 
   return flags;
-}
-
-function providerHint(booking: AdminBookingDetail) {
-  if (booking.selectedProvider) {
-    return `Final partner: ${providerName(booking.selectedProvider)}.`;
-  }
-  if (booking.preferredProvider && (booking.participants?.length ?? 0) === 0) {
-    return 'Preferred partner has first response window.';
-  }
-  if ((booking.participants?.length ?? 0) > 0) {
-    return 'Shortlist has partners ready for customer decision.';
-  }
-  return 'No partner response yet.';
-}
-
-function providerDecisionLabel(booking: AdminBookingDetail) {
-  const preferredId = bookingPreferredProviderId(booking);
-  const preferredParticipant = (booking.participants ?? []).find(
-    (participant) => participant.providerProfile?.id === preferredId,
-  );
-  if (preferredParticipant) {
-    return preferredParticipant.status;
-  }
-  if ((booking.participants?.length ?? 0) > 0) {
-    return `${booking.participants?.length ?? 0} marketplace ready`;
-  }
-  return 'Waiting';
 }
 
 function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
