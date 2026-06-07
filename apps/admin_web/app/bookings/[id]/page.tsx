@@ -128,6 +128,7 @@ import {
   completedCloseoutLabel,
   completedCloseoutTone,
 } from '../../../lib/booking-closeout-policy';
+import { bookingOpsBadges } from '../../../lib/booking-ops-badges';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
 import {
   bookingRefundLedgerEvidence,
@@ -994,7 +995,11 @@ export default async function BookingDetailPage({ params }: PageProps) {
         instruction={primaryBookingOpsInstruction(booking, {
           cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
         })}
-        badges={opsBadges(booking)}
+        badges={bookingOpsBadges(booking, {
+          attentionFlags: bookingAttentionFlags(booking),
+          cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+          locationFreshness: latestProviderLocationFreshness(booking),
+        })}
         finalGateReason={finalGateReason}
         actionEvidenceGate={actionEvidenceGate}
         actionGateByAction={actionGateByAction}
@@ -4040,57 +4045,6 @@ type DispatchStep = {
   actionHref?: string;
   actionLabel?: string;
 };
-
-function opsBadges(booking: AdminBookingDetail) {
-  const badges = [];
-  const flags = bookingAttentionFlags(booking);
-  if (booking.status === 'NO_SHOW') {
-    badges.push({ label: 'No-show', tone: 'pill-danger' });
-  }
-  if (booking.status === 'EXPIRED') {
-    badges.push({ label: 'Expired', tone: 'pill-warn' });
-  }
-  if (flags.some((flag) => flag.severity === 'high')) {
-    badges.push({ label: 'Action needed', tone: 'pill-danger' });
-  } else if (flags.some((flag) => flag.severity === 'medium')) {
-    badges.push({ label: 'Needs watch', tone: 'pill-warn' });
-  }
-  if (booking.payment?.status === 'AUTHORIZED') {
-    badges.push({ label: 'Hold active', tone: 'pill-warn' });
-  }
-  if (booking.payment?.status === 'RELEASED') {
-    badges.push({ label: 'Hold released', tone: 'pill-success' });
-  }
-  if (booking.payment?.status === 'CAPTURED') {
-    badges.push({ label: 'Captured', tone: 'pill-success' });
-  }
-  if (booking.payment?.status === 'REFUNDED') {
-    badges.push({ label: 'Refunded', tone: 'pill-warn' });
-  }
-  if (bookingCashDebtNeedsSettlement(booking)) {
-    badges.push({ label: 'Cash fee debt', tone: 'pill-danger' });
-  }
-  if (booking.selectedProvider) {
-    badges.push({ label: 'Partner selected', tone: 'pill-success' });
-  }
-  if (booking.chatRoom) {
-    badges.push({ label: 'Chat ready', tone: 'pill-info' });
-  }
-  const locationFreshness = latestProviderLocationFreshness(booking);
-  if (locationFreshness === 'recent') {
-    badges.push({ label: 'Location recent', tone: 'pill-success' });
-  }
-  if (locationFreshness === 'stale') {
-    badges.push({ label: 'Location stale', tone: 'pill-warn' });
-  }
-  if (locationFreshness === 'expired') {
-    badges.push({ label: 'Location too old', tone: 'pill-info' });
-  }
-  if (badges.length === 0) {
-    badges.push({ label: 'Monitor', tone: 'pill-neutral' });
-  }
-  return badges;
-}
 
 function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
   const flags: AttentionFlag[] = [];
