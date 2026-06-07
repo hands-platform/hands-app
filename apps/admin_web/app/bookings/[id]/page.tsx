@@ -74,6 +74,7 @@ import {
   bookingCashFeeSettlementPath,
 } from './booking-cash-wallet-gate';
 import { bookingFinanceTrace } from './booking-finance-trace';
+import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingAddressRadiusContract } from './booking-address-radius-contract';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
 import { bookingMvpAuthorityContract } from './booking-mvp-authority-contract';
@@ -234,7 +235,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const messages = [...(booking.chatRoom?.messages ?? [])].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
-  const finalProvider = booking.selectedProvider ?? booking.preferredProvider;
+  const finalPartnerSummary = bookingFinalPartnerSummary(booking);
   const latestLocation = latestProviderLocation(booking);
   const addressLine = bookingAddressSnapshotLabel(booking);
   const addressPin = booking.addressSnapshot
@@ -484,9 +485,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
     {
       area: 'Partner',
-      status: finalProvider?.id ? 'Linked' : 'Not selected',
-      evidence: finalProvider
-        ? providerName(finalProvider)
+      status: finalPartnerSummary.selected ? 'Linked' : 'Not selected',
+      evidence: finalPartnerSummary.selected
+        ? finalPartnerSummary.label
         : `${booking.participants?.length ?? 0} marketplace participant(s)`,
       href: '#handoff',
     },
@@ -666,6 +667,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     closeoutHelper: closeoutReadiness.helper,
     closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
   });
+  const decisionFinalPartner = bookingFinalPartnerSummary(booking);
   const decisionEvidenceGuardrails = buildBookingDecisionEvidenceGuardrails({
     bookingStatus: booking.status,
     hasAddressSnapshot: Boolean(booking.addressSnapshot),
@@ -673,8 +675,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     addressPinLabel: booking.addressSnapshot
       ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
       : 'No pin',
-    hasSelectedPartner: Boolean(booking.selectedProvider),
-    selectedPartnerLabel: providerName(booking.selectedProvider),
+    hasSelectedPartner: decisionFinalPartner.selected,
+    selectedPartnerLabel: decisionFinalPartner.label,
     participantCount: booking.participants?.length ?? 0,
     preferredPartnerLabel: providerName(booking.preferredProvider),
     hasChatRoom: Boolean(booking.chatRoom),
@@ -722,10 +724,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
     {
       label: 'Final partner',
-      value: finalProvider?.id ? providerName(finalProvider) : 'Customer choice pending',
+      value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Customer choice pending',
       detail: 'Final selected partner, location, payout, and service records.',
-      href: finalProvider?.id ? `/partners/${finalProvider.id}` : '#participants',
-      tone: finalProvider?.id ? 'pill-success' : 'pill-warn',
+      href: finalPartnerSummary.href,
+      tone: finalPartnerSummary.selected ? 'pill-success' : 'pill-warn',
     },
     {
       label: 'Chat archive',
@@ -763,7 +765,6 @@ export default async function BookingDetailPage({ params }: PageProps) {
       tone: bookingCashDebtNeedsSettlement(booking) ? 'pill-danger' : 'pill-success',
     },
   ];
-  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
   const failedAlertCount = notificationTrace.rows.filter((row) =>
     row.deliveryStatuses.includes('FAILED'),
@@ -782,10 +783,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
     addressReady: Boolean(booking.addressSnapshot),
     addressLabel: bookingAddressSnapshotLabel(booking),
     addressSourceLabel: dispatchPin.source,
-    finalPartnerId: finalPartner?.id ?? null,
-    finalPartnerRecordLabel: finalPartner?.id ? shortId(finalPartner.id) : 'Selection pending',
-    finalPartnerEvidenceLabel: finalPartner
-      ? `${providerName(finalPartner)} / ${providerLocationMetricValue(booking)}`
+    finalPartnerId: finalPartnerSummary.selected ? finalPartnerSummary.id : null,
+    finalPartnerRecordLabel: finalPartnerSummary.id ? shortId(finalPartnerSummary.id) : 'Selection pending',
+    finalPartnerEvidenceLabel: finalPartnerSummary.selected
+      ? `${finalPartnerSummary.label} / ${providerLocationMetricValue(booking)}`
       : null,
     participantCount: booking.participants?.length ?? 0,
     customerChoiceCandidates,
@@ -825,8 +826,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     bookingStatus: booking.status,
     addressReady: Boolean(booking.addressSnapshot),
     addressLabel: bookingAddressSnapshotLabel(booking),
-    finalPartnerId: finalPartner?.id ?? null,
-    finalPartnerLabel: finalPartner ? providerName(finalPartner) : null,
+    finalPartnerId: finalPartnerSummary.selected ? finalPartnerSummary.id : null,
+    finalPartnerLabel: finalPartnerSummary.selected ? finalPartnerSummary.label : null,
     customerChoiceCandidates,
     chatNeeded: ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
       booking.status,
@@ -909,7 +910,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
     customerChoiceCandidates,
     marketplaceParticipants,
-    selected: Boolean(booking.selectedProvider),
+    selected: bookingFinalPartnerSummary(booking).selected,
     hasChatRoom: Boolean(booking.chatRoom),
   });
   const decisionNotePresets = buildBookingDecisionNotePresets({
@@ -1015,10 +1016,10 @@ export default async function BookingDetailPage({ params }: PageProps) {
       detail: `${customerWaitPanel.signalStatus} / ${backupSupply.eligibleCount} marketplace partner(s) in policy.`,
     },
     {
-      href: finalProvider?.id ? `/partners/${finalProvider.id}` : '#participants',
+      href: finalPartnerSummary.href,
       label: 'Customer choice',
-      value: finalProvider?.id ? providerName(finalProvider) : 'Pending',
-      detail: finalProvider?.id
+      value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Pending',
+      detail: finalPartnerSummary.selected
         ? 'Final partner exists; confirm chat handoff before service coordination.'
         : 'Customer must choose the final partner before matched chat opens.',
     },
@@ -1112,8 +1113,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
   ];
   const bookingRecordHandoffRows = [
     { label: 'Preferred', value: providerName(booking.preferredProvider) },
-    { label: 'Final', value: providerName(finalProvider) },
-    { label: 'Final phone', value: finalProvider?.user?.phone ?? 'No phone' },
+    { label: 'Final', value: finalPartnerSummary.selected ? finalPartnerSummary.label : 'Not selected' },
+    { label: 'Final phone', value: booking.selectedProvider?.user?.phone ?? 'No phone' },
     {
       label: 'Latest partner pin',
       value: latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : 'No live pin yet',
@@ -1176,7 +1177,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         bookingId={booking.id}
         chatRoomId={booking.chatRoom?.id}
         customerProfileId={booking.customerProfile?.id}
-        finalPartnerId={finalProvider?.id}
+        finalPartnerId={finalPartnerSummary.selected ? finalPartnerSummary.id : null}
         paymentId={booking.payment?.id}
         refundId={booking.refunds?.[0]?.id}
         serviceLabel={bookingServiceOptionLabel(booking)}
@@ -1313,7 +1314,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
         chatMessages={messages}
         customerProfileId={booking.customerProfile?.id}
         customerRows={bookingRecordCustomerRows}
-        finalPartnerId={finalProvider?.id}
+        finalPartnerId={finalPartnerSummary.selected ? finalPartnerSummary.id : null}
         financeRows={bookingRecordFinanceRows}
         hasLatestPartnerLocation={Boolean(latestLocation)}
         handoffRows={bookingRecordHandoffRows}
@@ -1340,15 +1341,15 @@ function bookingOperatorCommandQueue({
   messages: AdminChatMessage[];
   latestLocation?: AdminLocationSnapshot;
 }) {
-  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
-  const partnerLabel = finalPartner ? providerName(finalPartner) : 'No final partner';
+  const finalPartner = bookingFinalPartnerSummary(booking);
+  const partnerLabel = finalPartner.selected ? finalPartner.label : 'No final partner';
   const pendingTasks = bookingOpsTaskCards(booking).filter((task) => task.status !== 'DONE');
 
   return buildBookingOperatorCommandQueue({
     bookingStatus: booking.status,
     participantCount: booking.participants?.length ?? 0,
     partnerLabel,
-    hasFinalPartner: Boolean(finalPartner),
+    hasFinalPartner: finalPartner.selected,
     hasChatRoom: Boolean(booking.chatRoom),
     messageCount: messages.length,
     hasLatestLocation: Boolean(latestLocation),
@@ -1405,11 +1406,11 @@ function bookingOperatorPriorityBriefing({
 }) {
   const primaryCommand = operatorCommandQueue.commands[0];
   const nextAction = bookingOperatingNextAction(booking);
-  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const finalPartner = bookingFinalPartnerSummary(booking);
   const participantCount = booking.participants?.length ?? 0;
   const customerName = booking.customerProfile?.user?.fullName ?? 'Customer';
   const customerPhone = booking.customerProfile?.user?.phone ?? 'No phone';
-  const partnerLabel = finalPartner ? providerName(finalPartner) : 'Not selected';
+  const partnerLabel = finalPartner.selected ? finalPartner.label : 'Not selected';
   const paymentLabel = booking.payment
     ? `${booking.payment.method} / ${booking.payment.status}`
     : 'No payment';
@@ -1426,7 +1427,7 @@ function bookingOperatorPriorityBriefing({
     customerPhone,
     addressSnapshotLabel: bookingAddressSnapshotLabel(booking),
     partnerLabel,
-    hasFinalPartner: Boolean(finalPartner),
+    hasFinalPartner: finalPartner.selected,
     participantCount,
     partnerHint: bookingPartnerHint(booking),
     hasChatRoom: Boolean(booking.chatRoom),
@@ -1513,7 +1514,7 @@ function bookingChatRepairActionState(booking: AdminBookingDetail) {
     status: booking.status,
     hasChatRoom: Boolean(booking.chatRoom),
     chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
-    hasSelectedPartner: Boolean(booking.selectedProvider),
+    hasSelectedPartner: bookingFinalPartnerSummary(booking).selected,
   });
 }
 
@@ -1524,7 +1525,7 @@ function bookingHandoffChecklist(
 ) {
   const participantCount = booking.participants?.length ?? 0;
   const selectableCount = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
-  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const finalPartner = bookingFinalPartnerSummary(booking);
   const paymentLabel = booking.payment
     ? `${booking.payment.method} / ${booking.payment.status} / ${money(booking.payment.amount, booking.payment.currency)}`
     : 'No payment record';
@@ -1550,7 +1551,7 @@ function bookingHandoffChecklist(
     {
       id: 'partner-response',
       label: 'Partner',
-      title: finalPartner ? providerName(finalPartner) : 'Waiting for partner response',
+      title: finalPartner.selected ? finalPartner.label : 'Waiting for partner response',
       detail: `${participantCount} participant record(s) / ${selectableCount} customer-selectable. The customer remains the final decision maker.`,
       status: 'Customer shortlist',
       href: '#participants',
@@ -1558,9 +1559,9 @@ function bookingHandoffChecklist(
     {
       id: 'customer-choice',
       label: 'Choice',
-      title: booking.selectedProvider ? 'Final partner selected' : 'Customer choice pending',
-      detail: booking.selectedProvider
-        ? `${providerName(booking.selectedProvider)} is recorded as the final partner.`
+      title: finalPartner.selected ? 'Final partner selected' : 'Customer choice pending',
+      detail: finalPartner.selected
+        ? `${finalPartner.label} is recorded as the final partner.`
         : 'Keep the customer waiting screen synced with participating/accepted partner options.',
       status: 'Customer screen',
       href: '#audit',
@@ -1601,7 +1602,7 @@ function bookingCloseoutReadiness({
     booking.status,
   );
   const activeStatus = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
-  const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
+  const finalPartner = bookingFinalPartnerSummary(booking);
   const hasAddress =
     Boolean(booking.addressSnapshot) || (booking.lat !== undefined && booking.lng !== undefined);
   const hasFinanceCloseout =
@@ -1624,7 +1625,7 @@ function bookingCloseoutReadiness({
   const partnerChoiceReady =
     booking.status === 'CREATED' ||
     booking.status === 'OPEN_MATCHING' ||
-    Boolean(booking.selectedProvider) ||
+    finalPartner.selected ||
     ['CANCELLED', 'EXPIRED'].includes(booking.status);
   const chatReady = !activeStatus && !terminalStatus ? true : Boolean(booking.chatRoom);
   const locationReady = !activeStatus || Boolean(latestLocation);
@@ -1649,8 +1650,8 @@ function bookingCloseoutReadiness({
       id: 'partner-choice',
       label: 'Partner',
       status: partnerChoiceReady ? 'Partner choice state explainable' : 'Final partner missing',
-      detail: finalPartner
-        ? `${providerName(finalPartner)} / ${booking.participants?.length ?? 0} participant(s)`
+      detail: finalPartner.selected
+        ? `${finalPartner.label} / ${booking.participants?.length ?? 0} participant(s)`
         : 'Customer has not selected a final partner yet.',
       owner: 'Dispatch',
       href: '#participants',
@@ -2448,6 +2449,7 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
   const openedAge = minutesSince(booking.openedAt ?? booking.createdAt);
   const expired = booking.expiresAt ? new Date(booking.expiresAt).getTime() < Date.now() : false;
   const activeWithLocationNeed = ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status);
+  const finalPartner = bookingFinalPartnerSummary(booking);
 
   return buildBookingAttentionFlags({
     bookingStatus: status,
@@ -2455,7 +2457,7 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
     paymentStatus,
     paymentProviderRef: booking.payment?.providerRef ?? null,
     cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-    cashDebtPartnerLabel: providerName(booking.selectedProvider ?? booking.preferredProvider),
+    cashDebtPartnerLabel: finalPartner.selected ? finalPartner.label : providerName(booking.preferredProvider),
     cashDebtAmount: Math.abs(booking.earning?.netAmount ?? 0),
     cashDebtCurrency: booking.earning?.currency ?? 'VND',
     matchingWindowExpired: expired,
@@ -2530,7 +2532,7 @@ function liveServiceSignals(booking: AdminBookingDetail) {
         latest.lng,
       )
     : null;
-  const provider = booking.selectedProvider ?? booking.preferredProvider;
+  const finalPartner = bookingFinalPartnerSummary(booking);
 
   return [
     {
@@ -2564,11 +2566,11 @@ function liveServiceSignals(booking: AdminBookingDetail) {
     },
     {
       label: 'Service contact',
-      value: provider?.user?.phone ?? 'No partner phone',
-      helper: provider
-        ? `${providerName(provider)} is the current handoff partner.`
+      value: booking.selectedProvider?.user?.phone ?? 'No partner phone',
+      helper: finalPartner.selected
+        ? `${finalPartner.label} is the current handoff partner.`
         : 'No partner assigned yet.',
-      tone: provider ? 'pill-success' : 'pill-warn',
+      tone: finalPartner.selected ? 'pill-success' : 'pill-warn',
     },
     {
       label: 'Chat',
@@ -2595,6 +2597,7 @@ function liveServiceSignals(booking: AdminBookingDetail) {
 }
 
 function flowStages(booking: AdminBookingDetail) {
+  const finalPartner = bookingFinalPartnerSummary(booking);
   return buildBookingFlowStages({
     createdAtLabel: formatDate(booking.createdAt),
     openedAtLabel: booking.openedAt ? formatDate(booking.openedAt) : null,
@@ -2604,8 +2607,8 @@ function flowStages(booking: AdminBookingDetail) {
     partnerHint: bookingPartnerHint(booking),
     participantCount: booking.participants?.length ?? 0,
     bookingStatus: booking.status,
-    selectedPartnerLabel: providerName(booking.selectedProvider),
-    hasSelectedPartner: Boolean(booking.selectedProvider),
+    selectedPartnerLabel: finalPartner.label,
+    hasSelectedPartner: finalPartner.selected,
     hasChatRoom: Boolean(booking.chatRoom),
     paymentStatus: booking.payment?.status ?? 'NONE',
     paymentHint: bookingPaymentHint(booking, {
@@ -2625,13 +2628,14 @@ function bookingFinanceFlags(
   const bookedService = booking.services?.[0];
   const paymentAmount = readNullableAmount(booking.payment?.amount);
   const servicePrice = readNullableAmount(bookedService?.price);
+  const finalPartner = bookingFinalPartnerSummary(booking);
   return buildBookingFinanceFlags({
     bookingStatus: booking.status,
     paymentAmount,
     servicePrice,
     hasEarning: Boolean(booking.earning),
     earningNetAmount: booking.earning?.netAmount ?? null,
-    partnerLabel: providerName(booking.selectedProvider ?? booking.preferredProvider),
+    partnerLabel: finalPartner.selected ? finalPartner.label : providerName(booking.preferredProvider),
     cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
     financeTrace: {
       currency: financeTrace.currency,
