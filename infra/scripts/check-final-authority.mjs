@@ -571,7 +571,7 @@ function checkOperationsPolicyControlPlane() {
   requireMarkers('infra/scripts/check-api-policy-coverage.mjs', apiPolicyCoverage, [
     'operational policy metadata',
     "'matching.provider_response_window_minutes'",
-    "'matching.backup_provider_radius_meters'",
+    "'matching.marketplace_partner_radius_meters'",
     "'wallet.negative_balance_gate'",
     'matching policy marketplace window',
     'marketplace radius participation guard',

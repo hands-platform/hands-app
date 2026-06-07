@@ -25,7 +25,7 @@ const requiredCoverage = [
     markers: [
       'assertOperationalPolicyMetadata',
       "'matching.provider_response_window_minutes'",
-      "'matching.backup_provider_radius_meters'",
+      "'matching.marketplace_partner_radius_meters'",
       "'wallet.negative_balance_gate'",
       "'cash.settlement_clearance_policy'",
       "'payout.batch_cycle_policy'",
@@ -91,7 +91,7 @@ const requiredCoverage = [
     area: 'matching policy marketplace window',
     markers: [
       "'matching.provider_response_window_minutes'",
-      "'matching.backup_provider_radius_meters'",
+      "'matching.marketplace_partner_radius_meters'",
       'Direct booking should notify eligible marketplace partners',
       'trace.backupProviderRadiusMeters === 10000',
       "acceptedButWaiting.status !== 'OPEN_MATCHING' || acceptedButWaiting.selectedProviderId !== null",

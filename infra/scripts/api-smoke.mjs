@@ -59,12 +59,12 @@ async function assertOperationalPolicyMetadata(accessToken) {
   const settings = await getJson('/admin/operational-policy', accessToken);
   const requiredLivePolicyKeys = [
     'matching.provider_response_window_minutes',
-    'matching.backup_provider_radius_meters',
-    'matching.backup_provider_location_max_age_minutes',
-    'matching.backup_provider_invitation_limit',
+    'matching.marketplace_partner_radius_meters',
+    'matching.marketplace_partner_location_max_age_minutes',
+    'matching.marketplace_partner_invitation_limit',
     'matching.travel_buffer_minutes',
     'matching.preferred_accept_mode',
-    'matching.backup_open_mode',
+    'matching.marketplace_open_mode',
     'booking.max_customer_current_to_booking_address_km',
     'booking.max_preferred_partner_distance_km',
     'booking.current_location_freshness_minutes',
@@ -86,7 +86,7 @@ async function assertOperationalPolicyMetadata(accessToken) {
     (key) => settingsByKey.get(key)?.enforced !== true,
   );
   const optionPolicyKeys = [
-    'matching.backup_open_mode',
+    'matching.marketplace_open_mode',
     'wallet.negative_balance_gate',
     'decision.action_evidence_gate_mode',
     'cash.settlement_clearance_policy',
@@ -1816,9 +1816,9 @@ try {
 
 const backupRadiusBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
-  'matching.backup_provider_radius_meters',
+  'matching.marketplace_partner_radius_meters',
 );
-await patchOperationalPolicyValue(adminAuth.accessToken, 'matching.backup_provider_radius_meters', 1000);
+await patchOperationalPolicyValue(adminAuth.accessToken, 'matching.marketplace_partner_radius_meters', 1000);
 try {
   await postJson('/provider/location', backupProviderAuth.accessToken, {
     lat: 10.805,
@@ -1856,7 +1856,7 @@ try {
   });
   await patchOperationalPolicyValue(
     adminAuth.accessToken,
-    'matching.backup_provider_radius_meters',
+    'matching.marketplace_partner_radius_meters',
     backupRadiusBeforeSmoke ?? 10000,
   );
 }
@@ -1865,11 +1865,11 @@ let delayedBackupBooking;
 let backupDeclineNotificationObserved = false;
 const backupOpenModeBeforeSmoke = await getOperationalPolicyValue(
   adminAuth.accessToken,
-  'matching.backup_open_mode',
+  'matching.marketplace_open_mode',
 );
 await patchOperationalPolicyValue(
   adminAuth.accessToken,
-  'matching.backup_open_mode',
+  'matching.marketplace_open_mode',
   'AFTER_FIRST_PICK_DELAY',
 );
 try {
@@ -1884,7 +1884,7 @@ try {
   });
   await patchOperationalPolicyValue(
     adminAuth.accessToken,
-    'matching.backup_open_mode',
+    'matching.marketplace_open_mode',
     'IMMEDIATE_WITHIN_WINDOW',
   );
   const delayedBackupOpenBookings = await getJson('/provider/bookings/open', backupProviderAuth.accessToken);
@@ -1954,7 +1954,7 @@ try {
 } finally {
   await patchOperationalPolicyValue(
     adminAuth.accessToken,
-    'matching.backup_open_mode',
+    'matching.marketplace_open_mode',
     backupOpenModeBeforeSmoke ?? 'IMMEDIATE_WITHIN_WINDOW',
   );
 }
