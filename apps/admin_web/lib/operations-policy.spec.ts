@@ -1,6 +1,9 @@
 import type { AdminOperationalPolicySetting } from './admin-api';
 import {
+  LEGACY_OPERATIONAL_POLICY_KEYS,
   OPERATIONAL_POLICY_KEYS,
+  adminOperationalPolicyEquivalentKeys,
+  adminOperationalPolicySettingByKey,
   adminWalletGateBlocksMarketplaceParticipation,
   buildAdminPartnerMarketplaceReadiness,
   buildAdminLiveOperationsPolicy,
@@ -40,6 +43,37 @@ describe('admin live operations policy helpers', () => {
     expect(policy.walletNegativeGate).toBe('BLOCK_MARKETPLACE_PARTICIPATION');
   });
 
+  it('reads current marketplace policy keys first and keeps legacy backup settings as fallback', () => {
+    const policy = buildAdminLiveOperationsPolicy([
+      setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 9000),
+      setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit, 12),
+      setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, 'IMMEDIATE_WITHIN_WINDOW'),
+      setting(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 13000),
+      setting(OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 25),
+      setting(OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit, 30),
+      setting(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, 'AFTER_FIRST_PICK_DELAY'),
+    ]);
+
+    expect(policy.marketplaceRadiusMeters).toBe(13000);
+    expect(policy.marketplaceLocationFreshnessMinutes).toBe(25);
+    expect(policy.marketplaceInvitationLimit).toBe(30);
+    expect(policy.marketplaceOpenMode).toBe('AFTER_FIRST_PICK_DELAY');
+  });
+
+  it('falls back to legacy backup policy keys when current marketplace keys are absent', () => {
+    const policy = buildAdminLiveOperationsPolicy([
+      setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 9000),
+      setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 20),
+      setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit, 12),
+      setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, 'AFTER_FIRST_PICK_DELAY'),
+    ]);
+
+    expect(policy.marketplaceRadiusMeters).toBe(9000);
+    expect(policy.marketplaceLocationFreshnessMinutes).toBe(20);
+    expect(policy.marketplaceInvitationLimit).toBe(12);
+    expect(policy.marketplaceOpenMode).toBe('AFTER_FIRST_PICK_DELAY');
+  });
+
   it('falls back to MVP authority defaults when settings are missing or invalid', () => {
     const policy = buildAdminLiveOperationsPolicy([
       setting(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes, 'bad-number'),
@@ -77,10 +111,28 @@ describe('admin live operations policy helpers', () => {
 
   it('builds stable Operations Policy anchors from policy keys', () => {
     expect(operationalPolicyAnchor(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)).toBe(
-      'policy-matching-marketplace-provider-radius-meters',
+      'policy-matching-marketplace-partner-radius-meters',
     );
     expect(operationalPolicyHref(OPERATIONAL_POLICY_KEYS.walletNegativeGate)).toBe(
       '/operations-policy#policy-wallet-negative-balance-gate',
+    );
+  });
+
+  it('resolves marketplace and legacy backup policy keys through one setting lookup contract', () => {
+    const settings = [
+      setting(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, 13000),
+      setting(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, 'IMMEDIATE_WITHIN_WINDOW'),
+    ];
+
+    expect(adminOperationalPolicyEquivalentKeys(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)).toEqual([
+      OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+    ]);
+    expect(
+      adminOperationalPolicySettingByKey(settings, LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)?.value,
+    ).toBe(13000);
+    expect(adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode)?.value).toBe(
+      'IMMEDIATE_WITHIN_WINDOW',
     );
   });
 

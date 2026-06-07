@@ -11,7 +11,9 @@ import { marketplaceDisplayText as displayOperationalWording } from '../../lib/a
 import { formatDateTime, formatMoney, formatRelativeTime, readPlainRecord } from '../../lib/admin-format';
 import {
   ADMIN_OPERATIONS_POLICY_DEFAULTS,
+  LEGACY_OPERATIONAL_POLICY_KEYS,
   OPERATIONAL_POLICY_KEYS,
+  adminOperationalPolicySettingByKey,
   adminPartnerAccountNeedsFollowUp,
   adminPartnerBankReady,
   adminPartnerCanCompleteFinalGate,
@@ -1907,7 +1909,12 @@ function policyRecommendationPosture(
     };
   }
 
-  if (setting.key === 'matching.backup_provider_radius_meters') {
+  if (
+    policyKeyMatches(setting.key, [
+      OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+    ])
+  ) {
     const narrower =
       Number.isFinite(numericValue) &&
       Number.isFinite(numericRecommended) &&
@@ -1925,7 +1932,12 @@ function policyRecommendationPosture(
     };
   }
 
-  if (setting.key === 'matching.backup_provider_location_max_age_minutes') {
+  if (
+    policyKeyMatches(setting.key, [
+      OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+    ])
+  ) {
     const looser =
       Number.isFinite(numericValue) &&
       Number.isFinite(numericRecommended) &&
@@ -1958,7 +1970,12 @@ function policyRecommendationPosture(
     };
   }
 
-  if (setting.key === 'matching.backup_open_mode') {
+  if (
+    policyKeyMatches(setting.key, [
+      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    ])
+  ) {
     return {
       status: value === 'IMMEDIATE_WITHIN_WINDOW' ? 'Immediate marketplace' : 'Delayed marketplace',
       detail:
@@ -3523,12 +3540,16 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
   }
 
   if (
-    [
-      'matching.backup_provider_radius_meters',
-      'matching.backup_provider_location_max_age_minutes',
-      'matching.backup_provider_invitation_limit',
-      'matching.backup_open_mode',
-    ].includes(key)
+    policyKeyMatches(key, [
+      OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+      OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+      OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    ])
   ) {
     return policyRelatedBookingRecordSet({
       title: 'Marketplace participation records',
@@ -4369,7 +4390,7 @@ function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
 }
 
 function policyDisplayByKey(settings: AdminOperationalPolicySetting[], key: string) {
-  const setting = settings.find((item) => item.key === key);
+  const setting = adminOperationalPolicySettingByKey(settings, key);
   return setting ? policyDisplayValue(setting) : 'Not configured';
 }
 
@@ -4387,7 +4408,7 @@ function formatSnapshotPolicyValue(
 }
 
 function policyRawValue(settings: AdminOperationalPolicySetting[], key: string) {
-  return settings.find((item) => item.key === key)?.value;
+  return adminOperationalPolicySettingByKey(settings, key)?.value;
 }
 
 function formatPolicyValue(value: unknown, unit?: string | null) {
@@ -4424,6 +4445,7 @@ type PolicyImpactDetails = {
 };
 
 function policyImpactDetails(key: string): PolicyImpactDetails {
+  const impactKey = policyImpactDetailsKey(key);
   const details: Record<string, PolicyImpactDetails> = {
     'booking.distance_gate_enabled': {
       area: 'Booking create gate',
@@ -4804,7 +4826,7 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
   };
 
   return (
-    details[key] ?? {
+    details[impactKey] ?? {
       area: 'Operations',
       title: 'Operational policy',
       detail: 'This setting is tracked for auditability and future automation.',
@@ -4822,6 +4844,24 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
       ],
     }
   );
+}
+
+function policyImpactDetailsKey(key: string) {
+  const aliases: Record<string, string> = {
+    [OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters]:
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+    [OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes]:
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+    [OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit]:
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+    [OPERATIONAL_POLICY_KEYS.marketplaceOpenMode]:
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+  };
+  return aliases[key] ?? key;
+}
+
+function policyKeyMatches(key: string, candidates: string[]) {
+  return candidates.includes(key);
 }
 
 function formatDate(value: string) {

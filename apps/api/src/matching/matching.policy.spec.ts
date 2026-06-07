@@ -8,6 +8,10 @@ import {
   MATCHING_BACKUP_OPEN_MODE_KEY,
   MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY,
   MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY,
+  MATCHING_MARKETPLACE_OPEN_MODE_KEY,
+  MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY,
+  MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY,
+  MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY,
   MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
   OPERATIONAL_POLICY_DEFINITIONS,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
@@ -59,6 +63,23 @@ describe('matching policy', () => {
     expect(policy.providerResponseWindowMinutes).toBe(15);
     expect(policy.backupProviderRadiusMeters).toBe(12000);
     expect(policy.backupProviderInvitationLimit).toBe(75);
+    expect(policy.backupOpenMode).toBe(BACKUP_OPEN_AFTER_FIRST_PICK_DELAY);
+  });
+
+  it('prefers current marketplace policy keys while preserving legacy backup fallback', () => {
+    const policy = resolveMatchingPolicy(config(), {
+      [MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY]: 9000,
+      [MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY]: 12,
+      [MATCHING_BACKUP_OPEN_MODE_KEY]: BACKUP_OPEN_IMMEDIATE,
+      [MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY]: 13000,
+      [MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY]: 25,
+      [MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY]: 30,
+      [MATCHING_MARKETPLACE_OPEN_MODE_KEY]: BACKUP_OPEN_AFTER_FIRST_PICK_DELAY,
+    });
+
+    expect(policy.backupProviderRadiusMeters).toBe(13000);
+    expect(policy.backupProviderLocationMaxAgeMinutes).toBe(25);
+    expect(policy.backupProviderInvitationLimit).toBe(30);
     expect(policy.backupOpenMode).toBe(BACKUP_OPEN_AFTER_FIRST_PICK_DELAY);
   });
 

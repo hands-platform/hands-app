@@ -11,8 +11,14 @@ export const DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES = 10;
 
 export const MATCHING_TRAVEL_BUFFER_MINUTES_KEY = 'matching.travel_buffer_minutes';
 export const MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY = 'matching.provider_response_window_minutes';
-// Compatibility: these saved policy keys keep the older internal "backup" naming.
+export const MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY = 'matching.marketplace_partner_radius_meters';
+export const MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY =
+  'matching.marketplace_partner_location_max_age_minutes';
+export const MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY =
+  'matching.marketplace_partner_invitation_limit';
+export const MATCHING_MARKETPLACE_OPEN_MODE_KEY = 'matching.marketplace_open_mode';
 // Product and Admin copy must present this flow as marketplace partner participation.
+// Compatibility: these saved policy keys keep the older internal "backup" naming.
 export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';
 export const MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY =
   'matching.backup_provider_location_max_age_minutes';
@@ -24,8 +30,8 @@ export const BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES_KEY = 'booking.current_l
 export const BOOKING_DISTANCE_GATE_ENABLED_KEY = 'booking.distance_gate_enabled';
 export const BOOKING_SERVICE_AREA_REQUIRED_KEY = 'booking.service_area_required';
 export const MATCHING_PREFERRED_ACCEPT_MODE_KEY = 'matching.preferred_accept_mode';
-// Compatibility: existing settings store this key as backup_open_mode.
 // Visible operations language must call it marketplace open mode.
+// Compatibility: existing settings store this key as backup_open_mode.
 export const MATCHING_BACKUP_OPEN_MODE_KEY = 'matching.backup_open_mode';
 export const BACKUP_OPEN_IMMEDIATE = 'IMMEDIATE_WITHIN_WINDOW';
 export const BACKUP_OPEN_AFTER_FIRST_PICK_DELAY = 'AFTER_FIRST_PICK_DELAY';
@@ -110,7 +116,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
   {
-    key: MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY,
+    key: MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY,
     category: 'Matching',
     label: 'Marketplace partner radius',
     description:
@@ -123,7 +129,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
   {
-    key: MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY,
+    key: MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY,
     category: 'Matching',
     label: 'Marketplace partner location freshness',
     description:
@@ -136,7 +142,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
   {
-    key: MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY,
+    key: MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY,
     category: 'Matching',
     label: 'Marketplace partner invitation limit',
     description:
@@ -236,7 +242,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     enforced: true,
   },
   {
-    key: MATCHING_BACKUP_OPEN_MODE_KEY,
+    key: MATCHING_MARKETPLACE_OPEN_MODE_KEY,
     category: 'Decision',
     label: 'When marketplace partners can participate',
     description:
@@ -506,30 +512,42 @@ export function resolveMatchingPolicy(
       30,
     ),
     backupProviderRadiusMeters: readPolicyInteger(
-      settings[MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY],
-      readPositiveInteger(
+      readFirstPolicyValue(settings, [
+        MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS_KEY,
+        MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY,
+      ]),
+      readPositiveIntegerFromConfig(
         config,
-        'MATCHING_BACKUP_PROVIDER_RADIUS_METERS',
+        ['MATCHING_MARKETPLACE_PARTNER_RADIUS_METERS', 'MATCHING_BACKUP_PROVIDER_RADIUS_METERS'],
         DEFAULT_BACKUP_PROVIDER_RADIUS_METERS,
       ),
       1000,
       30000,
     ),
     backupProviderLocationMaxAgeMinutes: readPolicyInteger(
-      settings[MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY],
-      readPositiveInteger(
+      readFirstPolicyValue(settings, [
+        MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES_KEY,
+        MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES_KEY,
+      ]),
+      readPositiveIntegerFromConfig(
         config,
-        'MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES',
+        [
+          'MATCHING_MARKETPLACE_PARTNER_LOCATION_MAX_AGE_MINUTES',
+          'MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES',
+        ],
         DEFAULT_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES,
       ),
       5,
       1440,
     ),
     backupProviderInvitationLimit: readPolicyInteger(
-      settings[MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY],
-      readPositiveInteger(
+      readFirstPolicyValue(settings, [
+        MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT_KEY,
+        MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY,
+      ]),
+      readPositiveIntegerFromConfig(
         config,
-        'MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT',
+        ['MATCHING_MARKETPLACE_PARTNER_INVITATION_LIMIT', 'MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT'],
         DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
       ),
       1,
@@ -569,9 +587,9 @@ export function resolveMatchingPolicy(
     bookingServiceAreaRequired: readPolicyBoolean(settings[BOOKING_SERVICE_AREA_REQUIRED_KEY], true),
     preferredAcceptMode: readPreferredAcceptMode(settings[MATCHING_PREFERRED_ACCEPT_MODE_KEY]),
     backupOpenMode:
-      settings[MATCHING_BACKUP_OPEN_MODE_KEY] === BACKUP_OPEN_AFTER_FIRST_PICK_DELAY
-        ? BACKUP_OPEN_AFTER_FIRST_PICK_DELAY
-        : BACKUP_OPEN_IMMEDIATE,
+      readBackupOpenMode(
+        readFirstPolicyValue(settings, [MATCHING_MARKETPLACE_OPEN_MODE_KEY, MATCHING_BACKUP_OPEN_MODE_KEY]),
+      ) ?? BACKUP_OPEN_IMMEDIATE,
   };
 }
 
@@ -591,23 +609,28 @@ export function resolveMatchingPolicyFromPayload(payload: unknown): MatchingPoli
     30,
   );
   const backupProviderRadiusMeters = readSnapshotInteger(
-    readPayloadValue(policy, 'backupProviderRadiusMeters'),
+    readPayloadValue(policy, 'marketplacePartnerRadiusMeters') ??
+      readPayloadValue(policy, 'backupProviderRadiusMeters'),
     1000,
     30000,
   );
   const travelBufferMinutes = readSnapshotInteger(readPayloadValue(policy, 'travelBufferMinutes'), 0, 120);
   const backupProviderLocationMaxAgeMinutes = readSnapshotInteger(
-    readPayloadValue(policy, 'backupProviderLocationMaxAgeMinutes'),
+    readPayloadValue(policy, 'marketplacePartnerLocationMaxAgeMinutes') ??
+      readPayloadValue(policy, 'backupProviderLocationMaxAgeMinutes'),
     5,
     1440,
   );
   const backupProviderInvitationLimit = readSnapshotInteger(
-    readPayloadValue(policy, 'backupProviderInvitationLimit'),
+    readPayloadValue(policy, 'marketplacePartnerInvitationLimit') ??
+      readPayloadValue(policy, 'backupProviderInvitationLimit'),
     1,
     200,
   );
   const preferredAcceptMode = readPreferredAcceptMode(readPayloadValue(policy, 'preferredAcceptMode'));
-  const backupOpenMode = readBackupOpenMode(readPayloadValue(policy, 'backupOpenMode'));
+  const backupOpenMode = readBackupOpenMode(
+    readPayloadValue(policy, 'marketplaceOpenMode') ?? readPayloadValue(policy, 'backupOpenMode'),
+  );
 
   if (
     providerResponseWindowMinutes == null ||
@@ -659,6 +682,25 @@ export function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: 
 function readPositiveInteger(config: ConfigService, key: string, fallback: number) {
   const value = Number(config.get<string>(key));
   return Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
+function readPositiveIntegerFromConfig(config: ConfigService, keys: string[], fallback: number) {
+  for (const key of keys) {
+    const value = Number(config.get<string>(key));
+    if (Number.isInteger(value) && value > 0) {
+      return value;
+    }
+  }
+  return fallback;
+}
+
+function readFirstPolicyValue(settings: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    if (settings[key] !== undefined && settings[key] !== null && settings[key] !== '') {
+      return settings[key];
+    }
+  }
+  return undefined;
 }
 
 export function readPolicyInteger(value: unknown, fallback: number, min: number, max: number) {

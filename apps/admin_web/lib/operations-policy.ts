@@ -3,10 +3,10 @@ import type { AdminOperationalPolicySetting } from './admin-api';
 export const OPERATIONAL_POLICY_KEYS = {
   travelBufferMinutes: 'matching.travel_buffer_minutes',
   providerResponseWindowMinutes: 'matching.provider_response_window_minutes',
-  marketplaceRadiusMeters: 'matching.backup_provider_radius_meters',
-  marketplaceLocationFreshnessMinutes: 'matching.backup_provider_location_max_age_minutes',
-  marketplaceInvitationLimit: 'matching.backup_provider_invitation_limit',
-  marketplaceOpenMode: 'matching.backup_open_mode',
+  marketplaceRadiusMeters: 'matching.marketplace_partner_radius_meters',
+  marketplaceLocationFreshnessMinutes: 'matching.marketplace_partner_location_max_age_minutes',
+  marketplaceInvitationLimit: 'matching.marketplace_partner_invitation_limit',
+  marketplaceOpenMode: 'matching.marketplace_open_mode',
   bookingMaxCustomerCurrentToAddressKm: 'booking.max_customer_current_to_booking_address_km',
   bookingMaxPreferredPartnerDistanceKm: 'booking.max_preferred_partner_distance_km',
   bookingCurrentLocationFreshnessMinutes: 'booking.current_location_freshness_minutes',
@@ -17,6 +17,13 @@ export const OPERATIONAL_POLICY_KEYS = {
   walletNegativeGate: 'wallet.negative_balance_gate',
   cashSettlementClearance: 'cash.settlement_clearance_policy',
   payoutBatchCycle: 'payout.batch_cycle_policy',
+} as const;
+
+export const LEGACY_OPERATIONAL_POLICY_KEYS = {
+  marketplaceRadiusMeters: 'matching.backup_provider_radius_meters',
+  marketplaceLocationFreshnessMinutes: 'matching.backup_provider_location_max_age_minutes',
+  marketplaceInvitationLimit: 'matching.backup_provider_invitation_limit',
+  marketplaceOpenMode: 'matching.backup_open_mode',
 } as const;
 
 export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
@@ -92,7 +99,10 @@ export function buildAdminLiveOperationsPolicy(
   settings: AdminOperationalPolicySetting[],
 ): AdminLiveOperationsPolicy {
   const marketplaceOpenMode =
-    readPolicyString(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) ??
+    readPolicyStringFromKeys(settings, [
+      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    ]) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
 
   return {
@@ -103,13 +113,22 @@ export function buildAdminLiveOperationsPolicy(
       readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.providerResponseWindowMinutes,
     marketplaceRadiusMeters:
-      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
+      readPolicyNumberFromKeys(settings, [
+        OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+        LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+      ]) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters,
     marketplaceLocationFreshnessMinutes:
-      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
+      readPolicyNumberFromKeys(settings, [
+        OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+        LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+      ]) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes,
     marketplaceInvitationLimit:
-      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ??
+      readPolicyNumberFromKeys(settings, [
+        OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+        LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+      ]) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceInvitationLimit,
     marketplaceOpenMode,
     backupOpenMode: marketplaceOpenMode,
@@ -262,9 +281,19 @@ export function adminWalletGateBlocksMarketplaceParticipation(value: string | nu
 }
 
 export function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
-  const value = settings.find((setting) => setting.key === key)?.value;
+  const value = adminOperationalPolicySettingByKey(settings, key)?.value;
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+export function readPolicyNumberFromKeys(settings: AdminOperationalPolicySetting[], keys: string[]) {
+  for (const key of keys) {
+    const value = readPolicyNumber(settings, key);
+    if (value !== null) {
+      return value;
+    }
+  }
+  return null;
 }
 
 export function readPositivePolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {
@@ -273,7 +302,7 @@ export function readPositivePolicyNumber(settings: AdminOperationalPolicySetting
 }
 
 export function readPolicyString(settings: AdminOperationalPolicySetting[], key: string) {
-  const value = settings.find((setting) => setting.key === key)?.value;
+  const value = adminOperationalPolicySettingByKey(settings, key)?.value;
   if (typeof value !== 'string') {
     return null;
   }
@@ -282,11 +311,68 @@ export function readPolicyString(settings: AdminOperationalPolicySetting[], key:
   return trimmed ? trimmed : null;
 }
 
+export function readPolicyStringFromKeys(settings: AdminOperationalPolicySetting[], keys: string[]) {
+  for (const key of keys) {
+    const value = readPolicyString(settings, key);
+    if (value !== null) {
+      return value;
+    }
+  }
+  return null;
+}
+
 export function formatPolicyDistance(meters: number) {
   if (meters >= 1000) {
     return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 }).format(meters / 1000)}km`;
   }
   return `${new Intl.NumberFormat('en-US').format(meters)}m`;
+}
+
+export function adminOperationalPolicySettingByKey(
+  settings: AdminOperationalPolicySetting[],
+  key: string,
+) {
+  return adminOperationalPolicyEquivalentKeys(key)
+    .map((candidateKey) => settings.find((setting) => setting.key === candidateKey))
+    .find((setting) => setting !== undefined);
+}
+
+export function adminOperationalPolicyEquivalentKeys(key: string) {
+  const aliases: Record<string, string[]> = {
+    [OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters]: [
+      OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+    ],
+    [LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters]: [
+      OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
+    ],
+    [OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes]: [
+      OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+    ],
+    [LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes]: [
+      OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes,
+    ],
+    [OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit]: [
+      OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+    ],
+    [LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit]: [
+      OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
+    ],
+    [OPERATIONAL_POLICY_KEYS.marketplaceOpenMode]: [
+      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    ],
+    [LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode]: [
+      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    ],
+  };
+  return aliases[key] ?? [key];
 }
 
 export function operationalPolicyAnchor(key: string) {
