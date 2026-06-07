@@ -1,9 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import {
-  BookingOpsTaskStatus,
-  BookingOpsTaskType,
   FileReviewStatus,
-  PayoutBatchStatus,
   ProviderReportSeverity,
   ProviderReportSource,
   ProviderReportStatus,
@@ -17,6 +14,21 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import {
+  BookingCloseoutDto,
+  BookingOpsNoteDto,
+  BookingOpsReasonDto,
+  BookingOpsTaskDto,
+  BulkUpsertServicePayoutRulesDto,
+  CreateAdminServiceDto,
+  CreatePayoutBatchDto,
+  MarkEarningPaidDto,
+  UpdateAdminServiceDto,
+  UpdateOperationalPolicyDto,
+  UpdatePayoutBatchDto,
+  UpdateServicePayoutRuleDto,
+  UpsertServicePayoutRuleDto,
+} from './admin.dto';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -333,7 +345,7 @@ export class AdminController {
   addBookingOpsNote(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: { note?: string; preset?: string },
+    @Body() body: BookingOpsNoteDto,
   ) {
     return this.admin.addBookingOpsNote(user.id, id, body);
   }
@@ -347,7 +359,7 @@ export class AdminController {
   markBookingNoShow(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: { reason?: string },
+    @Body() body: BookingOpsReasonDto,
   ) {
     return this.admin.markBookingNoShow(user.id, id, body);
   }
@@ -356,7 +368,7 @@ export class AdminController {
   expireBooking(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: { reason?: string },
+    @Body() body: BookingOpsReasonDto,
   ) {
     return this.admin.expireBooking(user.id, id, body);
   }
@@ -365,7 +377,7 @@ export class AdminController {
   closeoutCompletedBooking(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: { note?: string },
+    @Body() body: BookingCloseoutDto,
   ) {
     return this.admin.closeoutCompletedBooking(user.id, id, body);
   }
@@ -374,7 +386,7 @@ export class AdminController {
   updateBookingOpsTask(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: { type: BookingOpsTaskType; status: BookingOpsTaskStatus; note?: string },
+    @Body() body: BookingOpsTaskDto,
   ) {
     return this.admin.updateBookingOpsTask(user.id, id, body);
   }
@@ -455,17 +467,7 @@ export class AdminController {
   @Post('services')
   createService(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      serviceGroupKey?: string;
-      name?: string;
-      description?: string | null;
-      durationMin?: number;
-      basePrice?: number;
-      priceStep?: number;
-      displayOrder?: number;
-      active?: boolean;
-    },
+    @Body() body: CreateAdminServiceDto,
   ) {
     return this.admin.createService(user.id, body);
   }
@@ -474,17 +476,7 @@ export class AdminController {
   updateService(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body()
-    body: {
-      serviceGroupKey?: string | null;
-      name?: string;
-      description?: string | null;
-      durationMin?: number;
-      basePrice?: number;
-      priceStep?: number;
-      displayOrder?: number;
-      active?: boolean;
-    },
+    @Body() body: UpdateAdminServiceDto,
   ) {
     return this.admin.updateService(user.id, id, body);
   }
@@ -493,15 +485,7 @@ export class AdminController {
   upsertServicePayoutRule(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') serviceId: string,
-    @Body()
-    body: {
-      customerPrice?: number;
-      providerPayoutAmount?: number;
-      vatBps?: number;
-      otherCostAmount?: number;
-      active?: boolean;
-      notes?: string | null;
-    },
+    @Body() body: UpsertServicePayoutRuleDto,
   ) {
     return this.admin.upsertServicePayoutRule(user.id, serviceId, body);
   }
@@ -510,17 +494,7 @@ export class AdminController {
   bulkUpsertServicePayoutRules(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') serviceId: string,
-    @Body()
-    body: {
-      rules?: Array<{
-        customerPrice?: number;
-        providerPayoutAmount?: number;
-        vatBps?: number;
-        otherCostAmount?: number;
-        active?: boolean;
-        notes?: string | null;
-      }>;
-    },
+    @Body() body: BulkUpsertServicePayoutRulesDto,
   ) {
     return this.admin.bulkUpsertServicePayoutRules(user.id, serviceId, body);
   }
@@ -529,15 +503,7 @@ export class AdminController {
   updateServicePayoutRule(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body()
-    body: {
-      customerPrice?: number;
-      providerPayoutAmount?: number;
-      vatBps?: number;
-      otherCostAmount?: number;
-      active?: boolean;
-      notes?: string | null;
-    },
+    @Body() body: UpdateServicePayoutRuleDto,
   ) {
     return this.admin.updateServicePayoutRule(user.id, id, body);
   }
@@ -546,12 +512,7 @@ export class AdminController {
   markEarningPaid(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body()
-    body: {
-      settlementRef?: string | null;
-      settlementNotes?: string | null;
-      settlementMethod?: string | null;
-    },
+    @Body() body: MarkEarningPaidDto,
   ) {
     return this.admin.markEarningPaid(user.id, id, body);
   }
@@ -564,7 +525,7 @@ export class AdminController {
   @Post('payout-batches')
   createPayoutBatch(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { providerProfileId: string; transferRef?: string; notes?: string },
+    @Body() body: CreatePayoutBatchDto,
   ) {
     return this.admin.createPayoutBatch(user.id, body);
   }
@@ -573,12 +534,7 @@ export class AdminController {
   updatePayoutBatch(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body()
-    body: {
-      status?: PayoutBatchStatus;
-      transferRef?: string | null;
-      notes?: string | null;
-    },
+    @Body() body: UpdatePayoutBatchDto,
   ) {
     return this.admin.updatePayoutBatch(user.id, id, body);
   }
@@ -656,7 +612,7 @@ export class AdminController {
   updateOperationalPolicy(
     @CurrentUser() user: AuthenticatedUser,
     @Param('key') key: string,
-    @Body() body: { value?: unknown; reason?: string },
+    @Body() body: UpdateOperationalPolicyDto,
   ) {
     return this.admin.updateOperationalPolicySetting(user.id, key, body);
   }
