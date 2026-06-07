@@ -41,8 +41,8 @@ export function bookingStageSnapshot(
     (participant) => participant.status === 'REJECTED',
   );
   const finalPartner = bookingFinalPartnerSummary(booking);
-  const hasFinalPartner = finalPartner.selected || (status === 'MATCHED' && Boolean(booking.preferredProvider));
-  const finalPartnerLabel = finalPartner.selected ? finalPartner.label : providerName(booking.preferredProvider);
+  const hasFinalPartner = finalPartner.selected;
+  const finalPartnerLabel = finalPartner.selected ? finalPartner.label : 'Not selected';
   const preferredParticipant = preferredParticipantState(booking);
   const locationFreshness = latestProviderLocationFreshness(booking);
   const customerPinReady = Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng));
@@ -66,6 +66,14 @@ export function bookingStageSnapshot(
       'Use finance, refund, no-show, audit, and feedback sections to confirm the operational record is clean.';
     actionHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : `/bookings/${booking.id}`;
     actionLabel = booking.payment?.id ? 'Open payment trail' : 'Review closeout';
+  } else if (status === 'MATCHED' && !hasFinalPartner) {
+    stage = 'Stage 4 - Final partner repair';
+    pillClass = 'pill-danger';
+    noteClassName = 'ops-task-blocked';
+    headline = 'Booking is matched, but no customer final partner is recorded.';
+    detail = 'Repair the booking record before chat, finance, payout, or closeout decisions rely on this match.';
+    actionHref = `/bookings/${booking.id}#participants`;
+    actionLabel = 'Repair final partner';
   } else if (hasFinalPartner && chatReady) {
     stage = 'Stage 4 - Chat handoff';
     pillClass = 'pill-success';
@@ -163,8 +171,12 @@ export function bookingStageSnapshot(
       },
       { label: chatReady ? 'Chat ready' : 'Chat pending', tone: chatReady ? 'pill-success' : 'pill-info' },
       {
-        label: hasFinalPartner ? finalPartnerLabel : providerName(booking.preferredProvider),
-        tone: hasFinalPartner ? 'pill-success' : 'pill-neutral',
+        label: hasFinalPartner
+          ? finalPartnerLabel
+          : status === 'MATCHED'
+            ? 'Not selected'
+            : providerName(booking.preferredProvider),
+        tone: hasFinalPartner ? 'pill-success' : status === 'MATCHED' ? 'pill-danger' : 'pill-neutral',
       },
     ],
   };

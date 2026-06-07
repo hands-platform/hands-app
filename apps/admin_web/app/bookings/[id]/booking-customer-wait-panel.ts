@@ -48,7 +48,7 @@ export function bookingCustomerWaitPanel(
   );
   const firstPickRejected = firstPickParticipant?.status === 'REJECTED';
   const finalPartner = bookingFinalPartnerSummary(booking);
-  const selected = finalPartner.selected || booking.status === 'MATCHED';
+  const selected = finalPartner.selected;
   const selectedPartnerLabel = finalPartner.selected
     ? finalPartner.label
     : providerName(booking.preferredProvider);
