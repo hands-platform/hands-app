@@ -11,6 +11,7 @@ const bannedPatterns = [
   { label: 'non-Vietnam region default', pattern: /\b(Bangkok|Thailand|Asia\/Bangkok|THB|Thai Baht)\b/i },
   { label: 'tip wording', pattern: /\b(tips?|gratuity)\b/i },
   { label: 'legacy therapist wording', pattern: /\btherapists?\b/i },
+  { label: 'ambiguous marketplace wording', pattern: /\bmarketplace demand\b/i },
   { label: 'VIP wording', pattern: /\bVIP\b/i },
   { label: 'people scoring wording', pattern: /\b(scoring|score)\b/i },
   { label: 'partner hierarchy wording', pattern: /\b(trusted badge|trust badge|partner badge|profile badge)\b/i },

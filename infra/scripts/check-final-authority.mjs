@@ -106,6 +106,7 @@ function checkNoContradictoryNegativeWalletWording() {
     'can browse and join',
     'can browse/join',
     'can still browse/join',
+    'marketplace demand',
     'Unpaid HANDS fees must be settled before you can join this booking.',
     'final acceptance only',
     'blocks only configured final',
