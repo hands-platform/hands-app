@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { MetricCard } from '../../../components/metric-card';
+import type { BookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import { formatDate, shortId } from './booking-formatters';
 
 type SummaryLinkCard = {
@@ -55,6 +56,48 @@ type PriorityBriefing = {
     linkLabel: string;
   }>;
 };
+
+export function BookingCommandDecisionStripSection({
+  commandDecisionStrip,
+}: {
+  commandDecisionStrip: BookingCommandDecisionStrip;
+}) {
+  return (
+    <section className="card" id="booking-command-decision-strip" style={{ marginBottom: 16 }}>
+      <div className="ops-section-header">
+        <div>
+          <h2>Booking command decision strip</h2>
+          <p className="muted">
+            Primary booking command and four-lane operator strip for address, matching, chat, and finance.
+          </p>
+        </div>
+        <span className={`pill ${commandDecisionStrip.tone}`}>{commandDecisionStrip.status}</span>
+      </div>
+      <div
+        style={{
+          background: '#f8faf6',
+          border: '1px solid #d8e7ce',
+          borderRadius: 12,
+          marginTop: 12,
+          padding: 16,
+        }}
+      >
+        <strong>Primary booking command</strong>
+        <p>{commandDecisionStrip.primaryAction}</p>
+        <small>{commandDecisionStrip.primaryDetail}</small>
+      </div>
+      <div className="service-trace-summary" style={{ marginTop: 12 }}>
+        {commandDecisionStrip.rows.map((row) => (
+          <a href={row.href} key={row.lane}>
+            <span>{row.lane}</span>
+            <strong>{row.state}</strong>
+            <small>{row.detail}</small>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export function BookingDetailToolbar({
   bookingId,

@@ -916,6 +916,9 @@ if (bookingLinkMatch) {
   const bookingBody = await fetchPage(bookingPath);
   const bookingMarkers = [
     'Booking operations quick rail',
+    'Booking command decision strip',
+    'Primary booking command',
+    'four-lane operator strip',
     'Marketplace participation and wallet evidence',
     'Participant evidence boundary',
     'Customer final partner',

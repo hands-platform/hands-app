@@ -13,6 +13,7 @@ import {
 import { BookingActionStatusSections } from './booking-action-status-sections';
 import { BookingCloseoutSections } from './booking-closeout-sections';
 import {
+  BookingCommandDecisionStripSection,
   BookingDetailToolbar,
   BookingMatchingRuleSnapshotSection,
   BookingMetricGridSection,
@@ -133,6 +134,7 @@ import {
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
 } from '../../../lib/booking-chat-repair-action-state';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
+import { bookingCommandDecisionStrip } from '../../../lib/booking-command-decision-strip';
 import {
   bookingCloseoutChecklistRows as buildBookingCloseoutChecklistRowsFromFacts,
 } from '../../../lib/booking-closeout-checklist-rows';
@@ -601,6 +603,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
     financeFlags,
     latestLocation,
     messageCount: messages.length,
+  });
+  const commandDecisionStrip = bookingCommandDecisionStrip({
+    bookingStatus: booking.status,
+    hasAddressSnapshot: Boolean(booking.addressSnapshot),
+    addressLabel: bookingAddressSnapshotLabel(booking),
+    participantCount: booking.participants?.length ?? 0,
+    customerChoiceCandidateCount: bookingCustomerSelectableParticipantsForFinalChoice(booking).length,
+    marketplaceEligibleCount: marketplaceSupply.eligibleCount,
+    hasFinalPartner: finalPartnerSummary.selected,
+    hasChatRoom: Boolean(booking.chatRoom),
+    messageCount: messages.length,
+    paymentMethod: booking.payment?.method ?? 'NONE',
+    paymentStatus: booking.payment?.status ?? 'NONE',
+    cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    closeoutOpenItemCount: closeoutReadiness.openItems.length,
   });
   const evidencePacket = bookingEvidencePacket({
     booking,
@@ -1195,6 +1212,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingMvpAuthorityContractSection rows={mvpAuthorityContract} />
 
       <BookingRecentOperationsTimelineSection operatingTimeline={operatingTimeline} />
+
+      <BookingCommandDecisionStripSection commandDecisionStrip={commandDecisionStrip} />
 
       <BookingPriorityBriefingSection operatorPriorityBriefing={operatorPriorityBriefing} />
 
