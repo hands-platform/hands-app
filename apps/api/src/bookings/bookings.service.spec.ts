@@ -140,6 +140,137 @@ describe('BookingsService booking creation', () => {
   });
 });
 
+describe('BookingsService final partner selection', () => {
+  it('loads the immutable address snapshot before emitting the matched booking', async () => {
+    const matchedBooking = matchedBookingWithAddressSnapshot();
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+      },
+      booking: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          customerProfileId: 'customer-1',
+          status: BookingStatus.OPEN_MATCHING,
+          preferredProviderId: 'partner-1',
+        }),
+        update: jest.fn().mockResolvedValue(matchedBooking),
+      },
+      bookingParticipant: {
+        findUnique: jest.fn().mockResolvedValue({
+          bookingId: 'booking-1',
+          providerProfileId: 'partner-1',
+          status: ParticipantStatus.ACCEPTED,
+        }),
+      },
+      providerEarning: {
+        aggregate: jest.fn(),
+      },
+    };
+    const matching = {
+      closeBooking: jest.fn(),
+      selectFinalProvider: jest.fn().mockReturnValue({
+        bookingId: 'booking-1',
+        event: 'booking.matched',
+        booking: matchedBooking,
+      }),
+    };
+    const matchingGateway = { emitBookingMatched: jest.fn() };
+    const notifications = { create: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await service.selectProvider('booking-1', 'customer-user-1', 'partner-1');
+
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          addressSnapshot: true,
+        }),
+      }),
+    );
+    expect(matching.selectFinalProvider).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({
+        addressSnapshot: expect.objectContaining({
+          addressText: 'District 1, Ho Chi Minh City, Vietnam',
+          latitude: 10.7769,
+          longitude: 106.7009,
+        }),
+      }),
+    );
+  });
+});
+
+describe('BookingsService service completion', () => {
+  it('loads the immutable address snapshot before emitting the completed booking', async () => {
+    const completedBooking = completedBookingWithAddressSnapshot();
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(approvedPartner()),
+      },
+      booking: {
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValueOnce({
+            id: 'booking-1',
+            selectedProviderId: 'partner-1',
+            status: BookingStatus.IN_SERVICE,
+          })
+          .mockResolvedValueOnce({
+            customerProfile: { userId: 'customer-user-1' },
+          }),
+        update: jest.fn().mockResolvedValue(completedBooking),
+        count: jest.fn().mockResolvedValue(2),
+      },
+    };
+    const matching = {
+      completeBooking: jest.fn().mockReturnValue({
+        bookingId: 'booking-1',
+        event: 'service.completed',
+        booking: completedBooking,
+      }),
+    };
+    const matchingGateway = { emitServiceCompleted: jest.fn() };
+    const notifications = { create: jest.fn() };
+    const earnings = { createForCompletedBooking: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      earnings as never,
+    );
+
+    await service.complete('booking-1', 'partner-user-1');
+
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          addressSnapshot: true,
+        }),
+      }),
+    );
+    expect(matching.completeBooking).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({
+        addressSnapshot: expect.objectContaining({
+          addressText: 'District 1, Ho Chi Minh City, Vietnam',
+          latitude: 10.7769,
+          longitude: 106.7009,
+        }),
+      }),
+    );
+  });
+});
+
 describe('BookingsService marketplace participation', () => {
   it('blocks a negative-wallet partner before creating a marketplace participant', async () => {
     const bookingParticipantUpsert = jest.fn();
@@ -277,6 +408,52 @@ function massageService() {
     basePrice: 500000,
     priceStep: 100000,
     active: true,
+  };
+}
+
+function matchedBookingWithAddressSnapshot() {
+  return {
+    id: 'booking-1',
+    customerProfileId: 'customer-1',
+    status: BookingStatus.MATCHED,
+    scheduledStartAt: new Date('2026-06-01T00:00:00.000Z'),
+    scheduledEndAt: new Date('2026-06-01T01:00:00.000Z'),
+    address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+    lat: 10.7769,
+    lng: 106.7009,
+    addressSnapshot: {
+      addressText: 'District 1, Ho Chi Minh City, Vietnam',
+      latitude: 10.7769,
+      longitude: 106.7009,
+    },
+    preferredProviderId: 'partner-1',
+    selectedProviderId: 'partner-1',
+    chatRoom: { id: 'chat-room-1' },
+    preferredProvider: approvedPartner(),
+    selectedProvider: approvedPartner(),
+    payment: {
+      id: 'payment-1',
+      bookingId: 'booking-1',
+      method: PaymentMethod.CASH,
+      amount: 500000,
+      currency: 'VND',
+      status: PaymentStatus.AUTHORIZED,
+    },
+  };
+}
+
+function completedBookingWithAddressSnapshot() {
+  return {
+    ...matchedBookingWithAddressSnapshot(),
+    status: BookingStatus.COMPLETED,
+    payment: {
+      id: 'payment-1',
+      bookingId: 'booking-1',
+      method: PaymentMethod.CASH,
+      amount: 500000,
+      currency: 'VND',
+      status: PaymentStatus.CAPTURED,
+    },
   };
 }
 

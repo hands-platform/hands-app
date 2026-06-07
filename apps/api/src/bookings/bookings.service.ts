@@ -787,7 +787,13 @@ export class BookingsService {
         },
         chatRoom: { upsert: { create: {}, update: {} } },
       },
-      include: { chatRoom: true, preferredProvider: true, selectedProvider: true, payment: true },
+      include: {
+        addressSnapshot: true,
+        chatRoom: true,
+        preferredProvider: true,
+        selectedProvider: true,
+        payment: true,
+      },
     });
 
     await this.matching.closeBooking(bookingId);
@@ -1376,7 +1382,7 @@ export class BookingsService {
         status: BookingStatus.COMPLETED,
         payment: { update: { status: PaymentStatus.CAPTURED } },
       },
-      include: { payment: true, selectedProvider: true },
+      include: { addressSnapshot: true, payment: true, selectedProvider: true },
     });
     await this.earnings.createForCompletedBooking(bookingId, provider.id);
     const result = this.matching.completeBooking(bookingId, clientBookingResponse(booking));
