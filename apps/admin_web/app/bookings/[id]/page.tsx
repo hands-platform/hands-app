@@ -30,7 +30,6 @@ import {
   BookingPayoutBatchEligibilitySection,
   BookingServicePricingSnapshotSection,
 } from './booking-finance-trace-sections';
-import { type OperatorCommand } from './booking-operator-actions';
 import { BookingOperatorQueueSections, BookingOpsCommandCenter } from './booking-operator-sections';
 import {
   BookingChatLifecycleSection,
@@ -156,6 +155,7 @@ import {
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
 import { bookingOperatorActionMatrix as buildBookingOperatorActionMatrix } from '../../../lib/booking-operator-action-matrix';
+import { bookingOperatorCommandQueue as buildBookingOperatorCommandQueue } from '../../../lib/booking-operator-command-queue';
 import {
   bookingPartnerDecisionLabel,
   bookingPartnerHint,
@@ -1126,216 +1126,28 @@ function bookingOperatorCommandQueue({
   messages: AdminChatMessage[];
   latestLocation?: AdminLocationSnapshot;
 }) {
-  const commands: OperatorCommand[] = [];
-  const add = (command: OperatorCommand) => commands.push(command);
-  const activeStatus = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
   const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
   const partnerLabel = finalPartner ? providerName(finalPartner) : 'No final partner';
-
-  if (booking.status === 'OPEN_MATCHING') {
-    add({
-      id: 'matching-watch',
-      label: 'MATCH',
-      title: 'Monitor customer choice',
-      detail: `${booking.participants?.length ?? 0} partner(s) are in the customer choice list. Customer still chooses the final partner.`,
-      owner: 'Dispatch operator',
-      tone: 'pill-warn',
-      action: { type: 'link', href: '#participants', label: 'Open shortlist' },
-    });
-  }
-
-  if (booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0) {
-    add({
-      id: 'partner-supply',
-      label: 'SUPPLY',
-      title: 'Check nearby partner supply',
-      detail:
-        'No partner participation is recorded yet. Review marketplace-ready partners and notification delivery before widening operations policy.',
-      owner: 'Dispatch operator',
-      tone: 'pill-warn',
-      action: { type: 'link', href: '#backup-supply', label: 'Open supply' },
-    });
-  }
-
-  if (activeStatus && !booking.chatRoom) {
-    add({
-      id: 'chat-repair',
-      label: 'CHAT',
-      title: 'Repair chat handoff',
-      detail:
-        'A matched or active booking should have a retained chat room for customer support and admin review.',
-      owner: 'Support operator',
-      tone: 'pill-danger',
-      action: { type: 'link', href: '/bookings?view=chat-repair', label: 'Open queue' },
-    });
-  } else if (booking.chatRoom && activeStatus && messages.length === 0) {
-    add({
-      id: 'chat-first-contact',
-      label: 'CHAT',
-      title: 'Monitor first chat contact',
-      detail:
-        'Chat is ready but no message has been sent yet. Add a note if either side reports uncertainty.',
-      owner: 'Support operator',
-      tone: 'pill-info',
-      action: {
-        type: 'note',
-        label: 'Log watch',
-        preset: 'Chat is ready but quiet; support is monitoring first customer/partner contact.',
-      },
-    });
-  }
-
-  if (activeStatus && !latestLocation) {
-    add({
-      id: 'location-request',
-      label: 'LOC',
-      title: 'Ask partner to share location',
-      detail: `${partnerLabel} has not shared a saved current service pin for this active booking.`,
-      owner: 'Dispatch operator',
-      tone: 'pill-warn',
-      action: { type: 'task', taskType: 'LOCATION_CHECKED', taskStatus: 'BLOCKED', label: 'Flag location' },
-    });
-  } else if (latestLocation && latestProviderLocationFreshness(booking) !== 'recent') {
-    add({
-      id: 'location-stale',
-      label: 'LOC',
-      title: 'Refresh stale partner location',
-      detail: providerLocationMetricHelper(booking),
-      owner: 'Dispatch operator',
-      tone: 'pill-warn',
-      action: { type: 'task', taskType: 'LOCATION_CHECKED', taskStatus: 'PENDING', label: 'Reset check' },
-    });
-  }
-
-  if (booking.payment?.status === 'AUTHORIZED' && booking.status === 'COMPLETED') {
-    add({
-      id: 'capture-payment',
-      label: 'PAY',
-      title: 'Capture completed service payment',
-      detail: 'Service is completed but payment is still authorized. Review capture before payout closeout.',
-      owner: 'Payments operator',
-      tone: 'pill-warn',
-      action: { type: 'link', href: '#payment', label: 'Open payment' },
-    });
-  }
-
-  if (bookingCashDebtNeedsSettlement(booking)) {
-    add({
-      id: 'cash-debt',
-      label: 'CASH',
-      title: 'Settle partner cash fee debt',
-      detail: 'Cash service fee debt blocks future partner acceptance until the company fee is settled.',
-      owner: 'Finance operator',
-      tone: 'pill-danger',
-      action: { type: 'link', href: '#finance', label: 'Open finance' },
-    });
-  }
-
-  if (canCloseoutCompletedBooking(booking)) {
-    add({
-      id: 'completed-closeout',
-      label: 'CLOSE',
-      title: 'Reconcile completed booking',
-      detail:
-        'Ensure capture, earning, tax, platform fee, and wallet ledger records exist before leaving the booking.',
-      owner: 'Finance operator',
-      tone: 'pill-warn',
-      action: { type: 'link', href: '#completed-closeout', label: 'Open closeout' },
-    });
-  }
-
-  if (canExpireBooking(booking.status)) {
-    add({
-      id: 'expire-matching',
-      label: 'TTL',
-      title: 'Expire if matching window is over',
-      detail: 'Use this only when the customer should stop waiting and payment hold needs release.',
-      owner: 'Dispatch operator',
-      tone: 'pill-info',
-      action: { type: 'link', href: '#matching-expiry', label: 'Open expiry' },
-    });
-  }
-
-  if (canMarkNoShow(booking.status)) {
-    add({
-      id: 'no-show-option',
-      label: 'NO-SHOW',
-      title: 'No-show action available',
-      detail:
-        'Use only after confirming the customer or partner did not proceed and communication is retained.',
-      owner: 'Support operator',
-      tone: 'pill-neutral',
-      action: { type: 'link', href: '#no-show-handling', label: 'Open action' },
-    });
-  }
-
   const pendingTasks = bookingOpsTaskCards(booking).filter((task) => task.status !== 'DONE');
-  if (pendingTasks.length > 0) {
-    add({
-      id: 'ops-task-next',
-      label: 'TASK',
-      title: `Finish ${pendingTasks[0].label.toLowerCase()}`,
-      detail: pendingTasks[0].helper,
-      owner: 'Operations',
-      tone: pendingTasks[0].status === 'BLOCKED' ? 'pill-danger' : 'pill-info',
-      action: {
-        type: 'task',
-        taskType: pendingTasks[0].type,
-        taskStatus: pendingTasks[0].status === 'BLOCKED' ? 'PENDING' : 'DONE',
-        label: pendingTasks[0].status === 'BLOCKED' ? 'Reopen' : 'Mark done',
-      },
-    });
-  }
 
-  if (commands.length === 0) {
-    add({
-      id: 'normal-monitoring',
-      label: 'OK',
-      title: 'Normal monitoring',
-      detail:
-        'No immediate operator action is active. Keep the record visible until the next booking transition.',
-      owner: 'Operations',
-      tone: 'pill-success',
-      action: {
-        type: 'note',
-        label: 'Log check',
-        preset: 'Booking reviewed; no immediate operator action needed at this time.',
-      },
-    });
-  }
-
-  const urgentCount = commands.filter(
-    (command) => command.tone === 'pill-danger' || command.tone === 'pill-warn',
-  ).length;
-  const labels = [
-    {
-      label: 'Active commands',
-      value: String(commands.length),
-      helper: urgentCount ? `${urgentCount} need same-shift attention.` : 'No urgent handling step.',
-    },
-    {
-      label: 'Partner',
-      value: partnerLabel,
-      helper: finalPartner ? 'Preferred/final partner context.' : 'No partner is selected yet.',
-    },
-    {
-      label: 'Chat',
-      value: booking.chatRoom ? 'Retained' : 'Missing',
-      helper: `${messages.length} message(s) in admin archive.`,
-    },
-    {
-      label: 'Attention flags',
-      value: String(attentionFlags.length),
-      helper: 'Factual handling checks only.',
-    },
-  ];
-
-  return {
-    status: urgentCount ? `${urgentCount} action(s)` : 'Monitor',
-    tone: urgentCount ? 'pill-warn' : 'pill-success',
-    labels,
-    commands: commands.slice(0, 8),
-  };
+  return buildBookingOperatorCommandQueue({
+    bookingStatus: booking.status,
+    participantCount: booking.participants?.length ?? 0,
+    partnerLabel,
+    hasFinalPartner: Boolean(finalPartner),
+    hasChatRoom: Boolean(booking.chatRoom),
+    messageCount: messages.length,
+    hasLatestLocation: Boolean(latestLocation),
+    latestLocationFreshness: latestProviderLocationFreshness(booking),
+    providerLocationHelper: providerLocationMetricHelper(booking),
+    paymentStatus: booking.payment?.status ?? 'NONE',
+    cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    closeoutAvailable: canCloseoutCompletedBooking(booking),
+    canExpire: canExpireBooking(booking.status),
+    canMarkNoShow: canMarkNoShow(booking.status),
+    attentionFlagCount: attentionFlags.length,
+    pendingTask: pendingTasks[0] ?? null,
+  });
 }
 
 function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
