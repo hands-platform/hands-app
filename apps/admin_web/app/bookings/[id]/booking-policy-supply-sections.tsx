@@ -68,7 +68,7 @@ type AddressRadiusContract = {
   cards: OpsTaskCard[];
 };
 
-type BackupSupply = {
+type MarketplaceSupply = {
   candidateCommand: {
     tone: string;
     status: string;
@@ -203,7 +203,7 @@ export function BookingCustomerWaitPanelSection({
 
 export function BookingAppliedPolicySection({ policySnapshot }: { policySnapshot: PolicySnapshot }) {
   return (
-    <section className="card" id="backup-supply" style={{ marginBottom: 16 }}>
+    <section className="card" id="applied-operations-policy" style={{ marginBottom: 16 }}>
       <div className="ops-section-header">
         <div>
           <h2>Applied operations policy</h2>
@@ -291,9 +291,9 @@ export function BookingAddressRadiusContractSection({
 }
 
 export function BookingDispatchCandidateDecisionMatrixSection({
-  backupSupply,
+  marketplaceSupply,
 }: {
-  backupSupply: BackupSupply;
+  marketplaceSupply: MarketplaceSupply;
 }) {
   return (
     <section className="card" style={{ marginBottom: 16 }}>
@@ -305,18 +305,18 @@ export function BookingDispatchCandidateDecisionMatrixSection({
             before extending customer wait time.
           </p>
         </div>
-        <span className={`pill ${backupSupply.candidateCommand.tone}`}>
-          {backupSupply.candidateCommand.status}
+        <span className={`pill ${marketplaceSupply.candidateCommand.tone}`}>
+          {marketplaceSupply.candidateCommand.status}
         </span>
       </div>
       <div className="ops-task-note" style={{ marginTop: 14 }}>
         <div className="ops-row">
           <div>
-            <strong>{backupSupply.candidateCommand.title}</strong>
-            <p className="muted">{backupSupply.candidateCommand.detail}</p>
+            <strong>{marketplaceSupply.candidateCommand.title}</strong>
+            <p className="muted">{marketplaceSupply.candidateCommand.detail}</p>
           </div>
-          <Link className="text-link" href={backupSupply.candidateCommand.href}>
-            {backupSupply.candidateCommand.action}
+          <Link className="text-link" href={marketplaceSupply.candidateCommand.href}>
+            {marketplaceSupply.candidateCommand.action}
           </Link>
         </div>
       </div>
@@ -328,7 +328,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
             gates.
           </p>
           <div className="setup-stage-list" style={{ marginTop: 12 }}>
-            {backupSupply.topCandidates.map((row) => (
+            {marketplaceSupply.topCandidates.map((row) => (
               <div className="setup-stage-item" key={`candidate-${row.id}`}>
                 <span>GO</span>
                 <div>
@@ -342,7 +342,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
                 </Link>
               </div>
             ))}
-            {backupSupply.topCandidates.length === 0 ? (
+            {marketplaceSupply.topCandidates.length === 0 ? (
               <div className="setup-stage-item">
                 <span>NONE</span>
                 <div>
@@ -363,7 +363,7 @@ export function BookingDispatchCandidateDecisionMatrixSection({
           <h3>Excluded partner groups</h3>
           <p className="muted">Grouped by the first operational reason they cannot participate in this booking.</p>
           <div className="setup-stage-list" style={{ marginTop: 12 }}>
-            {backupSupply.excludedGroups.map((group) => (
+            {marketplaceSupply.excludedGroups.map((group) => (
               <div className="setup-stage-item" key={group.label}>
                 <span>{group.count ? 'FIX' : 'OK'}</span>
                 <div>
@@ -383,9 +383,9 @@ export function BookingDispatchCandidateDecisionMatrixSection({
   );
 }
 
-export function BookingMarketplaceSupplySection({ backupSupply }: { backupSupply: BackupSupply }) {
+export function BookingMarketplaceSupplySection({ marketplaceSupply }: { marketplaceSupply: MarketplaceSupply }) {
   return (
-    <section className="card" style={{ marginBottom: 16 }}>
+    <section className="card" id="marketplace-supply" style={{ marginBottom: 16 }}>
       <div className="ops-section-header">
         <div>
           <h2>Marketplace partner supply for this booking</h2>
@@ -394,12 +394,12 @@ export function BookingMarketplaceSupplySection({ backupSupply }: { backupSupply
             excluded.
           </p>
         </div>
-        <span className={`pill ${backupSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>
-          {backupSupply.eligibleCount} eligible
+        <span className={`pill ${marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn'}`}>
+          {marketplaceSupply.eligibleCount} eligible
         </span>
       </div>
       <div className="service-trace-summary" style={{ marginTop: 12 }}>
-        {backupSupply.metrics.map((item) => (
+        {marketplaceSupply.metrics.map((item) => (
           <div key={item.label}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
@@ -410,9 +410,9 @@ export function BookingMarketplaceSupplySection({ backupSupply }: { backupSupply
       <div className="ops-task-note" style={{ marginTop: 14 }}>
         <div className="ops-row">
           <div>
-            <span className={`pill ${backupSupply.decisionTone}`}>{backupSupply.decisionStatus}</span>
-            <strong>{backupSupply.decisionTitle}</strong>
-            <p className="muted">{backupSupply.decisionDetail}</p>
+            <span className={`pill ${marketplaceSupply.decisionTone}`}>{marketplaceSupply.decisionStatus}</span>
+            <strong>{marketplaceSupply.decisionTitle}</strong>
+            <p className="muted">{marketplaceSupply.decisionDetail}</p>
           </div>
           <Link className="text-link" href="/partners">
             Open partners
@@ -420,7 +420,7 @@ export function BookingMarketplaceSupplySection({ backupSupply }: { backupSupply
         </div>
       </div>
       <div className="stack" style={{ marginTop: 14 }}>
-        {backupSupply.rows.map((row) => (
+        {marketplaceSupply.rows.map((row) => (
           <div className="ops-row" key={row.id}>
             <div>
               <strong>
@@ -441,7 +441,7 @@ export function BookingMarketplaceSupplySection({ backupSupply }: { backupSupply
             </div>
           </div>
         ))}
-        {backupSupply.rows.length === 0 ? (
+        {marketplaceSupply.rows.length === 0 ? (
           <p className="muted">No partner supply can be evaluated until the booking has a customer pin.</p>
         ) : null}
       </div>

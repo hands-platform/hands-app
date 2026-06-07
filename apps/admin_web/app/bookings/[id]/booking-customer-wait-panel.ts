@@ -11,7 +11,7 @@ import {
   adminOperationalPolicySettingByKey,
 } from '../../../lib/operations-policy';
 
-type BookingCustomerWaitBackupSupply = {
+type BookingCustomerWaitMarketplaceSupply = {
   eligibleCount: number;
   decisionDetail: string;
 };
@@ -27,7 +27,7 @@ type CustomerWaitCard = {
 
 export function bookingCustomerWaitPanel(
   booking: AdminBookingDetail,
-  backupSupply: BookingCustomerWaitBackupSupply,
+  marketplaceSupply: BookingCustomerWaitMarketplaceSupply,
   settings: AdminOperationalPolicySetting[],
 ) {
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
@@ -94,7 +94,7 @@ export function bookingCustomerWaitPanel(
     detail =
       'Make sure the customer app shows the participating/accepted partner shortlist and opens matched chat after selection.';
     nextActionLabel = 'Check participants';
-  } else if (waitingForPartnerJoin && backupSupply.eligibleCount === 0) {
+  } else if (waitingForPartnerJoin && marketplaceSupply.eligibleCount === 0) {
     signalStatus = 'Supply gap';
     signalTone = 'pill-danger';
     headline = 'No fresh nearby partner can currently join under policy.';
@@ -106,7 +106,7 @@ export function bookingCustomerWaitPanel(
     signalStatus = 'Nudge partners';
     signalTone = 'pill-warn';
     headline = 'Customer is waiting and marketplace partners can participate.';
-    detail = `${backupSupply.eligibleCount} nearby partner(s) can be nudged into the customer shortlist.`;
+    detail = `${marketplaceSupply.eligibleCount} nearby partner(s) can be nudged into the customer shortlist.`;
     nextActionHref = '/partners?review=marketplace-ready';
     nextActionLabel = 'Open marketplace-ready partners';
   } else if (waitingForPartnerJoin) {
@@ -159,7 +159,7 @@ export function bookingCustomerWaitPanel(
       title: 'Marketplace participation',
       status: backupWindowOpen ? 'Open' : 'Held',
       detail: backupWindowOpen
-        ? `${backupSupply.eligibleCount} eligible marketplace partner(s) can participate under current/saved policy.`
+        ? `${marketplaceSupply.eligibleCount} eligible marketplace partner(s) can participate under current/saved policy.`
         : 'Marketplace partners are held until first-pick delay, decline, or timeout.',
       action: firstPickRejected
         ? 'First-pick declined, so marketplace recovery should be active.'
@@ -171,13 +171,13 @@ export function bookingCustomerWaitPanel(
     },
     {
       title: 'Nearby partner supply',
-      status: backupSupply.eligibleCount ? 'Supply ready' : customerPinReady ? 'Supply low' : 'No pin',
-      detail: backupSupply.decisionDetail,
+      status: marketplaceSupply.eligibleCount ? 'Supply ready' : customerPinReady ? 'Supply low' : 'No pin',
+      detail: marketplaceSupply.decisionDetail,
       action: customerPinReady
-        ? `${backupSupply.eligibleCount} eligible, ${rejectedParticipants.length} rejected, ${customerChoiceCandidates.length} selectable.`
+        ? `${marketplaceSupply.eligibleCount} eligible, ${rejectedParticipants.length} rejected, ${customerChoiceCandidates.length} selectable.`
         : 'Confirm customer pin before relying on radius search.',
-      className: backupSupply.eligibleCount ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: backupSupply.eligibleCount ? 'pill-success' : 'pill-danger',
+      className: marketplaceSupply.eligibleCount ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-danger',
     },
     {
       title: 'Chat handoff',
@@ -207,9 +207,9 @@ export function bookingCustomerWaitPanel(
       detail: 'Partners who rejected this booking request.',
     },
     {
-      label: `${backupSupply.eligibleCount} marketplace ready`,
-      tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn',
-      detail: backupSupply.decisionDetail,
+      label: `${marketplaceSupply.eligibleCount} marketplace ready`,
+      tone: marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn',
+      detail: marketplaceSupply.decisionDetail,
     },
     {
       label: customerPinReady ? 'Service address pin ready' : 'Service address pin missing',

@@ -10,7 +10,7 @@ import {
   providerName,
   shortId,
 } from './booking-formatters';
-import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
+import { bookingMarketplacePartnerSupply } from './booking-marketplace-supply';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
@@ -34,7 +34,7 @@ export type BookingMvpAuthorityContractRow = {
 export function bookingMvpAuthorityContract({
   booking,
   operationalPolicies,
-  backupSupply,
+  marketplaceSupply,
   messageCount,
   financeTrace,
   walletDebt,
@@ -42,7 +42,7 @@ export function bookingMvpAuthorityContract({
 }: {
   booking: AdminBookingDetail;
   operationalPolicies: AdminOperationalPolicySetting[];
-  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>;
+  marketplaceSupply: ReturnType<typeof bookingMarketplacePartnerSupply>;
   messageCount: number;
   financeTrace: ReturnType<typeof bookingFinanceTrace>;
   walletDebt: boolean;
@@ -68,7 +68,7 @@ export function bookingMvpAuthorityContract({
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const selectedPartner =
     booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);
-  const pinReady = Number.isFinite(backupSupply.policyPin.lat) && Number.isFinite(backupSupply.policyPin.lng);
+  const pinReady = Number.isFinite(marketplaceSupply.policyPin.lat) && Number.isFinite(marketplaceSupply.policyPin.lng);
   const addressSnapshotReady = Boolean(booking.addressSnapshot);
   const chatReady = Boolean(booking.chatRoom);
 
@@ -88,7 +88,7 @@ export function bookingMvpAuthorityContract({
       scope: 'Required dispatch pin',
       status: addressSnapshotReady ? 'Snapshot ready' : pinReady ? 'Stored pin only' : 'Missing pin',
       tone: addressSnapshotReady ? 'pill-success' : pinReady ? 'pill-warn' : 'pill-danger',
-      evidence: `${bookingAddressSnapshotLabel(booking)} / ${backupSupply.policyPin.label}`,
+      evidence: `${bookingAddressSnapshotLabel(booking)} / ${marketplaceSupply.policyPin.label}`,
       operatorUse: 'Marketplace distance and evidence review should use the immutable booking address.',
       href: '#address-radius-contract',
     },
@@ -109,8 +109,8 @@ export function bookingMvpAuthorityContract({
       contract: '10km marketplace',
       scope: 'Booking-address radius',
       status: pinReady ? `${formatDistanceMeters(radiusMeters)} radius` : 'Blocked by missing pin',
-      tone: pinReady ? (backupSupply.eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
-      evidence: `${backupSupply.eligibleCount} eligible / ${backupSupply.rows.length} partner row(s) sampled.`,
+      tone: pinReady ? (marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
+      evidence: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} partner row(s) sampled.`,
       operatorUse:
         'Only partners within booking-address radius and fresh-location policy should enter the customer shortlist.',
       href: '#marketplace-supply',

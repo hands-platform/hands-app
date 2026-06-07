@@ -27,7 +27,7 @@ import {
   operationalPolicyHref,
 } from '../../../lib/operations-policy';
 
-export function bookingBackupPartnerSupply(
+export function bookingMarketplacePartnerSupply(
   booking: AdminBookingDetail,
   providers: AdminProvider[],
   settings: AdminOperationalPolicySetting[],
@@ -156,8 +156,8 @@ export function bookingBackupPartnerSupply(
   const walletDebt = evaluatedRows.filter((row) =>
     row.blockers.some((blocker) => blocker.startsWith('wallet negative')),
   ).length;
-  const excludedGroups = bookingBackupPartnerExcludedGroups(evaluatedRows, radiusMeters);
-  const candidateCommand = bookingBackupCandidateCommand({
+  const excludedGroups = bookingMarketplacePartnerExcludedGroups(evaluatedRows, radiusMeters);
+  const candidateCommand = bookingMarketplaceCandidateCommand({
     hasCustomerPin,
     eligibleCount,
     nearbyExcluded,
@@ -250,7 +250,7 @@ export function bookingDispatchPin(booking: AdminBookingDetail) {
   };
 }
 
-function bookingBackupPartnerExcludedGroups(
+function bookingMarketplacePartnerExcludedGroups(
   rows: Array<{
     name: string;
     blockers: string[];
@@ -308,7 +308,7 @@ function bookingBackupPartnerExcludedGroups(
   ];
 }
 
-function bookingBackupCandidateCommand(input: {
+function bookingMarketplaceCandidateCommand(input: {
   hasCustomerPin: boolean;
   eligibleCount: number;
   nearbyExcluded: number;

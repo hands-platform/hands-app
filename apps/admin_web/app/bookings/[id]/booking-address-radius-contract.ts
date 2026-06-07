@@ -5,14 +5,14 @@ import {
   distanceLabel,
   formatDate,
 } from './booking-formatters';
-import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
+import { bookingMarketplacePartnerSupply } from './booking-marketplace-supply';
 import { readBookingGateSnapshot } from './booking-policy-snapshots';
 
 export function bookingAddressRadiusContract(
   booking: AdminBookingDetail,
-  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>,
+  marketplaceSupply: ReturnType<typeof bookingMarketplacePartnerSupply>,
 ) {
-  const pin = backupSupply.policyPin;
+  const pin = marketplaceSupply.policyPin;
   const bookingGate = readBookingGateSnapshot(booking);
   const snapshotLocked = Boolean(booking.addressSnapshot && pin.source === 'BookingAddressSnapshot');
   const driftMeters = pin.legacyDriftMeters;
@@ -38,7 +38,7 @@ export function bookingAddressRadiusContract(
       },
       {
         label: 'Marketplace radius',
-        value: formatDistanceMeters(backupSupply.radiusMeters),
+        value: formatDistanceMeters(marketplaceSupply.radiusMeters),
         helper: 'Partners outside this booking-address radius cannot participate in marketplace matching.',
       },
       {
@@ -76,9 +76,9 @@ export function bookingAddressRadiusContract(
         title: '10km participation rule',
         status: pinReady ? 'Enforced by pin' : 'Blocked',
         detail: `Marketplace partners are evaluated from ${pin.source} and must be within ${formatDistanceMeters(
-          backupSupply.radiusMeters,
+          marketplaceSupply.radiusMeters,
         )}.`,
-        action: `${backupSupply.eligibleCount} eligible / ${backupSupply.rows.length} displayed.`,
+        action: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} displayed.`,
         className: pinReady ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: pinReady ? 'pill-success' : 'pill-danger',
       },

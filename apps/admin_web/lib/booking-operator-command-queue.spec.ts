@@ -36,6 +36,10 @@ describe('bookingOperatorCommandQueue', () => {
     ]);
     expect(queue.status).toBe('2 action(s)');
     expect(queue.tone).toBe('pill-warn');
+    expect(queue.commands.find((command) => command.id === 'partner-supply')?.action).toMatchObject({
+      type: 'link',
+      href: '#marketplace-supply',
+    });
   });
 
   it('adds chat repair and location request commands for active bookings missing both records', () => {

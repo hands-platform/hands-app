@@ -81,7 +81,7 @@ export function bookingOperatorCommandQueue(
         'No partner participation is recorded yet. Review marketplace-ready partners and notification delivery before widening operations policy.',
       owner: 'Dispatch operator',
       tone: 'pill-warn',
-      action: { type: 'link', href: '#backup-supply', label: 'Open supply' },
+      action: { type: 'link', href: '#marketplace-supply', label: 'Open supply' },
     });
   }
 

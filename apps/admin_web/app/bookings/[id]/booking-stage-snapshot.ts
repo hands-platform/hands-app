@@ -14,7 +14,7 @@ type BookingStageCustomerWaitPanel = {
   detail: string;
 };
 
-type BookingStageBackupSupply = {
+type BookingStageMarketplaceSupply = {
   eligibleCount: number;
 };
 
@@ -33,7 +33,7 @@ export type BookingStageSnapshot = {
 export function bookingStageSnapshot(
   booking: AdminBookingDetail,
   customerWaitPanel: BookingStageCustomerWaitPanel,
-  backupSupply: BookingStageBackupSupply,
+  marketplaceSupply: BookingStageMarketplaceSupply,
 ): BookingStageSnapshot {
   const status = String(booking.status);
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
@@ -101,12 +101,12 @@ export function bookingStageSnapshot(
     detail = customerWaitPanel.detail;
     actionHref = `/bookings/${booking.id}#participants`;
     actionLabel = 'Review shortlist';
-  } else if (status === 'OPEN_MATCHING' && backupSupply.eligibleCount > 0) {
+  } else if (status === 'OPEN_MATCHING' && marketplaceSupply.eligibleCount > 0) {
     stage = 'Stage 2 - Marketplace participation';
     pillClass = 'pill-warn';
     noteClassName = 'ops-task-pending';
     headline = 'The marketplace partner window has usable supply.';
-    detail = `${backupSupply.eligibleCount} partner(s) can participate or be nudged while the customer waits.`;
+    detail = `${marketplaceSupply.eligibleCount} partner(s) can participate or be nudged while the customer waits.`;
     actionHref = '/partners?review=marketplace-ready';
     actionLabel = 'Open marketplace partners';
   } else if (status === 'OPEN_MATCHING') {
@@ -149,7 +149,7 @@ export function bookingStageSnapshot(
       {
         label: 'Shortlist',
         value: `${customerChoiceCandidates.length} selectable`,
-        helper: `${rejectedParticipants.length} rejected, ${backupSupply.eligibleCount} marketplace eligible.`,
+        helper: `${rejectedParticipants.length} rejected, ${marketplaceSupply.eligibleCount} marketplace eligible.`,
       },
       {
         label: 'Handoff',
@@ -166,8 +166,8 @@ export function bookingStageSnapshot(
         tone: customerPinReady ? 'pill-success' : 'pill-danger',
       },
       {
-        label: `${backupSupply.eligibleCount} in marketplace policy`,
-        tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn',
+        label: `${marketplaceSupply.eligibleCount} in marketplace policy`,
+        tone: marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn',
       },
       { label: chatReady ? 'Chat ready' : 'Chat pending', tone: chatReady ? 'pill-success' : 'pill-info' },
       {

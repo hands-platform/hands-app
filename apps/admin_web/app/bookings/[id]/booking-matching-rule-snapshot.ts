@@ -2,7 +2,7 @@ import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { bookingCustomerWaitPanel } from './booking-customer-wait-panel';
 import { providerName } from './booking-formatters';
-import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
+import { bookingMarketplacePartnerSupply } from './booking-marketplace-supply';
 import { bookingNotificationTrace } from './booking-notification-trace';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
@@ -19,13 +19,13 @@ export type BookingDetailMatchingRuleSnapshot = {
 
 export function bookingDetailMatchingRuleSnapshot({
   booking,
-  backupSupply,
+  marketplaceSupply,
   customerWaitPanel,
   notificationTrace,
   walletBlocked,
 }: {
   booking: AdminBookingDetail;
-  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>;
+  marketplaceSupply: ReturnType<typeof bookingMarketplacePartnerSupply>;
   customerWaitPanel: ReturnType<typeof bookingCustomerWaitPanel>;
   notificationTrace: ReturnType<typeof bookingNotificationTrace>;
   walletBlocked: boolean;
@@ -38,7 +38,7 @@ export function bookingDetailMatchingRuleSnapshot({
   const finalPartner =
     booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);
   const responseWindowMinutes = savedPolicy.providerResponseWindowMinutes ?? 10;
-  const radiusMeters = savedPolicy.backupProviderRadiusMeters ?? backupSupply.radiusMeters;
+  const radiusMeters = savedPolicy.backupProviderRadiusMeters ?? marketplaceSupply.radiusMeters;
   const partnerAlerts = notificationTrace.rows.filter((row) => row.isPartnerAlert).length;
 
   const status = finalPartner
@@ -91,7 +91,7 @@ export function bookingDetailMatchingRuleSnapshot({
       {
         label: 'Marketplace radius',
         value: formatDistanceMeters(radiusMeters),
-        helper: `${backupSupply.eligibleCount} eligible partner(s), ${participants.length} participant row(s), ${customerChoiceCandidates.length} customer-selectable.`,
+        helper: `${marketplaceSupply.eligibleCount} eligible partner(s), ${participants.length} participant row(s), ${customerChoiceCandidates.length} customer-selectable.`,
       },
       {
         label: 'Customer choice',

@@ -1,4 +1,4 @@
-import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
+import { bookingMarketplacePartnerSupply } from './booking-marketplace-supply';
 
 function booking(overrides = {}) {
   return {
@@ -42,7 +42,7 @@ describe('booking marketplace supply', () => {
   });
 
   it('excludes negative-wallet partners from marketplace participation supply', () => {
-    const supply = bookingBackupPartnerSupply(
+    const supply = bookingMarketplacePartnerSupply(
       booking(),
       [
         partner({

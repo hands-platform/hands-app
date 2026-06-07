@@ -2,7 +2,7 @@ import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { bookingFinanceTrace } from './booking-finance-trace';
 import { providerName } from './booking-formatters';
-import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
+import { bookingMarketplacePartnerSupply } from './booking-marketplace-supply';
 import { bookingNotificationTrace } from './booking-notification-trace';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
@@ -10,13 +10,13 @@ import {
 
 export function bookingMarketplaceWalletEvidence({
   booking,
-  backupSupply,
+  marketplaceSupply,
   financeTrace,
   notificationTrace,
   walletDebt,
 }: {
   booking: AdminBookingDetail;
-  backupSupply: ReturnType<typeof bookingBackupPartnerSupply>;
+  marketplaceSupply: ReturnType<typeof bookingMarketplacePartnerSupply>;
   financeTrace: ReturnType<typeof bookingFinanceTrace>;
   notificationTrace: ReturnType<typeof bookingNotificationTrace>;
   walletDebt: boolean;
@@ -28,7 +28,7 @@ export function bookingMarketplaceWalletEvidence({
   const selectedParticipants = participants.filter((participant) => participant.status === 'SELECTED');
   const finalPartner = booking.selectedProvider;
   const marketplaceAlerts = notificationTrace.backupBatches.length;
-  const excludedMarketplaceRows = backupSupply.rows.filter((row) => !row.eligible).length;
+  const excludedMarketplaceRows = marketplaceSupply.rows.filter((row) => !row.eligible).length;
   const status = finalPartner
     ? 'Final choice recorded'
     : customerChoiceCandidates.length
@@ -64,8 +64,8 @@ export function bookingMarketplaceWalletEvidence({
       },
       {
         label: 'Marketplace policy',
-        value: formatDistanceMeters(backupSupply.radiusMeters),
-        helper: `${backupSupply.eligibleCount} currently eligible partner(s) by booking address.`,
+        value: formatDistanceMeters(marketplaceSupply.radiusMeters),
+        helper: `${marketplaceSupply.eligibleCount} currently eligible partner(s) by booking address.`,
         href: '#marketplace-supply',
       },
       {
@@ -145,9 +145,9 @@ export function bookingMarketplaceWalletEvidence({
       {
         lane: 'Marketplace reach',
         scope: 'Booking address is the source of truth for distance-based participation.',
-        status: `${backupSupply.eligibleCount} eligible`,
-        tone: backupSupply.eligibleCount ? 'pill-success' : 'pill-warn',
-        record: `${formatDistanceMeters(backupSupply.radiusMeters)} radius / ${
+        status: `${marketplaceSupply.eligibleCount} eligible`,
+        tone: marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn',
+        record: `${formatDistanceMeters(marketplaceSupply.radiusMeters)} radius / ${
           excludedMarketplaceRows
         } excluded by current evidence.`,
         operatorUse:

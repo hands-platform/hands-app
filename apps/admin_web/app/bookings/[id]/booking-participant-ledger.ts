@@ -16,7 +16,7 @@ import {
   isCustomerSelectableParticipantForFinalChoice,
 } from './booking-participant-rules';
 
-type BookingParticipantLedgerBackupSupply = {
+type BookingParticipantLedgerMarketplaceSupply = {
   radiusMeters: number;
   eligibleCount: number;
 };
@@ -27,7 +27,7 @@ type BookingParticipantLedgerNotificationTrace = {
 
 export function bookingParticipantLedger(
   booking: AdminBookingDetail,
-  backupSupply: BookingParticipantLedgerBackupSupply,
+  marketplaceSupply: BookingParticipantLedgerMarketplaceSupply,
   notificationTrace: BookingParticipantLedgerNotificationTrace,
 ) {
   const participants = booking.participants ?? [];
@@ -111,8 +111,8 @@ export function bookingParticipantLedger(
       },
       {
         label: 'Booking-address radius',
-        value: formatDistanceMeters(backupSupply.radiusMeters),
-        helper: `${backupSupply.eligibleCount} currently eligible partner(s) / ${notificationTrace.backupBatches.length} alert batch(es).`,
+        value: formatDistanceMeters(marketplaceSupply.radiusMeters),
+        helper: `${marketplaceSupply.eligibleCount} currently eligible partner(s) / ${notificationTrace.backupBatches.length} alert batch(es).`,
         href: '#marketplace-supply',
       },
       {
@@ -157,7 +157,7 @@ export function bookingParticipantLedger(
         status: marketplaceParticipants.length ? 'Participants recorded' : 'Waiting',
         tone: marketplaceParticipants.length ? 'pill-info' : 'pill-neutral',
         value: `${marketplaceParticipants.length} actual row(s)`,
-        helper: `${formatDistanceMeters(backupSupply.radiusMeters)} booking-address radius / ${notificationTrace.backupBatches.length} alert batch(es).`,
+        helper: `${formatDistanceMeters(marketplaceSupply.radiusMeters)} booking-address radius / ${notificationTrace.backupBatches.length} alert batch(es).`,
       },
       {
         label: '3. Customer choice list',
@@ -284,7 +284,7 @@ export function bookingParticipantLedger(
         participant,
         customerSelectable,
       });
-      const distancePolicy = participantDistancePolicy(participant.distanceMeters, backupSupply.radiusMeters);
+      const distancePolicy = participantDistancePolicy(participant.distanceMeters, marketplaceSupply.radiusMeters);
 
       return {
         id: participant.id,

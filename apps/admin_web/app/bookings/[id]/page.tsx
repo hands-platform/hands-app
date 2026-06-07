@@ -91,7 +91,7 @@ import {
   humanizeAuditAction,
 } from './booking-operations-trace';
 import {
-  bookingBackupPartnerSupply,
+  bookingMarketplacePartnerSupply,
   bookingDispatchPin,
 } from './booking-marketplace-supply';
 import { bookingMarketplaceWalletEvidence } from './booking-marketplace-wallet-evidence';
@@ -294,23 +294,23 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
   ];
   const policySnapshot = bookingOperationalPolicySnapshot(booking, operationalPolicies);
-  const backupSupply = bookingBackupPartnerSupply(booking, providers, operationalPolicies);
-  const addressRadiusContract = bookingAddressRadiusContract(booking, backupSupply);
-  const customerWaitPanel = bookingCustomerWaitPanel(booking, backupSupply, operationalPolicies);
+  const marketplaceSupply = bookingMarketplacePartnerSupply(booking, providers, operationalPolicies);
+  const addressRadiusContract = bookingAddressRadiusContract(booking, marketplaceSupply);
+  const customerWaitPanel = bookingCustomerWaitPanel(booking, marketplaceSupply, operationalPolicies);
   const mvpAuthorityContract = bookingMvpAuthorityContract({
     booking,
     operationalPolicies,
-    backupSupply,
+    marketplaceSupply,
     messageCount: messages.length,
     financeTrace,
     walletDebt: bookingCashDebtNeedsSettlement(booking),
     terminal: TERMINAL_BOOKING_STATUSES.has(booking.status),
   });
-  const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, backupSupply);
+  const stageSnapshot = bookingStageSnapshot(booking, customerWaitPanel, marketplaceSupply);
   const notificationTrace = bookingNotificationTrace(booking, rawNotifications);
   const matchingRuleSnapshot = bookingDetailMatchingRuleSnapshot({
     booking,
-    backupSupply,
+    marketplaceSupply,
     customerWaitPanel,
     notificationTrace,
     walletBlocked: bookingCashDebtNeedsSettlement(booking),
@@ -330,12 +330,12 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingActivityCsvHref = buildBookingActivityCsvHref(booking, bookingActivityRecords);
   const marketplaceWalletEvidence = bookingMarketplaceWalletEvidence({
     booking,
-    backupSupply,
+    marketplaceSupply,
     financeTrace,
     notificationTrace,
     walletDebt: bookingCashDebtNeedsSettlement(booking),
   });
-  const participantLedger = bookingParticipantLedger(booking, backupSupply, notificationTrace);
+  const participantLedger = bookingParticipantLedger(booking, marketplaceSupply, notificationTrace);
   const chatLifecycle = bookingChatLifecycle(booking, messages.length);
   const handoffChecklist = bookingHandoffChecklist(booking, messages.length, latestLocation);
   const chatRepair = bookingChatRepairActionState(booking);
@@ -1013,7 +1013,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       href: '#matching-rule-snapshot',
       label: 'Matching state',
       value: matchingRuleSnapshot.status,
-      detail: `${customerWaitPanel.signalStatus} / ${backupSupply.eligibleCount} marketplace partner(s) in policy.`,
+      detail: `${customerWaitPanel.signalStatus} / ${marketplaceSupply.eligibleCount} marketplace partner(s) in policy.`,
     },
     {
       href: finalPartnerSummary.href,
@@ -1271,9 +1271,9 @@ export default async function BookingDetailPage({ params }: PageProps) {
 
       <BookingAddressRadiusContractSection addressRadiusContract={addressRadiusContract} />
 
-      <BookingDispatchCandidateDecisionMatrixSection backupSupply={backupSupply} />
+      <BookingDispatchCandidateDecisionMatrixSection marketplaceSupply={marketplaceSupply} />
 
-      <BookingMarketplaceSupplySection backupSupply={backupSupply} />
+      <BookingMarketplaceSupplySection marketplaceSupply={marketplaceSupply} />
 
       <BookingAlertTraceSection bookingId={booking.id} notificationTrace={notificationTrace} />
 
