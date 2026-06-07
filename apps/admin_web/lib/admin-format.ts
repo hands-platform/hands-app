@@ -113,6 +113,7 @@ export function formatRelativeTime(
     invalidFallback?: string;
     justNow?: string;
     includeFuture?: boolean;
+    hourLabelCutoff?: number;
   } = {},
 ) {
   const {
@@ -120,6 +121,7 @@ export function formatRelativeTime(
     invalidFallback = 'Unknown time',
     justNow = 'just now',
     includeFuture = false,
+    hourLabelCutoff = 24,
   } = options;
 
   if (!value) {
@@ -147,7 +149,7 @@ export function formatRelativeTime(
   }
 
   const hours = Math.floor(absoluteMinutes / 60);
-  if (hours < 24) {
+  if (hours < hourLabelCutoff) {
     return includeFuture ? `${hours}h ${suffix}` : `${hours}h ago`;
   }
 

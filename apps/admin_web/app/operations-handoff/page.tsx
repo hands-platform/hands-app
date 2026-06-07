@@ -15,7 +15,12 @@ import {
   AdminRefund,
   adminGet,
 } from '../../lib/admin-api';
-import { formatDateTime, formatMoney, shortId as formatShortId } from '../../lib/admin-format';
+import {
+  formatDateTime,
+  formatMoney,
+  formatRelativeTime,
+  shortId as formatShortId,
+} from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { partnerDisplayText as operatorDisplayText } from '../../lib/admin-copy';
@@ -1582,14 +1587,9 @@ function recentlyChanged(value?: string | null, minutes = 120) {
 }
 
 function relativeTime(value?: string | null) {
-  const timestamp = dateValue(value);
-  if (!timestamp) return 'unknown time';
-  const diffMs = Date.now() - timestamp;
-  const absMinutes = Math.max(0, Math.round(diffMs / 60_000));
-  if (absMinutes < 1) return 'just now';
-  if (absMinutes < 60) return `${absMinutes}m ago`;
-  const hours = Math.round(absMinutes / 60);
-  if (hours < 48) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  return `${days}d ago`;
+  return formatRelativeTime(value, {
+    emptyFallback: 'unknown time',
+    invalidFallback: 'unknown time',
+    hourLabelCutoff: 48,
+  });
 }
