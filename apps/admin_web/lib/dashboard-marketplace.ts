@@ -1,7 +1,7 @@
 import type { AdminBooking } from './admin-api';
 import {
+  bookingCustomerSelectableParticipants,
   bookingParticipantPartnerId,
-  isCustomerSelectableBookingParticipant,
 } from './booking-participant-choice';
 import { shortId } from './admin-format';
 
@@ -32,8 +32,14 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
     const preferredProviderId = preferredProviderIdForSnapshot(row.booking);
     return Boolean(participantProviderId && preferredProviderId) && participantProviderId === preferredProviderId;
   });
-  const customerSelectableRows = participantRows.filter((row) =>
-    isCustomerSelectableParticipantForSnapshot(row.booking, row.participant),
+  const dedupedCustomerSelectableRows = bookings.reduce(
+    (sum, booking) =>
+      sum +
+      bookingCustomerSelectableParticipants(
+        booking.participants,
+        preferredProviderIdForSnapshot(booking),
+      ).length,
+    0,
   );
   const customerSelectedRows = participantRows.filter(
     (row) =>
@@ -57,7 +63,7 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
     participantRows: participantRows.length,
     marketplaceRows: marketplaceRows.length,
     firstPickRows: firstPickRows.length,
-    customerSelectableRows: customerSelectableRows.length,
+    customerSelectableRows: dedupedCustomerSelectableRows,
     customerSelectedRows: customerSelectedRows.length,
     declinedRows: declinedRows.length,
     openBookingsWithoutParticipants,
@@ -71,13 +77,6 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
 
 function preferredProviderIdForSnapshot(booking: AdminBooking) {
   return booking.preferredProviderId ?? booking.preferredProvider?.id ?? null;
-}
-
-function isCustomerSelectableParticipantForSnapshot(
-  booking: AdminBooking,
-  participant: NonNullable<AdminBooking['participants']>[number],
-) {
-  return isCustomerSelectableBookingParticipant(participant, preferredProviderIdForSnapshot(booking));
 }
 
 function participantSnapshotTime(participant: NonNullable<AdminBooking['participants']>[number]) {

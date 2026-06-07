@@ -128,6 +128,40 @@ describe('dashboard marketplace participant snapshot', () => {
     expect(snapshot.customerSelectableRows).toBe(1);
   });
 
+  it('deduplicates customer-selectable counts while preserving actual participant rows', () => {
+    const snapshot = buildMarketplaceParticipantSnapshot([
+      booking({
+        id: 'booking-duplicate-choice-state',
+        preferredProviderId: 'partner-first',
+        participants: [
+          {
+            id: 'participant-market-joined',
+            providerProfileId: 'partner-market',
+            status: 'JOINED',
+            joinedAt: '2026-06-07T01:00:00.000Z',
+          },
+          {
+            id: 'participant-market-accepted',
+            providerProfileId: 'partner-market',
+            status: 'ACCEPTED',
+            joinedAt: '2026-06-07T01:01:00.000Z',
+            respondedAt: '2026-06-07T01:02:00.000Z',
+          },
+          {
+            id: 'participant-second',
+            providerProfileId: 'partner-second',
+            status: 'JOINED',
+            joinedAt: '2026-06-07T01:03:00.000Z',
+          },
+        ],
+      }),
+    ]);
+
+    expect(snapshot.participantRows).toBe(3);
+    expect(snapshot.marketplaceRows).toBe(3);
+    expect(snapshot.customerSelectableRows).toBe(2);
+  });
+
   it('returns operator-safe fallbacks when no participant history exists', () => {
     const snapshot = buildMarketplaceParticipantSnapshot([
       booking({
