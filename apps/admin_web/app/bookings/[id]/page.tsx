@@ -120,13 +120,14 @@ import {
   AdminProviderWalletLedgerEntry,
   adminGet,
 } from '../../../lib/admin-api';
+import {
+  attentionLevel,
+  type AttentionFlag,
+} from '../../../lib/admin-attention-flags';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
-import {
-  bookingFinanceFlags as buildBookingFinanceFlags,
-  type AttentionFlag,
-} from '../../../lib/booking-finance-flags';
+import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
 import {
   canCloseoutCompletedBooking,
   completedCloseoutLabel,
@@ -4214,19 +4215,6 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
   }
 
   return flags;
-}
-
-function attentionLevel(flags: AttentionFlag[]) {
-  if (flags.some((flag) => flag.severity === 'high')) {
-    return { label: 'Action', helper: `${flags.length} check(s) need attention`, tone: 'pill-danger' };
-  }
-  if (flags.some((flag) => flag.severity === 'medium')) {
-    return { label: 'Monitor', helper: `${flags.length} check(s) to monitor`, tone: 'pill-warn' };
-  }
-  if (flags.some((flag) => flag.severity === 'low')) {
-    return { label: 'Note', helper: `${flags.length} note check(s)`, tone: 'pill-info' };
-  }
-  return { label: 'Clear', helper: 'No active attention checks', tone: 'pill-success' };
 }
 
 function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {

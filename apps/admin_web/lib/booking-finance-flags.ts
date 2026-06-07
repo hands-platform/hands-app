@@ -1,9 +1,4 @@
-export type AttentionFlag = {
-  severity: 'high' | 'medium' | 'low';
-  title: string;
-  detail: string;
-  action: string;
-};
+import type { AttentionFlag } from './admin-attention-flags';
 
 export type BookingFinanceFlagTrace = {
   currency: string;
