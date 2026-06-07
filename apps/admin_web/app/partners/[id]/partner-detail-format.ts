@@ -4,7 +4,7 @@ import {
   formatDateOnly as formatAdminDateOnly,
   formatDateTime,
   formatDistanceMeters,
-  formatMoney as formatAdminMoney,
+  formatMoneyOrZero,
   readPlainRecord,
   shortId as formatAdminShortId,
 } from '../../../lib/admin-format';
@@ -91,7 +91,7 @@ export function maskDeviceId(value?: string | null) {
 
 export function formatCurrency(value?: number | string | null, currency = 'VND') {
   const amount = amountValue(value);
-  return formatAdminMoney(amount, currency, `0 ${currency}`);
+  return formatMoneyOrZero(amount, currency);
 }
 
 export function amountValue(value?: number | string | null) {

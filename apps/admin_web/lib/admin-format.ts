@@ -8,6 +8,10 @@ export function formatMoney(amount?: number | null, currency = 'VND', fallback =
   return `${new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 }).format(amount)} ${currency}`;
 }
 
+export function formatMoneyOrZero(amount?: number | null, currency = 'VND') {
+  return formatMoney(amount ?? 0, currency);
+}
+
 export function formatDistanceMeters(value?: number | null, fallback = '?') {
   if (value === undefined || value === null || !Number.isFinite(value)) {
     return fallback;
@@ -97,6 +101,10 @@ export function shortDisplayId(value?: string | null) {
   return shortId(value, { length: 8, ellipsis: true });
 }
 
+export function shortUnknownId(value?: string | null) {
+  return shortId(value, { fallback: 'unknown' });
+}
+
 export function readPlainRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -163,4 +171,12 @@ export function formatRelativeTime(
 
   const days = Math.floor(hours / 24);
   return includeFuture ? `${days}d ${suffix}` : `${days}d ago`;
+}
+
+export function formatRelativeAge(value?: string | null, fallback = 'unknown time') {
+  return formatRelativeTime(value, {
+    emptyFallback: fallback,
+    invalidFallback: fallback,
+    justNow: '0m ago',
+  });
 }

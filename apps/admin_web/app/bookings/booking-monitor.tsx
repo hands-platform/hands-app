@@ -8,9 +8,9 @@ import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admi
 import {
   formatDistanceMeters,
   formatDateTime,
-  formatMoney,
+  formatMoney as money,
   readPlainRecord,
-  shortId as formatShortId,
+  shortId,
 } from '../../lib/admin-format';
 import {
   type AdminLiveOperationsPolicy,
@@ -4139,10 +4139,6 @@ function nextAction(booking: AdminBooking) {
   return 'Normal operating state.';
 }
 
-function shortId(id: string) {
-  return formatShortId(id);
-}
-
 function bookingServiceOptionLabel(booking: AdminBooking) {
   const bookedService = booking.services?.[0];
   const service = bookedService?.service;
@@ -4409,10 +4405,6 @@ function relativeTimeLabel(value: string, nowMs: number) {
     return `${hoursAgo}h ago`;
   }
   return `${Math.round(hoursAgo / 24)}d ago`;
-}
-
-function money(amount: number, currency = 'VND') {
-  return formatMoney(amount, currency);
 }
 
 function coordinatePairLabel(lat: unknown, lng: unknown) {

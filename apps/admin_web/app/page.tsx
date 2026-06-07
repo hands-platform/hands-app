@@ -21,10 +21,10 @@ import {
 import {
   formatDateTime,
   formatDistanceMeters,
-  formatMoney,
-  formatRelativeTime,
+  formatMoneyOrZero as money,
+  formatRelativeAge as relativeTimeLabel,
   readPlainRecord,
-  shortId as formatShortId,
+  shortUnknownId as shortId,
 } from '../lib/admin-format';
 import {
   type AdminDateRange,
@@ -6010,14 +6010,6 @@ function formatPolicyValue(value: unknown, unit?: string | null) {
   return String(value);
 }
 
-function relativeTimeLabel(value?: string | null) {
-  return formatRelativeTime(value, {
-    emptyFallback: 'unknown time',
-    invalidFallback: 'unknown time',
-    justNow: '0m ago',
-  });
-}
-
 function activePayoutHold(batch: AdminPayoutBatch) {
   return batch.providerProfile?.sanctions?.find(
     (sanction) => sanction.type === 'PAYOUT_HOLD' && sanction.status === 'ACTIVE',
@@ -6032,12 +6024,4 @@ function opsQueueSeverityLabel(severity: OpsQueueItem['severity']) {
   if (severity === 'high') return 'SAME-SHIFT';
   if (severity === 'medium') return 'CHECK';
   return 'INFO';
-}
-
-function shortId(id?: string) {
-  return formatShortId(id, { fallback: 'unknown' });
-}
-
-function money(amount?: number, currency = 'VND') {
-  return formatMoney(amount ?? 0, currency);
 }

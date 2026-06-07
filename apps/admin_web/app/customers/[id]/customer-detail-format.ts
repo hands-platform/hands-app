@@ -3,13 +3,11 @@ import { marketplaceDisplayText as displayMarketplaceText } from '../../../lib/a
 import {
   formatDateTime,
   formatDistanceMeters,
-  formatMoney as formatAdminMoney,
-  shortId as formatShortId,
+  formatMoneyOrZero as formatMoney,
+  shortUnknownId as shortId,
 } from '../../../lib/admin-format';
 
-export function shortId(id?: string) {
-  return formatShortId(id, { fallback: 'unknown' });
-}
+export { formatMoney, shortId };
 
 export function compactJson(value: unknown) {
   if (!value) return 'No metadata';
@@ -62,8 +60,4 @@ export function formatDate(value?: string | null) {
 
 export function formatDistance(value: number) {
   return formatDistanceMeters(value);
-}
-
-export function formatMoney(value: number, currency = 'VND') {
-  return formatAdminMoney(value, currency, `0 ${currency}`);
 }
