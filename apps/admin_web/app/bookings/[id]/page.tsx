@@ -155,6 +155,7 @@ import {
   canExpireBooking,
   canMarkNoShow,
 } from '../../../lib/booking-operator-action-rules';
+import { bookingOperatorActionMatrix as buildBookingOperatorActionMatrix } from '../../../lib/booking-operator-action-matrix';
 import {
   bookingPartnerDecisionLabel,
   bookingPartnerHint,
@@ -1340,118 +1341,25 @@ function bookingOperatorCommandQueue({
 function bookingOperatorActionMatrix(booking: AdminBookingDetail) {
   const paymentStatus = booking.payment?.status ?? 'NONE';
   const paymentIsTerminal = isTerminalPayment(paymentStatus);
-  const paymentActionAvailable = Boolean(booking.payment?.id) && !paymentIsTerminal;
   const cashDebt = bookingCashDebtNeedsSettlement(booking);
-  const closeoutAvailable = canCloseoutCompletedBooking(booking);
-  const expireAvailable = canExpireBooking(booking.status);
-  const noShowAvailable = canMarkNoShow(booking.status);
-  const refundRows = bookingRefundRows(booking);
-
-  return [
-    {
-      action: 'Payment sync',
-      available: Boolean(booking.payment?.providerRef) && !paymentIsTerminal,
-      status: Boolean(booking.payment?.providerRef) && !paymentIsTerminal ? 'Available' : 'Locked',
-      tone: Boolean(booking.payment?.providerRef) && !paymentIsTerminal ? 'pill-info' : 'pill-neutral',
-      evidence: booking.payment?.providerRef
-        ? `${paymentStatus} / provider ref ${booking.payment.providerRef}`
-        : 'No payment provider reference to sync.',
-      operatorRule:
-        'Use for provider-gateway reconciliation only. Do not change customer outcome from sync alone.',
-      href: '#booking-ops',
-      hrefLabel: 'Open action forms',
-    },
-    {
-      action: 'Capture payment',
-      available: paymentActionAvailable && paymentStatus === 'AUTHORIZED',
-      status: paymentActionAvailable && paymentStatus === 'AUTHORIZED' ? 'Available' : 'Locked',
-      tone: paymentActionAvailable && paymentStatus === 'AUTHORIZED' ? 'pill-warn' : 'pill-neutral',
-      evidence:
-        paymentStatus === 'AUTHORIZED'
-          ? `${booking.status} / ${money(booking.payment?.amount, booking.payment?.currency)} authorized`
-          : `Payment status is ${paymentStatus}.`,
-      operatorRule:
-        'Capture only after service completion is confirmed by retained booking, chat, and closeout evidence.',
-      href: '#booking-ops',
-      hrefLabel: 'Open action forms',
-    },
-    {
-      action: 'Release or refund',
-      available: paymentActionAvailable,
-      status: paymentActionAvailable ? 'Available' : 'Locked',
-      tone: paymentActionAvailable ? 'pill-warn' : 'pill-neutral',
-      evidence: refundRows.length
-        ? `${refundRows.length} refund row(s) already recorded.`
-        : `${booking.status} / payment ${paymentStatus}.`,
-      operatorRule:
-        'Release or refund only after cancellation, expiry, or no-show evidence has been reviewed.',
-      href: '#booking-ops',
-      hrefLabel: 'Open action forms',
-    },
-    {
-      action: 'Settle cash fee debt',
-      available: cashDebt,
-      status: cashDebt ? 'Available' : 'Locked',
-      tone: cashDebt ? 'pill-danger' : 'pill-neutral',
-      evidence: cashDebt
-        ? `${money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency)} keeps marketplace participation and payout release blocked.`
-        : booking.payment?.method === 'CASH'
-          ? 'Cash booking has no active negative wallet block.'
-          : `${booking.payment?.method ?? 'No method'} booking.`,
-      operatorRule:
-        'Settle only when company fee deposit or admin offset evidence is available for this cash booking.',
-      href: '#booking-ops',
-      hrefLabel: 'Open action forms',
-    },
-    {
-      action: 'Reconcile completed booking',
-      available: closeoutAvailable,
-      status: closeoutAvailable ? 'Available' : 'Locked',
-      tone: closeoutAvailable ? 'pill-warn' : 'pill-neutral',
-      evidence: completedCloseoutLabel(booking),
-      operatorRule:
-        'Run after payment, earning, tax, platform fee, wallet, and chat archive records are aligned.',
-      href: '#completed-closeout',
-      hrefLabel: 'Open closeout',
-    },
-    {
-      action: 'Expire matching',
-      available: expireAvailable,
-      status: expireAvailable ? 'Available' : 'Locked',
-      tone: expireAvailable ? 'pill-info' : 'pill-neutral',
-      evidence: expireAvailable
-        ? `Open matching can be expired. Timer ${formatDate(booking.expiresAt)}.`
-        : `Current status is ${booking.status}.`,
-      operatorRule:
-        'Expire only when the customer should stop waiting and the payment hold can be released or reviewed.',
-      href: '#matching-expiry',
-      hrefLabel: 'Open expiry',
-    },
-    {
-      action: 'Mark no-show',
-      available: noShowAvailable,
-      status: noShowAvailable ? 'Available' : 'Locked',
-      tone: noShowAvailable ? 'pill-warn' : 'pill-neutral',
-      evidence: noShowAvailable
-        ? 'Use after communication and service movement are reviewed.'
-        : `Current status is ${booking.status}.`,
-      operatorRule:
-        'Mark no-show only from factual chat, alert, location, and operator-note evidence. Keep the record descriptive.',
-      href: '#no-show-handling',
-      hrefLabel: 'Open no-show',
-    },
-    {
-      action: 'Add operator note',
-      available: true,
-      status: 'Available',
-      tone: 'pill-info',
-      evidence: `${bookingOperatorNoteLines(booking.notes).length} note line(s) currently retained.`,
-      operatorRule:
-        'Use notes to record what happened, who was contacted, and what evidence supports the next decision.',
-      href: '#operator-notes',
-      hrefLabel: 'Open notes',
-    },
-  ];
+  return buildBookingOperatorActionMatrix({
+    bookingStatus: booking.status,
+    paymentStatus,
+    hasPayment: Boolean(booking.payment?.id),
+    paymentIsTerminal,
+    paymentProviderRef: booking.payment?.providerRef ?? null,
+    paymentAmountLabel: money(booking.payment?.amount, booking.payment?.currency),
+    paymentMethod: booking.payment?.method ?? null,
+    cashDebtNeedsSettlement: cashDebt,
+    cashDebtAmountLabel: money(Math.abs(booking.earning?.netAmount ?? 0), booking.earning?.currency),
+    closeoutAvailable: canCloseoutCompletedBooking(booking),
+    closeoutLabel: completedCloseoutLabel(booking),
+    expireAvailable: canExpireBooking(booking.status),
+    expiresAtLabel: formatDate(booking.expiresAt),
+    noShowAvailable: canMarkNoShow(booking.status),
+    refundRowCount: bookingRefundRows(booking).length,
+    noteLineCount: bookingOperatorNoteLines(booking.notes).length,
+  });
 }
 
 function bookingOperatorPriorityBriefing({
