@@ -27,6 +27,7 @@ import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
+import { bookingPrimaryCommandSummary } from '../../lib/booking-primary-command-summary';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -470,6 +471,20 @@ export function BookingMonitor({
     () => [bookingGateRejectionLane, ...commandCenter],
     [bookingGateRejectionLane, commandCenter],
   );
+  const primaryCommandQueue = useMemo(
+    () =>
+      bookingPrimaryCommandSummary(
+        orderedBookings.map((booking) => {
+          const strip = bookingListCommandDecisionStrip(booking);
+          return {
+            bookingId: booking.id,
+            href: bookingPrimaryCommandHref(strip.status),
+            strip,
+          };
+        }),
+      ),
+    [orderedBookings],
+  );
   const nextActions = useMemo(
     () => buildBookingNextActions(orderedBookings, currentTimeMs),
     [currentTimeMs, orderedBookings],
@@ -780,7 +795,7 @@ export function BookingMonitor({
             </p>
           </div>
           <span className="pill pill-info">
-            {autoRefresh ? 'Auto refresh on' : 'Auto refresh paused'} ·{' '}
+            {autoRefresh ? 'Auto refresh on' : 'Auto refresh paused'} /{' '}
             {isPending ? 'refreshing' : `last ${hasMounted ? lastRefreshLabel : 'pending'}`}
           </span>
         </div>
@@ -793,6 +808,35 @@ export function BookingMonitor({
               <div className="participant-list">
                 <span className="pill">{item.owner}</span>
                 <span className="pill">{item.action}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <div className="ops-section-header" style={{ marginTop: 16 }}>
+          <div>
+            <h3>Primary command queue</h3>
+            <p className="muted">
+              Grouped by the same booking command decision used in each detail page: address,
+              matching, chat, and finance.
+            </p>
+          </div>
+          <span className="pill pill-info">
+            {primaryCommandQueue.reduce((total, item) => total + item.count, 0)} booking(s)
+          </span>
+        </div>
+        <div className="ops-task-grid" style={{ marginTop: 12 }}>
+          {primaryCommandQueue.map((item) => (
+            <Link className="ops-task-card" href={item.href} key={`${item.status}-${item.primaryAction}`}>
+              <span className={`pill ${item.tone}`}>{item.status}</span>
+              <h3>{item.count} booking(s)</h3>
+              <p>{item.primaryAction}</p>
+              <p className="muted">{item.detail}</p>
+              <div className="participant-list">
+                {item.sampleBookingIds.map((bookingId) => (
+                  <span className="pill" key={bookingId}>
+                    {shortId(bookingId)}
+                  </span>
+                ))}
               </div>
             </Link>
           ))}
@@ -3842,6 +3886,31 @@ function bookingListCommandDecisionStrip(booking: AdminBooking) {
     cashDebtNeedsSettlement: bookingCashDebtNeedsOps(booking),
     closeoutOpenItemCount: bookingCompletedCloseoutNeedsOps(booking) ? 1 : 0,
   });
+}
+
+function bookingPrimaryCommandHref(status: string) {
+  if (status === 'Address check') {
+    return '/bookings?view=address';
+  }
+  if (status === 'Handoff repair') {
+    return '/bookings?view=chat-repair';
+  }
+  if (status === 'Finance gate') {
+    return '/bookings?view=cash-debt';
+  }
+  if (status === 'Customer choice') {
+    return '/bookings?view=customer-choice';
+  }
+  if (status === 'Matching watch') {
+    return '/bookings?view=matching';
+  }
+  if (status === 'Payment review') {
+    return '/bookings?view=payment';
+  }
+  if (status === 'Closeout review') {
+    return '/bookings?view=closeout';
+  }
+  return '/bookings?view=all';
 }
 
 function bookingAddressNeedsOps(booking: AdminBooking) {

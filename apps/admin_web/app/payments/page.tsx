@@ -879,7 +879,7 @@ function PaymentCallbackEvidence({ payment }: { payment: AdminPayment }) {
           <div>
             <strong>{callback.providerStatus ?? 'No status code'}</strong>
             <p className="muted">
-              Transaction: {callback.gatewayTransactionId ?? 'none'} · Amount:{' '}
+              Transaction: {callback.gatewayTransactionId ?? 'none'} / Amount:{' '}
               {callback.callbackAmount !== null ? money(callback.callbackAmount, payment.currency) : 'unknown'}
             </p>
           </div>

@@ -483,7 +483,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
               href={card.href}
               key={card.state}
             >
-              {card.label} · {card.count}
+              {card.label} / {card.count}
             </Link>
           ))}
         </div>
