@@ -213,8 +213,8 @@ void main() {
       ),
     );
 
-    expect(
-        find.text('Marketplace visible, participation locked'), findsOneWidget);
+    expect(find.text('Cannot participate until fees are settled'),
+        findsOneWidget);
     expect(find.text(providerWalletBlockFallbackReasonClean), findsOneWidget);
     expect(
         find.text(providerMarketplaceJoinBlockedButtonLabel), findsOneWidget);
@@ -277,8 +277,8 @@ void main() {
       ),
     );
 
-    expect(
-        find.text('Marketplace visible, participation locked'), findsNothing);
+    expect(find.text('Cannot participate until fees are settled'),
+        findsNothing);
     expect(find.text('Accept request'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Accept request'));
@@ -340,8 +340,8 @@ void main() {
       ),
     );
 
-    expect(
-        find.text('Marketplace visible, participation locked'), findsNothing);
+    expect(find.text('Cannot participate until fees are settled'),
+        findsNothing);
     expect(find.text('Start service'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Start service'));
@@ -402,8 +402,8 @@ void main() {
       ),
     );
 
-    expect(
-        find.text('Marketplace visible, participation locked'), findsOneWidget);
+    expect(find.text('Cannot participate until fees are settled'),
+        findsOneWidget);
     expect(
       find.text(
           'You are visible to the customer now. Wait for the final selection.'),
