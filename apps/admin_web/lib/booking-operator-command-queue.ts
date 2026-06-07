@@ -91,6 +91,23 @@ export function bookingOperatorCommandQueue(
     });
   }
 
+  if (
+    input.bookingStatus === 'OPEN_MATCHING' &&
+    input.participantCount > 0 &&
+    input.customerChoiceCandidateCount === 0
+  ) {
+    add({
+      id: 'customer-choice-empty',
+      label: 'CHOICE',
+      title: 'Check customer choice readiness',
+      detail:
+        'Participant evidence rows exist, but no partner is customer-selectable yet. Review participant statuses before telling the customer to choose.',
+      owner: 'Dispatch operator',
+      tone: 'pill-warn',
+      action: { type: 'link', href: '#participants', label: 'Open ledger' },
+    });
+  }
+
   if (activeStatus && !input.hasChatRoom) {
     add({
       id: 'chat-repair',

@@ -59,6 +59,21 @@ describe('bookingOperatorCommandQueue', () => {
     );
   });
 
+  it('adds a choice readiness command when participant rows are not customer-selectable', () => {
+    const queue = bookingOperatorCommandQueue({
+      ...baseInput,
+      bookingStatus: 'OPEN_MATCHING',
+      participantCount: 2,
+      customerChoiceCandidateCount: 0,
+    });
+
+    expect(queue.commands.map((command) => command.id)).toContain('customer-choice-empty');
+    expect(queue.commands.find((command) => command.id === 'customer-choice-empty')).toMatchObject({
+      title: 'Check customer choice readiness',
+      action: { type: 'link', href: '#participants' },
+    });
+  });
+
   it('adds chat repair and location request commands for active bookings missing both records', () => {
     const queue = bookingOperatorCommandQueue({
       ...baseInput,
