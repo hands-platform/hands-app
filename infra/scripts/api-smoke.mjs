@@ -2064,8 +2064,19 @@ if (
     `Cancelled booking did not record customer closure metadata: ${JSON.stringify(cancelledMomoBooking)}`,
   );
 }
+const cancelledPaymentBeforeSync = await getJson('/admin/payments', adminAuth.accessToken).then((payments) =>
+  payments.find((item) => item.bookingId === cancellableMomoBooking.id),
+);
+if (!cancelledPaymentBeforeSync?.id) {
+  throw new Error(
+    `Admin payment list did not expose cancelled booking payment id: ${JSON.stringify({
+      cancelledMomoBooking,
+      cancelledPaymentBeforeSync,
+    })}`,
+  );
+}
 const cancelledPaymentSync = await postJson(
-  `/admin/payments/${cancelledMomoBooking.payment.id}/sync`,
+  `/admin/payments/${cancelledPaymentBeforeSync.id}/sync`,
   adminAuth.accessToken,
 );
 const cancelledPaymentAfterSync = await getJson('/admin/payments', adminAuth.accessToken).then((payments) =>
