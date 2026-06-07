@@ -124,6 +124,10 @@ import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import {
+  bookingFinanceFlags as buildBookingFinanceFlags,
+  type AttentionFlag,
+} from '../../../lib/booking-finance-flags';
+import {
   canCloseoutCompletedBooking,
   completedCloseoutLabel,
   completedCloseoutTone,
@@ -4046,13 +4050,6 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
   };
 }
 
-type AttentionFlag = {
-  severity: 'high' | 'medium' | 'low';
-  title: string;
-  detail: string;
-  action: string;
-};
-
 type DispatchStep = {
   priority: 'Now' | 'Monitor' | 'Done';
   title: string;
@@ -4620,82 +4617,27 @@ function bookingFinanceFlags(
   booking: AdminBookingDetail,
   financeTrace: ReturnType<typeof bookingFinanceTrace>,
 ): AttentionFlag[] {
-  const flags: AttentionFlag[] = [];
   const bookedService = booking.services?.[0];
-  const customerPrice = financeTrace.customerPriceAmount;
   const paymentAmount = readNullableAmount(booking.payment?.amount);
   const servicePrice = readNullableAmount(bookedService?.price);
-
-  if (financeTrace.payoutRuleMissing) {
-    flags.push({
-      severity: 'high',
-      title: 'Payout rule missing',
-      detail: 'This booking price has no matching active service payout rule.',
-      action: 'Open Services and add a payout rule before allowing this option in production.',
-    });
-  }
-
-  if (paymentAmount !== null && servicePrice !== null && paymentAmount !== servicePrice) {
-    flags.push({
-      severity: 'medium',
-      title: 'Payment amount differs from booked service',
-      detail: `Payment is ${money(paymentAmount, financeTrace.currency)} but booked service is ${money(
-        servicePrice,
-        financeTrace.currency,
-      )}.`,
-      action: 'Review coupon, discount, or payment capture rules before closing finance.',
-    });
-  }
-
-  if (
-    financeTrace.providerPayoutAmount !== null &&
-    customerPrice !== null &&
-    financeTrace.providerPayoutAmount > customerPrice
-  ) {
-    flags.push({
-      severity: 'high',
-      title: 'Partner payout exceeds customer price',
-      detail: 'The payout rule would pay more than the customer charge.',
-      action: 'Disable or correct the service payout rule immediately.',
-    });
-  }
-
-  if (booking.status === 'COMPLETED' && !booking.earning) {
-    flags.push({
-      severity: 'high',
-      title: 'Completed booking has no earning',
-      detail: 'Service is completed but no partner earning/wallet entry exists.',
-      action: 'Run earning creation or inspect completion processing.',
-    });
-  }
-
-  if (bookingCashDebtNeedsSettlement(booking)) {
-    flags.push({
-      severity: 'high',
-      title: 'Cash wallet debt blocks partner',
-      detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} owes ${money(
-        Math.abs(booking.earning?.netAmount ?? financeTrace.walletTotalAmount),
-        financeTrace.currency,
-      )} before marketplace participation or payout release can continue.`,
-      action: 'Collect the HANDS fee deposit or offset it in an admin settlement.',
-    });
-  }
-
-  if (
-    financeTrace.paymentMethod === 'CASH' &&
-    booking.earning &&
-    financeTrace.walletTotalAmount >= 0 &&
-    booking.earning.netAmount < 0
-  ) {
-    flags.push({
-      severity: 'medium',
-      title: 'Cash debt ledger may be stale',
-      detail: 'The earning is negative but visible wallet entries are not negative.',
-      action: 'Check wallet ledger entries and settlement status.',
-    });
-  }
-
-  return flags;
+  return buildBookingFinanceFlags({
+    bookingStatus: booking.status,
+    paymentAmount,
+    servicePrice,
+    hasEarning: Boolean(booking.earning),
+    earningNetAmount: booking.earning?.netAmount ?? null,
+    partnerLabel: providerName(booking.selectedProvider ?? booking.preferredProvider),
+    cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    financeTrace: {
+      currency: financeTrace.currency,
+      customerPriceAmount: financeTrace.customerPriceAmount,
+      providerPayoutAmount: financeTrace.providerPayoutAmount,
+      payoutRuleMissing: financeTrace.payoutRuleMissing,
+      paymentMethod: financeTrace.paymentMethod,
+      walletTotalAmount: financeTrace.walletTotalAmount,
+    },
+    formatMoney: money,
+  });
 }
 
 function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
