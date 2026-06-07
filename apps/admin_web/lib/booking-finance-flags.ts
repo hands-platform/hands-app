@@ -21,12 +21,28 @@ export type BookingFinanceFlagsInput = {
   formatMoney?: (amount?: number | null, currency?: string) => string;
 };
 
+export type BookingCashDebtNeedsSettlementInput = {
+  paymentMethod?: string | null;
+  hasEarning: boolean;
+  earningNetAmount?: number | null;
+  earningStatus?: string | null;
+};
+
 const defaultMoney = (amount?: number | null, currency = 'VND') =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
     maximumFractionDigits: 0,
   }).format(amount ?? 0);
+
+export function bookingCashDebtNeedsSettlement(input: BookingCashDebtNeedsSettlementInput): boolean {
+  return Boolean(
+    input.paymentMethod === 'CASH' &&
+      input.hasEarning &&
+      (input.earningNetAmount ?? 0) < 0 &&
+      input.earningStatus !== 'PAID',
+  );
+}
 
 export function bookingFinanceFlags(input: BookingFinanceFlagsInput): AttentionFlag[] {
   const flags: AttentionFlag[] = [];

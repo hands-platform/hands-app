@@ -1,8 +1,46 @@
-import { bookingFinanceFlags } from './booking-finance-flags';
+import {
+  bookingCashDebtNeedsSettlement,
+  bookingFinanceFlags,
+} from './booking-finance-flags';
 
 const formatMoney = (amount?: number | null, currency = 'VND') => `${amount ?? 0} ${currency}`;
 
 describe('bookingFinanceFlags', () => {
+  it('detects active cash fee debt only for unpaid negative cash earnings', () => {
+    expect(
+      bookingCashDebtNeedsSettlement({
+        paymentMethod: 'CASH',
+        hasEarning: true,
+        earningNetAmount: -120000,
+        earningStatus: 'PENDING',
+      }),
+    ).toBe(true);
+    expect(
+      bookingCashDebtNeedsSettlement({
+        paymentMethod: 'CASH',
+        hasEarning: true,
+        earningNetAmount: -120000,
+        earningStatus: 'PAID',
+      }),
+    ).toBe(false);
+    expect(
+      bookingCashDebtNeedsSettlement({
+        paymentMethod: 'MOMO',
+        hasEarning: true,
+        earningNetAmount: -120000,
+        earningStatus: 'PENDING',
+      }),
+    ).toBe(false);
+    expect(
+      bookingCashDebtNeedsSettlement({
+        paymentMethod: 'CASH',
+        hasEarning: false,
+        earningNetAmount: -120000,
+        earningStatus: 'PENDING',
+      }),
+    ).toBe(false);
+  });
+
   it('flags a missing payout rule', () => {
     const flags = bookingFinanceFlags({
       bookingStatus: 'OPEN_MATCHING',

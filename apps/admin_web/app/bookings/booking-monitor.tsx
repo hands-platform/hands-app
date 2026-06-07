@@ -27,6 +27,7 @@ import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 import { bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps } from '../../lib/booking-chat-repair-action-state';
+import { bookingCashDebtNeedsSettlement } from '../../lib/booking-finance-flags';
 import {
   bookingCustomerSelectableParticipants as buildBookingCustomerSelectableParticipants,
   bookingHasCustomerSelectablePartner as hasBookingCustomerSelectablePartner,
@@ -3829,12 +3830,12 @@ function bookingPricingPolicySignal(booking: AdminBooking): {
 }
 
 function bookingCashDebtNeedsOps(booking: AdminBooking) {
-  return (
-    booking.payment?.method === 'CASH' &&
-    Boolean(booking.earning) &&
-    (booking.earning?.netAmount ?? 0) < 0 &&
-    booking.earning?.status !== 'PAID'
-  );
+  return bookingCashDebtNeedsSettlement({
+    paymentMethod: booking.payment?.method,
+    hasEarning: Boolean(booking.earning),
+    earningNetAmount: booking.earning?.netAmount,
+    earningStatus: booking.earning?.status,
+  });
 }
 
 function bookingAddressNeedsOps(booking: AdminBooking) {
@@ -5027,12 +5028,12 @@ function bookingMarketplaceWalletSignal(booking: AdminBooking) {
 }
 
 function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
-  return Boolean(
-    booking.payment?.method === 'CASH' &&
-      booking.earning &&
-      (booking.earning.netAmount ?? 0) < 0 &&
-      booking.earning.status !== 'PAID',
-  );
+  return bookingCashDebtNeedsSettlement({
+    paymentMethod: booking.payment?.method,
+    hasEarning: Boolean(booking.earning),
+    earningNetAmount: booking.earning?.netAmount,
+    earningStatus: booking.earning?.status,
+  });
 }
 
 function customerSelectableParticipants(booking: AdminBooking) {
