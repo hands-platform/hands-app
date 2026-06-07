@@ -334,7 +334,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="ops-section-header">
           <div>
-            <h2>Wallet recovery workflow</h2>
+            <h2>Cash fee settlement workflow</h2>
             <p className="muted">
               Standard operating flow for reopening marketplace participation after cash-fee debt is paid
               or offset. This does not track blocked marketplace attempts.

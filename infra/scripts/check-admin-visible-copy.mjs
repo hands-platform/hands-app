@@ -15,6 +15,9 @@ const bannedPatterns = [
   { label: 'people scoring wording', pattern: /\b(scoring|score)\b/i },
   { label: 'partner hierarchy wording', pattern: /\b(trusted badge|trust badge|partner badge|profile badge)\b/i },
   { label: 'negative wallet exception wording', pattern: /\bRecovery supervision\b/i },
+  { label: 'negative wallet recovery workflow wording', pattern: /\bWallet recovery workflow\b/i },
+  { label: 'ambiguous recovery follow-up wording', pattern: /\brecovery follow-up\b/i },
+  { label: 'ambiguous recovery queue wording', pattern: /\bRecovery queue\b/i },
   { label: 'auto final assignment wording', pattern: /\bAuto-lock\b/i },
   {
     label: 'disabled customer final selection wording',

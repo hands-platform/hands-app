@@ -444,7 +444,7 @@ export default async function OperationsPolicyPage({
             <h3>Current partner acceptance impact</h3>
             <p className="muted">
               Applies the policy posture to the current partner snapshot so operators can see who can pass
-              marketplace and payout gates, who needs account or identity follow-up, and who only needs recovery follow-up.
+              marketplace and payout gates, who needs account or identity follow-up, and who only needs readiness follow-up.
             </p>
           </div>
           <Link className="text-link" href="/partners">
@@ -2762,9 +2762,9 @@ function buildPartnerAcceptancePolicyImpact(
         'Blocked account, active admin hold, blocked device, session follow-up, or shared device record.',
     },
     {
-      label: 'Recovery queue',
+      label: 'Readiness follow-up',
       value: softRecovery.length.toString(),
-      helper: 'Not ready now, but can be recovered through app open, push refresh, or manual follow-up.',
+      helper: 'Not ready now, but can be made ready through app open, push refresh, or manual follow-up.',
     },
   ];
 }
