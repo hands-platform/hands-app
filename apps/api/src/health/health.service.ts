@@ -125,7 +125,7 @@ export class HealthService {
   }
 
   private storageStatus() {
-    const required = ['S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'];
+    const required = ['S3_ENDPOINT', 'S3_ACCESS_KEY', 'S3_SECRET_KEY', 'S3_PUBLIC_BASE_URL'];
     const bucketConfigured = Boolean(
       this.config.get<string>('S3_BUCKET') ||
       (this.config.get<string>('S3_PRIVATE_BUCKET') && this.config.get<string>('S3_PUBLIC_BUCKET')),
