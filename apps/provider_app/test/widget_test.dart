@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:provider_app/main.dart';
+import 'package:provider_app/provider_app.dart';
 import 'package:provider_app/src/core/api_client.dart';
 import 'package:provider_app/src/features/booking/presentation/provider_requests_list_section.dart';
 import 'package:provider_app/src/features/chat/presentation/provider_chat_location_helpers.dart';

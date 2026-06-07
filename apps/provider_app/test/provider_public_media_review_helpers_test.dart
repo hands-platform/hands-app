@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:provider_app/main.dart';
+import 'package:provider_app/provider_app.dart';
 
 void main() {
   test('recognizes reviewable public partner media', () {

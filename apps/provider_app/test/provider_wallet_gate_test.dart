@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider_app/src/core/api_client.dart';
-import 'package:provider_app/main.dart';
+import 'package:provider_app/provider_app.dart';
 
 void main() {
   test('holds marketplace participation when wallet balance is negative', () {
