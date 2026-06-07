@@ -133,12 +133,11 @@ import {
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import {
   bookingCloseoutChecklistRows as buildBookingCloseoutChecklistRowsFromFacts,
-  type BookingCloseoutChecklistItem,
-  toChecklistPillClass,
 } from '../../../lib/booking-closeout-checklist-rows';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingDecisionEvidenceGuardrails as buildBookingDecisionEvidenceGuardrails } from '../../../lib/booking-decision-evidence-guardrails';
 import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '../../../lib/booking-decision-note-presets';
+import { bookingActionEvidenceGate as buildBookingActionEvidenceGateFromFacts } from '../../../lib/booking-action-evidence-gate';
 import { bookingEvidenceBundleRows as buildBookingEvidenceBundleRowsFromFacts } from '../../../lib/booking-evidence-bundle-rows';
 import { bookingEvidencePacket as buildBookingEvidencePacket } from '../../../lib/booking-evidence-packet';
 import {
@@ -862,14 +861,43 @@ export default async function BookingDetailPage({ params }: PageProps) {
       : null,
     notificationCount: notificationTrace.rows.length,
   });
-  const actionEvidenceGate = buildBookingActionEvidenceGate({
-    booking,
-    messages,
-    latestLocation,
-    notificationTrace,
-    refundLedgerRows,
-    operatorNoteLines,
-    closeoutReadiness,
+  const manualOutcomeEvidenceLabel = [
+    messages.length ? `${messages.length} chat message(s)` : null,
+    latestLocation ? `location ${formatDate(latestLocation.recordedAt)}` : null,
+    notificationTrace.rows.length ? `${notificationTrace.rows.length} alert row(s)` : null,
+    operatorNoteLines.length ? `${operatorNoteLines.length} operator note(s)` : null,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const actionEvidenceGate = buildBookingActionEvidenceGateFromFacts({
+    bookingStatus: booking.status,
+    paymentExists: Boolean(booking.payment?.id),
+    paymentStatus: booking.payment?.status ?? 'NONE',
+    paymentProviderRef: booking.payment?.providerRef ?? null,
+    paymentMethod: booking.payment?.method ?? null,
+    paymentIsTerminal: isTerminalPayment(booking.payment?.status ?? 'NONE'),
+    hasChatArchive: Boolean(booking.chatRoom),
+    hasDecisionEvidence: Boolean(
+      messages.length ||
+        latestLocation ||
+        notificationTrace.rows.length ||
+        operatorNoteLines.length ||
+        booking.auditLogs?.length,
+    ),
+    manualOutcomeEvidenceLabel,
+    refundLedgerCount: refundLedgerRows.length,
+    cashDebt: bookingCashDebtNeedsSettlement(booking),
+    closeoutAvailable: canCloseoutCompletedBooking(booking),
+    closeoutStatus: closeoutReadiness.status,
+    closeoutTone: closeoutReadiness.tone,
+    closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
+    closeoutHelper: closeoutReadiness.helper,
+    completedCloseoutLabel: completedCloseoutLabel(booking),
+    completedCloseoutTone: completedCloseoutTone(booking),
+    expireAvailable: canExpireBooking(booking.status),
+    hasAddressSnapshot: Boolean(booking.addressSnapshot),
+    expiresAtLabel: formatDate(booking.expiresAt),
+    noShowAvailable: canMarkNoShow(booking.status),
   });
   const actionGateByAction = new Map(actionEvidenceGate.rows.map((row) => [row.action, row]));
   const finalGateReason = buildBookingFinalGateReason({
@@ -1465,16 +1493,6 @@ function bookingEvidencePacket({
   });
 }
 
-type BookingActionEvidenceGateRow = {
-  action: string;
-  status: string;
-  evidence: string;
-  operatorRule: string;
-  href: string;
-  className: BookingCloseoutChecklistItem['className'];
-  pillClass: BookingCloseoutChecklistItem['pillClass'];
-};
-
 function buildBookingFinalGateReason({
   booking,
   financeTrace,
@@ -1485,8 +1503,8 @@ function buildBookingFinalGateReason({
   title: string;
   detail: string;
   operatorRule: string;
-  className: BookingCloseoutChecklistItem['className'];
-  pillClass: BookingCloseoutChecklistItem['pillClass'];
+  className: 'ops-task-done' | 'ops-task-warning' | 'ops-task-blocked';
+  pillClass: 'pill-success' | 'pill-warn' | 'pill-danger';
 } {
   const customerChoiceCandidates =
     booking.participants?.filter(
@@ -1588,197 +1606,6 @@ function buildBookingFinalGateReason({
     operatorRule: 'Keep manual outcomes evidence-based; do not introduce judgment labels or automatic partner assignment.',
     className: 'ops-task-done',
     pillClass: 'pill-success',
-  };
-}
-
-function buildBookingActionEvidenceGate({
-  booking,
-  messages,
-  latestLocation,
-  notificationTrace,
-  refundLedgerRows,
-  operatorNoteLines,
-  closeoutReadiness,
-}: {
-  booking: AdminBookingDetail;
-  messages: AdminChatMessage[];
-  latestLocation?: AdminLocationSnapshot | null;
-  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
-  refundLedgerRows: BookingRefundLedgerRow[];
-  operatorNoteLines: string[];
-  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
-}) {
-  const paymentStatus = booking.payment?.status ?? 'NONE';
-  const paymentIsTerminal = isTerminalPayment(paymentStatus);
-  const paymentActionAvailable = Boolean(booking.payment?.id) && !paymentIsTerminal;
-  const paymentSyncAvailable = Boolean(booking.payment?.providerRef) && !paymentIsTerminal;
-  const hasAddressSnapshot = Boolean(booking.addressSnapshot);
-  const hasChatArchive = Boolean(booking.chatRoom);
-  const hasDecisionEvidence = Boolean(
-    messages.length ||
-    latestLocation ||
-    notificationTrace.rows.length ||
-    operatorNoteLines.length ||
-    booking.auditLogs?.length,
-  );
-  const cashDebt = bookingCashDebtNeedsSettlement(booking);
-  const closeoutAvailable = canCloseoutCompletedBooking(booking);
-  const expireAvailable = canExpireBooking(booking.status);
-  const noShowAvailable = canMarkNoShow(booking.status);
-  const completedWorkEvidenceReady =
-    booking.status === 'COMPLETED' && hasChatArchive && paymentStatus === 'AUTHORIZED';
-  const manualOutcomeEvidenceLabel = [
-    messages.length ? `${messages.length} chat message(s)` : null,
-    latestLocation ? `location ${formatDate(latestLocation.recordedAt)}` : null,
-    notificationTrace.rows.length ? `${notificationTrace.rows.length} alert row(s)` : null,
-    operatorNoteLines.length ? `${operatorNoteLines.length} operator note(s)` : null,
-  ]
-    .filter(Boolean)
-    .join(', ');
-
-  const rows: BookingActionEvidenceGateRow[] = [
-    {
-      action: 'Payment sync',
-      status: paymentSyncAvailable ? 'Available' : 'Locked',
-      evidence: booking.payment?.providerRef
-        ? `${paymentStatus} / provider ref ${booking.payment.providerRef}`
-        : `Payment status is ${paymentStatus}; no gateway reference is linked.`,
-      operatorRule:
-        'Sync only when a provider reference exists and the payment is not already captured, released, or refunded.',
-      href: '#booking-ops',
-      className: paymentSyncAvailable ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: paymentSyncAvailable ? 'pill-success' : 'pill-neutral',
-    },
-    {
-      action: 'Payment capture',
-      status: completedWorkEvidenceReady
-        ? 'Evidence ready'
-        : paymentStatus === 'AUTHORIZED'
-          ? 'Review first'
-          : 'Locked',
-      evidence:
-        paymentStatus === 'AUTHORIZED'
-          ? `${booking.status} / ${hasChatArchive ? 'chat archived' : 'chat missing'} / ${closeoutReadiness.status}`
-          : `Payment status is ${paymentStatus}. Capture is only relevant for active authorization.`,
-      operatorRule:
-        'Capture after completed service evidence is retained; do not capture from payment status alone.',
-      href: '#booking-ops',
-      className: completedWorkEvidenceReady
-        ? 'ops-task-done'
-        : paymentStatus === 'AUTHORIZED'
-          ? 'ops-task-warning'
-          : 'ops-task-blocked',
-      pillClass: completedWorkEvidenceReady
-        ? 'pill-success'
-        : paymentStatus === 'AUTHORIZED'
-          ? 'pill-warn'
-          : 'pill-neutral',
-    },
-    {
-      action: 'Release or refund',
-      status: paymentActionAvailable ? (hasDecisionEvidence ? 'Evidence ready' : 'Needs evidence') : 'Locked',
-      evidence: paymentActionAvailable
-        ? `${paymentStatus} / ${refundLedgerRows.length} refund row(s) / ${
-            manualOutcomeEvidenceLabel || 'no retained decision evidence yet'
-          }`
-        : `${paymentStatus} payment cannot be released or refunded from this state.`,
-      operatorRule:
-        'Use cancellation, expiry, no-show, chat, alert, location, note, and refund rows before money outcome changes.',
-      href: '#booking-ops',
-      className: paymentActionAvailable
-        ? hasDecisionEvidence
-          ? 'ops-task-done'
-          : 'ops-task-warning'
-        : 'ops-task-blocked',
-      pillClass: paymentActionAvailable
-        ? hasDecisionEvidence
-          ? 'pill-success'
-          : 'pill-warn'
-        : 'pill-neutral',
-    },
-    {
-      action: 'Cash fee settlement',
-      status: cashDebt ? 'Evidence required' : booking.payment?.method === 'CASH' ? 'Clear' : 'Not cash',
-      evidence: cashDebt
-        ? 'Partner cash fee debt is active. Operator needs deposit or admin offset evidence before clearing.'
-        : booking.payment?.method === 'CASH'
-          ? 'Cash booking has no active negative wallet block.'
-          : `${booking.payment?.method ?? 'NONE'} booking path.`,
-      operatorRule:
-        'Negative wallet partners can view marketplace requests, but participation and payout actions wait for settlement evidence.',
-      href: cashDebt ? '/cash-settlements' : '#finance',
-      className: cashDebt ? 'ops-task-blocked' : 'ops-task-done',
-      pillClass: cashDebt
-        ? 'pill-danger'
-        : booking.payment?.method === 'CASH'
-          ? 'pill-success'
-          : 'pill-neutral',
-    },
-    {
-      action: 'Completed closeout',
-      status: closeoutAvailable ? closeoutReadiness.status : completedCloseoutLabel(booking),
-      evidence: closeoutReadiness.openItems.length
-        ? closeoutReadiness.openItems.map((item) => item.label).join(', ')
-        : closeoutReadiness.helper,
-      operatorRule:
-        'Run completed closeout only after payment, earning, tax, platform fee, wallet, and chat records align.',
-      href: '#completed-closeout',
-      className: closeoutAvailable
-        ? closeoutReadiness.tone === 'pill-danger'
-          ? 'ops-task-blocked'
-          : 'ops-task-warning'
-        : 'ops-task-done',
-      pillClass: closeoutAvailable
-        ? toChecklistPillClass(closeoutReadiness.tone)
-        : completedCloseoutTone(booking),
-    },
-    {
-      action: 'Expire matching',
-      status: expireAvailable ? (hasAddressSnapshot ? 'Ready' : 'Needs address') : 'Locked',
-      evidence: expireAvailable
-        ? `${hasAddressSnapshot ? 'Address snapshot ready' : 'Address snapshot missing'} / expires ${formatDate(
-            booking.expiresAt,
-          )}`
-        : `Current status is ${booking.status}.`,
-      operatorRule:
-        'Expire only when the customer should stop waiting and payment release/review path is understood.',
-      href: '#matching-expiry',
-      className: expireAvailable
-        ? hasAddressSnapshot
-          ? 'ops-task-done'
-          : 'ops-task-warning'
-        : 'ops-task-blocked',
-      pillClass: expireAvailable ? (hasAddressSnapshot ? 'pill-success' : 'pill-warn') : 'pill-neutral',
-    },
-    {
-      action: 'No-show handling',
-      status: noShowAvailable ? (hasDecisionEvidence ? 'Evidence ready' : 'Needs evidence') : 'Locked',
-      evidence: noShowAvailable
-        ? manualOutcomeEvidenceLabel || 'No chat, alert, location, note, or audit evidence is loaded yet.'
-        : `Current status is ${booking.status}.`,
-      operatorRule:
-        'No-show is an admin evidence decision. Record what happened with factual service context only.',
-      href: '#no-show-handling',
-      className: noShowAvailable
-        ? hasDecisionEvidence
-          ? 'ops-task-done'
-          : 'ops-task-warning'
-        : 'ops-task-blocked',
-      pillClass: noShowAvailable ? (hasDecisionEvidence ? 'pill-success' : 'pill-warn') : 'pill-neutral',
-    },
-  ];
-
-  const needsEvidence = rows.filter((row) => row.className === 'ops-task-warning').length;
-  const blocked = rows.filter((row) => row.className === 'ops-task-blocked').length;
-
-  return {
-    status: needsEvidence
-      ? `${needsEvidence} need evidence`
-      : blocked
-        ? `${blocked} locked`
-        : 'Evidence ready',
-    tone: needsEvidence ? 'pill-warn' : blocked ? 'pill-neutral' : 'pill-success',
-    rows,
   };
 }
 
