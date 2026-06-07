@@ -1,6 +1,9 @@
 import {
+  bookingLocationNeedsOpsFromFacts,
   bookingLocationTrail,
+  hasProviderCoordinate,
   isPreferredAwaitingDecision,
+  providerLocationFreshnessFromTimestamp,
 } from './booking-status-location-helpers';
 
 describe('booking status location helpers', () => {
@@ -47,5 +50,53 @@ describe('booking status location helpers', () => {
 
   it('returns an empty trail when neither explicit snapshots nor latest location exist', () => {
     expect(bookingLocationTrail([], null)).toEqual([]);
+  });
+
+  it('detects usable partner coordinate pairs from numeric or string coordinates', () => {
+    expect(hasProviderCoordinate({ currentLat: 10.7769, currentLng: 106.7009 })).toBe(true);
+    expect(hasProviderCoordinate({ currentLat: '10.7769', currentLng: '106.7009' })).toBe(true);
+    expect(hasProviderCoordinate({ currentLat: null, currentLng: '106.7009' })).toBe(false);
+    expect(hasProviderCoordinate({ currentLat: 'not-a-number', currentLng: '106.7009' })).toBe(false);
+  });
+
+  it('classifies partner location freshness from the last update timestamp', () => {
+    const now = new Date('2026-06-07T10:00:00.000Z').getTime();
+
+    expect(providerLocationFreshnessFromTimestamp('2026-06-07T09:45:00.000Z', now)).toBe('recent');
+    expect(providerLocationFreshnessFromTimestamp('2026-06-07T09:20:00.000Z', now)).toBe('stale');
+    expect(providerLocationFreshnessFromTimestamp('2026-06-06T08:00:00.000Z', now)).toBe('expired');
+    expect(providerLocationFreshnessFromTimestamp(null, now)).toBe('missing');
+    expect(providerLocationFreshnessFromTimestamp('bad-date', now)).toBe('missing');
+  });
+
+  it('requires operations location review only for live handoff states with missing or stale location', () => {
+    expect(
+      bookingLocationNeedsOpsFromFacts({
+        status: 'OPEN_MATCHING',
+        hasProviderLocation: false,
+        providerLocationFreshness: 'missing',
+      }),
+    ).toBe(false);
+    expect(
+      bookingLocationNeedsOpsFromFacts({
+        status: 'PROVIDER_ON_THE_WAY',
+        hasProviderLocation: false,
+        providerLocationFreshness: 'missing',
+      }),
+    ).toBe(true);
+    expect(
+      bookingLocationNeedsOpsFromFacts({
+        status: 'IN_SERVICE',
+        hasProviderLocation: true,
+        providerLocationFreshness: 'stale',
+      }),
+    ).toBe(true);
+    expect(
+      bookingLocationNeedsOpsFromFacts({
+        status: 'ARRIVED',
+        hasProviderLocation: true,
+        providerLocationFreshness: 'recent',
+      }),
+    ).toBe(false);
   });
 });

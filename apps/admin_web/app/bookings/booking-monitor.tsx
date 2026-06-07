@@ -17,7 +17,12 @@ import {
   formatPolicyDistance,
   humanizePolicyValue,
 } from '../../lib/operations-policy';
-import { isPreferredAwaitingDecision as isPreferredAwaitingDecisionByStatus } from '../../lib/booking-status-location-helpers';
+import {
+  bookingLocationNeedsOpsFromFacts,
+  hasProviderCoordinate,
+  isPreferredAwaitingDecision as isPreferredAwaitingDecisionByStatus,
+  providerLocationFreshnessFromTimestamp,
+} from '../../lib/booking-status-location-helpers';
 import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
@@ -3844,13 +3849,11 @@ function bookingChatRepairNeedsOps(booking: AdminBooking) {
 }
 
 function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
-  if (!locationRequiredStatuses.has(booking.status)) {
-    return false;
-  }
-  if (!hasProviderLocation(booking)) {
-    return true;
-  }
-  return providerLocationFreshness(booking, nowMs) !== 'recent';
+  return bookingLocationNeedsOpsFromFacts({
+    status: booking.status,
+    hasProviderLocation: hasProviderLocation(booking),
+    providerLocationFreshness: providerLocationFreshness(booking, nowMs),
+  });
 }
 
 function bookingAddressSnapshotState(booking: AdminBooking) {
@@ -5258,24 +5261,12 @@ function providerLocationFreshness(
   nowMs: number,
 ): 'recent' | 'stale' | 'expired' | 'missing' {
   const provider = providerWithLocation(booking);
-  if (!provider?.currentLocationUpdatedAt) {
-    return 'missing';
-  }
-
-  const updatedAt = new Date(provider.currentLocationUpdatedAt).getTime();
-  if (!Number.isFinite(updatedAt)) {
-    return 'missing';
-  }
-
-  const reference = nowMs > 0 ? nowMs : Date.now();
-  const ageMs = reference - updatedAt;
-  if (ageMs > EXPIRED_LOCATION_HOURS * 60 * 60_000) {
-    return 'expired';
-  }
-  if (ageMs > STALE_LOCATION_MINUTES * 60_000) {
-    return 'stale';
-  }
-  return 'recent';
+  return providerLocationFreshnessFromTimestamp(
+    provider?.currentLocationUpdatedAt,
+    nowMs,
+    STALE_LOCATION_MINUTES,
+    EXPIRED_LOCATION_HOURS,
+  );
 }
 
 function providerWithLocation(booking: AdminBooking) {
@@ -5286,18 +5277,6 @@ function providerWithLocation(booking: AdminBooking) {
   return (booking.participants ?? [])
     .map((participant) => participant.providerProfile)
     .find((provider) => hasProviderCoordinate(provider));
-}
-
-function hasProviderCoordinate(
-  provider?: { currentLat?: string | number | null; currentLng?: string | number | null } | null,
-) {
-  if (!provider || provider.currentLat === null || provider.currentLat === undefined) {
-    return false;
-  }
-  if (provider.currentLng === null || provider.currentLng === undefined) {
-    return false;
-  }
-  return Number.isFinite(Number(provider.currentLat)) && Number.isFinite(Number(provider.currentLng));
 }
 
 function locationAgeLabel(value: string, nowMs: number) {

@@ -3,7 +3,23 @@ export type PreferredAwaitingDecisionInput = {
   preferredParticipantStatus?: string | null;
 };
 
+export type ProviderLocationCoordinateInput = {
+  currentLat?: string | number | null;
+  currentLng?: string | number | null;
+};
+
+export type ProviderLocationFreshness = 'recent' | 'stale' | 'expired' | 'missing';
+
+export type BookingLocationNeedsOpsFromFactsInput = {
+  status: string;
+  hasProviderLocation: boolean;
+  providerLocationFreshness: ProviderLocationFreshness;
+};
+
 const decidedPreferredParticipantStatuses = new Set(['ACCEPTED', 'SELECTED', 'REJECTED']);
+const locationRequiredStatuses = new Set(['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+const defaultStaleLocationMinutes = 30;
+const defaultExpiredLocationHours = 24;
 
 export function isPreferredAwaitingDecision(input: PreferredAwaitingDecisionInput): boolean {
   if (!input.hasPreferredPartner) {
@@ -23,4 +39,50 @@ export function bookingLocationTrail<T>(explicitSnapshots: T[] | undefined | nul
   }
 
   return latestLocation ? [latestLocation] : [];
+}
+
+export function hasProviderCoordinate(provider?: ProviderLocationCoordinateInput | null): boolean {
+  if (!provider || provider.currentLat === null || provider.currentLat === undefined) {
+    return false;
+  }
+  if (provider.currentLng === null || provider.currentLng === undefined) {
+    return false;
+  }
+  return Number.isFinite(Number(provider.currentLat)) && Number.isFinite(Number(provider.currentLng));
+}
+
+export function providerLocationFreshnessFromTimestamp(
+  value?: string | null,
+  nowMs = Date.now(),
+  staleLocationMinutes = defaultStaleLocationMinutes,
+  expiredLocationHours = defaultExpiredLocationHours,
+): ProviderLocationFreshness {
+  if (!value) {
+    return 'missing';
+  }
+
+  const updatedAt = new Date(value).getTime();
+  if (!Number.isFinite(updatedAt)) {
+    return 'missing';
+  }
+
+  const reference = nowMs > 0 ? nowMs : Date.now();
+  const ageMs = reference - updatedAt;
+  if (ageMs > expiredLocationHours * 60 * 60_000) {
+    return 'expired';
+  }
+  if (ageMs > staleLocationMinutes * 60_000) {
+    return 'stale';
+  }
+  return 'recent';
+}
+
+export function bookingLocationNeedsOpsFromFacts(input: BookingLocationNeedsOpsFromFactsInput): boolean {
+  if (!locationRequiredStatuses.has(input.status)) {
+    return false;
+  }
+  if (!input.hasProviderLocation) {
+    return true;
+  }
+  return input.providerLocationFreshness !== 'recent';
 }
