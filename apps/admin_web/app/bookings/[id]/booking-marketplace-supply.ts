@@ -4,7 +4,7 @@ import type {
   AdminOperationalPolicySetting,
   AdminProvider,
 } from '../../../lib/admin-api';
-import { formatDistanceMeters } from '../../../lib/admin-format';
+import { formatDistanceMeters, formatMoney } from '../../../lib/admin-format';
 import {
   approximateDistanceMeters,
   coordinateLabel,
@@ -20,7 +20,10 @@ import {
 } from './booking-status-location';
 import {
   OPERATIONAL_POLICY_KEYS,
+  adminPartnerWalletBalance,
   adminOperationalPolicySettingByKey,
+  adminWalletGateBlocksMarketplaceParticipation,
+  buildAdminLiveOperationsPolicy,
   operationalPolicyHref,
 } from '../../../lib/operations-policy';
 
@@ -30,6 +33,10 @@ export function bookingBackupPartnerSupply(
   settings: AdminOperationalPolicySetting[],
 ) {
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
+  const livePolicy = buildAdminLiveOperationsPolicy(settings);
+  const walletGateBlocksMarketplace = adminWalletGateBlocksMarketplaceParticipation(
+    livePolicy.walletNegativeGate,
+  );
   const radiusMeters =
     savedPolicy.backupProviderRadiusMeters ??
     readOptionalNumber(adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)?.value) ??
@@ -67,6 +74,7 @@ export function bookingBackupPartnerSupply(
               ? approximateDistanceMeters(customerLat, customerLng, lat, lng)
               : null;
           const locationAgeMinutes = providerLocationAgeMinutes(provider.currentLocationUpdatedAt);
+          const walletBalance = adminPartnerWalletBalance(provider);
           const blockers: string[] = [];
 
           if (provider.blockedAt) {
@@ -77,6 +85,9 @@ export function bookingBackupPartnerSupply(
           }
           if (provider.status !== 'ONLINE_AVAILABLE') {
             blockers.push(`status ${provider.status}`);
+          }
+          if (walletGateBlocksMarketplace && walletBalance < 0) {
+            blockers.push(`wallet negative ${formatMoney(Math.abs(walletBalance), 'VND')}`);
           }
           if (distanceMeters === null) {
             blockers.push('no current coordinates');
@@ -142,6 +153,9 @@ export function bookingBackupPartnerSupply(
   const staleOrMissing = evaluatedRows.filter((row) =>
     row.blockers.some((blocker) => blocker.startsWith('location')),
   ).length;
+  const walletDebt = evaluatedRows.filter((row) =>
+    row.blockers.some((blocker) => blocker.startsWith('wallet negative')),
+  ).length;
   const excludedGroups = bookingBackupPartnerExcludedGroups(evaluatedRows, radiusMeters);
   const candidateCommand = bookingBackupCandidateCommand({
     hasCustomerPin,
@@ -198,6 +212,11 @@ export function bookingBackupPartnerSupply(
         label: 'Location stale/missing',
         value: staleOrMissing.toString(),
         helper: `Current policy requires location within ${freshnessMinutes} minutes.`,
+      },
+      {
+        label: 'Wallet settlement',
+        value: walletDebt.toString(),
+        helper: 'Negative partner wallet blocks marketplace participation until HANDS fee settlement.',
       },
       {
         label: 'Invite cap',
@@ -267,6 +286,12 @@ function bookingBackupPartnerExcludedGroups(
       '/partners?readiness=approved-offline',
       'Partner must open the app or become online available before they can be relied on.',
       (blocker) => blocker.startsWith('status'),
+    ),
+    group(
+      'Wallet settlement required',
+      '/partners?review=cash-debt',
+      'Partner can view marketplace demand but cannot participate until HANDS fee settlement is confirmed.',
+      (blocker) => blocker.startsWith('wallet negative'),
     ),
     group(
       'Location stale or missing',

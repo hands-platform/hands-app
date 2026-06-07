@@ -1,0 +1,65 @@
+import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
+
+function booking(overrides = {}) {
+  return {
+    id: 'booking-1',
+    lat: 10.7769,
+    lng: 106.7009,
+    addressSnapshot: {
+      latitude: 10.7769,
+      longitude: 106.7009,
+      source: 'booking_confirmation',
+      createdAt: '2026-06-07T00:00:00.000Z',
+    },
+    participants: [],
+    preferredProviderId: null,
+    selectedProviderId: null,
+    ...overrides,
+  } as never;
+}
+
+function partner(overrides = {}) {
+  return {
+    id: 'partner-1',
+    displayName: 'Linh Wellness',
+    status: 'ONLINE_AVAILABLE',
+    currentLat: 10.777,
+    currentLng: 106.701,
+    currentLocationUpdatedAt: '2026-06-07T00:00:00.000Z',
+    verification: { status: 'APPROVED' },
+    earnings: [],
+    ...overrides,
+  } as never;
+}
+
+describe('booking marketplace supply', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-07T00:05:00.000Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('excludes negative-wallet partners from marketplace participation supply', () => {
+    const supply = bookingBackupPartnerSupply(
+      booking(),
+      [
+        partner({
+          earnings: [{ netAmount: -120000 }],
+        }),
+      ],
+      [],
+    );
+
+    expect(supply.eligibleCount).toBe(0);
+    expect(supply.rows[0]).toMatchObject({
+      eligible: false,
+      detail: expect.stringContaining('wallet negative'),
+    });
+    expect(supply.excludedGroups.find((group) => group.label === 'Wallet settlement required')).toMatchObject({
+      count: 1,
+      href: '/partners?review=cash-debt',
+    });
+  });
+});
