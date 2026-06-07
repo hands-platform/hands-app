@@ -17,9 +17,11 @@ import {
   formatPolicyDistance,
   humanizePolicyValue,
 } from '../../lib/operations-policy';
+import { isPreferredAwaitingDecision as isPreferredAwaitingDecisionByStatus } from '../../lib/booking-status-location-helpers';
 import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
+import { bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps } from '../../lib/booking-chat-repair-action-state';
 import {
   bookingCustomerSelectableParticipants as buildBookingCustomerSelectableParticipants,
   bookingHasCustomerSelectablePartner as hasBookingCustomerSelectablePartner,
@@ -3835,9 +3837,10 @@ function bookingAddressNeedsOps(booking: AdminBooking) {
 }
 
 function bookingChatRepairNeedsOps(booking: AdminBooking) {
-  return (
-    !booking.chatRoom && ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
-  );
+  return buildBookingChatRepairNeedsOps({
+    status: booking.status,
+    hasChatRoom: Boolean(booking.chatRoom),
+  });
 }
 
 function bookingLocationNeedsOps(booking: AdminBooking, nowMs: number) {
@@ -5183,17 +5186,10 @@ function preferredParticipantState(booking: AdminBooking) {
 
 function isPreferredAwaitingDecision(booking: AdminBooking) {
   const participant = preferredParticipantState(booking);
-  if (!booking.preferredProvider) {
-    return false;
-  }
-  if (!participant) {
-    return true;
-  }
-  return (
-    participant.status !== 'ACCEPTED' &&
-    participant.status !== 'SELECTED' &&
-    participant.status !== 'REJECTED'
-  );
+  return isPreferredAwaitingDecisionByStatus({
+    hasPreferredPartner: Boolean(booking.preferredProvider),
+    preferredParticipantStatus: participant?.status,
+  });
 }
 
 function preferredProviderStateLabel(booking: AdminBooking) {
