@@ -167,7 +167,7 @@ export function bookingMarketplaceWalletEvidence({
       {
         lane: 'Wallet participation gate',
         scope:
-          'Negative partner wallet keeps marketplace demand visible but blocks marketplace participation before the join is recorded.',
+          'Negative partner wallet keeps marketplace requests visible but blocks marketplace participation before the join is recorded.',
         status: walletDebt ? 'Settlement needed' : 'Clear',
         tone: walletDebt ? 'pill-danger' : 'pill-success',
         record: financeTrace.walletLedger,

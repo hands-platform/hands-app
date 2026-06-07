@@ -29,7 +29,7 @@ Future<void> showProviderWalletSettlementDialog({
               ),
               const SizedBox(height: 10),
               Text(
-                'You cannot participate in this marketplace booking until unpaid HANDS fees are settled.',
+                'You cannot participate in marketplace bookings until unpaid HANDS fees are settled.',
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),

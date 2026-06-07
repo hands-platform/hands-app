@@ -3766,7 +3766,7 @@ function buildPartnerOperatorCommandQueue({
       id: 'cash-fee-debt',
       label: 'CASH',
       title: 'Cash fee debt blocks marketplace participation',
-      detail: `${formatCurrency(cashDebt)} must be settled before this partner participates in marketplace demand or receives payout release. Customers never carry this wallet debt.`,
+      detail: `${formatCurrency(cashDebt)} must be settled before this partner participates in marketplace requests or receives payout release. Customers never carry this wallet debt.`,
       owner: 'Finance',
       tone: 'blocked',
       action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },

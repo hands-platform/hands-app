@@ -922,7 +922,7 @@ function buildWalletRecoverySteps(
         ? 'Marketplace participation and payout release remain blocked until the partner wallet is no longer negative.'
         : 'Partners with cleared wallets can participate in eligible marketplace bookings and continue payout release checks.',
       operatorRule:
-        'Negative-wallet partners may still see marketplace demand. Only actual marketplace participation and payout release are gated.',
+        'Negative-wallet partners may still see marketplace requests. Only actual marketplace participation and payout release are gated.',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
     },
   ];
@@ -983,7 +983,7 @@ function buildCashSettlementHandoffMap(
       title: 'Marketplace reopen rule',
       status: hasOpenDebt ? 'Participation gated' : 'Participation open',
       detail: hasOpenDebt
-        ? 'Partners may see marketplace demand, but cannot participate in marketplace bookings while wallet debt remains.'
+        ? 'Partners may see marketplace requests, but cannot participate in marketplace bookings while wallet debt remains.'
         : 'Cleared partner wallets can participate in eligible marketplace bookings again.',
       operatorRule: 'Partner app message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
       href: '/bookings?view=marketplace',
@@ -1026,7 +1026,7 @@ function buildCashSettlementEvidenceChecklist(
       title: 'Wallet participation gate',
       status: `${summary.providerCount} Partner(s)`,
       detail:
-        'Negative wallet partners can see marketplace demand, but cannot participate in marketplace bookings until settlement is confirmed.',
+        'Negative wallet partners can see marketplace requests, but cannot participate in marketplace bookings until settlement is confirmed.',
       operatorRule: 'Reopen marketplace participation only after settlement or approved offset is recorded.',
       href: '/partner-controls',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
@@ -1163,7 +1163,7 @@ function buildCashSettlementExecutionDesk(
       title: 'Marketplace unlock condition',
       status: summary.providerCount ? `${summary.providerCount} blocked` : 'Open',
       detail: summary.providerCount
-        ? 'Partners with negative cash-fee wallet debt can see marketplace demand but cannot participate until settlement is posted.'
+        ? 'Partners with negative cash-fee wallet debt can see marketplace requests but cannot participate until settlement is posted.'
         : 'No partner is blocked from marketplace participation by cash-fee debt in the visible queue.',
       action: 'Unlock marketplace participation only when the partner wallet is no longer negative.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',

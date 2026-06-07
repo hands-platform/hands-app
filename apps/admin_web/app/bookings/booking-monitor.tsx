@@ -1351,7 +1351,7 @@ export function BookingMonitor({
               <span className="signal signal-warn">Pre-participation wallet gate</span>
               <h3>Not participant rows</h3>
               <p>
-                A negative-wallet partner may see marketplace demand, but the join gate blocks
+                A negative-wallet partner may see marketplace requests, but the join gate blocks
                 participation before any participant row is created.
               </p>
             </article>
@@ -1510,7 +1510,7 @@ export function BookingMonitor({
         <div className="participant-list" style={{ marginTop: 12 }}>
           <span className="pill pill-info">Participant rows only</span>
           <span className="pill pill-warn">Blocked wallet joins are not participant records</span>
-          <span className="pill">Partners may view marketplace demand before join gate</span>
+          <span className="pill">Partners may view marketplace requests before join gate</span>
           <span className="pill">Customer-selected final partner only</span>
           <span className="pill">No automatic final assignment</span>
           <span className="pill">First-pick partners {marketplaceLedgerSummary.firstPick}</span>

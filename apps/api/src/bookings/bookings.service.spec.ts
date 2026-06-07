@@ -690,7 +690,7 @@ describe('BookingsService customer cancellation', () => {
 });
 
 describe('BookingsService marketplace participation', () => {
-  it('keeps marketplace demand visible for negative-wallet partners while participation stays blocked', async () => {
+  it('keeps marketplace requests visible for negative-wallet partners while participation stays blocked', async () => {
     const openBooking = {
       ...openMarketplaceBooking(),
       services: [{ serviceId: 'service-1', service: massageService(), price: 500000 }],

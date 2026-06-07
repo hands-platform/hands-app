@@ -1260,7 +1260,7 @@ function buildBookingAcceptanceUnblockBoard(
       operatorScript:
         'Tell the partner their unpaid HANDS fee must be deposited or offset before marketplace participation or payout release unlocks.',
       customerImpact:
-        'Customers can still see marketplace demand flow normally; the partner cannot participate in marketplace requests until fee settlement is cleared.',
+        'Customers can still see marketplace request flow normally; the partner cannot participate in marketplace requests until fee settlement is cleared.',
       action: cashDebtItems.length ? 'Open settlement queue' : 'Review wallet policy',
       href: cashDebtItems.length ? '/cash-settlements' : '/operations-policy',
       className: cashDebtItems.length ? 'ops-task-blocked' : 'ops-task-done',

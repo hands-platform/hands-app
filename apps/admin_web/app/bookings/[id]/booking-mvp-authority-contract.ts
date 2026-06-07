@@ -143,7 +143,7 @@ export function bookingMvpAuthorityContract({
     },
     {
       contract: 'Wallet participation gate',
-      scope: 'Negative wallet can see marketplace demand, but cannot participate',
+      scope: 'Negative wallet can see marketplace requests, but cannot participate',
       status: walletDebt ? 'Settlement needed' : 'Gate clear',
       tone: walletDebt ? 'pill-danger' : 'pill-success',
       evidence: financeTrace.walletLedger,

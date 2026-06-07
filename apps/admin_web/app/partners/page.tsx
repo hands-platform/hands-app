@@ -2926,7 +2926,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
   if (walletBalance < 0) {
     return `Partner wallet is negative by ${formatProviderMoney(
       Math.abs(walletBalance),
-    )}. They can see marketplace demand, but cannot participate until finance settles the cash fee debt.`;
+    )}. They can see marketplace requests, but cannot participate until finance settles the cash fee debt.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Partner is approved but not currently online for direct or marketplace requests.';
@@ -4223,7 +4223,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       count: cashDebtNeedsReview,
       href: '/partners?review=cash-debt',
       detail:
-        'Partners with negative wallet balance can see marketplace demand, but cannot participate until HANDS fee settlement is confirmed.',
+        'Partners with negative wallet balance can see marketplace requests, but cannot participate until HANDS fee settlement is confirmed.',
     },
     {
       label: 'Tax profile review',

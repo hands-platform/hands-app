@@ -290,7 +290,7 @@ function bookingMarketplacePartnerExcludedGroups(
     group(
       'Wallet settlement required',
       '/partners?review=cash-debt',
-      'Partner can view marketplace demand but cannot participate until HANDS fee settlement is confirmed.',
+      'Partner can view marketplace requests but cannot participate until HANDS fee settlement is confirmed.',
       (blocker) => blocker.startsWith('wallet negative'),
     ),
     group(

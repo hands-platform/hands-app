@@ -249,7 +249,7 @@ export default async function OperationsPolicyPage({
             <span className="pill pill-warn">Negative wallet gate</span>
             <h3>View demand, block participation</h3>
             <p>
-              A partner with a negative wallet may see marketplace demand, but cannot participate until the
+              A partner with a negative wallet may see marketplace requests, but cannot participate until the
               unpaid platform fee is settled or cleared by finance.
             </p>
             <small>
@@ -3036,7 +3036,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'Partner controls',
         title: 'Negative wallet gate protects cash-fee debt',
         detail:
-          'Partners with unpaid cash-fee debt can still see marketplace demand, but marketplace participation and payout release wait until settlement is posted.',
+          'Partners with unpaid cash-fee debt can still see marketplace requests, but marketplace participation and payout release wait until settlement is posted.',
         operatorAction:
           negativeCashDebtBookings.length > 0
             ? `${negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
@@ -4189,7 +4189,7 @@ function operationsOwnerDecisionBacklog() {
         {
           label: 'Marketplace only',
           tradeoff:
-            'Keeps payout decisions separate, while settlement is required before participating in new marketplace demand.',
+            'Keeps payout decisions separate, while settlement is required before participating in new marketplace requests.',
         },
         {
           label: 'Marketplace + payout',

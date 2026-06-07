@@ -62,7 +62,7 @@ This pass rechecked the active booking/matching/wallet boundaries against the fi
 - Booking creation rejects non-Vietnam dispatch coordinates when service-area policy is enabled.
 - Preferred partner distance is checked against the booking address, not the customer's transient current GPS.
 - Marketplace visibility and participation use booking-address distance plus the saved booking policy snapshot.
-- Negative-wallet partners can still see eligible marketplace demand but cannot join, accept as a marketplace participant, or be customer-selected as a marketplace final partner.
+- Negative-wallet partners can still see eligible marketplace requests but cannot join, accept as a marketplace participant, or be customer-selected as a marketplace final partner.
 - Direct first-pick acceptance and already matched service start remain allowed for a negative-wallet partner.
 - Blocked marketplace wallet attempts are intentionally not stored as participant rows; actual marketplace participation rows remain visible to Admin.
 
