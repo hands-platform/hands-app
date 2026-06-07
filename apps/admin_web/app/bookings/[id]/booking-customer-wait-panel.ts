@@ -200,11 +200,11 @@ export function bookingCustomerWaitPanel(
       detail: backupSupply.decisionDetail,
     },
     {
-      label: customerPinReady ? 'Customer pin ready' : 'Customer pin missing',
+      label: customerPinReady ? 'Service address pin ready' : 'Service address pin missing',
       tone: customerPinReady ? 'pill-success' : 'pill-danger',
       detail: customerPinReady
-        ? 'Distance and radius checks can use the saved customer coordinates.'
-        : 'Booking does not have usable customer coordinates.',
+        ? 'Distance and radius checks can use the saved service address coordinates.'
+        : 'Booking does not have usable service address coordinates.',
     },
   ];
 

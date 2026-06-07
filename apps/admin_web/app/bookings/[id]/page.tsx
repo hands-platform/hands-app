@@ -2390,7 +2390,7 @@ function buildBookingEvidenceBundleRows({
       tone: hasLocationTrace ? 'pill-info' : 'pill-neutral',
       evidence: latestLocation
         ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
-        : `Customer pin ${bookingDispatchPin(booking).label}`,
+        : `Service address pin ${bookingDispatchPin(booking).label}`,
       operatorUse:
         'Use location rows only as operational history; routing and live tracking are not required for MVP.',
       href: '#location',
@@ -4571,19 +4571,28 @@ function bookingOpsTaskCards(booking: AdminBookingDetail) {
 function liveServiceSignals(booking: AdminBookingDetail) {
   const latest = latestProviderLocation(booking);
   const freshness = latestProviderLocationFreshness(booking);
-  const customerPin = coordinateLabel(booking.lat, booking.lng);
+  const serviceAddressPin = booking.addressSnapshot
+    ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
+    : coordinateLabel(booking.lat, booking.lng);
   const providerPin = latest ? coordinateLabel(latest.lat, latest.lng) : 'No partner pin';
   const distanceMeters = latest
-    ? approximateDistanceMeters(booking.lat, booking.lng, latest.lat, latest.lng)
+    ? approximateDistanceMeters(
+        booking.addressSnapshot?.latitude ?? booking.lat,
+        booking.addressSnapshot?.longitude ?? booking.lng,
+        latest.lat,
+        latest.lng,
+      )
     : null;
   const provider = booking.selectedProvider ?? booking.preferredProvider;
 
   return [
     {
-      label: 'Customer pin',
-      value: customerPin,
-      helper: addressLabel(booking.address),
-      tone: booking.lat && booking.lng ? 'pill-success' : 'pill-warn',
+      label: 'Service address pin',
+      value: serviceAddressPin,
+      helper: booking.addressSnapshot
+        ? bookingAddressSnapshotLabel(booking)
+        : addressLabel(booking.address),
+      tone: booking.addressSnapshot || (booking.lat && booking.lng) ? 'pill-success' : 'pill-warn',
     },
     {
       label: 'Partner pin',
@@ -4603,7 +4612,7 @@ function liveServiceSignals(booking: AdminBookingDetail) {
     {
       label: 'Approx. gap',
       value: distanceMeters === null ? 'Unknown' : distanceLabel(Math.round(distanceMeters / 100) * 100),
-      helper: 'Calculated from saved pins. It is not a route or ETA.',
+      helper: 'Calculated from the service address pin and latest partner pin. It is not a route or ETA.',
       tone: distanceMeters === null ? 'pill-info' : distanceMeters > 5000 ? 'pill-warn' : 'pill-success',
     },
     {

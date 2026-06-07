@@ -108,14 +108,14 @@ export function bookingStageSnapshot(
     noteClassName = customerPinReady ? 'ops-task-pending' : 'ops-task-blocked';
     headline = customerPinReady
       ? 'Preferred partner is still in the first response window.'
-      : 'Customer pin is missing, so radius matching is not reliable.';
+      : 'Service address pin is missing, so radius matching is not reliable.';
     detail = customerPinReady
       ? customerWaitPanel.detail
       : 'Confirm the customer service location before using distance, marketplace, or dispatch decisions.';
     actionHref = customerPinReady
       ? `/bookings/${booking.id}#participants`
       : `/bookings/${booking.id}#customer`;
-    actionLabel = customerPinReady ? 'Monitor first-pick' : 'Fix customer pin';
+    actionLabel = customerPinReady ? 'Monitor first-pick' : 'Fix service address pin';
   }
 
   return {

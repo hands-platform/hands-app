@@ -3515,7 +3515,7 @@ function buildBookingEvidenceCommandQueue(input: {
           : 'Every loaded booking has the address snapshot needed for operations review.',
       href: '/bookings?view=all&evidence=address',
       tone: evidenceTone(addressChecks, 1, 3),
-      checks: ['BookingAddressSnapshot', 'Customer pin', 'Address text'],
+      checks: ['BookingAddressSnapshot', 'Service address pin', 'Address text'],
       operatorAction: addressChecks > 0 ? 'Open address snapshot queue' : 'Keep address snapshot monitor',
       sample: bookingEvidenceSample(addressRows, 'Address sample'),
     },

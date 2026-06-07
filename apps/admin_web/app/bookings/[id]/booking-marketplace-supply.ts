@@ -158,12 +158,12 @@ export function bookingBackupPartnerSupply(
       ? eligibleCount
         ? 'Marketplace matching has usable nearby supply'
         : 'No evaluated partner can participate under current policy'
-      : 'Customer pin is required before partner radius can be checked',
+      : 'Service address pin is required before partner radius can be checked',
     decisionDetail: hasCustomerPin
       ? eligibleCount
         ? 'Operators can use the eligible partners as marketplace participants while the customer waits.'
         : 'Review radius, partner online status, location freshness, and verification before extending the waiting window.'
-      : 'Ask the customer to confirm location or edit booking coordinates before dispatching partners.',
+      : 'Ask the customer to confirm the service address pin before dispatching partners.',
     metrics: [
       {
         label: 'Radius pin',
