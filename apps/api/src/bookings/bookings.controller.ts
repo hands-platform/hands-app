@@ -1,10 +1,11 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { BookingStatus, ParticipantStatus, PaymentMethod, Prisma, Role } from '@prisma/client';
+import { BookingStatus, ParticipantStatus, Role } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CreateCustomerBookingDto, SelectBookingProviderDto } from './bookings.dto';
 import { BookingsService } from './bookings.service';
 
 @Controller()
@@ -16,21 +17,7 @@ export class BookingsController {
   @Roles(Role.CUSTOMER)
   createCustomerBooking(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      serviceId: string;
-      providerId?: string;
-      couponCode?: string;
-      address: Prisma.InputJsonValue;
-      lat: number;
-      lng: number;
-      selectedLocationId?: string;
-      notes?: string;
-      paymentMethod: PaymentMethod;
-      currentLat?: number;
-      currentLng?: number;
-      currentLocationUpdatedAt?: string;
-    },
+    @Body() body: CreateCustomerBookingDto,
   ) {
     return this.bookings.createOpenMatchingBooking(user.id, body);
   }
@@ -62,7 +49,7 @@ export class BookingsController {
   selectProvider(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') bookingId: string,
-    @Body() body: { providerId: string },
+    @Body() body: SelectBookingProviderDto,
   ) {
     return this.bookings.selectProvider(bookingId, user.id, body.providerId);
   }
