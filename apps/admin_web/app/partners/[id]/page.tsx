@@ -20,7 +20,11 @@ import {
   readDetailActivityType,
 } from '../../../lib/detail-activity-filter';
 import { buildCsvDataHref } from '../../../lib/csv-export';
-import { OPERATIONAL_POLICY_KEYS, readPositivePolicyNumber } from '../../../lib/operations-policy';
+import {
+  ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS,
+  OPERATIONAL_POLICY_KEYS,
+  readPositivePolicyNumber,
+} from '../../../lib/operations-policy';
 import {
   approveProvider,
   approveProviderBankAccount,
@@ -171,7 +175,6 @@ type PartnerDetailChatMessage = NonNullable<
   NonNullable<PartnerDetailBooking['chatRoom']>['messages']
 >[number];
 
-const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   responseWindowMinutes: 10,
@@ -179,7 +182,9 @@ const DEFAULT_PARTNER_DISPATCH_POLICY: PartnerDispatchPolicy = {
   locationFreshnessMinutes: 30,
 };
 
-function readPartnerDetailSection(params: Record<string, string | string[] | undefined>): PartnerDetailSection {
+function readPartnerDetailSection(
+  params: Record<string, string | string[] | undefined>,
+): PartnerDetailSection {
   const rawSection = Array.isArray(params.section) ? params.section[0] : params.section;
   return rawSection === 'full' ? 'full' : 'overview';
 }
@@ -745,7 +750,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         <div className="setup-stage-list" style={{ marginTop: 12 }}>
           {filteredPartnerActivityRecords.length ? (
             filteredPartnerActivityRecords.slice(0, 8).map((record, index) => (
-              <div className="setup-stage-item" key={`recent-${record.type}-${record.id}-${record.at}-${index}`}>
+              <div
+                className="setup-stage-item"
+                key={`recent-${record.type}-${record.id}-${record.at}-${index}`}
+              >
                 <span>{record.type}</span>
                 <div>
                   <Link className="text-link" href={partnerActivityRecordHref(record)}>
@@ -952,8 +960,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner operator command queue</h2>
             <p className="muted">
-              Same-shift partner operations queue for onboarding, direct and marketplace readiness gates, payout, location, app
-              reachability, and service setup. This is factual handling for operators.
+              Same-shift partner operations queue for onboarding, direct and marketplace readiness gates,
+              payout, location, app reachability, and service setup. This is factual handling for operators.
             </p>
           </div>
           <span className={`pill ${pillClass(partnerOperatorCommandQueue.tone)}`}>
@@ -1067,9 +1075,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Partner booking evidence bundles</h2>
             <p className="muted">
-              Booking-by-booking partner work bundle for operators. Each row connects the partner
-              role, customer address snapshot, chat archive, payment, earning, payout/wallet records,
-              location, and staff task records as factual history only.
+              Booking-by-booking partner work bundle for operators. Each row connects the partner role,
+              customer address snapshot, chat archive, payment, earning, payout/wallet records, location, and
+              staff task records as factual history only.
             </p>
           </div>
           <span className="pill pill-info">{partnerBookingEvidenceRows.length} booking bundle(s)</span>
@@ -1667,7 +1675,10 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   </p>
                   <div className="setup-stage-list" style={{ marginTop: 10 }}>
                     {day.highlights.map((record, index) => (
-                      <div className="service-matrix-cell" key={`${record.type}-${record.id}-${record.at}-${index}`}>
+                      <div
+                        className="service-matrix-cell"
+                        key={`${record.type}-${record.id}-${record.at}-${index}`}
+                      >
                         <strong>{record.title}</strong>
                         <small>
                           {record.type} / {formatDate(record.at)}
@@ -1707,8 +1718,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <h2>Marketplace booking gate decision</h2>
             <p className="muted">
-              Operator-facing decision for whether this partner can participate in marketplace demand or continue
-              marketplace/payout operations right now.
+              Operator-facing decision for whether this partner can participate in marketplace demand or
+              continue marketplace/payout operations right now.
             </p>
           </div>
           <span className={`pill ${pillClass(bookingAcceptance.tone)}`}>{bookingAcceptance.status}</span>
@@ -1775,7 +1786,11 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
         dispatchPolicy={dispatchPolicy}
       />
 
-      <div className={`card ${hasCashFeeDebt ? 'card-danger' : ''}`} id="cash-debt-origin" style={{ marginBottom: 16 }}>
+      <div
+        className={`card ${hasCashFeeDebt ? 'card-danger' : ''}`}
+        id="cash-debt-origin"
+        style={{ marginBottom: 16 }}
+      >
         <div className="ops-section-header">
           <div>
             <h2>Cash debt origin and settlement</h2>
@@ -1797,7 +1812,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           </div>
           <div>
             <span>Evidence</span>
-            <strong>{openCashDebtEarnings.some((earning) => earning.settlementRef) ? 'Some refs' : 'Needs ref'}</strong>
+            <strong>
+              {openCashDebtEarnings.some((earning) => earning.settlementRef) ? 'Some refs' : 'Needs ref'}
+            </strong>
             <small>Deposit reference or admin offset is required to clear debt.</small>
           </div>
           <div>
@@ -1818,7 +1835,9 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <span>Next action</span>
             <strong>{hasCashFeeDebt ? 'Collect/offset' : 'Monitor'}</strong>
-            <small>{hasCashFeeDebt ? 'Use Cash Settlements to clear the wallet.' : 'No finance action needed.'}</small>
+            <small>
+              {hasCashFeeDebt ? 'Use Cash Settlements to clear the wallet.' : 'No finance action needed.'}
+            </small>
           </div>
         </div>
         {openCashDebtEarnings.length ? (
@@ -1838,12 +1857,8 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                     partner can participate in marketplace demand again.
                   </p>
                   <div className="participant-list">
-                    <span className="pill pill-danger">
-                      HANDS fee {formatCurrency(earning.platformFee)}
-                    </span>
-                    <span className="pill pill-warn">
-                      Tax {formatCurrency(earning.withholdingAmount)}
-                    </span>
+                    <span className="pill pill-danger">HANDS fee {formatCurrency(earning.platformFee)}</span>
+                    <span className="pill pill-warn">Tax {formatCurrency(earning.withholdingAmount)}</span>
                     <span className="pill pill-info">{partnerCashDebtEvidenceLabel(earning)}</span>
                     <span className="pill pill-info">Direct first-pick not wallet-blocked</span>
                   </div>
@@ -3145,7 +3160,10 @@ function PartnerDetailFastOverview({
           <InfoLine label="Legal name" value={provider.legalName} />
           <InfoLine label="Phone" value={provider.user?.phone} />
           <InfoLine label="City" value={provider.city} />
-          <InfoLine label="Joined" value={provider.user?.createdAt ? formatDate(provider.user.createdAt) : null} />
+          <InfoLine
+            label="Joined"
+            value={provider.user?.createdAt ? formatDate(provider.user.createdAt) : null}
+          />
           <InfoLine label="Last access" value={latestAccessAt ? formatDate(latestAccessAt) : null} />
         </div>
 
@@ -3168,13 +3186,22 @@ function PartnerDetailFastOverview({
             }
           />
           <InfoLine label="Marketplace rows" value={`${provider.participants?.length ?? 0} loaded`} />
-          <InfoLine label="Retained chats" value={`${chatRoomCount} room(s), ${chatMessageCount} message(s)`} />
+          <InfoLine
+            label="Retained chats"
+            value={`${chatRoomCount} room(s), ${chatMessageCount} message(s)`}
+          />
         </div>
 
         <div className="card">
           <h2>Payout readiness</h2>
-          <InfoLine label="Bank" value={primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null} />
-          <InfoLine label="Tax profile" value={provider.taxProfile?.status ?? 'Deferred until first earning'} />
+          <InfoLine
+            label="Bank"
+            value={primaryBank ? `${primaryBank.bankName} / ${primaryBank.status}` : null}
+          />
+          <InfoLine
+            label="Tax profile"
+            value={provider.taxProfile?.status ?? 'Deferred until first earning'}
+          />
           <InfoLine label="Cash fee debt" value={cashDebt > 0 ? formatCurrency(cashDebt) : 'Clear'} />
           <InfoLine label="Payout status" value={payoutOps.status} />
         </div>
@@ -3183,7 +3210,9 @@ function PartnerDetailFastOverview({
           <h2>Next operator action</h2>
           <p className="muted">{kycEvidence.nextAction}</p>
           <p className="muted">
-            {payoutOps.blockers[0] ?? payoutOps.hold?.reason ?? 'No payout blocker is loaded for this partner.'}
+            {payoutOps.blockers[0] ??
+              payoutOps.hold?.reason ??
+              'No payout blocker is loaded for this partner.'}
           </p>
           <div className="participant-list">
             <Link className="pill pill-info" href={fullHref}>
@@ -3599,7 +3628,11 @@ function PartnerDetailReadinessSnapshot({
       <div className="setup-stage-item" style={{ marginTop: 16 }}>
         <span>{bookingAcceptance.canJoinMarketplace ? 'GO' : 'HOLD'}</span>
         <div>
-          <strong>{bookingAcceptance.canJoinMarketplace ? 'Marketplace participation ready' : 'Marketplace participation blocker'}</strong>
+          <strong>
+            {bookingAcceptance.canJoinMarketplace
+              ? 'Marketplace participation ready'
+              : 'Marketplace participation blocker'}
+          </strong>
           <p className="muted">{bookingAcceptance.primaryReason}</p>
         </div>
         <small>
@@ -3631,8 +3664,8 @@ function PartnerAcceptanceRepairCommandPanel({
         <div>
           <h2>Marketplace repair command</h2>
           <p className="muted">
-            Exact operator diagnosis for marketplace participation, customer handoff, app message, and
-            finance repair.
+            Exact operator diagnosis for marketplace participation, customer handoff, app message, and finance
+            repair.
           </p>
         </div>
         <span className={`pill ${pillClass(command.tone)}`}>{command.status}</span>
@@ -3990,7 +4023,9 @@ function buildPartnerBookingEvidenceRows(
     ];
     const opsParts = [
       `participant ${participant?.status ?? 'not linked'}`,
-      participant?.joinedAt ? `participated ${formatDate(participant.joinedAt)}` : 'participation time not stored',
+      participant?.joinedAt
+        ? `participated ${formatDate(participant.joinedAt)}`
+        : 'participation time not stored',
       participant?.respondedAt
         ? `responded ${formatDate(participant.respondedAt)}`
         : 'response time not stored',
@@ -4528,7 +4563,9 @@ function buildPartnerActivityCommandSnapshot(
     {
       label: 'Latest event',
       value: latestEvent ? latestEvent.title : 'No event',
-      helper: latestEvent ? `${latestEvent.type} / ${formatDate(latestEvent.at)}` : 'No record in this filter.',
+      helper: latestEvent
+        ? `${latestEvent.type} / ${formatDate(latestEvent.at)}`
+        : 'No record in this filter.',
       href: latestEvent ? partnerActivityRecordHref(latestEvent) : '#app-activity',
     },
     {
@@ -4536,7 +4573,9 @@ function buildPartnerActivityCommandSnapshot(
       value: `${completedBookings.length} booking(s)`,
       helper: latestCompletedBooking
         ? `Latest ${bookingServiceLabel(latestCompletedBooking)} / ${formatDate(
-            latestCompletedBooking.updatedAt ?? latestCompletedBooking.createdAt ?? latestCompletedBooking.scheduledStartAt,
+            latestCompletedBooking.updatedAt ??
+              latestCompletedBooking.createdAt ??
+              latestCompletedBooking.scheduledStartAt,
           )}`
         : 'No completed booking in this filter.',
       href: latestCompletedBooking ? `/bookings/${latestCompletedBooking.id}` : '#partner-booking-journey',
@@ -4562,7 +4601,9 @@ function buildPartnerActivityCommandSnapshot(
     {
       label: 'Location and app',
       value: locationAgeLabel(provider.currentLocationUpdatedAt),
-      helper: latestAccessAt ? `Recent app access ${formatDate(latestAccessAt)}` : 'No app access row loaded.',
+      helper: latestAccessAt
+        ? `Recent app access ${formatDate(latestAccessAt)}`
+        : 'No app access row loaded.',
       href: '#location',
     },
     {
@@ -4901,9 +4942,13 @@ function buildPartnerOperatingChecklist(
     },
     {
       area: 'Booking',
-      status: bookingAcceptance.canJoinMarketplace ? 'Marketplace participation clear' : 'Marketplace participation on hold',
+      status: bookingAcceptance.canJoinMarketplace
+        ? 'Marketplace participation clear'
+        : 'Marketplace participation on hold',
       detail: bookingAcceptance.primaryReason,
-      nextAction: bookingAcceptance.canJoinMarketplace ? 'Ready for marketplace participation' : 'Resolve marketplace participation gate',
+      nextAction: bookingAcceptance.canJoinMarketplace
+        ? 'Ready for marketplace participation'
+        : 'Resolve marketplace participation gate',
       href: `/partners/${provider.id}?section=full#booking-chat-records`,
       tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
     },
@@ -5065,7 +5110,9 @@ function buildPartnerOperationsDigest({
     },
     {
       lane: 'Activity gate',
-      status: bookingAcceptance.canJoinMarketplace ? 'Marketplace participation clear' : 'Marketplace participation on hold',
+      status: bookingAcceptance.canJoinMarketplace
+        ? 'Marketplace participation clear'
+        : 'Marketplace participation on hold',
       detail: bookingAcceptance.primaryReason,
       href: '#final-booking-gate',
       latestAt: latestBooking?.createdAt,
@@ -5812,19 +5859,19 @@ function buildPartnerAcceptanceRepairCommand(
     ? 'Can appear in customer booking flow and final partner choice.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
       ? 'Customer balances are unaffected; this wallet gate blocks marketplace participation until settlement.'
-    : hasHardVisibilityBlock
-      ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
-      : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
+      : hasHardVisibilityBlock
+        ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
+        : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
   const operatorDecision = bookingAcceptance.canJoinMarketplace
     ? 'No manual repair required. Monitor service quality and response speed.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
       ? 'Finance must clear cash debt before marketplace participation or payout release.'
-    : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
+      : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
   const marketplaceRouting = bookingAcceptance.canJoinMarketplace
     ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
     : hasWalletBlock
       ? 'Partner can view marketplace demand, but marketplace participation is blocked until cash fee debt is settled or offset.'
-    : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
+      : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
 
   const steps = blockedGates.map((gate) => partnerAcceptanceRepairStep(provider, gate));
   if (!steps.length) {
@@ -6132,7 +6179,9 @@ function buildPartnerDetailOpsBadges(
       detail: bookingAcceptance.directFirstPickReason,
     },
     {
-      label: bookingAcceptance.canJoinMarketplace ? 'Marketplace participation ready' : 'Marketplace participation blocked',
+      label: bookingAcceptance.canJoinMarketplace
+        ? 'Marketplace participation ready'
+        : 'Marketplace participation blocked',
       tone: bookingAcceptance.canJoinMarketplace ? 'done' : 'blocked',
       detail: bookingAcceptance.canJoinMarketplace
         ? `Can participate in marketplace demand inside ${formatDistance(dispatchPolicy.backupRadiusMeters)} during the ${dispatchPolicy.responseWindowMinutes}m response window.`
@@ -7119,7 +7168,7 @@ function hasApprovedRequiredKycDocuments(provider: ProviderDetail) {
 }
 
 function buildPartnerKycEvidence(provider: ProviderDetail): PartnerKycEvidence {
-  const rows = REQUIRED_KYC_DOCUMENTS.map((type) => {
+  const rows = ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.map((type) => {
     const document = (provider.documents ?? []).find((item) => item.type === type);
     return {
       type,
@@ -7201,7 +7250,7 @@ function missingApprovedRequiredKycDocuments(provider: ProviderDetail) {
       .filter((document) => document.status === 'APPROVED')
       .map((document) => document.type),
   );
-  return REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
+  return ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
 }
 
 function buildPartnerDispatchPolicy(settings: AdminOperationalPolicySetting[]): PartnerDispatchPolicy {

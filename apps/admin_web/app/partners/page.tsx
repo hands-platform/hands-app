@@ -7,13 +7,10 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
-import {
-  compactValue,
-  formatDateTime,
-  formatMoney as formatProviderMoney,
-} from '../../lib/admin-format';
+import { compactValue, formatDateTime, formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { buildCsvDataHref } from '../../lib/csv-export';
+import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../lib/operations-policy';
 import {
   approveProvider,
   approveProviderBankAccount,
@@ -204,7 +201,6 @@ type PartnerKycState = {
 };
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 const PROVIDER_LIST_RENDER_LIMIT = 40;
-const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
 const providerBookingRowsCache = new WeakMap<AdminProvider, AdminBooking[]>();
 const providerCompletedWorkCountCache = new WeakMap<AdminProvider, number>();
 const providerGrossRevenueCache = new WeakMap<AdminProvider, number>();
@@ -631,9 +627,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                       Customer {row.customerClosedCount} / admin {row.adminClosedCount} / partner{' '}
                       {row.partnerClosedCount}
                     </p>
-                    <p className="muted">
-                      {row.noShowCount} no-show
-                    </p>
+                    <p className="muted">{row.noShowCount} no-show</p>
                   </td>
                   <td>
                     <strong>{row.reviewCount} feedback record(s)</strong>
@@ -682,9 +676,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
           <div>
             <h2>Partner operations list</h2>
             <p className="muted">
-              List-first partner control view. Operators can check onboarding, direct and marketplace readiness,
-              completed work, last work, wallet, location, push, services, and app activity before opening the full
-              partner record.
+              List-first partner control view. Operators can check onboarding, direct and marketplace
+              readiness, completed work, last work, wallet, location, push, services, and app activity before
+              opening the full partner record.
             </p>
           </div>
           <div className="participant-list">
@@ -748,10 +742,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                   <td>
                     <div className="participant-list">
                       {row.matchingFlow.map((item) => (
-                        <span
-                          className={`pill ${partnerOperationPillClass(item.tone)}`}
-                          key={item.label}
-                        >
+                        <span className={`pill ${partnerOperationPillClass(item.tone)}`} key={item.label}>
                           {item.label}: {item.status}
                         </span>
                       ))}
@@ -769,7 +760,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     </p>
                     {row.walletBalance < 0 ? (
                       <p className="muted" style={{ marginTop: 8 }}>
-                        Partner app message: Unpaid HANDS fees must be settled before you can participate in this marketplace booking.
+                        Partner app message: Unpaid HANDS fees must be settled before you can participate in
+                        this marketplace booking.
                       </p>
                     ) : null}
                   </td>
@@ -1366,8 +1358,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     ? provider.user.pushDevices.map((device) => (
                         <div key={device.id} style={{ marginBottom: 8 }}>
                           <p className="muted" style={{ marginBottom: 4 }}>
-                            {device.platform} / {device.enabled ? 'enabled' : 'disabled'} /{' '}
-                            Token hidden
+                            {device.platform} / {device.enabled ? 'enabled' : 'disabled'} / Token hidden
                           </p>
                           {!device.enabled ? (
                             <p className="muted" style={{ marginBottom: 4 }}>
@@ -1525,7 +1516,7 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
         {provider.kyc?.cccdNumberLast4 ? ` / CCCD ****${provider.kyc.cccdNumberLast4}` : ''}
       </p>
       <div className="participant-list" style={{ marginBottom: 8 }}>
-        {REQUIRED_KYC_DOCUMENTS.map((documentType) => {
+        {ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.map((documentType) => {
           const documentStatus = providerKycDocumentStatus(provider, documentType);
           return (
             <span className={`pill ${kycDocumentPillClass(documentStatus)}`} key={documentType}>
@@ -1571,7 +1562,9 @@ function ProviderOnboardingCell({ provider }: { provider: AdminProvider }) {
               <p className="muted" style={{ marginBottom: 6 }}>
                 {document.fileAsset?.contentType ?? 'unknown file'}
                 {document.fileAsset?.sizeBytes ? ` / ${formatBytes(document.fileAsset.sizeBytes)}` : ''}
-                {document.fileAsset?.uploadedAt ? ` / uploaded ${formatDateTime(document.fileAsset.uploadedAt)}` : ''}
+                {document.fileAsset?.uploadedAt
+                  ? ` / uploaded ${formatDateTime(document.fileAsset.uploadedAt)}`
+                  : ''}
               </p>
               <p className="muted" style={{ marginBottom: 6 }}>
                 {marketplaceDisplayText(document.fileAsset?.key ?? 'No file key')}
@@ -2022,7 +2015,11 @@ function buildPartnerMatchingFlow(
       {
         label: 'Chat',
         status: chatCount ? `${chatCount} room(s)` : 'none',
-        tone: chatCount ? 'ok' : activeBookingRows.some((booking) => shouldHavePartnerChatRoom(booking)) ? 'warn' : 'neutral',
+        tone: chatCount
+          ? 'ok'
+          : activeBookingRows.some((booking) => shouldHavePartnerChatRoom(booking))
+            ? 'warn'
+            : 'neutral',
       },
     ],
     detail: latestBooking
@@ -2049,7 +2046,9 @@ function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPo
     provider,
     initials: partnerInitials(displayName),
     displayName,
-    legalName: marketplaceDisplayText(provider.legalName ?? provider.user?.fullName ?? 'Legal name not saved'),
+    legalName: marketplaceDisplayText(
+      provider.legalName ?? provider.user?.fullName ?? 'Legal name not saved',
+    ),
     phone: provider.user?.phone ?? 'No phone',
     gender: provider.gender ?? 'Not saved',
     status: provider.status,
@@ -2141,20 +2140,13 @@ function partnerShortId(id: string) {
 }
 
 function isActivePartnerBooking(booking: AdminBooking) {
-  return [
-    'CREATED',
-    'OPEN_MATCHING',
-    'MATCHED',
-    'PROVIDER_ON_THE_WAY',
-    'ARRIVED',
-    'IN_SERVICE',
-  ].includes(booking.status);
+  return ['CREATED', 'OPEN_MATCHING', 'MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(
+    booking.status,
+  );
 }
 
 function shouldHavePartnerChatRoom(booking: AdminBooking) {
-  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
-    booking.status,
-  );
+  return ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status);
 }
 
 function partnerInitials(value: string) {
@@ -2577,7 +2569,8 @@ function nextProviderListAction(
     return {
       status: 'CASH DEBT',
       detail: `Wallet is negative by ${formatProviderMoney(Math.abs(walletBalance))}.`,
-      operatorAction: 'Confirm partner fee deposit or settle the cash fee debt before marketplace participation.',
+      operatorAction:
+        'Confirm partner fee deposit or settle the cash fee debt before marketplace participation.',
       tone: 'blocked',
       priority: 85,
     };
@@ -2699,7 +2692,7 @@ function missingApprovedRequiredKycDocuments(provider: AdminProvider) {
       .filter((document) => document.status === 'APPROVED')
       .map((document) => document.type),
   );
-  return REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
+  return ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.filter((type) => !approvedDocuments.has(type));
 }
 
 function providerKycDocumentStatus(provider: AdminProvider, documentType: string) {
@@ -2717,7 +2710,7 @@ function kycDocumentPillClass(status: string) {
 function partnerKycState(provider: AdminProvider): PartnerKycState {
   const status = provider.kyc?.status ?? 'MISSING';
   const missingDocuments = missingApprovedRequiredKycDocuments(provider);
-  const requiredDocumentStatuses = REQUIRED_KYC_DOCUMENTS.map((type) =>
+  const requiredDocumentStatuses = ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.map((type) =>
     providerKycDocumentStatus(provider, type),
   );
   const pendingDocuments = requiredDocumentStatuses.filter((documentStatus) =>
@@ -2811,7 +2804,9 @@ function providerListActionPillClass(tone: ProviderListAction['tone']) {
 }
 
 function providerDisplayName(provider: AdminProvider) {
-  return marketplaceDisplayText(provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id);
+  return marketplaceDisplayText(
+    provider.displayName || provider.user?.fullName || provider.user?.phone || provider.id,
+  );
 }
 
 function ProviderLocationCell({
@@ -3391,7 +3386,8 @@ function buildPartnerDispatchHandoff(
       {
         title: 'Cash fee debt',
         value: cashDebt.length.toString(),
-        detail: 'Negative wallet partners can view marketplace requests, but participation waits until company fee settlement.',
+        detail:
+          'Negative wallet partners can view marketplace requests, but participation waits until company fee settlement.',
         href: '/cash-settlements',
         tone: cashDebt.length ? 'danger' : 'ok',
       },
@@ -3701,7 +3697,8 @@ function buildPartnerDispatchForecast(
       {
         label: 'Wallet debt',
         count: walletDebt,
-        detail: 'Cash fee debt keeps marketplace view-only demand visible, but participation waits for settlement.',
+        detail:
+          'Cash fee debt keeps marketplace view-only demand visible, but participation waits for settlement.',
         href: '/partners?review=cash-debt',
         tone: walletDebt > 0 ? 'danger' : 'ok',
       },
@@ -3763,7 +3760,8 @@ function buildPartnerAcceptanceBlockerBoard(
         status: cashDebt.length ? 'Blocks marketplace' : 'Clear',
         detail:
           'Negative wallet from cash bookings blocks marketplace participation until HANDS fee settlement is posted.',
-        operatorAction: 'Open the cash debt queue and confirm settlement before allowing marketplace participation.',
+        operatorAction:
+          'Open the cash debt queue and confirm settlement before allowing marketplace participation.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
         samples: partnerBlockerSamples(cashDebt),
@@ -3795,7 +3793,8 @@ function buildPartnerAcceptanceBlockerBoard(
         title: 'Push alert reachability',
         count: pushHold.length,
         status: pushHold.length ? 'Alert gap' : 'Ready',
-        detail: 'Partners without enabled push devices may miss first-pick and marketplace participation prompts.',
+        detail:
+          'Partners without enabled push devices may miss first-pick and marketplace participation prompts.',
         operatorAction:
           'Use in-app refresh, token registration, or direct contact before relying on them for demand.',
         href: '/partners?review=push',
@@ -3847,7 +3846,7 @@ function buildPartnerKycReviewBoard(providers: AdminProvider[]): PartnerKycRevie
   const blockedByDocuments = providers.filter((provider) => partnerKycState(provider).blockedByDocuments);
   const readyToApprove = providers.filter((provider) => partnerKycState(provider).readyToApprove);
   const pendingRequiredDocuments = providers.filter((provider) =>
-    REQUIRED_KYC_DOCUMENTS.some((type) =>
+    ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS.some((type) =>
       ['PENDING_REVIEW', 'UPLOADED'].includes(providerKycDocumentStatus(provider, type)),
     ),
   );
@@ -4255,7 +4254,8 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       label: 'Push alert readiness',
       count: pushNeedsReview,
       href: '/partners?review=push',
-      detail: 'Partners without enabled push devices may miss direct requests and marketplace matching alerts.',
+      detail:
+        'Partners without enabled push devices may miss direct requests and marketplace matching alerts.',
     },
     {
       label: 'Direct request ready',
@@ -4267,7 +4267,8 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       label: 'Marketplace ready',
       count: backupReady,
       href: '/partners?review=marketplace-ready',
-      detail: 'Partners who can receive marketplace alerts and join customer choice lists under current policy.',
+      detail:
+        'Partners who can receive marketplace alerts and join customer choice lists under current policy.',
     },
   ];
 
@@ -4592,7 +4593,9 @@ function providerMatchesReviewQueue(
     return providerTaxNeedsReview(provider);
   }
   if (review === 'security') {
-    return ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider));
+    return ['account-blocked', 'blocked', 'session-check', 'shared'].includes(
+      providerSecurityStatus(provider),
+    );
   }
   if (review === 'reports') {
     return hasOpenPartnerControl(provider);
@@ -4637,9 +4640,7 @@ function providerSearchText(provider: AdminProvider) {
       ?.map((report) => `${report.category} ${report.summary} ${report.details ?? ''}`)
       .join(' '),
     provider.sanctions?.map((sanction) => `${sanction.type} ${sanction.reason}`).join(' '),
-    provider.auditLogs
-      ?.map((log) => `${log.action} ${compactValue(log.metadata, 160)}`)
-      .join(' '),
+    provider.auditLogs?.map((log) => `${log.action} ${compactValue(log.metadata, 160)}`).join(' '),
     provider.services?.map((item) => item.service?.name).join(' '),
   ]
     .filter(Boolean)
