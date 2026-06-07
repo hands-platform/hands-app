@@ -151,6 +151,141 @@ describe('BookingsService booking creation', () => {
       }),
     );
   });
+
+  it('allows overseas app access while requiring a Vietnam service address snapshot', async () => {
+    const addressSnapshot = {
+      id: 'snapshot-1',
+      bookingId: 'booking-1',
+      customerProfileId: 'customer-1',
+      selectedLocationId: null,
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      addressText: 'District 1, Ho Chi Minh City, Vietnam',
+      latitude: 10.7769,
+      longitude: 106.7009,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+    };
+    const booking = {
+      id: 'booking-1',
+      customerProfileId: 'customer-1',
+      status: BookingStatus.OPEN_MATCHING,
+      scheduledStartAt: new Date('2026-06-01T00:00:00.000Z'),
+      scheduledEndAt: new Date('2026-06-01T01:00:00.000Z'),
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      lat: 10.7769,
+      lng: 106.7009,
+      addressSnapshot,
+      notes: null,
+      travelBufferMin: 30,
+      earlyAcceptMin: 10,
+      preferredProviderId: null,
+      selectedProviderId: null,
+      openedAt: new Date('2026-06-01T00:00:00.000Z'),
+      expiresAt: new Date('2026-06-01T00:10:00.000Z'),
+      metadata: {},
+      services: [
+        {
+          serviceId: 'service-1',
+          price: 500000,
+          service: massageService(),
+        },
+      ],
+      payment: {
+        id: 'payment-1',
+        bookingId: 'booking-1',
+        method: PaymentMethod.CASH,
+        amount: 500000,
+        currency: 'VND',
+        status: PaymentStatus.AUTHORIZED,
+        providerRef: null,
+        metadata: {},
+      },
+      participants: [],
+      preferredProvider: null,
+      selectedProvider: null,
+    };
+    const prisma = {
+      adminAuditLog: {
+        create: jest.fn(),
+      },
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+      },
+      massageService: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue(massageService()),
+      },
+      servicePayoutRule: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'rule-1' }),
+      },
+      booking: {
+        create: jest.fn().mockResolvedValue(booking),
+        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const matching = {
+      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: jest.fn(),
+      scheduleBookingTimeout: jest.fn(),
+    };
+    const matchingGateway = {
+      emitBookingOpened: jest.fn(),
+      emitBackupBookingAvailable: jest.fn(),
+    };
+    const payments = {
+      buildAuthorization: jest.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
+      refreshAuthorizationForBooking: jest.fn().mockResolvedValue(booking.payment),
+      scheduleStatusCheck: jest.fn(),
+    };
+    const notifications = { create: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      payments as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await expect(
+      service.createOpenMatchingBooking('customer-user-1', {
+        serviceId: 'service-1',
+        address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+        lat: 10.7769,
+        lng: 106.7009,
+        currentLat: 37.5665,
+        currentLng: 126.978,
+        currentLocationUpdatedAt: new Date().toISOString(),
+        paymentMethod: PaymentMethod.CASH,
+      }),
+    ).resolves.toEqual(expect.objectContaining({ bookingId: 'booking-1', event: 'booking.opened' }));
+
+    const createArgs = prisma.booking.create.mock.calls[0][0];
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+    expect(createArgs.data.addressSnapshot.create).toEqual(
+      expect.objectContaining({
+        addressText: 'District 1, Ho Chi Minh City, Vietnam',
+        latitude: 10.7769,
+        longitude: 106.7009,
+      }),
+    );
+    expect(createArgs.data.metadata.bookingGate).toEqual(
+      expect.objectContaining({
+        serviceArea: 'VIETNAM',
+        serviceAreaValid: true,
+        customerCurrentLocation: expect.objectContaining({
+          lat: 37.5665,
+          lng: 126.978,
+        }),
+      }),
+    );
+    expect(createArgs.data.metadata.bookingGate.customerToBookingAddressDistanceMeters).toBeGreaterThan(
+      1_000_000,
+    );
+  });
 });
 
 describe('BookingsService final partner selection', () => {
