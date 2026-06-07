@@ -21,6 +21,7 @@ import {
   adminPartnerLocationFresh,
   adminPartnerMarketplaceBlocked,
   adminPartnerWalletBalance,
+  adminWalletGateBlocksMarketplaceParticipation,
   operationalPolicyAnchor,
   operationalPolicyHref,
 } from '../../lib/operations-policy';
@@ -1973,17 +1974,22 @@ function policyRecommendationPosture(
   }
 
   if (setting.key === 'wallet.negative_balance_gate') {
+    const blocksMarketplace = adminWalletGateBlocksMarketplaceParticipation(value);
     return {
-      status: value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE' ? 'Marketplace hold' : 'Future exception disabled',
-      detail:
-        value === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Cash-debt exposure is contained at marketplace participation and payout release gates.'
-          : 'Historical exception mode is retained for audit only. The MVP still blocks marketplace participation and payout release until settlement.',
+      status:
+        blocksMarketplace && value !== recommended
+          ? 'Marketplace hold (legacy value)'
+          : blocksMarketplace
+            ? 'Marketplace hold'
+            : 'Future exception disabled',
+      detail: blocksMarketplace
+        ? 'Cash-debt exposure is contained at marketplace participation and payout release gates.'
+        : 'Historical exception mode is retained for audit only. The MVP still blocks marketplace participation and payout release until settlement.',
       operatorAction:
         'Keep marketplace list visibility open; use settlement evidence before marketplace participation or payout release.',
       alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
-      className: value === recommended ? 'ops-task-done' : 'ops-task-blocked',
-      pillClass: value === recommended ? 'pill-success' : 'pill-danger',
+      className: blocksMarketplace ? 'ops-task-done' : 'ops-task-blocked',
+      pillClass: blocksMarketplace ? 'pill-success' : 'pill-danger',
     };
   }
 
@@ -2105,7 +2111,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
   const customerFinalChoice = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
   const pushReady = alertChannel === 'ONESIGNAL_FOR_ALL_BOOKINGS';
-  const hardWalletBlock = walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+  const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(walletGate);
   const baselineRadius = backupRadiusMeters === 10000;
   const baselineTimer = responseWindowMinutes === 10;
   const baselineLocationFreshness = backupLocationFreshnessMinutes === 30;
@@ -2250,7 +2256,7 @@ function buildPolicySupplySensitivity(
   const walletGate =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate;
-  const hardWalletBlock = walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+  const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(walletGate);
   const reference = referenceBookingCoordinate(bookings);
   const candidates = providers
     .map((provider) => {
@@ -2439,10 +2445,9 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
     },
     {
       scope: 'Wallet gate',
-      title:
-        walletGate === 'BLOCK_ACCEPTS_WHEN_NEGATIVE'
-          ? 'Negative wallet gates marketplace participation'
-          : 'Historical exception mode is not active for MVP',
+      title: adminWalletGateBlocksMarketplaceParticipation(walletGate)
+        ? 'Negative wallet gates marketplace participation'
+        : 'Historical exception mode is not active for MVP',
       detail:
         'Cash-service company fee debt is enforced before marketplace participation and payout release.',
       api: 'POST /provider/bookings/:id/join, POST /admin/payout-batches',
@@ -2467,9 +2472,10 @@ function buildMatchingStageImpactPreview(
   const freshnessMinutes =
     policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
-  const hardWalletBlock =
-    (policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
-      ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate) === 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+  const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(
+    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate,
+  );
   const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const liveHandoff = bookings.filter((booking) =>
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),

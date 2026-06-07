@@ -1,6 +1,7 @@
 import type { AdminOperationalPolicySetting } from './admin-api';
 import {
   OPERATIONAL_POLICY_KEYS,
+  adminWalletGateBlocksMarketplaceParticipation,
   buildAdminPartnerMarketplaceReadiness,
   buildAdminLiveOperationsPolicy,
   formatPolicyDistance,
@@ -52,7 +53,7 @@ describe('admin live operations policy helpers', () => {
     expect(policy.marketplaceInvitationLimit).toBe(50);
     expect(policy.marketplaceOpenMode).toBe('IMMEDIATE_WITHIN_WINDOW');
     expect(policy.preferredAcceptMode).toBe('CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT');
-    expect(policy.walletNegativeGate).toBe('BLOCK_ACCEPTS_WHEN_NEGATIVE');
+    expect(policy.walletNegativeGate).toBe('BLOCK_MARKETPLACE_PARTICIPATION');
     expect(policy.cashSettlementClearance).toBe('DEPOSIT_OR_ADMIN_OFFSET_REQUIRED');
     expect(policy.payoutBatchCycle).toBe('WEEKLY_OR_MONTHLY_BATCH');
   });
@@ -66,6 +67,12 @@ describe('admin live operations policy helpers', () => {
 
   it('does not return blank policy strings', () => {
     expect(readPolicyString([setting('empty', '   ')], 'empty')).toBeNull();
+  });
+
+  it('keeps legacy wallet policy values compatible with marketplace participation blocking', () => {
+    expect(adminWalletGateBlocksMarketplaceParticipation('BLOCK_MARKETPLACE_PARTICIPATION')).toBe(true);
+    expect(adminWalletGateBlocksMarketplaceParticipation('BLOCK_ACCEPTS_WHEN_NEGATIVE')).toBe(true);
+    expect(adminWalletGateBlocksMarketplaceParticipation('ALLOW_ONE_RECOVERY_BOOKING')).toBe(false);
   });
 
   it('builds stable Operations Policy anchors from policy keys', () => {

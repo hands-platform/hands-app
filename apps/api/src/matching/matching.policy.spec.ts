@@ -9,7 +9,10 @@ import {
   MATCHING_BACKUP_PROVIDER_INVITATION_LIMIT_KEY,
   MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY,
   MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY,
+  OPERATIONAL_POLICY_DEFINITIONS,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
+  WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
+  WALLET_NEGATIVE_BALANCE_GATE_KEY,
   haversineMeters,
   resolveMatchingPolicy,
   resolveMatchingPolicyFromPayload,
@@ -32,6 +35,17 @@ describe('matching policy', () => {
     expect(policy.backupOpenMode).toBe(BACKUP_OPEN_IMMEDIATE);
     expect(policy.bookingDistanceGateEnabled).toBe(true);
     expect(policy.bookingServiceAreaRequired).toBe(true);
+  });
+
+  it('defines negative wallet policy as marketplace participation blocking', () => {
+    const definition = OPERATIONAL_POLICY_DEFINITIONS.find(
+      (item) => item.key === WALLET_NEGATIVE_BALANCE_GATE_KEY,
+    );
+
+    expect(definition?.value).toBe(WALLET_BLOCK_MARKETPLACE_PARTICIPATION);
+    expect(definition?.recommendedValue).toBe(WALLET_BLOCK_MARKETPLACE_PARTICIPATION);
+    expect(definition?.options?.[0]?.value).toBe(WALLET_BLOCK_MARKETPLACE_PARTICIPATION);
+    expect(definition?.label).toBe('Negative wallet marketplace gate');
   });
 
   it('allows operations settings while keeping configured bounds', () => {

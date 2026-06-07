@@ -70,7 +70,8 @@ const registrationItems = [
     category: 'Supabase Phone Auth',
     account: 'Supabase Phone Auth + SMS provider',
     purpose: 'Deferred real OTP delivery and Supabase access-token exchange for mobile login.',
-    consolePath: 'Supabase Dashboard > Authentication > Providers > Phone and selected SMS provider dashboard',
+    consolePath:
+      'Supabase Dashboard > Authentication > Providers > Phone and selected SMS provider dashboard',
     env: [
       envItem(
         'AUTH_BACKEND',
@@ -125,8 +126,16 @@ const registrationItems = [
       'Runtime-tunable matching, marketplace participation, cancellation, no-show, notification, and wallet-gate policy.',
     consolePath: 'HANDS Admin > Operations Policy',
     env: [
-      envItem('MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES', '10', hasValue(env.MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES)),
-      envItem('MATCHING_BACKUP_PROVIDER_RADIUS_METERS', '10000', hasValue(env.MATCHING_BACKUP_PROVIDER_RADIUS_METERS)),
+      envItem(
+        'MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES',
+        '10',
+        hasValue(env.MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES),
+      ),
+      envItem(
+        'MATCHING_BACKUP_PROVIDER_RADIUS_METERS',
+        '10000',
+        hasValue(env.MATCHING_BACKUP_PROVIDER_RADIUS_METERS),
+      ),
       envItem(
         'MATCHING_BACKUP_PROVIDER_LOCATION_MAX_AGE_MINUTES',
         '30',
@@ -142,14 +151,26 @@ const registrationItems = [
         'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
         hasValue(env.MATCHING_PREFERRED_ACCEPT_MODE),
       ),
-      envItem('MATCHING_BACKUP_OPEN_MODE', 'IMMEDIATE_WITHIN_WINDOW', hasValue(env.MATCHING_BACKUP_OPEN_MODE)),
-      envItem('WALLET_NEGATIVE_BALANCE_GATE', 'BLOCK_ACCEPTS_WHEN_NEGATIVE', hasValue(env.WALLET_NEGATIVE_BALANCE_GATE)),
+      envItem(
+        'MATCHING_BACKUP_OPEN_MODE',
+        'IMMEDIATE_WITHIN_WINDOW',
+        hasValue(env.MATCHING_BACKUP_OPEN_MODE),
+      ),
+      envItem(
+        'WALLET_NEGATIVE_BALANCE_GATE',
+        'BLOCK_MARKETPLACE_PARTICIPATION',
+        hasValue(env.WALLET_NEGATIVE_BALANCE_GATE),
+      ),
       envItem(
         'CANCELLATION_AFTER_MATCH_POLICY',
         'ADMIN_REVIEW_FOR_MVP',
         hasValue(env.CANCELLATION_AFTER_MATCH_POLICY),
       ),
-      envItem('NO_SHOW_PARTNER_REPORT_POLICY', 'ADMIN_REVIEW_REQUIRED', hasValue(env.NO_SHOW_PARTNER_REPORT_POLICY)),
+      envItem(
+        'NO_SHOW_PARTNER_REPORT_POLICY',
+        'ADMIN_REVIEW_REQUIRED',
+        hasValue(env.NO_SHOW_PARTNER_REPORT_POLICY),
+      ),
       envItem(
         'NOTIFICATION_PARTNER_ALERT_CHANNEL',
         'IN_APP_WITH_PUSH_LATER',

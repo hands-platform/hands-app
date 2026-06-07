@@ -33,7 +33,7 @@ export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
   backupOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
   preferredAcceptMode: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
   partnerAlertChannel: 'IN_APP_WITH_PUSH_LATER',
-  walletNegativeGate: 'BLOCK_ACCEPTS_WHEN_NEGATIVE',
+  walletNegativeGate: 'BLOCK_MARKETPLACE_PARTICIPATION',
   cashSettlementClearance: 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED',
   payoutBatchCycle: 'WEEKLY_OR_MONTHLY_BATCH',
 } as const;
@@ -54,6 +54,8 @@ export type AdminLiveOperationsPolicy = {
 };
 
 export const ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'] as const;
+export const ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION = 'BLOCK_MARKETPLACE_PARTICIPATION';
+export const ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
 
 export type AdminPartnerMarketplaceReadinessProvider = {
   status?: string | null;
@@ -247,6 +249,13 @@ export function adminPartnerLocationFresh(
 
 export function adminPartnerHasEnabledPush(provider: AdminPartnerMarketplaceReadinessProvider) {
   return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
+}
+
+export function adminWalletGateBlocksMarketplaceParticipation(value: string | null | undefined) {
+  return (
+    value === ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION ||
+    value === ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE
+  );
 }
 
 export function readPolicyNumber(settings: AdminOperationalPolicySetting[], key: string) {

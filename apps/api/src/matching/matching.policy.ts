@@ -39,9 +39,9 @@ export const NOTIFICATION_PARTNER_ALERT_CHANNEL_KEY = 'notification.partner_aler
 export const PARTNER_ALERT_IN_APP_WITH_PUSH_LATER = 'IN_APP_WITH_PUSH_LATER';
 export const PARTNER_ALERT_ONESIGNAL_FOR_ALL_BOOKINGS = 'ONESIGNAL_FOR_ALL_BOOKINGS';
 export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';
-// Compatibility: the stored policy value keeps the earlier "accepts" wording,
-// but HANDS MVP behavior blocks marketplace participation and payout release.
-export const WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+export const WALLET_BLOCK_MARKETPLACE_PARTICIPATION = 'BLOCK_MARKETPLACE_PARTICIPATION';
+// Compatibility: older saved policy rows may keep the earlier "accepts" wording.
+export const WALLET_LEGACY_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
 export const WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
 export const DECISION_ACTION_EVIDENCE_GATE_MODE_KEY = 'decision.action_evidence_gate_mode';
 export const ACTION_EVIDENCE_ADMIN_REVIEW = 'ADMIN_EVIDENCE_REVIEW';
@@ -261,14 +261,14 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
   {
     key: WALLET_NEGATIVE_BALANCE_GATE_KEY,
     category: 'Decision',
-    label: 'Negative wallet booking gate',
+    label: 'Negative wallet marketplace gate',
     description:
       'Controls how unpaid cash-service platform fees block partner marketplace participation and payout release.',
-    value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
-    recommendedValue: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
+    value: WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
+    recommendedValue: WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
     options: [
       {
-        value: WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE,
+        value: WALLET_BLOCK_MARKETPLACE_PARTICIPATION,
         label: 'Block marketplace participation while negative',
         tradeoff:
           'Keeps marketplace requests visible for review, but blocks marketplace participation and payout release while debt is open.',
@@ -360,8 +360,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: PAYOUT_BATCH_HYBRID_REVIEW,
         label: 'Hybrid admin review',
-        tradeoff:
-          'Allows manual exception batches while preserving the default scheduled payout rhythm.',
+        tradeoff: 'Allows manual exception batches while preserving the default scheduled payout rhythm.',
       },
     ],
     enforced: true,
@@ -406,7 +405,8 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: CANCELLATION_ADMIN_FEE_REVIEW_AFTER_MATCH,
         label: 'Admin fee review after match',
-        tradeoff: 'Protects partner time without automatic penalties; operators review chat, arrival, and refund context.',
+        tradeoff:
+          'Protects partner time without automatic penalties; operators review chat, arrival, and refund context.',
       },
     ],
     enforced: true,
@@ -427,7 +427,8 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
       {
         value: NO_SHOW_EVIDENCE_ASSISTED_ADMIN_REVIEW,
         label: 'Evidence-assisted admin review',
-        tradeoff: 'Keeps the final decision in Admin while requiring stronger chat, alert, location, or note evidence.',
+        tradeoff:
+          'Keeps the final decision in Admin while requiring stronger chat, alert, location, or note evidence.',
       },
     ],
     enforced: true,
@@ -626,23 +627,14 @@ export function resolveMatchingPolicyFromPayload(payload: unknown): MatchingPoli
     backupProviderLocationMaxAgeMinutes,
     backupProviderInvitationLimit,
     bookingMaxCustomerCurrentToAddressKm:
-      readSnapshotInteger(
-        readPayloadValue(policy, 'bookingMaxCustomerCurrentToAddressKm'),
-        1,
-        100,
-      ) ?? DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
+      readSnapshotInteger(readPayloadValue(policy, 'bookingMaxCustomerCurrentToAddressKm'), 1, 100) ??
+      DEFAULT_BOOKING_MAX_CUSTOMER_CURRENT_TO_ADDRESS_KM,
     bookingMaxPreferredProviderDistanceKm:
-      readSnapshotInteger(
-        readPayloadValue(policy, 'bookingMaxPreferredProviderDistanceKm'),
-        1,
-        300,
-      ) ?? DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
+      readSnapshotInteger(readPayloadValue(policy, 'bookingMaxPreferredProviderDistanceKm'), 1, 300) ??
+      DEFAULT_BOOKING_MAX_PREFERRED_PROVIDER_DISTANCE_KM,
     bookingCurrentLocationFreshnessMinutes:
-      readSnapshotInteger(
-        readPayloadValue(policy, 'bookingCurrentLocationFreshnessMinutes'),
-        1,
-        60,
-      ) ?? DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
+      readSnapshotInteger(readPayloadValue(policy, 'bookingCurrentLocationFreshnessMinutes'), 1, 60) ??
+      DEFAULT_BOOKING_CURRENT_LOCATION_FRESHNESS_MINUTES,
     bookingDistanceGateEnabled: readPayloadBoolean(policy, 'bookingDistanceGateEnabled', true),
     bookingServiceAreaRequired: readPayloadBoolean(policy, 'bookingServiceAreaRequired', true),
     travelBufferMinutes,
