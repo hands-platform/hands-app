@@ -11,6 +11,7 @@ import {
   adminGet,
 } from '../../../lib/admin-api';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../../lib/admin-copy';
+import { customerWalletSummary } from '../../../lib/customer-wallet-summary';
 import {
   detailDateRangeOptions,
   isWithinDetailDateFilter,
@@ -73,7 +74,7 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
   }
 
   const bookings = customer.bookings ?? [];
-  const wallet = buildCustomerWallet(bookings);
+  const wallet = customerWalletSummary(bookings);
   const bookingStats = buildBookingStats(bookings);
   const addresses = buildAddressRows(customer);
   const latestBooking = bookings[0];
@@ -1200,9 +1201,9 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
 
       <section className="grid" style={{ marginBottom: 16 }}>
         <section className="card" id="wallet">
-          <h2>Customer wallet</h2>
+          <h2>Customer payment ledger</h2>
           <p className="muted">
-            Wallet-style readout derived from bookings, payments, refunds, coupons, and cash/payment state.
+            Factual payment readout. Partner cash-fee debt is never carried on the customer account.
           </p>
           <div className="setup-stage-list" style={{ marginTop: 12 }}>
             <div className="ops-row">
@@ -1221,7 +1222,14 @@ export default async function CustomerDetailPage({ params, searchParams }: PageP
               <strong>Cash bookings</strong>
               <span>{formatMoney(wallet.cashBookingAmount)}</span>
             </div>
+            <div className="ops-row">
+              <strong>Customer balance</strong>
+              <span>{formatMoney(wallet.customerBalance)}</span>
+            </div>
           </div>
+          <p className="muted" style={{ marginTop: 12 }}>
+            {wallet.operatorNote}
+          </p>
         </section>
 
         <section className="card" id="addresses">
@@ -1904,30 +1912,6 @@ function buildBookingStats(bookings: AdminBookingDetail[]) {
   };
 }
 
-function buildCustomerWallet(bookings: AdminBookingDetail[]) {
-  return bookings.reduce(
-    (wallet, booking) => {
-      const paymentAmount = Number(booking.payment?.amount ?? 0);
-      if (booking.payment?.status === 'CAPTURED') wallet.capturedSpend += paymentAmount;
-      if (booking.payment && ['PENDING', 'AUTHORIZED'].includes(booking.payment.status)) {
-        wallet.pendingPaymentAmount += paymentAmount;
-      }
-      if (booking.payment?.method === 'CASH') wallet.cashBookingAmount += paymentAmount;
-      const refunds = [...(booking.payment?.refunds ?? []), ...(booking.refunds ?? [])];
-      wallet.refundCount += refunds.length;
-      wallet.refundAmount += refunds.reduce((sum, refund) => sum + Number(refund.amount ?? 0), 0);
-      return wallet;
-    },
-    {
-      capturedSpend: 0,
-      pendingPaymentAmount: 0,
-      refundAmount: 0,
-      refundCount: 0,
-      cashBookingAmount: 0,
-    },
-  );
-}
-
 function buildCustomerOperatorCommandQueue({
   customer,
   bookings,
@@ -1940,7 +1924,7 @@ function buildCustomerOperatorCommandQueue({
 }: {
   customer: AdminCustomerDetail;
   bookings: AdminBookingDetail[];
-  wallet: ReturnType<typeof buildCustomerWallet>;
+  wallet: ReturnType<typeof customerWalletSummary>;
   bookingStats: ReturnType<typeof buildBookingStats>;
   addresses: Array<{ key: string; label: string; value: string }>;
   latestSession?: AdminAppSession;
@@ -2303,7 +2287,7 @@ function buildCustomerOperatingLedger({
 }: {
   customer: AdminCustomerDetail;
   bookings: AdminBookingDetail[];
-  wallet: ReturnType<typeof buildCustomerWallet>;
+  wallet: ReturnType<typeof customerWalletSummary>;
   bookingStats: ReturnType<typeof buildBookingStats>;
   addresses: Array<{ key: string; label: string; value: string }>;
   latestSession?: AdminAppSession;
@@ -2426,7 +2410,7 @@ function buildCustomerOperationsDigest({
 }: {
   customer: AdminCustomerDetail;
   bookings: AdminBookingDetail[];
-  wallet: ReturnType<typeof buildCustomerWallet>;
+  wallet: ReturnType<typeof customerWalletSummary>;
   bookingStats: ReturnType<typeof buildBookingStats>;
   addresses: Array<{ key: string; label: string; value: string }>;
   latestSession?: AdminAppSession;
@@ -2572,7 +2556,7 @@ function buildCustomerOperationsDigest({
 function buildCustomerActivityPlan(
   customer: AdminCustomerDetail,
   bookings: AdminBookingDetail[],
-  wallet: ReturnType<typeof buildCustomerWallet>,
+  wallet: ReturnType<typeof customerWalletSummary>,
   bookingStats: ReturnType<typeof buildBookingStats>,
   addresses: Array<{ key: string; label: string; value: string }>,
 ) {
