@@ -129,6 +129,10 @@ import { bookingAttentionFlags as buildBookingAttentionFlags } from '../../../li
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import {
+  bookingLocationTrail,
+  isPreferredAwaitingDecision as isPreferredAwaitingDecisionFromStatus,
+} from '../../../lib/booking-status-location-helpers';
+import {
   bookingDispatchChecklist,
   type DispatchStep,
 } from '../../../lib/booking-dispatch-checklist';
@@ -4270,16 +4274,11 @@ function bookingFinanceFlags(
 }
 
 function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
-  if (!booking.preferredProvider) {
-    return false;
-  }
-
   const participant = preferredParticipantState(booking);
-  if (!participant) {
-    return true;
-  }
-
-  return !['ACCEPTED', 'SELECTED', 'REJECTED'].includes(participant.status);
+  return isPreferredAwaitingDecisionFromStatus({
+    hasPreferredPartner: Boolean(booking.preferredProvider),
+    preferredParticipantStatus: participant?.status ?? null,
+  });
 }
 
 function providerLocationMetricValue(booking: AdminBookingDetail) {
@@ -4291,11 +4290,5 @@ function providerLocationMetricHelper(booking: AdminBookingDetail) {
 }
 
 function locationTrail(booking: AdminBookingDetail) {
-  const explicit = booking.snapshots ?? [];
-  if (explicit.length > 0) {
-    return explicit;
-  }
-
-  const latest = latestProviderLocation(booking);
-  return latest ? [latest] : [];
+  return bookingLocationTrail(booking.snapshots, latestProviderLocation(booking));
 }
