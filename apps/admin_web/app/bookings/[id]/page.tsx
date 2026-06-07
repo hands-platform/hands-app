@@ -1523,13 +1523,7 @@ function bookingHandoffChecklist(
   latestLocation?: AdminLocationSnapshot,
 ) {
   const participantCount = booking.participants?.length ?? 0;
-  const selectableCount =
-    booking.participants?.filter(
-      (participant) =>
-        isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)) ||
-        participant.status === 'SELECTED',
-    )
-      .length ?? 0;
+  const selectableCount = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
   const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
   const paymentLabel = booking.payment
     ? `${booking.payment.method} / ${booking.payment.status} / ${money(booking.payment.amount, booking.payment.currency)}`
@@ -2368,7 +2362,7 @@ function bookingOperatingSnapshot({
       {
         label: 'Marketplace supply',
         value: `${participants.length} participant record(s) / ${customerChoiceCandidates.length} selectable`,
-        helper: 'Partners can participate while the customer waits.',
+        helper: 'Actual participant rows stay as evidence; customer choices are deduped by partner.',
       },
       {
         label: 'Chat and alerts',

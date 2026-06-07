@@ -355,6 +355,7 @@ void main() {
     expect(guidance.nextAction, contains('Settle unpaid HANDS fees'));
     expect(guidance.contextMessage, contains('visible'));
     expect(guidance.contextMessage, contains('before marketplace participation'));
+    expect(guidance.infoMessage, contains('Deposit the unpaid HANDS fee'));
     expect(guidance.detailMessage,
         'Unpaid HANDS fees must be settled before you can participate in this marketplace booking.');
   });

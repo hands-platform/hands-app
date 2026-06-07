@@ -386,7 +386,7 @@ class MarketplaceJoinLockCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Marketplace visible, participation locked',
+                  'Cannot participate until fees are settled',
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: colorScheme.onErrorContainer,
                     fontWeight: FontWeight.w800,
