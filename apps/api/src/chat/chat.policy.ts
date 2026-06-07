@@ -1,0 +1,1 @@
+export const MAX_CHAT_MESSAGE_BODY_LENGTH = 2000;

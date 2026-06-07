@@ -1,0 +1,135 @@
+import { Role } from '@prisma/client';
+
+import { ChatService } from './chat.service';
+
+describe('ChatService access control', () => {
+  it('does not allow admin access to a missing chat room', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.canAccessChatRoom('missing-room', {
+        id: 'admin-user',
+        roles: [Role.ADMIN],
+      }),
+    ).resolves.toBe(false);
+
+    expect(prisma.chatRoom.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'missing-room' },
+      }),
+    );
+  });
+
+  it('allows admin access when the chat room exists', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: {
+            customerProfileId: 'customer-1',
+            selectedProviderId: 'partner-1',
+          },
+        }),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.canAccessChatRoom('chat-room-1', {
+        id: 'admin-user',
+        roles: [Role.ADMIN],
+      }),
+    ).resolves.toBe(true);
+  });
+
+  it('allows only the customer and final selected partner to access a booking chat room', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: {
+            customerProfileId: 'customer-1',
+            selectedProviderId: 'selected-partner',
+          },
+        }),
+      },
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1' }),
+      },
+      providerProfile: {
+        findUnique: jest
+          .fn()
+          .mockResolvedValueOnce({ id: 'selected-partner' })
+          .mockResolvedValueOnce({ id: 'joined-but-not-selected' }),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.canAccessChatRoom('chat-room-1', {
+        id: 'customer-user',
+        roles: [Role.CUSTOMER],
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      service.canAccessChatRoom('chat-room-1', {
+        id: 'selected-partner-user',
+        roles: [Role.PROVIDER],
+      }),
+    ).resolves.toBe(true);
+    await expect(
+      service.canAccessChatRoom('chat-room-1', {
+        id: 'joined-partner-user',
+        roles: [Role.PROVIDER],
+      }),
+    ).resolves.toBe(false);
+
+    expect(prisma.customerProfile.findUnique).toHaveBeenCalledWith({
+      where: { userId: 'customer-user' },
+      select: { id: true },
+    });
+    expect(prisma.providerProfile.findUnique).toHaveBeenNthCalledWith(1, {
+      where: { userId: 'selected-partner-user' },
+      select: { id: true },
+    });
+    expect(prisma.providerProfile.findUnique).toHaveBeenNthCalledWith(2, {
+      where: { userId: 'joined-partner-user' },
+      select: { id: true },
+    });
+  });
+});
+
+describe('ChatService message validation', () => {
+  it('rejects oversized realtime chat messages at the service boundary', async () => {
+    const prisma = {
+      chatRoom: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'chat-room-1',
+          booking: {
+            customerProfileId: 'customer-1',
+            selectedProviderId: 'partner-1',
+          },
+        }),
+      },
+      chatMessage: {
+        create: jest.fn(),
+      },
+    };
+    const service = new ChatService(prisma as never);
+
+    await expect(
+      service.createMessage(
+        'chat-room-1',
+        { id: 'admin-user', roles: [Role.ADMIN] },
+        { text: 'x'.repeat(2001) },
+      ),
+    ).rejects.toThrow('Message body must be 2000 characters or fewer');
+
+    expect(prisma.chatMessage.create).not.toHaveBeenCalled();
+  });
+});
