@@ -129,6 +129,7 @@ import {
   completedCloseoutTone,
 } from '../../../lib/booking-closeout-policy';
 import { bookingOpsBadges } from '../../../lib/booking-ops-badges';
+import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
 import {
   bookingRefundLedgerEvidence,
@@ -802,7 +803,13 @@ export default async function BookingDetailPage({ params }: PageProps) {
   const bookingMetricCards = [
     { label: 'Status', value: booking.status, helper: bookingStatusHint(booking.status) },
     { label: 'Closure', value: closureSummary.status, helper: closureSummary.detail },
-    { label: 'Payment', value: booking.payment?.status ?? 'NONE', helper: paymentHint(booking) },
+    {
+      label: 'Payment',
+      value: booking.payment?.status ?? 'NONE',
+      helper: bookingPaymentHint(booking, {
+        cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+      }),
+    },
     {
       label: 'Partners',
       value: `${booking.participants?.length ?? 0} participant row(s)`,
@@ -1487,7 +1494,9 @@ function bookingOperatorPriorityBriefing({
       {
         label: 'Payment',
         value: paymentLabel,
-        helper: paymentHint(booking),
+        helper: bookingPaymentHint(booking, {
+          cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+        }),
       },
       {
         label: 'Closeout',
@@ -4357,7 +4366,9 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
     steps.push({
       priority: isTerminalPayment(booking.payment.status) ? 'Done' : 'Monitor',
       title: 'Payment state',
-      detail: paymentHint(booking),
+      detail: bookingPaymentHint(booking, {
+        cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+      }),
       owner: 'Payments operator',
       tone: isTerminalPayment(booking.payment.status) ? 'pill-success' : 'pill-info',
       actionHref: paymentHref,
@@ -4484,7 +4495,9 @@ function liveServiceSignals(booking: AdminBookingDetail) {
     {
       label: 'Payment',
       value: booking.payment?.status ?? 'NONE',
-      helper: paymentHint(booking),
+      helper: bookingPaymentHint(booking, {
+        cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+      }),
       tone:
         booking.payment?.status === 'AUTHORIZED'
           ? 'pill-warn'
@@ -4528,38 +4541,12 @@ function flowStages(booking: AdminBookingDetail) {
     {
       label: 'Payment',
       value: booking.payment?.status ?? 'NONE',
-      hint: paymentHint(booking),
+      hint: bookingPaymentHint(booking, {
+        cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+      }),
       done: ['CAPTURED', 'RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
     },
   ];
-}
-
-function paymentHint(booking: AdminBookingDetail) {
-  if (!booking.payment) {
-    return 'No payment record created.';
-  }
-  if (booking.status === 'EXPIRED' && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)) {
-    return 'Expired booking requires payment release/refund before closing.';
-  }
-  if (booking.status === 'NO_SHOW' && !['RELEASED', 'REFUNDED'].includes(booking.payment.status)) {
-    return 'No-show requires payment decision before closing.';
-  }
-  if (bookingCashDebtNeedsSettlement(booking)) {
-    return 'Cash fee debt is still unsettled; marketplace participation and payout release are blocked.';
-  }
-  if (booking.payment.status === 'AUTHORIZED') {
-    return 'Hold is active; capture after service completion.';
-  }
-  if (booking.payment.status === 'RELEASED') {
-    return 'Hold released without capture.';
-  }
-  if (booking.payment.status === 'CAPTURED') {
-    return 'Payment captured.';
-  }
-  if (booking.payment.status === 'REFUNDED') {
-    return 'Refund path is active.';
-  }
-  return `${booking.payment.method} payment is being monitored.`;
 }
 
 function bookingOperatorNoteLines(booking: AdminBookingDetail) {
