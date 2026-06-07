@@ -79,6 +79,8 @@ The booking policy helpers now directly cover the two timing/order boundaries th
 
 - Marketplace participation window behavior for immediate mode, delayed first-pick mode, no first-pick bookings, and first-pick declines.
 - Partner response closure after matching/expiry and service completion ordering from `IN_SERVICE`.
+- Customer final partner selection now has service-level coverage for joined marketplace partners, preferred first-pick partners that have not accepted yet, and marketplace wallet blocks.
+- Customer mobile helper tests mirror the same selection rule: joined marketplace partners are selectable, but the preferred first-pick partner must accept first.
 
 The service still keeps its existing private method names for compatibility, but delegates those decisions to tested policy helpers.
 

@@ -1,5 +1,6 @@
 import type { AdminOperationalPolicySetting, AdminProvider } from '../../lib/admin-api';
 import {
+  formatBytes as formatAdminBytes,
   formatDateTime,
   formatDistanceMeters as formatAdminDistanceMeters,
   formatRelativeTime,
@@ -123,13 +124,7 @@ export function providerLocationAgeLabel(value?: string | null) {
 }
 
 export function formatBytes(value: number) {
-  if (value < 1024) {
-    return `${value} B`;
-  }
-  if (value < 1024 * 1024) {
-    return `${(value / 1024).toFixed(1)} KB`;
-  }
-  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  return formatAdminBytes(value);
 }
 
 export function formatDate(value?: string | null) {

@@ -1,12 +1,16 @@
 import {
+  compactValue,
+  formatBytes as formatAdminBytes,
   formatDateOnly as formatAdminDateOnly,
   formatDateTime,
   formatDistanceMeters,
   formatMoney as formatAdminMoney,
+  readPlainRecord,
+  shortId as formatAdminShortId,
 } from '../../../lib/admin-format';
 
 export function shortRecordId(value: string) {
-  return value.length > 12 ? `${value.slice(0, 8)}...` : value;
+  return value.length > 12 ? formatAdminShortId(value, { length: 8, ellipsis: true }) : value;
 }
 
 export function formatDate(value?: string | null) {
@@ -32,8 +36,9 @@ export function formatJsonSummary(value: unknown) {
   if (!value) return null;
   if (typeof value === 'string') return value;
   if (Array.isArray(value)) return `${value.length} item(s)`;
-  if (typeof value === 'object') {
-    return Object.keys(value as Record<string, unknown>).length ? JSON.stringify(value).slice(0, 120) : null;
+  const record = readPlainRecord(value);
+  if (record) {
+    return Object.keys(record).length ? compactValue(record, 120) : null;
   }
   return String(value);
 }
@@ -55,9 +60,7 @@ export function providerPublicMediaLabel(purpose?: string | null) {
 }
 
 export function formatBytes(value: number) {
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${Math.round(value / 1024)} KB`;
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  return formatAdminBytes(value, { kbFractionDigits: 0 });
 }
 
 export function formatDistance(value: number) {
@@ -111,8 +114,8 @@ export function walletLedgerLabel(type: string) {
 }
 
 export function metadataPreview(metadata?: unknown) {
-  if (!metadata || typeof metadata !== 'object') return null;
-  const record = metadata as Record<string, unknown>;
+  const record = readPlainRecord(metadata);
+  if (!record) return null;
   const reason = typeof record.reason === 'string' ? record.reason : null;
   const documentType = typeof record.documentType === 'string' ? record.documentType : null;
   const target = typeof record.target === 'string' ? record.target : null;

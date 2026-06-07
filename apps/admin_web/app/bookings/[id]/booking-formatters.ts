@@ -1,6 +1,11 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
-import { formatDateTime, formatMoney, shortId as formatShortId } from '../../../lib/admin-format';
+import {
+  formatDateTime,
+  formatDistanceMeters,
+  formatMoney,
+  shortId as formatShortId,
+} from '../../../lib/admin-format';
 
 export function readAmount(value: unknown) {
   return readNullableAmount(value) ?? 0;
@@ -90,13 +95,7 @@ export function coordinateLabel(lat?: string | number | null, lng?: string | num
 }
 
 export function distanceLabel(distance?: number | null) {
-  if (distance === undefined || distance === null) {
-    return 'No distance';
-  }
-  if (distance >= 1000) {
-    return `${(distance / 1000).toFixed(1)} km`;
-  }
-  return `${distance} m`;
+  return formatDistanceMeters(distance, 'No distance');
 }
 
 export function approximateDistanceMeters(

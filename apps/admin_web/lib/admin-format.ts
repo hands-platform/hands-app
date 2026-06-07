@@ -20,6 +20,26 @@ export function formatDistanceMeters(value?: number | null, fallback = '?') {
   return `${new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(value))} m`;
 }
 
+export function formatBytes(
+  value?: number | null,
+  options: { fallback?: string; kbFractionDigits?: number; mbFractionDigits?: number } = {},
+) {
+  const { fallback = 'Not set', kbFractionDigits = 1, mbFractionDigits = 1 } = options;
+  if (value === undefined || value === null || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(kbFractionDigits)} KB`;
+  }
+
+  return `${(value / (1024 * 1024)).toFixed(mbFractionDigits)} MB`;
+}
+
 export function formatDateTime(value?: string | null, fallback = 'Not set') {
   if (!value) {
     return fallback;
