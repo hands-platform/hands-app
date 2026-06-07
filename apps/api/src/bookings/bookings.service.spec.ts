@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 
 import { PROVIDER_WALLET_BLOCK_CODE } from '../provider-wallet/provider-wallet.policy';
+import { DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT } from '../matching/matching.policy';
 import { BookingsService } from './bookings.service';
 
 describe('BookingsService booking creation', () => {
@@ -669,7 +670,7 @@ function matchingPolicy() {
     providerResponseWindowMinutes: 10,
     backupProviderRadiusMeters: 10000,
     backupProviderLocationMaxAgeMinutes: 30,
-    backupProviderInvitationLimit: 20,
+    backupProviderInvitationLimit: DEFAULT_BACKUP_PROVIDER_INVITATION_LIMIT,
     bookingMaxCustomerCurrentToAddressKm: 50,
     bookingMaxPreferredProviderDistanceKm: 10,
     bookingCurrentLocationFreshnessMinutes: 30,

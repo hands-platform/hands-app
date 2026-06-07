@@ -288,7 +288,7 @@ void main() {
       const SelectedCustomerLocation(
         latitude: 37.5665,
         longitude: 126.9780,
-        addressText: 'Seoul, South Korea',
+        addressText: 'Overseas address outside Vietnam',
       ),
     );
     expect(overseas.isDemoLocation, isTrue);
