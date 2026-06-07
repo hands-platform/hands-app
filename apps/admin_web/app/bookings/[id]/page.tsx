@@ -134,6 +134,10 @@ import {
   bookingPartnerHint,
 } from '../../../lib/booking-partner-decision-copy';
 import { bookingPaymentHint } from '../../../lib/booking-payment-hint';
+import {
+  bookingProviderLocationMetricHelper,
+  bookingProviderLocationMetricValue,
+} from '../../../lib/booking-provider-location-copy';
 import { primaryBookingOpsInstruction } from '../../../lib/booking-primary-ops-instruction';
 import {
   bookingRefundLedgerEvidence,
@@ -4708,40 +4712,11 @@ function isPreferredAwaitingDecision(booking: AdminBookingDetail) {
 }
 
 function providerLocationMetricValue(booking: AdminBookingDetail) {
-  const freshness = latestProviderLocationFreshness(booking);
-  if (freshness === 'recent') {
-    return 'Recent';
-  }
-  if (freshness === 'stale') {
-    return 'Stale';
-  }
-  if (freshness === 'expired') {
-    return 'Too old';
-  }
-  return 'Missing';
+  return bookingProviderLocationMetricValue(latestProviderLocationFreshness(booking));
 }
 
 function providerLocationMetricHelper(booking: AdminBookingDetail) {
-  const latest = latestProviderLocation(booking);
-  if (!latest?.recordedAt) {
-    return 'No partner location shared yet';
-  }
-
-  const recordedAt = new Date(latest.recordedAt).getTime();
-  if (!Number.isFinite(recordedAt)) {
-    return 'Partner location timestamp is invalid';
-  }
-
-  const ageMinutes = Math.max(0, Math.round((Date.now() - recordedAt) / 60_000));
-  if (ageMinutes < 1) {
-    return 'Updated just now';
-  }
-  if (ageMinutes < 60) {
-    return `Updated ${ageMinutes}m ago`;
-  }
-
-  const ageHours = Math.round(ageMinutes / 60);
-  return `Updated ${ageHours}h ago`;
+  return bookingProviderLocationMetricHelper(latestProviderLocation(booking)?.recordedAt);
 }
 
 function locationTrail(booking: AdminBookingDetail) {
