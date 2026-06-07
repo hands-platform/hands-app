@@ -45,14 +45,15 @@ function numberString(value: unknown) {
 @ValidatorConstraint({ name: 'providerPayoutDoesNotExceedCustomerPrice', async: false })
 class ProviderPayoutDoesNotExceedCustomerPriceConstraint implements ValidatorConstraintInterface {
   validate(providerPayoutAmount: unknown, args: ValidationArguments) {
-    const body = args.object as { customerPrice?: unknown };
-    if (providerPayoutAmount === undefined || body.customerPrice === undefined) {
+    const body = args.object as { basePrice?: unknown; customerPrice?: unknown };
+    const customerPrice = body.customerPrice ?? body.basePrice;
+    if (providerPayoutAmount === undefined || customerPrice === undefined) {
       return true;
     }
     return (
       typeof providerPayoutAmount === 'number' &&
-      typeof body.customerPrice === 'number' &&
-      providerPayoutAmount <= body.customerPrice
+      typeof customerPrice === 'number' &&
+      providerPayoutAmount <= customerPrice
     );
   }
 
@@ -117,6 +118,82 @@ export class UpdateAdminServiceDto extends AdminServiceSharedPayloadDto {
   @IsString()
   @MaxLength(80)
   serviceGroupKey?: string | null;
+}
+
+class ServiceDurationOptionDto {
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  @Max(1440)
+  durationMin?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  basePrice?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  @Validate(ProviderPayoutDoesNotExceedCustomerPriceConstraint)
+  providerPayoutAmount?: number | null;
+}
+
+export class CreateServiceDurationSetDto {
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(80)
+  serviceGroupKey?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(120)
+  name?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => trimString(value))
+  @IsString()
+  @MaxLength(500)
+  description?: string | null;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(1)
+  priceStep?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  displayOrder?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  @Max(10000)
+  vatBps?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => numberString(value))
+  @IsInt()
+  @Min(0)
+  otherCostAmount?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  active?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ServiceDurationOptionDto)
+  durations?: ServiceDurationOptionDto[];
 }
 
 class ServicePayoutRulePayloadDto {

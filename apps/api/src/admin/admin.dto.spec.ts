@@ -84,6 +84,9 @@ describe('admin request DTO validation', () => {
   });
 
   it('uses concrete DTOs for service and pricing administration payloads', () => {
+    expect((bodyMetatype('createServiceDurationSet', 1) as { name?: string })?.name).toBe(
+      'CreateServiceDurationSetDto',
+    );
     expect((bodyMetatype('createService', 1) as { name?: string })?.name).toBe(
       'CreateAdminServiceDto',
     );
@@ -121,6 +124,26 @@ describe('admin request DTO validation', () => {
     expect(transformed).toHaveProperty('serviceGroupKey', 'body-massage');
     expect(transformed).toHaveProperty('name', 'Swedish Massage');
     expect(transformed).not.toHaveProperty('providerPayoutAmount');
+  });
+
+  it('validates nested service duration options', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        serviceGroupKey: ' body-massage ',
+        name: '  Body Massage  ',
+        priceStep: '100000',
+        durations: [
+          { durationMin: '60', basePrice: '500000', providerPayoutAmount: '380000', hidden: true },
+        ],
+      },
+      { type: 'body', metatype: bodyMetatype('createServiceDurationSet', 1) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('serviceGroupKey', 'body-massage');
+    expect(transformed.durations?.[0]).toHaveProperty('durationMin', 60);
+    expect(transformed.durations?.[0]).not.toHaveProperty('hidden');
   });
 
   it('rejects invalid service payout rule numbers before pricing logic runs', async () => {

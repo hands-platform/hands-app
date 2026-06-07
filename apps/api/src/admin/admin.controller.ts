@@ -21,6 +21,7 @@ import {
   CreatePartnerReportDto,
   CreatePartnerSanctionDto,
   CreatePayoutBatchDto,
+  CreateServiceDurationSetDto,
   CustomerOpsNoteDto,
   MarkEarningPaidDto,
   ModerateReviewDto,
@@ -409,22 +410,7 @@ export class AdminController {
   @Post('services/duration-sets')
   createServiceDurationSet(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      serviceGroupKey?: string;
-      name?: string;
-      description?: string | null;
-      priceStep?: number;
-      displayOrder?: number;
-      vatBps?: number;
-      otherCostAmount?: number;
-      active?: boolean;
-      durations?: Array<{
-        durationMin?: number;
-        basePrice?: number;
-        providerPayoutAmount?: number | null;
-      }>;
-    },
+    @Body() body: CreateServiceDurationSetDto,
   ) {
     return this.admin.createServiceDurationSet(user.id, body);
   }
