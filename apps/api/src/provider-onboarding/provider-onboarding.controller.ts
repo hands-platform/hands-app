@@ -1,19 +1,28 @@
 import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import {
-  ProviderAgreementType,
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderKycStatus,
   ProviderTaxProfileStatus,
   Role,
-  TaxPolicyStatus,
-  TaxRuleScope,
 } from '@prisma/client';
 import { AuthenticatedUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import {
+  AcceptProviderAgreementDto,
+  CreateProviderBankAccountDto,
+  CreateTaxPolicyVersionDto,
+  CreateTaxRuleDto,
+  ProviderOnboardingReasonDto,
+  SubmitProviderKycDto,
+  UpdateProviderBasicProfileDto,
+  UpdateTaxPolicyVersionDto,
+  UpdateTaxRuleDto,
+  UpsertProviderTaxProfileDto,
+} from './provider-onboarding.dto';
 import { ProviderOnboardingService } from './provider-onboarding.service';
 
 @Controller()
@@ -31,23 +40,7 @@ export class ProviderOnboardingController {
   @Roles(Role.PROVIDER)
   updateBasicProfile(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      legalName?: string;
-      dateOfBirth?: string;
-      gender?: string;
-      facebookId?: string;
-      displayName?: string;
-      activityNickname?: string;
-      bio?: string;
-      experienceYears?: number;
-      specialties?: unknown;
-      languages?: unknown;
-      serviceStyle?: string;
-      residentialAddress?: string;
-      city?: string;
-      serviceArea?: unknown;
-    },
+    @Body() body: UpdateProviderBasicProfileDto,
   ) {
     return this.onboarding.updateBasicProfile(user.id, body);
   }
@@ -56,11 +49,7 @@ export class ProviderOnboardingController {
   @Roles(Role.PROVIDER)
   submitKyc(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      cccdNumber?: string;
-      documents?: Array<{ fileId: string; type: string }>;
-    },
+    @Body() body: SubmitProviderKycDto,
   ) {
     return this.onboarding.submitKyc(user.id, body);
   }
@@ -69,14 +58,7 @@ export class ProviderOnboardingController {
   @Roles(Role.PROVIDER)
   createBankAccount(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      bankName: string;
-      accountNumber?: string;
-      accountHolderName: string;
-      qrBankingInfo?: unknown;
-      status?: ProviderBankAccountStatus;
-    },
+    @Body() body: CreateProviderBankAccountDto,
   ) {
     return this.onboarding.createBankAccount(user.id, body);
   }
@@ -85,13 +67,7 @@ export class ProviderOnboardingController {
   @Roles(Role.PROVIDER)
   upsertTaxProfile(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      taxCode?: string;
-      legalName: string;
-      registeredAddress: string;
-      status?: ProviderTaxProfileStatus;
-    },
+    @Body() body: UpsertProviderTaxProfileDto,
   ) {
     return this.onboarding.upsertTaxProfile(user.id, body);
   }
@@ -101,7 +77,7 @@ export class ProviderOnboardingController {
   acceptAgreement(
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: { ip?: string },
-    @Body() body: { type: ProviderAgreementType; version: string; deviceId?: string },
+    @Body() body: AcceptProviderAgreementDto,
   ) {
     return this.onboarding.acceptAgreement(user.id, {
       ...body,
@@ -119,14 +95,7 @@ export class ProviderOnboardingController {
   @Roles(Role.ADMIN)
   createTaxPolicyVersion(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      name: string;
-      status?: TaxPolicyStatus;
-      effectiveFrom: string;
-      effectiveTo?: string | null;
-      notes?: string;
-    },
+    @Body() body: CreateTaxPolicyVersionDto,
   ) {
     return this.onboarding.createTaxPolicyVersion(user.id, body);
   }
@@ -136,14 +105,7 @@ export class ProviderOnboardingController {
   updateTaxPolicyVersion(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body()
-    body: {
-      name?: string;
-      status?: TaxPolicyStatus;
-      effectiveFrom?: string;
-      effectiveTo?: string | null;
-      notes?: string | null;
-    },
+    @Body() body: UpdateTaxPolicyVersionDto,
   ) {
     return this.onboarding.updateTaxPolicyVersion(user.id, id, body);
   }
@@ -153,16 +115,7 @@ export class ProviderOnboardingController {
   createTaxRule(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') policyVersionId: string,
-    @Body()
-    body: {
-      scope?: TaxRuleScope;
-      serviceType?: string;
-      minGrossAmount?: number;
-      maxGrossAmount?: number;
-      rateBps?: number;
-      fixedAmount?: number;
-      active?: boolean;
-    },
+    @Body() body: CreateTaxRuleDto,
   ) {
     return this.onboarding.createTaxRule(user.id, policyVersionId, body);
   }
@@ -172,16 +125,7 @@ export class ProviderOnboardingController {
   updateTaxRule(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body()
-    body: {
-      scope?: TaxRuleScope;
-      serviceType?: string | null;
-      minGrossAmount?: number | null;
-      maxGrossAmount?: number | null;
-      rateBps?: number;
-      fixedAmount?: number;
-      active?: boolean;
-    },
+    @Body() body: UpdateTaxRuleDto,
   ) {
     return this.onboarding.updateTaxRule(user.id, id, body);
   }
@@ -203,7 +147,7 @@ export class ProviderOnboardingController {
   rejectKyc(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: ProviderOnboardingReasonDto,
   ) {
     return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.REJECTED, body.reason);
   }
@@ -213,7 +157,7 @@ export class ProviderOnboardingController {
   rejectPartnerKyc(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: ProviderOnboardingReasonDto,
   ) {
     return this.onboarding.reviewKyc(user.id, providerProfileId, ProviderKycStatus.REJECTED, body.reason);
   }
@@ -229,7 +173,7 @@ export class ProviderOnboardingController {
   rejectProviderDocument(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') documentId: string,
-    @Body() body: { reason?: string },
+    @Body() body: ProviderOnboardingReasonDto,
   ) {
     return this.onboarding.reviewProviderDocument(
       user.id,
@@ -250,7 +194,7 @@ export class ProviderOnboardingController {
   rejectBankAccount(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') bankAccountId: string,
-    @Body() body: { reason?: string },
+    @Body() body: ProviderOnboardingReasonDto,
   ) {
     return this.onboarding.reviewBankAccount(
       user.id,
@@ -277,7 +221,7 @@ export class ProviderOnboardingController {
   rejectTaxProfile(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: ProviderOnboardingReasonDto,
   ) {
     return this.onboarding.reviewTaxProfile(
       user.id,
@@ -292,7 +236,7 @@ export class ProviderOnboardingController {
   rejectPartnerTaxProfile(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: ProviderOnboardingReasonDto,
   ) {
     return this.onboarding.reviewTaxProfile(
       user.id,
