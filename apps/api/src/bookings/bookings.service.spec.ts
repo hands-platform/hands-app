@@ -2,6 +2,8 @@ import {
   BookingStatus,
   EarningStatus,
   ParticipantStatus,
+  PaymentMethod,
+  PaymentStatus,
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderDocumentType,
@@ -12,6 +14,131 @@ import {
 
 import { PROVIDER_WALLET_BLOCK_CODE } from '../provider-wallet/provider-wallet.policy';
 import { BookingsService } from './bookings.service';
+
+describe('BookingsService booking creation', () => {
+  it('loads the immutable address snapshot in the immediate booking response', async () => {
+    const addressSnapshot = {
+      id: 'snapshot-1',
+      bookingId: 'booking-1',
+      customerProfileId: 'customer-1',
+      selectedLocationId: null,
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      addressText: 'District 1, Ho Chi Minh City, Vietnam',
+      latitude: 10.7769,
+      longitude: 106.7009,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+    };
+    const booking = {
+      id: 'booking-1',
+      customerProfileId: 'customer-1',
+      status: BookingStatus.OPEN_MATCHING,
+      scheduledStartAt: new Date('2026-06-01T00:00:00.000Z'),
+      scheduledEndAt: new Date('2026-06-01T01:00:00.000Z'),
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      lat: 10.7769,
+      lng: 106.7009,
+      addressSnapshot,
+      notes: null,
+      travelBufferMin: 30,
+      earlyAcceptMin: 10,
+      preferredProviderId: null,
+      selectedProviderId: null,
+      openedAt: new Date('2026-06-01T00:00:00.000Z'),
+      expiresAt: new Date('2026-06-01T00:10:00.000Z'),
+      metadata: {},
+      services: [
+        {
+          serviceId: 'service-1',
+          price: 500000,
+          service: massageService(),
+        },
+      ],
+      payment: {
+        id: 'payment-1',
+        bookingId: 'booking-1',
+        method: PaymentMethod.CASH,
+        amount: 500000,
+        currency: 'VND',
+        status: PaymentStatus.AUTHORIZED,
+        providerRef: null,
+        metadata: {},
+      },
+      participants: [],
+      preferredProvider: null,
+      selectedProvider: null,
+    };
+    const prisma = {
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+      },
+      massageService: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue(massageService()),
+      },
+      servicePayoutRule: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'rule-1' }),
+      },
+      booking: {
+        create: jest.fn().mockResolvedValue(booking),
+        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([]),
+      },
+    };
+    const matching = {
+      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: jest.fn(),
+      scheduleBookingTimeout: jest.fn(),
+    };
+    const matchingGateway = {
+      emitBookingOpened: jest.fn(),
+      emitBackupBookingAvailable: jest.fn(),
+    };
+    const payments = {
+      buildAuthorization: jest.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
+      refreshAuthorizationForBooking: jest.fn().mockResolvedValue(booking.payment),
+      scheduleStatusCheck: jest.fn(),
+    };
+    const notifications = { create: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      payments as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await service.createOpenMatchingBooking('customer-user-1', {
+      serviceId: 'service-1',
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      lat: 10.7769,
+      lng: 106.7009,
+      paymentMethod: PaymentMethod.CASH,
+    });
+
+    expect(prisma.booking.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          addressSnapshot: true,
+        }),
+      }),
+    );
+    expect(matching.openBooking).toHaveBeenCalledWith(
+      expect.objectContaining({
+        booking: expect.objectContaining({
+          addressSnapshot: expect.objectContaining({
+            addressText: 'District 1, Ho Chi Minh City, Vietnam',
+            latitude: 10.7769,
+            longitude: 106.7009,
+          }),
+        }),
+      }),
+    );
+  });
+});
 
 describe('BookingsService marketplace participation', () => {
   it('blocks a negative-wallet partner before creating a marketplace participant', async () => {
@@ -141,6 +268,18 @@ function approvedDocument(type: ProviderDocumentType) {
   };
 }
 
+function massageService() {
+  return {
+    id: 'service-1',
+    name: 'Swedish Massage',
+    description: null,
+    durationMin: 60,
+    basePrice: 500000,
+    priceStep: 100000,
+    active: true,
+  };
+}
+
 function openMarketplaceBooking() {
   return {
     id: 'booking-1',
@@ -174,6 +313,13 @@ function matchingPolicy() {
     backupProviderRadiusMeters: 10000,
     backupProviderLocationMaxAgeMinutes: 30,
     backupProviderInvitationLimit: 20,
+    bookingMaxCustomerCurrentToAddressKm: 50,
+    bookingMaxPreferredProviderDistanceKm: 10,
+    bookingCurrentLocationFreshnessMinutes: 30,
+    bookingDistanceGateEnabled: true,
+    bookingServiceAreaRequired: true,
+    preferredAcceptMode: 'CUSTOMER_CONFIRM',
     backupOpenMode: 'IMMEDIATE',
+    travelBufferMinutes: 30,
   };
 }

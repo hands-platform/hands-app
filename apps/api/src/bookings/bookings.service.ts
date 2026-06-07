@@ -339,6 +339,7 @@ export class BookingsService {
       },
       include: {
         services: { include: { service: true } },
+        addressSnapshot: true,
         payment: true,
         participants: { include: { providerProfile: true } },
         preferredProvider: true,
