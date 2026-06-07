@@ -328,7 +328,7 @@ const pages = [
       'id="matching-stage-impact"',
       'id="policy-decision-action-evidence-gate-mode"',
       'id="policy-matching-provider-response-window-minutes"',
-      'id="policy-matching-marketplace-provider-radius-meters"',
+      'id="policy-matching-marketplace-partner-radius-meters"',
       'id="policy-payout-batch-cycle-policy"',
       'id="policy-wallet-negative-balance-gate"',
       'Change reason',

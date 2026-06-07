@@ -584,7 +584,7 @@ function checkOperationsPolicyControlPlane() {
     'Matching stage impact preview',
     'Policy enforcement trace',
     'id="policy-matching-provider-response-window-minutes"',
-    'id="policy-matching-marketplace-provider-radius-meters"',
+    'id="policy-matching-marketplace-partner-radius-meters"',
     'id="policy-wallet-negative-balance-gate"',
   ]);
 }
