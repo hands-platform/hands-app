@@ -68,6 +68,12 @@ export function bookingPaymentNeedsOpsFromFacts(input: BookingPaymentOpsInput): 
   return Boolean(input.cashDebtNeedsOps);
 }
 
+export function bookingPaymentReleaseNeedsOpsFromFacts(input: {
+  payment?: { status?: string | null } | null;
+}): boolean {
+  return Boolean(input.payment && !paymentIsReleaseComplete(input.payment.status));
+}
+
 export function bookingManualDecisionNeedsOpsFromFacts(
   input: BookingManualDecisionOpsInput,
 ): boolean {

@@ -36,6 +36,10 @@ import {
 import { marketplaceDisplayText as displayOperationalWording } from '../lib/admin-copy';
 import { buildMarketplaceParticipantSnapshot } from '../lib/dashboard-marketplace';
 import { OPERATIONAL_POLICY_KEYS, operationalPolicyHref } from '../lib/operations-policy';
+import {
+  bookingCompletedCloseoutNeedsOpsFromFacts,
+  bookingPaymentReleaseNeedsOpsFromFacts,
+} from '../lib/booking-payment-ops';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -5850,25 +5854,11 @@ function bookingFlags(booking: AdminBooking) {
 }
 
 function unresolvedReleasePayment(booking: AdminBooking) {
-  return Boolean(booking.payment && !['RELEASED', 'REFUNDED'].includes(booking.payment.status));
+  return bookingPaymentReleaseNeedsOpsFromFacts({ payment: booking.payment });
 }
 
 function completedCloseoutNeedsOps(booking: AdminBooking) {
-  if (booking.status !== 'COMPLETED') {
-    return false;
-  }
-  if (!booking.payment || booking.payment.status !== 'CAPTURED') {
-    return true;
-  }
-  if (!booking.earning) {
-    return true;
-  }
-
-  return (
-    (booking.earning.taxLogs?.length ?? 0) === 0 ||
-    (booking.earning.platformFeeLogs?.length ?? 0) === 0 ||
-    (booking.earning.walletLedgerEntries?.length ?? 0) === 0
-  );
+  return bookingCompletedCloseoutNeedsOpsFromFacts(booking);
 }
 
 function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]) {

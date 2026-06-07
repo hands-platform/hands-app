@@ -2,6 +2,7 @@ import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingManualDecisionNeedsOpsFromFacts,
   bookingPaymentNeedsOpsFromFacts,
+  bookingPaymentReleaseNeedsOpsFromFacts,
   bookingRefundReviewNeedsOpsFromFacts,
 } from './booking-payment-ops';
 
@@ -39,6 +40,19 @@ describe('booking payment operations helpers', () => {
         }),
       ).toBe(false);
     }
+  });
+
+  it('flags a payment release as pending until it is released or refunded', () => {
+    expect(bookingPaymentReleaseNeedsOpsFromFacts({ payment: null })).toBe(false);
+    expect(bookingPaymentReleaseNeedsOpsFromFacts({ payment: { status: 'AUTHORIZED' } })).toBe(
+      true,
+    );
+    expect(bookingPaymentReleaseNeedsOpsFromFacts({ payment: { status: 'RELEASED' } })).toBe(
+      false,
+    );
+    expect(bookingPaymentReleaseNeedsOpsFromFacts({ payment: { status: 'REFUNDED' } })).toBe(
+      false,
+    );
   });
 
   it('requires payment operations for payment holds, missing references, cash pending, and cash debt', () => {
