@@ -29,3 +29,33 @@ export function isCustomerSelectableBookingParticipant(
 
   return partnerId !== preferredProviderId;
 }
+
+export function bookingMarketplaceParticipants<T extends BookingParticipantChoiceInput>(
+  participants: T[] | null | undefined,
+  preferredProviderId?: string | null,
+) {
+  return (participants ?? []).filter((participant) => {
+    const partnerId = bookingParticipantPartnerId(participant);
+    return Boolean(partnerId && participant.status !== 'REJECTED' && partnerId !== preferredProviderId);
+  });
+}
+
+export function bookingCustomerSelectableParticipants<T extends BookingParticipantChoiceInput>(
+  participants: T[] | null | undefined,
+  preferredProviderId?: string | null,
+) {
+  return (participants ?? []).filter((participant) =>
+    isCustomerSelectableBookingParticipant(participant, preferredProviderId),
+  );
+}
+
+export function bookingHasCustomerSelectablePartner<T extends BookingParticipantChoiceInput>(
+  participants: T[] | null | undefined,
+  preferredProviderId?: string | null,
+  selectedProviderId?: string | null,
+) {
+  return (
+    !selectedProviderId &&
+    bookingCustomerSelectableParticipants(participants, preferredProviderId).length > 0
+  );
+}

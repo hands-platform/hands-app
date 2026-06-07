@@ -20,6 +20,12 @@ import {
 import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
+import {
+  bookingCustomerSelectableParticipants as buildBookingCustomerSelectableParticipants,
+  bookingHasCustomerSelectablePartner as hasBookingCustomerSelectablePartner,
+  bookingMarketplaceParticipants as buildBookingMarketplaceParticipants,
+  isCustomerSelectableBookingParticipant,
+} from '../../lib/booking-participant-choice';
 
 type Props = {
   bookings: AdminBooking[];
@@ -4506,12 +4512,9 @@ function isBackupSelected(booking: AdminBooking) {
 }
 
 function marketplaceParticipants(booking: AdminBooking) {
-  const preferredId = booking.preferredProvider?.id;
-  return (booking.participants ?? []).filter(
-    (participant) =>
-      participant.status !== 'REJECTED' &&
-      participant.providerProfile?.id &&
-      participant.providerProfile.id !== preferredId,
+  return buildBookingMarketplaceParticipants(
+    booking.participants,
+    booking.preferredProvider?.id ?? booking.preferredProviderId,
   );
 }
 
@@ -5027,28 +5030,25 @@ function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
 }
 
 function customerSelectableParticipants(booking: AdminBooking) {
-  return (booking.participants ?? []).filter(
-    (participant) =>
-      isCustomerSelectableMarketplaceParticipant(booking, participant) || participant.status === 'SELECTED',
+  return buildBookingCustomerSelectableParticipants(
+    booking.participants,
+    booking.preferredProvider?.id ?? booking.preferredProviderId,
   );
 }
 
 function isCustomerSelectableMarketplaceParticipant(booking: AdminBooking, participant: BookingParticipant) {
-  const partnerId = participant.providerProfile?.id;
-  if (!partnerId) {
-    return false;
-  }
-  if (participant.status === 'ACCEPTED') {
-    return true;
-  }
-  if (participant.status === 'JOINED') {
-    return partnerId !== (booking.preferredProvider?.id ?? booking.preferredProviderId);
-  }
-  return false;
+  return isCustomerSelectableBookingParticipant(
+    participant,
+    booking.preferredProvider?.id ?? booking.preferredProviderId,
+  );
 }
 
 function bookingHasCustomerSelectablePartner(booking: AdminBooking) {
-  return customerSelectableParticipants(booking).length > 0 && !booking.selectedProvider;
+  return hasBookingCustomerSelectablePartner(
+    booking.participants,
+    booking.preferredProvider?.id ?? booking.preferredProviderId,
+    booking.selectedProvider?.id ?? booking.selectedProviderId,
+  );
 }
 
 function bookingMatchingEscalationNeedsOps(booking: AdminBooking, nowMs: number) {
