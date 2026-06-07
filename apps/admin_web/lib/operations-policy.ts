@@ -6,9 +6,11 @@ export const OPERATIONAL_POLICY_KEYS = {
   marketplaceRadiusMeters: 'matching.backup_provider_radius_meters',
   marketplaceLocationFreshnessMinutes: 'matching.backup_provider_location_max_age_minutes',
   marketplaceInvitationLimit: 'matching.backup_provider_invitation_limit',
+  marketplaceOpenMode: 'matching.backup_open_mode',
   bookingMaxCustomerCurrentToAddressKm: 'booking.max_customer_current_to_booking_address_km',
   bookingMaxPreferredPartnerDistanceKm: 'booking.max_preferred_partner_distance_km',
   bookingCurrentLocationFreshnessMinutes: 'booking.current_location_freshness_minutes',
+  // Compatibility alias for older saved policy snapshots and Admin pages.
   backupOpenMode: 'matching.backup_open_mode',
   preferredAcceptMode: 'matching.preferred_accept_mode',
   partnerAlertChannel: 'notification.partner_alert_channel',
@@ -26,6 +28,8 @@ export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
   bookingMaxCustomerCurrentToAddressKm: 20,
   bookingMaxPreferredPartnerDistanceKm: 50,
   bookingCurrentLocationFreshnessMinutes: 10,
+  marketplaceOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
+  // Compatibility alias for older saved policy snapshots and Admin pages.
   backupOpenMode: 'IMMEDIATE_WITHIN_WINDOW',
   preferredAcceptMode: 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT',
   partnerAlertChannel: 'IN_APP_WITH_PUSH_LATER',
@@ -39,6 +43,8 @@ export type AdminLiveOperationsPolicy = {
   marketplaceRadiusMeters: number;
   marketplaceLocationFreshnessMinutes: number;
   marketplaceInvitationLimit: number;
+  marketplaceOpenMode: string;
+  /** @deprecated Use marketplaceOpenMode in new Admin code. */
   backupOpenMode: string;
   preferredAcceptMode: string;
   walletNegativeGate: string;
@@ -49,6 +55,10 @@ export type AdminLiveOperationsPolicy = {
 export function buildAdminLiveOperationsPolicy(
   settings: AdminOperationalPolicySetting[],
 ): AdminLiveOperationsPolicy {
+  const marketplaceOpenMode =
+    readPolicyString(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) ??
+    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
+
   return {
     providerResponseWindowMinutes:
       readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
@@ -62,9 +72,8 @@ export function buildAdminLiveOperationsPolicy(
     marketplaceInvitationLimit:
       readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceInvitationLimit,
-    backupOpenMode:
-      readPolicyString(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ??
-      ADMIN_OPERATIONS_POLICY_DEFAULTS.backupOpenMode,
+    marketplaceOpenMode,
+    backupOpenMode: marketplaceOpenMode,
     preferredAcceptMode:
       readPolicyString(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode,

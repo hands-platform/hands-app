@@ -20,7 +20,7 @@ describe('admin live operations policy helpers', () => {
       setting(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, '10000'),
       setting(OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 30),
       setting(OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit, '25'),
-      setting(OPERATIONAL_POLICY_KEYS.backupOpenMode, ' IMMEDIATE '),
+      setting(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, ' IMMEDIATE '),
       setting(OPERATIONAL_POLICY_KEYS.preferredAcceptMode, ' CUSTOMER_CONFIRM '),
       setting(OPERATIONAL_POLICY_KEYS.walletNegativeGate, ' BLOCK_MARKETPLACE_PARTICIPATION '),
     ];
@@ -31,7 +31,7 @@ describe('admin live operations policy helpers', () => {
     expect(policy.marketplaceRadiusMeters).toBe(10000);
     expect(policy.marketplaceLocationFreshnessMinutes).toBe(30);
     expect(policy.marketplaceInvitationLimit).toBe(25);
-    expect(policy.backupOpenMode).toBe('IMMEDIATE');
+    expect(policy.marketplaceOpenMode).toBe('IMMEDIATE');
     expect(policy.preferredAcceptMode).toBe('CUSTOMER_CONFIRM');
     expect(policy.walletNegativeGate).toBe('BLOCK_MARKETPLACE_PARTICIPATION');
   });
@@ -39,14 +39,14 @@ describe('admin live operations policy helpers', () => {
   it('falls back to MVP authority defaults when settings are missing or invalid', () => {
     const policy = buildAdminLiveOperationsPolicy([
       setting(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes, 'bad-number'),
-      setting(OPERATIONAL_POLICY_KEYS.backupOpenMode, '   '),
+      setting(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, '   '),
     ]);
 
     expect(policy.providerResponseWindowMinutes).toBe(10);
     expect(policy.marketplaceRadiusMeters).toBe(10000);
     expect(policy.marketplaceLocationFreshnessMinutes).toBe(30);
     expect(policy.marketplaceInvitationLimit).toBe(50);
-    expect(policy.backupOpenMode).toBe('IMMEDIATE_WITHIN_WINDOW');
+    expect(policy.marketplaceOpenMode).toBe('IMMEDIATE_WITHIN_WINDOW');
     expect(policy.preferredAcceptMode).toBe('CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT');
     expect(policy.walletNegativeGate).toBe('BLOCK_ACCEPTS_WHEN_NEGATIVE');
     expect(policy.cashSettlementClearance).toBe('DEPOSIT_OR_ADMIN_OFFSET_REQUIRED');
