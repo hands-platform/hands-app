@@ -131,6 +131,7 @@ import {
 } from '../../../lib/booking-chat-repair-action-state';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
+import { bookingEvidencePacket as buildBookingEvidencePacket } from '../../../lib/booking-evidence-packet';
 import {
   bookingLocationTrail,
   isPreferredAwaitingDecision as isPreferredAwaitingDecisionFromStatus,
@@ -1252,176 +1253,40 @@ function bookingEvidencePacket({
   operatorNoteLines: string[];
   bookingActivityRecords: BookingActivityRecord[];
 }) {
-  const chatReady = Boolean(booking.chatRoom);
   const trail = locationTrail(booking);
-  const failedAlerts = notificationTrace.rows.filter((row) => row.deliveryStatuses.includes('FAILED')).length;
-  const evidenceCount =
-    messages.length +
-    trail.length +
-    notificationTrace.rows.length +
-    refundLedgerRows.length +
-    operatorNoteLines.length +
-    (booking.auditLogs?.length ?? 0);
-  const hasDecisionEvidence =
-    messages.length > 0 ||
-    trail.length > 0 ||
-    notificationTrace.rows.length > 0 ||
-    operatorNoteLines.length > 0;
-  const status = hasDecisionEvidence ? 'Evidence ready' : 'Needs evidence';
-  const tone = hasDecisionEvidence ? 'pill-success' : 'pill-warn';
-  const summary = hasDecisionEvidence
-    ? `Admin can review ${evidenceCount} retained evidence item(s) before changing booking outcome.`
-    : 'No chat, alert, location, or operator note evidence is attached yet; add a note before manual outcome changes.';
-
-  return {
-    status,
-    tone,
-    summary,
-    metrics: [
-      {
-        label: 'Chat evidence',
-        value: chatReady ? `${messages.length} message(s)` : 'No room',
-        helper: chatReady
-          ? 'Matched booking chat is retained in admin even after mobile closeout.'
-          : 'Matched bookings should create a retained chat room before service handoff.',
-      },
-      {
-        label: 'Location evidence',
-        value: latestLocation ? formatDate(latestLocation.recordedAt) : `${trail.length} row(s)`,
-        helper: latestLocation
-          ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} latest partner pin.`
-          : 'No partner pin is saved for this booking yet.',
-      },
-      {
-        label: 'Payment evidence',
-        value: booking.payment?.status ?? 'NONE',
-        helper: `${booking.payment?.method ?? 'No method'} / ${money(
-          booking.payment?.amount,
-          booking.payment?.currency,
-        )}`,
-      },
-      {
-        label: 'Refund evidence',
-        value: `${refundLedgerRows.length} refund row(s)`,
-        helper: refundLedgerRows.length
-          ? refundLedgerRows
-              .map((row) => `${row.status} ${money(row.amount, row.payment?.currency ?? undefined)}`)
-              .join(', ')
-          : 'No refund row is attached to this booking.',
-      },
-      {
-        label: 'Alert evidence',
-        value: `${notificationTrace.rows.length} alert(s)`,
-        helper: `${failedAlerts} failed delivery row(s), ${notificationTrace.backupBatches.length} marketplace batch(es).`,
-      },
-      {
-        label: 'Operator note evidence',
-        value: `${operatorNoteLines.length} note(s)`,
-        helper:
-          operatorNoteLines[operatorNoteLines.length - 1] ??
-          'No internal note has been added for manual decision context.',
-      },
-    ],
-    records: [
-      {
-        id: 'address-evidence',
-        label: 'Address',
-        title: 'Address evidence',
-        detail: booking.addressSnapshot
-          ? `Locked address snapshot: ${bookingAddressSnapshotLabel(booking)}.`
-          : 'No immutable address snapshot is attached yet.',
-        evidence: booking.addressSnapshot
-          ? `Pin ${coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)}`
-          : 'Stored-address fallback or missing booking address needs operator review.',
-        href: '#address-radius-contract',
-      },
-      {
-        id: 'chat-evidence',
-        label: 'Chat',
-        title: 'Chat evidence',
-        detail: chatReady
-          ? `Room ${shortId(booking.chatRoom?.id ?? 'missing')} keeps ${messages.length} retained message(s).`
-          : 'No retained chat room is attached.',
-        evidence:
-          messages.length > 0
-            ? `Latest message: ${formatDate(messages[messages.length - 1]?.createdAt)}`
-            : 'No chat message evidence.',
-        href: '#chat',
-      },
-      {
-        id: 'location-evidence',
-        label: 'Location',
-        title: 'Location evidence',
-        detail: latestLocation
-          ? `Latest partner pin is ${coordinateLabel(latestLocation.lat, latestLocation.lng)}.`
-          : 'No partner location pin has been retained.',
-        evidence: latestLocation
-          ? `Recorded ${formatDate(latestLocation.recordedAt)}`
-          : 'No location timestamp.',
-        href: '#location',
-      },
-      {
-        id: 'payment-evidence',
-        label: 'Payment',
-        title: 'Payment evidence',
-        detail: `${booking.payment?.method ?? 'No method'} payment is ${booking.payment?.status ?? 'NONE'}.`,
-        evidence: `${financeTrace.customerPrice} customer price / ${financeTrace.walletLedger} wallet impact.`,
-        href: '#payment',
-      },
-      {
-        id: 'refund-evidence',
-        label: 'Refund',
-        title: 'Refund evidence',
-        detail: refundLedgerRows.length
-          ? `${refundLedgerRows.length} refund row(s) are attached to this booking.`
-          : 'No refund row is attached to this booking.',
-        evidence: bookingRefundLedgerEvidence(booking),
-        href: '#payment',
-      },
-      {
-        id: 'alert-evidence',
-        label: 'Alerts',
-        title: 'Alert evidence',
-        detail: `${notificationTrace.rows.length} notification row(s) and ${notificationTrace.backupBatches.length} marketplace batch(es).`,
-        evidence: failedAlerts
-          ? `${failedAlerts} failed delivery row(s)`
-          : 'No failed delivery row in this packet.',
-        href: '#alerts',
-      },
-      {
-        id: 'note-evidence',
-        label: 'Notes',
-        title: 'Operator note evidence',
-        detail: operatorNoteLines.length
-          ? 'Internal support notes are attached to this booking.'
-          : 'No internal support note has been added yet.',
-        evidence:
-          operatorNoteLines[operatorNoteLines.length - 1] ??
-          'Use operator notes before manual cancellation, no-show, or refund decisions.',
-        href: '#operator-notes',
-      },
-      {
-        id: 'ops-evidence',
-        label: 'Ops',
-        title: 'Operations evidence',
-        detail: `${booking.opsTasks?.length ?? 0} task row(s), ${booking.auditLogs?.length ?? 0} audit row(s).`,
-        evidence:
-          operatorNoteLines[operatorNoteLines.length - 1] ??
-          'Use structured ops status and audit rows before manual outcome changes.',
-        href: '#structured-ops-status',
-      },
-      {
-        id: 'audit-evidence',
-        label: 'Audit',
-        title: 'Audit evidence',
-        detail: `${booking.auditLogs?.length ?? 0} audit row(s), ${bookingActivityRecords.length} timeline event(s).`,
-        evidence: bookingActivityRecords[0]
-          ? `Latest event: ${bookingActivityRecords[0].title} / ${formatDate(bookingActivityRecords[0].at)}`
-          : 'No timeline event retained.',
-        href: '#booking-activity',
-      },
-    ],
-  };
+  return buildBookingEvidencePacket({
+    chatReady: Boolean(booking.chatRoom),
+    messageCount: messages.length,
+    latestMessageAtLabel: messages.length > 0 ? formatDate(messages[messages.length - 1]?.createdAt) : null,
+    locationTrailCount: trail.length,
+    latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
+    latestLocationCoordinateLabel: latestLocation ? coordinateLabel(latestLocation.lat, latestLocation.lng) : null,
+    paymentStatus: booking.payment?.status ?? 'NONE',
+    paymentMethod: booking.payment?.method ?? 'No method',
+    paymentAmountLabel: money(booking.payment?.amount, booking.payment?.currency),
+    refundRows: refundLedgerRows.map((row) => ({
+      status: row.status,
+      amountLabel: money(row.amount, row.payment?.currency ?? undefined),
+    })),
+    alertCount: notificationTrace.rows.length,
+    failedAlertCount: notificationTrace.rows.filter((row) => row.deliveryStatuses.includes('FAILED')).length,
+    marketplaceBatchCount: notificationTrace.backupBatches.length,
+    operatorNoteLines,
+    auditLogCount: booking.auditLogs?.length ?? 0,
+    opsTaskCount: booking.opsTasks?.length ?? 0,
+    hasAddressSnapshot: Boolean(booking.addressSnapshot),
+    addressSnapshotLabel: bookingAddressSnapshotLabel(booking),
+    addressPinLabel: booking.addressSnapshot
+      ? coordinateLabel(booking.addressSnapshot.latitude, booking.addressSnapshot.longitude)
+      : null,
+    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
+    customerPriceLabel: financeTrace.customerPrice,
+    walletLedgerLabel: financeTrace.walletLedger,
+    refundEvidence: bookingRefundLedgerEvidence(booking),
+    activityRecordCount: bookingActivityRecords.length,
+    latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
+    latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
+  });
 }
 
 function bookingDecisionEvidenceGuardrails({
