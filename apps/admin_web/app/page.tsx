@@ -46,6 +46,7 @@ import {
   bookingAlertTraceSummaryFromMetadata,
   bookingPartnerChoiceEvidenceNeedsOpsFromFacts,
 } from '../lib/booking-evidence-ops';
+import { bookingLocationNeedsOpsFromProvider } from '../lib/booking-status-location-helpers';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -3693,15 +3694,11 @@ function dashboardBookingPartnerChoiceNeedsEvidence(booking: AdminBooking) {
 }
 
 function dashboardBookingLocationNeedsEvidence(booking: AdminBooking) {
-  if (!['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)) {
-    return false;
-  }
   const partner = booking.selectedProvider ?? booking.preferredProvider;
-  if (!partner || !parseCoordinatePair(partner.currentLat, partner.currentLng)) {
-    return true;
-  }
-  const age = locationAgeMinutes(partner.currentLocationUpdatedAt);
-  return age === null || age > 30;
+  return bookingLocationNeedsOpsFromProvider({
+    status: booking.status,
+    provider: partner,
+  });
 }
 
 function dashboardBookingChatNeedsEvidence(booking: AdminBooking) {

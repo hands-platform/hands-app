@@ -1,5 +1,6 @@
 import {
   bookingLocationNeedsOpsFromFacts,
+  bookingLocationNeedsOpsFromProvider,
   bookingLocationTrail,
   hasProviderCoordinate,
   isPreferredAwaitingDecision,
@@ -96,6 +97,54 @@ describe('booking status location helpers', () => {
         status: 'ARRIVED',
         hasProviderLocation: true,
         providerLocationFreshness: 'recent',
+      }),
+    ).toBe(false);
+  });
+
+  it('derives live handoff location review from the selected partner coordinate and timestamp', () => {
+    const now = new Date('2026-06-07T10:00:00.000Z').getTime();
+
+    expect(
+      bookingLocationNeedsOpsFromProvider({
+        status: 'PROVIDER_ON_THE_WAY',
+        provider: {
+          currentLat: '10.7769',
+          currentLng: '106.7009',
+          currentLocationUpdatedAt: '2026-06-07T09:45:00.000Z',
+        },
+        nowMs: now,
+      }),
+    ).toBe(false);
+
+    expect(
+      bookingLocationNeedsOpsFromProvider({
+        status: 'ARRIVED',
+        provider: {
+          currentLat: '10.7769',
+          currentLng: '106.7009',
+          currentLocationUpdatedAt: '2026-06-07T09:20:00.000Z',
+        },
+        nowMs: now,
+      }),
+    ).toBe(true);
+
+    expect(
+      bookingLocationNeedsOpsFromProvider({
+        status: 'IN_SERVICE',
+        provider: {
+          currentLat: null,
+          currentLng: '106.7009',
+          currentLocationUpdatedAt: '2026-06-07T09:45:00.000Z',
+        },
+        nowMs: now,
+      }),
+    ).toBe(true);
+
+    expect(
+      bookingLocationNeedsOpsFromProvider({
+        status: 'MATCHED',
+        provider: null,
+        nowMs: now,
       }),
     ).toBe(false);
   });

@@ -8,6 +8,10 @@ export type ProviderLocationCoordinateInput = {
   currentLng?: string | number | null;
 };
 
+export type ProviderLocationTimestampInput = ProviderLocationCoordinateInput & {
+  currentLocationUpdatedAt?: string | null;
+};
+
 export type ProviderLocationFreshness = 'recent' | 'stale' | 'expired' | 'missing';
 
 export type BookingLocationNeedsOpsFromFactsInput = {
@@ -85,4 +89,19 @@ export function bookingLocationNeedsOpsFromFacts(input: BookingLocationNeedsOpsF
     return true;
   }
   return input.providerLocationFreshness !== 'recent';
+}
+
+export function bookingLocationNeedsOpsFromProvider(input: {
+  status: string;
+  provider?: ProviderLocationTimestampInput | null;
+  nowMs?: number;
+}): boolean {
+  const hasLocation = hasProviderCoordinate(input.provider);
+  return bookingLocationNeedsOpsFromFacts({
+    status: input.status,
+    hasProviderLocation: hasLocation,
+    providerLocationFreshness: hasLocation
+      ? providerLocationFreshnessFromTimestamp(input.provider?.currentLocationUpdatedAt, input.nowMs)
+      : 'missing',
+  });
 }
