@@ -1,11 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import {
   FileReviewStatus,
-  ProviderReportSeverity,
-  ProviderReportSource,
-  ProviderReportStatus,
-  ProviderSanctionType,
-  ReviewStatus,
   Role,
   VerificationStatus,
 } from '@prisma/client';
@@ -15,16 +10,26 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import {
+  AdminReasonDto,
   BookingCloseoutDto,
   BookingOpsNoteDto,
   BookingOpsReasonDto,
   BookingOpsTaskDto,
   BulkUpsertServicePayoutRulesDto,
   CreateAdminServiceDto,
+  CreateCouponDto,
+  CreatePartnerReportDto,
+  CreatePartnerSanctionDto,
   CreatePayoutBatchDto,
+  CustomerOpsNoteDto,
   MarkEarningPaidDto,
+  ModerateReviewDto,
+  OperationsHandoffNoteDto,
+  PartnerOpsNoteDto,
   UpdateAdminServiceDto,
+  UpdateCouponDto,
   UpdateOperationalPolicyDto,
+  UpdatePartnerReportDto,
   UpdatePayoutBatchDto,
   UpdateServicePayoutRuleDto,
   UpsertServicePayoutRuleDto,
@@ -56,7 +61,7 @@ export class AdminController {
   addCustomerOpsNote(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') customerProfileId: string,
-    @Body() body: { note?: string; preset?: string; bookingId?: string | null },
+    @Body() body: CustomerOpsNoteDto,
   ) {
     return this.admin.addCustomerOpsNote(user.id, customerProfileId, body);
   }
@@ -100,7 +105,7 @@ export class AdminController {
   addProviderOpsNote(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { note?: string; preset?: string },
+    @Body() body: PartnerOpsNoteDto,
   ) {
     return this.admin.addProviderOpsNote(user.id, providerProfileId, body);
   }
@@ -114,7 +119,7 @@ export class AdminController {
   blockProviderDevice(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerDeviceId: string,
-    @Body() body: { reason?: string },
+    @Body() body: AdminReasonDto,
   ) {
     return this.admin.blockProviderDevice(user.id, providerDeviceId, body.reason);
   }
@@ -138,7 +143,7 @@ export class AdminController {
   blockProviderAccount(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: AdminReasonDto,
   ) {
     return this.admin.blockProviderAccount(user.id, providerProfileId, body.reason);
   }
@@ -147,7 +152,7 @@ export class AdminController {
   blockPartnerAccount(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: AdminReasonDto,
   ) {
     return this.admin.blockProviderAccount(user.id, providerProfileId, body.reason);
   }
@@ -175,16 +180,7 @@ export class AdminController {
   @Post('provider-reports')
   createProviderReport(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      providerProfileId?: string;
-      bookingId?: string | null;
-      source?: ProviderReportSource;
-      severity?: ProviderReportSeverity;
-      category?: string;
-      summary?: string;
-      details?: string | null;
-    },
+    @Body() body: CreatePartnerReportDto,
   ) {
     return this.admin.createProviderReport(user.id, body);
   }
@@ -192,16 +188,7 @@ export class AdminController {
   @Post('partner-reports')
   createPartnerReport(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      providerProfileId?: string;
-      bookingId?: string | null;
-      source?: ProviderReportSource;
-      severity?: ProviderReportSeverity;
-      category?: string;
-      summary?: string;
-      details?: string | null;
-    },
+    @Body() body: CreatePartnerReportDto,
   ) {
     return this.admin.createProviderReport(user.id, body);
   }
@@ -210,12 +197,7 @@ export class AdminController {
   updateProviderReport(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') reportId: string,
-    @Body()
-    body: {
-      status?: ProviderReportStatus;
-      severity?: ProviderReportSeverity;
-      resolutionNote?: string | null;
-    },
+    @Body() body: UpdatePartnerReportDto,
   ) {
     return this.admin.updateProviderReport(user.id, reportId, body);
   }
@@ -224,12 +206,7 @@ export class AdminController {
   updatePartnerReport(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') reportId: string,
-    @Body()
-    body: {
-      status?: ProviderReportStatus;
-      severity?: ProviderReportSeverity;
-      resolutionNote?: string | null;
-    },
+    @Body() body: UpdatePartnerReportDto,
   ) {
     return this.admin.updateProviderReport(user.id, reportId, body);
   }
@@ -248,13 +225,7 @@ export class AdminController {
   createProviderSanction(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body()
-    body: {
-      type?: ProviderSanctionType;
-      reason?: string;
-      reportId?: string | null;
-      expiresAt?: string | null;
-    },
+    @Body() body: CreatePartnerSanctionDto,
   ) {
     return this.admin.createProviderSanction(user.id, providerProfileId, body);
   }
@@ -263,13 +234,7 @@ export class AdminController {
   createPartnerSanction(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body()
-    body: {
-      type?: ProviderSanctionType;
-      reason?: string;
-      reportId?: string | null;
-      expiresAt?: string | null;
-    },
+    @Body() body: CreatePartnerSanctionDto,
   ) {
     return this.admin.createProviderSanction(user.id, providerProfileId, body);
   }
@@ -303,7 +268,7 @@ export class AdminController {
   rejectPublicProviderMedia(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') fileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: AdminReasonDto,
   ) {
     return this.admin.reviewPublicProviderMedia(user.id, fileId, FileReviewStatus.REJECTED, body.reason);
   }
@@ -312,7 +277,7 @@ export class AdminController {
   rejectProvider(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: AdminReasonDto,
   ) {
     return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.REJECTED, body.reason);
   }
@@ -321,7 +286,7 @@ export class AdminController {
   rejectPartner(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') providerProfileId: string,
-    @Body() body: { reason?: string },
+    @Body() body: AdminReasonDto,
   ) {
     return this.admin.reviewProvider(user.id, providerProfileId, VerificationStatus.REJECTED, body.reason);
   }
@@ -548,7 +513,7 @@ export class AdminController {
   moderateReview(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body() body: { status: ReviewStatus; reportReason?: string },
+    @Body() body: ModerateReviewDto,
   ) {
     return this.admin.moderateReview(user.id, id, body);
   }
@@ -561,15 +526,7 @@ export class AdminController {
   @Post('coupons')
   createCoupon(
     @CurrentUser() user: AuthenticatedUser,
-    @Body()
-    body: {
-      code: string;
-      description?: string;
-      discount: unknown;
-      active?: boolean;
-      startsAt?: string;
-      endsAt?: string;
-    },
+    @Body() body: CreateCouponDto,
   ) {
     return this.admin.createCoupon(user.id, body);
   }
@@ -578,14 +535,7 @@ export class AdminController {
   updateCoupon(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') id: string,
-    @Body()
-    body: {
-      description?: string;
-      discount?: unknown;
-      active?: boolean;
-      startsAt?: string | null;
-      endsAt?: string | null;
-    },
+    @Body() body: UpdateCouponDto,
   ) {
     return this.admin.updateCoupon(user.id, id, body);
   }
@@ -598,7 +548,7 @@ export class AdminController {
   @Post('operations-handoff/note')
   addOperationsHandoffNote(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { note?: string; preset?: string; owner?: string },
+    @Body() body: OperationsHandoffNoteDto,
   ) {
     return this.admin.addOperationsHandoffNote(user.id, body);
   }

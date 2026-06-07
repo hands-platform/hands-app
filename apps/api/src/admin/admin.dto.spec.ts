@@ -1,6 +1,11 @@
 import 'reflect-metadata';
 import { ValidationPipe } from '@nestjs/common';
-import { BookingOpsTaskStatus, BookingOpsTaskType, PayoutBatchStatus } from '@prisma/client';
+import {
+  BookingOpsTaskStatus,
+  BookingOpsTaskType,
+  PayoutBatchStatus,
+  ProviderReportSeverity,
+} from '@prisma/client';
 import { AdminController } from './admin.controller';
 
 describe('admin request DTO validation', () => {
@@ -193,5 +198,114 @@ describe('admin request DTO validation', () => {
     );
 
     expect(transformed).toHaveProperty('note', 'reviewed');
+  });
+
+  it('uses concrete DTOs for customer and partner management payloads', () => {
+    expect((bodyMetatype('addCustomerOpsNote', 2) as { name?: string })?.name).toBe(
+      'CustomerOpsNoteDto',
+    );
+    expect((bodyMetatype('addProviderOpsNote', 2) as { name?: string })?.name).toBe(
+      'PartnerOpsNoteDto',
+    );
+    expect((bodyMetatype('blockProviderDevice', 2) as { name?: string })?.name).toBe(
+      'AdminReasonDto',
+    );
+    expect((bodyMetatype('blockPartnerAccount', 2) as { name?: string })?.name).toBe(
+      'AdminReasonDto',
+    );
+    expect((bodyMetatype('rejectPartner', 2) as { name?: string })?.name).toBe(
+      'AdminReasonDto',
+    );
+  });
+
+  it('uses concrete DTOs for reports, sanctions, moderation, coupons, and handoff', () => {
+    expect((bodyMetatype('createProviderReport', 1) as { name?: string })?.name).toBe(
+      'CreatePartnerReportDto',
+    );
+    expect((bodyMetatype('updatePartnerReport', 2) as { name?: string })?.name).toBe(
+      'UpdatePartnerReportDto',
+    );
+    expect((bodyMetatype('createPartnerSanction', 2) as { name?: string })?.name).toBe(
+      'CreatePartnerSanctionDto',
+    );
+    expect((bodyMetatype('moderateReview', 2) as { name?: string })?.name).toBe(
+      'ModerateReviewDto',
+    );
+    expect((bodyMetatype('createCoupon', 1) as { name?: string })?.name).toBe(
+      'CreateCouponDto',
+    );
+    expect((bodyMetatype('updateCoupon', 2) as { name?: string })?.name).toBe(
+      'UpdateCouponDto',
+    );
+    expect((bodyMetatype('addOperationsHandoffNote', 1) as { name?: string })?.name).toBe(
+      'OperationsHandoffNoteDto',
+    );
+  });
+
+  it('trims customer operation notes and strips unsupported customer fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        note: '  called customer  ',
+        bookingId: null,
+        walletBalance: -1000,
+      },
+      { type: 'body', metatype: bodyMetatype('addCustomerOpsNote', 2) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('note', 'called customer');
+    expect(transformed).toHaveProperty('bookingId', null);
+    expect(transformed).not.toHaveProperty('walletBalance');
+  });
+
+  it('rejects invalid report, sanction, and review enums', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    await expect(
+      pipe.transform(
+        {
+          providerProfileId: 'partner-1',
+          source: 'BOT',
+          severity: ProviderReportSeverity.HIGH,
+          category: 'kyc',
+          summary: 'invalid source',
+        },
+        { type: 'body', metatype: bodyMetatype('createProviderReport', 1) as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { type: 'AUTO_BAN', reason: 'bad sanction type' },
+        { type: 'body', metatype: bodyMetatype('createPartnerSanction', 2) as never, data: '' },
+      ),
+    ).rejects.toThrow();
+
+    await expect(
+      pipe.transform(
+        { status: 'DELETED', reportReason: 'bad review status' },
+        { type: 'body', metatype: bodyMetatype('moderateReview', 2) as never, data: '' },
+      ),
+    ).rejects.toThrow();
+  });
+
+  it('preserves coupon discount payloads while stripping unsupported coupon fields', async () => {
+    const pipe = new ValidationPipe({ whitelist: true, transform: true });
+
+    const transformed = await pipe.transform(
+      {
+        code: '  first100  ',
+        description: 'Launch coupon',
+        discount: { type: 'fixed', amount: 100000 },
+        active: true,
+        createdByPhone: 'hidden',
+      },
+      { type: 'body', metatype: bodyMetatype('createCoupon', 1) as never, data: '' },
+    );
+
+    expect(transformed).toHaveProperty('code', 'first100');
+    expect(transformed).toHaveProperty('discount', { type: 'fixed', amount: 100000 });
+    expect(transformed).not.toHaveProperty('createdByPhone');
   });
 });
