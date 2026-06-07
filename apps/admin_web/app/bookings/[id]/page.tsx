@@ -133,6 +133,7 @@ import {
   type DispatchStep,
 } from '../../../lib/booking-dispatch-checklist';
 import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
+import { bookingFlowStages as buildBookingFlowStages } from '../../../lib/booking-flow-stages';
 import { bookingFinanceSummaryCards as buildBookingFinanceSummaryCards } from '../../../lib/booking-finance-summary-cards';
 import {
   canCloseoutCompletedBooking,
@@ -4213,44 +4214,23 @@ function liveServiceSignals(booking: AdminBookingDetail) {
 }
 
 function flowStages(booking: AdminBookingDetail) {
-  return [
-    {
-      label: 'Created',
-      value: formatDate(booking.createdAt),
-      hint: 'Customer selected service and address.',
-      done: true,
-    },
-    {
-      label: 'Opened',
-      value: booking.openedAt ? formatDate(booking.openedAt) : 'Not opened',
-      hint: booking.preferredProvider
-        ? 'Direct request sent to preferred partner.'
-        : 'Open matching started.',
-      done: Boolean(booking.openedAt),
-    },
-    {
-      label: 'Partner reply',
-      value: bookingPartnerDecisionLabel(booking, bookingPreferredProviderId(booking)),
-      hint: bookingPartnerHint(booking),
-      done:
-        (booking.participants?.length ?? 0) > 0 ||
-        ['MATCHED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status),
-    },
-    {
-      label: 'Matched',
-      value: providerName(booking.selectedProvider),
-      hint: booking.chatRoom ? 'Chat room is ready.' : 'Waiting for final partner selection.',
-      done: Boolean(booking.selectedProvider),
-    },
-    {
-      label: 'Payment',
-      value: booking.payment?.status ?? 'NONE',
-      hint: bookingPaymentHint(booking, {
-        cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-      }),
-      done: ['CAPTURED', 'RELEASED', 'REFUNDED'].includes(booking.payment?.status ?? ''),
-    },
-  ];
+  return buildBookingFlowStages({
+    createdAtLabel: formatDate(booking.createdAt),
+    openedAtLabel: booking.openedAt ? formatDate(booking.openedAt) : null,
+    hasOpened: Boolean(booking.openedAt),
+    hasPreferredPartner: Boolean(booking.preferredProvider),
+    partnerDecisionLabel: bookingPartnerDecisionLabel(booking, bookingPreferredProviderId(booking)),
+    partnerHint: bookingPartnerHint(booking),
+    participantCount: booking.participants?.length ?? 0,
+    bookingStatus: booking.status,
+    selectedPartnerLabel: providerName(booking.selectedProvider),
+    hasSelectedPartner: Boolean(booking.selectedProvider),
+    hasChatRoom: Boolean(booking.chatRoom),
+    paymentStatus: booking.payment?.status ?? 'NONE',
+    paymentHint: bookingPaymentHint(booking, {
+      cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    }),
+  });
 }
 
 function bookingOperatorNoteLines(booking: AdminBookingDetail) {
