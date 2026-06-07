@@ -128,6 +128,10 @@ import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { bookingAttentionFlags as buildBookingAttentionFlags } from '../../../lib/booking-attention-flags';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
+import {
+  bookingDispatchChecklist,
+  type DispatchStep,
+} from '../../../lib/booking-dispatch-checklist';
 import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
 import {
   canCloseoutCompletedBooking,
@@ -4052,16 +4056,6 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
   };
 }
 
-type DispatchStep = {
-  priority: 'Now' | 'Monitor' | 'Done';
-  title: string;
-  detail: string;
-  owner: string;
-  tone: string;
-  actionHref?: string;
-  actionLabel?: string;
-};
-
 function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
   const paymentStatus = booking.payment?.status;
   const status = booking.status;
@@ -4098,169 +4092,39 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
 }
 
 function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
-  const steps: DispatchStep[] = [];
   const flags = bookingAttentionFlags(booking);
-  const provider = booking.selectedProvider ?? booking.preferredProvider;
-  const providerPhone = provider?.user?.phone;
   const paymentHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : undefined;
   const activeWithLocationNeed = ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status);
-
-  if (
-    booking.status === 'CANCELLED' &&
-    booking.payment &&
-    !['RELEASED', 'REFUNDED'].includes(booking.payment.status)
-  ) {
-    steps.push({
-      priority: 'Now',
-      title: 'Resolve cancelled payment',
-      detail: `Booking is cancelled but payment is still ${booking.payment.status}. Release the hold or refund before closing.`,
-      owner: 'Payments operator',
-      tone: 'pill-danger',
-      actionHref: paymentHref,
-      actionLabel: 'Open payment',
-    });
-  }
-
-  if (booking.status === 'COMPLETED' && booking.payment?.status === 'AUTHORIZED') {
-    steps.push({
-      priority: 'Now',
-      title: 'Capture completed service',
-      detail: 'Service is complete while payment is still authorized. Capture it unless a dispute is active.',
-      owner: 'Payments operator',
-      tone: 'pill-danger',
-      actionHref: paymentHref,
-      actionLabel: 'Capture payment',
-    });
-  }
-
-  if (
-    booking.status === 'OPEN_MATCHING' &&
-    booking.preferredProvider &&
-    isPreferredAwaitingDecision(booking)
-  ) {
-    steps.push({
-      priority: 'Now',
-      title: 'Preferred partner response',
-      detail: `${providerName(booking.preferredProvider)} has the first response window. Contact them if the customer is waiting too long.`,
-      owner: 'Dispatch operator',
-      tone: 'pill-warn',
-      actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
-      actionLabel: 'Call partner',
-    });
-  }
-
-  if (booking.status === 'OPEN_MATCHING' && (booking.participants?.length ?? 0) === 0) {
-    steps.push({
-      priority: 'Monitor',
-      title: 'Supply monitor',
-      detail: 'No partner participation is recorded yet. Keep partner availability and notification delivery visible.',
-      owner: 'Dispatch operator',
-      tone: 'pill-warn',
-      actionHref: '/partners',
-      actionLabel: 'Open partners',
-    });
-  }
-
-  if (booking.status === 'MATCHED' && !booking.chatRoom) {
-    steps.push({
-      priority: 'Now',
-      title: 'Recover chat room',
-      detail: 'Partner is selected but no chat room exists. This can block service coordination.',
-      owner: 'Support operator',
-      tone: 'pill-danger',
-    });
-  }
-
-  if (activeWithLocationNeed && !latestProviderLocation(booking)) {
-    steps.push({
-      priority: 'Now',
-      title: 'Request partner location',
-      detail: 'The partner has not shared a saved service pin for this active booking.',
-      owner: 'Dispatch operator',
-      tone: 'pill-warn',
-      actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
-      actionLabel: 'Call partner',
-    });
-  }
-
-  if (
-    activeWithLocationNeed &&
-    latestProviderLocation(booking) &&
-    latestProviderLocationFreshness(booking) !== 'recent'
-  ) {
-    steps.push({
-      priority: 'Monitor',
-      title: 'Refresh stale location',
-      detail: `${providerLocationMetricHelper(booking)}. Ask the partner to share current location again if the customer asks.`,
-      owner: 'Dispatch operator',
-      tone: 'pill-warn',
-      actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
-      actionLabel: 'Call partner',
-    });
-  }
-
-  if (
-    booking.chatRoom &&
-    (booking.chatRoom.messages?.length ?? 0) === 0 &&
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
-  ) {
-    steps.push({
-      priority: 'Monitor',
-      title: 'First chat contact',
-      detail: 'Chat is ready but quiet. Monitor for first contact if the customer reports uncertainty.',
-      owner: 'Customer support',
-      tone: 'pill-info',
-    });
-  }
-
-  if (booking.selectedProvider) {
-    steps.push({
-      priority: 'Done',
-      title: 'Partner handoff locked',
-      detail: `${providerName(booking.selectedProvider)} is the current final partner for this booking.`,
-      owner: 'Dispatch operator',
-      tone: 'pill-success',
-      actionHref: providerPhone ? `tel:${providerPhone}` : undefined,
-      actionLabel: 'Call partner',
-    });
-  }
-
-  if (booking.chatRoom) {
-    steps.push({
-      priority: 'Done',
-      title: 'Chat room ready',
-      detail: `Room ${booking.chatRoom.id} has ${booking.chatRoom.messages?.length ?? 0} message(s).`,
-      owner: 'Customer support',
-      tone: 'pill-success',
-    });
-  }
-
-  if (booking.payment) {
-    steps.push({
-      priority: isTerminalPayment(booking.payment.status) ? 'Done' : 'Monitor',
-      title: 'Payment state',
-      detail: bookingPaymentHint(booking, {
-        cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
-      }),
-      owner: 'Payments operator',
-      tone: isTerminalPayment(booking.payment.status) ? 'pill-success' : 'pill-info',
-      actionHref: paymentHref,
-      actionLabel: 'Open payment',
-    });
-  }
-
-  if (steps.length === 0 || (flags.length === 0 && steps.every((step) => step.priority === 'Done'))) {
-    steps.push({
-      priority: 'Done',
-      title: 'Normal monitoring',
-      detail:
-        'No same-shift operator action is active. Keep this booking visible until the next status transition.',
-      owner: 'Operations',
-      tone: 'pill-success',
-    });
-  }
-
-  return steps;
+  return bookingDispatchChecklist({
+    bookingStatus: booking.status,
+    attentionFlagCount: flags.length,
+    payment: booking.payment
+      ? {
+          id: booking.payment.id,
+          status: booking.payment.status,
+          href: paymentHref,
+          hint: bookingPaymentHint(booking, {
+            cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+          }),
+          terminal: isTerminalPayment(booking.payment.status),
+        }
+      : null,
+    selectedPartner: booking.selectedProvider
+      ? { label: providerName(booking.selectedProvider), phone: booking.selectedProvider.user?.phone }
+      : null,
+    preferredPartner: booking.preferredProvider
+      ? { label: providerName(booking.preferredProvider), phone: booking.preferredProvider.user?.phone }
+      : null,
+    isPreferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+    participantCount: booking.participants?.length ?? 0,
+    hasChatRoom: Boolean(booking.chatRoom),
+    chatRoomId: booking.chatRoom?.id ?? null,
+    messageCount: booking.chatRoom?.messages?.length ?? 0,
+    activeWithLocationNeed,
+    hasLatestProviderLocation: Boolean(latestProviderLocation(booking)),
+    latestProviderLocationFreshness: latestProviderLocationFreshness(booking),
+    providerLocationAgeLabel: providerLocationMetricHelper(booking),
+  });
 }
 
 function bookingOpsTaskCards(booking: AdminBookingDetail) {
