@@ -5,7 +5,13 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
-import { UpdateProviderLocationDto } from './providers.dto';
+import {
+  RecordProviderDeviceSessionDto,
+  SubmitProviderVerificationDto,
+  UpdateProviderLocationDto,
+  UpdateProviderProfileDto,
+  UpdateProviderServicePriceDto,
+} from './providers.dto';
 import { ProvidersService } from './providers.service';
 
 @Controller()
@@ -27,7 +33,7 @@ export class ProvidersController {
   @Roles(Role.PROVIDER)
   updateProviderProfile(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { displayName?: string; bio?: string },
+    @Body() body: UpdateProviderProfileDto,
   ) {
     return this.providers.updateProfile(user.id, body);
   }
@@ -45,7 +51,7 @@ export class ProvidersController {
   recordDeviceSession(
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: { ip?: string },
-    @Body() body: { deviceId?: string; platform?: string; appVersion?: string },
+    @Body() body: RecordProviderDeviceSessionDto,
   ) {
     return this.providers.recordDeviceSession(user.id, body, request.ip);
   }
@@ -84,7 +90,7 @@ export class ProvidersController {
   updateServicePrice(
     @CurrentUser() user: AuthenticatedUser,
     @Param('serviceId') serviceId: string,
-    @Body() body: { price?: number; active?: boolean },
+    @Body() body: UpdateProviderServicePriceDto,
   ) {
     return this.providers.updateServicePrice(user.id, serviceId, body);
   }
@@ -99,7 +105,7 @@ export class ProvidersController {
   @Post(['partner/verification/submit', 'provider/verification/submit'])
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.PROVIDER)
-  submitVerification(@CurrentUser() user: AuthenticatedUser, @Body() body: { fileIds?: string[] }) {
+  submitVerification(@CurrentUser() user: AuthenticatedUser, @Body() body: SubmitProviderVerificationDto) {
     return this.providers.submitVerification(user.id, body);
   }
 }
