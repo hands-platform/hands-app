@@ -3913,6 +3913,7 @@ export class AdminService {
       FROM ranked_logs
       WHERE "targetRank" <= ${perTargetLimit}
       ORDER BY "target" ASC, "createdAt" DESC
+      LIMIT ${targets.length * perTargetLimit}
     `);
 
     return rows.map((row) => ({

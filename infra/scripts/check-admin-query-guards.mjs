@@ -122,7 +122,10 @@ if (!adminServiceSource.includes('take: ADMIN_CUSTOMER_LIST_LIMIT,')) {
   });
 }
 
-if (!adminServiceSource.includes('take: customers.length * ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,')) {
+if (
+  !adminServiceSource.includes('take: customers.length * ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,') &&
+  !hasBoundedAuditSummaryHelper()
+) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -130,7 +133,7 @@ if (!adminServiceSource.includes('take: customers.length * ADMIN_CUSTOMER_LIST_A
   });
 }
 
-if (!hasAuditCountGroupBy('customerAuditCounts')) {
+if (!hasAuditCountGroupBy('customerAuditCounts') && !hasAuditSummaryGroupByHelper()) {
   violations.push({
     area: 'admin customer query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -218,7 +221,10 @@ if (adminServiceSource.includes('take: compact ? 100 : 100')) {
   });
 }
 
-if (!adminServiceSource.includes('take: providers.length * ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,')) {
+if (
+  !adminServiceSource.includes('take: providers.length * ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,') &&
+  !hasBoundedAuditSummaryHelper()
+) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -226,7 +232,7 @@ if (!adminServiceSource.includes('take: providers.length * ADMIN_PROVIDER_LIST_A
   });
 }
 
-if (!hasAuditCountGroupBy('providerAuditCounts')) {
+if (!hasAuditCountGroupBy('providerAuditCounts') && !hasAuditSummaryGroupByHelper()) {
   violations.push({
     area: 'admin provider query',
     file: 'apps/api/src/admin/admin.service.ts',
@@ -286,4 +292,21 @@ function hasAuditCountGroupBy(resultName) {
   );
 
   return directGroupBy.test(adminServiceSource) || promiseAllGroupBy.test(adminServiceSource);
+}
+
+function hasAuditSummaryGroupByHelper() {
+  const helperSource = sourceBetween(
+    'private async getAuditLogSummaryByTargets',
+    'private async findRecentAuditLogsByTargets',
+  );
+  return helperSource.includes('this.prisma.adminAuditLog.groupBy') && helperSource.includes("by: ['target']");
+}
+
+function hasBoundedAuditSummaryHelper() {
+  const helperSource = sourceBetween('private async findRecentAuditLogsByTargets', '\n}\n\nfunction toJson');
+  return (
+    helperSource.includes('ROW_NUMBER() OVER (PARTITION BY logs."target" ORDER BY logs."createdAt" DESC)') &&
+    helperSource.includes('WHERE "targetRank" <= ${perTargetLimit}') &&
+    helperSource.includes('LIMIT ${targets.length * perTargetLimit}')
+  );
 }
