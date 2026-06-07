@@ -8,7 +8,7 @@ import {
 import { ProvidersService } from './providers.service';
 
 describe('ProvidersService nearby discovery', () => {
-  it('falls back to the Vietnam browse pin when the customer browses from outside Vietnam', async () => {
+  it('preserves global browse coordinates for long-distance partner metadata', async () => {
     const service = new ProvidersService(
       {
         providerProfile: {
@@ -39,9 +39,9 @@ describe('ProvidersService nearby discovery', () => {
       } as never,
     );
 
-    const partners = await service.findNearby(13.7563, 100.5018);
+    const partners = await service.findNearby(37.5665, 126.978);
 
-    expect(partners[0].distanceMeters).toBe(0);
+    expect(partners[0].distanceMeters).toBeGreaterThan(1_000_000);
   });
 
   it('does not expose partner phone numbers in public nearby discovery', async () => {

@@ -528,7 +528,7 @@ function assertVietnamCoordinate(lat: number, lng: number, message: string) {
 }
 
 function normalizeBrowseCoordinate(lat: number, lng: number) {
-  if (isValidCoordinate(lat, lng) && isVietnamCoordinate(lat, lng)) {
+  if (isValidCoordinate(lat, lng)) {
     return { lat, lng };
   }
   return DEFAULT_BROWSE_COORDINATE;
