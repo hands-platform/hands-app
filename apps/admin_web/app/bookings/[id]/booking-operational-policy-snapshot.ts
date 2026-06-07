@@ -1,7 +1,6 @@
 import type { AdminBookingDetail, AdminOperationalPolicySetting } from '../../../lib/admin-api';
 import {
-  bookingPreferredProviderId,
-  isCustomerSelectableParticipantForFinalChoice,
+  bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 
@@ -31,9 +30,7 @@ export function bookingOperationalPolicySnapshot(
     expiresAt === null || Number.isNaN(expiresAt)
       ? null
       : Math.max(0, Math.ceil((expiresAt - Date.now()) / 60_000));
-  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
-  );
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const selected = booking.status === 'MATCHED' || Boolean(booking.selectedProvider);
   const customerConfirmMode = String(acceptMode?.value) === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 

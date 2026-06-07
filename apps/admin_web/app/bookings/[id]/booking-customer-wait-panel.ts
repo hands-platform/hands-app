@@ -1,8 +1,7 @@
 import type { AdminBookingDetail, AdminOperationalPolicySetting } from '../../../lib/admin-api';
 import { formatDate, providerName } from './booking-formatters';
 import {
-  bookingPreferredProviderId,
-  isCustomerSelectableParticipantForFinalChoice,
+  bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
@@ -38,9 +37,7 @@ export function bookingCustomerWaitPanel(
     (savedPolicy.preferredAcceptMode ??
       readOptionalString(byKey.get('matching.preferred_accept_mode')?.value)) ===
     'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
-  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
-  );
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
   );

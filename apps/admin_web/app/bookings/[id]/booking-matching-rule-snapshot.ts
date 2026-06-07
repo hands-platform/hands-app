@@ -5,8 +5,7 @@ import { providerName } from './booking-formatters';
 import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
 import { bookingNotificationTrace } from './booking-notification-trace';
 import {
-  bookingPreferredProviderId,
-  isCustomerSelectableParticipantForFinalChoice,
+  bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 
@@ -34,9 +33,7 @@ export function bookingDetailMatchingRuleSnapshot({
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
   const hasSavedPolicy = Object.values(savedPolicy).some((value) => value !== null);
   const participants = booking.participants ?? [];
-  const customerChoiceCandidates = participants.filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
-  );
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const finalPartner =
     booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);

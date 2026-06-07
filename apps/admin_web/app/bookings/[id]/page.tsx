@@ -97,6 +97,7 @@ import { bookingMarketplaceWalletEvidence } from './booking-marketplace-wallet-e
 import { bookingDetailMatchingRuleSnapshot } from './booking-matching-rule-snapshot';
 import { bookingParticipantLedger } from './booking-participant-ledger';
 import {
+  bookingCustomerSelectableParticipantsForFinalChoice,
   bookingPreferredProviderId,
   isCustomerSelectableParticipantForFinalChoice,
 } from './booking-participant-rules';
@@ -763,12 +764,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     },
   ];
   const finalPartner = booking.selectedProvider ?? booking.preferredProvider;
-  const customerChoiceCandidates =
-    booking.participants?.filter(
-      (participant) =>
-        isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)) ||
-        participant.status === 'SELECTED',
-    ).length ?? 0;
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking).length;
   const failedAlertCount = notificationTrace.rows.filter((row) =>
     row.deliveryStatuses.includes('FAILED'),
   ).length;
@@ -2307,11 +2303,7 @@ function bookingOperatingSnapshot({
   notificationCount: number;
 }) {
   const participants = booking.participants ?? [];
-  const customerChoiceCandidates = participants.filter(
-    (participant) =>
-      isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)) ||
-      participant.status === 'SELECTED',
-  );
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const preferredState = preferredParticipantState(booking);
   const paymentLabel = booking.payment
     ? `${booking.payment.method} / ${booking.payment.status}`

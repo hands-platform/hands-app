@@ -12,8 +12,7 @@ import {
 } from './booking-formatters';
 import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
 import {
-  bookingPreferredProviderId,
-  isCustomerSelectableParticipantForFinalChoice,
+  bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import { readOptionalNumber } from './booking-readers';
@@ -55,9 +54,7 @@ export function bookingMvpAuthorityContract({
     savedPolicy.backupProviderRadiusMeters ??
     readOptionalNumber(byKey.get('matching.backup_provider_radius_meters')?.value) ??
     10000;
-  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
-  );
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const selectedPartner =
     booking.selectedProvider ?? (booking.status === 'MATCHED' ? booking.preferredProvider : null);
   const pinReady = Number.isFinite(backupSupply.policyPin.lat) && Number.isFinite(backupSupply.policyPin.lng);

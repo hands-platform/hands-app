@@ -1,8 +1,7 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { providerName } from './booking-formatters';
 import {
-  bookingPreferredProviderId,
-  isCustomerSelectableParticipantForFinalChoice,
+  bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
 import {
   bookingStatusHint,
@@ -36,9 +35,7 @@ export function bookingStageSnapshot(
   backupSupply: BookingStageBackupSupply,
 ): BookingStageSnapshot {
   const status = String(booking.status);
-  const customerChoiceCandidates = (booking.participants ?? []).filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
-  );
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
   );

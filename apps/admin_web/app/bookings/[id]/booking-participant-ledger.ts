@@ -7,6 +7,7 @@ import { participantDistancePolicy } from '../../../lib/admin-distance-policy';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { distanceLabel, formatDate, providerName, shortId } from './booking-formatters';
 import {
+  bookingCustomerSelectableParticipantsForFinalChoice,
   bookingPreferredProviderId,
   type BookingDetailParticipant,
   isCustomerSelectableParticipantForFinalChoice,
@@ -29,15 +30,13 @@ export function bookingParticipantLedger(
   const participants = booking.participants ?? [];
   const preferredProviderId = bookingPreferredProviderId(booking);
   const selectedProviderId = booking.selectedProvider?.id;
-  const customerSelectableParticipants = participants.filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId),
-  );
+  const customerSelectableParticipants = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const marketplaceParticipants = participants.filter(
     (participant) => participant.providerProfile?.id !== preferredProviderId,
   );
-  const marketplaceCustomerSelectable = marketplaceParticipants.filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, preferredProviderId),
+  const marketplaceCustomerSelectable = customerSelectableParticipants.filter(
+    (participant) => participant.providerProfile?.id !== preferredProviderId,
   );
   const marketplaceEvidenceOnly = marketplaceParticipants.filter(
     (participant) =>

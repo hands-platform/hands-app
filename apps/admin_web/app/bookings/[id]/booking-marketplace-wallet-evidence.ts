@@ -5,8 +5,7 @@ import { providerName } from './booking-formatters';
 import { bookingBackupPartnerSupply } from './booking-marketplace-supply';
 import { bookingNotificationTrace } from './booking-notification-trace';
 import {
-  bookingPreferredProviderId,
-  isCustomerSelectableParticipantForFinalChoice,
+  bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
 
 export function bookingMarketplaceWalletEvidence({
@@ -24,9 +23,7 @@ export function bookingMarketplaceWalletEvidence({
 }) {
   const participants = booking.participants ?? [];
   const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
-  const customerChoiceCandidates = participants.filter((participant) =>
-    isCustomerSelectableParticipantForFinalChoice(participant, bookingPreferredProviderId(booking)),
-  );
+  const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const selectedParticipants = participants.filter((participant) => participant.status === 'SELECTED');
   const finalPartner = booking.selectedProvider;
