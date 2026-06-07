@@ -7,8 +7,10 @@ import { participantDistancePolicy } from '../../../lib/admin-distance-policy';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { distanceLabel, formatDate, providerName, shortId } from './booking-formatters';
 import {
+  bookingParticipantProviderId,
   bookingCustomerSelectableParticipantsForFinalChoice,
   bookingPreferredProviderId,
+  bookingSelectedProviderId,
   type BookingDetailParticipant,
   isCustomerSelectableParticipantForFinalChoice,
 } from './booking-participant-rules';
@@ -29,14 +31,14 @@ export function bookingParticipantLedger(
 ) {
   const participants = booking.participants ?? [];
   const preferredProviderId = bookingPreferredProviderId(booking);
-  const selectedProviderId = booking.selectedProvider?.id;
+  const selectedProviderId = bookingSelectedProviderId(booking);
   const customerSelectableParticipants = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const rejectedParticipants = participants.filter((participant) => participant.status === 'REJECTED');
   const marketplaceParticipants = participants.filter(
-    (participant) => participant.providerProfile?.id !== preferredProviderId,
+    (participant) => bookingParticipantProviderId(participant) !== preferredProviderId,
   );
   const marketplaceCustomerSelectable = customerSelectableParticipants.filter(
-    (participant) => participant.providerProfile?.id !== preferredProviderId,
+    (participant) => bookingParticipantProviderId(participant) !== preferredProviderId,
   );
   const marketplaceEvidenceOnly = marketplaceParticipants.filter(
     (participant) =>
@@ -46,10 +48,10 @@ export function bookingParticipantLedger(
   const acceptedParticipants = participants.filter((participant) => participant.status === 'ACCEPTED');
   const joinedParticipants = participants.filter((participant) => participant.status === 'JOINED');
   const firstPickParticipant = participants.find(
-    (participant) => participant.providerProfile?.id === preferredProviderId,
+    (participant) => bookingParticipantProviderId(participant) === preferredProviderId,
   );
   const selectedParticipant = participants.find(
-    (participant) => participant.providerProfile?.id === selectedProviderId,
+    (participant) => bookingParticipantProviderId(participant) === selectedProviderId,
   );
   const firstPickSelectable = firstPickParticipant
     ? isCustomerSelectableParticipantForFinalChoice(firstPickParticipant, preferredProviderId)
@@ -245,7 +247,7 @@ export function bookingParticipantLedger(
       },
     ],
     rows: [...participants].sort(sortBookingParticipantsForOps(preferredProviderId, selectedProviderId)).map((participant) => {
-      const partnerId = participant.providerProfile?.id;
+      const partnerId = bookingParticipantProviderId(participant);
       const isPreferred = partnerId === preferredProviderId;
       const isFinal = partnerId === selectedProviderId;
       const role = isFinal ? 'Final partner' : isPreferred ? 'First-pick' : 'Marketplace';
@@ -360,7 +362,7 @@ function bookingParticipantEligibilityState(input: {
     };
   }
 
-  if (!input.participant.providerProfile?.id) {
+  if (!bookingParticipantProviderId(input.participant)) {
     return {
       label: 'Not customer-selectable',
       tone: 'pill-neutral',
@@ -435,7 +437,7 @@ function bookingParticipantOpsRank(
   preferredProviderId?: string | null,
   selectedProviderId?: string | null,
 ) {
-  const partnerId = participant.providerProfile?.id;
+  const partnerId = bookingParticipantProviderId(participant);
   if (partnerId === selectedProviderId || participant.status === 'SELECTED') {
     return 0;
   }

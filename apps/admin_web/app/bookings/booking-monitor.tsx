@@ -5054,7 +5054,7 @@ function selectionLabel(booking: AdminBooking) {
     return 'First-pick partner pending';
   }
 
-  if (preferredProviderStateLabel(booking) == 'declined') {
+  if (preferredProviderStateLabel(booking) === 'declined') {
     return 'First-pick partner declined';
   }
 
@@ -5106,7 +5106,7 @@ function selectionToneClass(booking: AdminBooking) {
     return 'pill-warn';
   }
 
-  if (preferredProviderStateLabel(booking) == 'declined') {
+  if (preferredProviderStateLabel(booking) === 'declined') {
     return 'pill-info';
   }
 

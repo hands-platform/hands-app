@@ -1,10 +1,12 @@
 import { marketplaceDisplayText } from './admin-copy';
+import { bookingParticipantPartnerId } from './booking-participant-choice';
 
 export type BookingPartnerDecisionInput = {
   selectedProvider?: { displayName?: string | null } | null;
   preferredProvider?: { displayName?: string | null } | null;
   participants?: Array<{
     status?: string | null;
+    providerProfileId?: string | null;
     providerProfile?: { id?: string | null } | null;
   }> | null;
 };
@@ -31,7 +33,7 @@ export function bookingPartnerDecisionLabel(
   preferredProviderId?: string | null,
 ) {
   const preferredParticipant = (booking.participants ?? []).find(
-    (participant) => participant.providerProfile?.id === preferredProviderId,
+    (participant) => bookingParticipantPartnerId(participant) === preferredProviderId,
   );
   if (preferredParticipant) {
     return preferredParticipant.status ?? 'Waiting';

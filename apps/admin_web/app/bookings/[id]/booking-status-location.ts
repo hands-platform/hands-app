@@ -1,5 +1,8 @@
 import type { AdminBookingDetail, AdminLocationSnapshot } from '../../../lib/admin-api';
-import { bookingPreferredProviderId } from './booking-participant-rules';
+import {
+  bookingParticipantProviderId,
+  bookingPreferredProviderId,
+} from './booking-participant-rules';
 
 export const STALE_LOCATION_MINUTES = 30;
 export const EXPIRED_LOCATION_HOURS = 24;
@@ -37,7 +40,7 @@ export function preferredParticipantState(booking: AdminBookingDetail) {
 
   return (
     (booking.participants ?? []).find(
-      (participant) => participant.providerProfile?.id === preferredProviderId,
+      (participant) => bookingParticipantProviderId(participant) === preferredProviderId,
     ) ?? null
   );
 }

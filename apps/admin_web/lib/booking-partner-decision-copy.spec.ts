@@ -45,6 +45,17 @@ describe('booking partner decision copy', () => {
     expect(bookingPartnerDecisionLabel(booking, 'partner-preferred')).toBe('ACCEPTED');
   });
 
+  it('reads preferred participant status from providerProfileId payloads', () => {
+    const booking: BookingPartnerDecisionInput = {
+      participants: [
+        { status: 'JOINED', providerProfileId: 'partner-preferred' },
+        { status: 'ACCEPTED', providerProfileId: 'partner-marketplace' },
+      ],
+    };
+
+    expect(bookingPartnerDecisionLabel(booking, 'partner-preferred')).toBe('JOINED');
+  });
+
   it('counts marketplace-ready partners when no preferred participant is found', () => {
     const booking: BookingPartnerDecisionInput = {
       participants: [

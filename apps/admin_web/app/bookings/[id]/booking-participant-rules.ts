@@ -1,7 +1,9 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import {
+  bookingParticipantPartnerId,
   bookingCustomerSelectableParticipantsForBooking,
   bookingPreferredPartnerIdForChoice,
+  bookingSelectedPartnerIdForChoice,
   isCustomerSelectableBookingParticipant,
 } from '../../../lib/booking-participant-choice';
 
@@ -16,6 +18,14 @@ export function isCustomerSelectableParticipantForFinalChoice(
 
 export function bookingPreferredProviderId(booking: AdminBookingDetail) {
   return bookingPreferredPartnerIdForChoice(booking);
+}
+
+export function bookingSelectedProviderId(booking: AdminBookingDetail) {
+  return bookingSelectedPartnerIdForChoice(booking);
+}
+
+export function bookingParticipantProviderId(participant: BookingDetailParticipant) {
+  return bookingParticipantPartnerId(participant);
 }
 
 export function bookingCustomerSelectableParticipantsForFinalChoice(booking: AdminBookingDetail) {
