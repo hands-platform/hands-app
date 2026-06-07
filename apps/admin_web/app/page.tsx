@@ -779,9 +779,19 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         </div>
         <div className="service-trace-summary" style={{ marginTop: 12 }}>
           <div>
+            <span>Open marketplace bookings</span>
+            <strong>{marketplaceParticipantSnapshot.openMarketplaceBookings}</strong>
+            <small>Bookings still open for first-pick response, partner participation, or customer choice.</small>
+          </div>
+          <div>
             <span>Participant rows</span>
             <strong>{marketplaceParticipantSnapshot.participantRows}</strong>
             <small>First-pick, marketplace, accepted, declined, and selected records.</small>
+          </div>
+          <div>
+            <span>First-pick rows</span>
+            <strong>{marketplaceParticipantSnapshot.firstPickRows}</strong>
+            <small>Preferred partner response rows from the first-pick window.</small>
           </div>
           <div>
             <span>Marketplace participants</span>
@@ -792,6 +802,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <span>Customer-selectable</span>
             <strong>{marketplaceParticipantSnapshot.customerSelectableRows}</strong>
             <small>Accepted or selected rows that can support customer final choice.</small>
+          </div>
+          <div>
+            <span>Choice pending bookings</span>
+            <strong>{marketplaceParticipantSnapshot.customerChoicePendingBookings}</strong>
+            <small>Open bookings where the customer can choose a final partner now.</small>
           </div>
           <div>
             <span>Customer selected</span>

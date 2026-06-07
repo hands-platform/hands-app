@@ -8,10 +8,12 @@ import {
 import { shortId } from './admin-format';
 
 export type MarketplaceParticipantSnapshot = {
+  openMarketplaceBookings: number;
   participantRows: number;
   marketplaceRows: number;
   firstPickRows: number;
   customerSelectableRows: number;
+  customerChoicePendingBookings: number;
   customerSelectedRows: number;
   declinedRows: number;
   openBookingsWithoutParticipants: number;
@@ -21,6 +23,7 @@ export type MarketplaceParticipantSnapshot = {
 };
 
 export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): MarketplaceParticipantSnapshot {
+  const openMarketplaceBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
   const participantRows = bookings.flatMap((booking) =>
     (booking.participants ?? []).map((participant) => ({ booking, participant })),
   );
@@ -38,6 +41,12 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
     (sum, booking) => sum + bookingCustomerSelectableParticipantsForBooking(booking).length,
     0,
   );
+  const customerChoicePendingBookings = bookings.filter(
+    (booking) =>
+      booking.status === 'OPEN_MATCHING' &&
+      !bookingSelectedPartnerIdForChoice(booking) &&
+      bookingCustomerSelectableParticipantsForBooking(booking).length > 0,
+  ).length;
   const customerSelectedRows = participantRows.filter(
     (row) =>
       row.participant.status === 'SELECTED' ||
@@ -57,10 +66,12 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
   )[0];
 
   return {
+    openMarketplaceBookings,
     participantRows: participantRows.length,
     marketplaceRows: marketplaceRows.length,
     firstPickRows: firstPickRows.length,
     customerSelectableRows: dedupedCustomerSelectableRows,
+    customerChoicePendingBookings,
     customerSelectedRows: customerSelectedRows.length,
     declinedRows: declinedRows.length,
     openBookingsWithoutParticipants,

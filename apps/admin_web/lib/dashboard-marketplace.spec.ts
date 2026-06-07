@@ -63,9 +63,11 @@ describe('dashboard marketplace participant snapshot', () => {
     const snapshot = buildMarketplaceParticipantSnapshot(bookings);
 
     expect(snapshot.participantRows).toBe(3);
+    expect(snapshot.openMarketplaceBookings).toBe(2);
     expect(snapshot.firstPickRows).toBe(1);
     expect(snapshot.marketplaceRows).toBe(2);
     expect(snapshot.customerSelectableRows).toBe(2);
+    expect(snapshot.customerChoicePendingBookings).toBe(0);
     expect(snapshot.customerSelectedRows).toBe(1);
     expect(snapshot.declinedRows).toBe(1);
     expect(snapshot.openBookingsWithoutParticipants).toBe(1);
@@ -99,6 +101,7 @@ describe('dashboard marketplace participant snapshot', () => {
     expect(snapshot.firstPickRows).toBe(1);
     expect(snapshot.marketplaceRows).toBe(1);
     expect(snapshot.customerSelectableRows).toBe(2);
+    expect(snapshot.customerChoicePendingBookings).toBe(1);
   });
 
   it('does not count a pending first-pick partner as customer-selectable marketplace supply', () => {
@@ -126,6 +129,7 @@ describe('dashboard marketplace participant snapshot', () => {
     expect(snapshot.firstPickRows).toBe(1);
     expect(snapshot.marketplaceRows).toBe(1);
     expect(snapshot.customerSelectableRows).toBe(1);
+    expect(snapshot.customerChoicePendingBookings).toBe(1);
   });
 
   it('deduplicates customer-selectable counts while preserving actual participant rows', () => {
@@ -160,6 +164,7 @@ describe('dashboard marketplace participant snapshot', () => {
     expect(snapshot.participantRows).toBe(3);
     expect(snapshot.marketplaceRows).toBe(3);
     expect(snapshot.customerSelectableRows).toBe(2);
+    expect(snapshot.customerChoicePendingBookings).toBe(1);
   });
 
   it('returns operator-safe fallbacks when no participant history exists', () => {
@@ -172,6 +177,8 @@ describe('dashboard marketplace participant snapshot', () => {
     ]);
 
     expect(snapshot.participantRows).toBe(0);
+    expect(snapshot.openMarketplaceBookings).toBe(1);
+    expect(snapshot.customerChoicePendingBookings).toBe(0);
     expect(snapshot.latestParticipantLabel).toBe('No participant row');
     expect(snapshot.latestParticipantHref).toBe('/bookings?view=marketplace');
   });
