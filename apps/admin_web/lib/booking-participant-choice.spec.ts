@@ -60,6 +60,19 @@ describe('booking participant choice rules', () => {
     ).toEqual(['partner_marketplace', 'partner_selected']);
   });
 
+  it('deduplicates customer-selectable partners and keeps the strongest state', () => {
+    const participants = [
+      { status: 'JOINED', providerProfile: marketplace },
+      { status: 'ACCEPTED', providerProfile: marketplace },
+      { status: 'JOINED', providerProfile: { id: 'partner_second' } },
+    ];
+
+    expect(bookingCustomerSelectableParticipants(participants, 'partner_preferred')).toEqual([
+      { status: 'ACCEPTED', providerProfile: marketplace },
+      { status: 'JOINED', providerProfile: { id: 'partner_second' } },
+    ]);
+  });
+
   it('requires a selectable participant and no selected final partner for customer choice pending', () => {
     const participants = [{ status: 'JOINED', providerProfile: marketplace }];
 

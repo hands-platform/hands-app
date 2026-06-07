@@ -40,13 +40,43 @@ export function bookingMarketplaceParticipants<T extends BookingParticipantChoic
   });
 }
 
+function bookingParticipantChoicePriority(participant: BookingParticipantChoiceInput) {
+  switch (participant.status) {
+    case 'SELECTED':
+      return 4;
+    case 'ACCEPTED':
+      return 3;
+    case 'JOINED':
+      return 2;
+    default:
+      return 0;
+  }
+}
+
 export function bookingCustomerSelectableParticipants<T extends BookingParticipantChoiceInput>(
   participants: T[] | null | undefined,
   preferredProviderId?: string | null,
 ) {
-  return (participants ?? []).filter((participant) =>
-    isCustomerSelectableBookingParticipant(participant, preferredProviderId),
-  );
+  const byPartner = new Map<string, T>();
+  for (const participant of participants ?? []) {
+    if (!isCustomerSelectableBookingParticipant(participant, preferredProviderId)) {
+      continue;
+    }
+
+    const partnerId = bookingParticipantPartnerId(participant);
+    if (!partnerId) {
+      continue;
+    }
+
+    const current = byPartner.get(partnerId);
+    if (
+      !current ||
+      bookingParticipantChoicePriority(participant) > bookingParticipantChoicePriority(current)
+    ) {
+      byPartner.set(partnerId, participant);
+    }
+  }
+  return [...byPartner.values()];
 }
 
 export function bookingHasCustomerSelectablePartner<T extends BookingParticipantChoiceInput>(

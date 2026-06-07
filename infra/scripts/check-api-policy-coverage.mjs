@@ -362,7 +362,8 @@ function checkProviderMobileWalletGateBoundaries() {
       'partner app marketplace-only gate expression',
       'return walletBlocked && !isPreferredRequest && !isMatched;',
     ],
-    ['partner app honors explicit server marketplace participation flag', "summary['marketplaceJoinBlocked']"],
+    ['partner app wallet block overrides explicit marketplace open flag', 'if (providerWalletBlockReason(summary) != null)'],
+    ['partner app reads explicit settled-wallet marketplace flag', "summary['marketplaceJoinBlocked']"],
     ['partner app renders wallet settlement guidance', 'providerWalletBlockHintClean'],
   ]) {
     if (!providerSource.includes(marker)) {
@@ -404,6 +405,10 @@ function checkProviderMobileWalletGateBoundaries() {
       'marketplace participation remains blocked until settlement',
       'Partners with negative wallet debt can view marketplace requests, but cannot participate before settlement.',
     ],
+    [
+      'negative wallet overrides stale explicit marketplace open policy',
+      'negative wallet overrides stale explicit marketplace open policy',
+    ],
     ['already-matched workflow remains unblocked', 'Already matched bookings are handled by service workflow.'],
     ['partner app exact cash-fee block copy test', walletBlockDisplayMessage],
   ]) {
@@ -415,7 +420,7 @@ function checkProviderMobileWalletGateBoundaries() {
   return {
     area: 'partner app negative wallet marketplace-only gate',
     status: missingMarkers.length === 0 ? 'PASS' : 'FAIL',
-    markerCount: 16,
+    markerCount: 18,
     missingMarkers,
   };
 }
