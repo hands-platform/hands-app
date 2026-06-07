@@ -133,6 +133,7 @@ import {
   type DispatchStep,
 } from '../../../lib/booking-dispatch-checklist';
 import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
+import { bookingFinanceSummaryCards as buildBookingFinanceSummaryCards } from '../../../lib/booking-finance-summary-cards';
 import {
   canCloseoutCompletedBooking,
   completedCloseoutLabel,
@@ -4268,47 +4269,7 @@ function canExpireBooking(status: string) {
 }
 
 function bookingFinanceSummaryCards(financeTrace: ReturnType<typeof bookingFinanceTrace>) {
-  const walletHelper =
-    financeTrace.paymentMethod === 'CASH'
-      ? financeTrace.walletTotalAmount < 0
-        ? 'Cash fee debt gates marketplace participation and payout release.'
-        : 'Cash settlement ledger is not negative.'
-      : 'Non-cash booking should create payout credit after completion.';
-
-  return [
-    {
-      label: 'Customer charge',
-      value: money(financeTrace.customerPriceAmount, financeTrace.currency),
-      helper: financeTrace.serviceOption,
-    },
-    {
-      label: 'Partner payout',
-      value: money(financeTrace.providerPayoutAmount, financeTrace.currency),
-      helper: financeTrace.earningStatus
-        ? `Earning ${financeTrace.earningStatus}`
-        : 'Projected from payout rule.',
-    },
-    {
-      label: 'HANDS fee',
-      value: money(financeTrace.platformFeeAmount, financeTrace.currency),
-      helper: `${financeTrace.netHandsFee} before withholding impact.`,
-    },
-    {
-      label: 'Tax withheld',
-      value: money(financeTrace.withholdingAmount, financeTrace.currency),
-      helper: financeTrace.withholding,
-    },
-    {
-      label: 'Company net',
-      value: money(financeTrace.companyFeeAfterTaxAmount, financeTrace.currency),
-      helper: 'HANDS fee after VAT, other costs, and withholding.',
-    },
-    {
-      label: 'Wallet impact',
-      value: money(financeTrace.walletTotalAmount, financeTrace.currency),
-      helper: walletHelper,
-    },
-  ];
+  return buildBookingFinanceSummaryCards(financeTrace, { money });
 }
 
 function bookingFinanceFlags(
