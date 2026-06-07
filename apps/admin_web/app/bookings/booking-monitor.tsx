@@ -26,7 +26,10 @@ import {
 import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
-import { bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps } from '../../lib/booking-chat-repair-action-state';
+import {
+  bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
+  bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
+} from '../../lib/booking-chat-repair-action-state';
 import { bookingCashDebtNeedsSettlement } from '../../lib/booking-finance-flags';
 import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
@@ -3677,11 +3680,7 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
   ) {
     flags.push({ severity: 'medium', title: 'Partner location is stale' });
   }
-  if (
-    booking.chatRoom &&
-    (booking.chatRoom.messages?.length ?? 0) === 0 &&
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
-  ) {
+  if (bookingChatQuietNeedsOps(booking)) {
     flags.push({ severity: 'low', title: 'Chat quiet' });
   }
   if (paymentStatus === 'AUTHORIZED' && !booking.payment?.providerRef) {
@@ -3719,11 +3718,11 @@ function bookingChatEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
 }
 
 function bookingChatQuietNeedsOps(booking: AdminBooking) {
-  return (
-    Boolean(booking.chatRoom) &&
-    (booking.chatRoom?.messages?.length ?? 0) === 0 &&
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
-  );
+  return buildBookingChatQuietNeedsOps({
+    status: booking.status,
+    hasChatRoom: Boolean(booking.chatRoom),
+    messageCount: booking.chatRoom?.messages?.length ?? 0,
+  });
 }
 
 function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {

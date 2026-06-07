@@ -3,6 +3,12 @@ export type BookingChatRepairNeedsOpsInput = {
   hasChatRoom: boolean;
 };
 
+export type BookingChatQuietNeedsOpsInput = {
+  status: string;
+  hasChatRoom: boolean;
+  messageCount: number;
+};
+
 export type BookingChatRepairActionStateInput = BookingChatRepairNeedsOpsInput & {
   chatRoomShortId?: string | null;
   hasSelectedPartner: boolean;
@@ -23,8 +29,14 @@ const chatRequiredStatuses = new Set([
   'COMPLETED',
 ]);
 
+const activeChatStatuses = new Set(['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE']);
+
 export function bookingChatRepairNeedsOps(input: BookingChatRepairNeedsOpsInput): boolean {
   return chatRequiredStatuses.has(input.status) && !input.hasChatRoom;
+}
+
+export function bookingChatQuietNeedsOps(input: BookingChatQuietNeedsOpsInput): boolean {
+  return input.hasChatRoom && input.messageCount === 0 && activeChatStatuses.has(input.status);
 }
 
 export function bookingChatRepairActionState(

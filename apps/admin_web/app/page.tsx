@@ -40,6 +40,7 @@ import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingPaymentReleaseNeedsOpsFromFacts,
 } from '../lib/booking-payment-ops';
+import { bookingChatQuietNeedsOps } from '../lib/booking-chat-repair-action-state';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -3699,9 +3700,11 @@ function dashboardBookingLocationNeedsEvidence(booking: AdminBooking) {
 function dashboardBookingChatNeedsEvidence(booking: AdminBooking) {
   return (
     (booking.status === 'MATCHED' && !booking.chatRoom) ||
-    (Boolean(booking.chatRoom) &&
-      (booking.chatRoom?.messages?.length ?? 0) === 0 &&
-      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status))
+    bookingChatQuietNeedsOps({
+      status: booking.status,
+      hasChatRoom: Boolean(booking.chatRoom),
+      messageCount: booking.chatRoom?.messages?.length ?? 0,
+    })
   );
 }
 
@@ -4006,11 +4009,12 @@ function buildBookingOperationsDeepDive(bookings: AdminBooking[], payments: Admi
         (participant) => participant.status === 'ACCEPTED' || participant.status === 'SELECTED',
       ),
   ).length;
-  const quietActiveChats = bookings.filter(
-    (booking) =>
-      Boolean(booking.chatRoom) &&
-      (booking.chatRoom?.messages?.length ?? 0) === 0 &&
-      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  const quietActiveChats = bookings.filter((booking) =>
+    bookingChatQuietNeedsOps({
+      status: booking.status,
+      hasChatRoom: Boolean(booking.chatRoom),
+      messageCount: booking.chatRoom?.messages?.length ?? 0,
+    }),
   ).length;
   const releaseChecks = bookings.filter(
     (booking) =>
@@ -4811,11 +4815,12 @@ function buildDashboardCommandSignals(input: {
   const staleOpenMatching = openMatching.filter((booking) =>
     booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false,
   );
-  const quietChatRooms = input.bookings.filter(
-    (booking) =>
-      booking.chatRoom &&
-      (booking.chatRoom.messages?.length ?? 0) === 0 &&
-      ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
+  const quietChatRooms = input.bookings.filter((booking) =>
+    bookingChatQuietNeedsOps({
+      status: booking.status,
+      hasChatRoom: Boolean(booking.chatRoom),
+      messageCount: booking.chatRoom?.messages?.length ?? 0,
+    }),
   );
   const matchedWithoutChat = input.bookings.filter(
     (booking) => booking.status === 'MATCHED' && !booking.chatRoom,
@@ -5838,9 +5843,11 @@ function bookingFlags(booking: AdminBooking) {
     });
   }
   if (
-    booking.chatRoom &&
-    (booking.chatRoom.messages?.length ?? 0) === 0 &&
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status)
+    bookingChatQuietNeedsOps({
+      status: booking.status,
+      hasChatRoom: Boolean(booking.chatRoom),
+      messageCount: booking.chatRoom?.messages?.length ?? 0,
+    })
   ) {
     flags.push({
       label: 'Chat room is ready but still quiet',

@@ -1,5 +1,6 @@
 import {
   bookingChatRepairActionState,
+  bookingChatQuietNeedsOps,
   bookingChatRepairNeedsOps,
 } from './booking-chat-repair-action-state';
 
@@ -13,6 +14,30 @@ describe('booking chat repair action state', () => {
   it('does not require repair before matching or when chat exists', () => {
     expect(bookingChatRepairNeedsOps({ status: 'OPEN_MATCHING', hasChatRoom: false })).toBe(false);
     expect(bookingChatRepairNeedsOps({ status: 'MATCHED', hasChatRoom: true })).toBe(false);
+  });
+
+  it('flags quiet chat only for active bookings with a retained empty room', () => {
+    expect(
+      bookingChatQuietNeedsOps({
+        status: 'MATCHED',
+        hasChatRoom: true,
+        messageCount: 0,
+      }),
+    ).toBe(true);
+    expect(
+      bookingChatQuietNeedsOps({
+        status: 'COMPLETED',
+        hasChatRoom: true,
+        messageCount: 0,
+      }),
+    ).toBe(false);
+    expect(
+      bookingChatQuietNeedsOps({
+        status: 'MATCHED',
+        hasChatRoom: true,
+        messageCount: 1,
+      }),
+    ).toBe(false);
   });
 
   it('returns ready state when the chat room exists', () => {
