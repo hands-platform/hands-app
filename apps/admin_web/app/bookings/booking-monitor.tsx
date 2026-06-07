@@ -43,6 +43,7 @@ import {
   bookingMarketplaceParticipants as buildBookingMarketplaceParticipants,
   isCustomerSelectableBookingParticipant,
 } from '../../lib/booking-participant-choice';
+import { bookingAlertTraceSummaryFromMetadata } from '../../lib/booking-evidence-ops';
 
 type Props = {
   bookings: AdminBooking[];
@@ -4299,24 +4300,12 @@ function bookingBackupAlertTraceTone(booking: AdminBooking) {
 }
 
 function bookingBackupAlertTraceSummary(booking: AdminBooking, nowMs = 0) {
-  const metadata = readPlainRecord(booking.metadata);
-  const traces = Array.isArray(metadata?.backupNotificationTraces)
-    ? metadata.backupNotificationTraces
-        .map(readPlainRecord)
-        .filter((item): item is Record<string, unknown> => Boolean(item))
-    : [];
-  const totalNotified = traces.reduce(
-    (sum, trace) => sum + (readOptionalNumber(trace.notifiedCount) ?? 0),
-    0,
-  );
-  const latest = traces.at(-1) ?? null;
-  const lastCreatedAt = readOptionalString(latest?.createdAt);
+  const summary = bookingAlertTraceSummaryFromMetadata(booking.metadata);
   return {
-    batchCount: traces.length,
-    totalNotified,
-    lastStage: readOptionalString(latest?.stage),
-    lastCreatedAt,
-    lastAge: lastCreatedAt ? relativeTimeLabel(lastCreatedAt, nowMs) : null,
+    ...summary,
+    lastStage: summary.lastStage ?? null,
+    lastCreatedAt: summary.lastCreatedAt ?? null,
+    lastAge: summary.lastCreatedAt ? relativeTimeLabel(summary.lastCreatedAt, nowMs) : null,
   };
 }
 

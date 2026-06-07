@@ -2760,12 +2760,7 @@ function dashboardBookingHasMatchedPartner(booking: AdminBooking) {
 }
 
 function dashboardBookingBackupInviteCount(booking: AdminBooking) {
-  const metadata = readPlainRecord(booking.metadata);
-  const traces = Array.isArray(metadata?.backupNotificationTraces) ? metadata.backupNotificationTraces : [];
-  return traces.reduce((total, value) => {
-    const trace = readPlainRecord(value);
-    return total + (readOptionalNumber(trace?.notifiedCount) ?? 0);
-  }, 0);
+  return bookingAlertTraceSummaryFromMetadata(booking.metadata).totalNotified;
 }
 
 function dashboardPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperationalPolicySetting[]) {

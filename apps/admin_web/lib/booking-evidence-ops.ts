@@ -16,11 +16,17 @@ export type BookingAlertEvidenceNeedsOpsInput = {
 export type BookingAlertTraceSummary = {
   batchCount: number;
   totalNotified: number;
+  lastStage?: string;
+  lastCreatedAt?: string;
 };
 
 function readOptionalNumber(value: unknown): number | null {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : null;
+}
+
+function readOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 export function bookingPartnerChoiceEvidenceNeedsOpsFromFacts(
@@ -40,12 +46,16 @@ export function bookingAlertTraceSummaryFromMetadata(metadata: unknown): Booking
         .filter((item): item is Record<string, unknown> => Boolean(item))
     : [];
 
+  const latest = traces.at(-1);
+
   return {
     batchCount: traces.length,
     totalNotified: traces.reduce(
       (total, trace) => total + (readOptionalNumber(trace.notifiedCount) ?? 0),
       0,
     ),
+    lastStage: readOptionalString(latest?.stage),
+    lastCreatedAt: readOptionalString(latest?.createdAt),
   };
 }
 

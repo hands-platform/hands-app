@@ -58,14 +58,16 @@ describe('booking evidence operations helpers', () => {
     expect(
       bookingAlertTraceSummaryFromMetadata({
         backupNotificationTraces: [
-          { notifiedCount: 2 },
-          { notifiedCount: '3' },
-          { notifiedCount: 'not-a-number' },
+          { notifiedCount: 2, stage: 'first-pick', createdAt: '2026-06-07T01:00:00.000Z' },
+          { notifiedCount: '3', stage: 'marketplace', createdAt: '2026-06-07T01:10:00.000Z' },
+          { notifiedCount: 'not-a-number', stage: 'retry', createdAt: '2026-06-07T01:20:00.000Z' },
         ],
       }),
     ).toEqual({
       batchCount: 3,
       totalNotified: 5,
+      lastStage: 'retry',
+      lastCreatedAt: '2026-06-07T01:20:00.000Z',
     });
   });
 
