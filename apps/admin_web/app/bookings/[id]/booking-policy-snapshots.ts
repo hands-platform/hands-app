@@ -6,18 +6,37 @@ import { readOptionalNumber, readOptionalString } from './booking-readers';
 export function readBookingMatchingPolicySnapshot(booking: AdminBookingDetail) {
   const metadata = readPlainRecord(booking.metadata);
   const policy = readPlainRecord(metadata?.matchingPolicy);
+  const marketplaceRadiusMeters =
+    readOptionalNumber(policy?.marketplaceRadiusMeters) ??
+    readOptionalNumber(policy?.marketplacePartnerRadiusMeters) ??
+    readOptionalNumber(policy?.backupProviderRadiusMeters);
+  const marketplaceLocationMaxAgeMinutes =
+    readOptionalNumber(policy?.marketplaceLocationMaxAgeMinutes) ??
+    readOptionalNumber(policy?.marketplacePartnerLocationMaxAgeMinutes) ??
+    readOptionalNumber(policy?.backupProviderLocationMaxAgeMinutes);
+  const marketplaceInvitationLimit =
+    readOptionalNumber(policy?.marketplaceInvitationLimit) ??
+    readOptionalNumber(policy?.marketplacePartnerInvitationLimit) ??
+    readOptionalNumber(policy?.backupProviderInvitationLimit);
+  const marketplaceOpenMode =
+    readOptionalString(policy?.marketplaceOpenMode) ??
+    readOptionalString(policy?.backupOpenMode);
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy?.providerResponseWindowMinutes),
-    backupProviderRadiusMeters: readOptionalNumber(policy?.backupProviderRadiusMeters),
-    backupProviderLocationMaxAgeMinutes: readOptionalNumber(policy?.backupProviderLocationMaxAgeMinutes),
-    backupProviderInvitationLimit: readOptionalNumber(policy?.backupProviderInvitationLimit),
+    marketplaceRadiusMeters,
+    marketplaceLocationMaxAgeMinutes,
+    marketplaceInvitationLimit,
+    marketplaceOpenMode,
+    backupProviderRadiusMeters: marketplaceRadiusMeters,
+    backupProviderLocationMaxAgeMinutes: marketplaceLocationMaxAgeMinutes,
+    backupProviderInvitationLimit: marketplaceInvitationLimit,
     bookingMaxCustomerCurrentToAddressKm: readOptionalNumber(policy?.bookingMaxCustomerCurrentToAddressKm),
     bookingMaxPreferredProviderDistanceKm: readOptionalNumber(policy?.bookingMaxPreferredProviderDistanceKm),
     bookingCurrentLocationFreshnessMinutes: readOptionalNumber(
       policy?.bookingCurrentLocationFreshnessMinutes,
     ),
     preferredAcceptMode: readOptionalString(policy?.preferredAcceptMode),
-    backupOpenMode: readOptionalString(policy?.backupOpenMode),
+    backupOpenMode: marketplaceOpenMode,
     travelBufferMinutes: readOptionalNumber(policy?.travelBufferMinutes),
   };
 }

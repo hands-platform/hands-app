@@ -4221,13 +4221,27 @@ function bookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPo
   if (!policy) {
     return null;
   }
+  const marketplaceRadiusMeters =
+    readOptionalNumber(policy.marketplaceRadiusMeters) ??
+    readOptionalNumber(policy.marketplacePartnerRadiusMeters) ??
+    readOptionalNumber(policy.backupProviderRadiusMeters);
+  const marketplaceLocationMaxAgeMinutes =
+    readOptionalNumber(policy.marketplaceLocationMaxAgeMinutes) ??
+    readOptionalNumber(policy.marketplacePartnerLocationMaxAgeMinutes) ??
+    readOptionalNumber(policy.backupProviderLocationMaxAgeMinutes);
+  const marketplaceInvitationLimit =
+    readOptionalNumber(policy.marketplaceInvitationLimit) ??
+    readOptionalNumber(policy.marketplacePartnerInvitationLimit) ??
+    readOptionalNumber(policy.backupProviderInvitationLimit);
+  const marketplaceOpenMode =
+    readOptionalString(policy.marketplaceOpenMode) ?? readOptionalString(policy.backupOpenMode);
   return {
     providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
-    backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
-    backupProviderLocationMaxAgeMinutes: readOptionalNumber(policy.backupProviderLocationMaxAgeMinutes),
-    backupProviderInvitationLimit: readOptionalNumber(policy.backupProviderInvitationLimit),
+    backupProviderRadiusMeters: marketplaceRadiusMeters,
+    backupProviderLocationMaxAgeMinutes: marketplaceLocationMaxAgeMinutes,
+    backupProviderInvitationLimit: marketplaceInvitationLimit,
     preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
-    backupOpenMode: readOptionalString(policy.backupOpenMode),
+    backupOpenMode: marketplaceOpenMode,
     travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
   };
 }

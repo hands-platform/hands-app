@@ -88,9 +88,15 @@ function bookingBackupNotificationTraceBatches(booking: AdminBookingDetail) {
       const stage = readOptionalString(batch.stage) ?? 'backup_invite';
       const notifiedCount = readOptionalNumber(batch.notifiedCount) ?? providers.length;
       const websocketTargetCount = readOptionalNumber(batch.websocketTargetCount);
-      const radius = readOptionalNumber(batch.backupProviderRadiusMeters);
-      const limit = readOptionalNumber(batch.backupProviderInvitationLimit);
-      const mode = readOptionalString(batch.backupOpenMode);
+      const radius =
+        readOptionalNumber(batch.marketplaceRadiusMeters) ??
+        readOptionalNumber(batch.marketplacePartnerRadiusMeters) ??
+        readOptionalNumber(batch.backupProviderRadiusMeters);
+      const limit =
+        readOptionalNumber(batch.marketplaceInvitationLimit) ??
+        readOptionalNumber(batch.marketplacePartnerInvitationLimit) ??
+        readOptionalNumber(batch.backupProviderInvitationLimit);
+      const mode = readOptionalString(batch.marketplaceOpenMode) ?? readOptionalString(batch.backupOpenMode);
       const providerSummary = providers
         .map((providerValue) => {
           const provider = readPlainRecord(providerValue);
@@ -155,9 +161,17 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
     notification.user?.phone ??
     (partner?.id ? `Partner ${shortId(partner.id)}` : 'Unknown target');
   const providerProfileId = readOptionalString(data?.providerProfileId);
-  const radius = readOptionalNumber(data?.backupProviderRadiusMeters);
+  const radius =
+    readOptionalNumber(data?.marketplaceRadiusMeters) ??
+    readOptionalNumber(data?.marketplacePartnerRadiusMeters) ??
+    readOptionalNumber(data?.backupProviderRadiusMeters);
   const distance = readOptionalNumber(data?.distanceMeters);
-  const invitationLimit = readOptionalNumber(data?.backupProviderInvitationLimit);
+  const invitationLimit =
+    readOptionalNumber(data?.marketplaceInvitationLimit) ??
+    readOptionalNumber(data?.marketplacePartnerInvitationLimit) ??
+    readOptionalNumber(data?.backupProviderInvitationLimit);
+  const marketplaceOpenMode =
+    readOptionalString(data?.marketplaceOpenMode) ?? readOptionalString(data?.backupOpenMode);
   const deliveryStatuses = deliveries.map((delivery) => delivery.status);
 
   return {
@@ -185,7 +199,7 @@ export function bookingNotificationTraceRow(notification: AdminNotification) {
       distance !== null ? `distance ${formatDistanceMeters(distance)}` : null,
       radius !== null ? `marketplace radius ${formatDistanceMeters(radius)}` : null,
       invitationLimit !== null ? `invite cap ${invitationLimit}` : null,
-      data?.backupOpenMode ? `marketplace mode ${String(data.backupOpenMode)}` : null,
+      marketplaceOpenMode ? `marketplace mode ${marketplaceOpenMode}` : null,
       data?.noShowPolicy ? `no-show policy ${String(data.noShowPolicy)}` : null,
       data?.reason ? `reason ${String(data.reason)}` : null,
     ]
