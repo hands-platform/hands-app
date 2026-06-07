@@ -1,7 +1,9 @@
 import type { AdminBooking } from './admin-api';
 import {
-  bookingCustomerSelectableParticipants,
+  bookingCustomerSelectableParticipantsForBooking,
   bookingParticipantPartnerId,
+  bookingPreferredPartnerIdForChoice,
+  bookingSelectedPartnerIdForChoice,
 } from './booking-participant-choice';
 import { shortId } from './admin-format';
 
@@ -24,29 +26,24 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
   );
   const marketplaceRows = participantRows.filter((row) => {
     const participantProviderId = bookingParticipantPartnerId(row.participant);
-    const preferredProviderId = preferredProviderIdForSnapshot(row.booking);
+    const preferredProviderId = bookingPreferredPartnerIdForChoice(row.booking);
     return Boolean(participantProviderId) && participantProviderId !== preferredProviderId;
   });
   const firstPickRows = participantRows.filter((row) => {
     const participantProviderId = bookingParticipantPartnerId(row.participant);
-    const preferredProviderId = preferredProviderIdForSnapshot(row.booking);
+    const preferredProviderId = bookingPreferredPartnerIdForChoice(row.booking);
     return Boolean(participantProviderId && preferredProviderId) && participantProviderId === preferredProviderId;
   });
   const dedupedCustomerSelectableRows = bookings.reduce(
-    (sum, booking) =>
-      sum +
-      bookingCustomerSelectableParticipants(
-        booking.participants,
-        preferredProviderIdForSnapshot(booking),
-      ).length,
+    (sum, booking) => sum + bookingCustomerSelectableParticipantsForBooking(booking).length,
     0,
   );
   const customerSelectedRows = participantRows.filter(
     (row) =>
       row.participant.status === 'SELECTED' ||
       Boolean(
-        row.booking.selectedProviderId &&
-          bookingParticipantPartnerId(row.participant) === row.booking.selectedProviderId,
+        bookingSelectedPartnerIdForChoice(row.booking) &&
+          bookingParticipantPartnerId(row.participant) === bookingSelectedPartnerIdForChoice(row.booking),
       ),
   );
   const declinedRows = participantRows.filter((row) => row.participant.status === 'REJECTED');
@@ -73,10 +70,6 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
       : 'No participant row',
     latestParticipantHref: latest ? `/bookings/${latest.booking.id}#participants` : '/bookings?view=marketplace',
   };
-}
-
-function preferredProviderIdForSnapshot(booking: AdminBooking) {
-  return booking.preferredProviderId ?? booking.preferredProvider?.id ?? null;
 }
 
 function participantSnapshotTime(participant: NonNullable<AdminBooking['participants']>[number]) {

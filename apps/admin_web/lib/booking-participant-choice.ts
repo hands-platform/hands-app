@@ -6,8 +6,30 @@ export type BookingParticipantChoiceInput = {
   } | null;
 };
 
+export type BookingParticipantChoiceBookingInput<
+  T extends BookingParticipantChoiceInput = BookingParticipantChoiceInput,
+> = {
+  preferredProviderId?: string | null;
+  preferredProvider?: {
+    id?: string | null;
+  } | null;
+  selectedProviderId?: string | null;
+  selectedProvider?: {
+    id?: string | null;
+  } | null;
+  participants?: T[] | null;
+};
+
 export function bookingParticipantPartnerId(participant: BookingParticipantChoiceInput) {
   return participant.providerProfileId ?? participant.providerProfile?.id ?? null;
+}
+
+export function bookingPreferredPartnerIdForChoice(booking: BookingParticipantChoiceBookingInput) {
+  return booking.preferredProvider?.id ?? booking.preferredProviderId ?? null;
+}
+
+export function bookingSelectedPartnerIdForChoice(booking: BookingParticipantChoiceBookingInput) {
+  return booking.selectedProvider?.id ?? booking.selectedProviderId ?? null;
 }
 
 export function isCustomerSelectableBookingParticipant(
@@ -38,6 +60,12 @@ export function bookingMarketplaceParticipants<T extends BookingParticipantChoic
     const partnerId = bookingParticipantPartnerId(participant);
     return Boolean(partnerId && participant.status !== 'REJECTED' && partnerId !== preferredProviderId);
   });
+}
+
+export function bookingMarketplaceParticipantsForBooking<T extends BookingParticipantChoiceInput>(
+  booking: BookingParticipantChoiceBookingInput<T>,
+) {
+  return bookingMarketplaceParticipants(booking.participants, bookingPreferredPartnerIdForChoice(booking));
 }
 
 function bookingParticipantChoicePriority(participant: BookingParticipantChoiceInput) {
@@ -79,6 +107,12 @@ export function bookingCustomerSelectableParticipants<T extends BookingParticipa
   return [...byPartner.values()];
 }
 
+export function bookingCustomerSelectableParticipantsForBooking<T extends BookingParticipantChoiceInput>(
+  booking: BookingParticipantChoiceBookingInput<T>,
+) {
+  return bookingCustomerSelectableParticipants(booking.participants, bookingPreferredPartnerIdForChoice(booking));
+}
+
 export function bookingHasCustomerSelectablePartner<T extends BookingParticipantChoiceInput>(
   participants: T[] | null | undefined,
   preferredProviderId?: string | null,
@@ -87,5 +121,15 @@ export function bookingHasCustomerSelectablePartner<T extends BookingParticipant
   return (
     !selectedProviderId &&
     bookingCustomerSelectableParticipants(participants, preferredProviderId).length > 0
+  );
+}
+
+export function bookingHasCustomerSelectablePartnerForBooking<T extends BookingParticipantChoiceInput>(
+  booking: BookingParticipantChoiceBookingInput<T>,
+) {
+  return bookingHasCustomerSelectablePartner(
+    booking.participants,
+    bookingPreferredPartnerIdForChoice(booking),
+    bookingSelectedPartnerIdForChoice(booking),
   );
 }

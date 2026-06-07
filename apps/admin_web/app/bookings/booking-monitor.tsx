@@ -38,9 +38,12 @@ import {
   bookingRefundReviewNeedsOpsFromFacts,
 } from '../../lib/booking-payment-ops';
 import {
-  bookingCustomerSelectableParticipants as buildBookingCustomerSelectableParticipants,
-  bookingHasCustomerSelectablePartner as hasBookingCustomerSelectablePartner,
-  bookingMarketplaceParticipants as buildBookingMarketplaceParticipants,
+  bookingCustomerSelectableParticipantsForBooking as buildBookingCustomerSelectableParticipants,
+  bookingHasCustomerSelectablePartnerForBooking as hasBookingCustomerSelectablePartner,
+  bookingMarketplaceParticipantsForBooking as buildBookingMarketplaceParticipants,
+  bookingParticipantPartnerId,
+  bookingPreferredPartnerIdForChoice,
+  bookingSelectedPartnerIdForChoice,
   isCustomerSelectableBookingParticipant,
 } from '../../lib/booking-participant-choice';
 import { bookingAlertTraceSummaryFromMetadata } from '../../lib/booking-evidence-ops';
@@ -1749,7 +1752,7 @@ export function BookingMonitor({
                         </span>
                       )}
                       {booking.selectedProvider &&
-                        booking.selectedProvider.id !== booking.preferredProvider?.id && (
+                        bookingSelectedPartnerIdForChoice(booking) !== bookingPreferredPartnerIdForChoice(booking) && (
                           <span className="pill pill-success">
                             Final: {partnerDisplayName(booking.selectedProvider)}
                           </span>
@@ -4454,30 +4457,25 @@ function partnerDisplayName(provider?: { displayName?: string | null } | null, f
 }
 
 function isSelectedProviderParticipant(booking: AdminBooking) {
-  const selectedProviderId = booking.selectedProvider?.id;
+  const selectedProviderId = bookingSelectedPartnerIdForChoice(booking);
   if (!selectedProviderId) {
     return false;
   }
 
   return (booking.participants ?? []).some(
     (participant) =>
-      participant.providerProfile?.id === selectedProviderId && participant.status !== 'REJECTED',
+      bookingParticipantPartnerId(participant) === selectedProviderId && participant.status !== 'REJECTED',
   );
 }
 
 function isBackupSelected(booking: AdminBooking) {
-  return Boolean(
-    booking.selectedProvider?.id &&
-    booking.preferredProvider?.id &&
-    booking.selectedProvider.id !== booking.preferredProvider.id,
-  );
+  const selectedProviderId = bookingSelectedPartnerIdForChoice(booking);
+  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
+  return Boolean(selectedProviderId && preferredProviderId && selectedProviderId !== preferredProviderId);
 }
 
 function marketplaceParticipants(booking: AdminBooking) {
-  return buildBookingMarketplaceParticipants(
-    booking.participants,
-    booking.preferredProvider?.id ?? booking.preferredProviderId,
-  );
+  return buildBookingMarketplaceParticipants(booking);
 }
 
 function buildMarketplaceBookingCoverageRows(
@@ -4867,17 +4865,17 @@ function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
 }
 
 function marketplaceParticipantRoleLabel(booking: AdminBooking, participant: BookingParticipant) {
-  const preferredProviderId = booking.preferredProvider?.id ?? booking.preferredProviderId;
-  if (participant.providerProfile?.id === preferredProviderId) {
+  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
+  if (bookingParticipantPartnerId(participant) === preferredProviderId) {
     return 'First-pick partner';
   }
   return 'Marketplace participant';
 }
 
 function marketplaceParticipantEvidenceState(booking: AdminBooking, participant: BookingParticipant) {
-  const selectedProviderId = booking.selectedProvider?.id ?? booking.selectedProviderId;
-  const preferredProviderId = booking.preferredProvider?.id ?? booking.preferredProviderId;
-  const partnerId = participant.providerProfile?.id;
+  const selectedProviderId = bookingSelectedPartnerIdForChoice(booking);
+  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
+  const partnerId = bookingParticipantPartnerId(participant);
 
   if (selectedProviderId && partnerId === selectedProviderId) {
     return {
@@ -4940,9 +4938,9 @@ function marketplaceParticipantStatusTone(status: string) {
 }
 
 function marketplaceParticipantChoiceState(booking: AdminBooking, participant: BookingParticipant) {
-  const selectedProviderId = booking.selectedProvider?.id ?? booking.selectedProviderId;
-  const preferredProviderId = booking.preferredProvider?.id ?? booking.preferredProviderId;
-  const partnerId = participant.providerProfile?.id;
+  const selectedProviderId = bookingSelectedPartnerIdForChoice(booking);
+  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
+  const partnerId = bookingParticipantPartnerId(participant);
   const isFinal = Boolean(selectedProviderId && partnerId === selectedProviderId);
 
   return participantChoicePresentation({
@@ -4992,25 +4990,18 @@ function bookingHasPartnerWalletDebtSignal(booking: AdminBooking) {
 }
 
 function customerSelectableParticipants(booking: AdminBooking) {
-  return buildBookingCustomerSelectableParticipants(
-    booking.participants,
-    booking.preferredProvider?.id ?? booking.preferredProviderId,
-  );
+  return buildBookingCustomerSelectableParticipants(booking);
 }
 
 function isCustomerSelectableMarketplaceParticipant(booking: AdminBooking, participant: BookingParticipant) {
   return isCustomerSelectableBookingParticipant(
     participant,
-    booking.preferredProvider?.id ?? booking.preferredProviderId,
+    bookingPreferredPartnerIdForChoice(booking),
   );
 }
 
 function bookingHasCustomerSelectablePartner(booking: AdminBooking) {
-  return hasBookingCustomerSelectablePartner(
-    booking.participants,
-    booking.preferredProvider?.id ?? booking.preferredProviderId,
-    booking.selectedProvider?.id ?? booking.selectedProviderId,
-  );
+  return hasBookingCustomerSelectablePartner(booking);
 }
 
 function bookingMatchingEscalationNeedsOps(booking: AdminBooking, nowMs: number) {
@@ -5131,14 +5122,14 @@ function selectionToneClass(booking: AdminBooking) {
 }
 
 function preferredParticipantState(booking: AdminBooking) {
-  const preferredProviderId = booking.preferredProvider?.id;
+  const preferredProviderId = bookingPreferredPartnerIdForChoice(booking);
   if (!preferredProviderId) {
     return null;
   }
 
   return (
     (booking.participants ?? []).find(
-      (participant) => participant.providerProfile?.id === preferredProviderId,
+      (participant) => bookingParticipantPartnerId(participant) === preferredProviderId,
     ) ?? null
   );
 }

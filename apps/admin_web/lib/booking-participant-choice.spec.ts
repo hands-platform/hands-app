@@ -1,6 +1,11 @@
 import {
   bookingCustomerSelectableParticipants,
+  bookingCustomerSelectableParticipantsForBooking,
   bookingHasCustomerSelectablePartner,
+  bookingHasCustomerSelectablePartnerForBooking,
+  bookingMarketplaceParticipantsForBooking,
+  bookingPreferredPartnerIdForChoice,
+  bookingSelectedPartnerIdForChoice,
   bookingMarketplaceParticipants,
   isCustomerSelectableBookingParticipant,
 } from './booking-participant-choice';
@@ -78,5 +83,39 @@ describe('booking participant choice rules', () => {
 
     expect(bookingHasCustomerSelectablePartner(participants, 'partner_preferred', null)).toBe(true);
     expect(bookingHasCustomerSelectablePartner(participants, 'partner_preferred', 'partner_marketplace')).toBe(false);
+  });
+
+  it('reads preferred and selected partner ids from relation payloads first', () => {
+    const booking = {
+      preferredProviderId: 'partner_old_first',
+      preferredProvider: preferred,
+      selectedProviderId: 'partner_old_selected',
+      selectedProvider: marketplace,
+    };
+
+    expect(bookingPreferredPartnerIdForChoice(booking)).toBe('partner_preferred');
+    expect(bookingSelectedPartnerIdForChoice(booking)).toBe('partner_marketplace');
+  });
+
+  it('builds booking-level marketplace and customer choice sets from one shared contract', () => {
+    const booking = {
+      preferredProvider: preferred,
+      selectedProvider: null,
+      participants: [
+        { status: 'JOINED', providerProfile: preferred },
+        { status: 'JOINED', providerProfile: marketplace },
+        { status: 'ACCEPTED', providerProfile: marketplace },
+        { status: 'REJECTED', providerProfile: { id: 'partner_rejected' } },
+      ],
+    };
+
+    expect(bookingMarketplaceParticipantsForBooking(booking).map((row) => row.providerProfile?.id)).toEqual([
+      'partner_marketplace',
+      'partner_marketplace',
+    ]);
+    expect(bookingCustomerSelectableParticipantsForBooking(booking)).toEqual([
+      { status: 'ACCEPTED', providerProfile: marketplace },
+    ]);
+    expect(bookingHasCustomerSelectablePartnerForBooking(booking)).toBe(true);
   });
 });
