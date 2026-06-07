@@ -412,7 +412,7 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
         value: CANCELLATION_ADMIN_FEE_REVIEW_AFTER_MATCH,
         label: 'Admin fee review after match',
         tradeoff:
-          'Protects partner time without automatic penalties; operators review chat, arrival, and refund context.',
+          'Protects partner time without automatic closeout decisions; operators review chat, arrival, and refund context.',
       },
     ],
     enforced: true,

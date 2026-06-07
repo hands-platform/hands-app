@@ -52,6 +52,12 @@ describe('matching policy', () => {
     expect(definition?.label).toBe('Negative wallet marketplace gate');
   });
 
+  it('keeps operational policy copy factual instead of scoring people', () => {
+    const serializedPolicyCopy = JSON.stringify(OPERATIONAL_POLICY_DEFINITIONS);
+
+    expect(serializedPolicyCopy).not.toMatch(/\b(penalty|penalties|risk|score|rank)\b/i);
+  });
+
   it('allows operations settings while keeping configured bounds', () => {
     const policy = resolveMatchingPolicy(config(), {
       [MATCHING_PROVIDER_RESPONSE_WINDOW_MINUTES_KEY]: 15,
