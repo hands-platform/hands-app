@@ -28,6 +28,7 @@ export type BookingOperatorPendingTask = {
 export type BookingOperatorCommandQueueInput = {
   bookingStatus: string;
   participantCount: number;
+  customerChoiceCandidateCount: number;
   partnerLabel: string;
   hasFinalPartner: boolean;
   hasChatRoom: boolean;
@@ -61,11 +62,16 @@ export function bookingOperatorCommandQueue(
   const activeStatus = activeStatuses.has(input.bookingStatus);
 
   if (input.bookingStatus === 'OPEN_MATCHING') {
+    const selectableDetail =
+      input.customerChoiceCandidateCount > 0
+        ? `${input.customerChoiceCandidateCount} customer-selectable partner(s) / ${input.participantCount} participant row(s).`
+        : `0 customer-selectable partner(s) / ${input.participantCount} participant row(s).`;
+
     add({
       id: 'matching-watch',
       label: 'MATCH',
       title: 'Monitor customer choice',
-      detail: `${input.participantCount} partner(s) are in the customer choice list. Customer still chooses the final partner.`,
+      detail: `${selectableDetail} Customer still chooses the final partner.`,
       owner: 'Dispatch operator',
       tone: 'pill-warn',
       action: { type: 'link', href: '#participants', label: 'Open shortlist' },

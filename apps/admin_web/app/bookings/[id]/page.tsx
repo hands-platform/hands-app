@@ -1348,6 +1348,7 @@ function bookingOperatorCommandQueue({
   return buildBookingOperatorCommandQueue({
     bookingStatus: booking.status,
     participantCount: booking.participants?.length ?? 0,
+    customerChoiceCandidateCount: bookingCustomerSelectableParticipantsForFinalChoice(booking).length,
     partnerLabel,
     hasFinalPartner: finalPartner.selected,
     hasChatRoom: Boolean(booking.chatRoom),

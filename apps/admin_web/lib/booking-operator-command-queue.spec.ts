@@ -3,6 +3,7 @@ import { bookingOperatorCommandQueue } from './booking-operator-command-queue';
 const baseInput = {
   bookingStatus: 'CREATED',
   participantCount: 0,
+  customerChoiceCandidateCount: 0,
   partnerLabel: 'No final partner',
   hasFinalPartner: false,
   hasChatRoom: false,
@@ -40,6 +41,22 @@ describe('bookingOperatorCommandQueue', () => {
       type: 'link',
       href: '#marketplace-supply',
     });
+  });
+
+  it('separates participant evidence rows from customer-selectable partners', () => {
+    const queue = bookingOperatorCommandQueue({
+      ...baseInput,
+      bookingStatus: 'OPEN_MATCHING',
+      participantCount: 1,
+      customerChoiceCandidateCount: 0,
+    });
+
+    expect(queue.commands.find((command) => command.id === 'matching-watch')?.detail).toContain(
+      '0 customer-selectable partner(s)',
+    );
+    expect(queue.commands.find((command) => command.id === 'matching-watch')?.detail).toContain(
+      '1 participant row(s)',
+    );
   });
 
   it('adds chat repair and location request commands for active bookings missing both records', () => {
