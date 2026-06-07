@@ -100,7 +100,7 @@ npm.cmd run external:check:production
 | Admin Operations Command Center | Active | Dashboard, bookings, customers, partners, services, policy, payments, refunds, earnings, payouts, cash settlements, notifications, chat archive, sessions, audit, setup are present. Sidebar IA now groups existing routes into Command, Bookings, Partners, Customers, Finance, Policy, Evidence/System without deleting pages. Date-range `Today` filters use the Vietnam business day. | Continue adding depth inside existing command lanes before creating new top-level pages. |
 | Customers admin | Active | Customer list/detail exists with factual records. No customer scoring. | Decide which fields are must-show above the fold. |
 | Partners admin | Active | Partner list/detail, KYC, wallet, payout, tax, device/session, document, activity evidence are present. Legacy `/providers` routes stay as redirects only. | Continue improving partner list/detail depth without rebuilding separate partner-risk pages. |
-| Booking and marketplace | Active | Address snapshot, first-pick, 10km marketplace, customer final selection, negative wallet blocking, chat evidence closeout are guarded by smoke tests. | Decide next audit slice: API policy consistency or mobile E2E consistency. |
+| Booking and marketplace | Active | Address snapshot, first-pick, 10km marketplace, customer final selection, negative wallet blocking, chat evidence closeout, and Admin/API policy-default consistency are guarded. | Decide next audit slice: mobile paired E2E consistency or payment/settlement gateway audit. |
 | Payments and gateway callbacks | Active | Payment callback audit, payment detail view, gateway reference wording, capture/release/refund/cash settlement actions are present. | Decide gateway sandbox E2E order: MoMo first, VNPay first, or keep both deferred. |
 | Cash fee debt and wallet | Active | Cash bookings can create partner company receivable; negative wallet keeps marketplace demand visible, but blocks marketplace participation/join and payout release until settlement or approved offset. Partner app block copy is aligned. | Decide finance SLA and deposit evidence requirements for production operations. |
 | Service pricing | Active | Admin service names, duration options, minimum price, price step, partner price, payout rules, and booking price snapshots are modeled. | Decide if service catalog should be frozen before final mobile UI. |
@@ -120,9 +120,8 @@ These items should be proposed to the owner before implementation.
    - Next: add depth inside existing lanes before introducing new top-level pages.
 
 2. Backend policy consistency pass
-   - Option A: audit booking/matching/wallet/payment services first.
-   - Option B: continue adding Admin depth first.
-   - Recommended: Option A next if we want to reduce hidden rule drift.
+   - Current: booking/matching/wallet smoke coverage exists, and `policy:coverage` now also checks Admin operations policy defaults against the NestJS policy source.
+   - Next: payment callbacks, settlement closeout, or mobile paired E2E can be audited as the next focused slice.
 
 3. Mobile E2E consistency pass
    - Option A: customer app first.

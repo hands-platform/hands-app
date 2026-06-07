@@ -11,7 +11,7 @@
 ## Matching Policy
 
 - First-pick partner response window: 10 minutes.
-- Marketplace partner radius: 10km from the booking location.
+- Marketplace partner radius: 10km from the confirmed booking address.
 - Marketplace eligibility uses the partner's last stored location; the MVP does not run route or live navigation APIs.
 - Eligible marketplace partners receive a marketplace availability notification and can participate through `POST /partner/bookings/:id/join`.
 - Customer final selection remains the source of truth. The first-pick partner can accept first, but
@@ -26,12 +26,14 @@ and partner join eligibility.
 Enforced settings:
 
 - `matching.provider_response_window_minutes`
-- `matching.marketplace_partner_radius_meters`
+- `matching.backup_provider_radius_meters`
+- `matching.backup_provider_location_max_age_minutes`
+- `matching.backup_provider_invitation_limit`
 - `matching.travel_buffer_minutes`
 - `matching.preferred_accept_mode`
-- `matching.marketplace_open_mode`
+- `matching.backup_open_mode`
 
-Compatibility note: older internal keys may still contain `backup_provider` or `backup_open`. Admin and product-facing copy should use marketplace partner/candidate wording.
+Compatibility note: the saved policy keys still contain `backup_provider` or `backup_open` for schema and migration stability. Admin and product-facing copy should describe these as marketplace partner participation.
 
 Existing open bookings keep their stored `expiresAt` timestamp so operators do not accidentally change a
 live customer countdown. `matching.preferred_accept_mode` is kept for snapshot compatibility, but the

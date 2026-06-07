@@ -9,7 +9,7 @@ Customer booking starts from a selected partner profile. The selected partner is
 Default operating policy:
 
 - Preferred partner response window: 10 minutes.
-- Marketplace partner radius: 10km from the booking location.
+- Marketplace partner radius: 10km from the confirmed booking address.
 - Marketplace partners can participate while the preferred partner is still deciding.
 - Customers always choose the final partner.
 - No automatic final matching.
