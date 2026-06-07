@@ -39,6 +39,7 @@ export const ADMIN_OPERATIONS_POLICY_DEFAULTS = {
 } as const;
 
 export type AdminLiveOperationsPolicy = {
+  travelBufferMinutes: number;
   providerResponseWindowMinutes: number;
   marketplaceRadiusMeters: number;
   marketplaceLocationFreshnessMinutes: number;
@@ -60,6 +61,9 @@ export function buildAdminLiveOperationsPolicy(
     ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
 
   return {
+    travelBufferMinutes:
+      readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.travelBufferMinutes) ??
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.travelBufferMinutes,
     providerResponseWindowMinutes:
       readPolicyNumber(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ??
       ADMIN_OPERATIONS_POLICY_DEFAULTS.providerResponseWindowMinutes,

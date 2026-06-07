@@ -17,6 +17,7 @@ describe('admin live operations policy helpers', () => {
   it('normalizes configured marketplace policy values and trims string policies', () => {
     const settings = [
       setting(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes, '10'),
+      setting(OPERATIONAL_POLICY_KEYS.travelBufferMinutes, '45'),
       setting(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters, '10000'),
       setting(OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes, 30),
       setting(OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit, '25'),
@@ -28,6 +29,7 @@ describe('admin live operations policy helpers', () => {
     const policy = buildAdminLiveOperationsPolicy(settings);
 
     expect(policy.providerResponseWindowMinutes).toBe(10);
+    expect(policy.travelBufferMinutes).toBe(45);
     expect(policy.marketplaceRadiusMeters).toBe(10000);
     expect(policy.marketplaceLocationFreshnessMinutes).toBe(30);
     expect(policy.marketplaceInvitationLimit).toBe(25);
@@ -43,6 +45,7 @@ describe('admin live operations policy helpers', () => {
     ]);
 
     expect(policy.providerResponseWindowMinutes).toBe(10);
+    expect(policy.travelBufferMinutes).toBe(30);
     expect(policy.marketplaceRadiusMeters).toBe(10000);
     expect(policy.marketplaceLocationFreshnessMinutes).toBe(30);
     expect(policy.marketplaceInvitationLimit).toBe(50);
