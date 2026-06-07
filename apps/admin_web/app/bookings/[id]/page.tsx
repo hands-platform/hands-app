@@ -139,6 +139,7 @@ import {
   completedCloseoutTone,
 } from '../../../lib/booking-closeout-policy';
 import { bookingOpsBadges } from '../../../lib/booking-ops-badges';
+import { bookingOpsTaskCards as buildBookingOpsTaskCards } from '../../../lib/booking-ops-task-cards';
 import {
   bookingPartnerDecisionLabel,
   bookingPartnerHint,
@@ -4128,42 +4129,7 @@ function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
 }
 
 function bookingOpsTaskCards(booking: AdminBookingDetail) {
-  const taskByType = new Map((booking.opsTasks ?? []).map((task) => [task.type, task]));
-  const definitions = [
-    {
-      type: 'CUSTOMER_CONTACTED',
-      label: 'Customer contacted',
-      helper:
-        'Confirm the guest has been updated when waiting, switching partner, cancelling, or resolving payment.',
-    },
-    {
-      type: 'PROVIDER_CONTACTED',
-      label: 'Partner contacted',
-      helper: 'Confirm the partner has been reached for response, location, arrival, or service progress.',
-    },
-    {
-      type: 'LOCATION_CHECKED',
-      label: 'Location checked',
-      helper: 'Confirm saved customer/partner pins are reasonable. No route or continuous tracking is used.',
-    },
-    {
-      type: 'PAYMENT_REVIEWED',
-      label: 'Payment reviewed',
-      helper: 'Confirm authorization, capture, release, cash fallback, or refund path before closing.',
-    },
-  ];
-
-  return definitions.map((definition) => {
-    const task = taskByType.get(definition.type);
-    return {
-      ...definition,
-      status: task?.status ?? 'PENDING',
-      note: task?.note?.trim() ? task.note.trim() : null,
-      updatedBy: task
-        ? `Updated ${formatDate(task.updatedAt)} by ${task.actor?.fullName ?? task.actor?.phone ?? 'Admin'}`
-        : 'Not checked yet',
-    };
-  });
+  return buildBookingOpsTaskCards(booking.opsTasks, { formatDate });
 }
 
 function liveServiceSignals(booking: AdminBookingDetail) {
