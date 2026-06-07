@@ -6,6 +6,7 @@ import {
 import { participantDistancePolicy } from '../../../lib/admin-distance-policy';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { distanceLabel, formatDate, providerName, shortId } from './booking-formatters';
+import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import {
   bookingParticipantProviderId,
   bookingCustomerSelectableParticipantsForFinalChoice,
@@ -53,19 +54,8 @@ export function bookingParticipantLedger(
   const selectedParticipant = participants.find(
     (participant) => bookingParticipantProviderId(participant) === selectedProviderId,
   );
-  const finalPartnerRecorded = Boolean(selectedProviderId);
-  const finalPartnerLabel = booking.selectedProvider
-    ? providerName(booking.selectedProvider)
-    : selectedParticipant?.providerProfile
-      ? providerName(selectedParticipant.providerProfile)
-      : selectedProviderId
-        ? `Partner ${shortId(selectedProviderId)}`
-        : 'Not selected';
-  const finalPartnerHref = booking.selectedProvider?.id
-    ? `/partners/${booking.selectedProvider.id}`
-    : selectedProviderId
-      ? `/partners/${selectedProviderId}`
-      : '#participants';
+  const finalPartner = bookingFinalPartnerSummary(booking);
+  const finalPartnerRecorded = finalPartner.selected;
   const firstPickSelectable = firstPickParticipant
     ? isCustomerSelectableParticipantForFinalChoice(firstPickParticipant, preferredProviderId)
     : false;
@@ -113,11 +103,11 @@ export function bookingParticipantLedger(
       },
       {
         label: 'Customer final choice',
-        value: finalPartnerLabel,
+        value: finalPartner.label,
         helper: selectedParticipant
           ? `${selectedParticipant.status} participant row retained.`
           : 'No automatic assignment; the customer final choice remains required.',
-        href: finalPartnerHref,
+        href: finalPartner.href,
       },
       {
         label: 'Booking-address radius',
@@ -181,7 +171,7 @@ export function bookingParticipantLedger(
         label: '4. Final match',
         status: finalPartnerRecorded ? 'Customer selected' : 'Pending',
         tone: finalPartnerRecorded ? 'pill-success' : 'pill-neutral',
-        value: finalPartnerRecorded ? finalPartnerLabel : 'No final partner yet',
+        value: finalPartnerRecorded ? finalPartner.label : 'No final partner yet',
         helper: finalPartnerRecorded
           ? selectedFromMarketplace
             ? 'Customer selected a marketplace participant instead of the first-pick partner.'
@@ -240,7 +230,7 @@ export function bookingParticipantLedger(
             ? 'pill-warn'
             : 'pill-neutral',
         evidence: finalPartnerRecorded
-          ? `${finalPartnerLabel} is saved as selectedProvider.`
+          ? `${finalPartner.label} is saved as selectedProvider.`
           : `${customerSelectableParticipants.length} customer-selectable partner(s) available.`,
         operatorUse:
           'If final partner is missing, check customer app shortlist visibility instead of manually choosing for the customer.',

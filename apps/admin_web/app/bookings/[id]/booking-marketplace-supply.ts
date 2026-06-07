@@ -10,6 +10,7 @@ import {
   coordinateLabel,
   distanceLabel,
 } from './booking-formatters';
+import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import { bookingPreferredProviderId } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import { readOptionalNumber } from './booking-readers';
@@ -46,7 +47,7 @@ export function bookingBackupPartnerSupply(
     (booking.participants ?? []).map((participant) => participant.providerProfile?.id).filter(Boolean),
   );
   const preferredProviderId = bookingPreferredProviderId(booking);
-  const selectedProviderId = booking.selectedProvider?.id;
+  const selectedProviderId = bookingFinalPartnerSummary(booking).id;
 
   const evaluatedRows = hasCustomerPin
     ? providers

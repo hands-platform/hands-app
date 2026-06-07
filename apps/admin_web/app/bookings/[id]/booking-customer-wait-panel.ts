@@ -1,5 +1,6 @@
 import type { AdminBookingDetail, AdminOperationalPolicySetting } from '../../../lib/admin-api';
 import { formatDate, providerName } from './booking-formatters';
+import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
@@ -46,7 +47,11 @@ export function bookingCustomerWaitPanel(
     (participant) => participant.providerProfile?.id && participant.providerProfile.id === firstPick?.id,
   );
   const firstPickRejected = firstPickParticipant?.status === 'REJECTED';
-  const selected = Boolean(booking.selectedProvider) || booking.status === 'MATCHED';
+  const finalPartner = bookingFinalPartnerSummary(booking);
+  const selected = finalPartner.selected || booking.status === 'MATCHED';
+  const selectedPartnerLabel = finalPartner.selected
+    ? finalPartner.label
+    : providerName(booking.preferredProvider);
   const expired = booking.expiresAt ? Date.parse(booking.expiresAt) < Date.now() : false;
   const customerPinReady = Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng));
   const backupWindowOpen = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW' || firstPickRejected || expired;
@@ -126,7 +131,7 @@ export function bookingCustomerWaitPanel(
       title: 'Customer final choice',
       status: selected ? 'Selected' : waitingForCustomerChoice ? 'Choose now' : 'Waiting',
       detail: selected
-        ? `Final partner: ${providerName(booking.selectedProvider ?? booking.preferredProvider)}.`
+        ? `Final partner: ${selectedPartnerLabel}.`
         : waitingForCustomerChoice
           ? `${customerChoiceCandidates.length} participating/accepted partner(s) are ready for customer selection.`
           : 'No participating/accepted partner is ready for final customer selection yet.',

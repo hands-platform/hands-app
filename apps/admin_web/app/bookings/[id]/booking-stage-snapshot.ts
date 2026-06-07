@@ -1,5 +1,6 @@
 import type { AdminBookingDetail } from '../../../lib/admin-api';
 import { providerName } from './booking-formatters';
+import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
@@ -39,8 +40,9 @@ export function bookingStageSnapshot(
   const rejectedParticipants = (booking.participants ?? []).filter(
     (participant) => participant.status === 'REJECTED',
   );
-  const selectedPartner =
-    booking.selectedProvider ?? (status === 'MATCHED' ? booking.preferredProvider : null);
+  const finalPartner = bookingFinalPartnerSummary(booking);
+  const hasFinalPartner = finalPartner.selected || (status === 'MATCHED' && Boolean(booking.preferredProvider));
+  const finalPartnerLabel = finalPartner.selected ? finalPartner.label : providerName(booking.preferredProvider);
   const preferredParticipant = preferredParticipantState(booking);
   const locationFreshness = latestProviderLocationFreshness(booking);
   const customerPinReady = Number.isFinite(Number(booking.lat)) && Number.isFinite(Number(booking.lng));
@@ -64,7 +66,7 @@ export function bookingStageSnapshot(
       'Use finance, refund, no-show, audit, and feedback sections to confirm the operational record is clean.';
     actionHref = booking.payment?.id ? `/payments#payment-${booking.payment.id}` : `/bookings/${booking.id}`;
     actionLabel = booking.payment?.id ? 'Open payment trail' : 'Review closeout';
-  } else if (selectedPartner && chatReady) {
+  } else if (hasFinalPartner && chatReady) {
     stage = 'Stage 4 - Chat handoff';
     pillClass = 'pill-success';
     noteClassName = 'ops-task-done';
@@ -75,7 +77,7 @@ export function bookingStageSnapshot(
         : 'Chat is ready; ask the partner to refresh location if the customer needs approach visibility.';
     actionHref = `/bookings/${booking.id}#chat`;
     actionLabel = 'Review chat';
-  } else if (selectedPartner && !chatReady) {
+  } else if (hasFinalPartner && !chatReady) {
     stage = 'Stage 4 - Handoff repair';
     pillClass = 'pill-danger';
     noteClassName = 'ops-task-blocked';
@@ -161,8 +163,8 @@ export function bookingStageSnapshot(
       },
       { label: chatReady ? 'Chat ready' : 'Chat pending', tone: chatReady ? 'pill-success' : 'pill-info' },
       {
-        label: providerName(selectedPartner ?? booking.preferredProvider),
-        tone: selectedPartner ? 'pill-success' : 'pill-neutral',
+        label: hasFinalPartner ? finalPartnerLabel : providerName(booking.preferredProvider),
+        tone: hasFinalPartner ? 'pill-success' : 'pill-neutral',
       },
     ],
   };

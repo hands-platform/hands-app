@@ -13,6 +13,7 @@ import {
   safeTime,
   shortId,
 } from './booking-formatters';
+import { bookingFinalPartnerSummary } from './booking-final-partner-summary';
 
 export type BookingActivityRecord = {
   id: string;
@@ -127,14 +128,15 @@ export function buildBookingActivityRecords({
     }
   }
 
-  if (booking.selectedProvider) {
+  const finalPartner = bookingFinalPartnerSummary(booking);
+  if (finalPartner.selected) {
     records.push({
-      id: `${booking.id}-selected-partner`,
+      id: `${booking.id}-selected-partner-${finalPartner.id ?? 'relation'}`,
       type: 'MATCHED',
       at: booking.updatedAt ?? booking.openedAt ?? booking.createdAt ?? '',
       title: 'Final partner selected',
-      detail: `${providerName(booking.selectedProvider)} / chat ${booking.chatRoom ? 'created' : 'not created yet'}`,
-      href: booking.selectedProvider.id ? `/partners/${booking.selectedProvider.id}` : '#participants',
+      detail: `${finalPartner.label} / chat ${booking.chatRoom ? 'created' : 'not created yet'}`,
+      href: finalPartner.href,
     });
   }
 
@@ -304,13 +306,15 @@ export function buildBookingActivityRecords({
 }
 
 export function buildBookingActivityCsvHref(booking: AdminBookingDetail, records: BookingActivityRecord[]) {
+  const finalPartner = bookingFinalPartnerSummary(booking);
+
   return buildCsvDataHref(
     records.map((record) => ({
       booking_id: booking.id,
       booking_status: booking.status,
       customer_phone: booking.customerProfile?.user?.phone ?? '',
       preferred_partner: providerName(booking.preferredProvider),
-      final_partner: providerName(booking.selectedProvider ?? booking.preferredProvider),
+      final_partner: finalPartner.selected ? finalPartner.label : 'Not selected',
       type: record.type,
       date: record.at,
       title: record.title,
