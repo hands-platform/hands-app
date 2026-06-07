@@ -122,6 +122,7 @@ import {
 } from '../../../lib/admin-api';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
+import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import {
   canCloseoutCompletedBooking,
   completedCloseoutLabel,
@@ -4018,36 +4019,6 @@ function bookingOperatingNextAction(booking: AdminBookingDetail) {
     href: '#booking-activity',
     hrefLabel: 'Open timeline',
   };
-}
-
-function bookingClosureSummary(booking: AdminBookingDetail) {
-  if (!booking.closedAt) {
-    return {
-      status: TERMINAL_BOOKING_STATUSES.has(booking.status) ? 'Terminal without closure stamp' : 'Open',
-      detail: TERMINAL_BOOKING_STATUSES.has(booking.status)
-        ? 'This booking is terminal but has no explicit closure actor/reason saved.'
-        : 'No closure has been recorded yet.',
-    };
-  }
-
-  const actor = booking.closedByRole
-    ? `${booking.closedByRole.toLowerCase()} closure`
-    : 'closure actor missing';
-  const reason = booking.closedReason ? humanizeClosureReason(booking.closedReason) : 'reason not saved';
-  const note = booking.closedNote ? ` / ${booking.closedNote}` : '';
-
-  return {
-    status: formatDate(booking.closedAt),
-    detail: `${actor} / ${reason}${note}`,
-  };
-}
-
-function humanizeClosureReason(reason: string) {
-  return reason
-    .split(/[_\s-]+/)
-    .filter(Boolean)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join(' ');
 }
 
 type AttentionFlag = {
