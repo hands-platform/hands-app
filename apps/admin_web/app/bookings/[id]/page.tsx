@@ -126,6 +126,10 @@ import {
 } from '../../../lib/admin-attention-flags';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { bookingAttentionFlags as buildBookingAttentionFlags } from '../../../lib/booking-attention-flags';
+import {
+  bookingChatRepairActionState as buildBookingChatRepairActionState,
+  bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
+} from '../../../lib/booking-chat-repair-action-state';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import {
@@ -3093,46 +3097,19 @@ function buildBookingActionEvidenceGate({
 }
 
 function bookingChatRepairNeedsOps(booking: AdminBookingDetail) {
-  return (
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status) &&
-    !booking.chatRoom
-  );
+  return buildBookingChatRepairNeedsOps({
+    status: booking.status,
+    hasChatRoom: Boolean(booking.chatRoom),
+  });
 }
 
 function bookingChatRepairActionState(booking: AdminBookingDetail) {
-  if (booking.chatRoom) {
-    return {
-      canSubmit: false,
-      status: 'Chat ready',
-      tone: 'pill-success',
-      helper: `Room ${shortId(booking.chatRoom.id)} is retained for admin evidence.`,
-    };
-  }
-
-  if (!bookingChatRepairNeedsOps(booking)) {
-    return {
-      canSubmit: false,
-      status: 'Not required',
-      tone: 'pill-neutral',
-      helper: 'Chat opens after customer final partner selection.',
-    };
-  }
-
-  if (!booking.selectedProvider) {
-    return {
-      canSubmit: false,
-      status: 'Final partner missing',
-      tone: 'pill-warn',
-      helper: 'Repair is locked until the customer final partner selection is recorded.',
-    };
-  }
-
-  return {
-    canSubmit: true,
-    status: 'Repair available',
-    tone: 'pill-danger',
-    helper: 'Final partner is recorded, but the retained chat room is missing.',
-  };
+  return buildBookingChatRepairActionState({
+    status: booking.status,
+    hasChatRoom: Boolean(booking.chatRoom),
+    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
+    hasSelectedPartner: Boolean(booking.selectedProvider),
+  });
 }
 
 function bookingHandoffChecklist(
