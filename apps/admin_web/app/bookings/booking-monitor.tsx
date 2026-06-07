@@ -17,6 +17,7 @@ import {
   formatPolicyDistance,
   humanizePolicyValue,
 } from '../../lib/operations-policy';
+import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 
 type Props = {
@@ -183,6 +184,9 @@ type MarketplaceParticipantLedgerRow = {
   statusLabel: string;
   statusTone: string;
   distanceLabel: string;
+  distancePolicyLabel: string;
+  distancePolicyTone: string;
+  distancePolicyHelper: string;
   joinedLabel: string;
   respondedLabel: string;
   choiceLabel: string;
@@ -483,8 +487,13 @@ export function BookingMonitor({
     );
   }, [baseVisibleBookings, currentTimeMs, evidenceFilter, paymentFilter, searchQuery, statusFilter]);
   const marketplaceLedgerRows = useMemo(
-    () => buildMarketplaceParticipantLedgerRows(visibleBookings, currentTimeMs),
-    [currentTimeMs, visibleBookings],
+    () =>
+      buildMarketplaceParticipantLedgerRows(
+        visibleBookings,
+        currentTimeMs,
+        liveOperationsPolicy.marketplaceRadiusMeters,
+      ),
+    [currentTimeMs, liveOperationsPolicy.marketplaceRadiusMeters, visibleBookings],
   );
   const marketplaceBookingCoverageRows = useMemo(
     () => buildMarketplaceBookingCoverageRows(visibleBookings, currentTimeMs),
@@ -1546,7 +1555,13 @@ export function BookingMonitor({
                     <span className={`pill ${row.statusTone}`}>{row.statusLabel}</span>
                     <div className="muted">{row.participant.providerStatusAtJoin ?? 'Partner state not saved'}</div>
                   </td>
-                  <td>{row.distanceLabel}</td>
+                  <td>
+                    <strong>{row.distanceLabel}</strong>
+                    <div>
+                      <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
+                    </div>
+                    <div className="muted">{row.distancePolicyHelper}</div>
+                  </td>
                   <td>
                     <div>{row.windowLabel}</div>
                     <span className={`pill ${row.alertTone}`}>{row.alertLabel}</span>
@@ -4703,33 +4718,39 @@ function bookingCreatedTimestamp(booking: AdminBooking) {
 function buildMarketplaceParticipantLedgerRows(
   bookings: AdminBooking[],
   nowMs: number,
+  marketplaceRadiusMeters: number,
 ): MarketplaceParticipantLedgerRow[] {
   return bookings.flatMap((booking) =>
     (booking.participants ?? [])
       .filter((participant) => Boolean(participant.providerProfile?.id))
-      .map((participant) => ({
-        booking,
-        participant,
-        partnerLabel: partnerDisplayName(participant.providerProfile),
-        roleLabel: marketplaceParticipantRoleLabel(booking, participant),
-        ...marketplaceParticipantEvidenceState(booking, participant),
-        statusLabel: marketplaceParticipantStatusLabel(participant.status),
-        statusTone: marketplaceParticipantStatusTone(participant.status),
-        distanceLabel: formatMeters(
-          typeof participant.distanceMeters === 'number' ? participant.distanceMeters : null,
-        ),
-        joinedLabel: participant.joinedAt
-          ? `${formatDate(participant.joinedAt)} / ${relativeTimeLabel(participant.joinedAt, nowMs)}`
-          : 'Participation time not saved',
-        respondedLabel: participant.respondedAt
-          ? `Responded ${formatDate(participant.respondedAt)}`
-          : 'No response time saved',
-        windowLabel: bookingMatchingWindowLabel(booking, nowMs),
-        alertLabel: bookingBackupAlertTracePill(booking),
-        alertTone: bookingBackupAlertTraceTone(booking),
-        ...bookingMarketplaceWalletSignal(booking),
-        ...marketplaceParticipantChoiceState(booking, participant),
-      }))
+      .map((participant) => {
+        const distanceMeters = typeof participant.distanceMeters === 'number' ? participant.distanceMeters : null;
+        const distancePolicy = participantDistancePolicy(distanceMeters, marketplaceRadiusMeters);
+        return {
+          booking,
+          participant,
+          partnerLabel: partnerDisplayName(participant.providerProfile),
+          roleLabel: marketplaceParticipantRoleLabel(booking, participant),
+          ...marketplaceParticipantEvidenceState(booking, participant),
+          statusLabel: marketplaceParticipantStatusLabel(participant.status),
+          statusTone: marketplaceParticipantStatusTone(participant.status),
+          distanceLabel: formatMeters(distanceMeters),
+          distancePolicyLabel: distancePolicy.label,
+          distancePolicyTone: distancePolicy.tone,
+          distancePolicyHelper: distancePolicy.helper,
+          joinedLabel: participant.joinedAt
+            ? `${formatDate(participant.joinedAt)} / ${relativeTimeLabel(participant.joinedAt, nowMs)}`
+            : 'Participation time not saved',
+          respondedLabel: participant.respondedAt
+            ? `Responded ${formatDate(participant.respondedAt)}`
+            : 'No response time saved',
+          windowLabel: bookingMatchingWindowLabel(booking, nowMs),
+          alertLabel: bookingBackupAlertTracePill(booking),
+          alertTone: bookingBackupAlertTraceTone(booking),
+          ...bookingMarketplaceWalletSignal(booking),
+          ...marketplaceParticipantChoiceState(booking, participant),
+        };
+      })
       .sort((left, right) => {
         if (left.choiceLabel === 'Selected by customer' && right.choiceLabel !== 'Selected by customer') {
           return -1;

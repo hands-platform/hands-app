@@ -60,6 +60,9 @@ type ParticipantRow = {
   eligibilityReason: string;
   eligibilityNextStep: string;
   distance: string;
+  distancePolicyLabel: string;
+  distancePolicyTone: string;
+  distancePolicyHelper: string;
   timing: string;
   operatorUse: string;
 };
@@ -377,6 +380,10 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
               </td>
               <td>
                 <strong>{row.distance}</strong>
+                <div className="filter-row" style={{ marginTop: 6 }}>
+                  <span className={`pill ${row.distancePolicyTone}`}>{row.distancePolicyLabel}</span>
+                </div>
+                <p className="muted">{row.distancePolicyHelper}</p>
                 <p className="muted">{row.timing}</p>
               </td>
               <td>{row.operatorUse}</td>

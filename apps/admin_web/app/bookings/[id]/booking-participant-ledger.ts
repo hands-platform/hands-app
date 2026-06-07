@@ -3,6 +3,7 @@ import {
   marketplaceParticipantLedgerBoundaryCopy,
   participantReadableDecision,
 } from '../../../lib/admin-participant-ledger-copy';
+import { participantDistancePolicy } from '../../../lib/admin-distance-policy';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { distanceLabel, formatDate, providerName, shortId } from './booking-formatters';
 import {
@@ -279,6 +280,7 @@ export function bookingParticipantLedger(
         participant,
         customerSelectable,
       });
+      const distancePolicy = participantDistancePolicy(participant.distanceMeters, backupSupply.radiusMeters);
 
       return {
         id: participant.id,
@@ -303,6 +305,9 @@ export function bookingParticipantLedger(
         eligibilityReason: eligibility.reason,
         eligibilityNextStep: eligibility.nextStep,
         distance: distanceLabel(participant.distanceMeters),
+        distancePolicyLabel: distancePolicy.label,
+        distancePolicyTone: distancePolicy.tone,
+        distancePolicyHelper: distancePolicy.helper,
         timing: `Participated ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
         operatorUse: `Participant ${shortId(participant.id)} is retained as actual booking evidence. ${
           readableDecision.nextStep
