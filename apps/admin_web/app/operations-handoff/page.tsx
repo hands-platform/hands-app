@@ -19,7 +19,7 @@ import {
   formatDateTime,
   formatMoney,
   formatRelativeTime,
-  shortId as formatShortId,
+  shortDisplayId,
 } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { buildCsvDataHref } from '../../lib/csv-export';
@@ -535,7 +535,7 @@ export default async function OperationsHandoffPage({
               <tr key={booking.id}>
                 <td>
                   <Link className="text-link" href={`/bookings/${booking.id}`}>
-                    {shortId(booking.id)}
+                    {shortDisplayId(booking.id)}
                   </Link>
                   <div className="muted">{relativeTime(booking.updatedAt ?? booking.createdAt)}</div>
                 </td>
@@ -654,7 +654,7 @@ export default async function OperationsHandoffPage({
                 </td>
                 <td>
                   <Link className="text-link" href={`/bookings/${row.bookingId}`}>
-                    {shortId(row.bookingId)}
+                    {shortDisplayId(row.bookingId)}
                   </Link>
                 </td>
                 <td>{formatMoney(row.grossAmount, row.currency)}</td>
@@ -1129,7 +1129,7 @@ function buildUnifiedActivityStream(input: {
     id: `booking-${booking.id}`,
     area: 'Booking',
     source: booking.status,
-    record: shortId(booking.id),
+    record: shortDisplayId(booking.id),
     summary: bookingActivitySummary(booking),
     href: `/bookings/${booking.id}`,
     className: bookingStatusClass(booking.status),
@@ -1154,7 +1154,7 @@ function buildUnifiedActivityStream(input: {
         id: `chat-${message.id}`,
         area: 'Chat',
         source: message.sender?.roles?.includes('PROVIDER') ? 'Partner message' : 'Customer/admin message',
-        record: `Room ${shortId(booking.chatRoom?.id)}`,
+        record: `Room ${shortDisplayId(booking.chatRoom?.id)}`,
         summary: operatorDisplayText(
           `${message.sender?.fullName ?? message.sender?.phone ?? 'User'}: ${trimText(message.body, 110)}`,
         ),
@@ -1184,7 +1184,7 @@ function buildUnifiedActivityStream(input: {
       id: `notification-${notification.id}`,
       area: 'Notification',
       source: notification.type,
-      record: shortId(notification.id),
+      record: shortDisplayId(notification.id),
       summary: operatorDisplayText(`${notification.title}: ${trimText(notification.body, 100)}`),
       href: '/notifications?review=failed',
       className: 'pill pill-warn',
@@ -1195,7 +1195,7 @@ function buildUnifiedActivityStream(input: {
     id: `finance-${row.id}`,
     area: 'Finance',
     source: row.status,
-    record: shortId(row.bookingId),
+    record: shortDisplayId(row.bookingId),
     summary: `${row.partnerName} / wallet effect ${formatMoney(row.netAmount, row.currency)} / fee ${formatMoney(
       row.platformFee,
       row.currency,
@@ -1245,7 +1245,7 @@ function auditActivitySummary(log: AdminAuditLog) {
 function shortTarget(target?: string | null) {
   if (!target) return '-';
   const [kind, id] = target.split(':');
-  return id ? `${kind}:${shortId(id)}` : shortId(target);
+  return id ? `${kind}:${shortDisplayId(id)}` : shortDisplayId(target);
 }
 
 function trimText(value: string, maxLength: number) {
@@ -1445,7 +1445,7 @@ function buildCustomerSignals(customers: AdminCustomer[]) {
           customer.selectedLocations?.length ?? 0
         } saved location(s).`,
         lastWorkLabel: lastWork
-          ? `Last booking ${shortId(lastWork.id)} / ${relativeTime(lastWork.updatedAt ?? lastWork.createdAt)}`
+          ? `Last booking ${shortDisplayId(lastWork.id)} / ${relativeTime(lastWork.updatedAt ?? lastWork.createdAt)}`
           : 'No booking yet',
         sortTime: dateValue(
           lastWork?.updatedAt ?? lastWork?.createdAt ?? customer.user?.updatedAt ?? customer.user?.createdAt,
@@ -1568,10 +1568,6 @@ function stringValue(value: unknown) {
 
 function humanizeAction(action: string) {
   return action.replace(/[._]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
-}
-
-function shortId(id?: string | null) {
-  return formatShortId(id, { length: 8, ellipsis: true });
 }
 
 function dateValue(value?: string | null) {

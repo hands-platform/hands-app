@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { AdminEarning, AdminEarningSummary, AdminPayoutBatch, adminGet } from '../../lib/admin-api';
-import { formatMoney, formatRelativeTime, shortId as formatShortId } from '../../lib/admin-format';
+import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import { createProviderPayout, markEarningPaid } from './actions';
 
@@ -338,7 +338,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                   </p>
                   <p className="muted">
                     {group.activeBatch
-                      ? `Existing batch ${shortId(group.activeBatch.id)} is ${group.activeBatch.status}.`
+                      ? `Existing batch ${shortRecordId(group.activeBatch.id)} is ${group.activeBatch.status}.`
                       : group.nextAction}
                   </p>
                 </div>
@@ -352,7 +352,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                       <input
                         type="hidden"
                         name="transferRef"
-                        value={`HANDS-${shortId(group.providerProfileId)}`}
+                        value={`HANDS-${shortRecordId(group.providerProfileId)}`}
                       />
                       <button type="submit">Batch payout</button>
                     </form>
@@ -415,7 +415,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                   <p className="muted">
                     Owes {formatMoney(item.debtAmount, item.earning.currency)} from booking{' '}
                     <Link className="text-link" href={`/bookings/${item.earning.bookingId}`}>
-                      {shortId(item.earning.bookingId)}
+                      {shortRecordId(item.earning.bookingId)}
                     </Link>
                     {' / '}payment {item.paymentMethod}
                   </p>
@@ -535,7 +535,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                 </td>
                 <td>
                   <a className="text-link" href={`/bookings/${earning.bookingId}`}>
-                    {shortId(earning.bookingId)}
+                    {shortRecordId(earning.bookingId)}
                   </a>
                   <div className="muted">
                     {earning.createdAt
@@ -564,7 +564,7 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                 <td>
                   {earning.payoutBatchId ? (
                     <a className="pill pill-info" href={`/payouts#${earning.payoutBatchId}`}>
-                      {shortId(earning.payoutBatchId)}
+                      {shortRecordId(earning.payoutBatchId)}
                     </a>
                   ) : (
                     <span className="pill pill-warn">Not batched</span>
@@ -1464,8 +1464,4 @@ function settlementMethodLabel(method: string) {
     return 'Admin offset';
   }
   return method;
-}
-
-function shortId(value: string) {
-  return formatShortId(value, { length: 12 });
 }

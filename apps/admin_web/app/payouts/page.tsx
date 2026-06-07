@@ -10,7 +10,7 @@ import {
   formatDateTime,
   formatMoney,
   formatRelativeTime,
-  shortId as formatShortId,
+  shortRecordId,
 } from '../../lib/admin-format';
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
@@ -513,7 +513,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
                 <div className="setup-stage-list">
                   {lane.batches.slice(0, 4).map((batch) => (
                     <div className="setup-stage-item" key={`${lane.title}-${batch.id}`}>
-                      <span>{shortId(batch.id)}</span>
+                      <span>{shortRecordId(batch.id)}</span>
                       <div>
                         <strong>
                           {batch.providerProfile?.displayName ??
@@ -584,7 +584,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               return (
                 <tr id={batch.id} key={batch.id}>
                   <td>
-                    <div>{shortId(batch.id)}</div>
+                    <div>{shortRecordId(batch.id)}</div>
                     <div className="muted">
                       {formatRelativeTime(batch.createdAt, { justNow: 'Updated just now' })}
                     </div>
@@ -1363,7 +1363,7 @@ function payoutInclusionRow(earning: AdminEarning, status: PayoutInclusionAuditR
   const service = earning.booking?.services?.[0]?.service;
   const serviceLabel = service
     ? `${service.name} / ${service.durationMin} min`
-    : `Booking ${shortId(earning.bookingId)}`;
+    : `Booking ${shortRecordId(earning.bookingId)}`;
   const providerLabel =
     earning.providerProfile?.displayName ?? earning.providerProfile?.user?.phone ?? 'Unknown partner';
   const holdReason =
@@ -1964,8 +1964,4 @@ function activePayoutHold(batch: AdminPayoutBatch) {
   return batch.providerProfile?.sanctions?.find(
     (sanction) => sanction.type === 'PAYOUT_HOLD' && sanction.status === 'ACTIVE',
   );
-}
-
-function shortId(value: string) {
-  return formatShortId(value, { length: 12 });
 }

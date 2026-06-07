@@ -89,6 +89,14 @@ export function shortId(
   return ellipsis ? `${value.slice(0, length)}...` : value.slice(0, length);
 }
 
+export function shortRecordId(value?: string | null) {
+  return shortId(value, { length: 12 });
+}
+
+export function shortDisplayId(value?: string | null) {
+  return shortId(value, { length: 8, ellipsis: true });
+}
+
 export function readPlainRecord(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;

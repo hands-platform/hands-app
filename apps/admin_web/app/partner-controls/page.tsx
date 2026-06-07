@@ -10,7 +10,7 @@ import { marketplaceDisplayText as partnerDisplayText } from '../../lib/admin-co
 import {
   formatDateTime,
   formatMoney,
-  shortId as formatShortId,
+  shortDisplayId,
 } from '../../lib/admin-format';
 import {
   createProviderReport,
@@ -644,7 +644,7 @@ export default async function PartnerControlsPage({
                   {report.details ? <p className="muted">{partnerDisplayText(report.details)}</p> : null}
                   {report.bookingId ? (
                     <Link className="text-link" href={`/bookings/${report.bookingId}`}>
-                      Booking {shortId(report.bookingId)}
+                      Booking {shortDisplayId(report.bookingId)}
                     </Link>
                   ) : null}
                 </td>
@@ -2064,10 +2064,6 @@ function statusPill(status: string) {
   if (status === 'RESOLVED' || status === 'DISMISSED') return 'pill-success';
   if (status === 'INVESTIGATING') return 'pill-warn';
   return 'pill-info';
-}
-
-function shortId(value: string) {
-  return formatShortId(value, { length: 8, ellipsis: true });
 }
 
 function formatDate(value?: string | null) {

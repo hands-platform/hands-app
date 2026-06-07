@@ -6,7 +6,7 @@ import {
   adminGet,
 } from '../../lib/admin-api';
 import { partnerDisplayText } from '../../lib/admin-copy';
-import { formatMoney, formatRelativeTime, shortId as formatShortId } from '../../lib/admin-format';
+import { formatMoney, formatRelativeTime, shortRecordId } from '../../lib/admin-format';
 import {
   type AdminDateRange,
   dateRangeLabel,
@@ -223,7 +223,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                       <strong>{item.row.providerName}</strong>
                       <div>
                         <Link className="text-link" href={`/bookings/${item.row.earning.bookingId}`}>
-                          {shortId(item.row.earning.bookingId)}
+                          {shortRecordId(item.row.earning.bookingId)}
                         </Link>
                       </div>
                       <div className="muted">{item.row.providerPhone}</div>
@@ -522,7 +522,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
                 </td>
                 <td>
                   <Link className="text-link" href={`/bookings/${row.earning.bookingId}`}>
-                    {shortId(row.earning.bookingId)}
+                    {shortRecordId(row.earning.bookingId)}
                   </Link>
                   <div className="muted">{row.createdAtLabel}</div>
                   <div className="muted">{row.serviceLabel}</div>
@@ -1520,7 +1520,7 @@ function settlementUnlockResult(row: CashSettlementRow) {
   return [
     'Marketplace participation unlocks only after wallet balance is no longer negative.',
     'Payout release returns to batch review after settlement.',
-    `Customer wallet stays unchanged; this is partner cash-fee debt for booking ${shortId(row.earning.bookingId)}.`,
+    `Customer wallet stays unchanged; this is partner cash-fee debt for booking ${shortRecordId(row.earning.bookingId)}.`,
   ];
 }
 
@@ -1546,7 +1546,7 @@ function bookingServiceLabel(earning: AdminEarning) {
 }
 
 function cashSettlementReference(earning: AdminEarning) {
-  return `HANDS-CASH-${shortId(earning.bookingId).toUpperCase()}`;
+  return `HANDS-CASH-${shortRecordId(earning.bookingId).toUpperCase()}`;
 }
 
 function cashDebtOriginLabel(earning: AdminEarning) {
@@ -1625,8 +1625,4 @@ function cashSettlementHref(input: { range: AdminDateRange; queue?: CashSettleme
   }
   const query = params.toString();
   return query ? `/cash-settlements?${query}` : '/cash-settlements';
-}
-
-function shortId(value: string) {
-  return formatShortId(value, { length: 12 });
 }
