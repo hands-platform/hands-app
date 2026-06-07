@@ -19,6 +19,7 @@ import {
 } from '../../lib/operations-policy';
 import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
+import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 
 type Props = {
   bookings: AdminBooking[];
@@ -3973,91 +3974,46 @@ function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingLi
 }
 
 function bookingFinalGateReason(booking: AdminBooking) {
-  const participantCount = marketplaceParticipants(booking).length;
-  const acceptedPartnerReady = bookingHasCustomerSelectablePartner(booking);
-  const selectedPartnerReady = Boolean(booking.selectedProvider);
-
-  if (bookingCashDebtNeedsOps(booking)) {
-    return {
-      label: 'Wallet debt gate',
-      detail:
-        'Partner can view marketplace requests, but marketplace participation and payout release wait for cash fee settlement.',
-      tone: 'pill-danger',
-      href: '/cash-settlements',
-    };
-  }
-
-  if (bookingAddressNeedsOps(booking)) {
-    return {
-      label: 'Address snapshot gate',
-      detail:
-        'BookingAddressSnapshot is missing. Confirm the service address before using marketplace radius or dispatch evidence.',
-      tone: 'pill-danger',
-      href: '/bookings?view=address',
-    };
-  }
-
-  if (
-    booking.status === 'OPEN_MATCHING' &&
-    booking.preferredProvider &&
-    isPreferredAwaitingDecision(booking)
-  ) {
-    return {
-      label: 'First-pick window',
-      detail:
-        'Preferred partner is still inside the response window. Marketplace partners may be watched, but no automatic final match is allowed.',
-      tone: 'pill-warn',
-      href: '/bookings?view=first-pick',
-    };
-  }
-
-  if (booking.status === 'OPEN_MATCHING' && acceptedPartnerReady && !selectedPartnerReady) {
-    return {
-      label: 'Customer final choice',
-      detail:
-        'One or more partners can take the booking. The customer must choose the final partner before chat and service handoff.',
-      tone: 'pill-warn',
-      href: '/bookings?view=customer-choice',
-    };
-  }
-
-  if (booking.status === 'OPEN_MATCHING' && participantCount === 0) {
-    return {
-      label: 'Partner supply wait',
-      detail:
-        'No eligible 10km marketplace partner participation is recorded yet. Check partner alerts, app inbox, and saved location freshness.',
-      tone: 'pill-warn',
-      href: '/bookings?view=no-supply',
-    };
-  }
-
-  if (booking.status === 'MATCHED' && !booking.chatRoom) {
-    return {
-      label: 'Chat handoff gate',
-      detail:
-        'Customer final partner is locked, but the chat room is missing. Repair chat before service coordination.',
-      tone: 'pill-danger',
-      href: '/bookings?view=chat-repair',
-    };
-  }
-
-  if (booking.status === 'MATCHED') {
-    return {
-      label: 'Final partner locked',
-      detail:
-        'Customer final choice is complete. Monitor chat, location handoff, and service progress from the booking detail.',
-      tone: 'pill-success',
-      href: `/bookings/${booking.id}`,
-    };
-  }
-
+  const reason = buildBookingFinalGateReasonFromFacts({
+    cashDebt: bookingCashDebtNeedsOps(booking),
+    walletLedgerLabel: 'Cash fee settlement required',
+    hasAddressSnapshot: !bookingAddressNeedsOps(booking),
+    bookingStatus: booking.status,
+    hasPreferredPartner: Boolean(booking.preferredProvider),
+    preferredAwaitingDecision: isPreferredAwaitingDecision(booking),
+    customerChoiceCandidates: customerSelectableParticipants(booking).length,
+    marketplaceParticipants: marketplaceParticipants(booking).length,
+    selected: Boolean(booking.selectedProvider),
+    hasChatRoom: Boolean(booking.chatRoom),
+  });
   return {
-    label: 'Gate clear',
-    detail:
-      'No marketplace or finance blocker is visible in the booking list. Continue checking factual payment, chat, location, and closeout records.',
-    tone: 'pill-success',
-    href: `/bookings/${booking.id}`,
+    label: reason.title,
+    detail: reason.detail,
+    tone: reason.pillClass,
+    href: bookingFinalGateReasonHref(reason.title, booking),
   };
+}
+
+function bookingFinalGateReasonHref(title: string, booking: AdminBooking) {
+  if (title === 'Wallet debt gate') {
+    return '/cash-settlements';
+  }
+  if (title === 'Address snapshot gate') {
+    return '/bookings?view=address';
+  }
+  if (title === 'First-pick window') {
+    return '/bookings?view=first-pick';
+  }
+  if (title === 'Customer final choice') {
+    return '/bookings?view=customer-choice';
+  }
+  if (title === 'Partner supply wait') {
+    return '/bookings?view=no-supply';
+  }
+  if (title === 'Chat handoff gate') {
+    return '/bookings?view=chat-repair';
+  }
+  return `/bookings/${booking.id}`;
 }
 
 function checkLevel(flags: BookingCheckFlag[]) {
