@@ -9,71 +9,23 @@ import { ProvidersService } from './providers.service';
 
 describe('ProvidersService nearby discovery', () => {
   it('preserves global browse coordinates for long-distance partner metadata', async () => {
-    const service = new ProvidersService(
-      {
-        providerProfile: {
-          findMany: jest.fn().mockResolvedValue([
-            {
-              id: 'partner-hcm',
-              displayName: 'Linh Wellness',
-              status: ProviderStatus.ONLINE_AVAILABLE,
-              currentLat: 10.7769,
-              currentLng: 106.7009,
-              currentLocationUpdatedAt: new Date(),
-              ratingAvg: 5,
-              reviewCount: 14,
-              user: { fullName: 'Linh Wellness', phone: '0900000000', fileAssets: [] },
-              services: [],
-              reviews: [],
-              verification: { status: VerificationStatus.APPROVED },
-              kyc: { status: ProviderKycStatus.APPROVED },
-              bankAccounts: [{ status: ProviderBankAccountStatus.APPROVED }],
-              documents: [],
-            },
-          ]),
-        },
-      } as never,
-      {} as never,
-      {
-        get: jest.fn(),
-      } as never,
-    );
+    const service = createServiceWithNearbyProviders([nearbyProviderFixture()]);
 
     const partners = await service.findNearby(37.5665, 126.978);
 
     expect(partners[0].distanceMeters).toBeGreaterThan(1_000_000);
   });
 
+  it('uses the Vietnam browse fallback only when discovery coordinates are missing or invalid', async () => {
+    const service = createServiceWithNearbyProviders([nearbyProviderFixture()]);
+
+    const partners = await service.findNearby(Number.NaN, Number.NaN);
+
+    expect(partners[0].distanceMeters).toBe(0);
+  });
+
   it('does not expose partner phone numbers in public nearby discovery', async () => {
-    const service = new ProvidersService(
-      {
-        providerProfile: {
-          findMany: jest.fn().mockResolvedValue([
-            {
-              id: 'partner-hcm',
-              displayName: 'Linh Wellness',
-              status: ProviderStatus.ONLINE_AVAILABLE,
-              currentLat: 10.7769,
-              currentLng: 106.7009,
-              currentLocationUpdatedAt: new Date(),
-              ratingAvg: 5,
-              reviewCount: 14,
-              user: { fullName: 'Linh Wellness', phone: '0900000000', fileAssets: [] },
-              services: [],
-              reviews: [],
-              verification: { status: VerificationStatus.APPROVED },
-              kyc: { status: ProviderKycStatus.APPROVED },
-              bankAccounts: [{ status: ProviderBankAccountStatus.APPROVED }],
-              documents: [],
-            },
-          ]),
-        },
-      } as never,
-      {} as never,
-      {
-        get: jest.fn(),
-      } as never,
-    );
+    const service = createServiceWithNearbyProviders([nearbyProviderFixture()]);
 
     const partners = await service.findNearby(10.7769, 106.7009);
 
@@ -140,3 +92,37 @@ describe('ProvidersService nearby discovery', () => {
     });
   });
 });
+
+function createServiceWithNearbyProviders(providers: unknown[]) {
+  return new ProvidersService(
+    {
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue(providers),
+      },
+    } as never,
+    {} as never,
+    {
+      get: jest.fn(),
+    } as never,
+  );
+}
+
+function nearbyProviderFixture() {
+  return {
+    id: 'partner-hcm',
+    displayName: 'Linh Wellness',
+    status: ProviderStatus.ONLINE_AVAILABLE,
+    currentLat: 10.7769,
+    currentLng: 106.7009,
+    currentLocationUpdatedAt: new Date(),
+    ratingAvg: 5,
+    reviewCount: 14,
+    user: { fullName: 'Linh Wellness', phone: '0900000000', fileAssets: [] },
+    services: [],
+    reviews: [],
+    verification: { status: VerificationStatus.APPROVED },
+    kyc: { status: ProviderKycStatus.APPROVED },
+    bankAccounts: [{ status: ProviderBankAccountStatus.APPROVED }],
+    documents: [],
+  };
+}
