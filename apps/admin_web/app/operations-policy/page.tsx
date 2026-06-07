@@ -12,6 +12,15 @@ import { formatDateTime, formatMoney, formatRelativeTime, readPlainRecord } from
 import {
   ADMIN_OPERATIONS_POLICY_DEFAULTS,
   OPERATIONAL_POLICY_KEYS,
+  adminPartnerAccountNeedsFollowUp,
+  adminPartnerBankReady,
+  adminPartnerCanCompleteFinalGate,
+  adminPartnerFinalGateHeld,
+  adminPartnerHasEnabledPush,
+  adminPartnerIdentityReady,
+  adminPartnerLocationFresh,
+  adminPartnerMarketplaceBlocked,
+  adminPartnerWalletBalance,
   operationalPolicyAnchor,
   operationalPolicyHref,
 } from '../../lib/operations-policy';
@@ -115,8 +124,6 @@ type ActionGatePolicyChecklist = {
   }>;
 };
 
-const REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'];
-
 export default async function OperationsPolicyPage({
   searchParams,
 }: {
@@ -211,7 +218,9 @@ export default async function OperationsPolicyPage({
               Every booking must keep an immutable service address snapshot before distance matching,
               marketplace participation, payment evidence, and dispute review.
             </p>
-            <small>Customers may browse globally; booking requires a confirmed Vietnam service address.</small>
+            <small>
+              Customers may browse globally; booking requires a confirmed Vietnam service address.
+            </small>
           </div>
           <div className="ops-task-card ops-task-done">
             <span className="pill pill-success">No auto assignment</span>
@@ -220,7 +229,9 @@ export default async function OperationsPolicyPage({
               Partner acceptance does not auto-match the booking. The customer must choose the final partner
               from eligible accepted participants.
             </p>
-            <small>Operators review evidence, but the platform does not automatically assign the partner.</small>
+            <small>
+              Operators review evidence, but the platform does not automatically assign the partner.
+            </small>
           </div>
           <div className="ops-task-card ops-task-done">
             <span className="pill pill-info">10km marketplace</span>
@@ -238,7 +249,9 @@ export default async function OperationsPolicyPage({
               A partner with a negative wallet may see marketplace demand, but cannot participate until the
               unpaid platform fee is settled or cleared by finance.
             </p>
-            <small>Direct first-pick response and already-matched service flow stay separate from this gate.</small>
+            <small>
+              Direct first-pick response and already-matched service flow stay separate from this gate.
+            </small>
           </div>
         </div>
       </section>
@@ -412,8 +425,8 @@ export default async function OperationsPolicyPage({
             <h2>Final partner choice control matrix</h2>
             <p className="muted">
               Current owner choices for the direct booking window, marketplace participation, partner push
-              reach, and the negative wallet marketplace/payout gate. This is the screen operators should check
-              before changing the mobile flow.
+              reach, and the negative wallet marketplace/payout gate. This is the screen operators should
+              check before changing the mobile flow.
             </p>
           </div>
           <span className={`pill ${acceptanceMatrix.blockingCount ? 'pill-warn' : 'pill-success'}`}>
@@ -444,7 +457,8 @@ export default async function OperationsPolicyPage({
             <h3>Current partner acceptance impact</h3>
             <p className="muted">
               Applies the policy posture to the current partner snapshot so operators can see who can pass
-              marketplace and payout gates, who needs account or identity follow-up, and who only needs readiness follow-up.
+              marketplace and payout gates, who needs account or identity follow-up, and who only needs
+              readiness follow-up.
             </p>
           </div>
           <Link className="text-link" href="/partners">
@@ -488,7 +502,8 @@ export default async function OperationsPolicyPage({
             <h3>Marketplace supply sensitivity</h3>
             <p className="muted">
               Reference point: {supplySensitivity.referenceLabel}. Marketplace blockers include account,
-              identity, and bank readiness. Negative wallet stays visible and is shown as a marketplace/payout hold.
+              identity, and bank readiness. Negative wallet stays visible and is shown as a marketplace/payout
+              hold.
             </p>
             <table className="table service-trace">
               <thead>
@@ -605,9 +620,9 @@ export default async function OperationsPolicyPage({
         <div className="ops-task-note" style={{ marginTop: 14 }}>
           <strong>How to use this preview</strong>
           <p className="muted">
-            If a tested value increases Stage 2 marketplace count without increasing stale/no-supply
-            checks, it may reduce customer waiting anxiety. If it increases overdue or no-supply count,
-            improve partner location freshness, push delivery, or city supply before changing policy.
+            If a tested value increases Stage 2 marketplace count without increasing stale/no-supply checks,
+            it may reduce customer waiting anxiety. If it increases overdue or no-supply count, improve
+            partner location freshness, push delivery, or city supply before changing policy.
           </p>
         </div>
       </section>
@@ -726,9 +741,9 @@ export default async function OperationsPolicyPage({
           <div>
             <h2>Live matching policy</h2>
             <p className="muted">
-              These settings are enforced by booking creation, marketplace partner discovery, and partner participation
-              eligibility. Existing open bookings keep their stored expiry time, while new bookings use the
-              latest policy.
+              These settings are enforced by booking creation, marketplace partner discovery, and partner
+              participation eligibility. Existing open bookings keep their stored expiry time, while new
+              bookings use the latest policy.
             </p>
           </div>
           <span className="pill pill-success">Admin editable</span>
@@ -953,7 +968,9 @@ export default async function OperationsPolicyPage({
               {policyAuditRows.map((row) => (
                 <tr key={row.id}>
                   <td>
-                    <strong>{formatRelativeTime(row.createdAt, { justNow: 'Just now', includeFuture: true })}</strong>
+                    <strong>
+                      {formatRelativeTime(row.createdAt, { justNow: 'Just now', includeFuture: true })}
+                    </strong>
                     <p className="muted">{formatDate(row.createdAt)}</p>
                   </td>
                   <td>
@@ -1338,7 +1355,8 @@ function buildActionGatePolicyChecklist(
       recommendedValue: 'DEPOSIT_OR_ADMIN_OFFSET_REQUIRED',
       detail:
         'Negative wallet from cash jobs can be cleared by verified company deposit or approved settlement offset, with evidence retained.',
-      operatorAction: 'Check cash settlement references before clearing partner marketplace and payout holds.',
+      operatorAction:
+        'Check cash settlement references before clearing partner marketplace and payout holds.',
       href: '/cash-settlements',
     },
     {
@@ -2290,7 +2308,8 @@ function buildPolicySupplySensitivity(
       {
         label: 'Marketplace/payout held in radius',
         value: currentFinalGateHeld.length.toString(),
-        helper: 'Marketplace participation or payout release may wait for settlement, identity, bank, or account controls.',
+        helper:
+          'Marketplace participation or payout release may wait for settlement, identity, bank, or account controls.',
       },
       {
         label: 'Stale excluded',
@@ -2380,8 +2399,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
       detail:
         'Marketplace partners are prioritized by booking-address distance before alerts and operator review.',
       api: 'GET /provider/bookings/open, POST /provider/bookings/:id/join',
-      server:
-        'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
+      server: 'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
       verify: 'Verify from Operations Policy simulator and Partner Controls location freshness records.',
     },
     {
@@ -2451,8 +2469,7 @@ function buildMatchingStageImpactPreview(
     ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
   const hardWalletBlock =
     (policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
-      ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate) ===
-    'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+      ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate) === 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
   const openBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING');
   const liveHandoff = bookings.filter((booking) =>
     ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(booking.status),
@@ -2773,67 +2790,42 @@ function partnerCanCompleteFinalGateUnderCurrentPolicy(
   provider: AdminProvider,
   policy: { backupLocationFreshnessMinutes: number; hardWalletBlock: boolean },
 ) {
-  return (
-    provider.status === 'ONLINE_AVAILABLE' &&
-    !partnerFinalGateHeld(provider, policy) &&
-    partnerLocationFresh(provider, policy.backupLocationFreshnessMinutes) &&
-    partnerHasEnabledPush(provider)
-  );
+  return adminPartnerCanCompleteFinalGate(provider, {
+    freshnessMinutes: policy.backupLocationFreshnessMinutes,
+    hardWalletBlock: policy.hardWalletBlock,
+  });
 }
 
 function partnerMarketplaceBlocked(provider: AdminProvider) {
-  return (
-    partnerAccountNeedsFollowUp(provider) || !partnerIdentityReady(provider) || !partnerBankReady(provider)
-  );
+  return adminPartnerMarketplaceBlocked(provider);
 }
 
 function partnerFinalGateHeld(provider: AdminProvider, policy: { hardWalletBlock: boolean }) {
-  return (
-    partnerMarketplaceBlocked(provider) || (policy.hardWalletBlock && partnerWalletBalance(provider) < 0)
-  );
+  return adminPartnerFinalGateHeld(provider, policy);
 }
 
 function partnerIdentityReady(provider: AdminProvider) {
-  const approvedDocuments = new Set(
-    (provider.documents ?? [])
-      .filter((document) => document.status === 'APPROVED')
-      .map((document) => document.type),
-  );
-  return (
-    provider.verification?.status === 'APPROVED' &&
-    provider.kyc?.status === 'APPROVED' &&
-    REQUIRED_KYC_DOCUMENTS.every((type) => approvedDocuments.has(type))
-  );
+  return adminPartnerIdentityReady(provider);
 }
 
 function partnerBankReady(provider: AdminProvider) {
-  return (provider.bankAccounts ?? []).some((account) => account.status === 'APPROVED');
+  return adminPartnerBankReady(provider);
 }
 
 function partnerWalletBalance(provider: AdminProvider) {
-  return (provider.earnings ?? []).reduce((total, earning) => total + Number(earning.netAmount ?? 0), 0);
+  return adminPartnerWalletBalance(provider);
 }
 
 function partnerLocationFresh(provider: AdminProvider, freshnessMinutes: number) {
-  if (readOptionalNumber(provider.currentLat) === null || readOptionalNumber(provider.currentLng) === null) {
-    return false;
-  }
-  const ageMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
-  return ageMinutes !== null && ageMinutes <= freshnessMinutes;
+  return adminPartnerLocationFresh(provider, freshnessMinutes, Date.now());
 }
 
 function partnerHasEnabledPush(provider: AdminProvider) {
-  return (provider.user?.pushDevices ?? []).some((device) => device.enabled);
+  return adminPartnerHasEnabledPush(provider);
 }
 
 function partnerAccountNeedsFollowUp(provider: AdminProvider) {
-  return (
-    Boolean(provider.blockedAt) ||
-    (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE') ||
-    (provider.devices ?? []).some((device) => Boolean(device.blockedAt) || device.enabled === false) ||
-    (provider.sessions ?? []).some((session) => session.suspicious) ||
-    (provider.sharedDeviceMatches ?? []).length > 0
-  );
+  return adminPartnerAccountNeedsFollowUp(provider);
 }
 
 function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], bookings: AdminBooking[]) {
@@ -3422,7 +3414,8 @@ function buildPolicyDrilldown(bookings: AdminBooking[], settings: AdminOperation
     {
       key: 'wallet-gate',
       title: 'Wallet gate queue',
-      helper: 'Partners with negative recent wallet ledger entries that may hold marketplace participation or payout release.',
+      helper:
+        'Partners with negative recent wallet ledger entries that may hold marketplace participation or payout release.',
       className: walletRows.length ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: walletRows.length ? 'pill-danger' : 'pill-success',
       emptyText: 'No negative recent wallet ledger was found in the current booking sample.',
@@ -3567,8 +3560,7 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
   if (key === 'wallet.negative_balance_gate') {
     return policyRelatedBookingRecordSet({
       title: 'Cash-fee debt records',
-      helper:
-        'Negative wallet records can hold marketplace participation or payout release.',
+      helper: 'Negative wallet records can hold marketplace participation or payout release.',
       href: '/cash-settlements',
       emptyText: 'No negative wallet booking record is currently loaded.',
       bookings: walletRows,
@@ -3993,7 +3985,10 @@ function buildOwnerDecisionPressure(
   );
   const currentVisibleSupply = readSupplySummaryNumber(supplySensitivity, 'Current visible supply');
   const staleExcluded = readSupplySummaryNumber(supplySensitivity, 'Stale excluded');
-  const finalGateHeldInRadius = readSupplySummaryNumber(supplySensitivity, 'Marketplace/payout held in radius');
+  const finalGateHeldInRadius = readSupplySummaryNumber(
+    supplySensitivity,
+    'Marketplace/payout held in radius',
+  );
   const onlinePartners = providers.filter((provider) => provider.status.startsWith('ONLINE')).length;
   const enabledPushPartners = providers.filter((provider) =>
     (provider.user?.pushDevices ?? []).some((device) => device.enabled),
@@ -4168,8 +4163,7 @@ function operationsOwnerDecisionBacklog() {
         },
         {
           label: 'Marketplace + payout',
-          tradeoff:
-            'Adds payout release review while preserving marketplace list visibility.',
+          tradeoff: 'Adds payout release review while preserving marketplace list visibility.',
         },
       ],
       recommendation:
@@ -4568,7 +4562,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'Marketplace shortlist',
-          detail: 'Confirm the customer choice shortlist will stay readable when more partners can participate.',
+          detail:
+            'Confirm the customer choice shortlist will stay readable when more partners can participate.',
           href: '/bookings?view=marketplace',
         },
       ],
@@ -4680,7 +4675,8 @@ function policyImpactDetails(key: string): PolicyImpactDetails {
         },
         {
           label: 'Partner cash holds',
-          detail: 'Check partners blocked from marketplace participation or payout release by unpaid platform fees.',
+          detail:
+            'Check partners blocked from marketplace participation or payout release by unpaid platform fees.',
           href: '/partners?review=cash-debt',
         },
       ],

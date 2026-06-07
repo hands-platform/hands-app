@@ -1,6 +1,7 @@
 import type { AdminOperationalPolicySetting } from './admin-api';
 import {
   OPERATIONAL_POLICY_KEYS,
+  buildAdminPartnerMarketplaceReadiness,
   buildAdminLiveOperationsPolicy,
   formatPolicyDistance,
   humanizePolicyValue,
@@ -60,9 +61,7 @@ describe('admin live operations policy helpers', () => {
     expect(formatPolicyDistance(10000)).toBe('10km');
     expect(formatPolicyDistance(1500)).toBe('1.5km');
     expect(formatPolicyDistance(900)).toBe('900m');
-    expect(humanizePolicyValue('BLOCK_MARKETPLACE_PARTICIPATION')).toBe(
-      'Block Marketplace Participation',
-    );
+    expect(humanizePolicyValue('BLOCK_MARKETPLACE_PARTICIPATION')).toBe('Block Marketplace Participation');
   });
 
   it('does not return blank policy strings', () => {
@@ -76,5 +75,112 @@ describe('admin live operations policy helpers', () => {
     expect(operationalPolicyHref(OPERATIONAL_POLICY_KEYS.walletNegativeGate)).toBe(
       '/operations-policy#policy-wallet-negative-balance-gate',
     );
+  });
+
+  it('marks a fully prepared online partner as marketplace ready', () => {
+    const readiness = buildAdminPartnerMarketplaceReadiness({
+      provider: {
+        status: 'ONLINE_AVAILABLE',
+        verification: { id: 'verification-1', status: 'APPROVED' },
+        kyc: { id: 'kyc-1', status: 'APPROVED' },
+        documents: [
+          { id: 'doc-1', type: 'CCCD_FRONT', status: 'APPROVED' },
+          { id: 'doc-2', type: 'CCCD_BACK', status: 'APPROVED' },
+          { id: 'doc-3', type: 'SELFIE', status: 'APPROVED' },
+        ],
+        bankAccounts: [
+          {
+            id: 'bank-1',
+            bankName: 'VCB',
+            accountHolderName: 'Linh Nguyen',
+            status: 'APPROVED',
+            isPrimary: true,
+          },
+        ],
+        earnings: [{ netAmount: 250000 }],
+        currentLat: 10.7769,
+        currentLng: 106.7009,
+        currentLocationUpdatedAt: new Date().toISOString(),
+        user: { pushDevices: [{ id: 'push-1', platform: 'android', enabled: true }] },
+      },
+      freshnessMinutes: 30,
+      hardWalletBlock: true,
+    });
+
+    expect(readiness.marketplaceBlocked).toBe(false);
+    expect(readiness.finalGateHeld).toBe(false);
+    expect(readiness.canCompleteFinalGate).toBe(true);
+    expect(readiness.walletBalance).toBe(250000);
+  });
+
+  it('keeps negative-wallet partners visible but blocks marketplace participation and final gate', () => {
+    const readiness = buildAdminPartnerMarketplaceReadiness({
+      provider: {
+        status: 'ONLINE_AVAILABLE',
+        verification: { id: 'verification-1', status: 'APPROVED' },
+        kyc: { id: 'kyc-1', status: 'APPROVED' },
+        documents: [
+          { id: 'doc-1', type: 'CCCD_FRONT', status: 'APPROVED' },
+          { id: 'doc-2', type: 'CCCD_BACK', status: 'APPROVED' },
+          { id: 'doc-3', type: 'SELFIE', status: 'APPROVED' },
+        ],
+        bankAccounts: [
+          {
+            id: 'bank-1',
+            bankName: 'VCB',
+            accountHolderName: 'Linh Nguyen',
+            status: 'APPROVED',
+            isPrimary: true,
+          },
+        ],
+        earnings: [{ netAmount: -120000 }],
+        currentLat: 10.7769,
+        currentLng: 106.7009,
+        currentLocationUpdatedAt: new Date().toISOString(),
+        user: { pushDevices: [{ id: 'push-1', platform: 'android', enabled: true }] },
+      },
+      freshnessMinutes: 30,
+      hardWalletBlock: true,
+    });
+
+    expect(readiness.marketplaceBlocked).toBe(false);
+    expect(readiness.finalGateHeld).toBe(true);
+    expect(readiness.canCompleteFinalGate).toBe(false);
+    expect(readiness.walletBalance).toBe(-120000);
+  });
+
+  it('separates account, identity, bank, location, and push readiness reasons', () => {
+    const readiness = buildAdminPartnerMarketplaceReadiness({
+      provider: {
+        status: 'ONLINE_AVAILABLE',
+        verification: { id: 'verification-1', status: 'APPROVED' },
+        kyc: { id: 'kyc-1', status: 'PENDING' },
+        documents: [{ id: 'doc-1', type: 'CCCD_FRONT', status: 'APPROVED' }],
+        bankAccounts: [
+          {
+            id: 'bank-1',
+            bankName: 'VCB',
+            accountHolderName: 'Linh Nguyen',
+            status: 'PENDING',
+            isPrimary: true,
+          },
+        ],
+        devices: [{ id: 'device-1', deviceId: 'a', enabled: false }],
+        earnings: [{ netAmount: 0 }],
+        currentLat: 10.7769,
+        currentLng: null,
+        user: { pushDevices: [] },
+      },
+      freshnessMinutes: 30,
+      hardWalletBlock: true,
+    });
+
+    expect(readiness.accountNeedsFollowUp).toBe(true);
+    expect(readiness.identityReady).toBe(false);
+    expect(readiness.bankReady).toBe(false);
+    expect(readiness.locationFresh).toBe(false);
+    expect(readiness.pushEnabled).toBe(false);
+    expect(readiness.marketplaceBlocked).toBe(true);
+    expect(readiness.finalGateHeld).toBe(true);
   });
 });
