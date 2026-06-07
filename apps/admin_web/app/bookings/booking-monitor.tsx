@@ -29,6 +29,12 @@ import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '
 import { bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps } from '../../lib/booking-chat-repair-action-state';
 import { bookingCashDebtNeedsSettlement } from '../../lib/booking-finance-flags';
 import {
+  bookingCompletedCloseoutNeedsOpsFromFacts,
+  bookingManualDecisionNeedsOpsFromFacts,
+  bookingPaymentNeedsOpsFromFacts,
+  bookingRefundReviewNeedsOpsFromFacts,
+} from '../../lib/booking-payment-ops';
+import {
   bookingCustomerSelectableParticipants as buildBookingCustomerSelectableParticipants,
   bookingHasCustomerSelectablePartner as hasBookingCustomerSelectablePartner,
   bookingMarketplaceParticipants as buildBookingMarketplaceParticipants,
@@ -3686,43 +3692,20 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
 }
 
 function bookingPaymentNeedsOps(booking: AdminBooking) {
-  const payment = booking.payment;
-  if (!payment) {
-    return ['CREATED', 'OPEN_MATCHING', 'MATCHED'].includes(booking.status);
-  }
-  if (booking.status === 'CANCELLED' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
-    return true;
-  }
-  if (booking.status === 'EXPIRED' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
-    return true;
-  }
-  if (booking.status === 'NO_SHOW' && !['RELEASED', 'REFUNDED'].includes(payment.status)) {
-    return true;
-  }
-  if (booking.status === 'COMPLETED' && payment.status === 'AUTHORIZED') {
-    return true;
-  }
-  if (bookingCompletedCloseoutNeedsOps(booking)) {
-    return true;
-  }
-  if (payment.status === 'AUTHORIZED' && !payment.providerRef) {
-    return true;
-  }
-  if (payment.method === 'CASH' && payment.status === 'PENDING') {
-    return true;
-  }
-  if (bookingCashDebtNeedsOps(booking)) {
-    return true;
-  }
-  return false;
+  return bookingPaymentNeedsOpsFromFacts({
+    status: booking.status,
+    payment: booking.payment,
+    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+  });
 }
 
 function bookingManualDecisionNeedsOps(booking: AdminBooking) {
-  return (
-    ['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status) ||
-    bookingCashDebtNeedsOps(booking) ||
-    bookingCompletedCloseoutNeedsOps(booking)
-  );
+  return bookingManualDecisionNeedsOpsFromFacts({
+    status: booking.status,
+    cashDebtNeedsOps: bookingCashDebtNeedsOps(booking),
+    completedCloseoutNeedsOps: bookingCompletedCloseoutNeedsOps(booking),
+  });
 }
 
 function bookingChatEvidenceNeedsOps(booking: AdminBooking, nowMs: number) {
@@ -3754,32 +3737,16 @@ function bookingDecisionEvidenceMissing(booking: AdminBooking, nowMs: number) {
 }
 
 function bookingRefundReviewNeedsOps(booking: AdminBooking) {
-  const paymentStatus = booking.payment?.status;
-  const hasRefundRows = (booking.refunds?.length ?? 0) > 0 || (booking.payment?.refunds?.length ?? 0) > 0;
-  if (hasRefundRows && paymentStatus !== 'REFUNDED') {
-    return true;
-  }
-  if (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status) && booking.payment) {
-    return !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '');
-  }
-  return false;
+  return bookingRefundReviewNeedsOpsFromFacts({
+    status: booking.status,
+    payment: booking.payment,
+    refundCount: booking.refunds?.length,
+    paymentRefundCount: booking.payment?.refunds?.length,
+  });
 }
 
 function bookingCompletedCloseoutNeedsOps(booking: AdminBooking) {
-  if (booking.status !== 'COMPLETED') {
-    return false;
-  }
-  if (!booking.payment || booking.payment.status !== 'CAPTURED') {
-    return true;
-  }
-  if (!booking.earning) {
-    return true;
-  }
-  return (
-    (booking.earning.taxLogs?.length ?? 0) === 0 ||
-    (booking.earning.platformFeeLogs?.length ?? 0) === 0 ||
-    (booking.earning.walletLedgerEntries?.length ?? 0) === 0
-  );
+  return bookingCompletedCloseoutNeedsOpsFromFacts(booking);
 }
 
 function bookingPricingPolicyNeedsOps(booking: AdminBooking) {
