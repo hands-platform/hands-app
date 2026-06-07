@@ -69,10 +69,10 @@ describe('admin live operations policy helpers', () => {
     expect(readPolicyString([setting('empty', '   ')], 'empty')).toBeNull();
   });
 
-  it('keeps legacy wallet policy values compatible with marketplace participation blocking', () => {
+  it('keeps all MVP wallet policy values compatible with marketplace participation blocking', () => {
     expect(adminWalletGateBlocksMarketplaceParticipation('BLOCK_MARKETPLACE_PARTICIPATION')).toBe(true);
     expect(adminWalletGateBlocksMarketplaceParticipation('BLOCK_ACCEPTS_WHEN_NEGATIVE')).toBe(true);
-    expect(adminWalletGateBlocksMarketplaceParticipation('ALLOW_ONE_RECOVERY_BOOKING')).toBe(false);
+    expect(adminWalletGateBlocksMarketplaceParticipation('ALLOW_ONE_RECOVERY_BOOKING')).toBe(true);
   });
 
   it('builds stable Operations Policy anchors from policy keys', () => {

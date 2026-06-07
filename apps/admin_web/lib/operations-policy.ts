@@ -56,6 +56,7 @@ export type AdminLiveOperationsPolicy = {
 export const ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS = ['CCCD_FRONT', 'CCCD_BACK', 'SELFIE'] as const;
 export const ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION = 'BLOCK_MARKETPLACE_PARTICIPATION';
 export const ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE = 'BLOCK_ACCEPTS_WHEN_NEGATIVE';
+export const ADMIN_WALLET_ALLOW_ONE_RECOVERY_BOOKING = 'ALLOW_ONE_RECOVERY_BOOKING';
 
 export type AdminPartnerMarketplaceReadinessProvider = {
   status?: string | null;
@@ -255,7 +256,8 @@ export function adminPartnerHasEnabledPush(provider: AdminPartnerMarketplaceRead
 export function adminWalletGateBlocksMarketplaceParticipation(value: string | null | undefined) {
   return (
     value === ADMIN_WALLET_BLOCK_MARKETPLACE_PARTICIPATION ||
-    value === ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE
+    value === ADMIN_LEGACY_WALLET_BLOCK_ACCEPTS_WHEN_NEGATIVE ||
+    value === ADMIN_WALLET_ALLOW_ONE_RECOVERY_BOOKING
   );
 }
 
