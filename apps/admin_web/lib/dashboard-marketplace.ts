@@ -1,4 +1,8 @@
 import type { AdminBooking } from './admin-api';
+import {
+  bookingParticipantPartnerId,
+  isCustomerSelectableBookingParticipant,
+} from './booking-participant-choice';
 import { shortId } from './admin-format';
 
 export type MarketplaceParticipantSnapshot = {
@@ -19,12 +23,12 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
     (booking.participants ?? []).map((participant) => ({ booking, participant })),
   );
   const marketplaceRows = participantRows.filter((row) => {
-    const participantProviderId = participantProviderIdForSnapshot(row.participant);
+    const participantProviderId = bookingParticipantPartnerId(row.participant);
     const preferredProviderId = preferredProviderIdForSnapshot(row.booking);
     return Boolean(participantProviderId) && participantProviderId !== preferredProviderId;
   });
   const firstPickRows = participantRows.filter((row) => {
-    const participantProviderId = participantProviderIdForSnapshot(row.participant);
+    const participantProviderId = bookingParticipantPartnerId(row.participant);
     const preferredProviderId = preferredProviderIdForSnapshot(row.booking);
     return Boolean(participantProviderId && preferredProviderId) && participantProviderId === preferredProviderId;
   });
@@ -36,7 +40,7 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
       row.participant.status === 'SELECTED' ||
       Boolean(
         row.booking.selectedProviderId &&
-          participantProviderIdForSnapshot(row.participant) === row.booking.selectedProviderId,
+          bookingParticipantPartnerId(row.participant) === row.booking.selectedProviderId,
       ),
   );
   const declinedRows = participantRows.filter((row) => row.participant.status === 'REJECTED');
@@ -65,10 +69,6 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
   };
 }
 
-function participantProviderIdForSnapshot(participant: NonNullable<AdminBooking['participants']>[number]) {
-  return participant.providerProfileId ?? participant.providerProfile?.id ?? null;
-}
-
 function preferredProviderIdForSnapshot(booking: AdminBooking) {
   return booking.preferredProviderId ?? booking.preferredProvider?.id ?? null;
 }
@@ -77,17 +77,7 @@ function isCustomerSelectableParticipantForSnapshot(
   booking: AdminBooking,
   participant: NonNullable<AdminBooking['participants']>[number],
 ) {
-  if (participant.status === 'ACCEPTED' || participant.status === 'SELECTED') {
-    return true;
-  }
-
-  if (participant.status !== 'JOINED') {
-    return false;
-  }
-
-  const participantProviderId = participantProviderIdForSnapshot(participant);
-  const preferredProviderId = preferredProviderIdForSnapshot(booking);
-  return Boolean(participantProviderId) && participantProviderId !== preferredProviderId;
+  return isCustomerSelectableBookingParticipant(participant, preferredProviderIdForSnapshot(booking));
 }
 
 function participantSnapshotTime(participant: NonNullable<AdminBooking['participants']>[number]) {
