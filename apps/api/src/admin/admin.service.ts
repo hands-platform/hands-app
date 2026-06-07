@@ -396,6 +396,19 @@ const adminAuditLogSelect = {
   actor: { select: { id: true, phone: true, fullName: true } },
 } satisfies Prisma.AdminAuditLogSelect;
 
+type AdminAuditLogSummary = Prisma.AdminAuditLogGetPayload<{ select: typeof adminAuditLogSelect }>;
+
+type AdminAuditLogSummaryRow = {
+  id: string;
+  action: string;
+  target: string;
+  metadata: Prisma.JsonValue | null;
+  createdAt: Date;
+  actorId: string;
+  actorPhone: string;
+  actorFullName: string | null;
+};
+
 const adminAddressSnapshotSelect = {
   id: true,
   bookingId: true,
@@ -1746,41 +1759,15 @@ export class AdminService {
       return customers;
     }
 
-    const customerTargets = customers.map((customer) => `customer:${customer.id}`);
-    const [customerAuditLogs, customerAuditCounts] = await Promise.all([
-      this.prisma.adminAuditLog.findMany({
-        where: {
-          target: { in: customerTargets },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: customers.length * ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,
-        select: adminAuditLogSelect,
-      }),
-      this.prisma.adminAuditLog.groupBy({
-        by: ['target'],
-        where: {
-          target: { in: customerTargets },
-        },
-        _count: { _all: true },
-      }),
-    ]);
-
-    const auditLogsByTarget = new Map<string, typeof customerAuditLogs>();
-    for (const log of customerAuditLogs) {
-      const bucket = auditLogsByTarget.get(log.target) ?? [];
-      if (bucket.length < ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT) {
-        bucket.push(log);
-        auditLogsByTarget.set(log.target, bucket);
-      }
-    }
-    const auditLogCountByTarget = new Map(
-      customerAuditCounts.map((row) => [row.target, row._count._all]),
+    const { logsByTarget, countByTarget } = await this.getAuditLogSummaryByTargets(
+      customers.map((customer) => `customer:${customer.id}`),
+      ADMIN_CUSTOMER_LIST_AUDIT_LOG_LIMIT,
     );
 
     return customers.map((customer) => ({
       ...customer,
-      auditLogs: auditLogsByTarget.get(`customer:${customer.id}`) ?? [],
-      auditLogCount: auditLogCountByTarget.get(`customer:${customer.id}`) ?? 0,
+      auditLogs: logsByTarget.get(`customer:${customer.id}`) ?? [],
+      auditLogCount: countByTarget.get(`customer:${customer.id}`) ?? 0,
     }));
   }
 
@@ -1880,36 +1867,15 @@ export class AdminService {
       return providers;
     }
 
-    const providerAuditTargets = providers.map((provider) => `provider:${provider.id}`);
-    const [providerAuditLogs, providerAuditCounts] = await Promise.all([
-      this.prisma.adminAuditLog.findMany({
-        where: { target: { in: providerAuditTargets } },
-        orderBy: { createdAt: 'desc' },
-        take: providers.length * ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
-        select: adminAuditLogSelect,
-      }),
-      this.prisma.adminAuditLog.groupBy({
-        by: ['target'],
-        where: { target: { in: providerAuditTargets } },
-        _count: { _all: true },
-      }),
-    ]);
-    const auditLogsByTarget = new Map<string, typeof providerAuditLogs>();
-    for (const log of providerAuditLogs) {
-      const bucket = auditLogsByTarget.get(log.target) ?? [];
-      if (bucket.length < ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT) {
-        bucket.push(log);
-        auditLogsByTarget.set(log.target, bucket);
-      }
-    }
-    const auditLogCountByTarget = new Map(
-      providerAuditCounts.map((entry) => [entry.target, entry._count._all]),
+    const { logsByTarget, countByTarget } = await this.getAuditLogSummaryByTargets(
+      providers.map((provider) => `provider:${provider.id}`),
+      ADMIN_PROVIDER_LIST_AUDIT_LOG_LIMIT,
     );
 
     return providers.map((provider) => ({
       ...provider,
-      auditLogs: auditLogsByTarget.get(`provider:${provider.id}`) ?? [],
-      auditLogCount: auditLogCountByTarget.get(`provider:${provider.id}`) ?? 0,
+      auditLogs: logsByTarget.get(`provider:${provider.id}`) ?? [],
+      auditLogCount: countByTarget.get(`provider:${provider.id}`) ?? 0,
     }));
   }
 
@@ -3876,6 +3842,81 @@ export class AdminService {
         metadata,
       },
     });
+  }
+
+  private async getAuditLogSummaryByTargets(targets: string[], perTargetLimit: number) {
+    if (targets.length === 0 || perTargetLimit <= 0) {
+      return {
+        logsByTarget: new Map<string, AdminAuditLogSummary[]>(),
+        countByTarget: new Map<string, number>(),
+      };
+    }
+
+    const [logs, counts] = await Promise.all([
+      this.findRecentAuditLogsByTargets(targets, perTargetLimit),
+      this.prisma.adminAuditLog.groupBy({
+        by: ['target'],
+        where: { target: { in: targets } },
+        _count: { _all: true },
+      }),
+    ]);
+
+    const logsByTarget = new Map<string, AdminAuditLogSummary[]>();
+    for (const log of logs) {
+      const bucket = logsByTarget.get(log.target) ?? [];
+      bucket.push(log);
+      logsByTarget.set(log.target, bucket);
+    }
+
+    return {
+      logsByTarget,
+      countByTarget: new Map(counts.map((entry) => [entry.target, entry._count._all])),
+    };
+  }
+
+  private async findRecentAuditLogsByTargets(targets: string[], perTargetLimit: number) {
+    const rows = await this.prisma.$queryRaw<AdminAuditLogSummaryRow[]>(Prisma.sql`
+      WITH ranked_logs AS (
+        SELECT
+          logs."id",
+          logs."action",
+          logs."target",
+          logs."metadata",
+          logs."createdAt",
+          actor."id" AS "actorId",
+          actor."phone" AS "actorPhone",
+          actor."fullName" AS "actorFullName",
+          ROW_NUMBER() OVER (PARTITION BY logs."target" ORDER BY logs."createdAt" DESC) AS "targetRank"
+        FROM "AdminAuditLog" logs
+        INNER JOIN "User" actor ON actor."id" = logs."actorId"
+        WHERE logs."target" IN (${Prisma.join(targets)})
+      )
+      SELECT
+        "id",
+        "action",
+        "target",
+        "metadata",
+        "createdAt",
+        "actorId",
+        "actorPhone",
+        "actorFullName"
+      FROM ranked_logs
+      WHERE "targetRank" <= ${perTargetLimit}
+      ORDER BY "target" ASC, "createdAt" DESC
+    `);
+
+    return rows.map((row) => ({
+      id: row.id,
+      action: row.action,
+      target: row.target,
+      metadata: row.metadata,
+      createdAt: row.createdAt,
+      actor: {
+        id: row.actorId,
+        phone: row.actorPhone,
+        fullName: row.actorFullName,
+      },
+    })) satisfies AdminAuditLogSummary[];
   }
 }
 
