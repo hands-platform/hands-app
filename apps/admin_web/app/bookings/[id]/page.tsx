@@ -125,6 +125,7 @@ import {
   type AttentionFlag,
 } from '../../../lib/admin-attention-flags';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
+import { bookingAttentionFlags as buildBookingAttentionFlags } from '../../../lib/booking-attention-flags';
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingFinanceFlags as buildBookingFinanceFlags } from '../../../lib/booking-finance-flags';
@@ -4062,7 +4063,6 @@ type DispatchStep = {
 };
 
 function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
-  const flags: AttentionFlag[] = [];
   const paymentStatus = booking.payment?.status;
   const status = booking.status;
   const participantCount = booking.participants?.length ?? 0;
@@ -4071,150 +4071,30 @@ function bookingAttentionFlags(booking: AdminBookingDetail): AttentionFlag[] {
   const expired = booking.expiresAt ? new Date(booking.expiresAt).getTime() < Date.now() : false;
   const activeWithLocationNeed = ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status);
 
-  if (status === 'CANCELLED' && booking.payment && !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')) {
-    flags.push({
-      severity: 'high',
-      title: 'Cancelled payment unresolved',
-      detail: `Booking is cancelled but payment is still ${paymentStatus}.`,
-      action: 'Release the authorization or refund before closing the ticket.',
-    });
-  }
-
-  if (status === 'EXPIRED' && booking.payment && !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')) {
-    flags.push({
-      severity: 'high',
-      title: 'Expired payment unresolved',
-      detail: `Booking is expired but payment is still ${paymentStatus}.`,
-      action: 'Release the authorization or refund before closing the ticket.',
-    });
-  }
-
-  if (status === 'NO_SHOW' && booking.payment && !['RELEASED', 'REFUNDED'].includes(paymentStatus ?? '')) {
-    flags.push({
-      severity: 'high',
-      title: 'No-show payment unresolved',
-      detail: `Booking is no-show but payment is still ${paymentStatus}.`,
-      action: 'Decide whether to release, refund, or keep the fee according to the active operating policy.',
-    });
-  }
-
-  if (status === 'COMPLETED' && paymentStatus === 'AUTHORIZED') {
-    flags.push({
-      severity: 'high',
-      title: 'Completed service still on hold',
-      detail: 'The customer payment is authorized but not captured after completion.',
-      action: 'Capture payment, or refund if there is an active dispute.',
-    });
-  }
-
-  if (bookingCashDebtNeedsSettlement(booking)) {
-    flags.push({
-      severity: 'high',
-      title: 'Cash fee debt blocks partner',
-      detail: `${providerName(booking.selectedProvider ?? booking.preferredProvider)} collected cash and still owes ${money(
-        Math.abs(booking.earning?.netAmount ?? 0),
-        booking.earning?.currency,
-      )}.`,
-      action: 'Confirm the partner deposit or admin offset before marketplace participation or payout release resumes.',
-    });
-  }
-
-  if (status === 'OPEN_MATCHING' && expired) {
-    flags.push({
-      severity: 'high',
-      title: 'Matching window expired',
-      detail: `The request expired at ${formatDate(booking.expiresAt)} but is still open.`,
-      action: 'Expire the booking and release or refund the payment hold.',
-    });
-  }
-
-  if (
-    status === 'OPEN_MATCHING' &&
-    booking.preferredProvider &&
-    participantCount === 0 &&
-    openedAge !== null &&
-    openedAge >= 10
-  ) {
-    flags.push({
-      severity: 'medium',
-      title: 'Preferred partner slow',
-      detail: `${providerName(booking.preferredProvider)} has not responded after ${openedAge} minute(s).`,
-      action: 'Encourage marketplace supply or contact the partner.',
-    });
-  }
-
-  if (status === 'OPEN_MATCHING' && participantCount === 0) {
-    flags.push({
-      severity: 'medium',
-      title: 'No partner supply',
-      detail: 'No partner participation is recorded for the request yet.',
-      action: 'Check nearby online partners and consider operational outreach.',
-    });
-  }
-
-  if (status === 'MATCHED' && !booking.chatRoom) {
-    flags.push({
-      severity: 'high',
-      title: 'Matched without chat',
-      detail: 'A partner is selected but no chat room exists.',
-      action: 'Retry chat room creation before the service starts.',
-    });
-  }
-
-  if (activeWithLocationNeed && !latestProviderLocation(booking)) {
-    flags.push({
-      severity: 'medium',
-      title: 'No partner location record',
-      detail: `Booking is ${status}, but the partner has not shared a live pin.`,
-      action: 'Ask the partner to share current location from the Partner app.',
-    });
-  }
-
-  if (
-    activeWithLocationNeed &&
-    latestProviderLocation(booking) &&
-    latestProviderLocationFreshness(booking) !== 'recent'
-  ) {
-    flags.push({
-      severity: 'medium',
-      title: 'Partner location is stale',
-      detail: `The latest partner pin is ${providerLocationMetricHelper(booking).toLowerCase()}.`,
-      action: 'Ask the partner to share location again from the Partner app.',
-    });
-  }
-
-  if (
-    booking.chatRoom &&
-    messages.length === 0 &&
-    ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE'].includes(status)
-  ) {
-    flags.push({
-      severity: 'low',
-      title: 'Chat quiet',
-      detail: 'Chat is ready but no messages have been exchanged.',
-      action: 'Monitor for first contact if the customer reports uncertainty.',
-    });
-  }
-
-  if (paymentStatus === 'AUTHORIZED' && !booking.payment?.providerRef) {
-    flags.push({
-      severity: 'medium',
-      title: 'Payment reference missing',
-      detail: 'The payment is authorized but has no gateway reference for reconciliation.',
-      action: 'Sync payment before capture, release, or refund.',
-    });
-  }
-
-  if ((booking.refunds?.length ?? 0) > 0 && paymentStatus && paymentStatus !== 'REFUNDED') {
-    flags.push({
-      severity: 'medium',
-      title: 'Refund/payment mismatch',
-      detail: `Refund records exist while payment status is ${paymentStatus}.`,
-      action: 'Review gateway status and keep refund timeline aligned.',
-    });
-  }
-
-  return flags;
+  return buildBookingAttentionFlags({
+    bookingStatus: status,
+    hasPayment: Boolean(booking.payment),
+    paymentStatus,
+    paymentProviderRef: booking.payment?.providerRef ?? null,
+    cashDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    cashDebtPartnerLabel: providerName(booking.selectedProvider ?? booking.preferredProvider),
+    cashDebtAmount: Math.abs(booking.earning?.netAmount ?? 0),
+    cashDebtCurrency: booking.earning?.currency ?? 'VND',
+    matchingWindowExpired: expired,
+    expiresAtLabel: formatDate(booking.expiresAt),
+    hasPreferredPartner: Boolean(booking.preferredProvider),
+    preferredPartnerLabel: providerName(booking.preferredProvider),
+    participantCount,
+    openedAgeMinutes: openedAge,
+    hasChatRoom: Boolean(booking.chatRoom),
+    activeWithLocationNeed,
+    hasLatestProviderLocation: Boolean(latestProviderLocation(booking)),
+    latestProviderLocationFreshness: latestProviderLocationFreshness(booking),
+    providerLocationAgeLabel: providerLocationMetricHelper(booking),
+    messageCount: messages.length,
+    refundCount: booking.refunds?.length ?? 0,
+    formatMoney: money,
+  });
 }
 
 function dispatchChecklist(booking: AdminBookingDetail): DispatchStep[] {
