@@ -1896,8 +1896,8 @@ export class AdminService {
         ].filter((deviceId): deviceId is string => Boolean(deviceId)),
       ),
     );
-    const sharedDeviceMatches = deviceIds.length
-      ? await this.prisma.providerDevice.findMany({
+    const sharedDeviceMatchesPromise = deviceIds.length
+      ? this.prisma.providerDevice.findMany({
           where: {
             deviceId: { in: deviceIds },
             providerProfileId: { not: provider.id },
@@ -1920,9 +1920,9 @@ export class AdminService {
             },
           },
         })
-      : [];
+      : Promise.resolve([]);
 
-    const auditLogs = await this.prisma.adminAuditLog.findMany({
+    const auditLogsPromise = this.prisma.adminAuditLog.findMany({
       where: {
         OR: [
           { target: `provider:${providerProfileId}` },
@@ -1936,6 +1936,11 @@ export class AdminService {
       take: 75,
       select: adminAuditLogSelect,
     });
+
+    const [sharedDeviceMatches, auditLogs] = await Promise.all([
+      sharedDeviceMatchesPromise,
+      auditLogsPromise,
+    ]);
 
     return { ...provider, sharedDeviceMatches, auditLogs };
   }
@@ -2991,7 +2996,7 @@ export class AdminService {
       throw new NotFoundException('Payment not found');
     }
 
-    const callbackAttempts = await this.prisma.paymentCallbackAttempt.findMany({
+    const callbackAttemptsPromise = this.prisma.paymentCallbackAttempt.findMany({
       where: {
         OR: [
           { paymentId: payment.id },
@@ -3003,7 +3008,7 @@ export class AdminService {
       select: adminPaymentCallbackAttemptSummarySelect,
     });
 
-    const auditLogs = await this.prisma.adminAuditLog.findMany({
+    const auditLogsPromise = this.prisma.adminAuditLog.findMany({
       where: {
         OR: [
           { target: `payment:${payment.id}` },
@@ -3016,6 +3021,11 @@ export class AdminService {
       take: 75,
       select: adminAuditLogSelect,
     });
+
+    const [callbackAttempts, auditLogs] = await Promise.all([
+      callbackAttemptsPromise,
+      auditLogsPromise,
+    ]);
 
     return { ...payment, callbackAttempts, auditLogs };
   }
