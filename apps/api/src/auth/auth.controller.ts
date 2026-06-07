@@ -1,22 +1,6 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { Role } from '@prisma/client';
+import { RefreshTokenDto, RequestOtpDto, SupabaseExchangeDto, VerifyOtpDto } from './auth.dto';
 import { AuthService } from './auth.service';
-
-type RequestOtpDto = {
-  phone: string;
-  role?: Role;
-};
-
-type VerifyOtpDto = {
-  phone: string;
-  otp: string;
-  role?: Role;
-};
-
-type SupabaseExchangeDto = {
-  supabaseAccessToken: string;
-  role?: Role;
-};
 
 @Controller('auth')
 export class AuthController {
@@ -33,7 +17,7 @@ export class AuthController {
   }
 
   @Post('refresh')
-  refresh(@Body() body: { refreshToken: string }) {
+  refresh(@Body() body: RefreshTokenDto) {
     return this.auth.refresh(body.refreshToken);
   }
 

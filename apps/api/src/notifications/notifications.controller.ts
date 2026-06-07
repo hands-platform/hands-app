@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { RegisterDeviceTokenDto } from './notifications.dto';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
@@ -26,7 +27,7 @@ export class NotificationsController {
   @Patch('device-token/register')
   registerDeviceToken(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { token: string; platform: 'ios' | 'android' | 'web' },
+    @Body() body: RegisterDeviceTokenDto,
   ) {
     return this.notifications.registerDeviceToken(user.id, body);
   }
@@ -34,7 +35,7 @@ export class NotificationsController {
   @Post('device-token/register')
   registerDeviceTokenPost(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { token: string; platform: 'ios' | 'android' | 'web' },
+    @Body() body: RegisterDeviceTokenDto,
   ) {
     return this.notifications.registerDeviceToken(user.id, body);
   }

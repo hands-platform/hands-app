@@ -3,6 +3,7 @@ import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CreateServiceDto } from './services.dto';
 import { ServicesService } from './services.service';
 
 @Controller('services')
@@ -23,16 +24,7 @@ export class ServicesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   create(
-    @Body()
-    body: {
-      serviceGroupKey?: string;
-      name: string;
-      description?: string;
-      durationMin: number;
-      basePrice: number;
-      priceStep?: number;
-      displayOrder?: number;
-    },
+    @Body() body: CreateServiceDto,
   ) {
     return this.services.create(body);
   }

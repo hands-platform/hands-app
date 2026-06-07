@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { AuthenticatedUser } from '../auth/auth.types';
+import { RecordAppSessionDto, UpdateUserProfileDto } from './users.dto';
 import { UsersService } from './users.service';
 
 @Controller()
@@ -16,14 +17,7 @@ export class UsersController {
   recordAppSession(
     @CurrentUser() user: AuthenticatedUser,
     @Req() request: { ip?: string },
-    @Body()
-    body: {
-      role?: Role;
-      deviceId?: string;
-      platform?: string;
-      appVersion?: string;
-      metadata?: Record<string, unknown>;
-    },
+    @Body() body: RecordAppSessionDto,
   ) {
     return this.users.recordAppSession(user, body, request.ip);
   }
@@ -40,7 +34,7 @@ export class UsersController {
   @Roles(Role.CUSTOMER)
   updateCustomerMe(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { fullName?: string; email?: string },
+    @Body() body: UpdateUserProfileDto,
   ) {
     return this.users.updateMe(user.id, body);
   }
@@ -57,7 +51,7 @@ export class UsersController {
   @Roles(Role.PROVIDER)
   updateProviderMe(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { fullName?: string; email?: string },
+    @Body() body: UpdateUserProfileDto,
   ) {
     return this.users.updateMe(user.id, body);
   }

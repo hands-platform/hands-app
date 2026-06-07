@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CreateCustomerReviewDto, PreviewCouponDto } from './customers.dto';
 import { CustomersService } from './customers.service';
 
 @Controller('customer')
@@ -15,7 +16,7 @@ export class CustomersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.CUSTOMER)
   previewCoupon(
-    @Body() body: { code: string; serviceId: string; subtotal: number },
+    @Body() body: PreviewCouponDto,
   ) {
     return this.customers.previewCoupon(body);
   }
@@ -25,7 +26,7 @@ export class CustomersController {
   @Roles(Role.CUSTOMER)
   createReview(
     @CurrentUser() user: AuthenticatedUser,
-    @Body() body: { bookingId: string; rating: number; comment?: string },
+    @Body() body: CreateCustomerReviewDto,
   ) {
     return this.customers.createReview(user.id, body);
   }
