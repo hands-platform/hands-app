@@ -108,6 +108,14 @@ export function formatPolicyDistance(meters: number) {
   return `${new Intl.NumberFormat('en-US').format(meters)}m`;
 }
 
+export function operationalPolicyAnchor(key: string) {
+  return `policy-${key.replaceAll('backup', 'marketplace').replaceAll('.', '-').replaceAll('_', '-')}`;
+}
+
+export function operationalPolicyHref(key: string) {
+  return `/operations-policy#${operationalPolicyAnchor(key)}`;
+}
+
 export function humanizePolicyValue(value: string) {
   return value
     .toLowerCase()

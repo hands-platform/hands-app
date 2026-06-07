@@ -4,6 +4,8 @@ import {
   buildAdminLiveOperationsPolicy,
   formatPolicyDistance,
   humanizePolicyValue,
+  operationalPolicyAnchor,
+  operationalPolicyHref,
   readPolicyString,
 } from './operations-policy';
 
@@ -62,5 +64,14 @@ describe('admin live operations policy helpers', () => {
 
   it('does not return blank policy strings', () => {
     expect(readPolicyString([setting('empty', '   ')], 'empty')).toBeNull();
+  });
+
+  it('builds stable Operations Policy anchors from policy keys', () => {
+    expect(operationalPolicyAnchor(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)).toBe(
+      'policy-matching-marketplace-provider-radius-meters',
+    );
+    expect(operationalPolicyHref(OPERATIONAL_POLICY_KEYS.walletNegativeGate)).toBe(
+      '/operations-policy#policy-wallet-negative-balance-gate',
+    );
   });
 });

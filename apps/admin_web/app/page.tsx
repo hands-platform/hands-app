@@ -34,6 +34,7 @@ import {
 } from '../lib/date-range';
 import { marketplaceDisplayText as displayOperationalWording } from '../lib/admin-copy';
 import { buildMarketplaceParticipantSnapshot } from '../lib/dashboard-marketplace';
+import { OPERATIONAL_POLICY_KEYS, operationalPolicyHref } from '../lib/operations-policy';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -619,8 +620,8 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
         'Matching windows, marketplace radius, booking gates, service options, price policy, tax policy, and setup checks.',
       links: [
         ['Operations policy', '/operations-policy'],
-        ['First-pick window', '/operations-policy#policy-matching-provider-response-window-minutes'],
-        ['Wallet gate', '/operations-policy#policy-wallet-negative-balance-gate'],
+        ['First-pick window', operationalPolicyHref(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes)],
+        ['Wallet gate', operationalPolicyHref(OPERATIONAL_POLICY_KEYS.walletNegativeGate)],
         ['Services', '/services'],
         ['Tax policy', '/tax-policy'],
         ['Setup', '/setup'],
@@ -5985,10 +5986,6 @@ function policyMetric(setting: AdminOperationalPolicySetting | undefined, label:
     helper,
     href: setting ? operationalPolicyHref(setting.key) : '/operations-policy',
   };
-}
-
-function operationalPolicyHref(key: string) {
-  return `/operations-policy#policy-${key.replaceAll('.', '-').replaceAll('_', '-')}`;
 }
 
 function policyOptionLabel(setting: AdminOperationalPolicySetting, useRecommended = false) {

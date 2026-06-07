@@ -17,6 +17,7 @@ import {
   providerLocationAgeMinutes,
   STALE_LOCATION_MINUTES,
 } from './booking-status-location';
+import { OPERATIONAL_POLICY_KEYS, operationalPolicyHref } from '../../../lib/operations-policy';
 
 export function bookingBackupPartnerSupply(
   booking: AdminBookingDetail,
@@ -266,7 +267,7 @@ function bookingBackupPartnerExcludedGroups(
     ),
     group(
       `Outside ${formatDistanceMeters(radiusMeters)}`,
-      '/operations-policy#policy-matching-backup-provider-radius-meters',
+      operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
       'Partner is outside the configured marketplace policy distance for this booking pin.',
       (blocker) => blocker.startsWith('outside'),
     ),
@@ -319,7 +320,7 @@ function bookingBackupCandidateCommand(input: {
       title: 'Partners are outside the configured marketplace radius',
       detail:
         'Do not widen radius blindly. Check city supply, customer location accuracy, and operations policy first.',
-      href: '/operations-policy#policy-matching-backup-provider-radius-meters',
+      href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
       action: 'Review radius policy',
     };
   }

@@ -15,9 +15,11 @@ import {
 import { dateRangeLabel, isInDateRange, normalizeDateRange, readSearchParam } from '../../lib/date-range';
 import {
   type AdminLiveOperationsPolicy,
+  OPERATIONAL_POLICY_KEYS,
   buildAdminLiveOperationsPolicy,
   formatPolicyDistance,
   humanizePolicyValue,
+  operationalPolicyHref,
 } from '../../lib/operations-policy';
 import { markPayoutFailed, markPayoutPaid, markPayoutProcessing, updatePayoutTransferRef } from './actions';
 
@@ -121,7 +123,7 @@ export default async function PayoutsPage({ searchParams }: PayoutsPageProps) {
               batch timing stays configurable from Operations Policy.
             </p>
           </div>
-          <Link className="text-link" href="/operations-policy#policy-payout-batch-cycle-policy">
+          <Link className="text-link" href={operationalPolicyHref(OPERATIONAL_POLICY_KEYS.payoutBatchCycle)}>
             Batch policy
           </Link>
         </div>

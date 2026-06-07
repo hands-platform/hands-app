@@ -9,7 +9,12 @@ import {
 import { MetricCard } from '../../components/metric-card';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime, formatMoney, formatRelativeTime, readPlainRecord } from '../../lib/admin-format';
-import { ADMIN_OPERATIONS_POLICY_DEFAULTS, OPERATIONAL_POLICY_KEYS } from '../../lib/operations-policy';
+import {
+  ADMIN_OPERATIONS_POLICY_DEFAULTS,
+  OPERATIONAL_POLICY_KEYS,
+  operationalPolicyAnchor,
+  operationalPolicyHref,
+} from '../../lib/operations-policy';
 import { updateOperationalPolicy } from './actions';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -1159,7 +1164,7 @@ function PolicyForm({
     <form
       action={updateOperationalPolicy}
       className="card"
-      id={policySettingAnchor(setting.key)}
+      id={operationalPolicyAnchor(setting.key)}
       style={{ margin: 0 }}
     >
       <input type="hidden" name="key" value={setting.key} />
@@ -1313,10 +1318,6 @@ function PolicyForm({
   );
 }
 
-function policySettingAnchor(key: string) {
-  return `policy-${key.replaceAll('backup', 'marketplace').replaceAll('.', '-').replaceAll('_', '-')}`;
-}
-
 function buildActionGatePolicyChecklist(
   settings: AdminOperationalPolicySetting[],
 ): ActionGatePolicyChecklist {
@@ -1381,7 +1382,7 @@ function buildActionGatePolicyChecklist(
       current,
       detail: row.detail,
       operatorAction: row.operatorAction,
-      href: setting ? `/operations-policy#${policySettingAnchor(row.key)}` : row.href,
+      href: setting ? operationalPolicyHref(row.key) : row.href,
       className: aligned ? 'ops-task-done' : 'ops-task-warning',
       pillClass: aligned ? 'pill-success' : 'pill-warn',
     };
@@ -4148,7 +4149,7 @@ function operationsOwnerDecisionBacklog() {
         'Start with one marketplace policy baseline, then add city/service overrides after Ho Chi Minh City data is stable.',
       decisionTrigger:
         'Revisit when marketplace alerts are ignored often, or accepted marketplace partners are repeatedly too far away.',
-      href: '/operations-policy#policy-matching-marketplace-provider-radius-meters',
+      href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
       className: 'ops-task-pending',
       pillClass: 'pill-info',
     },
@@ -4282,7 +4283,7 @@ function operationsOwnerDecisionBacklog() {
         'Keep in-app first locally, then enable OneSignal once production credentials and failure dashboards are ready.',
       decisionTrigger:
         'Revisit immediately after OneSignal production setup is complete and device delivery logs are visible.',
-      href: '/operations-policy#policy-notification-partner-alert-channel',
+      href: operationalPolicyHref(OPERATIONAL_POLICY_KEYS.partnerAlertChannel),
       className: 'ops-task-done',
       pillClass: 'pill-success',
     },
