@@ -35,7 +35,11 @@ import {
 } from '../lib/date-range';
 import { marketplaceDisplayText as displayOperationalWording } from '../lib/admin-copy';
 import { buildMarketplaceParticipantSnapshot } from '../lib/dashboard-marketplace';
-import { OPERATIONAL_POLICY_KEYS, operationalPolicyHref } from '../lib/operations-policy';
+import {
+  OPERATIONAL_POLICY_KEYS,
+  adminOperationalPolicySettingByKey,
+  operationalPolicyHref,
+} from '../lib/operations-policy';
 import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingPaymentReleaseNeedsOpsFromFacts,
@@ -2353,15 +2357,15 @@ function buildMatchingControlRoom(
         Date.parse(right.expiresAt ?? right.createdAt ?? ''),
     );
   const responseWindowMinutes =
-    dashboardPolicyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
+    dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ?? 10;
   const backupRadiusMeters =
-    dashboardPolicyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+    dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ?? 10000;
   const backupLocationMaxAgeMinutes =
-    dashboardPolicyNumberValue(settings, 'matching.backup_provider_location_max_age_minutes') ?? 30;
+    dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ?? 30;
   const backupInvitationLimit =
-    dashboardPolicyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
+    dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ?? 50;
   const backupOpenMode =
-    dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+    dashboardPolicyStringValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) ?? 'IMMEDIATE_WITHIN_WINDOW';
   const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
   const openMatchingWithPolicySnapshot = openMatching.filter((booking) =>
     dashboardBookingPolicySnapshot(booking),
@@ -2612,12 +2616,12 @@ type DashboardPolicyOutcomeStats = {
 function buildDashboardPolicyOutcome(bookings: AdminBooking[], settings: AdminOperationalPolicySetting[]) {
   const measuredBookings = bookings.filter((booking) => dashboardBookingPolicySnapshot(booking));
   const stats = dashboardPolicyOutcomeStats(measuredBookings);
-  const liveWindow = dashboardPolicyNumberValue(settings, 'matching.provider_response_window_minutes') ?? 10;
-  const liveRadius = dashboardPolicyNumberValue(settings, 'matching.backup_provider_radius_meters') ?? 10000;
+  const liveWindow = dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes) ?? 10;
+  const liveRadius = dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ?? 10000;
   const liveInviteCap =
-    dashboardPolicyNumberValue(settings, 'matching.backup_provider_invitation_limit') ?? 50;
+    dashboardPolicyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit) ?? 50;
   const liveBackupMode =
-    dashboardPolicyStringValue(settings, 'matching.backup_open_mode') ?? 'IMMEDIATE_WITHIN_WINDOW';
+    dashboardPolicyStringValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) ?? 'IMMEDIATE_WITHIN_WINDOW';
   const driftCount = measuredBookings.filter(
     (booking) => dashboardPolicySnapshotDrift(booking, settings).length > 0,
   ).length;
@@ -2771,27 +2775,27 @@ function dashboardPolicySnapshotDrift(booking: AdminBooking, settings: AdminOper
   const comparisons = [
     {
       saved: snapshot.providerResponseWindowMinutes,
-      live: dashboardPolicyRawValue(settings, 'matching.provider_response_window_minutes'),
+      live: dashboardPolicyRawValue(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes),
     },
     {
       saved: snapshot.backupProviderRadiusMeters,
-      live: dashboardPolicyRawValue(settings, 'matching.backup_provider_radius_meters'),
+      live: dashboardPolicyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
     },
     {
       saved: snapshot.backupProviderLocationMaxAgeMinutes,
-      live: dashboardPolicyRawValue(settings, 'matching.backup_provider_location_max_age_minutes'),
+      live: dashboardPolicyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes),
     },
     {
       saved: snapshot.backupProviderInvitationLimit,
-      live: dashboardPolicyRawValue(settings, 'matching.backup_provider_invitation_limit'),
+      live: dashboardPolicyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit),
     },
     {
       saved: snapshot.preferredAcceptMode,
-      live: dashboardPolicyRawValue(settings, 'matching.preferred_accept_mode'),
+      live: dashboardPolicyRawValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode),
     },
     {
       saved: snapshot.backupOpenMode,
-      live: dashboardPolicyRawValue(settings, 'matching.backup_open_mode'),
+      live: dashboardPolicyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode),
     },
   ];
   return comparisons.filter(
@@ -2803,7 +2807,7 @@ function dashboardPolicySnapshotDrift(booking: AdminBooking, settings: AdminOper
 }
 
 function dashboardPolicyRawValue(settings: AdminOperationalPolicySetting[], key: string) {
-  return settings.find((setting) => setting.key === key)?.value;
+  return adminOperationalPolicySettingByKey(settings, key)?.value;
 }
 
 function dashboardPercentLabel(count: number, total: number) {
@@ -2821,13 +2825,13 @@ function dashboardAverageLabel(total: number, count: number, unit: string) {
 }
 
 function dashboardPolicyNumberValue(settings: AdminOperationalPolicySetting[], key: string) {
-  const raw = settings.find((setting) => setting.key === key)?.value;
+  const raw = adminOperationalPolicySettingByKey(settings, key)?.value;
   const value = typeof raw === 'number' ? raw : typeof raw === 'string' ? Number(raw) : NaN;
   return Number.isFinite(value) ? value : null;
 }
 
 function dashboardPolicyStringValue(settings: AdminOperationalPolicySetting[], key: string) {
-  const raw = settings.find((setting) => setting.key === key)?.value;
+  const raw = adminOperationalPolicySettingByKey(settings, key)?.value;
   return typeof raw === 'string' ? raw : null;
 }
 
@@ -5864,7 +5868,7 @@ function completedCloseoutNeedsOps(booking: AdminBooking) {
 }
 
 function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]) {
-  const byKey = new Map(settings.map((setting) => [setting.key, setting]));
+  const settingByKey = (key: string) => adminOperationalPolicySettingByKey(settings, key);
   const activeOverrides = settings
     .filter((setting) => isOperationalPolicyOverride(setting))
     .map((setting) => ({
@@ -5893,38 +5897,42 @@ function buildOperationalPolicySummary(settings: AdminOperationalPolicySetting[]
     : 'All loaded policies match the recommended baseline.';
   const enforced = [
     policyMetric(
-      byKey.get('matching.provider_response_window_minutes'),
+      settingByKey(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes),
       'Response window',
       'First-pick partner first reply timer.',
     ),
     policyMetric(
-      byKey.get('matching.backup_provider_radius_meters'),
+      settingByKey(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
       'Marketplace radius',
       'Partners inside this radius can participate.',
     ),
     policyMetric(
-      byKey.get('matching.backup_provider_invitation_limit'),
+      settingByKey(OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit),
       'Marketplace invite cap',
       'Nearest eligible partners opened for marketplace participation.',
     ),
     policyMetric(
-      byKey.get('matching.travel_buffer_minutes'),
+      settingByKey(OPERATIONAL_POLICY_KEYS.travelBufferMinutes),
       'Travel buffer',
       'Availability buffer after work.',
     ),
-    policyMetric(byKey.get('matching.preferred_accept_mode'), 'Accept mode', 'First-pick accept behavior.'),
+    policyMetric(
+      settingByKey(OPERATIONAL_POLICY_KEYS.preferredAcceptMode),
+      'Accept mode',
+      'First-pick accept behavior.',
+    ),
   ];
 
   const decisionKeys = [
-    'matching.backup_open_mode',
-    'wallet.negative_balance_gate',
-    'cancellation.after_match_policy',
-    'no_show.partner_report_policy',
-    'notification.partner_alert_channel',
+    OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    OPERATIONAL_POLICY_KEYS.walletNegativeGate,
+    OPERATIONAL_POLICY_KEYS.cancellationAfterMatch,
+    OPERATIONAL_POLICY_KEYS.noShowPartnerReport,
+    OPERATIONAL_POLICY_KEYS.partnerAlertChannel,
   ];
 
   const decisions = decisionKeys
-    .map((key) => byKey.get(key))
+    .map((key) => settingByKey(key))
     .filter((setting): setting is AdminOperationalPolicySetting => Boolean(setting))
     .map((setting) => {
       const aligned = String(setting.value) === String(setting.recommendedValue);

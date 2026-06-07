@@ -3,28 +3,32 @@ import {
   bookingCustomerSelectableParticipantsForFinalChoice,
 } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
+import {
+  OPERATIONAL_POLICY_KEYS,
+  adminOperationalPolicySettingByKey,
+} from '../../../lib/operations-policy';
 
 export function bookingOperationalPolicySnapshot(
   booking: AdminBookingDetail,
   settings: AdminOperationalPolicySetting[],
 ) {
-  const byKey = new Map(settings.map((setting) => [setting.key, setting]));
+  const settingByKey = (key: string) => adminOperationalPolicySettingByKey(settings, key);
   const savedMatchingPolicy = readBookingMatchingPolicySnapshot(booking);
-  const responseWindow = byKey.get('matching.provider_response_window_minutes');
-  const backupRadius = byKey.get('matching.backup_provider_radius_meters');
-  const backupLocationFreshness = byKey.get('matching.backup_provider_location_max_age_minutes');
-  const travelBuffer = byKey.get('matching.travel_buffer_minutes');
-  const acceptMode = byKey.get('matching.preferred_accept_mode');
-  const backupOpenMode = byKey.get('matching.backup_open_mode');
-  const walletGate = byKey.get('wallet.negative_balance_gate');
-  const actionEvidenceGateMode = byKey.get('decision.action_evidence_gate_mode');
-  const cashSettlementClearancePolicy = byKey.get('cash.settlement_clearance_policy');
-  const firstPickExpiryActionPolicy = byKey.get('matching.first_pick_expiry_action_policy');
-  const cancellationPolicy = byKey.get('cancellation.after_match_policy');
-  const noShowEvidenceRequirementPolicy = byKey.get('no_show.evidence_requirement_policy');
-  const noShowPolicy = byKey.get('no_show.partner_report_policy');
-  const partnerAlertPolicy = byKey.get('notification.partner_alert_channel');
-  const payoutBatchCyclePolicy = byKey.get('payout.batch_cycle_policy');
+  const responseWindow = settingByKey(OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes);
+  const backupRadius = settingByKey(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters);
+  const backupLocationFreshness = settingByKey(OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes);
+  const travelBuffer = settingByKey(OPERATIONAL_POLICY_KEYS.travelBufferMinutes);
+  const acceptMode = settingByKey(OPERATIONAL_POLICY_KEYS.preferredAcceptMode);
+  const backupOpenMode = settingByKey(OPERATIONAL_POLICY_KEYS.marketplaceOpenMode);
+  const walletGate = settingByKey(OPERATIONAL_POLICY_KEYS.walletNegativeGate);
+  const actionEvidenceGateMode = settingByKey(OPERATIONAL_POLICY_KEYS.actionEvidenceGateMode);
+  const cashSettlementClearancePolicy = settingByKey(OPERATIONAL_POLICY_KEYS.cashSettlementClearance);
+  const firstPickExpiryActionPolicy = settingByKey(OPERATIONAL_POLICY_KEYS.firstPickExpiryAction);
+  const cancellationPolicy = settingByKey(OPERATIONAL_POLICY_KEYS.cancellationAfterMatch);
+  const noShowEvidenceRequirementPolicy = settingByKey(OPERATIONAL_POLICY_KEYS.noShowEvidenceRequirement);
+  const noShowPolicy = settingByKey(OPERATIONAL_POLICY_KEYS.noShowPartnerReport);
+  const partnerAlertPolicy = settingByKey(OPERATIONAL_POLICY_KEYS.partnerAlertChannel);
+  const payoutBatchCyclePolicy = settingByKey(OPERATIONAL_POLICY_KEYS.payoutBatchCycle);
   const expiresAt = booking.expiresAt ? new Date(booking.expiresAt).getTime() : null;
   const minutesLeft =
     expiresAt === null || Number.isNaN(expiresAt)
@@ -59,7 +63,7 @@ export function bookingOperationalPolicySnapshot(
     decisionCards: [
       bookingPolicyDecisionCard({
         setting: backupOpenMode,
-        key: 'matching.backup_open_mode',
+        key: OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
         label: 'Marketplace participation',
         helper:
           String(backupOpenMode?.value) === 'AFTER_FIRST_PICK_DELAY'

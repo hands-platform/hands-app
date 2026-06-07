@@ -15,7 +15,12 @@ export const OPERATIONAL_POLICY_KEYS = {
   preferredAcceptMode: 'matching.preferred_accept_mode',
   partnerAlertChannel: 'notification.partner_alert_channel',
   walletNegativeGate: 'wallet.negative_balance_gate',
+  cancellationAfterMatch: 'cancellation.after_match_policy',
+  noShowPartnerReport: 'no_show.partner_report_policy',
+  actionEvidenceGateMode: 'decision.action_evidence_gate_mode',
   cashSettlementClearance: 'cash.settlement_clearance_policy',
+  firstPickExpiryAction: 'matching.first_pick_expiry_action_policy',
+  noShowEvidenceRequirement: 'no_show.evidence_requirement_policy',
   payoutBatchCycle: 'payout.batch_cycle_policy',
 } as const;
 

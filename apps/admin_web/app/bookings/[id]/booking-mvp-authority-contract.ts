@@ -16,6 +16,10 @@ import {
 } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import { readOptionalNumber } from './booking-readers';
+import {
+  OPERATIONAL_POLICY_KEYS,
+  adminOperationalPolicySettingByKey,
+} from '../../../lib/operations-policy';
 
 export type BookingMvpAuthorityContractRow = {
   contract: string;
@@ -44,15 +48,22 @@ export function bookingMvpAuthorityContract({
   walletDebt: boolean;
   terminal: boolean;
 }): BookingMvpAuthorityContractRow[] {
-  const byKey = new Map(operationalPolicies.map((setting) => [setting.key, setting]));
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
   const responseWindowMinutes =
     savedPolicy.providerResponseWindowMinutes ??
-    readOptionalNumber(byKey.get('matching.provider_response_window_minutes')?.value) ??
+    readOptionalNumber(
+      adminOperationalPolicySettingByKey(
+        operationalPolicies,
+        OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes,
+      )?.value,
+    ) ??
     10;
   const radiusMeters =
     savedPolicy.backupProviderRadiusMeters ??
-    readOptionalNumber(byKey.get('matching.backup_provider_radius_meters')?.value) ??
+    readOptionalNumber(
+      adminOperationalPolicySettingByKey(operationalPolicies, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)
+        ?.value,
+    ) ??
     10000;
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const selectedPartner =

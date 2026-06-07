@@ -6,6 +6,10 @@ import {
 } from './booking-participant-rules';
 import { readBookingMatchingPolicySnapshot } from './booking-policy-snapshots';
 import { readOptionalNumber, readOptionalString } from './booking-readers';
+import {
+  OPERATIONAL_POLICY_KEYS,
+  adminOperationalPolicySettingByKey,
+} from '../../../lib/operations-policy';
 
 type BookingCustomerWaitBackupSupply = {
   eligibleCount: number;
@@ -26,17 +30,23 @@ export function bookingCustomerWaitPanel(
   backupSupply: BookingCustomerWaitBackupSupply,
   settings: AdminOperationalPolicySetting[],
 ) {
-  const byKey = new Map(settings.map((setting) => [setting.key, setting]));
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
   const responseWindowMinutes =
     savedPolicy.providerResponseWindowMinutes ??
-    readOptionalNumber(byKey.get('matching.provider_response_window_minutes')?.value) ??
+    readOptionalNumber(
+      adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.providerResponseWindowMinutes)
+        ?.value,
+    ) ??
     10;
   const backupOpenMode =
-    savedPolicy.backupOpenMode ?? readOptionalString(byKey.get('matching.backup_open_mode')?.value) ?? 'IMMEDIATE_WITHIN_WINDOW';
+    savedPolicy.backupOpenMode ??
+    readOptionalString(adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode)?.value) ??
+    'IMMEDIATE_WITHIN_WINDOW';
   const customerConfirmMode =
     (savedPolicy.preferredAcceptMode ??
-      readOptionalString(byKey.get('matching.preferred_accept_mode')?.value)) ===
+      readOptionalString(
+        adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode)?.value,
+      )) ===
     'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const rejectedParticipants = (booking.participants ?? []).filter(

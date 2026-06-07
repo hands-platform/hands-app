@@ -18,7 +18,11 @@ import {
   providerLocationAgeMinutes,
   STALE_LOCATION_MINUTES,
 } from './booking-status-location';
-import { OPERATIONAL_POLICY_KEYS, operationalPolicyHref } from '../../../lib/operations-policy';
+import {
+  OPERATIONAL_POLICY_KEYS,
+  adminOperationalPolicySettingByKey,
+  operationalPolicyHref,
+} from '../../../lib/operations-policy';
 
 export function bookingBackupPartnerSupply(
   booking: AdminBookingDetail,
@@ -26,18 +30,22 @@ export function bookingBackupPartnerSupply(
   settings: AdminOperationalPolicySetting[],
 ) {
   const savedPolicy = readBookingMatchingPolicySnapshot(booking);
-  const byKey = new Map(settings.map((setting) => [setting.key, setting]));
   const radiusMeters =
     savedPolicy.backupProviderRadiusMeters ??
-    readOptionalNumber(byKey.get('matching.backup_provider_radius_meters')?.value) ??
+    readOptionalNumber(adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)?.value) ??
     10000;
   const freshnessMinutes =
     savedPolicy.backupProviderLocationMaxAgeMinutes ??
-    readOptionalNumber(byKey.get('matching.backup_provider_location_max_age_minutes')?.value) ??
+    readOptionalNumber(
+      adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes)
+        ?.value,
+    ) ??
     STALE_LOCATION_MINUTES;
   const invitationLimit =
     savedPolicy.backupProviderInvitationLimit ??
-    readOptionalNumber(byKey.get('matching.backup_provider_invitation_limit')?.value) ??
+    readOptionalNumber(
+      adminOperationalPolicySettingByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit)?.value,
+    ) ??
     50;
   const policyPin = bookingDispatchPin(booking);
   const customerLat = policyPin.lat;
