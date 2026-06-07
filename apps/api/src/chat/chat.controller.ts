@@ -5,6 +5,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
+import { CreateChatMessageDto } from './chat.dto';
 import { ChatService } from './chat.service';
 
 @Controller('chat')
@@ -22,7 +23,7 @@ export class ChatController {
   createMessage(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id') chatRoomId: string,
-    @Body() body: { body: string; attachments?: unknown },
+    @Body() body: CreateChatMessageDto,
   ) {
     return this.chat.createMessage(chatRoomId, user, body);
   }
