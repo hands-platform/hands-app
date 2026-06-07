@@ -1200,7 +1200,7 @@ class _BookingWaitingPageState extends ConsumerState<BookingWaitingPage> {
                               detail: directRequestDetail(matchingPolicy),
                               subtitle: fallbackCount == 0
                                   ? 'Checking availability - $timeLeft'
-                                  : 'Checking availability - $timeLeft with ${backupParticipationLabel(matchingPolicy)}',
+                                  : 'Checking availability - $timeLeft with ${marketplaceParticipationLabel(matchingPolicy)}',
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -1578,7 +1578,7 @@ class WaitingStagePanel extends StatelessWidget {
             : 'Chosen partner first',
         body: preferredProviderName == null
             ? 'Nearby partners are being checked now.'
-            : '$preferredProviderName gets ${responseWindowLabel(matchingPolicy)} while ${backupWindowDescription(matchingPolicy)}.',
+            : '$preferredProviderName gets ${responseWindowLabel(matchingPolicy)} while ${marketplaceWindowDescription(matchingPolicy)}.',
         accent: const Color(0xFF5E8E4A),
         caption: preferredProviderName == null
             ? 'Stage 1'
@@ -1589,7 +1589,7 @@ class WaitingStagePanel extends StatelessWidget {
             ? 'No marketplace option yet'
             : '$fallbackCount marketplace option(s) ready',
         body: fallbackCount == 0
-            ? backupStandbyDescription(matchingPolicy)
+            ? marketplaceStandbyDescription(matchingPolicy)
             : 'You can switch to another available partner below without restarting the booking.',
         accent: const Color(0xFFB9852F),
         caption: fallbackCount == 0

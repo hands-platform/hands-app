@@ -54,7 +54,7 @@ ProviderRequestGuidance providerRequestGuidance({
     isMatched: isMatched,
   );
   final responseWindowLabel = providerMatchingWindowText(booking);
-  final backupRadiusLabel = providerBackupRadiusText(booking);
+  final marketplaceRadiusLabel = providerMarketplaceRadiusText(booking);
 
   final modeLabel = isPreferredRequest
       ? 'Direct request'
@@ -129,7 +129,7 @@ ProviderRequestGuidance providerRequestGuidance({
       contextMessage:
           'The customer picked your profile first and is waiting for your response.',
       detailMessage:
-          'You are the first partner this guest chose. Reply within $responseWindowLabel to protect the booking; marketplace partners inside $backupRadiusLabel can still volunteer while the customer waits.',
+          'You are the first partner this guest chose. Reply within $responseWindowLabel to protect the booking; marketplace partners inside $marketplaceRadiusLabel can still volunteer while the customer waits.',
       infoMessage:
           'The customer already chose you. Accept or decline this request within $responseWindowLabel.',
     );
@@ -163,11 +163,11 @@ ProviderRequestGuidance providerRequestGuidance({
       decisionLabel: 'Can participate',
       nextAction: 'Offer marketplace support if you can cover this request.',
       contextMessage:
-          'Another partner was chosen first. You can still participate as an alternative option within the $backupRadiusLabel marketplace radius.',
+          'Another partner was chosen first. You can still participate as an alternative option within the $marketplaceRadiusLabel marketplace radius.',
       detailMessage:
           'The guest is still waiting on $name. Participate now to appear as a marketplace option.',
       infoMessage:
-          'Preferred partner: $name. Only partners inside $backupRadiusLabel can participate in this request.',
+          'Preferred partner: $name. Only partners inside $marketplaceRadiusLabel can participate in this request.',
     );
   }
 
@@ -178,7 +178,7 @@ ProviderRequestGuidance providerRequestGuidance({
     decisionLabel: 'Can participate',
     nextAction: 'Participate in this open request to enter the customer choice list.',
     contextMessage:
-        'This request is open to nearby partners inside $backupRadiusLabel. The customer will pick the final partner.',
+        'This request is open to nearby partners inside $marketplaceRadiusLabel. The customer will pick the final partner.',
     detailMessage:
         'No preferred partner was set. Nearby partners can participate and wait for the guest selection.',
     infoMessage:
@@ -198,7 +198,7 @@ int providerMatchingWindowMinutes(Map<String, dynamic> booking) {
   return minutes;
 }
 
-int providerBackupRadiusMeters(Map<String, dynamic> booking) {
+int providerMarketplaceRadiusMeters(Map<String, dynamic> booking) {
   final policy = asMap(asMap(booking['metadata'])?['matchingPolicy']);
   final value = asNum(policy?['backupProviderRadiusMeters']) ??
       asNum(booking['backupProviderRadiusMeters']);
@@ -218,8 +218,8 @@ String providerMatchingWindowTagLabel(Map<String, dynamic> booking) {
   return '${providerMatchingWindowText(booking)} first-pick';
 }
 
-String providerBackupRadiusText(Map<String, dynamic> booking) {
-  final meters = providerBackupRadiusMeters(booking);
+String providerMarketplaceRadiusText(Map<String, dynamic> booking) {
+  final meters = providerMarketplaceRadiusMeters(booking);
   if (meters >= 1000) {
     final km = meters / 1000;
     final value = km == km.roundToDouble()
@@ -230,6 +230,18 @@ String providerBackupRadiusText(Map<String, dynamic> booking) {
   return '$meters m';
 }
 
-String providerBackupRadiusTagLabel(Map<String, dynamic> booking) {
-  return '${providerBackupRadiusText(booking)} marketplace';
+String providerMarketplaceRadiusTagLabel(Map<String, dynamic> booking) {
+  return '${providerMarketplaceRadiusText(booking)} marketplace';
 }
+
+@Deprecated('Use providerMarketplaceRadiusMeters. Reads legacy policy keys.')
+int providerBackupRadiusMeters(Map<String, dynamic> booking) =>
+    providerMarketplaceRadiusMeters(booking);
+
+@Deprecated('Use providerMarketplaceRadiusText. Reads legacy policy keys.')
+String providerBackupRadiusText(Map<String, dynamic> booking) =>
+    providerMarketplaceRadiusText(booking);
+
+@Deprecated('Use providerMarketplaceRadiusTagLabel. Reads legacy policy keys.')
+String providerBackupRadiusTagLabel(Map<String, dynamic> booking) =>
+    providerMarketplaceRadiusTagLabel(booking);

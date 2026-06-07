@@ -502,7 +502,7 @@ WaitingCustomerAction waitingCustomerAction({
     return WaitingCustomerAction(
       title: 'Waiting for partner response',
       body:
-          'No action is needed yet. HANDS is waiting for your chosen partner. ${backupStandbyDescription(matchingPolicy)}',
+          'No action is needed yet. HANDS is waiting for your chosen partner. ${marketplaceStandbyDescription(matchingPolicy)}',
     );
   }
   if (hasChatRoom && (status == 'MATCHED' || status == 'PROVIDER_ON_THE_WAY')) {
@@ -543,7 +543,7 @@ String responseWindowLabel(Map<String, dynamic> policy) {
   return 'the first $minutes minute response window';
 }
 
-String backupRadiusLabel(Map<String, dynamic> policy) {
+String marketplaceRadiusLabel(Map<String, dynamic> policy) {
   final meters = asNum(policy['backupProviderRadiusMeters'])?.toInt();
   if (meters == null || meters <= 0) {
     return 'nearby';
@@ -558,31 +558,51 @@ String backupRadiusLabel(Map<String, dynamic> policy) {
   return 'within ${meters}m';
 }
 
-bool backupOpensImmediately(Map<String, dynamic> policy) {
+bool marketplaceOpensImmediately(Map<String, dynamic> policy) {
   return policy['backupOpenMode']?.toString() == 'IMMEDIATE_WITHIN_WINDOW';
 }
 
-String backupWindowDescription(Map<String, dynamic> policy) {
-  final radius = backupRadiusLabel(policy);
-  if (backupOpensImmediately(policy)) {
+String marketplaceWindowDescription(Map<String, dynamic> policy) {
+  final radius = marketplaceRadiusLabel(policy);
+  if (marketplaceOpensImmediately(policy)) {
     return 'marketplace partners $radius can also join during this window';
   }
   return 'marketplace partners $radius can join after this window if needed';
 }
 
-String backupStandbyDescription(Map<String, dynamic> policy) {
-  final radius = backupRadiusLabel(policy);
-  if (backupOpensImmediately(policy)) {
+String marketplaceStandbyDescription(Map<String, dynamic> policy) {
+  final radius = marketplaceRadiusLabel(policy);
+  if (marketplaceOpensImmediately(policy)) {
     return 'Marketplace partners $radius can appear as soon as they offer support.';
   }
   return 'Marketplace partners $radius can appear after the first response window if the chosen partner is slow.';
 }
 
-String backupParticipationLabel(Map<String, dynamic> policy) {
-  return backupOpensImmediately(policy)
+String marketplaceParticipationLabel(Map<String, dynamic> policy) {
+  return marketplaceOpensImmediately(policy)
       ? 'marketplace options open'
       : 'marketplace options on standby';
 }
+
+@Deprecated('Use marketplaceRadiusLabel. Reads legacy policy keys.')
+String backupRadiusLabel(Map<String, dynamic> policy) =>
+    marketplaceRadiusLabel(policy);
+
+@Deprecated('Use marketplaceOpensImmediately. Reads legacy policy keys.')
+bool backupOpensImmediately(Map<String, dynamic> policy) =>
+    marketplaceOpensImmediately(policy);
+
+@Deprecated('Use marketplaceWindowDescription. Reads legacy policy keys.')
+String backupWindowDescription(Map<String, dynamic> policy) =>
+    marketplaceWindowDescription(policy);
+
+@Deprecated('Use marketplaceStandbyDescription. Reads legacy policy keys.')
+String backupStandbyDescription(Map<String, dynamic> policy) =>
+    marketplaceStandbyDescription(policy);
+
+@Deprecated('Use marketplaceParticipationLabel. Reads legacy policy keys.')
+String backupParticipationLabel(Map<String, dynamic> policy) =>
+    marketplaceParticipationLabel(policy);
 
 String directRequestDetail(Map<String, dynamic> policy) {
   return 'This partner is getting ${responseWindowLabel(policy)} for your request.';

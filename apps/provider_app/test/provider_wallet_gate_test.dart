@@ -225,7 +225,7 @@ void main() {
     );
 
     expect(providerMatchingWindowTagLabel(booking), '7 min first-pick');
-    expect(providerBackupRadiusTagLabel(booking), '5 km marketplace');
+    expect(providerMarketplaceRadiusTagLabel(booking), '5 km marketplace');
     expect(guidance.detailMessage, contains('7 min'));
     expect(guidance.detailMessage, contains('5 km'));
   });

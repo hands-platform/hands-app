@@ -129,4 +129,26 @@ void main() {
       expect(point?.longitude, closeTo(106.7009, 0.000001));
     });
   });
+
+  group('customer marketplace policy copy', () {
+    test('describes immediate marketplace participation with current wording',
+        () {
+      final policy = {
+        'backupProviderRadiusMeters': 10000,
+        'backupOpenMode': 'IMMEDIATE_WITHIN_WINDOW',
+      };
+
+      expect(marketplaceRadiusLabel(policy), 'within 10 km');
+      expect(marketplaceOpensImmediately(policy), isTrue);
+      expect(
+        marketplaceWindowDescription(policy),
+        'marketplace partners within 10 km can also join during this window',
+      );
+      expect(
+        marketplaceStandbyDescription(policy),
+        'Marketplace partners within 10 km can appear as soon as they offer support.',
+      );
+      expect(marketplaceParticipationLabel(policy), 'marketplace options open');
+    });
+  });
 }

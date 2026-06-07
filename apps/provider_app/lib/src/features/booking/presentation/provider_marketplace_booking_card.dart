@@ -151,7 +151,7 @@ class OpenBookingCard extends StatelessWidget {
                 ProviderRequestTag(
                     label: providerMatchingWindowTagLabel(booking)),
                 ProviderRequestTag(
-                    label: providerBackupRadiusTagLabel(booking)),
+                    label: providerMarketplaceRadiusTagLabel(booking)),
                 ProviderRequestTag(
                   label: payment?['method']?.toString() ??
                       (isCashBooking ? 'CASH' : 'PAYMENT'),
