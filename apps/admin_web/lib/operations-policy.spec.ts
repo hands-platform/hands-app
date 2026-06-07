@@ -113,6 +113,12 @@ describe('admin live operations policy helpers', () => {
     expect(operationalPolicyAnchor(OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)).toBe(
       'policy-matching-marketplace-partner-radius-meters',
     );
+    expect(operationalPolicyAnchor(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters)).toBe(
+      'policy-matching-marketplace-partner-radius-meters',
+    );
+    expect(operationalPolicyHref(LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode)).toBe(
+      '/operations-policy#policy-matching-marketplace-open-mode',
+    );
     expect(operationalPolicyHref(OPERATIONAL_POLICY_KEYS.walletNegativeGate)).toBe(
       '/operations-policy#policy-wallet-negative-balance-gate',
     );

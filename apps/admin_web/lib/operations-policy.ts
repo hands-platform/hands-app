@@ -381,7 +381,8 @@ export function adminOperationalPolicyEquivalentKeys(key: string) {
 }
 
 export function operationalPolicyAnchor(key: string) {
-  return `policy-${key.replaceAll('backup', 'marketplace').replaceAll('.', '-').replaceAll('_', '-')}`;
+  const canonicalKey = adminOperationalPolicyEquivalentKeys(key)[0] ?? key;
+  return `policy-${canonicalKey.replaceAll('backup', 'marketplace').replaceAll('.', '-').replaceAll('_', '-')}`;
 }
 
 export function operationalPolicyHref(key: string) {

@@ -1644,7 +1644,7 @@ function buildPolicySimulation(
           : `Marketplace partners are held until the ${responseWindowMinutes} minute first-pick window ends, but open immediately if the first-pick partner declines.`,
         className: immediateBackup ? 'timeline-active' : 'timeline-warn',
         tags: [
-          { label: policyDisplayByKey(settings, 'matching.backup_open_mode'), tone: 'pill-info' },
+          { label: policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode), tone: 'pill-info' },
           {
             label: `${eligiblePartners.length} eligible`,
             tone: eligiblePartners.length ? 'pill-success' : 'pill-danger',
@@ -2870,7 +2870,8 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
   const openMatchingWithoutSnapshot = openMatching.length - openMatchingWithSnapshot.length;
   const snapshotCoverage =
     bookings.length > 0 ? `${Math.round((withSnapshot.length / bookings.length) * 100)}%` : 'No sample';
-  const immediateBackup = policyRawValue(settings, 'matching.backup_open_mode') === 'IMMEDIATE_WITHIN_WINDOW';
+  const immediateBackup =
+    policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode) === 'IMMEDIATE_WITHIN_WINDOW';
   const customerConfirm =
     policyRawValue(settings, 'matching.preferred_accept_mode') === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
 
@@ -2946,7 +2947,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         policy: 'Marketplace partner radius',
         scope: 'Partner eligibility',
-        liveValue: policyDisplayByKey(settings, 'matching.backup_provider_radius_meters'),
+        liveValue: policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
         savedValue: summarizeSnapshotValues(
           bookings,
           (snapshot) => snapshot.backupProviderRadiusMeters,
@@ -2958,7 +2959,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         policy: 'Marketplace location freshness',
         scope: 'Partner eligibility',
-        liveValue: policyDisplayByKey(settings, 'matching.backup_provider_location_max_age_minutes'),
+        liveValue: policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes),
         savedValue: summarizeSnapshotValues(
           bookings,
           (snapshot) => snapshot.backupProviderLocationMaxAgeMinutes,
@@ -2982,11 +2983,11 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
       {
         policy: 'Marketplace opening mode',
         scope: 'Marketplace visibility',
-        liveValue: policyDisplayByKey(settings, 'matching.backup_open_mode'),
+        liveValue: policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode),
         savedValue: summarizeSnapshotValues(
           bookings,
           (snapshot) => snapshot.backupOpenMode,
-          (value) => formatSnapshotPolicyValue(settings, 'matching.backup_open_mode', value),
+          (value) => formatSnapshotPolicyValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, value),
         ),
         operatorMeaning:
           'Explains whether marketplace partners were allowed to participate during the first-pick response window.',
@@ -3089,7 +3090,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       policy: 'Marketplace policy',
       settings,
       bookings: sampledBookings,
-      settingKey: 'matching.backup_provider_radius_meters',
+      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters,
       readValue: (snapshot) => snapshot.backupProviderRadiusMeters,
       formatValue: (value) => formatDistance(Number(value)),
       globalMatchedRate,
@@ -3098,7 +3099,7 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       policy: 'Marketplace alert cap',
       settings,
       bookings: sampledBookings,
-      settingKey: 'matching.backup_provider_invitation_limit',
+      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit,
       readValue: (snapshot) => snapshot.backupProviderInvitationLimit,
       formatValue: (value) => `${value} partner(s)`,
       globalMatchedRate,
@@ -3107,9 +3108,9 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
       policy: 'Marketplace opening mode',
       settings,
       bookings: sampledBookings,
-      settingKey: 'matching.backup_open_mode',
+      settingKey: OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
       readValue: (snapshot) => snapshot.backupOpenMode,
-      formatValue: (value) => formatSnapshotPolicyValue(settings, 'matching.backup_open_mode', value),
+      formatValue: (value) => formatSnapshotPolicyValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode, value),
       globalMatchedRate,
     }),
     ...buildPolicyEffectRows({
@@ -3128,8 +3129,8 @@ function buildPolicyEffectAnalysis(settings: AdminOperationalPolicySetting[], bo
   const totalOutcomeCheckCount =
     globalStats.cancelledCount + globalStats.expiredCount + globalStats.noShowCount;
   const avgBackupInvites = averageLabel(globalStats.backupInviteCount, globalStats.sampleCount, 'partner(s)');
-  const currentInviteCap = policyDisplayByKey(settings, 'matching.backup_provider_invitation_limit');
-  const currentRadius = policyDisplayByKey(settings, 'matching.backup_provider_radius_meters');
+  const currentInviteCap = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit);
+  const currentRadius = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters);
 
   return {
     sampleCount: sampledBookings.length,
@@ -4315,9 +4316,9 @@ function operationsOwnerDecisionBacklog() {
 
 function buildMatchingPlaybook(settings: AdminOperationalPolicySetting[]) {
   const responseWindow = policyDisplayByKey(settings, 'matching.provider_response_window_minutes');
-  const backupRadius = policyDisplayByKey(settings, 'matching.backup_provider_radius_meters');
-  const backupLimit = policyDisplayByKey(settings, 'matching.backup_provider_invitation_limit');
-  const backupOpenMode = policyDisplayByKey(settings, 'matching.backup_open_mode');
+  const backupRadius = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters);
+  const backupLimit = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit);
+  const backupOpenMode = policyDisplayByKey(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode);
   const preferredAcceptMode = policyDisplayByKey(settings, 'matching.preferred_accept_mode');
   const walletGate = policyDisplayByKey(settings, 'wallet.negative_balance_gate');
   const alertChannel = policyDisplayByKey(settings, 'notification.partner_alert_channel');
@@ -4399,7 +4400,7 @@ function formatSnapshotPolicyValue(
   key: string,
   value: string | number,
 ) {
-  const setting = settings.find((item) => item.key === key);
+  const setting = adminOperationalPolicySettingByKey(settings, key);
   const stringValue = String(value);
   return displayOperationalWording(
     setting?.options?.find((option) => option.value === stringValue)?.label ??
@@ -4959,17 +4960,17 @@ function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperat
     {
       label: 'marketplace radius',
       saved: snapshot.backupProviderRadiusMeters,
-      live: policyRawValue(settings, 'matching.backup_provider_radius_meters'),
+      live: policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
     },
     {
       label: 'marketplace location freshness',
       saved: snapshot.backupProviderLocationMaxAgeMinutes,
-      live: policyRawValue(settings, 'matching.backup_provider_location_max_age_minutes'),
+      live: policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes),
     },
     {
       label: 'marketplace invitation limit',
       saved: snapshot.backupProviderInvitationLimit,
-      live: policyRawValue(settings, 'matching.backup_provider_invitation_limit'),
+      live: policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit),
     },
     {
       label: 'accept mode',
@@ -4979,7 +4980,7 @@ function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperat
     {
       label: 'marketplace open mode',
       saved: snapshot.backupOpenMode,
-      live: policyRawValue(settings, 'matching.backup_open_mode'),
+      live: policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode),
     },
     {
       label: 'travel buffer',
