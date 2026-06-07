@@ -79,6 +79,46 @@ void main() {
       );
     });
 
+    test('reads partner id from nested provider profile rows', () {
+      expect(
+        customerParticipantSelectableForFinalChoice(
+          {
+            'providerProfile': {'id': 'marketplace-1'},
+            'status': 'JOINED',
+          },
+          preferredProviderId: 'preferred-1',
+        ),
+        isTrue,
+      );
+    });
+
+    test('deduplicates final choices and keeps accepted participant state', () {
+      final participants = [
+        {
+          'providerProfileId': 'marketplace-1',
+          'status': 'JOINED',
+        },
+        {
+          'providerProfileId': 'marketplace-1',
+          'status': 'ACCEPTED',
+        },
+        {
+          'providerProfileId': 'marketplace-2',
+          'status': 'JOINED',
+        },
+      ];
+
+      final selectable = customerSelectableMarketplaceParticipants(
+        participants,
+        preferredProviderId: 'preferred-1',
+      );
+
+      expect(selectable, hasLength(2));
+      expect(selectable.first['providerProfileId'], 'marketplace-1');
+      expect(selectable.first['status'], 'ACCEPTED');
+      expect(selectable.last['providerProfileId'], 'marketplace-2');
+    });
+
     test('rejects blocked or incomplete participant rows', () {
       expect(
         customerParticipantSelectableForFinalChoice({

@@ -153,12 +153,24 @@ void main() {
         contains('Cash booking fees are settled.'));
   });
 
-  test('prefers explicit marketplace participation policy from API summary', () {
-    final explicitOpen = <String, dynamic>{
+  test('negative wallet overrides stale explicit marketplace open policy', () {
+    final summary = <String, dynamic>{
       'walletBalance': -120000,
       'walletBlocked': true,
       'marketplaceJoinBlocked': false,
-      'walletBlockReason': 'Wallet needs settlement, but policy allows participation.',
+      'walletBlockReason':
+          'Wallet needs settlement before marketplace participation.',
+    };
+
+    expect(providerWalletMarketplaceJoinBlocked(summary), isTrue);
+    expect(providerWalletBlockReason(summary), isNotNull);
+  });
+
+  test('uses explicit marketplace policy only when wallet is settled', () {
+    final explicitOpen = <String, dynamic>{
+      'walletBalance': 20000,
+      'walletBlocked': false,
+      'marketplaceJoinBlocked': false,
     };
     final explicitBlocked = <String, dynamic>{
       'walletBalance': 20000,
@@ -168,7 +180,7 @@ void main() {
     };
 
     expect(providerWalletMarketplaceJoinBlocked(explicitOpen), isFalse);
-    expect(providerWalletBlockReason(explicitOpen), isNotNull);
+    expect(providerWalletBlockReason(explicitOpen), isNull);
     expect(providerWalletMarketplaceJoinBlocked(explicitBlocked), isTrue);
     expect(
       providerWalletBlockReason(explicitBlocked),

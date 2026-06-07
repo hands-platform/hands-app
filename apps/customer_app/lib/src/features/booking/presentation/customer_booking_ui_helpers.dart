@@ -116,7 +116,7 @@ bool customerParticipantSelectableForFinalChoice(
   Map<String, dynamic> participant, {
   String? preferredProviderId,
 }) {
-  final providerProfileId = participant['providerProfileId']?.toString();
+  final providerProfileId = customerParticipantPartnerId(participant);
   if (providerProfileId == null || providerProfileId.isEmpty) {
     return false;
   }
@@ -131,19 +131,55 @@ bool customerParticipantSelectableForFinalChoice(
   return false;
 }
 
+String? customerParticipantPartnerId(Map<String, dynamic> participant) {
+  for (final value in [
+    participant['providerProfileId'],
+    participant['providerId'],
+    asMap(participant['providerProfile'])?['id'],
+    asMap(participant['provider'])?['id'],
+  ]) {
+    final text = value?.toString().trim();
+    if (text != null && text.isNotEmpty) {
+      return text;
+    }
+  }
+  return null;
+}
+
+int customerFinalChoicePriority(Map<String, dynamic> participant) {
+  return switch (participant['status']?.toString().toUpperCase()) {
+    'ACCEPTED' => 3,
+    'JOINED' => 2,
+    _ => 0,
+  };
+}
+
 List<Map<String, dynamic>> customerSelectableMarketplaceParticipants(
   List<dynamic> participants, {
   String? preferredProviderId,
 }) {
-  return participants
-      .whereType<Map<String, dynamic>>()
-      .where(
-        (participant) => customerParticipantSelectableForFinalChoice(
-          participant,
-          preferredProviderId: preferredProviderId,
-        ),
-      )
-      .toList();
+  final byPartner = <String, Map<String, dynamic>>{};
+  for (final participant in participants.whereType<Map<String, dynamic>>()) {
+    if (!customerParticipantSelectableForFinalChoice(
+      participant,
+      preferredProviderId: preferredProviderId,
+    )) {
+      continue;
+    }
+
+    final partnerId = customerParticipantPartnerId(participant);
+    if (partnerId == null) {
+      continue;
+    }
+
+    final current = byPartner[partnerId];
+    if (current == null ||
+        customerFinalChoicePriority(participant) >
+            customerFinalChoicePriority(current)) {
+      byPartner[partnerId] = participant;
+    }
+  }
+  return byPartner.values.toList();
 }
 
 bool customerCancellationNeedsOpsReview(String status) {

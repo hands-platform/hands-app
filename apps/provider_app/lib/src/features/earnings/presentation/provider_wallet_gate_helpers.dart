@@ -35,11 +35,14 @@ num providerWalletBalance(Map<String, dynamic> summary) {
 }
 
 bool providerWalletMarketplaceJoinBlocked(Map<String, dynamic> summary) {
+  if (providerWalletBlockReason(summary) != null) {
+    return true;
+  }
   final explicit = summary['marketplaceJoinBlocked'];
   if (explicit is bool) {
     return explicit;
   }
-  return providerWalletBlockReason(summary) != null;
+  return false;
 }
 
 String? providerWalletBlockReason(Map<String, dynamic> summary) {
