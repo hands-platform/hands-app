@@ -59,14 +59,14 @@ describe('participantReadableDecision', () => {
 });
 
 describe('marketplaceParticipantLedgerBoundaryCopy', () => {
-  it('explains that negative wallet partners cannot join marketplace bookings', () => {
+  it('explains that only actual marketplace participation is retained', () => {
     expect(marketplaceParticipantLedgerBoundaryCopy()).toEqual({
       helper:
-        'Partners may view marketplace demand before the wallet join gate. If the wallet is negative, the partner app blocks marketplace participation with an unpaid HANDS fee message before a participant row is created.',
+        'Marketplace visibility is not an activity record. If the partner wallet is negative, the partner app blocks marketplace participation with an unpaid HANDS fee message before any participant row is created.',
       pills: [
         'Actual participant rows only',
-        'Negative wallet blocks marketplace join',
-        'Blocked join attempts are not participant records',
+        'Negative wallet blocks participation',
+        'No view-only activity log',
         'Customer-selected final partner only',
         'No automatic final assignment',
       ],

@@ -1316,8 +1316,8 @@ export function BookingMonitor({
                 All participant records by booking, including first-pick, marketplace participants, declined
                 responses, and the customer final choice. This is the operations record of who entered the
                 request. It shows the Customer-selectable reason and Why not selectable for evidence-only
-                rows. Wallet-blocked partners who only viewed marketplace demand are blocked before
-                participation and are not participant rows.
+                rows. Marketplace visibility is not an activity record; wallet-blocked partners are
+                stopped before participation and never create participant rows.
               </p>
           </div>
           <span className={`pill ${marketplaceLedgerSummary.total > 0 ? 'pill-info' : 'pill-neutral'}`}>
@@ -1345,11 +1345,11 @@ export function BookingMonitor({
               </p>
             </article>
             <article className="ops-task-card">
-              <span className="signal signal-warn">View-only wallet blocks</span>
+              <span className="signal signal-warn">Pre-participation wallet gate</span>
               <h3>Not participant rows</h3>
               <p>
-                A negative-wallet partner can see marketplace demand, but the join gate blocks
-                participation before a participant row is created.
+                A negative-wallet partner may see marketplace demand, but the join gate blocks
+                participation before any participant row is created.
               </p>
             </article>
             <article className="ops-task-card">
@@ -1432,7 +1432,7 @@ export function BookingMonitor({
             </div>
           </div>
           <div className="participant-list" style={{ marginTop: 12 }}>
-            <span className="pill">Booking rows, not view-only attempts</span>
+            <span className="pill">Booking rows, not visibility events</span>
             <span className="pill">Wallet gate blocks participation</span>
             <span className="pill">No auto assignment</span>
             <span className="pill">Final partner selected {marketplaceBookingCoverageSummary.selected}</span>
@@ -1506,7 +1506,7 @@ export function BookingMonitor({
         </section>
         <div className="participant-list" style={{ marginTop: 12 }}>
           <span className="pill pill-info">Participant rows only</span>
-          <span className="pill pill-warn">Blocked wallet attempts are not participant records</span>
+          <span className="pill pill-warn">Blocked wallet joins are not participant records</span>
           <span className="pill">Partners may view marketplace demand before join gate</span>
           <span className="pill">Customer-selected final partner only</span>
           <span className="pill">No automatic final assignment</span>

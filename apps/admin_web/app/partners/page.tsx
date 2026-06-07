@@ -3698,7 +3698,7 @@ function buildPartnerDispatchForecast(
         label: 'Wallet debt',
         count: walletDebt,
         detail:
-          'Cash fee debt keeps marketplace view-only demand visible, but participation waits for settlement.',
+          'Cash fee debt may keep demand visible, but marketplace participation waits for settlement.',
         href: '/partners?review=cash-debt',
         tone: walletDebt > 0 ? 'danger' : 'ok',
       },

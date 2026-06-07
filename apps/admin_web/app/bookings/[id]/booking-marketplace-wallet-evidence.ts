@@ -100,7 +100,7 @@ export function bookingMarketplaceWalletEvidence({
         label: 'Participant evidence boundary',
         value: `${participants.length} actual row(s)`,
         helper:
-          'Only partners who entered the booking are retained here; view-only wallet blocks are excluded before participant creation.',
+          'Only partners who entered the booking are retained here; marketplace visibility is not an activity record.',
         href: '#participants',
       },
       {

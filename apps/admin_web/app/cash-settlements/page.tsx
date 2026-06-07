@@ -60,7 +60,8 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
         Finance queue for cash bookings where the partner collected customer cash and still owes HANDS
         platform fee or withholding. This page focuses on why the wallet became negative, whether the
         company-fee deposit or approved offset has evidence, and when marketplace participation can reopen.
-        Wallet-blocked partners who only viewed the marketplace list are not tracked here.
+        Marketplace visibility is not logged here; only debt origin, deposit evidence, offset evidence,
+        and participation rows are retained.
       </p>
 
       <section className="card" style={{ marginTop: 16, marginBottom: 16 }}>

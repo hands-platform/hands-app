@@ -1796,7 +1796,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
             <h2>Cash debt origin and settlement</h2>
             <p className="muted">
               Partner wallet debt is reviewed by why it became negative and whether a company-fee deposit or
-              approved offset has evidence. Marketplace view-only activity is not tracked here; direct
+              approved offset has evidence. Marketplace visibility is not logged here; direct
               first-pick and already-matched service flow are not retroactively blocked by wallet debt.
             </p>
           </div>

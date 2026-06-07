@@ -210,7 +210,7 @@ export function bookingParticipantLedger(
         tone: marketplaceParticipants.length ? 'pill-info' : 'pill-neutral',
         evidence: `${marketplaceCustomerSelectable.length} customer-selectable / ${acceptedParticipants.length} accepted / ${joinedParticipants.length} participating / ${rejectedParticipants.length} rejected.`,
         operatorUse:
-          'Use the rows below as the factual list of partners who entered the booking; view-only blocked wallets are not logged here.',
+          'Use the rows below as the factual list of partners who entered the booking; marketplace visibility is not retained as activity.',
       },
       {
         stage: '3. Customer final choice',

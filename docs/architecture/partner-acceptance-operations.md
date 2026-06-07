@@ -174,7 +174,7 @@ These should stay configurable instead of being hardcoded:
 - Marketplace partner radius.
 - Whether marketplace partners can appear immediately or only after a delay.
 - Whether preferred partner acceptance requires customer final confirmation.
-- Negative-wallet partner list visibility is view-only. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace participation, marketplace acceptance, and customer final marketplace selection until settlement or approved offset clears the debt.
+- Marketplace list visibility is not retained as partner activity. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace participation, marketplace acceptance, and customer final marketplace selection until settlement or approved offset clears the debt.
 - No-show review thresholds and settlement decision options.
 - Cash settlement deadline.
 - Notification retry and fallback contact rules.

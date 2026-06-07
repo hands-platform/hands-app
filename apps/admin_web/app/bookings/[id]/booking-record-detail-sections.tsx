@@ -244,8 +244,8 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
           <h2>Actual marketplace participant ledger</h2>
           <p className="muted">
             Every partner who actually participated, accepted, rejected, or became the customer-selected final
-            partner stays here as booking evidence. Wallet-blocked partners who only viewed the marketplace
-            list are not tracked as participants.
+            partner stays here as booking evidence. Marketplace visibility is not retained as activity; wallet
+            gates stop blocked partners before a participant row is created.
           </p>
         </div>
         <span className={`pill ${participantLedger.tone}`}>{participantLedger.status}</span>
