@@ -125,6 +125,7 @@ import {
 } from '../../../lib/admin-attention-flags';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { bookingAttentionFlags as buildBookingAttentionFlags } from '../../../lib/booking-attention-flags';
+import { bookingChatEvidenceDecisionBoard as buildBookingChatEvidenceDecisionBoard } from '../../../lib/booking-chat-evidence-decision-board';
 import {
   bookingChatRepairActionState as buildBookingChatRepairActionState,
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
@@ -585,11 +586,24 @@ export default async function BookingDetailPage({ params }: PageProps) {
     operatorNoteLines,
     bookingActivityRecords,
   });
-  const chatEvidenceDecisionBoard = bookingChatEvidenceDecisionBoard({
-    booking,
-    messages,
-    latestLocation,
-    notificationTrace,
+  const latestMessage = messages[messages.length - 1];
+  const chatEvidenceDecisionBoard = buildBookingChatEvidenceDecisionBoard({
+    bookingId: booking.id,
+    bookingStatus: booking.status,
+    hasChatRoom: Boolean(booking.chatRoom),
+    chatRoomShortId: booking.chatRoom ? shortId(booking.chatRoom.id) : null,
+    messageCount: messages.length,
+    latestMessageAtLabel: latestMessage ? formatDate(latestMessage.createdAt) : null,
+    latestMessagePreview: latestMessage
+      ? `${messageSenderLabel(latestMessage)}: ${compactActivityText(latestMessage.body, 90)}`
+      : null,
+    hasLatestLocation: Boolean(latestLocation),
+    latestLocationAtLabel: latestLocation ? formatDate(latestLocation.recordedAt) : null,
+    latestLocationCoordinateLabel: latestLocation
+      ? coordinateLabel(latestLocation.lat, latestLocation.lng)
+      : null,
+    alertCount: notificationTrace.rows.length,
+    auditLogCount: booking.auditLogs?.length ?? 0,
     operatorNoteLines,
   });
   const manualDecisionReadiness = bookingManualDecisionReadiness({
@@ -1317,141 +1331,6 @@ function bookingEvidencePacket({
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
   });
-}
-
-function bookingChatEvidenceDecisionBoard({
-  booking,
-  messages,
-  latestLocation,
-  notificationTrace,
-  operatorNoteLines,
-}: {
-  booking: AdminBookingDetail;
-  messages: AdminChatMessage[];
-  latestLocation?: AdminLocationSnapshot | null;
-  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
-  operatorNoteLines: string[];
-}) {
-  const chatRequired = ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(
-    booking.status,
-  );
-  const chatRoomReady = Boolean(booking.chatRoom);
-  const latestMessage = messages[messages.length - 1];
-  const alertCount = notificationTrace.rows.length;
-  const noteCount = operatorNoteLines.length;
-  const hasContextEvidence =
-    messages.length > 0 || Boolean(latestLocation) || alertCount > 0 || noteCount > 0;
-  const mobileHidden = TERMINAL_BOOKING_STATUSES.has(booking.status) && chatRoomReady;
-  const status = chatRoomReady
-    ? hasContextEvidence
-      ? 'Chat evidence ready'
-      : 'Chat room quiet'
-    : chatRequired
-      ? 'Chat repair needed'
-      : 'Chat locked until match';
-  const tone = chatRoomReady
-    ? hasContextEvidence
-      ? 'pill-success'
-      : 'pill-warn'
-    : chatRequired
-      ? 'pill-danger'
-      : 'pill-info';
-  const summary = chatRoomReady
-    ? mobileHidden
-      ? 'This booking can hide chat in mobile after closeout, but admin keeps the retained transcript for operations review.'
-      : 'This booking has an admin-retained chat room for service handoff and operations review.'
-    : chatRequired
-      ? 'A final partner exists or service stage has started, but no retained chat room is attached yet.'
-      : 'Customer and partner chat opens only after the customer final partner selection.';
-
-  return {
-    status,
-    tone,
-    summary,
-    metrics: [
-      {
-        label: 'Chat room',
-        value: chatRoomReady ? shortId(booking.chatRoom?.id ?? '') : 'No room',
-        helper: chatRoomReady
-          ? `${messages.length} retained message(s) in admin archive.`
-          : chatRequired
-            ? 'Matched or active booking should have a retained chat room.'
-            : 'Chat is not expected before final partner selection.',
-      },
-      {
-        label: 'Latest message',
-        value: latestMessage ? formatDate(latestMessage.createdAt) : 'No message',
-        helper: latestMessage
-          ? `${messageSenderLabel(latestMessage)}: ${compactActivityText(latestMessage.body, 90)}`
-          : 'No customer or partner message has been retained yet.',
-      },
-      {
-        label: 'Location handoff',
-        value: latestLocation ? formatDate(latestLocation.recordedAt) : 'No pin',
-        helper: latestLocation
-          ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} latest partner pin.`
-          : 'No partner location record is attached to this booking.',
-      },
-      {
-        label: 'Alerts and notes',
-        value: `${alertCount} alert(s) / ${noteCount} note(s)`,
-        helper:
-          operatorNoteLines[operatorNoteLines.length - 1] ??
-          'Use alerts and operator notes to add context around chat silence or service issues.',
-      },
-    ],
-    rows: [
-      {
-        lane: 'Chat room creation',
-        scope: 'Final partner selection should create a retained customer-partner room.',
-        state: chatRoomReady ? 'Archived' : chatRequired ? 'Repair needed' : 'Waiting for final choice',
-        tone: chatRoomReady ? 'pill-success' : chatRequired ? 'pill-danger' : 'pill-info',
-        record: chatRoomReady
-          ? `Room ${shortId(booking.chatRoom?.id ?? '')} / ${messages.length} message(s).`
-          : chatRequired
-            ? 'No retained room attached to a matched or service-stage booking.'
-            : 'No room expected before matching.',
-        operatorUse: 'Repair a missing room before service coordination, refund review, or no-show decision.',
-        href: chatRoomReady ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : '#chat',
-      },
-      {
-        lane: 'Conversation evidence',
-        scope: 'Messages explain what customer and partner actually communicated.',
-        state: messages.length ? 'Messages retained' : chatRoomReady ? 'No messages yet' : 'No room',
-        tone: messages.length ? 'pill-success' : chatRoomReady ? 'pill-warn' : 'pill-neutral',
-        record: latestMessage
-          ? `${messageSenderLabel(latestMessage)} / ${formatDate(latestMessage.createdAt)} / ${compactActivityText(
-              latestMessage.body,
-              100,
-            )}`
-          : 'No message body retained.',
-        operatorUse:
-          'Use the transcript before cancellation, no-show, payment, refund, or support messaging.',
-        href: chatRoomReady ? `/chat-archive?q=${encodeURIComponent(booking.id)}` : '#chat',
-      },
-      {
-        lane: 'Movement evidence',
-        scope: 'Partner location can support arrival, delay, or no-show context.',
-        state: latestLocation ? 'Location retained' : 'No location',
-        tone: latestLocation ? 'pill-info' : 'pill-warn',
-        record: latestLocation
-          ? `${coordinateLabel(latestLocation.lat, latestLocation.lng)} / ${formatDate(latestLocation.recordedAt)}`
-          : 'No partner movement row is attached.',
-        operatorUse:
-          'Use movement context with chat and alerts; do not judge either side from one signal alone.',
-        href: '#location',
-      },
-      {
-        lane: 'Admin retained context',
-        scope: 'Alerts, audit rows, and operator notes preserve support context after mobile chat closes.',
-        state: hasContextEvidence ? 'Context loaded' : 'Needs operator note',
-        tone: hasContextEvidence ? 'pill-success' : 'pill-warn',
-        record: `${alertCount} notification row(s), ${booking.auditLogs?.length ?? 0} audit row(s), ${noteCount} note(s).`,
-        operatorUse: 'Add a factual note when chat is quiet, missing, or insufficient for an outcome change.',
-        href: '#operator-notes',
-      },
-    ],
-  };
 }
 
 function bookingManualDecisionReadiness({
