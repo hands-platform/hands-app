@@ -150,7 +150,7 @@ describe('admin live operations policy helpers', () => {
       hardWalletBlock: true,
     });
 
-    expect(readiness.marketplaceBlocked).toBe(false);
+    expect(readiness.marketplaceBlocked).toBe(true);
     expect(readiness.finalGateHeld).toBe(true);
     expect(readiness.canCompleteFinalGate).toBe(false);
     expect(readiness.walletBalance).toBe(-120000);

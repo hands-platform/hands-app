@@ -144,7 +144,7 @@ export function buildAdminPartnerMarketplaceReadiness({
   const walletBalance = adminPartnerWalletBalance(provider);
   const locationFresh = adminPartnerLocationFresh(provider, freshnessMinutes, now);
   const pushEnabled = adminPartnerHasEnabledPush(provider);
-  const marketplaceBlocked = adminPartnerMarketplaceBlocked(provider);
+  const marketplaceBlocked = adminPartnerMarketplaceBlocked(provider, { hardWalletBlock });
   const finalGateHeld = adminPartnerFinalGateHeld(provider, { hardWalletBlock });
   const canCompleteFinalGate = adminPartnerCanCompleteFinalGate(provider, {
     freshnessMinutes,
@@ -177,11 +177,15 @@ export function adminPartnerCanCompleteFinalGate(
   );
 }
 
-export function adminPartnerMarketplaceBlocked(provider: AdminPartnerMarketplaceReadinessProvider) {
+export function adminPartnerMarketplaceBlocked(
+  provider: AdminPartnerMarketplaceReadinessProvider,
+  policy: { hardWalletBlock?: boolean } = {},
+) {
   return (
     adminPartnerAccountNeedsFollowUp(provider) ||
     !adminPartnerIdentityReady(provider) ||
-    !adminPartnerBankReady(provider)
+    !adminPartnerBankReady(provider) ||
+    (policy.hardWalletBlock === true && adminPartnerWalletBalance(provider) < 0)
   );
 }
 
@@ -189,10 +193,7 @@ export function adminPartnerFinalGateHeld(
   provider: AdminPartnerMarketplaceReadinessProvider,
   policy: { hardWalletBlock: boolean },
 ) {
-  return (
-    adminPartnerMarketplaceBlocked(provider) ||
-    (policy.hardWalletBlock && adminPartnerWalletBalance(provider) < 0)
-  );
+  return adminPartnerMarketplaceBlocked(provider, policy);
 }
 
 export function adminPartnerAccountNeedsFollowUp(provider: AdminPartnerMarketplaceReadinessProvider) {

@@ -2270,7 +2270,7 @@ function buildPolicySupplySensitivity(
         ageMinutes,
         distanceMeters,
         hasCoordinate: Boolean(coordinate),
-        marketplaceBlocked: partnerMarketplaceBlocked(provider),
+        marketplaceBlocked: partnerMarketplaceBlocked(provider, { hardWalletBlock }),
         finalGateHeld: partnerFinalGateHeld(provider, { hardWalletBlock }),
         online: provider.status === 'ONLINE_AVAILABLE',
       };
@@ -2687,7 +2687,7 @@ function eligibleBackupPartnersForBooking(
     if (provider.id === preferredId || provider.status !== 'ONLINE_AVAILABLE') {
       return false;
     }
-    if (partnerMarketplaceBlocked(provider)) {
+    if (partnerMarketplaceBlocked(provider, { hardWalletBlock: policy.hardWalletBlock })) {
       return false;
     }
     const providerCoordinate = parseCoordinatePair(provider.currentLat, provider.currentLng);
@@ -2746,10 +2746,12 @@ function buildPartnerAcceptancePolicyImpact(
       helper: `${onlinePartners.length} online partner(s), filtered by marketplace, location, push, and control readiness.`,
     },
     {
-      label: 'Account/identity held',
-      value: providers.filter((provider) => partnerMarketplaceBlocked(provider)).length.toString(),
+      label: 'Marketplace held',
+      value: providers
+        .filter((provider) => partnerMarketplaceBlocked(provider, { hardWalletBlock: policy.hardWalletBlock }))
+        .length.toString(),
       helper:
-        'Account controls, identity failure, or missing approved bank can hold marketplace eligibility.',
+        'Account controls, identity failure, missing approved bank, or negative wallet can hold marketplace participation.',
     },
     {
       label: 'Cash debt gate',
@@ -2802,8 +2804,8 @@ function partnerCanCompleteFinalGateUnderCurrentPolicy(
   });
 }
 
-function partnerMarketplaceBlocked(provider: AdminProvider) {
-  return adminPartnerMarketplaceBlocked(provider);
+function partnerMarketplaceBlocked(provider: AdminProvider, policy: { hardWalletBlock?: boolean } = {}) {
+  return adminPartnerMarketplaceBlocked(provider, policy);
 }
 
 function partnerFinalGateHeld(provider: AdminProvider, policy: { hardWalletBlock: boolean }) {
