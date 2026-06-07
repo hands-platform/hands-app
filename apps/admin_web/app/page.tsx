@@ -41,6 +41,11 @@ import {
   bookingPaymentReleaseNeedsOpsFromFacts,
 } from '../lib/booking-payment-ops';
 import { bookingChatQuietNeedsOps } from '../lib/booking-chat-repair-action-state';
+import {
+  bookingAlertEvidenceNeedsOpsFromFacts,
+  bookingAlertTraceSummaryFromMetadata,
+  bookingPartnerChoiceEvidenceNeedsOpsFromFacts,
+} from '../lib/booking-evidence-ops';
 
 const activeBookingStatuses = new Set([
   'OPEN_MATCHING',
@@ -3676,13 +3681,15 @@ function dashboardDateValue(value?: string | null) {
 }
 
 function dashboardBookingPartnerChoiceNeedsEvidence(booking: AdminBooking) {
-  if (booking.status !== 'OPEN_MATCHING') {
-    return false;
-  }
   const acceptedCount = (booking.participants ?? []).filter((participant) =>
     ['ACCEPTED', 'SELECTED'].includes(participant.status),
   ).length;
-  return !booking.selectedProvider && (!booking.preferredProvider || acceptedCount > 0);
+  return bookingPartnerChoiceEvidenceNeedsOpsFromFacts({
+    status: booking.status,
+    hasSelectedProvider: Boolean(booking.selectedProvider),
+    hasPreferredProvider: Boolean(booking.preferredProvider),
+    acceptedOrSelectedParticipantCount: acceptedCount,
+  });
 }
 
 function dashboardBookingLocationNeedsEvidence(booking: AdminBooking) {
@@ -3718,16 +3725,12 @@ function dashboardBookingMoneyNeedsEvidence(booking: AdminBooking) {
 }
 
 function dashboardBookingAlertNeedsEvidence(booking: AdminBooking) {
-  if (booking.status !== 'OPEN_MATCHING') {
-    return false;
-  }
-  const metadata = readPlainRecord(booking.metadata);
-  const traces = Array.isArray(metadata?.backupNotificationTraces) ? metadata.backupNotificationTraces : [];
-  const notifiedCount = traces.reduce((total, value) => {
-    const trace = readPlainRecord(value);
-    return total + (readOptionalNumber(trace?.notifiedCount) ?? 0);
-  }, 0);
-  return (booking.participants?.length ?? 0) === 0 && notifiedCount === 0;
+  const alertTrace = bookingAlertTraceSummaryFromMetadata(booking.metadata);
+  return bookingAlertEvidenceNeedsOpsFromFacts({
+    status: booking.status,
+    participantCount: booking.participants?.length ?? 0,
+    totalNotified: alertTrace.totalNotified,
+  });
 }
 
 function dashboardBookingCloseoutNeedsEvidence(booking: AdminBooking) {
