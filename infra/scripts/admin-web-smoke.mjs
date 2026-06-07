@@ -130,6 +130,7 @@ const pages = [
       'Booking / stage',
       'Address / customer',
       'Payment / wallet',
+      'Primary booking command',
       'Booking gate reason',
       'Action status strip',
       'Matching rule snapshot',

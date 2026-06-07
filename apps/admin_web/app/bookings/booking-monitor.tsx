@@ -25,6 +25,7 @@ import {
 } from '../../lib/booking-status-location-helpers';
 import { participantDistancePolicy } from '../../lib/admin-distance-policy';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
+import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
 import {
   bookingChatQuietNeedsOps as buildBookingChatQuietNeedsOps,
@@ -1630,7 +1631,7 @@ export function BookingMonitor({
               <th title="Matching rule snapshot">Partner supply</th>
               <th>Chat / location</th>
               <th>Payment / wallet</th>
-              <th title="Booking gate reason Action status strip">Ops check</th>
+              <th title="Primary booking command Booking gate reason Action status strip">Ops check</th>
             </tr>
           </thead>
           <tbody>
@@ -1648,6 +1649,7 @@ export function BookingMonitor({
               const actionChips = bookingListActionChips(booking, currentTimeMs);
               const matchingRuleSnapshot = bookingMatchingRuleSnapshot(booking, currentTimeMs);
               const finalGateReason = bookingFinalGateReason(booking);
+              const commandDecisionStrip = bookingListCommandDecisionStrip(booking);
               return (
                 <tr id={`booking-${booking.id}`} key={booking.id}>
                   <td>
@@ -1834,6 +1836,19 @@ export function BookingMonitor({
                     <div style={{ marginTop: 8 }}>{opsSignal(booking)}</div>
                     <div className="muted" style={{ marginTop: 8 }}>
                       {nextAction(booking)}
+                    </div>
+                    <div className="participant-list" style={{ marginTop: 10 }}>
+                      <span className="muted">Primary booking command</span>
+                      <Link
+                        className={`pill ${commandDecisionStrip.tone}`}
+                        href={`/bookings/${booking.id}#booking-command-decision-strip`}
+                        title={commandDecisionStrip.primaryDetail}
+                      >
+                        {commandDecisionStrip.primaryAction}
+                      </Link>
+                    </div>
+                    <div className="muted" style={{ marginTop: 6 }}>
+                      {commandDecisionStrip.status}: {commandDecisionStrip.primaryDetail}
                     </div>
                     <div className="participant-list" style={{ marginTop: 10 }}>
                       <span className="muted">Booking gate reason</span>
@@ -3805,6 +3820,27 @@ function bookingCashDebtNeedsOps(booking: AdminBooking) {
     hasEarning: Boolean(booking.earning),
     earningNetAmount: booking.earning?.netAmount,
     earningStatus: booking.earning?.status,
+  });
+}
+
+function bookingListCommandDecisionStrip(booking: AdminBooking) {
+  const addressState = bookingAddressSnapshotState(booking);
+  const marketplaceCount = marketplaceParticipants(booking).length;
+
+  return bookingCommandDecisionStrip({
+    bookingStatus: booking.status,
+    hasAddressSnapshot: Boolean(booking.addressSnapshot),
+    addressLabel: addressState.detail,
+    participantCount: booking.participants?.length ?? 0,
+    customerChoiceCandidateCount: customerSelectableParticipants(booking).length,
+    marketplaceEligibleCount: marketplaceCount,
+    hasFinalPartner: Boolean(booking.selectedProvider),
+    hasChatRoom: Boolean(booking.chatRoom),
+    messageCount: booking.chatRoom?.messages?.length ?? 0,
+    paymentMethod: booking.payment?.method ?? 'NONE',
+    paymentStatus: booking.payment?.status ?? 'NONE',
+    cashDebtNeedsSettlement: bookingCashDebtNeedsOps(booking),
+    closeoutOpenItemCount: bookingCompletedCloseoutNeedsOps(booking) ? 1 : 0,
   });
 }
 
