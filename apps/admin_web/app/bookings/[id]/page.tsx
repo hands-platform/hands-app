@@ -133,6 +133,7 @@ import {
 import { bookingChatLifecycle } from '../../../lib/booking-chat-lifecycle';
 import { bookingClosureSummary } from '../../../lib/booking-closure-summary';
 import { bookingDecisionEvidenceGuardrails as buildBookingDecisionEvidenceGuardrails } from '../../../lib/booking-decision-evidence-guardrails';
+import { bookingDecisionNotePresets as buildBookingDecisionNotePresets } from '../../../lib/booking-decision-note-presets';
 import { bookingEvidencePacket as buildBookingEvidencePacket } from '../../../lib/booking-evidence-packet';
 import {
   bookingLocationTrail,
@@ -774,14 +775,17 @@ export default async function BookingDetailPage({ params }: PageProps) {
     booking,
     financeTrace,
   });
-  const decisionNotePresets = bookingDecisionNotePresets({
-    booking,
-    messages,
-    latestLocation,
-    notificationTrace,
-    refundLedgerRows,
-    operatorNoteLines,
-    closeoutReadiness,
+  const decisionNotePresets = buildBookingDecisionNotePresets({
+    bookingStatus: booking.status,
+    messageCount: messages.length,
+    hasLatestLocation: Boolean(latestLocation),
+    notificationCount: notificationTrace.rows.length,
+    operatorNoteCount: operatorNoteLines.length,
+    paymentMethod: booking.payment?.method ?? 'NONE',
+    paymentStatus: booking.payment?.status ?? 'NONE',
+    refundRowCount: refundLedgerRows.length,
+    cashFeeDebtNeedsSettlement: bookingCashDebtNeedsSettlement(booking),
+    closeoutOpenItemLabels: closeoutReadiness.openItems.map((item) => item.label),
   });
   const bookingOperationsQuickRail = [
     {
@@ -1358,144 +1362,6 @@ function bookingEvidencePacket({
     latestActivityTitle: bookingActivityRecords[0]?.title ?? null,
     latestActivityAtLabel: bookingActivityRecords[0] ? formatDate(bookingActivityRecords[0].at) : null,
   });
-}
-
-function bookingDecisionNotePresets({
-  booking,
-  messages,
-  latestLocation,
-  notificationTrace,
-  refundLedgerRows,
-  operatorNoteLines,
-  closeoutReadiness,
-}: {
-  booking: AdminBookingDetail;
-  messages: AdminChatMessage[];
-  latestLocation?: AdminLocationSnapshot | null;
-  notificationTrace: ReturnType<typeof bookingNotificationTrace>;
-  refundLedgerRows: BookingRefundLedgerRow[];
-  operatorNoteLines: string[];
-  closeoutReadiness: ReturnType<typeof bookingCloseoutReadiness>;
-}) {
-  const presets: Array<{
-    id: string;
-    label: string;
-    title: string;
-    detail: string;
-    preset: string;
-  }> = [];
-  const activeOrTerminal = [
-    'MATCHED',
-    'PROVIDER_ON_THE_WAY',
-    'ARRIVED',
-    'IN_SERVICE',
-    'COMPLETED',
-    'CANCELLED',
-    'EXPIRED',
-    'NO_SHOW',
-  ].includes(booking.status);
-  const moneyReviewNeeded =
-    Boolean(booking.payment) &&
-    (['CANCELLED', 'EXPIRED', 'NO_SHOW'].includes(booking.status) ||
-      refundLedgerRows.length > 0 ||
-      booking.payment?.status === 'AUTHORIZED');
-
-  if (activeOrTerminal && messages.length === 0) {
-    presets.push({
-      id: 'chat-empty-note',
-      label: 'Chat',
-      title: 'Chat evidence is empty',
-      detail: 'Use when a manual outcome is being reviewed but no customer/partner messages are loaded.',
-      preset:
-        'Manual decision evidence note: chat archive is present/checked but has no retained customer or partner messages for this booking.',
-    });
-  }
-
-  if (
-    ['PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED', 'NO_SHOW'].includes(booking.status) &&
-    !latestLocation
-  ) {
-    presets.push({
-      id: 'location-empty-note',
-      label: 'Location',
-      title: 'Partner location is not retained',
-      detail:
-        'Use before arrival, no-show, service completion, or refund review when no partner pin is loaded.',
-      preset:
-        'Manual decision evidence note: no partner location snapshot is retained for this booking at the time of operator review.',
-    });
-  }
-
-  if (activeOrTerminal && notificationTrace.rows.length === 0) {
-    presets.push({
-      id: 'alert-empty-note',
-      label: 'Alerts',
-      title: 'Notification trail is empty',
-      detail: 'Use when partner/customer alert records are not available for this booking.',
-      preset:
-        'Manual decision evidence note: no customer or partner notification delivery rows are loaded for this booking.',
-    });
-  }
-
-  if (operatorNoteLines.length === 0) {
-    presets.push({
-      id: 'operator-note-needed',
-      label: 'Note',
-      title: 'Operator context not recorded yet',
-      detail: 'Use when support has reviewed the booking and needs to leave a factual handling note.',
-      preset:
-        'Operator context note: booking reviewed for current status, customer/partner handoff, chat, payment, and closeout readiness.',
-    });
-  }
-
-  if (moneyReviewNeeded) {
-    presets.push({
-      id: 'payment-review-note',
-      label: 'Money',
-      title: 'Payment or refund review',
-      detail: `${booking.payment?.method ?? 'NONE'} / ${booking.payment?.status ?? 'NONE'} / ${refundLedgerRows.length} refund row(s).`,
-      preset: `Payment review note: booking ${booking.status}, payment ${
-        booking.payment?.status ?? 'NONE'
-      }, method ${booking.payment?.method ?? 'NONE'}, refund rows ${refundLedgerRows.length}.`,
-    });
-  }
-
-  if (bookingCashDebtNeedsSettlement(booking)) {
-    presets.push({
-      id: 'cash-debt-note',
-      label: 'Cash',
-      title: 'Cash fee settlement needed',
-      detail:
-        'Use when cash collection created a partner wallet debt that should be cleared by deposit or offset.',
-      preset:
-        'Cash settlement note: partner cash-fee debt remains open; marketplace participation and payout release should stay blocked until company deposit or admin offset is verified.',
-    });
-  }
-
-  if (closeoutReadiness.openItems.length > 0) {
-    presets.push({
-      id: 'closeout-open-items-note',
-      label: 'Closeout',
-      title: 'Closeout has open items',
-      detail: closeoutReadiness.openItems.map((item) => item.label).join(', '),
-      preset: `Closeout readiness note: open factual items - ${closeoutReadiness.openItems
-        .map((item) => item.label)
-        .join(', ')}.`,
-    });
-  }
-
-  if (presets.length === 0) {
-    presets.push({
-      id: 'evidence-reviewed-note',
-      label: 'Clear',
-      title: 'Evidence reviewed',
-      detail: 'Use when the operator checked the factual evidence bundle and no immediate gap is visible.',
-      preset:
-        'Manual decision evidence note: chat, alerts, location, payment, and closeout records reviewed; no immediate evidence gap visible for current booking stage.',
-    });
-  }
-
-  return presets;
 }
 
 function buildBookingEvidenceBundleRows({
