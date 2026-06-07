@@ -799,6 +799,92 @@ describe('BookingsService partner response wallet gates', () => {
       }),
     );
   });
+
+  it('uses the booking address snapshot when reopening marketplace after first-pick rejection', async () => {
+    const firstPickPartner = approvedPartner({ id: 'partner-1' });
+    const nearbyBackupPartner = approvedPartner({
+      id: 'backup-partner-1',
+      userId: 'backup-user-1',
+      currentLat: 10.777,
+      currentLng: 106.701,
+    });
+    const staleMutableCoordinates = {
+      lat: 13.7563,
+      lng: 100.5018,
+      addressSnapshot: {
+        latitude: 10.7769,
+        longitude: 106.7009,
+      },
+    };
+    const bookingParticipantUpdate = jest.fn();
+    const prisma = {
+      providerProfile: {
+        findUnique: jest.fn().mockResolvedValue(firstPickPartner),
+        findMany: jest.fn().mockResolvedValue([nearbyBackupPartner]),
+      },
+      booking: {
+        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
+        findUniqueOrThrow: jest.fn().mockResolvedValue({
+          ...openFirstPickBooking(),
+          ...staleMutableCoordinates,
+          customerProfile: { userId: 'customer-user-1' },
+          preferredProvider: firstPickPartner,
+          selectedProvider: null,
+          chatRoom: null,
+          services: [{ serviceId: 'service-1' }],
+        }),
+        update: jest.fn().mockResolvedValue({
+          ...openFirstPickBooking(),
+          ...staleMutableCoordinates,
+          customerProfile: { userId: 'customer-user-1' },
+          preferredProvider: firstPickPartner,
+          selectedProvider: null,
+          chatRoom: null,
+          services: [{ serviceId: 'service-1' }],
+        }),
+      },
+      bookingParticipant: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'participant-1' }),
+        update: bookingParticipantUpdate,
+      },
+    };
+    const matching = {
+      closeBooking: jest.fn(),
+      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: jest.fn(),
+      scheduleBookingTimeout: jest.fn(),
+    };
+    const matchingGateway = { emitBackupBookingAvailable: jest.fn() };
+    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await service.updateParticipant('booking-1', 'partner-user-1', ParticipantStatus.REJECTED);
+
+    expect(matching.openBooking).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          eligibleBackupProviderCount: 1,
+        }),
+      }),
+    );
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'backup-user-1',
+        type: 'booking.backup_available',
+        data: expect.objectContaining({
+          distanceMeters: 0,
+        }),
+      }),
+    );
+  });
 });
 
 function approvedPartner(overrides: Record<string, unknown> = {}) {

@@ -352,11 +352,12 @@ export class BookingsService {
       booking = { ...booking, payment };
     }
 
+    const dispatchPin = bookingDispatchCoordinates(booking);
     const eligibleBackupProviders = await this.findEligibleBackupProviders({
       bookingId: booking.id,
       serviceId: service.id,
-      lat: Number(booking.lat),
-      lng: Number(booking.lng),
+      lat: dispatchPin.lat,
+      lng: dispatchPin.lng,
       preferredProviderId: preferredProvider?.id,
       backupOpenMode: matchingPolicy.backupOpenMode,
       policy: matchingPolicy,
@@ -863,7 +864,13 @@ export class BookingsService {
               },
             },
           },
-          include: { participants: true, preferredProvider: true, selectedProvider: true, chatRoom: true },
+          include: {
+            participants: true,
+            preferredProvider: true,
+            selectedProvider: true,
+            chatRoom: true,
+            addressSnapshot: true,
+          },
         });
         await this.notifications.create({
           userId: booking.customerProfile.userId,
@@ -901,12 +908,13 @@ export class BookingsService {
         });
         const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
         const serviceId = booking.services[0]?.serviceId;
+        const dispatchPin = bookingDispatchCoordinates(updated);
         const eligibleBackupProviders = serviceId
           ? await this.findEligibleBackupProviders({
               bookingId,
               serviceId,
-              lat: Number(updated.lat),
-              lng: Number(updated.lng),
+              lat: dispatchPin.lat,
+              lng: dispatchPin.lng,
               preferredProviderId: provider.id,
               backupOpenMode: matchingPolicy.backupOpenMode,
               forceOpen: true,
