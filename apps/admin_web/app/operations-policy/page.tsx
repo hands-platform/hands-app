@@ -1532,9 +1532,11 @@ function buildPolicySimulation(
   const travelBufferMinutes =
     policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.travelBufferMinutes) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.travelBufferMinutes;
-  const backupOpenMode =
-    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.backupOpenMode;
+  const marketplaceOpenMode =
+    policyStringValueFromKeys(settings, [
+      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
   const preferredAcceptMode =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
@@ -1578,7 +1580,7 @@ function buildPolicySimulation(
     pillClass: (item.ageMinutes ?? Infinity) <= backupLocationFreshnessMinutes ? 'pill-success' : 'pill-warn',
   }));
   const expiresAt = new Date(Date.now() + responseWindowMinutes * 60 * 1000);
-  const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
+  const immediateBackup = marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
   const customerFinalConfirm = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
   const ready = eligiblePartners.length > 0 && freshEligible.length > 0;
 
@@ -1994,12 +1996,7 @@ function policyRecommendationPosture(
   if (setting.key === 'wallet.negative_balance_gate') {
     const blocksMarketplace = adminWalletGateBlocksMarketplaceParticipation(value);
     return {
-      status:
-        blocksMarketplace && value !== recommended
-          ? 'Marketplace hold (legacy value)'
-          : blocksMarketplace
-            ? 'Marketplace hold'
-            : 'Future exception disabled',
+      status: blocksMarketplace ? 'Marketplace hold' : 'Future exception disabled',
       detail: blocksMarketplace
         ? 'Cash-debt exposure is contained at marketplace participation and payout release gates.'
         : 'Historical exception mode is retained for audit only. The MVP still blocks marketplace participation and payout release until settlement.',
@@ -2116,9 +2113,11 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
   const preferredAcceptMode =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
-  const backupOpenMode =
-    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.backupOpenMode;
+  const marketplaceOpenMode =
+    policyStringValueFromKeys(settings, [
+      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
   const alertChannel =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.partnerAlertChannel) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.partnerAlertChannel;
@@ -2127,7 +2126,7 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate;
 
   const customerFinalChoice = preferredAcceptMode === 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';
-  const immediateBackup = backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
+  const immediateBackup = marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW';
   const pushReady = alertChannel === 'ONESIGNAL_FOR_ALL_BOOKINGS';
   const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(walletGate);
   const baselineRadius = backupRadiusMeters === 10000;
@@ -2396,9 +2395,11 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
   const backupLocationFreshnessMinutes =
     policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
-  const backupOpenMode =
-    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.backupOpenMode) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.backupOpenMode;
+  const marketplaceOpenMode =
+    policyStringValueFromKeys(settings, [
+      OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+      LEGACY_OPERATIONAL_POLICY_KEYS.marketplaceOpenMode,
+    ]) ?? ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceOpenMode;
   const preferredAcceptMode =
     policyStringValue(settings, OPERATIONAL_POLICY_KEYS.preferredAcceptMode) ??
     ADMIN_OPERATIONS_POLICY_DEFAULTS.preferredAcceptMode;
@@ -2452,7 +2453,7 @@ function buildPolicyEnforcementTrace(settings: AdminOperationalPolicySetting[]) 
     {
       scope: 'Marketplace timing',
       title:
-        backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
+        marketplaceOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'Marketplace partners can participate during the wait'
           : 'Marketplace partners wait until timer or decline',
       detail:
@@ -3722,6 +3723,16 @@ function policyNumberValue(settings: AdminOperationalPolicySetting[], key: strin
 
 function policyStringValue(settings: AdminOperationalPolicySetting[], key: string) {
   return readOptionalString(policyRawValue(settings, key));
+}
+
+function policyStringValueFromKeys(settings: AdminOperationalPolicySetting[], keys: string[]) {
+  for (const key of keys) {
+    const value = policyStringValue(settings, key);
+    if (value !== null) {
+      return value;
+    }
+  }
+  return null;
 }
 
 function policyBooleanValue(settings: AdminOperationalPolicySetting[], key: string) {
