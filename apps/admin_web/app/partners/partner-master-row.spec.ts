@@ -154,7 +154,7 @@ describe('partner master row', () => {
     expect(row.accountNote).toBe('Normal account');
   });
 
-  it('shows account block facts without producing a risk score', () => {
+  it('shows account block facts without producing numeric person ranking', () => {
     const row = buildPartnerMasterRow(
       partner({
         blockedAt: '2026-06-02T01:00:00.000Z',
