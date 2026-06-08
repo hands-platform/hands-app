@@ -229,14 +229,15 @@ export const OPERATIONAL_POLICY_DEFINITIONS: OperationalPolicyDefinition[] = [
     category: 'Decision',
     label: 'First-pick acceptance contract',
     description:
-      'First-pick partner acceptance keeps the booking open until the customer confirms the final partner. Automatic matching is disabled for the MVP.',
+      'First-pick partner acceptance can match first under API rules; otherwise the customer selects from participating partners.',
     value: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     recommendedValue: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
     options: [
       {
         value: PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
-        label: 'Customer confirms final partner',
-        tradeoff: 'Required HANDS MVP contract. The customer always chooses the final partner.',
+        label: 'First-pick priority with customer fallback',
+        tradeoff:
+          'Required HANDS MVP contract. Customer final selection is required unless first-pick validly accepts first.',
       },
     ],
     enforced: true,

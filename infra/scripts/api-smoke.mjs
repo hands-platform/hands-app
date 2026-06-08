@@ -1768,35 +1768,26 @@ try {
       `Preferred partner selection before acceptance returned an unexpected error: ${preferredBeforeAcceptSelectionError}`,
     );
   }
-  const acceptedButWaiting = await postJson(
+  preferredAcceptPolicyMatched = await postJson(
     `/provider/bookings/${preferredAcceptPolicyBooking.id}/accept`,
     providerAuth.accessToken,
   );
-  if (acceptedButWaiting.status !== 'OPEN_MATCHING' || acceptedButWaiting.selectedProviderId !== null) {
+  if (
+    preferredAcceptPolicyMatched.status !== 'MATCHED' ||
+    preferredAcceptPolicyMatched.selectedProviderId !== providerAuth.user.providerProfile.id
+  ) {
     throw new Error(
-      `Preferred accept customer-confirm policy should keep booking open: ${JSON.stringify(
-        acceptedButWaiting,
+      `First-pick valid acceptance should match the preferred partner first: ${JSON.stringify(
+        preferredAcceptPolicyMatched,
       )}`,
     );
   }
-  const preferredAcceptedParticipant = acceptedButWaiting.participants?.find(
+  const preferredAcceptedParticipant = preferredAcceptPolicyMatched.participants?.find(
     (participant) => participant.providerProfileId === providerAuth.user.providerProfile.id,
   );
-  if (preferredAcceptedParticipant?.status !== 'ACCEPTED') {
+  if (preferredAcceptedParticipant?.status !== 'SELECTED') {
     throw new Error(
-      `Preferred accept customer-confirm policy should mark participant accepted: ${JSON.stringify(
-        acceptedButWaiting,
-      )}`,
-    );
-  }
-  preferredAcceptPolicyMatched = await postJson(
-    `/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider`,
-    customerAuth.accessToken,
-    { providerId: providerAuth.user.providerProfile.id },
-  );
-  if (preferredAcceptPolicyMatched.status !== 'MATCHED') {
-    throw new Error(
-      `Customer final confirmation did not match preferred accepted partner: ${JSON.stringify(
+      `First-pick valid acceptance should mark participant selected: ${JSON.stringify(
         preferredAcceptPolicyMatched,
       )}`,
     );

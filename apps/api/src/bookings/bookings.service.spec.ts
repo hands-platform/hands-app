@@ -1091,8 +1091,19 @@ describe('BookingsService partner response wallet gates', () => {
     expect(bookingParticipantUpdate).not.toHaveBeenCalled();
   });
 
-  it('does not apply the marketplace wallet gate to the preferred first-pick acceptance', async () => {
+  it('matches the booking when the preferred first-pick partner accepts first', async () => {
     const bookingParticipantUpdate = jest.fn();
+    const adminAuditLogCreate = jest.fn();
+    const matchedBooking = {
+      ...openFirstPickBooking(),
+      status: BookingStatus.MATCHED,
+      selectedProviderId: 'partner-1',
+      participants: [{ providerProfileId: 'partner-1', status: ParticipantStatus.SELECTED }],
+      preferredProvider: approvedPartner(),
+      selectedProvider: approvedPartner(),
+      chatRoom: { id: 'chat-room-1', bookingId: 'booking-1' },
+      addressSnapshot: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+    };
     const prisma = {
       providerProfile: {
         findUnique: jest.fn().mockResolvedValue(approvedPartner()),
@@ -1106,13 +1117,7 @@ describe('BookingsService partner response wallet gates', () => {
           chatRoom: null,
           services: [{ serviceId: 'service-1' }],
         }),
-        update: jest.fn().mockResolvedValue({
-          ...openFirstPickBooking(),
-          participants: [{ providerProfileId: 'partner-1', status: ParticipantStatus.ACCEPTED }],
-          preferredProvider: approvedPartner(),
-          selectedProvider: null,
-          chatRoom: null,
-        }),
+        update: jest.fn().mockResolvedValue(matchedBooking),
       },
       bookingParticipant: {
         findUnique: jest.fn().mockResolvedValue({ id: 'participant-1' }),
@@ -1121,12 +1126,25 @@ describe('BookingsService partner response wallet gates', () => {
       providerEarning: {
         aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -90000 } }),
       },
+      adminAuditLog: { create: adminAuditLogCreate },
     };
     const notifications = { create: jest.fn() };
-    const matchingGateway = { emitProviderAccepted: jest.fn() };
+    const matching = {
+      closeBooking: jest.fn(),
+      selectFinalProvider: jest.fn().mockReturnValue({
+        bookingId: 'booking-1',
+        event: 'booking.matched',
+        matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
+        booking: matchedBooking,
+      }),
+    };
+    const matchingGateway = {
+      emitBookingMatched: jest.fn(),
+      emitProviderAccepted: jest.fn(),
+    };
     const service = new BookingsService(
       prisma as never,
-      {} as never,
+      matching as never,
       matchingGateway as never,
       {} as never,
       notifications as never,
@@ -1137,19 +1155,57 @@ describe('BookingsService partner response wallet gates', () => {
       service.updateParticipant('booking-1', 'partner-user-1', ParticipantStatus.ACCEPTED),
     ).resolves.toEqual(
       expect.objectContaining({
-        participants: [expect.objectContaining({ status: ParticipantStatus.ACCEPTED })],
+        event: 'booking.matched',
+        matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
       }),
     );
 
     expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
-    expect(prisma.booking.update).toHaveBeenCalled();
-    expect(bookingParticipantUpdate).not.toHaveBeenCalled();
-    expect(notifications.create).toHaveBeenCalledWith(
+    expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: 'provider.accepted',
-        data: { bookingId: 'booking-1', providerProfileId: 'partner-1' },
+        data: expect.objectContaining({
+          status: BookingStatus.MATCHED,
+          selectedProviderId: 'partner-1',
+          chatRoom: { upsert: { create: {}, update: {} } },
+          participants: {
+            update: {
+              where: { bookingId_providerProfileId: { bookingId: 'booking-1', providerProfileId: 'partner-1' } },
+              data: { status: ParticipantStatus.SELECTED, respondedAt: expect.any(Date) },
+            },
+          },
+        }),
       }),
     );
+    expect(bookingParticipantUpdate).not.toHaveBeenCalled();
+    expect(matching.closeBooking).toHaveBeenCalledWith('booking-1');
+    expect(matching.selectFinalProvider).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({ status: BookingStatus.MATCHED, selectedProviderId: 'partner-1' }),
+      'FIRST_PICK_ACCEPTED_FIRST',
+    );
+    expect(adminAuditLogCreate).toHaveBeenCalledWith({
+      data: {
+        actorId: 'partner-user-1',
+        action: 'booking.matched.first_pick_accepted',
+        target: 'booking:booking-1',
+        metadata: {
+          bookingId: 'booking-1',
+          providerProfileId: 'partner-1',
+          matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
+        },
+      },
+    });
+    expect(notifications.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'booking.matched',
+        data: { bookingId: 'booking-1', chatRoomId: 'chat-room-1', providerProfileId: 'partner-1' },
+      }),
+    );
+    expect(matchingGateway.emitBookingMatched).toHaveBeenCalledWith(
+      'booking-1',
+      expect.objectContaining({ event: 'booking.matched', matchSource: 'FIRST_PICK_ACCEPTED_FIRST' }),
+    );
+    expect(matchingGateway.emitProviderAccepted).not.toHaveBeenCalled();
   });
 
   it('uses the booking address snapshot when reopening marketplace after first-pick rejection', async () => {

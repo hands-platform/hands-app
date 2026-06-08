@@ -106,8 +106,19 @@ export class MatchingService {
     return { bookingId, participant, event: 'provider.joined' };
   }
 
-  selectFinalProvider(bookingId: string, booking: unknown) {
-    return { bookingId, booking, status: 'MATCHED', finalSelection: 'CUSTOMER_SELECTED' };
+  selectFinalProvider(
+    bookingId: string,
+    booking: unknown,
+    matchSource: 'CUSTOMER_SELECTED_PARTNER' | 'FIRST_PICK_ACCEPTED_FIRST' = 'CUSTOMER_SELECTED_PARTNER',
+  ) {
+    return {
+      bookingId,
+      booking,
+      event: 'booking.matched',
+      status: 'MATCHED',
+      matchSource,
+      finalSelection: matchSource === 'CUSTOMER_SELECTED_PARTNER' ? 'CUSTOMER_SELECTED' : 'FIRST_PICK_ACCEPTED',
+    };
   }
 
   completeBooking(bookingId: string, booking: unknown) {

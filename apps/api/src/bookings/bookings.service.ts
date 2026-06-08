@@ -61,6 +61,17 @@ const REQUIRED_BOOKING_DOCUMENT_TYPES = [
   ProviderDocumentType.SELFIE,
 ];
 
+type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
+  include: {
+    participants: true;
+    preferredProvider: true;
+    selectedProvider: true;
+    chatRoom: true;
+    addressSnapshot: true;
+    payment: true;
+  };
+}>;
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -848,35 +859,73 @@ export class BookingsService {
 
     if (booking.preferredProviderId === provider.id) {
       if (status === ParticipantStatus.ACCEPTED) {
-        const updated = await this.prisma.booking.update({
-          where: { id: bookingId },
-          data: {
-            status: BookingStatus.OPEN_MATCHING,
-            selectedProviderId: null,
-            participants: {
-              update: {
-                where: participantKey,
-                data: { status, respondedAt: new Date() },
+        let updated: MatchedBookingForClientResponse;
+        try {
+          updated = await this.prisma.booking.update({
+            where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+            data: {
+              status: BookingStatus.MATCHED,
+              selectedProviderId: provider.id,
+              participants: {
+                update: {
+                  where: participantKey,
+                  data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
+                },
               },
+              chatRoom: { upsert: { create: {}, update: {} } },
+            },
+            include: {
+              participants: true,
+              preferredProvider: true,
+              selectedProvider: true,
+              chatRoom: true,
+              addressSnapshot: true,
+              payment: true,
+            },
+          });
+        } catch (error) {
+          if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+            throw new BadRequestException('Booking is already matched or no longer open for first-pick acceptance');
+          }
+          throw error;
+        }
+
+        await this.matching.closeBooking(bookingId);
+        const result = this.matching.selectFinalProvider(
+          bookingId,
+          clientBookingResponse(updated),
+          'FIRST_PICK_ACCEPTED_FIRST',
+        );
+        await this.prisma.adminAuditLog.create({
+          data: {
+            actorId: provider.userId,
+            action: 'booking.matched.first_pick_accepted',
+            target: `booking:${bookingId}`,
+            metadata: {
+              bookingId,
+              providerProfileId: provider.id,
+              matchSource: 'FIRST_PICK_ACCEPTED_FIRST',
             },
           },
-          include: {
-            participants: true,
-            preferredProvider: true,
-            selectedProvider: true,
-            chatRoom: true,
-            addressSnapshot: true,
-          },
         });
+        if (updated.selectedProvider?.userId) {
+          await this.notifications.create({
+            userId: updated.selectedProvider.userId,
+            type: 'booking.matched',
+            title: 'You were matched',
+            body: 'Your first-pick request was accepted and matched.',
+            data: { bookingId },
+          });
+        }
         await this.notifications.create({
           userId: booking.customerProfile.userId,
-          type: 'provider.accepted',
-          title: 'Partner is ready',
-          body: `${provider.displayName} accepted your request. Confirm this partner or choose another available partner.`,
-          data: { bookingId, providerProfileId: provider.id },
+          type: 'booking.matched',
+          title: 'Partner matched',
+          body: `${provider.displayName} accepted your request. Your chat room is ready.`,
+          data: { bookingId, chatRoomId: updated.chatRoom?.id, providerProfileId: provider.id },
         });
-        this.matchingGateway.emitProviderAccepted(bookingId, updated);
-        return updated;
+        this.matchingGateway.emitBookingMatched(bookingId, result);
+        return result;
       }
 
       if (status === ParticipantStatus.REJECTED) {

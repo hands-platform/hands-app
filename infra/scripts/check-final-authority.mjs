@@ -29,7 +29,7 @@ console.log(
     {
       ok: violations.length === 0,
       purpose:
-        'Static HANDS MVP final authority guard: NestJS business authority, on-demand booking, customer final selection, no tip flow, payout batch authority, and Partner visible copy.',
+        'Static HANDS MVP final authority guard: NestJS business authority, on-demand booking, first-pick Partner priority, customer fallback selection, no tip flow, payout batch authority, and Partner visible copy.',
       violations,
     },
     null,
@@ -48,10 +48,10 @@ function checkRequiredAuthorityDoc() {
     'Supabase is infrastructure. NestJS owns business rules',
     'Every booking must preserve an immutable `BookingAddressSnapshot`',
     'Customers may browse partners from any country',
-    'Preferred partner gets the first-pick window, currently 10 minutes',
+    'Preferred partner gets first-pick priority, currently within the 10 minute response window',
     'default 10km, can participate during the matching window',
-    'The customer always chooses the final partner',
-    'There is no automatic partner assignment',
+    'Customer final selection is required unless the first-pick Partner validly accepts first under API rules',
+    'There is no automatic nearest-partner assignment',
     'Do not expose scheduled booking or calendar booking UX',
     'Tips are not part of the MVP',
     'customers do not directly cancel through a normal cancel button',
@@ -196,18 +196,19 @@ function checkCustomerFinalSelectionContract() {
   requireMarkers('apps/api/src/matching/matching.policy.ts', policy, [
     "export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';",
     'return PREFERRED_ACCEPT_CUSTOMER_CONFIRM;',
-    'Automatic matching is disabled for the MVP.',
+    'First-pick partner acceptance can match first under API rules',
   ]);
   requireMarkers('apps/api/src/bookings/bookings.service.ts', bookings, [
-    "type: 'provider.accepted'",
-    'Confirm this partner or choose another available partner.',
-    'selectedProviderId: null',
+    "type: 'booking.matched'",
+    'FIRST_PICK_ACCEPTED_FIRST',
+    'selectedProviderId: provider.id',
+    'Booking is already matched or no longer open for first-pick acceptance',
     'The customer selected you for this booking.',
   ]);
   requireMarkers('infra/scripts/api-smoke.mjs', smoke, [
-    'Customer final confirmation did not match preferred accepted partner',
-    'acceptedButWaiting.status !==',
-    'selectedProviderId !== null',
+    'First-pick valid acceptance should match the preferred partner first',
+    'preferredAcceptPolicyMatched.status !==',
+    'selectedProviderId !== providerAuth.user.providerProfile.id',
   ]);
   requireMarkers('infra/scripts/admin-web-smoke.mjs', adminSmoke, [
     'Stage 3 choice',
@@ -568,7 +569,7 @@ function checkOperationsPolicyControlPlane() {
     "export const MATCHING_BACKUP_PROVIDER_RADIUS_METERS_KEY = 'matching.backup_provider_radius_meters';",
     "export const WALLET_NEGATIVE_BALANCE_GATE_KEY = 'wallet.negative_balance_gate';",
     "export const PREFERRED_ACCEPT_CUSTOMER_CONFIRM = 'CUSTOMER_FINAL_CONFIRM_AFTER_ACCEPT';",
-    'Automatic matching is disabled for the MVP.',
+    'First-pick partner acceptance can match first under API rules',
     'No policy can automatically assign the final partner.',
   ]);
   requireMarkers('apps/admin_web/app/operations-policy/page.tsx', operationsPolicy, [

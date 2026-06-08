@@ -22,10 +22,10 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 - Customers may browse partners from any country; booking creation depends on a confirmed service address in the active HANDS service area.
 - Every booking must preserve an immutable `BookingAddressSnapshot`.
 - Discovery can show partners beyond the Open Matching radius, but Open Matching participation is gated by booking address distance.
-- Preferred partner gets the first-pick window, currently 10 minutes.
-- Eligible marketplace partners within configured radius, default 10km, can participate during the matching window.
-- The customer always chooses the final partner.
-- There is no automatic partner assignment.
+- Preferred partner gets first-pick priority, currently within the 10 minute response window.
+- Eligible marketplace partners within configured radius, default 10km, can participate during the matching window in parallel with the first-pick request.
+- Customer final selection is required unless the first-pick Partner validly accepts first under API rules.
+- There is no automatic nearest-partner assignment.
 - MVP bookings are immediate/on-demand. Do not expose scheduled booking or calendar booking UX.
 - Tips are not part of the MVP.
 - After matching, customers do not directly cancel through a normal cancel button. Cancellation and no-show outcomes are chat-evidence based and admin judged.
@@ -40,10 +40,10 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 2. Customer browses partners sorted by address distance and availability.
 3. Customer selects a preferred partner profile and service option.
 4. API creates a booking with `BookingAddressSnapshot`.
-5. Preferred partner is notified.
-6. Eligible partners within the configured Open Matching radius can see/join.
-7. Preferred partner acceptance does not automatically complete matching.
-8. Customer reviews participating/accepted partners and selects the final partner.
+5. Preferred partner is notified as the first-pick Partner.
+6. Eligible partners within the configured Open Matching radius can see/join in parallel.
+7. If the first-pick Partner validly accepts first under API rules, that Partner becomes matched.
+8. Otherwise, customer reviews participating/accepted partners and selects the final Partner.
 9. Chat opens when the booking is matched.
 
 ## Settlement Model
