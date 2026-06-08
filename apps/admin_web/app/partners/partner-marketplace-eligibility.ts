@@ -7,6 +7,7 @@ import {
   providerLocationStatus,
   type ProviderOpsPolicy,
 } from './partner-list-ops';
+import { partnerUnsettledWalletBalance } from './partner-activity-facts';
 
 export type PartnerMarketplaceBlocker = {
   label: string;
@@ -31,7 +32,7 @@ export function buildPartnerMarketplaceEligibility(
 ): PartnerMarketplaceEligibility {
   const blockers = partnerMarketplaceBlockers(provider, opsPolicy);
   const eligible = blockers.length === 0;
-  const walletBalance = providerUnsettledWalletBalance(provider);
+  const walletBalance = partnerUnsettledWalletBalance(provider);
 
   return {
     eligible,
@@ -80,7 +81,7 @@ export function partnerMarketplaceBlockers(
   if (!hasApprovedBankAccount(provider)) {
     blockers.push({ label: 'bank account', severity: 'hard' });
   }
-  if (providerUnsettledWalletBalance(provider) < 0) {
+  if (partnerUnsettledWalletBalance(provider) < 0) {
     blockers.push({ label: 'cash fee debt', severity: 'hard' });
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
@@ -100,12 +101,6 @@ export function partnerMarketplaceBlockers(
   }
 
   return blockers;
-}
-
-export function providerUnsettledWalletBalance(provider: AdminProvider) {
-  return (provider.earnings ?? [])
-    .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status) && !earning.payoutBatchId)
-    .reduce((sum, earning) => sum + numberValue(earning.netAmount), 0);
 }
 
 function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
@@ -151,10 +146,4 @@ function providerSecurityLabel(status: ProviderSecurityState) {
   if (status === 'shared') return 'Shared device';
   if (status === 'missing') return 'No app device';
   return 'Device clear';
-}
-
-function numberValue(value: unknown) {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') return Number(value) || 0;
-  return 0;
 }
