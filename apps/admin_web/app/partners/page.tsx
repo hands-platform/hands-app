@@ -80,6 +80,11 @@ import {
   partnerUnsettledWalletBalance as providerUnsettledWalletBalance,
 } from './partner-activity-facts';
 import { buildPartnerMarketplaceEligibility } from './partner-marketplace-eligibility';
+import {
+  partnerSecurityPillClass as providerSecurityPillClass,
+  partnerSecurityStatus as providerSecurityStatus,
+  sharedPartnerDeviceIds as sharedDeviceIds,
+} from './partner-security-facts';
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 type ProviderCommandLane = {
@@ -4502,33 +4507,4 @@ function providerPriority(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_
     return 2;
   }
   return 1;
-}
-
-function providerSecurityStatus(provider: AdminProvider): ProviderSecurityState {
-  if (provider.blockedAt) {
-    return 'account-blocked';
-  }
-  if ((provider.devices ?? []).some((device) => Boolean(device.blockedAt))) {
-    return 'blocked';
-  }
-  if ((provider.sessions ?? []).some((session) => session.suspicious)) {
-    return 'session-check';
-  }
-  if (sharedDeviceIds(provider).size > 0) {
-    return 'shared';
-  }
-  if (!(provider.devices ?? []).length && !(provider.sessions ?? []).length) {
-    return 'missing';
-  }
-  return 'clear';
-}
-
-function sharedDeviceIds(provider: AdminProvider) {
-  return new Set((provider.sharedDeviceMatches ?? []).map((match) => match.deviceId).filter(Boolean));
-}
-
-function providerSecurityPillClass(status: ProviderSecurityState) {
-  if (status === 'clear') return 'pill-success';
-  if (status === 'missing') return 'pill-neutral';
-  return 'pill-danger';
 }
