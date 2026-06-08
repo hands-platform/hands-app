@@ -75,6 +75,12 @@ import {
   providerKycDocumentStatus,
 } from './partner-kyc-facts';
 import {
+  partnerHasFirstRevenueSignal as providerHasFirstRevenueSignal,
+  partnerPayoutSetupNeedsReview as providerPayoutSetupNeedsReview,
+  partnerTaxNeedsReview as providerTaxNeedsReview,
+  partnerTaxPillClass as providerTaxPillClass,
+} from './partner-finance-readiness-facts';
+import {
   latestPartnerBookingRecord,
   partnerAvailablePayout as providerAvailablePayout,
   partnerBookingRows as providerBookingRows,
@@ -2658,24 +2664,6 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
   );
 }
 
-function providerHasFirstRevenueSignal(provider: AdminProvider) {
-  return (provider.earnings ?? []).some((earning) =>
-    ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
-  );
-}
-
-function providerPayoutSetupNeedsReview(provider: AdminProvider) {
-  if (!providerHasFirstRevenueSignal(provider)) {
-    return false;
-  }
-
-  return (
-    provider.taxProfile?.status !== 'APPROVED' ||
-    !provider.residentialAddress?.trim() ||
-    (provider.agreements?.length ?? 0) < 5
-  );
-}
-
 function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
   if (provider.blockedAt) {
     return 'This partner account is blocked and cannot go online, update location, or appear to customers.';
@@ -3988,25 +3976,6 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
     .reduce((sum, item) => sum + item.count, 0);
 
   return { items, totalOpen };
-}
-
-function providerTaxNeedsReview(provider: AdminProvider) {
-  const taxStatus = provider.taxProfile?.status ?? 'MISSING';
-  if (['PENDING_REVIEW', 'REJECTED'].includes(taxStatus)) {
-    return true;
-  }
-
-  return providerHasFirstRevenueSignal(provider) && taxStatus !== 'APPROVED';
-}
-
-function providerTaxPillClass(provider: AdminProvider) {
-  if (provider.taxProfile?.status === 'APPROVED') {
-    return 'pill-success';
-  }
-  if (providerTaxNeedsReview(provider)) {
-    return provider.taxProfile?.status === 'REJECTED' ? 'pill-danger' : 'pill-warn';
-  }
-  return 'pill-neutral';
 }
 
 function providerReviewIssues(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
