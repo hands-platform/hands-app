@@ -75,13 +75,10 @@ import {
   partnerTaxPillClass as providerTaxPillClass,
 } from './partner-finance-readiness-facts';
 import {
-  latestPartnerBookingRecord,
   partnerAvailablePayout as providerAvailablePayout,
   partnerBookingRows as providerBookingRows,
   partnerCompletedWorkCount as providerCompletedWorkCount,
   partnerGrossRevenue as providerGrossRevenue,
-  partnerLastActivityAt,
-  partnerLastCompletedWorkAt as providerLastCompletedWorkAt,
   partnerLastSessionAt,
   partnerPendingPayout as providerPendingPayout,
   partnerUnsettledWalletBalance as providerUnsettledWalletBalance,
@@ -94,16 +91,13 @@ import {
 } from './partner-security-facts';
 import {
   filterPartners as filterProviders,
-  isActivePartnerBooking,
   partnerHasOpenControl as hasOpenPartnerControl,
-  shouldHavePartnerChatRoom,
   sortPartners as sortProviders,
   type PartnerListQueryDeps,
 } from './partner-list-query';
 import {
   nextPartnerListAction as nextProviderListAction,
   partnerListActionPillClass as providerListActionPillClass,
-  type ProviderListAction,
 } from './partner-list-actions';
 import {
   buildPartnerFilterSummary,
@@ -127,6 +121,11 @@ import {
   partnerShiftCardClass,
   partnerShiftPillClass,
 } from './partner-shift-handoff';
+import {
+  buildPartnerOperationRow,
+  partnerAcceptBlockerSummary,
+  partnerOperationPillClass,
+} from './partner-operation-row';
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -182,12 +181,20 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
     activeFilters.length > 0 ? activeFilters.map((filter) => filter.label).join(' | ') : 'All partners';
   const partnerExportFileSlug = buildPartnerExportSlug(filters);
   const partnerOperationRows = visibleProviders.map((provider) =>
-    buildPartnerOperationRow(provider, opsPolicy),
+    buildPartnerOperationRow(provider, opsPolicy, {
+      displayName: providerDisplayName,
+      canAcceptBookingNow: partnerCanAcceptBookingNow,
+    }),
   );
   const partnerMasterRows = visibleProviders.map((provider) => buildPartnerMasterRow(provider, opsPolicy));
   const partnerExportRows = partnerMasterRows.map((master, index) => {
     const provider = master.provider;
-    const operations = partnerOperationRows[index] ?? buildPartnerOperationRow(provider, opsPolicy);
+    const operations =
+      partnerOperationRows[index] ??
+      buildPartnerOperationRow(provider, opsPolicy, {
+        displayName: providerDisplayName,
+        canAcceptBookingNow: partnerCanAcceptBookingNow,
+      });
     return {
       export_filter: partnerExportFilterLabel,
       export_sort: partnerSortLabel(filters.sort),
@@ -1712,35 +1719,6 @@ type PartnerOpsBadge = {
   detail: string;
   tone: 'success' | 'danger' | 'warn' | 'info' | 'neutral';
 };
-type PartnerOperationChecklistItem = {
-  label: string;
-  status: string;
-  tone: ProviderCommandLane['tone'] | 'neutral';
-};
-type PartnerOperationRow = {
-  provider: AdminProvider;
-  name: string;
-  phone: string;
-  checklist: PartnerOperationChecklistItem[];
-  matchingFlow: PartnerOperationChecklistItem[];
-  matchingFlowDetail: string;
-  acceptanceLabel: string;
-  acceptanceDetail: string;
-  acceptanceTone: ProviderCommandLane['tone'];
-  marketplaceAccessLabel: string;
-  marketplaceAccessDetail: string;
-  marketplaceAccessTone: ProviderCommandLane['tone'];
-  marketplaceCanView: boolean;
-  marketplaceCanReceiveAlerts: boolean;
-  marketplaceCanParticipate: boolean;
-  marketplacePartnerAppMessage: string | null;
-  completedWorkCount: number;
-  lastWorkAt: string | null;
-  walletBalance: number;
-  locationState: ProviderLocationState;
-  lastActivityAt: string | null;
-  nextAction: ProviderListAction;
-};
 type PartnerMasterRow = {
   provider: AdminProvider;
   initials: string;
@@ -1825,164 +1803,6 @@ function PartnerOpsBadgeList({
   );
 }
 
-function buildPartnerOperationRow(
-  provider: AdminProvider,
-  opsPolicy: ProviderOpsPolicy,
-): PartnerOperationRow {
-  const walletBalance = providerUnsettledWalletBalance(provider);
-  const locationState = providerLocationStatus(provider, opsPolicy);
-  const canAccept = partnerCanAcceptBookingNow(provider, opsPolicy);
-  const backupEligibility = partnerBackupMatchingEligibility(provider, opsPolicy);
-  const completedWorkCount = providerCompletedWorkCount(provider);
-  const firstRevenue = providerHasFirstRevenueSignal(provider);
-  const taxStatus = provider.taxProfile?.status ?? (firstRevenue ? 'MISSING' : 'deferred');
-  const nextAction = nextProviderListAction(provider, opsPolicy);
-  const matchingFlow = buildPartnerMatchingFlow(provider, opsPolicy);
-
-  return {
-    provider,
-    name: providerDisplayName(provider),
-    phone: provider.user?.phone ?? provider.id,
-    checklist: [
-      {
-        label: 'KYC',
-        status:
-          provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
-            ? 'ok'
-            : (provider.kyc?.status ?? 'missing'),
-        tone:
-          provider.kyc?.status === 'APPROVED' && hasApprovedRequiredKycDocuments(provider)
-            ? 'ok'
-            : provider.kyc?.status === 'REJECTED'
-              ? 'danger'
-              : 'warn',
-      },
-      {
-        label: 'Bank',
-        status: hasApprovedBankAccount(provider) ? 'ok' : (provider.bankAccounts?.[0]?.status ?? 'missing'),
-        tone: hasApprovedBankAccount(provider) ? 'ok' : 'warn',
-      },
-      {
-        label: 'Tax',
-        status: taxStatus,
-        tone: provider.taxProfile?.status === 'APPROVED' ? 'ok' : firstRevenue ? 'warn' : 'neutral',
-      },
-      {
-        label: 'Wallet',
-        status: walletBalance < 0 ? 'settlement needed' : 'clear',
-        tone: walletBalance < 0 ? 'danger' : 'ok',
-      },
-      {
-        label: 'Location',
-        status: locationState,
-        tone: locationState === 'recent' ? 'ok' : locationState === 'stale' ? 'warn' : 'neutral',
-      },
-      {
-        label: 'Push',
-        status: hasHealthyPush(provider) ? 'ready' : 'missing',
-        tone: hasHealthyPush(provider) ? 'ok' : 'warn',
-      },
-      {
-        label: 'Services',
-        status:
-          providerActiveServiceCount(provider) > 0
-            ? `${providerActiveServiceCount(provider)} active`
-            : 'none',
-        tone: providerActiveServiceCount(provider) > 0 ? 'ok' : 'warn',
-      },
-      {
-        label: 'App',
-        status: partnerHasAppActivity(provider) ? 'seen' : 'not seen',
-        tone: partnerHasAppActivity(provider) ? 'ok' : 'neutral',
-      },
-    ],
-    matchingFlow: matchingFlow.items,
-    matchingFlowDetail: matchingFlow.detail,
-    acceptanceLabel: canAccept ? 'Direct request clear' : 'Direct request held',
-    acceptanceDetail: canAccept
-      ? 'Ready to receive and accept preferred direct booking requests.'
-      : partnerAcceptBlockerSummary(provider, opsPolicy),
-    acceptanceTone: canAccept ? 'ok' : 'warn',
-    marketplaceAccessLabel: backupEligibility.eligible
-      ? 'Marketplace ready'
-      : walletBalance < 0
-        ? 'Fee settlement required'
-        : 'Marketplace repair needed',
-    marketplaceAccessDetail: backupEligibility.eligible
-      ? `Can participate in marketplace bookings within ${formatDistanceMeters(opsPolicy.backupRadiusMeters)} when the booking address matches policy.`
-      : walletBalance < 0
-        ? 'Partner may see marketplace requests, but the Partner app must block marketplace alerts and booking participation until HANDS fee settlement is posted.'
-        : backupEligibility.detail,
-    marketplaceAccessTone: backupEligibility.eligible ? 'ok' : walletBalance < 0 ? 'danger' : 'warn',
-    marketplaceCanView: backupEligibility.canViewMarketplace,
-    marketplaceCanReceiveAlerts: backupEligibility.canReceiveMarketplaceAlerts,
-    marketplaceCanParticipate: backupEligibility.canParticipateInMarketplace,
-    marketplacePartnerAppMessage: backupEligibility.partnerAppMessage,
-    completedWorkCount,
-    lastWorkAt: providerLastCompletedWorkAt(provider),
-    walletBalance,
-    locationState,
-    lastActivityAt: partnerLastActivityAt(provider),
-    nextAction,
-  };
-}
-
-function buildPartnerMatchingFlow(
-  provider: AdminProvider,
-  opsPolicy: ProviderOpsPolicy,
-): { items: PartnerOperationChecklistItem[]; detail: string } {
-  const bookingRows = providerBookingRows(provider);
-  const preferredCount = provider.preferredBookings?.length ?? 0;
-  const marketplaceCount = (provider.participants ?? []).filter((participant) =>
-    Boolean(participant.booking),
-  ).length;
-  const selectedCount = provider.selectedBookings?.length ?? 0;
-  const chatCount = bookingRows.filter((booking) => Boolean(booking.chatRoom)).length;
-  const activeBookingRows = bookingRows.filter((booking) => isActivePartnerBooking(booking));
-  const latestBooking = latestPartnerBookingRecord(bookingRows);
-  const marketplaceEligibility = partnerBackupMatchingEligibility(provider, opsPolicy);
-
-  return {
-    items: [
-      {
-        label: 'First-pick',
-        status: preferredCount ? `${preferredCount} record(s)` : 'none',
-        tone: preferredCount ? 'info' : 'neutral',
-      },
-      {
-        label: 'Marketplace',
-        status: marketplaceCount
-          ? `${marketplaceCount} participation record(s)`
-          : marketplaceEligibility.eligible
-            ? 'ready'
-            : 'blocked',
-        tone: marketplaceCount || marketplaceEligibility.eligible ? 'ok' : 'warn',
-      },
-      {
-        label: 'Customer choice',
-        status: selectedCount ? `${selectedCount} selected` : 'none',
-        tone: selectedCount ? 'ok' : 'neutral',
-      },
-      {
-        label: 'Chat',
-        status: chatCount ? `${chatCount} room(s)` : 'none',
-        tone: chatCount
-          ? 'ok'
-          : activeBookingRows.some((booking) => shouldHavePartnerChatRoom(booking))
-            ? 'warn'
-            : 'neutral',
-      },
-    ],
-    detail: latestBooking
-      ? `Latest booking ${partnerShortId(latestBooking.id)} / ${latestBooking.status}. ${opsPolicy.responseWindowMinutes}m first-pick and ${formatDistanceMeters(
-          opsPolicy.backupRadiusMeters,
-        )} marketplace are governed by Operations Policy.`
-      : `No booking record loaded. ${opsPolicy.responseWindowMinutes}m first-pick and ${formatDistanceMeters(
-          opsPolicy.backupRadiusMeters,
-        )} marketplace checks still apply to new booking addresses.`,
-  };
-}
-
 function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPolicy): PartnerMasterRow {
   const bookingRows = providerBookingRows(provider);
   const earnings = provider.earnings ?? [];
@@ -2060,10 +1880,6 @@ function partnerLatestSessionFacts(provider: AdminProvider) {
   };
 }
 
-function partnerShortId(id: string) {
-  return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
-}
-
 function partnerInitials(value: string) {
   const parts = value
     .split(/\s+/)
@@ -2074,22 +1890,6 @@ function partnerInitials(value: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
-}
-
-function partnerOperationPillClass(tone: PartnerOperationChecklistItem['tone']) {
-  if (tone === 'ok') return 'pill-success';
-  if (tone === 'danger') return 'pill-danger';
-  if (tone === 'warn') return 'pill-warn';
-  if (tone === 'info') return 'pill-info';
-  return 'pill-neutral';
-}
-
-function providerActiveServiceCount(provider: AdminProvider) {
-  return (provider.services ?? []).filter((service) => service.active !== false).length;
-}
-
-function partnerHasAppActivity(provider: AdminProvider) {
-  return Boolean((provider.sessions ?? []).length || (provider.devices ?? []).length);
 }
 
 function ProviderIssuePills({
@@ -2205,27 +2005,6 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
         : providerSecurityLabel(securityState),
     },
   ];
-}
-
-function partnerAcceptBlockerSummary(provider: AdminProvider, opsPolicy: ProviderOpsPolicy) {
-  const blockers: string[] = [];
-  const locationState = providerLocationStatus(provider, opsPolicy);
-  const securityState = providerSecurityStatus(provider);
-
-  if (provider.blockedAt) blockers.push('account blocked');
-  if (provider.verification?.status !== 'APPROVED') {
-    blockers.push(`verification ${provider.verification?.status ?? 'DRAFT'}`);
-  }
-  if (provider.kyc?.status !== 'APPROVED') blockers.push(`KYC ${provider.kyc?.status ?? 'MISSING'}`);
-  if (!hasApprovedRequiredKycDocuments(provider)) blockers.push('identity documents');
-  if (!hasApprovedBankAccount(provider)) blockers.push('bank account');
-  if (provider.status !== 'ONLINE_AVAILABLE') blockers.push(`status ${provider.status}`);
-  if (locationState !== 'recent') blockers.push(`location ${locationState}`);
-  if (!hasHealthyPush(provider)) blockers.push('push missing');
-  if (!['clear', 'missing'].includes(securityState))
-    blockers.push(providerSecurityLabel(securityState).toLowerCase());
-
-  return blockers.length ? `Held by: ${blockers.join(', ')}.` : 'Direct request gate is held by policy.';
 }
 
 function partnerOpsBadgePillClass(tone: PartnerOpsBadge['tone']) {
