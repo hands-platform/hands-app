@@ -555,6 +555,7 @@ function checkBookingDetailIsSourceOfTruth() {
 function checkOperationsPolicyControlPlane() {
   const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
   const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
+  const policyEnforcementTrace = read('apps/admin_web/app/operations-policy/policy-enforcement-trace.ts');
   const operationsOwnerDecisionBacklog = read('apps/admin_web/app/operations-policy/owner-decision-backlog.ts');
   const operationsMatchingPlaybook = read('apps/admin_web/app/operations-policy/matching-playbook.ts');
   const apiPolicyCoverage = read('infra/scripts/check-api-policy-coverage.mjs');
@@ -576,11 +577,15 @@ function checkOperationsPolicyControlPlane() {
     'Matching stage impact preview',
     'Policy enforcement trace',
     'operationalPolicyAnchor(setting.key)',
-    "api: 'POST /customer/bookings'",
-    "server: 'BookingsService.createBooking -> MatchingService.openBooking'",
     'id={operationalPolicyAnchor(setting.key)}',
     'Keep customer final confirmation as the operating rule.',
     'The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner.',
+  ]);
+  requireMarkers('apps/admin_web/app/operations-policy/policy-enforcement-trace.ts', policyEnforcementTrace, [
+    "api: 'POST /customer/bookings'",
+    "server: 'BookingsService.createBooking -> MatchingService.openBooking'",
+    'Marketplace eligibility pipeline -> visibility check -> booking-address radius gate',
+    'Negative wallet gates marketplace participation',
   ]);
   requireMarkers('apps/admin_web/app/operations-policy/owner-decision-backlog.ts', operationsOwnerDecisionBacklog, [
     'Marketplace partner radius',
