@@ -7,5 +7,5 @@
     "isolatedModules": false,
     "noEmit": true
   },
-  "include": ["lib/**/*.ts", "app/**/*.ts"]
+  "include": ["lib/**/*.ts", "app/**/*.ts", "app/**/*.tsx", "components/**/*.ts", "components/**/*.tsx"]
 }
