@@ -672,24 +672,25 @@ if (requestedSmokePaths.length > 0 && smokePages.length === 0) {
 
 async function fetchPage(path, redirectDepth = 0, attempt = 0) {
   let response;
+  let body;
   try {
     response = await fetch(`${baseUrl}${path}`, {
       redirect: 'manual',
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     });
+    if ([307, 308].includes(response.status) && redirectDepth < 3) {
+      const location = response.headers.get('location');
+      if (location?.startsWith('/')) {
+        return fetchPage(location, redirectDepth + 1);
+      }
+    }
+    body = await response.text();
   } catch (error) {
     if (attempt < 6) {
       await delay(1_000 * (attempt + 1));
       return fetchPage(path, redirectDepth, attempt + 1);
     }
     throw new Error(`${path} failed after ${attempt + 1} attempt(s): ${error.message}`);
-  }
-  const body = await response.text();
-  if ([307, 308].includes(response.status) && redirectDepth < 3) {
-    const location = response.headers.get('location');
-    if (location?.startsWith('/')) {
-      return fetchPage(location, redirectDepth + 1);
-    }
   }
   if (!response.ok) {
     throw new Error(`${path} returned ${response.status}: ${body.slice(0, 240)}`);
