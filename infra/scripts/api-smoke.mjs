@@ -153,17 +153,17 @@ function assertNegativeWalletBlockResponse(label, message) {
     '"code":"PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT"',
     '"walletBlocked":true',
     '"marketplaceVisibilityBlocked":false',
-    '"marketplaceJoinBlocked":true',
+    '"marketplaceJoinBlocked":false',
     '"directFirstPickBlocked":false',
-    '"alreadyMatchedServiceBlocked":false',
+    '"alreadyMatchedServiceBlocked":true',
     '"payoutReleaseBlocked":true',
     '"walletDebtAmount":',
     '"walletSettlementRequired":true',
     '"walletSettlementMethod":"PROVIDER_DEPOSIT_OR_ADMIN_OFFSET"',
     '"walletSettlementReference":"HANDS-WALLET-',
-    '"displayMessage":"Unpaid HANDS fees must be settled before you can participate in marketplace bookings."',
-    'Marketplace requests stay visible for review, but participation is blocked',
-    'Marketplace participation and payout release resume',
+    '"displayMessage":"Unpaid HANDS fees must be settled before final acceptance or service start."',
+    'Marketplace requests stay visible and participation is allowed',
+    'Final acceptance, service start, and payout release resume',
   ];
   const missingMarkers = requiredMarkers.filter((marker) => !message.includes(marker));
   if (missingMarkers.length) {
@@ -2346,9 +2346,9 @@ if (
   walletDebtProviderEarningsSummary.walletBalance >= 0 ||
   walletDebtProviderEarningsSummary.walletBlocked !== true ||
   walletDebtProviderEarningsSummary.marketplaceVisibilityBlocked !== false ||
-  walletDebtProviderEarningsSummary.marketplaceJoinBlocked !== true ||
+  walletDebtProviderEarningsSummary.marketplaceJoinBlocked !== false ||
   walletDebtProviderEarningsSummary.directFirstPickBlocked !== false ||
-  walletDebtProviderEarningsSummary.alreadyMatchedServiceBlocked !== false ||
+  walletDebtProviderEarningsSummary.alreadyMatchedServiceBlocked !== true ||
   walletDebtProviderEarningsSummary.payoutReleaseBlocked !== true ||
   walletDebtProviderEarningsSummary.walletDebtAmount <= 0 ||
   walletDebtProviderEarningsSummary.walletBlockCode !== 'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT' ||
@@ -2385,7 +2385,7 @@ if (
   );
 }
 const expectedProviderWalletBlockReason =
-  'Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.';
+  'Outstanding HANDS fee settlement must be completed before final acceptance, service start, or payout release.';
 if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWalletBlockReason) {
   throw new Error(
     `Negative wallet block reason should be readable and operator-approved: ${JSON.stringify(
@@ -2395,10 +2395,10 @@ if (walletDebtProviderEarningsSummary.walletBlockReason !== expectedProviderWall
 }
 if (
   walletDebtProviderEarningsSummary.walletBlockDisplayMessage !==
-  'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.'
+  'Unpaid HANDS fees must be settled before final acceptance or service start.'
 ) {
   throw new Error(
-    `Negative wallet summary should include the partner-app marketplace block message: ${JSON.stringify(
+    `Negative wallet summary should include the wallet block display message: ${JSON.stringify(
       walletDebtProviderEarningsSummary,
     )}`,
   );
@@ -2413,7 +2413,7 @@ if (!['OPEN_MATCHING', 'MATCHED'].includes(directAcceptedWithDebt.status)) {
   );
 }
 const negativeWalletMarketplaceAcceptError = await expectRequestFailure(
-  'Negative provider wallet blocks marketplace participation after debt appears',
+  'Negative provider wallet blocks marketplace final acceptance after debt appears',
   () =>
     postJson(
       `/provider/bookings/${walletDebtJoinedBeforeDebtBooking.id}/accept`,
@@ -2421,7 +2421,10 @@ const negativeWalletMarketplaceAcceptError = await expectRequestFailure(
     ),
   400,
 );
-assertNegativeWalletBlockResponse('marketplace participation after debt appears', negativeWalletMarketplaceAcceptError);
+assertNegativeWalletBlockResponse(
+  'marketplace final acceptance after debt appears',
+  negativeWalletMarketplaceAcceptError,
+);
 const negativeWalletMarketplaceSelectionError = await expectRequestFailure(
   'Negative provider wallet blocks customer final selection of marketplace participant',
   () =>
@@ -2431,17 +2434,16 @@ const negativeWalletMarketplaceSelectionError = await expectRequestFailure(
   400,
 );
 assertNegativeWalletBlockResponse('marketplace final selection after debt appears', negativeWalletMarketplaceSelectionError);
-const serviceStartedWithDebt = await postJson(
-  `/provider/bookings/${walletDebtServiceStartGateBooking.id}/start`,
-  walletDebtProviderAuth.accessToken,
+const negativeWalletServiceStartError = await expectRequestFailure(
+  'Negative wallet blocks starting a booking that is already matched',
+  () =>
+    postJson(
+      `/provider/bookings/${walletDebtServiceStartGateBooking.id}/start`,
+      walletDebtProviderAuth.accessToken,
+    ),
+  400,
 );
-if (serviceStartedWithDebt.status !== 'IN_SERVICE') {
-  throw new Error(
-    `Negative wallet should not block starting a booking that is already matched: ${JSON.stringify(
-      serviceStartedWithDebt,
-    )}`,
-  );
-}
+assertNegativeWalletBlockResponse('already matched service start', negativeWalletServiceStartError);
 const blockedOpenMatchingBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   address: { line1: 'Negative wallet open matching smoke flow' },
@@ -2462,7 +2464,7 @@ if (
   negativeWalletVisibleMarketplaceBooking.distanceMeters > 10000
 ) {
   throw new Error(
-    `Negative wallet partner should still see marketplace request before settlement, but cannot participate: ${JSON.stringify(
+    `Negative wallet partner should still see marketplace request before settlement and can join before final acceptance: ${JSON.stringify(
       {
         expectedBookingId: blockedOpenMatchingBooking.id,
         visibleBooking: negativeWalletVisibleMarketplaceBooking,
@@ -2471,16 +2473,10 @@ if (
     )}`,
   );
 }
-const negativeWalletMarketplaceJoinError = await expectRequestFailure(
-  'Negative provider wallet blocks marketplace participation',
-  () =>
-    postJson(
-      `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
-      walletDebtProviderAuth.accessToken,
-    ),
-  400,
+await postJson(
+  `/provider/bookings/${blockedOpenMatchingBooking.id}/join`,
+  walletDebtProviderAuth.accessToken,
 );
-assertNegativeWalletBlockResponse('marketplace participation', negativeWalletMarketplaceJoinError);
 const adminBookingAfterBlockedMarketplaceJoin = (
   await getJson('/admin/bookings', adminAuth.accessToken)
 ).find((booking) => booking.id === blockedOpenMatchingBooking.id);
@@ -2489,9 +2485,9 @@ const blockedMarketplaceParticipant =
     (participant) =>
       participant.providerProfileId === walletDebtProviderAuth.user.providerProfile.id,
   );
-if (blockedMarketplaceParticipant) {
+if (!blockedMarketplaceParticipant || blockedMarketplaceParticipant.status !== 'JOINED') {
   throw new Error(
-    `Wallet-blocked marketplace attempt should not create a participant record: ${JSON.stringify(
+    `Negative wallet marketplace join should create a participant record before final acceptance: ${JSON.stringify(
       blockedMarketplaceParticipant,
     )}`,
   );

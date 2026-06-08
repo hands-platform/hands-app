@@ -79,7 +79,7 @@ const requiredCoverage = [
     markers: [
       '/customer/bookings/${preferredAcceptPolicyBooking.id}/select-provider',
       'Customer final selection rejects preferred partner before acceptance',
-      'Customer final confirmation did not match preferred accepted partner',
+      'First-pick valid acceptance should match the preferred partner first',
       'Customer final selection rejects inactive marketplace participant',
       'Partner must participate or accept before customer selection',
       'Hybrid booking did not switch from preferred to marketplace participant',
@@ -94,7 +94,7 @@ const requiredCoverage = [
       "'matching.marketplace_partner_radius_meters'",
       'Direct booking should notify eligible marketplace partners',
       'trace.backupProviderRadiusMeters === 10000',
-      "acceptedButWaiting.status !== 'OPEN_MATCHING' || acceptedButWaiting.selectedProviderId !== null",
+      "preferredAcceptPolicyMatched.status !== 'MATCHED'",
       'Delayed marketplace booking snapshot should hide request from non-preferred partner',
       'Delayed marketplace partner participation',
       'First-pick decline should immediately expose delayed marketplace request',
@@ -198,14 +198,13 @@ const requiredCoverage = [
       'PROVIDER_WALLET_NEGATIVE_CASH_FEE_DEBT',
       'Negative wallet should not block preferred direct request acceptance',
       'Negative provider wallet blocks customer final selection of marketplace participant',
-      'Negative wallet should not block starting a booking that is already matched',
+      'Negative wallet blocks starting a booking that is already matched',
       'Negative wallet partner should still see marketplace request before settlement',
-      'Negative provider wallet blocks marketplace participation',
-      'Wallet-blocked marketplace attempt should not create a participant record',
+      'Negative wallet marketplace join should create a participant record before final acceptance',
       'Negative provider wallet holds payout batch creation',
       'assertNegativeWalletBlockResponse',
       'walletSettlementReference',
-      'Marketplace requests stay visible for review, but participation is blocked',
+      'Marketplace requests stay visible and participation is allowed',
     ],
   },
   {
@@ -213,10 +212,10 @@ const requiredCoverage = [
     markers: [
       'wallet.negative_balance_gate',
       'Negative wallet partner should still see marketplace request before settlement',
-      'Negative provider wallet blocks marketplace participation',
+      'Negative provider wallet blocks marketplace final acceptance',
       'Negative provider wallet blocks customer final selection of marketplace participant',
-      'Negative wallet should not block starting a booking that is already matched',
-      'marketplace participation',
+      'Negative wallet blocks starting a booking that is already matched',
+      'marketplace final acceptance',
       'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET',
     ],
   },
@@ -307,8 +306,8 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   const lifecycleStatus = sliceBetween(bookingSource, 'async updateProviderBookingStatus(', 'private async requireSelectedProvider(');
 
   const missingMarkers = [];
-  if (!joinBooking.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
-    missingMarkers.push('joinBooking must keep the negative-wallet marketplace participation gate');
+  if (joinBooking.includes('ensureProviderWalletCanJoinMarketplace')) {
+    missingMarkers.push('joinBooking must allow negative-wallet marketplace visibility and join before final acceptance');
   }
   if (!selectProvider.includes('await this.ensureProviderWalletCanJoinMarketplace(providerId);')) {
     missingMarkers.push('selectProvider must keep the negative-wallet marketplace final selection gate');
@@ -325,11 +324,8 @@ function checkNegativeWalletBookingFunctionBoundaries() {
   if (!updateParticipant.includes('if (booking.preferredProviderId === provider.id)')) {
     missingMarkers.push('updateParticipant must keep the preferred first-pick branch before marketplace wallet gate');
   }
-  if (
-    lifecycleStatus.includes('ensureProviderWalletCanJoinMarketplace') ||
-    lifecycleStatus.includes('throwProviderWalletBlocked')
-  ) {
-    missingMarkers.push('updateProviderBookingStatus must not apply the negative-wallet marketplace gate');
+  if (!lifecycleStatus.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
+    missingMarkers.push('updateProviderBookingStatus must keep the negative-wallet service start gate');
   }
 
   return {
