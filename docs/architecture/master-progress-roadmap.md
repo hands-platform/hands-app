@@ -22,7 +22,7 @@ This is the single working board for day-to-day MVP execution. If this file conf
 - Marketplace participation uses booking-address distance, 10km by default.
 - Customer always selects the final partner. There is no automatic assignment.
 - MVP has no scheduled booking, tip, gratuity, VIP, people-scoring, ranking, or dispatch-priority system.
-- Negative partner wallet keeps marketplace visibility but blocks marketplace participation and payout release until settlement.
+- Negative partner wallet keeps marketplace visibility and participation open, but blocks final acceptance, service start, and payout release until settlement.
 - Admin is an Operations Command Center, not CRM.
 - Visible product/admin/mobile copy should say Partner. Internal DB/API names may still use Provider for compatibility.
 
@@ -102,7 +102,7 @@ npm.cmd run external:check:production
 | Partners admin | Active | Partner list/detail, KYC, wallet, payout, tax, device/session, document, activity evidence are present. Legacy `/providers` routes stay as redirects only. | Continue improving partner list/detail depth without rebuilding separate partner-risk pages. |
 | Booking and marketplace | Active | Address snapshot, first-pick, 10km marketplace, customer final selection, negative wallet blocking, chat evidence closeout, and Admin/API policy-default consistency are guarded. Admin booking detail keeps actual participant records as evidence and does not list wallet-debt partners as booking-level candidates. | Decide next audit slice: mobile paired E2E consistency or payment/settlement gateway audit. |
 | Payments and gateway callbacks | Active | Payment callback audit, payment detail view, gateway reference wording, capture/release/refund/cash settlement actions are present. | Decide gateway sandbox E2E order: MoMo first, VNPay first, or keep both deferred. |
-| Cash fee debt and wallet | Active | Cash bookings can create partner company receivable; negative wallet keeps marketplace requests visible, but blocks marketplace participation/join and payout release until settlement or approved offset. Partner app block copy is aligned. | Decide finance SLA and deposit evidence requirements for production operations. |
+| Cash fee debt and wallet | Active | Cash bookings can create partner company receivable; negative wallet keeps marketplace requests visible and participation open, but blocks final acceptance, service start, and payout release until settlement or approved offset. Partner app warning copy is aligned. | Decide finance SLA and deposit evidence requirements for production operations. |
 | Service pricing | Active | Admin service names, duration options, minimum price, price step, partner price, payout rules, and booking price snapshots are modeled. | Decide if service catalog should be frozen before final mobile UI. |
 | Earnings and payouts | Active | Earnings, payout batches, payout holds, tax/fee logs, and payout pages exist. | Decide weekly/monthly/manual payout default for first Vietnam launch. |
 | Chat archive | Active | Matched bookings open chat; admin keeps chat evidence. | Decide retention/export policy for disputes before production. |

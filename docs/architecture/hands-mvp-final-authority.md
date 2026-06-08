@@ -29,7 +29,7 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 - MVP bookings are immediate/on-demand. Do not expose scheduled booking or calendar booking UX.
 - Tips are not part of the MVP.
 - After matching, customers do not directly cancel through a normal cancel button. Cancellation and no-show outcomes are chat-evidence based and admin judged.
-- Negative partner wallet balances allow marketplace list visibility only; marketplace participation and payout release are blocked until settlement.
+- Negative partner wallet balances keep marketplace visibility and participation open as a warning state; final acceptance, service start, and payout release are blocked until settlement.
 - Partner payouts are weekly, monthly, or admin-selected batch cycles.
 - Admin is an Operations Command Center, not a CRM.
 - Internal code may keep `Provider` names for compatibility, but visible product copy should use `Partner`.
@@ -51,7 +51,7 @@ If older docs, comments, tests, or UI copy conflict with this file, this file wi
 - Cash payments mean the partner receives customer money directly.
 - Cash bookings create a company receivable for HANDS fee and withholding.
 - That receivable can make the partner wallet negative.
-- Negative wallet state is an operational settlement warning that keeps marketplace list visibility but blocks marketplace participation and payout release.
+- Negative wallet state is an operational settlement warning that keeps marketplace list visibility and participation open, while final acceptance, service start, and payout release wait for settlement.
 - Admin confirms repayment or offset with auditable references.
 
 ## Current Migration Notes

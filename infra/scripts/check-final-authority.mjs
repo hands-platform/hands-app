@@ -55,7 +55,7 @@ function checkRequiredAuthorityDoc() {
     'Do not expose scheduled booking or calendar booking UX',
     'Tips are not part of the MVP',
     'customers do not directly cancel through a normal cancel button',
-    'Negative partner wallet balances allow marketplace list visibility only',
+    'Negative partner wallet balances keep marketplace visibility and participation open as a warning state',
     'Partner payouts are weekly, monthly, or admin-selected batch cycles',
     'Admin is an Operations Command Center',
     'visible product copy should use `Partner`',
