@@ -685,7 +685,7 @@ export function BookingMonitor({
     {
       label: 'First-pick wait',
       value: `${bookingViewCounts.get('first-pick') ?? 0}`,
-      detail: 'Preferred partner has the 10-minute response window before wider marketplace pressure.',
+      detail: 'Preferred Partner has the first response window while the marketplace remains open in parallel.',
       owner: 'Dispatch',
       action: 'Watch the direct partner response window.',
       href: '/bookings?view=first-pick',
@@ -701,7 +701,7 @@ export function BookingMonitor({
     {
       label: 'Customer choice',
       value: `${bookingViewCounts.get('customer-choice') ?? 0}`,
-      detail: 'Customer must select the final partner. The system never auto-assigns.',
+      detail: 'Customer fallback choice is required when first-pick does not validly win under API rules.',
       owner: 'Support',
       action: 'Help customers finish final partner selection.',
       href: '/bookings?view=customer-choice',
@@ -717,7 +717,7 @@ export function BookingMonitor({
     {
       label: 'Cash debt gate',
       value: `${bookingViewCounts.get('cash-debt') ?? 0}`,
-      detail: 'Cash bookings that can create partner fee debt and block marketplace alerts and participation.',
+      detail: 'Cash bookings can create Partner fee debt that blocks final acceptance, service start, and payout release.',
       owner: 'Finance',
       action: 'Confirm partner fee collection or wallet debt state.',
       href: '/bookings?view=cash-debt',
@@ -1404,19 +1404,19 @@ export function BookingMonitor({
               </p>
             </article>
             <article className="ops-task-card">
-              <span className="signal signal-warn">Pre-participation wallet gate</span>
-              <h3>Not participant rows</h3>
+              <span className="signal signal-warn">Pre-finalization wallet gate</span>
+              <h3>Not finalization rows</h3>
               <p>
-                A negative-wallet partner may see marketplace requests, but the join gate blocks
-                participation before any participant row is created.
+                A negative-wallet Partner may see marketplace requests, but final acceptance, service start,
+                and payout release wait until settlement.
               </p>
             </article>
             <article className="ops-task-card">
               <span className="signal signal-ok">Customer choice evidence</span>
               <h3>{marketplaceLedgerSummary.selected}</h3>
               <p>
-                Final partner selection is customer-owned. Operators verify the selected participant row
-                and retained chat evidence; HANDS never auto-assigns the final partner.
+                Customer fallback selection is retained when first-pick does not validly win. Operators verify
+                the selected participant row and retained chat evidence.
               </p>
             </article>
           </div>
@@ -1499,7 +1499,7 @@ export function BookingMonitor({
           </div>
           <div className="participant-list" style={{ marginTop: 12 }}>
             <span className="pill">Booking rows, not visibility events</span>
-            <span className="pill">Wallet gate blocks participation</span>
+            <span className="pill">Wallet gate blocks finalization</span>
             <span className="pill">No auto assignment</span>
             <span className="pill">Final partner selected {marketplaceBookingCoverageSummary.selected}</span>
           </div>
@@ -2573,7 +2573,7 @@ function buildBookingDispatchPartnerShortcuts(
     {
       title: 'Cash fee debt',
       value: cashDebt.length.toString(),
-      detail: 'Cash bookings can create negative partner wallets that block marketplace alerts, participation, and payout release.',
+      detail: 'Cash bookings can create negative Partner wallets that block final acceptance, service start, and payout release.',
       href: '/cash-settlements',
       tone: cashDebt.length ? 'danger' : 'ok',
     },
@@ -2648,13 +2648,13 @@ function buildMatchingFlowTimeline(bookings: AdminBooking[], nowMs: number): Boo
     },
     {
       stage: 'Stage 3',
-      title: 'Customer final partner choice',
+      title: 'Customer fallback partner choice',
       status: customerChoice.length ? 'Needs customer' : 'Clear',
       tone: customerChoice.length ? 'warn' : 'ok',
       detail:
         customerChoice.length > 0
-          ? 'One or more partners are ready, but the customer has not locked the final partner.'
-          : 'No open booking is waiting on customer final selection.',
+          ? 'One or more Partners are ready after first-pick did not validly win, but the customer has not locked the fallback choice.'
+          : 'No open booking is waiting on customer fallback selection.',
       operatorAction:
         'Prompt support to guide the customer while partner availability and wait anxiety are still fresh.',
       href: '/bookings?view=matching',
@@ -2872,8 +2872,8 @@ function buildMatchingEscalationRows(
       if (booking.status === 'OPEN_MATCHING' && selectableCount > 0) {
         return {
           booking,
-          title: 'Customer final partner selection needed',
-          detail: 'One or more partners are ready, but the booking has not moved to final match.',
+          title: 'Customer fallback partner selection needed',
+          detail: 'One or more Partners are ready after first-pick did not validly win, but the booking has not moved to final match.',
           operatorAction:
             'Ask support to prompt the customer to choose a final partner from the waiting list.',
           tone: 'warn',
@@ -4330,7 +4330,7 @@ function bookingMatchingRuleOperatorAction(
     return 'Open booking detail and continue from the latest factual status.';
   }
   if (selectableCount > 0) {
-    return 'Customer must select the final partner; do not auto-assign.';
+    return 'Customer fallback selection is needed because first-pick did not validly win; do not auto-assign.';
   }
   if (marketplaceCount > 0) {
     return 'Marketplace partners are visible. Monitor customer choice list and partner response evidence.';
@@ -5014,7 +5014,7 @@ function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
     {
       label: 'Wallet gate',
       value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative partner wallet blocks marketplace alerts and participation; customers never carry this debt.',
+      helper: 'Negative Partner wallet blocks final acceptance, service start, and payout release; customers never carry this debt.',
     },
   ];
 }
