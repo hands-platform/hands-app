@@ -825,6 +825,18 @@ export class BookingsService {
 
     await this.matching.closeBooking(bookingId);
     const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));
+    await this.prisma.adminAuditLog.create({
+      data: {
+        actorId: customerUserId,
+        action: 'booking.matched.customer_selected',
+        target: `booking:${bookingId}`,
+        metadata: {
+          bookingId,
+          providerProfileId: providerId,
+          matchSource: 'CUSTOMER_SELECTED_PARTNER',
+        },
+      },
+    });
     if (booking.selectedProvider?.userId) {
       await this.notifications.create({
         userId: booking.selectedProvider.userId,

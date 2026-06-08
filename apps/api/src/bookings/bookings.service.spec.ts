@@ -468,6 +468,7 @@ describe('BookingsService final partner selection', () => {
           status: ParticipantStatus.ACCEPTED,
         }),
       },
+      adminAuditLog: { create: jest.fn() },
       providerEarning: {
         aggregate: jest.fn(),
       },
@@ -513,6 +514,7 @@ describe('BookingsService final partner selection', () => {
   });
 
   it('allows the customer to select a joined marketplace partner when wallet is clear', async () => {
+    const adminAuditLogCreate = jest.fn();
     const marketplacePartner = approvedPartner({
       id: 'marketplace-partner',
       userId: 'marketplace-user-1',
@@ -551,6 +553,7 @@ describe('BookingsService final partner selection', () => {
       providerEarning: {
         aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
       },
+      adminAuditLog: { create: adminAuditLogCreate },
     };
     const matching = {
       closeBooking: jest.fn(),
@@ -600,6 +603,18 @@ describe('BookingsService final partner selection', () => {
       }),
     );
     expect(matching.closeBooking).toHaveBeenCalledWith('booking-1');
+    expect(adminAuditLogCreate).toHaveBeenCalledWith({
+      data: {
+        actorId: 'customer-user-1',
+        action: 'booking.matched.customer_selected',
+        target: 'booking:booking-1',
+        metadata: {
+          bookingId: 'booking-1',
+          providerProfileId: 'marketplace-partner',
+          matchSource: 'CUSTOMER_SELECTED_PARTNER',
+        },
+      },
+    });
     expect(notifications.create).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: 'marketplace-user-1',
@@ -762,6 +777,7 @@ describe('BookingsService final partner selection', () => {
       providerEarning: {
         aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -70000 } }),
       },
+      adminAuditLog: { create: jest.fn() },
     };
     const matching = {
       closeBooking: jest.fn(),
