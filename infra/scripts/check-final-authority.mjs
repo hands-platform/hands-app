@@ -274,6 +274,7 @@ function checkPayoutBatchContract() {
   const matchingPolicy = read('apps/api/src/matching/matching.policy.ts');
   const adminEarnings = read('apps/admin_web/app/earnings/page.tsx');
   const operationsPolicy = read('apps/admin_web/app/operations-policy/page.tsx');
+  const actionGatePolicyChecklist = read('apps/admin_web/app/operations-policy/action-gate-policy-checklist.ts');
   const policyImpactDetails = read('apps/admin_web/app/operations-policy/policy-impact-details.ts');
   const smoke = read('infra/scripts/api-smoke.mjs');
   requireMarkers('apps/api/src/earnings/earnings.policy.ts', earningsPolicy, [
@@ -288,9 +289,13 @@ function checkPayoutBatchContract() {
     'return isCashDebt(earning);',
   ]);
   requireMarkers('apps/admin_web/app/operations-policy/page.tsx', operationsPolicy, [
-    'Payout batch cycle',
     'id={operationalPolicyAnchor(setting.key)}',
   ]);
+  requireMarkers(
+    'apps/admin_web/app/operations-policy/action-gate-policy-checklist.ts',
+    actionGatePolicyChecklist,
+    ['Payout batch cycle'],
+  );
   requireMarkers('apps/admin_web/app/operations-policy/policy-impact-details.ts', policyImpactDetails, [
     "'payout.batch_cycle_policy':",
     'Positive partner earnings remain settlement-batch based.',
