@@ -117,6 +117,12 @@ import {
   buildPartnerCommandCenter as buildProviderCommandCenter,
   type PartnerCommandLane as ProviderCommandLane,
 } from './partner-command-center';
+import { buildPartnerDispatchHandoff } from './partner-dispatch-handoff';
+import {
+  buildPartnerShiftHandoff,
+  partnerShiftCardClass,
+  partnerShiftPillClass,
+} from './partner-shift-handoff';
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
 type PartnerDispatchForecast = {
@@ -181,41 +187,6 @@ type PartnerKycReviewBoard = {
     samples: string[];
   }>;
 };
-type PartnerShiftHandoff = {
-  tone: ProviderCommandLane['tone'];
-  label: string;
-  headline: string;
-  detail: string;
-  primaryAction: { label: string; href: string };
-  stats: Array<{
-    label: string;
-    value: string;
-    detail: string;
-    href: string;
-    tone: ProviderCommandLane['tone'];
-  }>;
-  actions: Array<{
-    title: string;
-    scope: string;
-    detail: string;
-    operatorAction: string;
-    href: string;
-    tone: ProviderCommandLane['tone'];
-    samples: string[];
-  }>;
-};
-type PartnerDispatchHandoff = {
-  headline: string;
-  detail: string;
-  policyLabel: string;
-  links: Array<{
-    title: string;
-    value: string;
-    detail: string;
-    href: string;
-    tone: ProviderCommandLane['tone'];
-  }>;
-};
 type PartnerDailyActionQueue = {
   urgentCount: number;
   blockedCount: number;
@@ -258,8 +229,8 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy);
   const acceptanceBlockerBoard = buildPartnerAcceptanceBlockerBoard(providers, opsPolicy);
   const kycReviewBoard = buildPartnerKycReviewBoard(providers);
-  const shiftHandoff = buildPartnerShiftHandoff(providers, opsPolicy);
-  const dispatchHandoff = buildPartnerDispatchHandoff(allProviders, opsPolicy);
+  const shiftHandoff = buildPartnerShiftHandoff(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
+  const dispatchHandoff = buildPartnerDispatchHandoff(allProviders, opsPolicy, PARTNER_LIST_QUERY_DEPS);
   const dailyActionQueue = buildPartnerDailyActionQueue(providers, opsPolicy);
   const activeFilters = buildProviderActiveFilters(filters);
   const filterSummary = buildPartnerFilterSummary(
@@ -2536,305 +2507,6 @@ function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
 }
 
-function buildPartnerShiftHandoff(
-  providers: AdminProvider[],
-  opsPolicy: ProviderOpsPolicy,
-): PartnerShiftHandoff {
-  const acceptReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy));
-  const backupReady = providers.filter(
-    (provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible,
-  );
-  const hardBlocked = providers.filter(partnerHasHardAcceptanceBlocker);
-  const cashDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0);
-  const readyKyc = providers.filter((provider) => partnerKycState(provider).readyToApprove);
-  const kycBlocked = providers.filter((provider) => {
-    const kycState = partnerKycState(provider);
-    return (
-      kycState.blockedByDocuments || kycState.rejectedDocuments > 0 || provider.kyc?.status === 'REJECTED'
-    );
-  });
-  const locationRefresh = providers.filter((provider) =>
-    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
-  );
-  const pushMissing = providers.filter((provider) => !hasHealthyPush(provider));
-  const payoutSetup = providers.filter(providerPayoutSetupNeedsReview);
-  const accountControlFollowUp = providers.filter((provider) =>
-    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
-  );
-  const publicMedia = providers.filter(providerPublicMediaNeedsReview);
-
-  const actions = [
-    cashDebt.length
-      ? {
-          title: 'Collect cash-fee debt before more bookings',
-          scope: 'Finance gate',
-          detail: `${cashDebt.length} partner(s) have negative wallet balance from cash-service fee or tax debt.`,
-          operatorAction:
-            'Collect company fee deposit, record evidence, or offset from available earnings before marketplace alerts and participation resume.',
-          href: '/partners?review=cash-debt',
-          tone: 'danger' as const,
-          samples: partnerSampleNames(cashDebt),
-        }
-      : null,
-    readyKyc.length
-      ? {
-          title: 'Approve KYC records that are ready',
-          scope: 'KYC review',
-          detail: `${readyKyc.length} partner(s) have required CCCD/selfie evidence ready for admin decision.`,
-          operatorAction:
-            'Open each detail page, verify evidence, then approve or reject with a clear reason.',
-          href: '/partners?review=kyc',
-          tone: 'warn' as const,
-          samples: partnerSampleNames(readyKyc),
-        }
-      : null,
-    kycBlocked.length
-      ? {
-          title: 'Request KYC resubmission where evidence is blocked',
-          scope: 'Identity blocker',
-          detail: `${kycBlocked.length} partner(s) cannot move forward because identity evidence is missing or rejected.`,
-          operatorAction:
-            'Use rejection reasons and resubmission guidance before the partner can become dispatch-ready.',
-          href: '/partners?review=documents',
-          tone: 'warn' as const,
-          samples: partnerSampleNames(kycBlocked),
-        }
-      : null,
-    payoutSetup.length
-      ? {
-          title: 'Finish first-earning payout and tax setup',
-          scope: 'Payout gate',
-          detail: `${payoutSetup.length} partner(s) have revenue records but still need tax, address, or agreement readiness.`,
-          operatorAction:
-            'Ask for tax profile/address/terms only after first revenue, then approve before withdrawal.',
-          href: '/partners?review=payout-setup',
-          tone: 'warn' as const,
-          samples: partnerSampleNames(payoutSetup),
-        }
-      : null,
-    accountControlFollowUp.length
-      ? {
-          title: 'Review device or account controls before dispatch',
-          scope: 'Control gate',
-          detail: `${accountControlFollowUp.length} partner(s) have blocked devices, session checks, shared devices, or account block state.`,
-          operatorAction: 'Open partner control history before relying on them for customer bookings.',
-          href: '/partners?review=security',
-          tone: 'danger' as const,
-          samples: partnerSampleNames(accountControlFollowUp),
-        }
-      : null,
-    locationRefresh.length
-      ? {
-          title: 'Refresh partner locations for dispatch accuracy',
-          scope: 'Location',
-          detail: `${locationRefresh.length} partner(s) need a current location before direct request or marketplace matching.`,
-          operatorAction: `Ask partners to open the app; location must be fresh within ${opsPolicy.staleLocationMinutes} minutes.`,
-          href: '/partners?review=location',
-          tone: acceptReady.length ? ('info' as const) : ('warn' as const),
-          samples: partnerSampleNames(locationRefresh),
-        }
-      : null,
-    pushMissing.length
-      ? {
-          title: 'Repair request alert readiness',
-          scope: 'Alerts',
-          detail: `${pushMissing.length} partner(s) have no enabled push device, so urgent booking alerts may be missed.`,
-          operatorAction:
-            'Ask partners to reopen the app and register notifications before relying on push outreach.',
-          href: '/partners?review=push',
-          tone: 'info' as const,
-          samples: partnerSampleNames(pushMissing),
-        }
-      : null,
-    publicMedia.length
-      ? {
-          title: 'Moderate public partner media',
-          scope: 'Profile',
-          detail: `${publicMedia.length} partner(s) have profile/gallery media waiting for admin review.`,
-          operatorAction:
-            'Approve original, safe media or reject unclear uploads before final visual redesign.',
-          href: '/partners?review=public-media',
-          tone: 'info' as const,
-          samples: partnerSampleNames(publicMedia),
-        }
-      : null,
-    acceptReady.length
-      ? {
-          title: 'Keep ready partners warm for live requests',
-          scope: 'Dispatch supply',
-          detail: `${acceptReady.length} partner(s) can receive direct bookings now; ${backupReady.length} are also marketplace-ready.`,
-          operatorAction: 'Use these partners first when matching demand spikes or customer wait time rises.',
-          href: '/partners?review=direct-ready',
-          tone: 'ok' as const,
-          samples: partnerSampleNames(acceptReady),
-        }
-      : null,
-  ].filter((item): item is PartnerShiftHandoff['actions'][number] => Boolean(item));
-
-  const topAction =
-    actions.find((item) => item.tone === 'danger') ??
-    actions.find((item) => item.tone === 'warn') ??
-    actions[0];
-  const tone =
-    cashDebt.length || accountControlFollowUp.length
-      ? 'danger'
-      : hardBlocked.length || readyKyc.length || payoutSetup.length
-        ? 'warn'
-        : acceptReady.length
-          ? 'ok'
-          : 'info';
-
-  return {
-    tone,
-    label:
-      tone === 'danger'
-        ? 'Immediate check'
-        : tone === 'warn'
-          ? 'Action needed'
-          : tone === 'ok'
-            ? 'Dispatch ready'
-            : 'Monitor',
-    headline: topAction?.title ?? 'No urgent partner operation item',
-    detail:
-      topAction?.operatorAction ??
-      'The current filtered partner queue has no immediate blocker. Keep monitoring booking demand, location freshness, and cash debt.',
-    primaryAction: {
-      label: topAction ? 'Open partner work queue' : 'Open dispatch-ready partners',
-      href: topAction?.href ?? '/partners?review=direct-ready',
-    },
-    stats: [
-      {
-        label: 'Direct request ready',
-        value: acceptReady.length.toString(),
-        detail: `${backupReady.length} marketplace-ready within current policy gates.`,
-        href: '/partners?review=direct-ready',
-        tone: acceptReady.length ? 'ok' : 'warn',
-      },
-      {
-        label: 'Hard blocked',
-        value: hardBlocked.length.toString(),
-        detail: 'Account, KYC, bank, device/session, or identity blockers for direct partner work.',
-        href: '/partners?review=acceptance-blocked',
-        tone: hardBlocked.length ? 'danger' : 'ok',
-      },
-      {
-        label: 'Cash debt',
-        value: cashDebt.length.toString(),
-        detail: 'Negative wallet blocks marketplace alerts and participation.',
-        href: '/partners?review=cash-debt',
-        tone: cashDebt.length ? 'danger' : 'ok',
-      },
-      {
-        label: 'KYC ready',
-        value: readyKyc.length.toString(),
-        detail: 'Identity evidence ready for admin decision.',
-        href: '/partners?review=kyc',
-        tone: readyKyc.length ? 'warn' : 'ok',
-      },
-      {
-        label: 'Location refresh',
-        value: locationRefresh.length.toString(),
-        detail: `Fresh location policy is ${opsPolicy.staleLocationMinutes} minutes.`,
-        href: '/partners?review=location',
-        tone: locationRefresh.length ? 'warn' : 'ok',
-      },
-      {
-        label: 'Payout setup',
-        value: payoutSetup.length.toString(),
-        detail: 'First-revenue tax/address/agreement gate.',
-        href: '/partners?review=payout-setup',
-        tone: payoutSetup.length ? 'warn' : 'ok',
-      },
-    ],
-    actions: actions.slice(0, 6),
-  };
-}
-
-function buildPartnerDispatchHandoff(
-  providers: AdminProvider[],
-  opsPolicy: ProviderOpsPolicy,
-): PartnerDispatchHandoff {
-  const directReady = providers.filter((provider) => partnerCanAcceptBookingNow(provider, opsPolicy));
-  const backupReady = providers.filter(
-    (provider) => partnerBackupMatchingEligibility(provider, opsPolicy).eligible,
-  );
-  const acceptanceBlocked = providers.filter((provider) => !partnerCanAcceptBookingNow(provider, opsPolicy));
-  const cashDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0);
-  const locationRefresh = providers.filter((provider) =>
-    ['stale', 'expired', 'missing'].includes(providerLocationStatus(provider, opsPolicy)),
-  );
-  const pushRepair = providers.filter((provider) => !hasHealthyPush(provider));
-  const reportReview = providers.filter((provider) => hasOpenPartnerControl(provider));
-
-  return {
-    headline:
-      'When Bookings shows matching pressure, jump from here to the exact partner lane that can unblock dispatch.',
-    detail: `Current policy: first partner response window ${opsPolicy.responseWindowMinutes}m, marketplace radius ${formatDistanceMeters(
-      opsPolicy.backupRadiusMeters,
-    )}, fresh location within ${opsPolicy.staleLocationMinutes}m.`,
-    policyLabel: 'Edit dispatch policy',
-    links: [
-      {
-        title: 'Matching queue',
-        value: 'Open',
-        detail: 'Live bookings waiting for preferred response, marketplace supply, or customer selection.',
-        href: '/bookings?view=matching',
-        tone: 'info',
-      },
-      {
-        title: 'Direct ready',
-        value: directReady.length.toString(),
-        detail: 'Partners who can receive the first customer request immediately.',
-        href: '/partners?review=direct-ready',
-        tone: directReady.length ? 'ok' : 'warn',
-      },
-      {
-        title: 'Marketplace ready',
-        value: backupReady.length.toString(),
-        detail: 'Partners eligible to receive marketplace alerts and join the customer choice list.',
-        href: '/partners?review=marketplace-ready',
-        tone: backupReady.length ? 'ok' : 'warn',
-      },
-      {
-        title: 'Acceptance blocked',
-        value: acceptanceBlocked.length.toString(),
-        detail: 'Partners blocked from direct requests by KYC, bank, location, push, or control gates.',
-        href: '/partners?review=acceptance-blocked',
-        tone: acceptanceBlocked.length ? 'danger' : 'ok',
-      },
-      {
-        title: 'Cash fee debt',
-        value: cashDebt.length.toString(),
-        detail:
-          'Negative wallet partners can view marketplace requests, but marketplace alerts and participation wait until company fee settlement.',
-        href: '/cash-settlements',
-        tone: cashDebt.length ? 'danger' : 'ok',
-      },
-      {
-        title: 'Location refresh',
-        value: locationRefresh.length.toString(),
-        detail: 'Partners who must reopen the app before distance-based matching uses their location.',
-        href: '/partners?review=location',
-        tone: locationRefresh.length ? 'warn' : 'ok',
-      },
-      {
-        title: 'Push repair',
-        value: pushRepair.length.toString(),
-        detail: 'Partners who may miss direct or marketplace request alerts.',
-        href: '/partners?review=push',
-        tone: pushRepair.length ? 'warn' : 'ok',
-      },
-      {
-        title: 'Reports desk',
-        value: reportReview.length.toString(),
-        detail: 'Partners with reports or account controls that should be checked before dispatch.',
-        href: '/partner-controls',
-        tone: reportReview.length ? 'danger' : 'info',
-      },
-    ],
-  };
-}
-
 function buildPartnerDailyActionQueue(
   providers: AdminProvider[],
   opsPolicy: ProviderOpsPolicy,
@@ -2965,28 +2637,11 @@ function latestSecurityAgeLabel(provider: AdminProvider) {
   return 'No recent session record.';
 }
 
-function partnerSampleNames(providers: AdminProvider[], limit = 4) {
-  return providers.slice(0, limit).map(providerDisplayName);
-}
-
 function providerDashboardTone(tone: ProviderCommandLane['tone']) {
   if (tone === 'danger') return 'danger';
   if (tone === 'warn') return 'warn';
   if (tone === 'info') return 'info';
   return 'ok';
-}
-
-function partnerShiftCardClass(tone: ProviderCommandLane['tone']) {
-  if (tone === 'danger') return 'ops-task-blocked';
-  if (tone === 'warn') return 'ops-task-pending';
-  return 'ops-task-done';
-}
-
-function partnerShiftPillClass(tone: ProviderCommandLane['tone']) {
-  if (tone === 'danger') return 'pill-danger';
-  if (tone === 'warn') return 'pill-warn';
-  if (tone === 'info') return 'pill-info';
-  return 'pill-success';
 }
 
 function providerDispatchReady(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
