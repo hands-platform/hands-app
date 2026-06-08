@@ -36,7 +36,7 @@ describe('booking customer wait panel', () => {
     });
     expect(chatCard).toMatchObject({
       status: 'Locked',
-      detail: 'Chat stays locked until the final partner is selected.',
+      detail: 'Chat stays locked until first-pick match or customer final selection is recorded.',
     });
   });
 });

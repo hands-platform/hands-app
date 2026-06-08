@@ -92,7 +92,7 @@ export function bookingCustomerWaitPanel(
     signalTone = 'pill-warn';
     headline = 'A participating or accepted partner is ready for customer final selection.';
     detail =
-      'Make sure the customer app shows the participating/accepted partner shortlist and opens matched chat after selection.';
+      'Make sure the customer app shows the participating partner shortlist when first-pick has not already matched.';
     nextActionLabel = 'Check participants';
   } else if (waitingForPartnerJoin && marketplaceSupply.eligibleCount === 0) {
     signalStatus = 'Supply gap';
@@ -146,8 +146,8 @@ export function bookingCustomerWaitPanel(
           ? `${customerChoiceCandidates.length} participating/accepted partner(s) are ready for customer selection.`
           : 'No participating/accepted partner is ready for final customer selection yet.',
       action: customerConfirmMode
-        ? 'Customer selects the final partner before matched chat opens.'
-        : 'Policy conflicts with HANDS final-choice flow; return to customer-confirm mode.',
+        ? 'Customer final choice applies when first-pick does not validly match first.'
+        : 'Policy conflicts with HANDS matching flow; return to first-pick priority with customer fallback.',
       className: selected
         ? 'ops-task-done'
         : waitingForCustomerChoice
@@ -160,12 +160,12 @@ export function bookingCustomerWaitPanel(
       status: backupWindowOpen ? 'Open' : 'Held',
       detail: backupWindowOpen
         ? `${marketplaceSupply.eligibleCount} eligible marketplace partner(s) can participate under current/saved policy.`
-        : 'Marketplace partners are held until first-pick delay, decline, or timeout.',
+        : 'Marketplace participation is not currently open for this saved policy snapshot.',
       action: firstPickRejected
         ? 'First-pick declined, so marketplace recovery should be active.'
         : backupOpenMode === 'IMMEDIATE_WITHIN_WINDOW'
           ? 'Policy allows marketplace partners during the first-pick window.'
-          : 'Policy delays marketplace visibility while first-pick is deciding.',
+          : 'Saved policy snapshot delays marketplace visibility while first-pick is deciding.',
       className: backupWindowOpen ? 'ops-task-done' : 'ops-task-pending',
       pillClass: backupWindowOpen ? 'pill-success' : 'pill-info',
     },
@@ -186,7 +186,7 @@ export function bookingCustomerWaitPanel(
         ? `${booking.chatRoom.messages?.length ?? 0} message(s) are visible in the room.`
         : selected
           ? 'Final partner is selected, but no chat room is attached.'
-          : 'Chat stays locked until the final partner is selected.',
+          : 'Chat stays locked until first-pick match or customer final selection is recorded.',
       action: booking.chatRoom
         ? 'Monitor coordination and location sharing.'
         : 'Unlock/repair after final match.',
@@ -199,7 +199,7 @@ export function bookingCustomerWaitPanel(
     {
       label: `${customerChoiceCandidates.length} selectable`,
       tone: customerChoiceCandidates.length ? 'pill-success' : 'pill-neutral',
-      detail: 'Partners who participated or accepted and can be shown for final customer choice.',
+      detail: 'Partners who participated and can be shown for customer fallback choice.',
     },
     {
       label: `${rejectedParticipants.length} rejected`,
