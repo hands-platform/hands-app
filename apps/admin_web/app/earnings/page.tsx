@@ -432,8 +432,8 @@ export default async function EarningsPage({ searchParams }: EarningsPageProps) 
                     {item.lastLedgerRef ? <small>Last ledger ref: {item.lastLedgerRef}</small> : null}
                   </div>
                   <p className="muted">
-                    Settling this row records the partner cash-fee debt as paid and can reopen booking
-                    acceptance once the wallet is non-negative.
+                    Settling this row records the partner cash-fee debt as paid and can reopen marketplace
+                    participation plus payout release once the wallet is non-negative.
                   </p>
                 </div>
                 <div className="actions">

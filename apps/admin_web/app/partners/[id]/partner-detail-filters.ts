@@ -1,4 +1,5 @@
 import type { DetailActivityTypeOption } from '../../../lib/detail-activity-filter';
+import { bookingRecordCreatedAt } from '../../../lib/admin-booking-time';
 import { dateValue } from './partner-detail-format';
 
 export const DETAIL_ACTIVITY_ORDER_OPTIONS = [
@@ -49,8 +50,8 @@ export function orderPartnerBookingArchive<
   T extends { booking: { createdAt?: string | null; scheduledStartAt?: string | null } },
 >(records: T[], order: DetailActivityOrder) {
   return [...records].sort((left, right) => {
-    const leftAt = left.booking.createdAt ?? left.booking.scheduledStartAt;
-    const rightAt = right.booking.createdAt ?? right.booking.scheduledStartAt;
+    const leftAt = bookingRecordCreatedAt(left.booking);
+    const rightAt = bookingRecordCreatedAt(right.booking);
     return order === 'oldest'
       ? dateValue(leftAt) - dateValue(rightAt)
       : dateValue(rightAt) - dateValue(leftAt);

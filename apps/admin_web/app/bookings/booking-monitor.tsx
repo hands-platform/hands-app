@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AdminAuditLog, AdminBooking } from '../../lib/admin-api';
+import {
+  bookingEventTimestamp,
+  bookingListSortTimestamp,
+  bookingRequestOpenedAt,
+} from '../../lib/admin-booking-time';
 import { marketplaceDisplayText as displayMarketplaceText } from '../../lib/admin-copy';
 import {
   formatDistanceMeters,
@@ -1709,7 +1714,7 @@ export function BookingMonitor({
                       <span className={`pill ${pricingPolicy.tone}`}>{pricingPolicy.label}</span>
                     )}
                     <div className="muted">
-                      Opened {formatDate(booking.createdAt ?? booking.scheduledStartAt)}
+                      Opened {formatDate(bookingRequestOpenedAt(booking))}
                     </div>
                     <div className="muted">{recencyLabel(booking, nowMs)}</div>
                     <div style={{ marginTop: 8 }}>
@@ -3616,7 +3621,7 @@ function emptyBookingMessage(view: BookingView) {
 }
 
 function bookingTimestamp(booking: AdminBooking) {
-  return new Date(booking.createdAt ?? booking.scheduledStartAt ?? booking.expiresAt ?? 0).getTime();
+  return new Date(bookingListSortTimestamp(booking) ?? 0).getTime();
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -4519,7 +4524,7 @@ function formatClockTime(value: Date) {
 }
 
 function recencyLabel(booking: AdminBooking, nowMs: number | null) {
-  const timestamp = booking.createdAt ?? booking.scheduledStartAt ?? booking.expiresAt;
+  const timestamp = bookingListSortTimestamp(booking);
   if (!timestamp) {
     return 'Created time unavailable';
   }
@@ -4543,7 +4548,7 @@ function recencyLabel(booking: AdminBooking, nowMs: number | null) {
 }
 
 function bookingAgeLabel(booking: AdminBooking, nowMs: number) {
-  const timestamp = booking.createdAt ?? booking.scheduledStartAt ?? booking.expiresAt;
+  const timestamp = bookingListSortTimestamp(booking);
   if (!timestamp || nowMs <= 0) {
     return 'age pending';
   }
@@ -4737,7 +4742,7 @@ function marketplaceBookingNextAction(booking: AdminBooking, nowMs: number) {
 }
 
 function bookingCreatedTimestamp(booking: AdminBooking) {
-  const value = booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt;
+  const value = bookingEventTimestamp(booking);
   if (!value) {
     return 0;
   }

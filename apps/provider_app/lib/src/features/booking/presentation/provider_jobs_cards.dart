@@ -103,7 +103,7 @@ class PartnerJobsCard extends StatelessWidget {
               children: [
                 ProviderRequestTag(
                   label:
-                      'Opened ${formatRequestOpenedMoment(booking['createdAt'] ?? booking['scheduledStartAt'])}',
+                      'Opened ${formatRequestOpenedMoment(providerBookingRequestOpenedAt(booking))}',
                 ),
                 ProviderRequestTag(
                     label: providerServiceDurationLabel(service)),

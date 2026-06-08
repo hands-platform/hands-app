@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
 import {
   BookingActivityPanel,
   BookingFullRecordIndex,
@@ -1108,7 +1109,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     { label: 'Phone', value: booking.customerProfile?.user?.phone ?? 'No phone' },
     { label: 'Address', value: addressLine },
     { label: 'Pin', value: addressPin },
-    { label: 'Request opened', value: formatDate(booking.createdAt ?? booking.scheduledStartAt) },
+    { label: 'Request opened', value: formatDate(bookingRequestOpenedAt(booking)) },
     { label: 'Expires', value: formatDate(booking.expiresAt) },
   ];
   const bookingRecordServiceRows = [
@@ -1564,7 +1565,7 @@ function bookingHandoffChecklist(
       id: 'booking-request',
       label: 'Request',
       title: bookingServiceOptionLabel(booking),
-      detail: `${booking.status} / opened ${formatDate(booking.createdAt ?? booking.scheduledStartAt)} / ${bookingAddressSnapshotLabel(booking)}`,
+      detail: `${booking.status} / opened ${formatDate(bookingRequestOpenedAt(booking))} / ${bookingAddressSnapshotLabel(booking)}`,
       status: 'Booking facts',
       href: '#customer',
     },

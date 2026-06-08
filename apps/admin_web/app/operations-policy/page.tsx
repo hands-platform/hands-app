@@ -6,6 +6,7 @@ import {
   AdminProvider,
   adminGet,
 } from '../../lib/admin-api';
+import { bookingRequestOpenedAt } from '../../lib/admin-booking-time';
 import { MetricCard } from '../../components/metric-card';
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { formatDateTime, formatMoney, formatRelativeTime, readPlainRecord } from '../../lib/admin-format';
@@ -2727,7 +2728,7 @@ function eligibleBackupPartnersForBooking(
 }
 
 function bookingOpenAgeMinutes(booking: AdminBooking) {
-  const openedAt = Date.parse(booking.createdAt ?? booking.scheduledStartAt ?? '');
+  const openedAt = Date.parse(bookingRequestOpenedAt(booking) ?? '');
   if (!Number.isFinite(openedAt)) {
     return 0;
   }

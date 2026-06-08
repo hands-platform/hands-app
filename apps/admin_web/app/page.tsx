@@ -19,6 +19,11 @@ import {
   adminGet,
 } from '../lib/admin-api';
 import {
+  bookingLatestActivityAt,
+  bookingRecordCreatedAt,
+  bookingRequestOpenedAt,
+} from '../lib/admin-booking-time';
+import {
   formatDateTime,
   formatDistanceMeters,
   formatMoneyOrZero as money,
@@ -300,7 +305,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
   const cashDebtAmount = cashSettlementSummary.totalDebtAmount;
   const queueSummary = buildOpsQueueSummary(queue);
   const rangeBookings = bookings.filter((booking) =>
-    isInDateRange(booking.createdAt ?? booking.updatedAt ?? booking.scheduledStartAt, filters.range),
+    isInDateRange(bookingLatestActivityAt(booking), filters.range),
   );
   const rangePayments = payments.filter((payment) =>
     isInDateRange(payment.booking?.createdAt ?? payment.refunds?.[0]?.createdAt, filters.range),
@@ -3023,7 +3028,7 @@ function buildDailyOperationsSnapshot(input: {
   activePayoutBatches: AdminPayoutBatch[];
 }): DailyOperationsSnapshotItem[] {
   const todayBookings = input.bookings.filter((booking) =>
-    isInDateRange(booking.createdAt ?? booking.scheduledStartAt, 'today'),
+    isInDateRange(bookingRecordCreatedAt(booking), 'today'),
   );
   const completedToday = input.bookings.filter(
     (booking) =>
@@ -3658,7 +3663,7 @@ function bookingEvidenceSample(bookings: AdminBooking[], label: string): Booking
   return {
     label: `${label}: ${shortId(booking.id)}`,
     detail: `${booking.status} / ${bookingServiceLabel(booking)} / opened ${dashboardDateLabel(
-      booking.createdAt ?? booking.scheduledStartAt,
+      bookingRequestOpenedAt(booking),
     )}`,
     href: `/bookings/${booking.id}`,
   };
@@ -3670,8 +3675,8 @@ function bookingEvidencePrioritySort(left: AdminBooking, right: AdminBooking) {
   if (leftRank !== rightRank) {
     return rightRank - leftRank;
   }
-  return dashboardDateValue(right.updatedAt ?? right.createdAt ?? right.scheduledStartAt) -
-    dashboardDateValue(left.updatedAt ?? left.createdAt ?? left.scheduledStartAt);
+  return dashboardDateValue(bookingLatestActivityAt(right)) -
+    dashboardDateValue(bookingLatestActivityAt(left));
 }
 
 function bookingEvidenceStatusRank(status?: string | null) {
@@ -4691,7 +4696,7 @@ function buildHourlyBookingDemand(bookings: AdminBooking[]) {
   >();
 
   for (const booking of bookings) {
-    const timestamp = booking.createdAt ?? booking.scheduledStartAt;
+    const timestamp = bookingRecordCreatedAt(booking);
     if (!timestamp) continue;
     const hour = `${hourFormatter.format(new Date(timestamp))}:00`;
     const bucket = buckets.get(hour) ?? { hour, total: 0, active: 0, completed: 0, cancelled: 0 };
@@ -4750,7 +4755,7 @@ function isNoShowSignal(booking: AdminBooking) {
   if (booking.status === 'EXPIRED') {
     return true;
   }
-  const requestedAtValue = booking.createdAt ?? booking.scheduledStartAt;
+  const requestedAtValue = bookingRequestOpenedAt(booking);
   if (booking.status !== 'MATCHED' || !requestedAtValue) {
     return false;
   }

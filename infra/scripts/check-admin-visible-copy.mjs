@@ -19,6 +19,10 @@ const bannedPatterns = [
   { label: 'negative wallet recovery workflow wording', pattern: /\bWallet recovery workflow\b/i },
   { label: 'ambiguous recovery follow-up wording', pattern: /\brecovery follow-up\b/i },
   { label: 'ambiguous recovery queue wording', pattern: /\bRecovery queue\b/i },
+  {
+    label: 'negative wallet broad acceptance wording',
+    pattern: /\b(cash[- ]fee debt|negative wallet|wallet debt)\b[\s\S]{0,140}\b(booking\s+acceptance|future\s+partner\s+acceptance|partner\s+acceptance)\b/i,
+  },
   { label: 'auto final assignment wording', pattern: /\bAuto-lock\b/i },
   {
     label: 'disabled customer final selection wording',

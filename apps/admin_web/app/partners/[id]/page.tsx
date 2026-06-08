@@ -8,6 +8,11 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../../lib/admin-api';
+import {
+  bookingLatestActivityAt,
+  bookingRecordCreatedAt,
+  bookingRequestOpenedAt,
+} from '../../../lib/admin-booking-time';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import {
   detailDateRangeOptions,
@@ -296,7 +301,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
   const partnerActivityRecords = buildPartnerActivityRecords(provider, partnerBookingArchive);
   const filteredPartnerBookingArchive = orderPartnerBookingArchive(
     partnerBookingArchive.filter((record) =>
-      isWithinDetailDateFilter(record.booking.createdAt ?? record.booking.scheduledStartAt, dateFilters),
+      isWithinDetailDateFilter(bookingRecordCreatedAt(record.booking), dateFilters),
     ),
     activityOrder,
   );
@@ -1457,7 +1462,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
                   </strong>
                   <p className="muted">
                     Customer {partnerBookingCustomer(record.booking)} / requested{' '}
-                    {formatDate(record.booking.createdAt ?? record.booking.scheduledStartAt)}
+                    {formatDate(bookingRequestOpenedAt(record.booking))}
                   </p>
                   <p className="muted">
                     Payment {record.booking.payment?.method ?? 'UNKNOWN'} /{' '}
@@ -3990,8 +3995,8 @@ function buildPartnerBookingArchive(provider: ProviderDetail): PartnerBookingArc
 
   return [...records.values()].sort(
     (left, right) =>
-      dateValue(right.booking.createdAt ?? right.booking.scheduledStartAt) -
-      dateValue(left.booking.createdAt ?? left.booking.scheduledStartAt),
+      dateValue(bookingRecordCreatedAt(right.booking)) -
+      dateValue(bookingRecordCreatedAt(left.booking)),
   );
 }
 
@@ -4036,9 +4041,7 @@ function buildPartnerBookingEvidenceRows(
     return {
       id: booking.id,
       relation: record.relation,
-      bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
-        booking.createdAt ?? booking.scheduledStartAt,
-      )}`,
+      bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(bookingRecordCreatedAt(booking))}`,
       serviceLabel: `${bookingServiceLabel(booking)} / ${formatCurrency(bookingTotal(booking))}`,
       status: booking.status ?? 'UNKNOWN',
       roleStatus:
@@ -4109,8 +4112,7 @@ function buildPartnerBookingJourneyRows(
       earning?.paidAt,
       earning?.availableAt,
       earning?.createdAt,
-      booking.scheduledStartAt,
-      booking.createdAt,
+      bookingRecordCreatedAt(booking),
     ]);
 
     return {
@@ -4206,7 +4208,7 @@ function buildPartnerActivityRecords(
     records.push({
       id: bookingRecord.booking.id,
       type: 'BOOKING',
-      at: bookingRecord.booking.createdAt ?? bookingRecord.booking.scheduledStartAt ?? '',
+      at: bookingRecordCreatedAt(bookingRecord.booking) ?? '',
       title: `${bookingRecord.relation} booking ${shortRecordId(bookingRecord.booking.id)}`,
       detail: `${bookingServiceLabel(bookingRecord.booking)} / ${bookingRecord.booking.status ?? 'UNKNOWN'} / customer ${partnerBookingCustomer(
         bookingRecord.booking,
@@ -4573,9 +4575,7 @@ function buildPartnerActivityCommandSnapshot(
       value: `${completedBookings.length} booking(s)`,
       helper: latestCompletedBooking
         ? `Latest ${bookingServiceLabel(latestCompletedBooking)} / ${formatDate(
-            latestCompletedBooking.updatedAt ??
-              latestCompletedBooking.createdAt ??
-              latestCompletedBooking.scheduledStartAt,
+            bookingLatestActivityAt(latestCompletedBooking),
           )}`
         : 'No completed booking in this filter.',
       href: latestCompletedBooking ? `/bookings/${latestCompletedBooking.id}` : '#partner-booking-journey',
@@ -5421,9 +5421,7 @@ function buildPartnerChatRetentionRows(records: PartnerBookingArchiveRecord[]): 
     return {
       id: booking.id,
       relation: record.relation,
-      bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
-        booking.createdAt ?? booking.scheduledStartAt,
-      )}`,
+      bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(bookingRecordCreatedAt(booking))}`,
       serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
       status: booking.status ?? 'UNKNOWN',
       roleDetail: partnerRoleRetentionDetail(record),
@@ -5495,9 +5493,7 @@ function buildPartnerBookingOpsLedgerRows(
       return {
         id: booking.id,
         relation: record.relation,
-        bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(
-          booking.createdAt ?? booking.scheduledStartAt,
-        )}`,
+        bookingLabel: `${shortRecordId(booking.id)} / ${formatDate(bookingRecordCreatedAt(booking))}`,
         serviceLabel: `${bookingServiceLabel(booking)} / customer ${partnerBookingCustomer(booking)}`,
         status: booking.status ?? 'UNKNOWN',
         noteStatus: latestNote ? 'Manual note saved' : 'No manual note',

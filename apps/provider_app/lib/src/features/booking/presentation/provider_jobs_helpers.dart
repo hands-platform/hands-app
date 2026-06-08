@@ -70,6 +70,10 @@ int bookingTimestamp(Map<String, dynamic> booking) {
   return 0;
 }
 
+dynamic providerBookingRequestOpenedAt(Map<String, dynamic> booking) {
+  return booking['openedAt'] ?? booking['createdAt'] ?? booking['scheduledStartAt'];
+}
+
 String formatRelativeMoment(dynamic value) {
   final raw = value?.toString();
   if (raw == null || raw.isEmpty) {

@@ -824,7 +824,6 @@ await expectRequestFailure(
   () =>
     postJson('/customer/bookings', customerAuth.accessToken, {
       serviceId: serviceWithoutPayoutRule.id,
-      scheduledStartAt: new Date(Date.now() + 45 * 60_000).toISOString(),
       address: { line1: 'Missing payout rule smoke flow' },
       lat: 10.7769,
       lng: 106.7009,
@@ -1107,7 +1106,6 @@ const unapprovedKycBookingGateError = await expectRequestFailure(
     postJson('/customer/bookings', customerAuth.accessToken, {
       serviceId: service.id,
       providerId: kycNegativeProviderAuth.user.providerProfile.id,
-      scheduledStartAt: new Date(Date.now() + 50 * 60_000).toISOString(),
       address: { line1: 'KYC booking gate smoke flow' },
       lat: 10.7769,
       lng: 106.7009,
@@ -1137,7 +1135,6 @@ const missingBankBookingGateError = await expectRequestFailure(
     postJson('/customer/bookings', customerAuth.accessToken, {
       serviceId: service.id,
       providerId: kycNegativeProviderAuth.user.providerProfile.id,
-      scheduledStartAt: new Date(Date.now() + 55 * 60_000).toISOString(),
       address: { line1: 'Bank booking gate smoke flow' },
       lat: 10.7769,
       lng: 106.7009,
@@ -1645,7 +1642,6 @@ if (!preMatchChatRepairError.includes('Final partner selection is required befor
 const hybridBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: providerAuth.user.providerProfile.id,
-  scheduledStartAt: new Date(Date.now() + 75 * 60_000).toISOString(),
   address: { line1: 'Hybrid fallback smoke flow' },
   lat: 10.7783,
   lng: 106.6994,
@@ -1737,7 +1733,6 @@ try {
   preferredAcceptPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
-    scheduledStartAt: new Date(Date.now() + 80 * 60_000).toISOString(),
     address: { line1: 'Preferred accept policy smoke flow' },
     lat: 10.7783,
     lng: 106.6994,
@@ -1827,7 +1822,6 @@ try {
   const narrowRadiusBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
-    scheduledStartAt: new Date(Date.now() + 82 * 60_000).toISOString(),
     address: { line1: 'Narrow marketplace radius smoke flow' },
     lat: 10.7769,
     lng: 106.7009,
@@ -1876,7 +1870,6 @@ try {
   delayedBackupBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
-    scheduledStartAt: new Date(Date.now() + 85 * 60_000).toISOString(),
     address: { line1: 'Delayed marketplace visibility smoke flow' },
     lat: 10.7783,
     lng: 106.6994,
@@ -1973,7 +1966,6 @@ try {
   const oneSignalPolicyBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
-    scheduledStartAt: new Date(Date.now() + 88 * 60_000).toISOString(),
     address: { line1: 'Partner alert channel policy smoke flow' },
     lat: 10.7783,
     lng: 106.6994,
@@ -2010,7 +2002,6 @@ try {
 
 const momoBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
-  scheduledStartAt: new Date(Date.now() + 90 * 60_000).toISOString(),
   address: { line1: 'District 1, Ho Chi Minh City' },
   lat: 10.7769,
   lng: 106.7009,
@@ -2020,7 +2011,6 @@ const momoBooking = await postJson('/customer/bookings', customerAuth.accessToke
 const couponBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   couponCode: couponCode.toLowerCase(),
-  scheduledStartAt: new Date(Date.now() + 105 * 60_000).toISOString(),
   address: { line1: 'Coupon checkout smoke flow' },
   lat: 10.7769,
   lng: 106.7009,
@@ -2042,7 +2032,6 @@ if (couponPayment?.amount !== expectedCouponTotal) {
 
 const cancellableMomoBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
-  scheduledStartAt: new Date(Date.now() + 120 * 60_000).toISOString(),
   address: { line1: 'Cancellation release smoke flow' },
   lat: 10.7769,
   lng: 106.7009,
@@ -2102,7 +2091,6 @@ try {
   afterMatchCancellationBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
     providerId: providerAuth.user.providerProfile.id,
-    scheduledStartAt: new Date(Date.now() + 220 * 60_000).toISOString(),
     address: { line1: 'After match cancellation policy smoke flow' },
     lat: 10.7769,
     lng: 106.7009,
@@ -2150,7 +2138,6 @@ try {
 const noShowBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: providerAuth.user.providerProfile.id,
-  scheduledStartAt: new Date(Date.now() + 130 * 60_000).toISOString(),
   address: { line1: 'No-show operations smoke flow' },
   lat: 10.7769,
   lng: 106.7009,
@@ -2206,7 +2193,6 @@ if (!noShowCustomerCancelError.includes('Booking cannot be cancelled in its curr
 
 const manuallyExpiredBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
-  scheduledStartAt: new Date(Date.now() + 135 * 60_000).toISOString(),
   address: { line1: 'Manual expiry operations smoke flow' },
   lat: 10.7769,
   lng: 106.7009,
@@ -2270,7 +2256,6 @@ const hybridMatched = await postJson(
 
 const walletDebtJoinedBeforeDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
-  scheduledStartAt: new Date(Date.now() + 130 * 60_000).toISOString(),
   address: { line1: 'Negative wallet final selection smoke flow' },
   lat: 10.7783,
   lng: 106.6994,
@@ -2284,7 +2269,6 @@ await postJson(
 const walletDebtServiceStartGateBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: walletDebtProviderAuth.user.providerProfile.id,
-  scheduledStartAt: new Date(Date.now() + 132 * 60_000).toISOString(),
   address: { line1: 'Negative wallet service start smoke flow' },
   lat: 10.7783,
   lng: 106.6994,
@@ -2307,7 +2291,6 @@ if (acceptedWalletDebtServiceStartGateBooking.status !== 'MATCHED') {
 const walletDebtBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: walletDebtProviderAuth.user.providerProfile.id,
-  scheduledStartAt: new Date(Date.now() + 135 * 60_000).toISOString(),
   address: { line1: 'Negative wallet source smoke flow' },
   lat: 10.7783,
   lng: 106.6994,
@@ -2316,8 +2299,7 @@ const walletDebtBooking = await postJson('/customer/bookings', customerAuth.acce
 const blockedDirectBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: walletDebtProviderAuth.user.providerProfile.id,
-  scheduledStartAt: new Date(Date.now() + 150 * 60_000).toISOString(),
-  address: { line1: 'Negative wallet acceptance smoke flow' },
+  address: { line1: 'Negative wallet marketplace smoke flow' },
   lat: 10.7783,
   lng: 106.6994,
   paymentMethod: 'CASH',
@@ -2440,7 +2422,7 @@ if (!['OPEN_MATCHING', 'MATCHED'].includes(directAcceptedWithDebt.status)) {
   );
 }
 const negativeWalletMarketplaceAcceptError = await expectRequestFailure(
-  'Negative provider wallet blocks marketplace participant acceptance after debt appears',
+  'Negative provider wallet blocks marketplace participation after debt appears',
   () =>
     postJson(
       `/provider/bookings/${walletDebtJoinedBeforeDebtBooking.id}/accept`,
@@ -2448,7 +2430,7 @@ const negativeWalletMarketplaceAcceptError = await expectRequestFailure(
     ),
   400,
 );
-assertNegativeWalletBlockResponse('marketplace acceptance after debt appears', negativeWalletMarketplaceAcceptError);
+assertNegativeWalletBlockResponse('marketplace participation after debt appears', negativeWalletMarketplaceAcceptError);
 const negativeWalletMarketplaceSelectionError = await expectRequestFailure(
   'Negative provider wallet blocks customer final selection of marketplace participant',
   () =>
@@ -2471,7 +2453,6 @@ if (serviceStartedWithDebt.status !== 'IN_SERVICE') {
 }
 const blockedOpenMatchingBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
-  scheduledStartAt: new Date(Date.now() + 165 * 60_000).toISOString(),
   address: { line1: 'Negative wallet open matching smoke flow' },
   lat: 10.7783,
   lng: 106.6994,
@@ -2891,7 +2872,6 @@ if (
 const directCustomPriceBooking = await postJson('/customer/bookings', customerAuth.accessToken, {
   serviceId: service.id,
   providerId: providerAuth.user.providerProfile.id,
-  scheduledStartAt: new Date(Date.now() + 75 * 60_000).toISOString(),
   address: { line1: 'Custom price payout smoke flow' },
   lat: 10.7769,
   lng: 106.7009,

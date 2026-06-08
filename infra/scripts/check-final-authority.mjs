@@ -81,7 +81,7 @@ function checkNoContradictoryOperationsDocs() {
   requireMarkers('docs/architecture/partner-acceptance-operations.md', partnerAcceptance, [
     'The partner can still see marketplace opportunities',
     'Marketplace requests can remain visible, but marketplace participation is blocked until settlement.',
-    'Marketplace participation, marketplace acceptance, and customer final selection of that marketplace partner stay blocked until settlement.',
+    'Marketplace participation and customer final selection of that marketplace partner stay blocked until settlement.',
   ]);
 
   const reviews = read('docs/architecture/reviews.md');
@@ -138,6 +138,7 @@ function checkOnDemandBookingContract() {
   const controller = read('apps/api/src/bookings/bookings.controller.ts');
   const service = read('apps/api/src/bookings/bookings.service.ts');
   const smoke = read('infra/scripts/api-smoke.mjs');
+  const realtimeSmoke = read('infra/scripts/realtime-smoke.mjs');
   const customerAppFiles = listFiles('apps/customer_app/lib', '.dart');
 
   rejectMarker('apps/api/src/bookings/bookings.controller.ts', controller, 'scheduledStartAt?:');
@@ -153,6 +154,8 @@ function checkOnDemandBookingContract() {
     'Customer-supplied scheduledStartAt should not create scheduled booking',
     'ignoredFutureScheduledStartAt',
   ]);
+  rejectMarker('infra/scripts/api-smoke.mjs', smoke, 'scheduledStartAt: new Date(Date.now()');
+  rejectMarker('infra/scripts/realtime-smoke.mjs', realtimeSmoke, 'scheduledStartAt: new Date(Date.now()');
 }
 
 function checkAddressBasedBookingContract() {

@@ -38,7 +38,7 @@ When that wallet becomes negative:
 
 - The partner can still see marketplace opportunities so customer supply stays visible, but cannot join until settlement is confirmed.
 - Marketplace requests can remain visible, but marketplace participation is blocked until settlement.
-- Marketplace participation, marketplace acceptance, and customer final selection of that marketplace partner stay blocked until settlement.
+- Marketplace participation and customer final selection of that marketplace partner stay blocked until settlement.
 - Payout release stays blocked until the debt is settled.
 - The partner app displays the localized settlement-block message from `apps/provider_app/lib/src/features/earnings/presentation/provider_wallet_gate_helpers.dart`.
 - Admin finance can settle the debt through cash settlement, earning, payout, payment, or booking detail workflows.
@@ -174,7 +174,7 @@ These should stay configurable instead of being hardcoded:
 - Marketplace partner radius.
 - Whether marketplace partners can appear immediately or only after a delay.
 - Whether preferred partner acceptance requires customer final confirmation.
-- Marketplace list visibility is not retained as partner activity. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace participation, marketplace acceptance, and customer final marketplace selection until settlement or approved offset clears the debt.
+- Marketplace list visibility is not retained as partner activity. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace participation and customer final marketplace selection until settlement or approved offset clears the debt.
 - No-show review thresholds and settlement decision options.
 - Cash settlement deadline.
 - Notification retry and fallback contact rules.

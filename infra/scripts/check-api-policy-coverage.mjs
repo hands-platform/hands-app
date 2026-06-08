@@ -320,7 +320,7 @@ function checkNegativeWalletBookingFunctionBoundaries() {
     missingMarkers.push('selectProvider must not block direct first-pick final selection for negative wallet');
   }
   if (!updateParticipant.includes('await this.ensureProviderWalletCanJoinMarketplace(provider.id);')) {
-    missingMarkers.push('updateParticipant must keep the negative-wallet marketplace acceptance gate');
+    missingMarkers.push('updateParticipant must keep the negative-wallet marketplace participation gate');
   }
   if (!updateParticipant.includes('if (booking.preferredProviderId === provider.id)')) {
     missingMarkers.push('updateParticipant must keep the preferred first-pick branch before marketplace wallet gate');

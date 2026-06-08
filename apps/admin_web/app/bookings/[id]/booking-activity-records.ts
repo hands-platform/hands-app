@@ -1,4 +1,5 @@
 import type { AdminBookingDetail, AdminLocationSnapshot, AdminNotification } from '../../../lib/admin-api';
+import { bookingRecordCreatedAt, bookingRequestOpenedAt } from '../../../lib/admin-booking-time';
 import { marketplaceDisplayText } from '../../../lib/admin-copy';
 import { buildCsvDataHref } from '../../../lib/csv-export';
 import {
@@ -61,7 +62,7 @@ export function buildBookingActivityRecords({
   records.push({
     id: `${booking.id}-created`,
     type: 'BOOKING',
-    at: booking.createdAt ?? booking.scheduledStartAt ?? '',
+    at: bookingRecordCreatedAt(booking) ?? '',
     title: `Booking created as ${booking.status}`,
     detail: `${bookingServiceOptionLabel(booking)} / customer ${
       booking.customerProfile?.user?.fullName ?? booking.customerProfile?.user?.phone ?? 'Customer'
@@ -80,7 +81,7 @@ export function buildBookingActivityRecords({
     });
   }
 
-  const requestOpenedAt = booking.createdAt ?? booking.scheduledStartAt;
+  const requestOpenedAt = bookingRequestOpenedAt(booking);
   if (requestOpenedAt) {
     records.push({
       id: `${booking.id}-request-timestamp`,

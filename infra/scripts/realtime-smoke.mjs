@@ -118,7 +118,6 @@ try {
   );
   const booking = await postJson('/customer/bookings', customerAuth.accessToken, {
     serviceId: service.id,
-    scheduledStartAt: new Date(Date.now() + 60 * 60_000).toISOString(),
     address: { line1: uniqueAddressLine },
     lat: 10.7769,
     lng: 106.7009,

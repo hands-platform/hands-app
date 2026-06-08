@@ -66,9 +66,8 @@ class OpenBookingCard extends StatelessWidget {
         bookingId.length <= 8 ? bookingId : bookingId.substring(0, 8);
     final updatedLabel =
         formatRelativeMoment(booking['updatedAt'] ?? booking['createdAt']);
-    final openedLabel = formatRequestOpenedMoment(
-      booking['createdAt'] ?? booking['scheduledStartAt'],
-    );
+    final openedLabel =
+        formatRequestOpenedMoment(providerBookingRequestOpenedAt(booking));
     final guidance = providerRequestGuidance(
       booking: booking,
       isPreferredRequest: isPreferredRequest,

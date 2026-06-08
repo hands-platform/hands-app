@@ -1,5 +1,6 @@
 import { formatDateTime as formatDate } from '../../lib/admin-format';
 import type { AdminCustomer } from '../../lib/admin-api';
+import { bookingLatestActivityAt } from '../../lib/admin-booking-time';
 import type { CustomerFilters } from './customer-filters';
 
 const ACTIVE_STATUSES = [
@@ -146,21 +147,18 @@ export function buildCustomerRow(customer: AdminCustomer) {
     .reduce((sum, payment) => sum + Number(payment?.amount ?? 0), 0);
   const addressCount = readAddressCount(customer.addresses) + (customer.selectedLocations?.length ?? 0);
   const lastBookingAt = bookings
-    .map((booking) => booking.updatedAt ?? booking.createdAt ?? booking.scheduledStartAt)
+    .map((booking) => bookingLatestActivityAt(booking))
     .filter(Boolean)
     .sort((left, right) => dateMs(right) - dateMs(left))[0];
   const completedRows = bookings
     .filter((booking) => booking.status === 'COMPLETED')
     .sort(
       (left, right) =>
-        dateMs(right.updatedAt ?? right.createdAt ?? right.scheduledStartAt) -
-        dateMs(left.updatedAt ?? left.createdAt ?? left.scheduledStartAt),
+        dateMs(bookingLatestActivityAt(right)) -
+        dateMs(bookingLatestActivityAt(left)),
     );
   const lastCompletedBooking = completedRows[0];
-  const lastCompletedAt =
-    lastCompletedBooking?.updatedAt ??
-    lastCompletedBooking?.createdAt ??
-    lastCompletedBooking?.scheduledStartAt;
+  const lastCompletedAt = lastCompletedBooking ? bookingLatestActivityAt(lastCompletedBooking) : undefined;
   const commonService = mostCommonLabel(bookings.map((booking) => bookingServiceLabel(booking)));
   const commonArea = mostCommonLabel(
     bookings.map((booking) => bookingAddressLabel(booking)).filter((label) => label !== 'No address'),

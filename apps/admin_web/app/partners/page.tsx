@@ -7,6 +7,7 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
+import { bookingLatestActivityAt } from '../../lib/admin-booking-time';
 import { compactValue, formatDateTime, formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { buildCsvDataHref } from '../../lib/csv-export';
@@ -2129,8 +2130,8 @@ function providerBookingRows(provider: AdminProvider) {
 
 function latestPartnerBookingRecord(bookings: AdminBooking[]) {
   return [...bookings].sort((left, right) => {
-    const rightTime = Date.parse(right.updatedAt ?? right.createdAt ?? right.scheduledStartAt ?? '');
-    const leftTime = Date.parse(left.updatedAt ?? left.createdAt ?? left.scheduledStartAt ?? '');
+    const rightTime = Date.parse(bookingLatestActivityAt(right) ?? '');
+    const leftTime = Date.parse(bookingLatestActivityAt(left) ?? '');
     return (Number.isFinite(rightTime) ? rightTime : 0) - (Number.isFinite(leftTime) ? leftTime : 0);
   })[0];
 }
@@ -2226,7 +2227,7 @@ function providerLastCompletedWorkAt(provider: AdminProvider) {
           earning.booking?.status === 'COMPLETED' || ['AVAILABLE', 'PAID'].includes(earning.status),
       )
       .flatMap((earning) => [
-        earning.booking?.scheduledStartAt,
+        earning.booking ? bookingLatestActivityAt(earning.booking) : null,
         earning.paidAt,
         earning.availableAt,
         earning.createdAt,
@@ -2246,7 +2247,7 @@ function partnerLastActivityAt(provider: AdminProvider) {
     ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
     ...(provider.user?.pushDevices ?? []).map((device) => device.createdAt),
     ...(provider.earnings ?? []).flatMap((earning) => [
-      earning.booking?.scheduledStartAt,
+      earning.booking ? bookingLatestActivityAt(earning.booking) : null,
       earning.createdAt,
       earning.availableAt,
       earning.paidAt,
