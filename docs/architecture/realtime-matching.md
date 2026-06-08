@@ -14,8 +14,8 @@
 - Marketplace partner radius: 10km from the confirmed booking address.
 - Marketplace eligibility uses the partner's last stored location; the MVP does not run route or live navigation APIs.
 - Eligible marketplace partners receive a marketplace availability notification and can participate through `POST /partner/bookings/:id/join`.
-- Customer final selection remains the source of truth. The first-pick partner can accept first, but
-  the customer still confirms the final partner before the booking is matched.
+- First-pick partner acceptance can match first when the API validates that it won the race.
+- Customer final selection remains the source of truth when first-pick does not validly accept first.
 
 ## Admin-Operable Policy
 
@@ -37,8 +37,8 @@ Compatibility note: the saved policy keys still contain `backup_provider` or `ba
 
 Existing open bookings keep their stored `expiresAt` timestamp so operators do not accidentally change a
 live customer countdown. `matching.preferred_accept_mode` is kept for snapshot compatibility, but the
-MVP contract is fixed: first-pick partner acceptance keeps the booking open until the customer confirms
-that partner as the final selection.
+MVP contract is fixed: first-pick partner acceptance can match first under API race rules; otherwise the
+customer selects from participating partners.
 
 ## BullMQ Queues
 
