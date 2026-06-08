@@ -1,5 +1,5 @@
 param(
-  [string]$RepoRoot = "C:\dev\massage-vn-workspace\repo",
+  [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path,
   [int]$ApiPort = 3000,
   [int]$AdminPort = 3101
 )
