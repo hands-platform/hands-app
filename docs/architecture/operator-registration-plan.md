@@ -45,7 +45,7 @@ npm.cmd run external:check:maps
      - first-pick response window: 10 minutes
      - marketplace radius: 10km
      - marketplace location freshness: 30 minutes
-     - customer final partner selection: always required
+     - final partner connection: first-pick valid acceptance first, otherwise customer fallback selection
      - negative partner wallet: marketplace participation blocked until settlement
    - Legacy env keys may still contain `BACKUP`; treat them as marketplace settings.
 

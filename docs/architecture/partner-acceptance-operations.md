@@ -11,8 +11,9 @@ Default operating policy:
 - Preferred partner response window: 10 minutes.
 - Marketplace partner radius: 10km from the confirmed booking address.
 - Marketplace partners can participate while the preferred partner is still deciding.
-- Customers always choose the final partner.
-- No automatic final matching.
+- The preferred partner can become the matched partner by validly accepting first under API rules.
+- Customer final partner selection is required when the preferred partner does not validly match first or the flow falls back to participant review.
+- No automatic nearest-partner assignment.
 - Matched bookings open chat immediately; service start keeps the matched chat available.
 - Route calculation and live navigation APIs are not required for MVP.
 
@@ -173,7 +174,7 @@ These should stay configurable instead of being hardcoded:
 - Preferred partner response window.
 - Marketplace partner radius.
 - Whether marketplace partners can appear immediately or only after a delay.
-- Whether preferred partner acceptance requires customer final confirmation.
+- Whether preferred partner acceptance matched first or customer fallback selection was required.
 - Marketplace list visibility is not retained as partner activity. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace participation and customer final marketplace selection until settlement or approved offset clears the debt.
 - No-show review thresholds and settlement decision options.
 - Cash settlement deadline.
