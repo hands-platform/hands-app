@@ -32,6 +32,7 @@ import { updateOperationalPolicy } from './actions';
 import { buildActionGatePolicyChecklist } from './action-gate-policy-checklist';
 import { buildMatchingPlaybook } from './matching-playbook';
 import { policyImpactDetails } from './policy-impact-details';
+import { buildPolicySupplySensitivity, type PolicySupplySensitivity } from './policy-supply-sensitivity';
 import { operationsOwnerDecisionBacklog } from './owner-decision-backlog';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -44,26 +45,6 @@ type BookingMatchingPolicySnapshot = {
   preferredAcceptMode: string | null;
   backupOpenMode: string | null;
   travelBufferMinutes: number | null;
-};
-type PolicySupplySensitivity = {
-  referenceLabel: string;
-  currentPolicyLabel: string;
-  summary: Array<{ label: string; value: string; helper: string }>;
-  radiusRows: Array<{
-    radiusLabel: string;
-    eligible: number;
-    fresh: number;
-    finalGateHeld: number;
-    operatorRead: string;
-    pillClass: string;
-  }>;
-  freshnessRows: Array<{
-    freshnessLabel: string;
-    eligible: number;
-    staleExcluded: number;
-    operatorRead: string;
-    pillClass: string;
-  }>;
 };
 type OwnerDecisionPressure = {
   alertCount: number;
@@ -2141,132 +2122,6 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
     ],
     cards,
     impact,
-  };
-}
-
-function buildPolicySupplySensitivity(
-  settings: AdminOperationalPolicySetting[],
-  bookings: AdminBooking[],
-  providers: AdminProvider[],
-): PolicySupplySensitivity {
-  const backupRadiusMeters =
-    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceRadiusMeters;
-  const freshnessMinutes =
-    policyNumberValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.marketplaceLocationFreshnessMinutes;
-  const walletGate =
-    policyStringValue(settings, OPERATIONAL_POLICY_KEYS.walletNegativeGate) ??
-    ADMIN_OPERATIONS_POLICY_DEFAULTS.walletNegativeGate;
-  const hardWalletBlock = adminWalletGateBlocksMarketplaceParticipation(walletGate);
-  const reference = referenceBookingCoordinate(bookings);
-  const candidates = providers
-    .map((provider) => {
-      const coordinate = parseCoordinatePair(provider.currentLat, provider.currentLng);
-      const ageMinutes = locationAgeMinutes(provider.currentLocationUpdatedAt);
-      const distanceMeters = coordinate
-        ? haversineDistanceMeters(reference.lat, reference.lng, coordinate.lat, coordinate.lng)
-        : null;
-      return {
-        provider,
-        ageMinutes,
-        distanceMeters,
-        hasCoordinate: Boolean(coordinate),
-        marketplaceBlocked: partnerMarketplaceBlocked(provider, { hardWalletBlock }),
-        finalGateHeld: partnerFinalGateHeld(provider, { hardWalletBlock }),
-        online: provider.status === 'ONLINE_AVAILABLE',
-      };
-    })
-    .filter((item) => item.hasCoordinate && item.distanceMeters !== null);
-  const currentVisibleSupply = candidates.filter(
-    (item) =>
-      item.online &&
-      !item.marketplaceBlocked &&
-      (item.distanceMeters ?? Infinity) <= backupRadiusMeters &&
-      (item.ageMinutes ?? Infinity) <= freshnessMinutes,
-  );
-  const currentFinalGateHeld = candidates.filter(
-    (item) => item.finalGateHeld && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
-  );
-  const currentStaleExcluded = candidates.filter(
-    (item) =>
-      item.online &&
-      !item.marketplaceBlocked &&
-      (item.distanceMeters ?? Infinity) <= backupRadiusMeters &&
-      (item.ageMinutes === null || item.ageMinutes > freshnessMinutes),
-  );
-
-  const radiusOptions = uniqueNumbers([5000, 10000, backupRadiusMeters, 15000, 20000]).sort((a, b) => a - b);
-  const freshnessOptions = uniqueNumbers([10, 30, freshnessMinutes, 60, 120]).sort((a, b) => a - b);
-
-  return {
-    referenceLabel: reference.label,
-    currentPolicyLabel: `${formatDistance(backupRadiusMeters)} / ${freshnessMinutes}m fresh`,
-    summary: [
-      {
-        label: 'Coordinate sample',
-        value: candidates.length.toString(),
-        helper: `${providers.length} total partner(s), ${candidates.length} with saved coordinates.`,
-      },
-      {
-        label: 'Current visible supply',
-        value: currentVisibleSupply.length.toString(),
-        helper: 'Online, marketplace eligible, inside radius, and fresh enough.',
-      },
-      {
-        label: 'Marketplace/payout held in radius',
-        value: currentFinalGateHeld.length.toString(),
-        helper:
-          'Marketplace participation or payout release may wait for settlement, identity, bank, or account controls.',
-      },
-      {
-        label: 'Stale excluded',
-        value: currentStaleExcluded.length.toString(),
-        helper: 'Could become usable by opening the Partner app and refreshing location.',
-      },
-    ],
-    radiusRows: radiusOptions.map((radius) => {
-      const insideRadius = candidates.filter((item) => (item.distanceMeters ?? Infinity) <= radius);
-      const eligible = insideRadius.filter(
-        (item) =>
-          item.online && !item.marketplaceBlocked && (item.ageMinutes ?? Infinity) <= freshnessMinutes,
-      );
-      const fresh = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= freshnessMinutes);
-      const finalGateHeld = insideRadius.filter((item) => item.finalGateHeld);
-      return {
-        radiusLabel: formatDistance(radius),
-        eligible: eligible.length,
-        fresh: fresh.length,
-        finalGateHeld: finalGateHeld.length,
-        operatorRead: radiusSensitivityRead(radius, backupRadiusMeters, eligible.length),
-        pillClass:
-          radius === backupRadiusMeters
-            ? 'pill-info'
-            : radius < backupRadiusMeters
-              ? 'pill-warn'
-              : 'pill-neutral',
-      };
-    }),
-    freshnessRows: freshnessOptions.map((freshness) => {
-      const insideRadius = candidates.filter(
-        (item) =>
-          item.online && !item.marketplaceBlocked && (item.distanceMeters ?? Infinity) <= backupRadiusMeters,
-      );
-      const eligible = insideRadius.filter((item) => (item.ageMinutes ?? Infinity) <= freshness);
-      const staleExcluded = insideRadius.length - eligible.length;
-      return {
-        freshnessLabel: `${freshness} min`,
-        eligible: eligible.length,
-        staleExcluded,
-        operatorRead: freshnessSensitivityRead(freshness, freshnessMinutes, eligible.length, staleExcluded),
-        pillClass:
-          freshness === freshnessMinutes
-            ? 'pill-info'
-            : freshness < freshnessMinutes
-              ? 'pill-warn'
-              : 'pill-neutral',
-      };
-    }),
   };
 }
 
