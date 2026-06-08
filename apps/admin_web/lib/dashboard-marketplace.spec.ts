@@ -167,6 +167,53 @@ describe('dashboard marketplace participant snapshot', () => {
     expect(snapshot.customerChoicePendingBookings).toBe(1);
   });
 
+  it('counts cash fee debt bookings that block marketplace participation', () => {
+    const snapshot = buildMarketplaceParticipantSnapshot([
+      booking({
+        id: 'booking-cash-debt',
+        payment: {
+          method: 'CASH',
+          status: 'AUTHORIZED',
+          amount: 500000,
+        },
+        earning: {
+          id: 'earning-cash-debt',
+          providerProfileId: 'partner-debt',
+          bookingId: 'booking-cash-debt',
+          grossAmount: 500000,
+          platformFee: 120000,
+          withholdingAmount: 0,
+          netAmount: -120000,
+          currency: 'VND',
+          status: 'PENDING',
+          createdAt: '2026-06-07T01:00:00.000Z',
+        },
+      }),
+      booking({
+        id: 'booking-cash-settled',
+        payment: {
+          method: 'CASH',
+          status: 'AUTHORIZED',
+          amount: 500000,
+        },
+        earning: {
+          id: 'earning-cash-settled',
+          providerProfileId: 'partner-clear',
+          bookingId: 'booking-cash-settled',
+          grossAmount: 500000,
+          platformFee: 120000,
+          withholdingAmount: 0,
+          netAmount: -120000,
+          currency: 'VND',
+          status: 'PAID',
+          createdAt: '2026-06-07T02:00:00.000Z',
+        },
+      }),
+    ]);
+
+    expect(snapshot.cashDebtBlockedBookings).toBe(1);
+  });
+
   it('returns operator-safe fallbacks when no participant history exists', () => {
     const snapshot = buildMarketplaceParticipantSnapshot([
       booking({

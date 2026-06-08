@@ -824,6 +824,11 @@ export default async function DashboardPage({ searchParams }: { searchParams?: D
             <small>Open matching rows where the customer is still waiting for partner options.</small>
           </div>
           <div>
+            <span>Cash fee gate</span>
+            <strong>{marketplaceParticipantSnapshot.cashDebtBlockedBookings}</strong>
+            <small>Bookings where unpaid HANDS fees block marketplace alerts, participation, and payout release.</small>
+          </div>
+          <div>
             <span>Latest participant</span>
             <strong>
               <Link className="text-link" href={marketplaceParticipantSnapshot.latestParticipantHref}>

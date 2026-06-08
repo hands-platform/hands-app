@@ -5,6 +5,7 @@ import {
   bookingPreferredPartnerIdForChoice,
   bookingSelectedPartnerIdForChoice,
 } from './booking-participant-choice';
+import { bookingCashDebtNeedsSettlement } from './booking-finance-flags';
 import { shortId } from './admin-format';
 
 export type MarketplaceParticipantSnapshot = {
@@ -17,6 +18,7 @@ export type MarketplaceParticipantSnapshot = {
   customerSelectedRows: number;
   declinedRows: number;
   openBookingsWithoutParticipants: number;
+  cashDebtBlockedBookings: number;
   bookingsWithParticipantHistory: number;
   latestParticipantLabel: string;
   latestParticipantHref: string;
@@ -24,6 +26,14 @@ export type MarketplaceParticipantSnapshot = {
 
 export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): MarketplaceParticipantSnapshot {
   const openMarketplaceBookings = bookings.filter((booking) => booking.status === 'OPEN_MATCHING').length;
+  const cashDebtBlockedBookings = bookings.filter((booking) =>
+    bookingCashDebtNeedsSettlement({
+      paymentMethod: booking.payment?.method,
+      hasEarning: Boolean(booking.earning),
+      earningNetAmount: booking.earning?.netAmount,
+      earningStatus: booking.earning?.status,
+    }),
+  ).length;
   const participantRows = bookings.flatMap((booking) =>
     (booking.participants ?? []).map((participant) => ({ booking, participant })),
   );
@@ -75,6 +85,7 @@ export function buildMarketplaceParticipantSnapshot(bookings: AdminBooking[]): M
     customerSelectedRows: customerSelectedRows.length,
     declinedRows: declinedRows.length,
     openBookingsWithoutParticipants,
+    cashDebtBlockedBookings,
     bookingsWithParticipantHistory,
     latestParticipantLabel: latest
       ? `${bookingServiceLabelForSnapshot(latest.booking)} / ${shortId(latest.booking.id, { fallback: 'unknown' })}`
