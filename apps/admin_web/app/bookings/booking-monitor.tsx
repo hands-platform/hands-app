@@ -29,6 +29,7 @@ import {
   providerLocationFreshnessFromTimestamp,
 } from '../../lib/booking-status-location-helpers';
 import { participantDistancePolicy } from '../../lib/admin-distance-policy';
+import { participantChatHandoffState } from '../../lib/admin-participant-chat-handoff';
 import { participantChoicePresentation } from '../../lib/admin-participant-ledger-copy';
 import { bookingCommandDecisionStrip } from '../../lib/booking-command-decision-strip';
 import { bookingFinalGateReason as buildBookingFinalGateReasonFromFacts } from '../../lib/booking-final-gate-reason';
@@ -228,6 +229,8 @@ type MarketplaceParticipantLedgerRow = {
   choiceTone: string;
   choiceReason: string;
   choiceNextStep: string;
+  chatHandoffLabel: string;
+  chatHandoffTone: string;
   windowLabel: string;
   alertLabel: string;
   alertTone: string;
@@ -1653,6 +1656,9 @@ export function BookingMonitor({
                   </td>
                   <td>
                     <span className={`pill ${row.choiceTone}`}>{row.choiceLabel}</span>
+                    <div className="participant-list" style={{ marginTop: 6 }}>
+                      <span className={`pill ${row.chatHandoffTone}`}>{row.chatHandoffLabel}</span>
+                    </div>
                     <div className="muted">{row.choiceReason}</div>
                     <small>{row.choiceNextStep}</small>
                   </td>
@@ -4761,6 +4767,26 @@ function buildMarketplaceParticipantLedgerRows(
       .map((participant) => {
         const distanceMeters = typeof participant.distanceMeters === 'number' ? participant.distanceMeters : null;
         const distancePolicy = participantDistancePolicy(distanceMeters, marketplaceRadiusMeters);
+        const selectedPartnerId = bookingSelectedPartnerIdForChoice(booking);
+        const participantPartnerId = bookingParticipantPartnerId(participant);
+        const isFinal = Boolean(selectedPartnerId && participantPartnerId === selectedPartnerId);
+        const finalPartnerRecorded = Boolean(selectedPartnerId);
+        const customerSelectable = isCustomerSelectableBookingParticipant(
+          participant,
+          bookingPreferredPartnerIdForChoice(booking),
+        );
+        const chatRequired = Boolean(
+          finalPartnerRecorded ||
+            ['MATCHED', 'PROVIDER_ON_THE_WAY', 'ARRIVED', 'IN_SERVICE', 'COMPLETED'].includes(booking.status),
+        );
+        const chatHandoff = participantChatHandoffState({
+          chatRequired,
+          customerSelectable,
+          finalPartnerRecorded,
+          hasChatRoom: Boolean(booking.chatRoom),
+          isFinal,
+          status: participant.status ?? 'UNKNOWN',
+        });
         return {
           booking,
           participant,
@@ -4784,6 +4810,8 @@ function buildMarketplaceParticipantLedgerRows(
           alertTone: bookingBackupAlertTraceTone(booking),
           ...bookingMarketplaceWalletSignal(booking),
           ...marketplaceParticipantChoiceState(booking, participant),
+          chatHandoffLabel: chatHandoff.label,
+          chatHandoffTone: chatHandoff.tone,
         };
       })
       .sort((left, right) => {

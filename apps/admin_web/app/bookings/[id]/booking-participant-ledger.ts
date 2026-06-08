@@ -3,6 +3,7 @@ import {
   marketplaceParticipantLedgerBoundaryCopy,
   participantReadableDecision,
 } from '../../../lib/admin-participant-ledger-copy';
+import { participantChatHandoffState } from '../../../lib/admin-participant-chat-handoff';
 import { participantDistancePolicy } from '../../../lib/admin-distance-policy';
 import { formatDistanceMeters } from '../../../lib/admin-format';
 import { distanceLabel, formatDate, providerName, shortId } from './booking-formatters';
@@ -270,7 +271,7 @@ export function bookingParticipantLedger(
           ? 'Customer-selectable'
           : 'Evidence-only';
       const choiceTone = isFinal ? 'pill-success' : customerSelectable ? 'pill-info' : 'pill-neutral';
-      const chatHandoff = bookingParticipantChatHandoffState({
+      const chatHandoff = participantChatHandoffState({
         chatRequired,
         customerSelectable,
         finalPartnerRecorded,
@@ -334,41 +335,6 @@ export function bookingParticipantLedger(
       };
     }),
   };
-}
-
-function bookingParticipantChatHandoffState(input: {
-  chatRequired: boolean;
-  customerSelectable: boolean;
-  finalPartnerRecorded: boolean;
-  hasChatRoom: boolean;
-  isFinal: boolean;
-  status: string;
-}) {
-  if (input.isFinal) {
-    if (input.hasChatRoom) {
-      return { label: 'Chat retained', tone: 'pill-success' };
-    }
-
-    if (input.chatRequired) {
-      return { label: 'Chat missing', tone: 'pill-danger' };
-    }
-
-    return { label: 'Final choice recorded', tone: 'pill-success' };
-  }
-
-  if (input.finalPartnerRecorded) {
-    return { label: 'Not final partner', tone: 'pill-neutral' };
-  }
-
-  if (input.customerSelectable) {
-    return { label: 'Waiting customer', tone: 'pill-warn' };
-  }
-
-  if (input.status === 'REJECTED') {
-    return { label: 'No handoff', tone: 'pill-neutral' };
-  }
-
-  return { label: 'Evidence only', tone: 'pill-neutral' };
 }
 
 function bookingParticipantEligibilityState(input: {
