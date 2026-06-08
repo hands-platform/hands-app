@@ -93,11 +93,30 @@ describe('booking participant ledger', () => {
       choiceState: 'Customer final choice',
       eligibilityLabel: 'Final selected by customer',
     });
+    expect(ledger.rows.find((row) => row.id === 'participant-selected')?.facts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Source', value: 'Final partner', tone: 'pill-success' }),
+        expect.objectContaining({ label: 'Decision', value: 'SELECTED', tone: 'pill-success' }),
+        expect.objectContaining({
+          label: 'Customer choice',
+          value: 'Customer final choice',
+          tone: 'pill-success',
+        }),
+        expect.objectContaining({ label: 'Chat handoff', value: 'Chat missing', tone: 'pill-danger' }),
+      ]),
+    );
     expect(ledger.rows.find((row) => row.id === 'participant-marketplace')).toMatchObject({
       role: 'Marketplace',
       choiceState: 'Customer-selectable',
       eligibilityLabel: 'Customer-selectable',
     });
+    expect(ledger.rows.find((row) => row.id === 'participant-marketplace')?.facts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: 'Source', value: 'Marketplace', tone: 'pill-neutral' }),
+        expect.objectContaining({ label: 'Customer choice', value: 'Customer-selectable', tone: 'pill-info' }),
+        expect.objectContaining({ label: 'Chat handoff', value: 'Not final partner', tone: 'pill-neutral' }),
+      ]),
+    );
     expect(ledger.rows.find((row) => row.id === 'participant-first')).toMatchObject({
       role: 'First-pick',
       choiceState: 'Evidence-only',

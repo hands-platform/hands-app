@@ -39,6 +39,12 @@ type ParticipantLifecycleRow = {
   tone: string;
 };
 
+type ParticipantFact = {
+  label: string;
+  value: string;
+  tone: string;
+};
+
 type ParticipantRow = {
   id: string;
   partner: string;
@@ -63,6 +69,7 @@ type ParticipantRow = {
   distancePolicyLabel: string;
   distancePolicyTone: string;
   distancePolicyHelper: string;
+  facts: ParticipantFact[];
   timing: string;
   operatorUse: string;
 };
@@ -386,7 +393,18 @@ function ParticipantLedgerSection({ participantLedger }: { participantLedger: Pa
                 <p className="muted">{row.distancePolicyHelper}</p>
                 <p className="muted">{row.timing}</p>
               </td>
-              <td>{row.operatorUse}</td>
+              <td>
+                <div className="filter-row">
+                  {row.facts.map((fact) => (
+                    <span className={`pill ${fact.tone}`} key={`${row.id}-${fact.label}`}>
+                      {fact.label}: {fact.value}
+                    </span>
+                  ))}
+                </div>
+                <p className="muted" style={{ marginTop: 8 }}>
+                  {row.operatorUse}
+                </p>
+              </td>
             </tr>
           ))}
           {participantLedger.rows.length === 0 && (

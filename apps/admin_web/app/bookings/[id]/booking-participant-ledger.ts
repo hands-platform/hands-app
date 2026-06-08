@@ -270,6 +270,14 @@ export function bookingParticipantLedger(
           ? 'Customer-selectable'
           : 'Evidence-only';
       const choiceTone = isFinal ? 'pill-success' : customerSelectable ? 'pill-info' : 'pill-neutral';
+      const chatHandoff = bookingParticipantChatHandoffState({
+        chatRequired,
+        customerSelectable,
+        finalPartnerRecorded,
+        hasChatRoom: Boolean(booking.chatRoom),
+        isFinal,
+        status: participant.status,
+      });
       const readableDecision = participantReadableDecision({
         isFinal,
         isPreferred,
@@ -312,6 +320,13 @@ export function bookingParticipantLedger(
         distancePolicyLabel: distancePolicy.label,
         distancePolicyTone: distancePolicy.tone,
         distancePolicyHelper: distancePolicy.helper,
+        facts: [
+          { label: 'Source', value: role, tone: roleTone },
+          { label: 'Decision', value: participant.status, tone: statusTone },
+          { label: 'Customer choice', value: choiceState, tone: choiceTone },
+          { label: 'Distance', value: distancePolicy.label, tone: distancePolicy.tone },
+          { label: 'Chat handoff', value: chatHandoff.label, tone: chatHandoff.tone },
+        ],
         timing: `Participated ${formatDate(participant.joinedAt)} / responded ${formatDate(participant.respondedAt)}`,
         operatorUse: `Participant ${shortId(participant.id)} is retained as actual booking evidence. ${
           readableDecision.nextStep
@@ -319,6 +334,41 @@ export function bookingParticipantLedger(
       };
     }),
   };
+}
+
+function bookingParticipantChatHandoffState(input: {
+  chatRequired: boolean;
+  customerSelectable: boolean;
+  finalPartnerRecorded: boolean;
+  hasChatRoom: boolean;
+  isFinal: boolean;
+  status: string;
+}) {
+  if (input.isFinal) {
+    if (input.hasChatRoom) {
+      return { label: 'Chat retained', tone: 'pill-success' };
+    }
+
+    if (input.chatRequired) {
+      return { label: 'Chat missing', tone: 'pill-danger' };
+    }
+
+    return { label: 'Final choice recorded', tone: 'pill-success' };
+  }
+
+  if (input.finalPartnerRecorded) {
+    return { label: 'Not final partner', tone: 'pill-neutral' };
+  }
+
+  if (input.customerSelectable) {
+    return { label: 'Waiting customer', tone: 'pill-warn' };
+  }
+
+  if (input.status === 'REJECTED') {
+    return { label: 'No handoff', tone: 'pill-neutral' };
+  }
+
+  return { label: 'Evidence only', tone: 'pill-neutral' };
 }
 
 function bookingParticipantEligibilityState(input: {
