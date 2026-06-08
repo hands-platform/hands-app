@@ -87,7 +87,7 @@ export function nextPartnerListAction(
       status: 'CASH DEBT',
       detail: `Wallet is negative by ${formatProviderMoney(Math.abs(walletBalance))}.`,
       operatorAction:
-        'Confirm partner fee deposit or settle the cash fee debt before marketplace alerts and participation.',
+        'Confirm partner fee deposit or settle the cash fee debt before marketplace alerts, final acceptance, service start, or payout release.',
       tone: 'blocked',
       priority: 85,
     };

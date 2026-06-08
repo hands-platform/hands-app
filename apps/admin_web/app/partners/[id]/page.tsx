@@ -5992,7 +5992,7 @@ function partnerAppBlockMessage(
     return 'Partner is clear for direct first-pick and marketplace participation.';
   }
   if (bookingAcceptance.cashDebt > 0) {
-    return 'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.';
+    return 'Unpaid HANDS fees must be settled before final acceptance or service start.';
   }
   if (provider.blockedAt || (provider.sanctions ?? []).some((sanction) => sanction.status === 'ACTIVE')) {
     return 'Account requires admin review before receiving work.';

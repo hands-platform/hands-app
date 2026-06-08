@@ -50,7 +50,7 @@ function partner(input: Partial<AdminProvider> = {}): AdminProvider {
 }
 
 describe('partner list actions', () => {
-  it('blocks marketplace participation work before other dispatch checks when cash fee debt exists', () => {
+  it('blocks marketplace finalization work before other dispatch checks when cash fee debt exists', () => {
     const action = nextPartnerListAction(
       partner({
         earnings: [
@@ -75,6 +75,7 @@ describe('partner list actions', () => {
     expect(action.tone).toBe('blocked');
     expect(action.priority).toBe(85);
     expect(action.operatorAction).toContain('settle the cash fee debt');
+    expect(action.operatorAction).toContain('final acceptance');
   });
 
   it('asks for tax review after first earning before payout readiness', () => {
