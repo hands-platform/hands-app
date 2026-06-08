@@ -72,6 +72,16 @@ type MatchedBookingForClientResponse = Prisma.BookingGetPayload<{
   };
 }>;
 
+type SelectedBookingForClientResponse = Prisma.BookingGetPayload<{
+  include: {
+    addressSnapshot: true;
+    chatRoom: true;
+    preferredProvider: true;
+    selectedProvider: true;
+    payment: true;
+  };
+}>;
+
 @Injectable()
 export class BookingsService {
   constructor(
@@ -783,27 +793,35 @@ export class BookingsService {
     if (!participant || !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)) {
       throw new BadRequestException('Partner must participate or accept before customer selection');
     }
-    const booking = await this.prisma.booking.update({
-      where: { id: bookingId },
-      data: {
-        status: BookingStatus.MATCHED,
-        selectedProviderId: providerId,
-        participants: {
-          update: {
-            where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
-            data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
+    let booking: SelectedBookingForClientResponse;
+    try {
+      booking = await this.prisma.booking.update({
+        where: { id: bookingId, status: BookingStatus.OPEN_MATCHING, selectedProviderId: null },
+        data: {
+          status: BookingStatus.MATCHED,
+          selectedProviderId: providerId,
+          participants: {
+            update: {
+              where: { bookingId_providerProfileId: { bookingId, providerProfileId: providerId } },
+              data: { status: ParticipantStatus.SELECTED, respondedAt: new Date() },
+            },
           },
+          chatRoom: { upsert: { create: {}, update: {} } },
         },
-        chatRoom: { upsert: { create: {}, update: {} } },
-      },
-      include: {
-        addressSnapshot: true,
-        chatRoom: true,
-        preferredProvider: true,
-        selectedProvider: true,
-        payment: true,
-      },
-    });
+        include: {
+          addressSnapshot: true,
+          chatRoom: true,
+          preferredProvider: true,
+          selectedProvider: true,
+          payment: true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new BadRequestException('Booking is already matched or no longer open for customer final selection');
+      }
+      throw error;
+    }
 
     await this.matching.closeBooking(bookingId);
     const result = this.matching.selectFinalProvider(bookingId, clientBookingResponse(booking));

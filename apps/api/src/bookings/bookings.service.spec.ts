@@ -4,6 +4,7 @@ import {
   ParticipantStatus,
   PaymentMethod,
   PaymentStatus,
+  Prisma,
   ProviderBankAccountStatus,
   ProviderDocumentStatus,
   ProviderDocumentType,
@@ -609,6 +610,76 @@ describe('BookingsService final partner selection', () => {
       'booking-1',
       expect.objectContaining({ event: 'booking.matched' }),
     );
+  });
+
+  it('blocks customer final selection when the booking was already matched by a racing first-pick acceptance', async () => {
+    const raceError = new Prisma.PrismaClientKnownRequestError('No booking matched the conditional update', {
+      code: 'P2025',
+      clientVersion: 'test',
+    });
+    const marketplacePartner = approvedPartner({
+      id: 'marketplace-partner',
+      userId: 'marketplace-user-1',
+      displayName: 'Marketplace Partner',
+    });
+    const prisma = {
+      customerProfile: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+      },
+      booking: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'booking-1',
+          customerProfileId: 'customer-1',
+          status: BookingStatus.OPEN_MATCHING,
+          preferredProviderId: 'first-pick-partner',
+        }),
+        update: jest.fn().mockRejectedValue(raceError),
+      },
+      bookingParticipant: {
+        findUnique: jest.fn().mockResolvedValue({
+          bookingId: 'booking-1',
+          providerProfileId: marketplacePartner.id,
+          status: ParticipantStatus.JOINED,
+        }),
+      },
+      providerEarning: {
+        aggregate: jest.fn(),
+      },
+      adminAuditLog: { create: jest.fn() },
+    };
+    const matching = {
+      closeBooking: jest.fn(),
+      selectFinalProvider: jest.fn(),
+    };
+    const matchingGateway = { emitBookingMatched: jest.fn() };
+    const notifications = { create: jest.fn() };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      {} as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await expect(
+      service.selectProvider('booking-1', 'customer-user-1', marketplacePartner.id),
+    ).rejects.toThrow('Booking is already matched or no longer open for customer final selection');
+
+    expect(prisma.booking.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          id: 'booking-1',
+          status: BookingStatus.OPEN_MATCHING,
+          selectedProviderId: null,
+        },
+      }),
+    );
+    expect(matching.closeBooking).not.toHaveBeenCalled();
+    expect(matching.selectFinalProvider).not.toHaveBeenCalled();
+    expect(matchingGateway.emitBookingMatched).not.toHaveBeenCalled();
+    expect(notifications.create).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 
   it('blocks customer final selection for a preferred first-pick partner until that partner accepts', async () => {
