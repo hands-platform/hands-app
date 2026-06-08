@@ -1542,11 +1542,11 @@ function buildPolicySimulation(
         status: customerFinalConfirm ? 'Customer controls' : 'Fast lock',
         title: 'Final matching decision',
         detail: customerFinalConfirm
-          ? 'Accepted partners still require customer final selection.'
-          : 'This setting would skip the final customer choice step.',
+          ? 'Customer final selection applies when first-pick does not validly match first.'
+          : 'This setting would conflict with the first-pick priority plus customer fallback flow.',
         operatorAction: customerFinalConfirm
-          ? 'This matches the current HANDS direction: customer always chooses the final partner.'
-          : 'Treat this as a configuration conflict for HANDS and return to customer-confirm mode.',
+          ? 'This matches the current HANDS direction: first-pick can win first, otherwise the customer chooses.'
+          : 'Treat this as a configuration conflict for HANDS and return to first-pick priority with customer fallback.',
         className: customerFinalConfirm ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: customerFinalConfirm ? 'pill-success' : 'pill-danger',
       },
