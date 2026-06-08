@@ -156,7 +156,7 @@ assert.equal(
 assert.equal(
   defaultMatchingPolicy.preferredAcceptMode,
   PREFERRED_ACCEPT_CUSTOMER_CONFIRM,
-  'customer final partner selection must stay mandatory',
+  'first-pick valid acceptance should stay prioritized with customer fallback selection',
 );
 assert.equal(
   defaultMatchingPolicy.backupOpenMode,
@@ -202,9 +202,9 @@ assert.equal(walletBlock.displayMessage, PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPL
 assert.equal(walletBlock.walletBalance, -145000);
 assert.equal(walletBlock.walletDebtAmount, 145000);
 assert.equal(walletBlock.marketplaceVisibilityBlocked, false);
-assert.equal(walletBlock.marketplaceJoinBlocked, true);
+assert.equal(walletBlock.marketplaceJoinBlocked, false);
 assert.equal(walletBlock.directFirstPickBlocked, false);
-assert.equal(walletBlock.alreadyMatchedServiceBlocked, false);
+assert.equal(walletBlock.alreadyMatchedServiceBlocked, true);
 assert.equal(walletBlock.payoutReleaseBlocked, true);
 assert.equal(walletBlock.walletSettlementMethod, PROVIDER_WALLET_SETTLEMENT_METHOD);
 assert.ok(walletBlock.walletSettlementReference.startsWith('HANDS-WALLET-'));
