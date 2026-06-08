@@ -103,7 +103,6 @@ import {
   bookingCustomerSelectableParticipantsForFinalChoice,
   bookingParticipantProviderId,
   bookingPreferredProviderId,
-  isCustomerSelectableParticipantForFinalChoice,
 } from './booking-participant-rules';
 import { bookingStageSnapshot } from './booking-stage-snapshot';
 import {

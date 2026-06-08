@@ -58,7 +58,7 @@ describe('partner activity facts', () => {
     expect(latestPartnerBookingRecord(rows)?.id).toBe('latest-booking');
   });
 
-  it('summarizes earnings without partner scoring or risk judgment', () => {
+  it('summarizes factual earnings for operations', () => {
     const result = partner({
       earnings: [
         {

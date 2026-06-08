@@ -25,11 +25,10 @@ import {
   adminPartnerWalletBalance,
   adminWalletGateBlocksMarketplaceParticipation,
   operationalPolicyAnchor,
-  operationalPolicyHref,
 } from '../../lib/operations-policy';
 import { updateOperationalPolicy } from './actions';
 import { buildActionGatePolicyChecklist } from './action-gate-policy-checklist';
-import { buildMatchingStageImpactPreview, type MatchingStageImpactPreview } from './matching-stage-impact-preview';
+import { buildMatchingStageImpactPreview } from './matching-stage-impact-preview';
 import { buildMatchingPlaybook } from './matching-playbook';
 import { buildPolicyEnforcementTrace } from './policy-enforcement-trace';
 import { buildPolicyOutcomeEffect } from './policy-outcome-effect';
@@ -196,7 +195,7 @@ export default async function OperationsPolicyPage({
             <span className="pill pill-info">10km marketplace</span>
             <h3>Booking-address radius</h3>
             <p>
-              Marketplace participation and alerts are based on the booking address, not the customer's
+              Marketplace participation and alerts are based on the booking address, not the customer&apos;s
               browsing location or current country.
             </p>
             <small>The radius is admin-editable and defaults to 10km for Vietnam operations.</small>
@@ -3012,43 +3011,6 @@ function formatDistance(meters: number) {
     return `${Math.round(meters)} m`;
   }
   return `${(meters / 1000).toLocaleString('en', { maximumFractionDigits: 1 })} km`;
-}
-
-function uniqueNumbers(values: number[]) {
-  return Array.from(new Set(values.filter((value) => Number.isFinite(value) && value > 0)));
-}
-
-function radiusSensitivityRead(radius: number, currentRadius: number, eligibleCount: number) {
-  if (eligibleCount === 0) {
-    return 'No usable marketplace supply at this radius. Operators should improve partner location/push readiness before relying on it.';
-  }
-  if (radius < currentRadius) {
-    return 'Tighter radius improves arrival quality but can create empty customer waiting screens in thin cities.';
-  }
-  if (radius > currentRadius) {
-    return 'Wider radius increases customer options, but operators should watch late arrivals and ignored alerts.';
-  }
-  return 'Current live radius. Use this as the baseline before changing matching policy.';
-}
-
-function freshnessSensitivityRead(
-  freshness: number,
-  currentFreshness: number,
-  eligibleCount: number,
-  staleExcluded: number,
-) {
-  if (eligibleCount === 0) {
-    return 'No visible partner remains under this freshness rule. Ask partners to reopen the app or loosen only with caution.';
-  }
-  if (freshness < currentFreshness) {
-    return 'Stricter freshness improves distance confidence, but may hide partners who update every 10 minutes imperfectly.';
-  }
-  if (freshness > currentFreshness) {
-    return 'Looser freshness exposes more supply, but stale pins can create bad arrival expectations.';
-  }
-  return staleExcluded
-    ? 'Current live freshness. Stale partners can be recovered by opening the Partner app.'
-    : 'Current live freshness. No stale partner is being excluded in this sample.';
 }
 
 function operationalPolicyAuditRows(logs: AdminAuditLog[]) {
