@@ -6,7 +6,7 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
-import { compactValue, formatDateTime, formatMoney as formatProviderMoney } from '../../lib/admin-format';
+import { formatDateTime, formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { buildCsvDataHref } from '../../lib/csv-export';
 import { ADMIN_PARTNER_REQUIRED_KYC_DOCUMENTS } from '../../lib/operations-policy';
@@ -41,7 +41,6 @@ import {
 import {
   DEFAULT_PROVIDER_OPS_POLICY,
   buildProviderOpsPolicy,
-  dateMs,
   formatBytes,
   formatDate,
   formatDistanceMeters,
@@ -51,7 +50,7 @@ import {
   providerLocationPillClass,
   providerLocationStatus,
 } from './partner-list-ops';
-import type { ProviderLocationState, ProviderOpsPolicy } from './partner-list-ops';
+import type { ProviderOpsPolicy } from './partner-list-ops';
 import {
   hasApprovedBankAccount,
   hasHealthyPush,
@@ -74,15 +73,7 @@ import {
   partnerTaxNeedsReview as providerTaxNeedsReview,
   partnerTaxPillClass as providerTaxPillClass,
 } from './partner-finance-readiness-facts';
-import {
-  partnerAvailablePayout as providerAvailablePayout,
-  partnerBookingRows as providerBookingRows,
-  partnerCompletedWorkCount as providerCompletedWorkCount,
-  partnerGrossRevenue as providerGrossRevenue,
-  partnerLastSessionAt,
-  partnerPendingPayout as providerPendingPayout,
-  partnerUnsettledWalletBalance as providerUnsettledWalletBalance,
-} from './partner-activity-facts';
+import { partnerUnsettledWalletBalance as providerUnsettledWalletBalance } from './partner-activity-facts';
 import { buildPartnerMarketplaceEligibility } from './partner-marketplace-eligibility';
 import {
   partnerSecurityPillClass as providerSecurityPillClass,
@@ -126,8 +117,7 @@ import {
   partnerAcceptBlockerSummary,
   partnerOperationPillClass,
 } from './partner-operation-row';
-
-const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
+import { buildPartnerMasterRow } from './partner-master-row';
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 const PROVIDER_LIST_RENDER_LIMIT = 40;
 const PARTNER_LIST_QUERY_DEPS: PartnerListQueryDeps = {
@@ -186,7 +176,9 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
       canAcceptBookingNow: partnerCanAcceptBookingNow,
     }),
   );
-  const partnerMasterRows = visibleProviders.map((provider) => buildPartnerMasterRow(provider, opsPolicy));
+  const partnerMasterRows = visibleProviders.map((provider) =>
+    buildPartnerMasterRow(provider, opsPolicy, { displayName: providerDisplayName }),
+  );
   const partnerExportRows = partnerMasterRows.map((master, index) => {
     const provider = master.provider;
     const operations =
@@ -1719,42 +1711,6 @@ type PartnerOpsBadge = {
   detail: string;
   tone: 'success' | 'danger' | 'warn' | 'info' | 'neutral';
 };
-type PartnerMasterRow = {
-  provider: AdminProvider;
-  initials: string;
-  displayName: string;
-  legalName: string;
-  phone: string;
-  gender: string;
-  status: string;
-  online: boolean;
-  level: string;
-  kycStatus: string;
-  joinedAt: string | null;
-  lastSeenAt: string | null;
-  latestSessionDevice: string;
-  latestSessionPlatform: string;
-  latestSessionIp: string;
-  latestSessionAppVersion: string;
-  locationState: ProviderLocationState;
-  bookingCount: number;
-  completedCount: number;
-  closedCount: number;
-  customerClosedCount: number;
-  adminClosedCount: number;
-  partnerClosedCount: number;
-  noShowCount: number;
-  reviewCount: number;
-  grossRevenue: number;
-  platformFee: number;
-  pendingPayout: number;
-  availablePayout: number;
-  auditLogCount: number;
-  latestAuditTitle: string;
-  latestAuditDetail: string;
-  accountBlocked: boolean;
-  accountNote: string;
-};
 
 function ProviderNextActionCell({
   provider,
@@ -1801,95 +1757,6 @@ function PartnerOpsBadgeList({
       ))}
     </div>
   );
-}
-
-function buildPartnerMasterRow(provider: AdminProvider, opsPolicy: ProviderOpsPolicy): PartnerMasterRow {
-  const bookingRows = providerBookingRows(provider);
-  const earnings = provider.earnings ?? [];
-  const displayName = providerDisplayName(provider);
-  const lastSeenAt = partnerLastSessionAt(provider);
-  const latestSessionFacts = partnerLatestSessionFacts(provider);
-  const accountBlocked = Boolean(provider.blockedAt);
-  const closedRows = bookingRows.filter((booking) => CLOSED_BOOKING_STATUSES.includes(booking.status));
-  const latestAuditLog = latestProviderAuditLog(provider);
-
-  return {
-    provider,
-    initials: partnerInitials(displayName),
-    displayName,
-    legalName: marketplaceDisplayText(
-      provider.legalName ?? provider.user?.fullName ?? 'Legal name not saved',
-    ),
-    phone: provider.user?.phone ?? 'No phone',
-    gender: provider.gender ?? 'Not saved',
-    status: provider.status,
-    online: provider.status !== 'OFFLINE',
-    level: provider.level ?? 'LEVEL_1_SIGNUP',
-    kycStatus: provider.kyc?.status ?? 'DRAFT',
-    joinedAt: provider.user?.createdAt ?? null,
-    lastSeenAt,
-    latestSessionDevice: latestSessionFacts.device,
-    latestSessionPlatform: latestSessionFacts.platform,
-    latestSessionIp: latestSessionFacts.ip,
-    latestSessionAppVersion: latestSessionFacts.appVersion,
-    locationState: providerLocationStatus(provider, opsPolicy),
-    bookingCount: bookingRows.length,
-    completedCount:
-      bookingRows.filter((booking) => booking.status === 'COMPLETED').length ||
-      providerCompletedWorkCount(provider),
-    closedCount: closedRows.length,
-    customerClosedCount: closedRows.filter((booking) => booking.closedByRole === 'CUSTOMER').length,
-    adminClosedCount: closedRows.filter((booking) => booking.closedByRole === 'ADMIN').length,
-    partnerClosedCount: closedRows.filter((booking) => booking.closedByRole === 'PROVIDER').length,
-    noShowCount: bookingRows.filter((booking) => booking.status === 'NO_SHOW').length,
-    reviewCount: Number(provider.reviewCount ?? 0),
-    grossRevenue: providerGrossRevenue(provider),
-    platformFee: earnings.reduce((sum, earning) => sum + Number(earning.platformFee ?? 0), 0),
-    pendingPayout: providerPendingPayout(provider),
-    availablePayout: providerAvailablePayout(provider),
-    auditLogCount: provider.auditLogCount ?? provider.auditLogs?.length ?? 0,
-    latestAuditTitle: latestAuditLog?.action ?? 'No internal note',
-    latestAuditDetail: latestAuditLog
-      ? compactValue(latestAuditLog.metadata, 96)
-      : 'No partner memo or audit event saved yet',
-    accountBlocked,
-    accountNote: accountBlocked ? (provider.blockedReason ?? 'No block reason saved') : 'Normal account',
-  };
-}
-
-function latestProviderAuditLog(provider: AdminProvider) {
-  const logs = [...(provider.auditLogs ?? [])].sort(
-    (left, right) => dateMs(right.createdAt) - dateMs(left.createdAt),
-  );
-  return logs.find((log) => log.action === 'provider.ops_note.add') ?? logs[0] ?? null;
-}
-
-function partnerLatestSessionFacts(provider: AdminProvider) {
-  const latestSession = provider.sessions?.[0];
-  const latestDevice = provider.devices?.[0];
-  const platform = latestDevice?.platform ?? 'Unknown platform';
-  const appVersion = latestSession?.appVersion ?? latestDevice?.appVersion;
-  const appVersionLabel = appVersion ? `v${appVersion}` : 'No app version';
-  const deviceId = latestSession?.deviceId ?? latestDevice?.deviceId;
-
-  return {
-    device: deviceId ? `${platform} / ${appVersionLabel} / ${maskToken(deviceId)}` : 'No session',
-    platform,
-    ip: latestSession?.ipAddress ?? 'No IP recorded',
-    appVersion: appVersion ?? 'No app version',
-  };
-}
-
-function partnerInitials(value: string) {
-  const parts = value
-    .split(/\s+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-  if (!parts.length) return 'P';
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join('');
 }
 
 function ProviderIssuePills({
