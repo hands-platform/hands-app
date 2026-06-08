@@ -981,11 +981,11 @@ function buildCashSettlementHandoffMap(
     },
     {
       title: 'Marketplace reopen rule',
-      status: hasOpenDebt ? 'Participation gated' : 'Participation open',
+      status: hasOpenDebt ? 'Finalization gated' : 'Participation open',
       detail: hasOpenDebt
-        ? 'Partners may see marketplace requests, but cannot participate in marketplace bookings while wallet debt remains.'
+        ? 'Partners may see and join marketplace requests, but final acceptance, service start, and payout release wait for wallet settlement.'
         : 'Cleared partner wallets can participate in eligible marketplace bookings again.',
-      operatorRule: 'Partner app message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
+      operatorRule: 'Partner app message: Unpaid HANDS fees must be settled before final acceptance or service start.',
       href: '/bookings?view=marketplace',
       className: hasOpenDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',

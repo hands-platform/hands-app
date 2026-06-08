@@ -33,27 +33,36 @@ export function buildPartnerMarketplaceEligibility(
   const blockers = partnerMarketplaceBlockers(provider, opsPolicy);
   const eligible = blockers.length === 0;
   const walletBalance = partnerUnsettledWalletBalance(provider);
+  const hasWalletDebt = walletBalance < 0;
+  const onlyWalletBlocksMarketplaceFinalization =
+    hasWalletDebt && blockers.every((blocker) => blocker.label === 'cash fee debt');
 
   return {
     eligible,
     canViewMarketplace: !provider.blockedAt,
     canReceiveMarketplaceAlerts: eligible,
-    canParticipateInMarketplace: eligible,
+    canParticipateInMarketplace: eligible || onlyWalletBlocksMarketplaceFinalization,
     blockers,
     walletBalance,
     detail: eligible
       ? `Can receive marketplace alerts and join eligible bookings within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )} during the ${opsPolicy.responseWindowMinutes}m first-pick window.`
-      : `Marketplace matching needs the listed blockers resolved. Negative wallet blocks marketplace alerts and participation until the HANDS fee debt is settled. Distance is still checked per booking within ${formatDistanceMeters(
+      : onlyWalletBlocksMarketplaceFinalization
+        ? `Can view and join eligible marketplace bookings within ${formatDistanceMeters(
+            opsPolicy.backupRadiusMeters,
+          )}, but final acceptance, service start, and payout release wait for HANDS fee settlement.`
+        : `Marketplace matching needs the listed blockers resolved. Negative wallet blocks final acceptance, service start, and payout release until the HANDS fee debt is settled. Distance is still checked per booking within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )}.`,
     operatorAction: eligible
       ? 'For a live booking, confirm the booking address is inside radius before asking this partner to join.'
-      : 'Fix identity, account, location, wallet, or alert blockers before relying on this partner for marketplace participation or customer choice list recovery.',
+      : onlyWalletBlocksMarketplaceFinalization
+        ? 'Let marketplace join remain visible for customer recovery, but settle the wallet before final acceptance, service start, or payout release.'
+        : 'Fix identity, account, location, wallet, or alert blockers before relying on this partner for marketplace participation or customer choice list recovery.',
     partnerAppMessage:
       walletBalance < 0
-        ? 'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.'
+        ? 'Unpaid HANDS fees must be settled before final acceptance or service start.'
         : null,
   };
 }

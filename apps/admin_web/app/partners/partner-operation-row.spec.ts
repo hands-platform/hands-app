@@ -90,7 +90,7 @@ describe('partner operation row', () => {
     expect(row.marketplaceAccessLabel).toBe('Fee settlement required');
     expect(row.marketplaceCanView).toBe(true);
     expect(row.marketplaceCanReceiveAlerts).toBe(false);
-    expect(row.marketplaceCanParticipate).toBe(false);
+    expect(row.marketplaceCanParticipate).toBe(true);
     expect(row.marketplacePartnerAppMessage).toContain('Unpaid HANDS fees');
     expect(row.checklist.find((item) => item.label === 'Wallet')).toMatchObject({
       status: 'settlement needed',

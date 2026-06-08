@@ -38,7 +38,7 @@ function partner(input: Partial<AdminProvider> = {}): AdminProvider {
 }
 
 describe('partner marketplace eligibility', () => {
-  it('lets negative-wallet partners view marketplace requests but blocks alerts and participation', () => {
+  it('lets negative-wallet partners view and join marketplace requests before final acceptance', () => {
     const result = buildPartnerMarketplaceEligibility(
       partner({
         earnings: [
@@ -61,12 +61,12 @@ describe('partner marketplace eligibility', () => {
 
     expect(result.canViewMarketplace).toBe(true);
     expect(result.canReceiveMarketplaceAlerts).toBe(false);
-    expect(result.canParticipateInMarketplace).toBe(false);
+    expect(result.canParticipateInMarketplace).toBe(true);
     expect(result.eligible).toBe(false);
     expect(result.walletBalance).toBe(-120000);
     expect(result.blockers).toContainEqual({ label: 'cash fee debt', severity: 'hard' });
     expect(result.partnerAppMessage).toBe(
-      'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
+      'Unpaid HANDS fees must be settled before final acceptance or service start.',
     );
   });
 
