@@ -793,6 +793,9 @@ export class BookingsService {
     if (!participant || !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)) {
       throw new BadRequestException('Partner must participate or accept before customer selection');
     }
+    if (isMarketplacePartnerAction(providerId, ownedBooking.preferredProviderId)) {
+      await this.ensureProviderWalletCanJoinMarketplace(providerId);
+    }
     let booking: SelectedBookingForClientResponse;
     try {
       booking = await this.prisma.booking.update({

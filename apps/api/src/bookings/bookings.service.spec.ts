@@ -581,7 +581,14 @@ describe('BookingsService final partner selection', () => {
       }),
     );
 
-    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith({
+      where: {
+        providerProfileId: 'marketplace-partner',
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+      },
+      _sum: { netAmount: true },
+    });
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -658,7 +665,7 @@ describe('BookingsService final partner selection', () => {
         }),
       },
       providerEarning: {
-        aggregate: jest.fn(),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: 0 } }),
       },
       adminAuditLog: { create: jest.fn() },
     };
@@ -744,7 +751,7 @@ describe('BookingsService final partner selection', () => {
     expect(matching.selectFinalProvider).not.toHaveBeenCalled();
   });
 
-  it('allows customer final selection when a marketplace partner wallet becomes negative', async () => {
+  it('blocks customer final selection when a marketplace partner wallet becomes negative', async () => {
     const selectedBooking = {
       id: 'booking-1',
       status: BookingStatus.MATCHED,
@@ -797,12 +804,19 @@ describe('BookingsService final partner selection', () => {
 
     await expect(
       service.selectProvider('booking-1', 'customer-user-1', 'marketplace-partner'),
-    ).resolves.toEqual({ bookingId: 'booking-1', event: 'booking.matched' });
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: PROVIDER_WALLET_BLOCK_CODE,
+        marketplaceJoinBlocked: false,
+        alreadyMatchedServiceBlocked: true,
+        marketplaceVisibilityBlocked: false,
+      }),
+    });
 
-    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
-    expect(prisma.booking.update).toHaveBeenCalled();
-    expect(matching.selectFinalProvider).toHaveBeenCalled();
-    expect(matchingGateway.emitBookingMatched).toHaveBeenCalled();
+    expect(prisma.providerEarning.aggregate).toHaveBeenCalled();
+    expect(prisma.booking.update).not.toHaveBeenCalled();
+    expect(matching.selectFinalProvider).not.toHaveBeenCalled();
+    expect(matchingGateway.emitBookingMatched).not.toHaveBeenCalled();
   });
 });
 
