@@ -286,6 +286,162 @@ describe('BookingsService booking creation', () => {
       1_000_000,
     );
   });
+
+  it('excludes negative-wallet partners from marketplace invitation alerts while keeping requests visible elsewhere', async () => {
+    const addressSnapshot = {
+      id: 'snapshot-1',
+      bookingId: 'booking-1',
+      customerProfileId: 'customer-1',
+      selectedLocationId: null,
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      addressText: 'District 1, Ho Chi Minh City, Vietnam',
+      latitude: 10.7769,
+      longitude: 106.7009,
+      createdAt: new Date('2026-06-01T00:00:00.000Z'),
+    };
+    const booking = {
+      id: 'booking-1',
+      customerProfileId: 'customer-1',
+      status: BookingStatus.OPEN_MATCHING,
+      scheduledStartAt: new Date('2026-06-01T00:00:00.000Z'),
+      scheduledEndAt: new Date('2026-06-01T01:00:00.000Z'),
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      lat: 10.7769,
+      lng: 106.7009,
+      addressSnapshot,
+      notes: null,
+      travelBufferMin: 30,
+      earlyAcceptMin: 10,
+      preferredProviderId: null,
+      selectedProviderId: null,
+      openedAt: new Date('2026-06-01T00:00:00.000Z'),
+      expiresAt: new Date('2026-06-01T00:10:00.000Z'),
+      metadata: {},
+      services: [
+        {
+          serviceId: 'service-1',
+          price: 500000,
+          service: massageService(),
+        },
+      ],
+      payment: {
+        id: 'payment-1',
+        bookingId: 'booking-1',
+        method: PaymentMethod.CASH,
+        amount: 500000,
+        currency: 'VND',
+        status: PaymentStatus.AUTHORIZED,
+        providerRef: null,
+        metadata: {},
+      },
+      participants: [],
+      preferredProvider: null,
+      selectedProvider: null,
+    };
+    const cleanPartner = approvedPartner({
+      id: 'clean-partner',
+      userId: 'clean-user',
+      currentLat: 10.777,
+      currentLng: 106.701,
+    });
+    const negativeWalletPartner = approvedPartner({
+      id: 'negative-wallet-partner',
+      userId: 'negative-wallet-user',
+      currentLat: 10.7771,
+      currentLng: 106.7011,
+    });
+    const prisma = {
+      customerProfile: {
+        findUnique: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
+      },
+      massageService: {
+        findUniqueOrThrow: jest.fn().mockResolvedValue(massageService()),
+      },
+      servicePayoutRule: {
+        findFirst: jest.fn().mockResolvedValue({ id: 'rule-1' }),
+      },
+      booking: {
+        create: jest.fn().mockResolvedValue(booking),
+        findUnique: jest.fn().mockResolvedValue({ metadata: {} }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      providerProfile: {
+        findMany: jest.fn().mockResolvedValue([cleanPartner, negativeWalletPartner]),
+      },
+      providerEarning: {
+        groupBy: jest.fn().mockResolvedValue([
+          {
+            providerProfileId: 'negative-wallet-partner',
+            _sum: { netAmount: -120000 },
+          },
+        ]),
+      },
+    };
+    const matching = {
+      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      openBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.opened' }),
+      registerActiveBooking: jest.fn(),
+      scheduleBookingTimeout: jest.fn(),
+    };
+    const matchingGateway = {
+      emitBookingOpened: jest.fn(),
+      emitBackupBookingAvailable: jest.fn(),
+    };
+    const payments = {
+      buildAuthorization: jest.fn().mockReturnValue({ method: PaymentMethod.CASH, amount: 500000 }),
+      refreshAuthorizationForBooking: jest.fn().mockResolvedValue(booking.payment),
+      scheduleStatusCheck: jest.fn(),
+    };
+    const notifications = { create: jest.fn().mockResolvedValue({ id: 'notification-1' }) };
+    const service = new BookingsService(
+      prisma as never,
+      matching as never,
+      matchingGateway as never,
+      payments as never,
+      notifications as never,
+      {} as never,
+    );
+
+    await service.createOpenMatchingBooking('customer-user-1', {
+      serviceId: 'service-1',
+      address: { addressText: 'District 1, Ho Chi Minh City, Vietnam' },
+      lat: 10.7769,
+      lng: 106.7009,
+      paymentMethod: PaymentMethod.CASH,
+    });
+
+    const backupNotificationCalls = notifications.create.mock.calls
+      .map(([input]) => input)
+      .filter((input) => input.type === 'booking.backup_available');
+
+    expect(prisma.providerEarning.groupBy).toHaveBeenCalledWith({
+      by: ['providerProfileId'],
+      where: {
+        providerProfileId: { in: ['clean-partner', 'negative-wallet-partner'] },
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+      },
+      _sum: { netAmount: true },
+    });
+    expect(matching.openBooking).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({
+          eligibleBackupProviderCount: 1,
+        }),
+      }),
+    );
+    expect(backupNotificationCalls).toEqual([
+      expect.objectContaining({
+        userId: 'clean-user',
+        data: expect.objectContaining({ providerProfileId: 'clean-partner' }),
+      }),
+    ]);
+    expect(matchingGateway.emitBackupBookingAvailable).toHaveBeenCalledWith(
+      ['clean-user'],
+      'booking-1',
+      expect.objectContaining({ bookingId: 'booking-1' }),
+    );
+  });
 });
 
 describe('BookingsService final partner selection', () => {
@@ -1016,6 +1172,9 @@ describe('BookingsService partner response wallet gates', () => {
       providerProfile: {
         findUnique: jest.fn().mockResolvedValue(firstPickPartner),
         findMany: jest.fn().mockResolvedValue([nearbyBackupPartner]),
+      },
+      providerEarning: {
+        groupBy: jest.fn().mockResolvedValue([]),
       },
       booking: {
         findUnique: jest.fn().mockResolvedValue({ metadata: {} }),

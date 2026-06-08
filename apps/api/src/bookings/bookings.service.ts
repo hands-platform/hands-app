@@ -1223,7 +1223,7 @@ export class BookingsService {
       },
     });
 
-    return providers
+    const providersWithinRadius = providers
       .map((provider) => ({
         ...provider,
         distanceMeters: calculateDistanceMeters(
@@ -1237,9 +1237,36 @@ export class BookingsService {
         (provider) =>
           provider.distanceMeters !== null && provider.distanceMeters <= policy.backupProviderRadiusMeters,
       )
-      .map((provider) => ({ ...provider, distanceMeters: provider.distanceMeters as number }))
+      .map((provider) => ({ ...provider, distanceMeters: provider.distanceMeters as number }));
+    const providersWithClearWallets =
+      await this.excludeNegativeWalletProviders(providersWithinRadius);
+
+    return providersWithClearWallets
       .sort((left, right) => left.distanceMeters - right.distanceMeters)
       .slice(0, policy.backupProviderInvitationLimit);
+  }
+
+  private async excludeNegativeWalletProviders<T extends { id: string }>(providers: T[]) {
+    if (providers.length === 0) {
+      return providers;
+    }
+
+    const walletRows = await this.prisma.providerEarning.groupBy({
+      by: ['providerProfileId'],
+      where: {
+        providerProfileId: { in: providers.map((provider) => provider.id) },
+        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
+        payoutBatchId: null,
+      },
+      _sum: { netAmount: true },
+    });
+    const blockedProviderIds = new Set(
+      walletRows
+        .filter((row) => (row._sum.netAmount ?? 0) < 0)
+        .map((row) => row.providerProfileId),
+    );
+
+    return providers.filter((provider) => !blockedProviderIds.has(provider.id));
   }
 
   private canProviderSeeOpenBooking(
