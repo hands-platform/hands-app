@@ -175,7 +175,7 @@ These should stay configurable instead of being hardcoded:
 - Marketplace partner radius.
 - Whether marketplace partners can appear immediately or only after a delay.
 - Whether preferred partner acceptance matched first or customer fallback selection was required.
-- Marketplace list visibility is not retained as partner activity. The app should show settlement guidance before any marketplace participation attempt, and the API blocks marketplace participation and customer final marketplace selection until settlement or approved offset clears the debt.
+- Marketplace list visibility is not retained as partner activity. The app should show settlement guidance before final acceptance or service start, and the API blocks marketplace final acceptance, customer final marketplace selection, service start, and payout release until settlement or approved offset clears the debt.
 - No-show review thresholds and settlement decision options.
 - Cash settlement deadline.
 - Notification retry and fallback contact rules.

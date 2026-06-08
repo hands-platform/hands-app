@@ -57,12 +57,12 @@ requirements become active gates for payout and settlement readiness.
 Cash bookings are handled differently from online payments. When a partner receives
 cash directly from the customer, HANDS records platform fee and withholding as a
 negative wallet amount. A negative partner wallet becomes a settlement-required state
-and blocks marketplace participation plus payout release until finance confirms
+and blocks final acceptance, service start, and payout release until finance confirms
 partner repayment or an approved admin offset. The API response must separate the
 internal reason from the partner-facing display message:
 
-- Internal reason: `Outstanding HANDS fee settlement must be completed before marketplace participation or payout release.`
-- Partner app display copy: `Unpaid HANDS fees must be settled before you can participate in marketplace bookings.`
+- Internal reason: `Outstanding HANDS fee settlement must be completed before final acceptance, service start, or payout release.`
+- Partner app display copy: `Unpaid HANDS fees must be settled before final acceptance or service start.`
 
 ## Tax Policy Rule
 

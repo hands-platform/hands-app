@@ -20,7 +20,7 @@ This is the single working board for day-to-day MVP execution. If this file conf
 - Booking creation requires an immutable `BookingAddressSnapshot`.
 - First-pick partner response window is 10 minutes by default.
 - Marketplace participation uses booking-address distance, 10km by default.
-- Customer always selects the final partner. There is no automatic assignment.
+- First-pick valid acceptance can match first; otherwise the customer selects from participating partners. There is no automatic nearest-partner assignment.
 - MVP has no scheduled booking, tip, gratuity, VIP, people-scoring, ranking, or dispatch-priority system.
 - Negative partner wallet keeps marketplace visibility and participation open, but blocks final acceptance, service start, and payout release until settlement.
 - Admin is an Operations Command Center, not CRM.
