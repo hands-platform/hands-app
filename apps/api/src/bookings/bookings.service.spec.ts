@@ -577,14 +577,7 @@ describe('BookingsService final partner selection', () => {
       }),
     );
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith({
-      where: {
-        providerProfileId: 'marketplace-partner',
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
-      },
-      _sum: { netAmount: true },
-    });
+    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
     expect(prisma.booking.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -665,7 +658,16 @@ describe('BookingsService final partner selection', () => {
     expect(matching.selectFinalProvider).not.toHaveBeenCalled();
   });
 
-  it('blocks customer final selection when a marketplace partner wallet becomes negative', async () => {
+  it('allows customer final selection when a marketplace partner wallet becomes negative', async () => {
+    const selectedBooking = {
+      id: 'booking-1',
+      status: BookingStatus.MATCHED,
+      selectedProviderId: 'marketplace-partner',
+      selectedProvider: { id: 'marketplace-partner', userId: 'partner-user-2' },
+      preferredProvider: null,
+      payment: null,
+      chatRoom: { id: 'chat-1' },
+    };
     const prisma = {
       customerProfile: {
         findUniqueOrThrow: jest.fn().mockResolvedValue({ id: 'customer-1', userId: 'customer-user-1' }),
@@ -692,37 +694,28 @@ describe('BookingsService final partner selection', () => {
     };
     const matching = {
       closeBooking: jest.fn(),
-      selectFinalProvider: jest.fn(),
+      selectFinalProvider: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'booking.matched' }),
     };
+    prisma.booking.update.mockResolvedValue(selectedBooking);
+    const notifications = { create: jest.fn() };
+    const matchingGateway = { emitBookingMatched: jest.fn() };
     const service = new BookingsService(
       prisma as never,
       matching as never,
+      matchingGateway as never,
       {} as never,
-      {} as never,
-      {} as never,
+      notifications as never,
       {} as never,
     );
 
     await expect(
       service.selectProvider('booking-1', 'customer-user-1', 'marketplace-partner'),
-    ).rejects.toMatchObject({
-      response: expect.objectContaining({
-        code: PROVIDER_WALLET_BLOCK_CODE,
-        marketplaceJoinBlocked: true,
-        marketplaceVisibilityBlocked: false,
-      }),
-    });
+    ).resolves.toEqual({ bookingId: 'booking-1', event: 'booking.matched' });
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith({
-      where: {
-        providerProfileId: 'marketplace-partner',
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
-      },
-      _sum: { netAmount: true },
-    });
-    expect(prisma.booking.update).not.toHaveBeenCalled();
-    expect(matching.selectFinalProvider).not.toHaveBeenCalled();
+    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+    expect(prisma.booking.update).toHaveBeenCalled();
+    expect(matching.selectFinalProvider).toHaveBeenCalled();
+    expect(matchingGateway.emitBookingMatched).toHaveBeenCalled();
   });
 });
 
@@ -894,14 +887,24 @@ describe('BookingsService marketplace participation', () => {
     expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
   });
 
-  it('blocks a negative-wallet partner before creating a marketplace participant', async () => {
-    const bookingParticipantUpsert = jest.fn();
+  it('allows a negative-wallet partner to join before final acceptance', async () => {
+    const bookingParticipantUpsert = jest.fn().mockResolvedValue({
+      id: 'participant-1',
+      bookingId: 'booking-1',
+      providerProfileId: 'partner-1',
+      status: ParticipantStatus.JOINED,
+      distanceMeters: 0,
+      providerProfile: approvedPartner(),
+    });
     const prisma = {
       providerProfile: {
         findUnique: jest.fn().mockResolvedValue(approvedPartner()),
       },
       booking: {
-        findUniqueOrThrow: jest.fn().mockResolvedValue(openMarketplaceBooking()),
+        findUniqueOrThrow: jest
+          .fn()
+          .mockResolvedValueOnce(openMarketplaceBooking())
+          .mockResolvedValueOnce({ customerProfile: { userId: 'customer-user-1' } }),
       },
       providerEarning: {
         aggregate: jest.fn().mockResolvedValue({ _sum: { netAmount: -120000 } }),
@@ -910,33 +913,30 @@ describe('BookingsService marketplace participation', () => {
         upsert: bookingParticipantUpsert,
       },
     };
+    const matching = {
+      getPolicy: jest.fn().mockResolvedValue(matchingPolicy()),
+      registerParticipant: jest.fn(),
+      joinBooking: jest.fn().mockReturnValue({ bookingId: 'booking-1', event: 'provider.joined' }),
+    };
+    const notifications = { create: jest.fn() };
+    const matchingGateway = { emitProviderJoined: jest.fn() };
     const service = new BookingsService(
       prisma as never,
+      matching as never,
+      matchingGateway as never,
       {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
+      notifications as never,
       {} as never,
     );
 
-    await expect(service.joinBooking('booking-1', 'partner-user-1')).rejects.toMatchObject({
-      response: expect.objectContaining({
-        code: PROVIDER_WALLET_BLOCK_CODE,
-        marketplaceJoinBlocked: true,
-        marketplaceVisibilityBlocked: false,
-        directFirstPickBlocked: false,
-      }),
+    await expect(service.joinBooking('booking-1', 'partner-user-1')).resolves.toEqual({
+      bookingId: 'booking-1',
+      event: 'provider.joined',
     });
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalledWith({
-      where: {
-        providerProfileId: 'partner-1',
-        status: { in: [EarningStatus.PENDING, EarningStatus.AVAILABLE] },
-        payoutBatchId: null,
-      },
-      _sum: { netAmount: true },
-    });
-    expect(bookingParticipantUpsert).not.toHaveBeenCalled();
+    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
+    expect(bookingParticipantUpsert).toHaveBeenCalled();
+    expect(matching.registerParticipant).toHaveBeenCalled();
   });
 
   it('does not apply the marketplace wallet gate to the preferred first-pick partner', async () => {
@@ -1029,7 +1029,7 @@ describe('BookingsService marketplace participation', () => {
       'Only partners within 10km can participate in this booking',
     );
 
-    expect(prisma.providerEarning.aggregate).toHaveBeenCalled();
+    expect(prisma.providerEarning.aggregate).not.toHaveBeenCalled();
     expect(bookingParticipantUpsert).not.toHaveBeenCalled();
     expect(matching.registerParticipant).not.toHaveBeenCalled();
   });
@@ -1074,7 +1074,8 @@ describe('BookingsService partner response wallet gates', () => {
     ).rejects.toMatchObject({
       response: expect.objectContaining({
         code: PROVIDER_WALLET_BLOCK_CODE,
-        marketplaceJoinBlocked: true,
+        marketplaceJoinBlocked: false,
+        alreadyMatchedServiceBlocked: true,
         marketplaceVisibilityBlocked: false,
       }),
     });

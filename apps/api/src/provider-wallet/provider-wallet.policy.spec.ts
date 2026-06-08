@@ -6,8 +6,8 @@ import {
   providerWalletSettlementReference,
 } from './provider-wallet.policy';
 
-describe('provider wallet marketplace participation policy', () => {
-  it('blocks marketplace alerts and participation without hiding visible demand', () => {
+describe('provider wallet settlement gate policy', () => {
+  it('blocks final acceptance, service start, and payout without hiding visible demand', () => {
     const response = providerWalletBlockedResponse({
       providerProfileId: 'provider-profile-abc12345',
       walletBalance: -145000,
@@ -18,19 +18,19 @@ describe('provider wallet marketplace participation policy', () => {
     expect(response.displayMessage).toBe(PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE);
     expect(response.walletBlocked).toBe(true);
     expect(response.marketplaceVisibilityBlocked).toBe(false);
-    expect(response.marketplaceJoinBlocked).toBe(true);
+    expect(response.marketplaceJoinBlocked).toBe(false);
     expect(response.directFirstPickBlocked).toBe(false);
-    expect(response.alreadyMatchedServiceBlocked).toBe(false);
+    expect(response.alreadyMatchedServiceBlocked).toBe(true);
     expect(response.payoutReleaseBlocked).toBe(true);
     expect(response.walletDebtAmount).toBe(145000);
     expect(response.walletSettlementMethod).toBe(PROVIDER_WALLET_SETTLEMENT_METHOD);
     expect(response.walletSettlementReference).toBe('HANDS-WALLET-ABC12345');
-    expect(response.message).toContain('marketplace alerts');
-    expect(response.walletBlockReason).toContain('marketplace alerts');
-    expect(response.walletSettlementInstruction).toContain('Marketplace requests stay visible for review only');
-    expect(response.walletSettlementInstruction).toContain('marketplace alerts and participation');
+    expect(response.message).toContain('final acceptance');
+    expect(response.walletBlockReason).toContain('service start');
+    expect(response.walletSettlementInstruction).toContain('Marketplace requests stay visible');
+    expect(response.walletSettlementInstruction).toContain('participation is allowed');
     expect(response.walletSettlementSteps.join(' ')).toContain(
-      'Marketplace alerts, participation, and payout release resume',
+      'Final acceptance, service start, and payout release resume',
     );
   });
 

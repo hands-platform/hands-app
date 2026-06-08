@@ -725,9 +725,6 @@ export class BookingsService {
       throw new BadRequestException('Booking request is expired');
     }
     assertProviderCanReceiveBooking(provider);
-    if (isMarketplacePartnerAction(provider.id, booking.preferredProviderId)) {
-      await this.ensureProviderWalletCanJoinMarketplace(provider.id);
-    }
     const matchingPolicy = this.bookingPolicy(booking, await this.matching.getPolicy());
     const distanceMeters = this.requireProviderWithinMatchingRadius(booking, provider, matchingPolicy);
 
@@ -774,9 +771,6 @@ export class BookingsService {
     });
     if (!participant || !isCustomerSelectableParticipantForFinalChoice(participant, ownedBooking.preferredProviderId)) {
       throw new BadRequestException('Partner must participate or accept before customer selection');
-    }
-    if (isMarketplacePartnerAction(providerId, ownedBooking.preferredProviderId)) {
-      await this.ensureProviderWalletCanJoinMarketplace(providerId);
     }
     const booking = await this.prisma.booking.update({
       where: { id: bookingId },
@@ -1393,6 +1387,7 @@ export class BookingsService {
         BookingStatus.PROVIDER_ON_THE_WAY,
         BookingStatus.ARRIVED,
       ]);
+      await this.ensureProviderWalletCanJoinMarketplace(provider.id);
       const updated = await this.prisma.booking.update({
         where: { id: bookingId },
         data: {
