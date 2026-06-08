@@ -2351,7 +2351,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           (value) => formatSnapshotPolicyValue(settings, 'matching.preferred_accept_mode', value),
         ),
         operatorMeaning:
-          'Confirms accepted first-pick partners wait for customer final selection; automatic final matching is disabled.',
+          'Confirms first-pick partners can match first under API rules; otherwise customer final selection is required.',
       },
       {
         policy: 'Marketplace opening mode',
@@ -2400,8 +2400,8 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           ? 'Eligible partners can appear while the first-pick partner is still deciding.'
           : 'Marketplace visibility and participation checks stay delayed until the first-pick response window passes.',
         operatorAction: customerConfirm
-          ? 'Customer confirmation mode is active, so accepted partners still require customer final choice.'
-          : 'Historical auto-match value is ignored; reset the policy to customer final-choice mode for clean operations.',
+          ? 'First-pick priority is active, with customer final choice as the fallback when first-pick does not win.'
+          : 'Historical policy value is ignored; reset the policy to first-pick priority with customer fallback.',
         className: immediateBackup ? 'ops-task-done' : 'ops-task-pending',
         pillClass: immediateBackup ? 'pill-success' : 'pill-warn',
       },
