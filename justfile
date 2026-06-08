@@ -67,7 +67,7 @@ safe-check:
 
 # Focused API wallet and booking tests.
 api-focused-wallet:
-    npm.cmd run --workspace apps/api test -- bookings.service.spec.ts provider-wallet.policy.spec.ts --runInBand
+    npm.cmd run test --workspace @massage-vn/api -- bookings.service.spec.ts provider-wallet.policy.spec.ts --runInBand
 
 # Focused Admin shared component tests.
 admin-components:
