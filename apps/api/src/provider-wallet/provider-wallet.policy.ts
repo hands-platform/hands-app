@@ -7,7 +7,7 @@ export const PROVIDER_WALLET_MARKETPLACE_BLOCK_DISPLAY_MESSAGE =
   'Unpaid HANDS fees must be settled before you can participate in marketplace bookings.';
 export const PROVIDER_WALLET_SETTLEMENT_METHOD = 'PROVIDER_DEPOSIT_OR_ADMIN_OFFSET';
 export const PROVIDER_WALLET_SETTLEMENT_INSTRUCTION =
-  'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace requests stay visible for review, but participation is blocked until HANDS confirms the deposit or admin offset.';
+  'Cash bookings created unpaid HANDS platform fee or tax settlement debt. Marketplace requests stay visible for review only, and participation is blocked until HANDS confirms the deposit or admin offset.';
 
 export function providerWalletSettlementReference(providerProfileId: string) {
   return `HANDS-WALLET-${providerProfileId.slice(-8).toUpperCase()}`;

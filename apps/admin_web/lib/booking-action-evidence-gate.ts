@@ -57,10 +57,10 @@ export function bookingActionEvidenceGate(input: BookingActionEvidenceGateInput)
       action: 'Payment sync',
       status: paymentSyncAvailable ? 'Available' : 'Locked',
       evidence: input.paymentProviderRef
-        ? `${input.paymentStatus} / provider ref ${input.paymentProviderRef}`
+        ? `${input.paymentStatus} / gateway ref ${input.paymentProviderRef}`
         : `Payment status is ${input.paymentStatus}; no gateway reference is linked.`,
       operatorRule:
-        'Sync only when a provider reference exists and the payment is not already captured, released, or refunded.',
+        'Sync only when a gateway reference exists and the payment is not already captured, released, or refunded.',
       href: '#booking-ops',
       className: paymentSyncAvailable ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: paymentSyncAvailable ? 'pill-success' : 'pill-neutral',

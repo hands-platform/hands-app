@@ -35,7 +35,7 @@ describe('bookingOperatorActionMatrix', () => {
     ]);
   });
 
-  it('opens payment sync only when a non-terminal provider reference exists', () => {
+  it('opens payment sync only when a non-terminal gateway reference exists', () => {
     const [paymentSync] = bookingOperatorActionMatrix({
       ...baseInput,
       paymentStatus: 'AUTHORIZED',
@@ -47,7 +47,7 @@ describe('bookingOperatorActionMatrix', () => {
       available: true,
       status: 'Available',
       tone: 'pill-info',
-      evidence: 'AUTHORIZED / provider ref momo-123',
+      evidence: 'AUTHORIZED / gateway ref momo-123',
     });
   });
 

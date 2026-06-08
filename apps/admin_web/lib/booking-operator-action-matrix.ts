@@ -44,10 +44,10 @@ export function bookingOperatorActionMatrix(
       status: paymentSyncAvailable ? 'Available' : 'Locked',
       tone: paymentSyncAvailable ? 'pill-info' : 'pill-neutral',
       evidence: input.paymentProviderRef
-        ? `${input.paymentStatus} / provider ref ${input.paymentProviderRef}`
-        : 'No payment provider reference to sync.',
+        ? `${input.paymentStatus} / gateway ref ${input.paymentProviderRef}`
+        : 'No payment gateway reference to sync.',
       operatorRule:
-        'Use for provider-gateway reconciliation only. Do not change customer outcome from sync alone.',
+        'Use for gateway reconciliation only. Do not change customer outcome from sync alone.',
       href: '#booking-ops',
       hrefLabel: 'Open action forms',
     },

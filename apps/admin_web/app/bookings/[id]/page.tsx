@@ -1991,7 +1991,7 @@ function bookingOperatingTimeline({
       type: 'PAY',
       title: `Payment ${booking.payment.status}`,
       detail: `${booking.payment.method} / ${money(booking.payment.amount, paymentCurrency)} / ${
-        booking.payment.providerRef ?? 'no provider ref'
+        booking.payment.providerRef ?? 'no gateway ref'
       }`,
       at: booking.updatedAt ?? booking.createdAt,
       status: booking.payment.status,

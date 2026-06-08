@@ -71,7 +71,7 @@ void main() {
 
     expect(
       find.text(
-        '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible for review, and direct first-pick requests can still be answered.',
+        '$providerWalletBlockFallbackReasonClean Marketplace requests stay visible for review only. Direct first-pick requests are handled separately.',
       ),
       findsOneWidget,
     );

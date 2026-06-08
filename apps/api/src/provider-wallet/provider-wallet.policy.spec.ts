@@ -25,6 +25,7 @@ describe('provider wallet marketplace participation policy', () => {
     expect(response.walletDebtAmount).toBe(145000);
     expect(response.walletSettlementMethod).toBe(PROVIDER_WALLET_SETTLEMENT_METHOD);
     expect(response.walletSettlementReference).toBe('HANDS-WALLET-ABC12345');
+    expect(response.walletSettlementInstruction).toContain('Marketplace requests stay visible for review only');
     expect(response.walletSettlementSteps.join(' ')).toContain('Marketplace participation and payout release resume');
   });
 
