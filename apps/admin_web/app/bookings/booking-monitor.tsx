@@ -39,6 +39,7 @@ import {
   bookingChatRepairNeedsOps as buildBookingChatRepairNeedsOps,
 } from '../../lib/booking-chat-repair-action-state';
 import { bookingCashDebtNeedsSettlement } from '../../lib/booking-finance-flags';
+import { buildMarketplaceBookingCoverageSummary } from '../../lib/marketplace-booking-coverage';
 import {
   bookingCompletedCloseoutNeedsOpsFromFacts,
   bookingManualDecisionNeedsOpsFromFacts,
@@ -272,6 +273,8 @@ type MarketplaceBookingCoverageRow = {
   alertDetail: string;
   walletLabel: string;
   walletTone: string;
+  selectedPartnerPresent: boolean;
+  chatRepairNeeded: boolean;
   nextAction: string;
   nextActionTone: string;
 };
@@ -1484,6 +1487,13 @@ export function BookingMonitor({
                 }`}
               >
                 Waiting customer choice {marketplaceBookingCoverageSummary.waitingChoice}
+              </span>
+              <span
+                className={`pill ${
+                  marketplaceBookingCoverageSummary.chatRepair > 0 ? 'pill-danger' : 'pill-success'
+                }`}
+              >
+                Chat handoff repair {marketplaceBookingCoverageSummary.chatRepair}
               </span>
             </div>
           </div>
@@ -4650,6 +4660,7 @@ function buildMarketplaceBookingCoverageRows(
       const firstPick = firstPickCoverageState(booking, nowMs);
       const wallet = bookingMarketplaceWalletSignal(booking);
       const next = marketplaceBookingNextAction(booking, nowMs);
+      const selectedPartnerPresent = Boolean(booking.selectedProvider);
 
       return {
         booking,
@@ -4665,6 +4676,8 @@ function buildMarketplaceBookingCoverageRows(
         alertDetail,
         walletLabel: wallet.walletLabel,
         walletTone: wallet.walletTone,
+        selectedPartnerPresent,
+        chatRepairNeeded: bookingChatRepairNeedsOps(booking),
         nextAction: next.label,
         nextActionTone: next.tone,
       };
@@ -4688,16 +4701,6 @@ function buildMarketplaceBookingCoverageRows(
         bookingCreatedTimestamp(right.booking) - bookingCreatedTimestamp(left.booking)
       );
     });
-}
-
-function buildMarketplaceBookingCoverageSummary(rows: MarketplaceBookingCoverageRow[]) {
-  return {
-    total: rows.length,
-    withParticipants: rows.filter((row) => row.participantCount > 0).length,
-    withoutParticipants: rows.filter((row) => row.participantCount === 0).length,
-    selected: rows.filter((row) => row.booking.selectedProvider).length,
-    waitingChoice: rows.filter((row) => row.selectableCount > 0 && !row.booking.selectedProvider).length,
-  };
 }
 
 function firstPickCoverageState(booking: AdminBooking, nowMs: number) {
