@@ -2422,7 +2422,7 @@ function buildCustomerProtectionBoard(bookings: AdminBooking[]): BookingProtecti
       tone: cashDebt.length ? 'danger' : 'ok',
       detail:
         cashDebt.length > 0
-          ? 'Cash bookings created negative wallet balances that require settlement before marketplace participation or payout release.'
+          ? 'Cash bookings created negative wallet balances that require settlement before marketplace alerts, participation, or payout release.'
           : 'No cash booking currently creates an unpaid HANDS fee debt blocker.',
       operatorAction: 'Collect partner fee deposit or settle from available earnings before new marketplace participation.',
       href: '/bookings?view=cash-debt',
@@ -2557,7 +2557,7 @@ function buildBookingDispatchPartnerShortcuts(
     {
       title: 'Cash fee debt',
       value: cashDebt.length.toString(),
-      detail: 'Cash bookings can create negative partner wallets that block marketplace participation and payout release.',
+      detail: 'Cash bookings can create negative partner wallets that block marketplace alerts, participation, and payout release.',
       href: '/cash-settlements',
       tone: cashDebt.length ? 'danger' : 'ok',
     },
@@ -3230,7 +3230,7 @@ function bookingActionOwner(booking: AdminBooking, flag?: BookingCheckFlag): Boo
 
 function bookingOperatorAction(booking: AdminBooking, nowMs: number, flag?: BookingCheckFlag) {
   if (bookingCashDebtNeedsOps(booking)) {
-    return 'Confirm partner wallet debt and request company fee settlement before marketplace participation or payout release resumes.';
+    return 'Confirm partner wallet debt and request company fee settlement before marketplace alerts, participation, or payout release resumes.';
   }
   if (bookingCompletedCloseoutNeedsOps(booking)) {
     return 'Run closeout reconciliation so payment, earning, tax, fee, and wallet records match.';
@@ -3718,7 +3718,7 @@ function bookingCheckFlags(booking: AdminBooking, nowMs: number): BookingCheckFl
     flags.push({ severity: 'high', title: 'No-show payment unresolved' });
   }
   if (bookingCashDebtNeedsOps(booking)) {
-    flags.push({ severity: 'high', title: 'Cash fee debt blocks marketplace participation' });
+    flags.push({ severity: 'high', title: 'Cash fee debt blocks marketplace alerts' });
   }
   const pricingPolicy = bookingPricingPolicySignal(booking);
   if (pricingPolicy.status === 'blocked') {
@@ -4044,7 +4044,7 @@ function bookingListActionChips(booking: AdminBooking, nowMs: number): BookingLi
     {
       label: cashDebtNeedsOps ? 'Cash debt' : 'Cash clear',
       detail: cashDebtNeedsOps
-        ? 'Partner cash fee debt must be settled before marketplace participation or payout release resumes.'
+        ? 'Partner cash fee debt must be settled before marketplace alerts, participation, or payout release resumes.'
         : 'No partner cash fee debt is visible for this booking.',
       tone: cashDebtNeedsOps ? 'pill-danger' : 'pill-success',
       href: '/bookings?view=cash-debt',
@@ -4944,9 +4944,9 @@ function buildMarketplaceOperatingQueue(
       status: cashDebtBookings.length ? 'Fee settlement' : 'Clear',
       tone: cashDebtBookings.length ? 'danger' : 'ok',
       detail:
-        'Negative wallet partners can see marketplace requests, but cannot join marketplace bookings. App message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
+        'Negative wallet partners can see marketplace requests, but cannot receive marketplace alerts or join marketplace bookings. App message: Unpaid HANDS fees must be settled before you can participate in marketplace bookings.',
       operatorAction:
-        'Confirm HANDS fee deposit or approved admin offset before marketplace participation and payout release reopen.',
+        'Confirm HANDS fee deposit or approved admin offset before marketplace alerts, participation, and payout release reopen.',
       href: cashDebtBookings.length ? '/cash-settlements' : '/bookings?view=cash-debt',
       bookings: cashDebtBookings,
     },
@@ -4983,7 +4983,7 @@ function buildLiveMatchingPolicyCards(policy: AdminLiveOperationsPolicy) {
     {
       label: 'Wallet gate',
       value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative partner wallet blocks marketplace participation; customers never carry this debt.',
+      helper: 'Negative partner wallet blocks marketplace alerts and participation; customers never carry this debt.',
     },
   ];
 }

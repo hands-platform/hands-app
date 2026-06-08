@@ -50,6 +50,7 @@ describe('matching policy', () => {
     expect(definition?.recommendedValue).toBe(WALLET_BLOCK_MARKETPLACE_PARTICIPATION);
     expect(definition?.options?.[0]?.value).toBe(WALLET_BLOCK_MARKETPLACE_PARTICIPATION);
     expect(definition?.label).toBe('Negative wallet marketplace gate');
+    expect(JSON.stringify(definition)).toContain('marketplace alerts');
   });
 
   it('keeps operational policy copy factual instead of scoring people', () => {

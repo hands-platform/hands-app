@@ -1743,7 +1743,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <span>Cash debt</span>
             <strong>{formatCurrency(bookingAcceptance.cashDebt)}</strong>
-            <small>Negative wallet blocks marketplace participation</small>
+            <small>Negative wallet blocks marketplace alerts and participation</small>
           </div>
           <div>
             <span>Location</span>
@@ -1825,7 +1825,7 @@ export default async function ProviderDetailPage({ params, searchParams }: PageP
           <div>
             <span>Marketplace</span>
             <strong>{hasCashFeeDebt ? 'Participation blocked' : 'Participation open'}</strong>
-            <small>Partner can view marketplace requests; only marketplace booking participation is blocked.</small>
+            <small>Partner can view marketplace requests; marketplace alerts and booking participation are blocked.</small>
           </div>
           <div>
             <span>Direct first-pick</span>
@@ -3069,7 +3069,7 @@ function PartnerDetailFastOverview({
       value: cashDebt > 0 ? 'Company fee unpaid' : 'Clear',
       detail:
         cashDebt > 0
-          ? `${formatCurrency(cashDebt)} cash-booking fee must be settled before marketplace participation.`
+          ? `${formatCurrency(cashDebt)} cash-booking fee must be settled before marketplace alerts and participation.`
           : 'No partner cash-fee debt is loaded.',
       href: fullSectionHref('#cash-debt-origin'),
       tone: cashDebt > 0 ? 'pill-danger' : 'pill-success',
@@ -3770,8 +3770,8 @@ function buildPartnerOperatorCommandQueue({
     add({
       id: 'cash-fee-debt',
       label: 'CASH',
-      title: 'Cash fee debt blocks marketplace participation',
-      detail: `${formatCurrency(cashDebt)} must be settled before this partner participates in marketplace requests or receives payout release. Customers never carry this wallet debt.`,
+      title: 'Cash fee debt blocks marketplace alerts',
+      detail: `${formatCurrency(cashDebt)} must be settled before this partner receives marketplace alerts, participates in marketplace requests, or receives payout release. Customers never carry this wallet debt.`,
       owner: 'Finance',
       tone: 'blocked',
       action: { type: 'link', href: '/cash-settlements', label: 'Open cash queue' },
@@ -5739,7 +5739,7 @@ function buildProviderBookingAcceptance(
           : 'No open negative wallet debt is visible.',
       action:
         cashDebt > 0
-          ? 'Record partner deposit or admin offset before marketplace participation and payout release resume.'
+          ? 'Record partner deposit or admin offset before marketplace alerts, participation, and payout release resume.'
           : 'Clear',
     },
     {
@@ -5854,19 +5854,19 @@ function buildPartnerAcceptanceRepairCommand(
   const customerImpact = bookingAcceptance.canJoinMarketplace
     ? 'Can appear in customer booking flow and final partner choice.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Customer balances are unaffected; this wallet gate blocks marketplace booking participation until settlement.'
+      ? 'Customer balances are unaffected; this wallet gate blocks marketplace alerts and booking participation until settlement.'
       : hasHardVisibilityBlock
         ? 'Hide or avoid this partner for direct booking and marketplace shortlist until hard blockers are cleared.'
         : 'Partner may remain visible only after operator confirms freshness, reachability, and pricing.';
   const operatorDecision = bookingAcceptance.canJoinMarketplace
     ? 'No manual repair required. Monitor service quality and response speed.'
     : bookingAcceptance.canDirectFirstPick && hasWalletBlock
-      ? 'Finance must clear cash debt before marketplace participation or payout release.'
+      ? 'Finance must clear cash debt before marketplace alerts, participation, or payout release.'
       : `Start with ${blockedGates[0]?.label ?? 'the first visible blocker'} before considering dispatch.`;
   const marketplaceRouting = bookingAcceptance.canJoinMarketplace
     ? `Eligible for first-pick and marketplace participation within ${formatDistance(dispatchPolicy.backupRadiusMeters)}.`
     : hasWalletBlock
-      ? 'Partner can view marketplace requests, but marketplace booking participation is blocked until cash fee debt is settled or offset.'
+      ? 'Partner can view marketplace requests, but marketplace alerts and booking participation are blocked until cash fee debt is settled or offset.'
       : 'Route urgent demand to direct-ready or marketplace-ready partners while this repair queue is open.';
 
   const steps = blockedGates.map((gate) => partnerAcceptanceRepairStep(provider, gate));
@@ -6012,7 +6012,7 @@ function partnerAppBlockMessage(
   if (payoutOps.hold) {
     return 'Payout is held by admin review; booking may require operator confirmation.';
   }
-  return 'Partner needs operator review before marketplace participation.';
+  return 'Partner needs operator review before marketplace alerts or participation.';
 }
 
 function buildPartnerAcceptanceUnblockPlaybook(
@@ -6041,8 +6041,8 @@ function buildPartnerAcceptanceUnblockPlaybook(
       status: walletGate?.ok ? 'CLEAR' : 'BLOCKING',
       detail: walletGate?.detail ?? 'Wallet gate was not evaluated.',
       bookingImpact: walletGate?.ok
-        ? 'Partner can pass the cash-debt marketplace participation gate.'
-        : 'Marketplace participation and final marketplace selection are blocked; direct first-pick and already-matched service flow are not retroactively blocked by wallet debt.',
+        ? 'Partner can pass the cash-debt marketplace alert and participation gate.'
+        : 'Marketplace alerts, participation, and final marketplace selection are blocked; direct first-pick and already-matched service flow are not retroactively blocked by wallet debt.',
       payoutImpact: 'Finance should not release payout while HANDS fee/tax debt is still open.',
       action: walletGate?.ok ? 'Open cash settlement history' : 'Settle cash debt',
       href: '/cash-settlements',

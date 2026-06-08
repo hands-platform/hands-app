@@ -777,7 +777,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
                     <strong>{formatProviderMoney(row.walletBalance)}</strong>
                     <p className="muted">
                       {row.walletBalance < 0
-                        ? 'Company fee settlement is required before marketplace participation.'
+                        ? 'Company fee settlement is required before marketplace alerts and participation.'
                         : 'No negative wallet balance.'}
                     </p>
                     <p className="muted">
@@ -2343,8 +2343,8 @@ function partnerOpsBadges(provider: AdminProvider, opsPolicy: ProviderOpsPolicy)
       tone: walletBalance < 0 ? 'danger' : 'success',
       detail:
         walletBalance < 0
-          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before marketplace participation.`
-          : 'No negative wallet balance is gating marketplace participation.',
+          ? `Partner owes ${formatProviderMoney(Math.abs(walletBalance))} before marketplace alerts and participation.`
+          : 'No negative wallet balance is gating marketplace alerts or participation.',
     },
     {
       label:
@@ -2571,7 +2571,7 @@ function nextProviderListAction(
       status: 'CASH DEBT',
       detail: `Wallet is negative by ${formatProviderMoney(Math.abs(walletBalance))}.`,
       operatorAction:
-        'Confirm partner fee deposit or settle the cash fee debt before marketplace participation.',
+        'Confirm partner fee deposit or settle the cash fee debt before marketplace alerts and participation.',
       tone: 'blocked',
       priority: 85,
     };
@@ -2927,7 +2927,7 @@ function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDE
   if (walletBalance < 0) {
     return `Partner wallet is negative by ${formatProviderMoney(
       Math.abs(walletBalance),
-    )}. They can see marketplace requests, but cannot participate until finance settles the cash fee debt.`;
+    )}. They can see marketplace requests, but cannot receive marketplace alerts or participate until finance settles the cash fee debt.`;
   }
   if (provider.status !== 'ONLINE_AVAILABLE') {
     return 'Partner is approved but not currently online for direct or marketplace requests.';
@@ -3003,7 +3003,7 @@ function partnerBackupMatchingEligibility(provider: AdminProvider, opsPolicy = D
       ? `Can receive marketplace alerts and join eligible bookings within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )} during the ${opsPolicy.responseWindowMinutes}m first-pick window.`
-      : `Marketplace matching needs the listed blockers resolved. Negative wallet blocks marketplace participation until the HANDS fee debt is settled. Distance is still checked per booking within ${formatDistanceMeters(
+      : `Marketplace matching needs the listed blockers resolved. Negative wallet blocks marketplace alerts and participation until the HANDS fee debt is settled. Distance is still checked per booking within ${formatDistanceMeters(
           opsPolicy.backupRadiusMeters,
         )}.`,
     operatorAction: eligible
@@ -3086,7 +3086,7 @@ function buildProviderCommandCenter(
       tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
       detail:
         walletDebt > 0
-          ? 'Cash fee debt blocks marketplace participation until HANDS fee settlement is posted.'
+          ? 'Cash fee debt blocks marketplace alerts and participation until HANDS fee settlement is posted.'
           : 'First-earning payout, bank, and freelance tax readiness are under control.',
       href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
       metrics: [
@@ -3152,7 +3152,7 @@ function buildPartnerShiftHandoff(
           scope: 'Finance gate',
           detail: `${cashDebt.length} partner(s) have negative wallet balance from cash-service fee or tax debt.`,
           operatorAction:
-            'Collect company fee deposit, record evidence, or offset from available earnings before marketplace participation resumes.',
+            'Collect company fee deposit, record evidence, or offset from available earnings before marketplace alerts and participation resume.',
           href: '/partners?review=cash-debt',
           tone: 'danger' as const,
           samples: partnerSampleNames(cashDebt),
@@ -3302,7 +3302,7 @@ function buildPartnerShiftHandoff(
       {
         label: 'Cash debt',
         value: cashDebt.length.toString(),
-        detail: 'Negative wallet blocks marketplace participation.',
+        detail: 'Negative wallet blocks marketplace alerts and participation.',
         href: '/partners?review=cash-debt',
         tone: cashDebt.length ? 'danger' : 'ok',
       },
@@ -3388,7 +3388,7 @@ function buildPartnerDispatchHandoff(
         title: 'Cash fee debt',
         value: cashDebt.length.toString(),
         detail:
-          'Negative wallet partners can view marketplace requests, but participation waits until company fee settlement.',
+          'Negative wallet partners can view marketplace requests, but marketplace alerts and participation wait until company fee settlement.',
         href: '/cash-settlements',
         tone: cashDebt.length ? 'danger' : 'ok',
       },
@@ -3699,7 +3699,7 @@ function buildPartnerDispatchForecast(
         label: 'Wallet debt',
         count: walletDebt,
         detail:
-          'Cash fee debt may keep demand visible, but marketplace participation waits for settlement.',
+          'Cash fee debt may keep demand visible, but marketplace alerts and participation wait for settlement.',
         href: '/partners?review=cash-debt',
         tone: walletDebt > 0 ? 'danger' : 'ok',
       },
@@ -3760,7 +3760,7 @@ function buildPartnerAcceptanceBlockerBoard(
         count: cashDebt.length,
         status: cashDebt.length ? 'Blocks marketplace' : 'Clear',
         detail:
-          'Negative wallet from cash bookings blocks marketplace participation until HANDS fee settlement is posted.',
+          'Negative wallet from cash bookings blocks marketplace alerts and participation until HANDS fee settlement is posted.',
         operatorAction:
           'Open the cash debt queue and confirm settlement before allowing marketplace participation.',
         href: '/partners?review=cash-debt',
@@ -4119,7 +4119,7 @@ function buildPartnerFilterSummary(
     {
       label: 'Wallet settlement',
       value: walletDebt.toString(),
-      detail: 'Negative wallet balance blocks marketplace participation',
+      detail: 'Negative wallet balance blocks marketplace alerts and participation',
       href: '/partners?review=cash-debt',
     },
     {
@@ -4224,7 +4224,7 @@ function buildProviderReviewQueue(providers: AdminProvider[], opsPolicy: Provide
       count: cashDebtNeedsReview,
       href: '/partners?review=cash-debt',
       detail:
-        'Partners with negative wallet balance can see marketplace requests, but cannot participate until HANDS fee settlement is confirmed.',
+        'Partners with negative wallet balance can see marketplace requests, but cannot receive marketplace alerts or participate until HANDS fee settlement is confirmed.',
     },
     {
       label: 'Tax profile review',
