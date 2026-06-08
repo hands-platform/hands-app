@@ -7,7 +7,6 @@ import {
   providerDocumentLabel,
   providerDocumentReviewHint,
 } from '../../lib/admin-api';
-import { bookingLatestActivityAt } from '../../lib/admin-booking-time';
 import { compactValue, formatDateTime, formatMoney as formatProviderMoney } from '../../lib/admin-format';
 import { marketplaceDisplayText } from '../../lib/admin-copy';
 import { buildCsvDataHref } from '../../lib/csv-export';
@@ -68,6 +67,18 @@ import {
   readFailureStatus,
   readLastAttempt,
 } from './partner-list-profile';
+import {
+  latestPartnerBookingRecord,
+  partnerAvailablePayout as providerAvailablePayout,
+  partnerBookingRows as providerBookingRows,
+  partnerCompletedWorkCount as providerCompletedWorkCount,
+  partnerGrossRevenue as providerGrossRevenue,
+  partnerLastActivityAt,
+  partnerLastCompletedWorkAt as providerLastCompletedWorkAt,
+  partnerLastSessionAt,
+  partnerPendingPayout as providerPendingPayout,
+  partnerUnsettledWalletBalance as providerUnsettledWalletBalance,
+} from './partner-activity-facts';
 import { buildPartnerMarketplaceEligibility } from './partner-marketplace-eligibility';
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
@@ -203,15 +214,6 @@ type PartnerKycState = {
 };
 type ProvidersPageSearchParams = Promise<Record<string, string | string[] | undefined>>;
 const PROVIDER_LIST_RENDER_LIMIT = 40;
-const providerBookingRowsCache = new WeakMap<AdminProvider, AdminBooking[]>();
-const providerCompletedWorkCountCache = new WeakMap<AdminProvider, number>();
-const providerGrossRevenueCache = new WeakMap<AdminProvider, number>();
-const providerPendingPayoutCache = new WeakMap<AdminProvider, number>();
-const providerAvailablePayoutCache = new WeakMap<AdminProvider, number>();
-const providerLastCompletedWorkAtCache = new WeakMap<AdminProvider, string | null>();
-const partnerLastActivityAtCache = new WeakMap<AdminProvider, string | null>();
-const partnerLastSessionAtCache = new WeakMap<AdminProvider, string | null>();
-const providerWalletBalanceCache = new WeakMap<AdminProvider, number>();
 
 export default async function ProvidersPage({ searchParams }: { searchParams?: ProvidersPageSearchParams }) {
   const filters = buildProviderFilters(searchParams ? await searchParams : {});
@@ -2126,32 +2128,6 @@ function partnerLatestSessionFacts(provider: AdminProvider) {
   };
 }
 
-function providerBookingRows(provider: AdminProvider) {
-  const cached = providerBookingRowsCache.get(provider);
-  if (cached) return cached;
-  const records = new Map<string, NonNullable<AdminProvider['selectedBookings']>[number]>();
-  for (const booking of provider.preferredBookings ?? []) {
-    records.set(booking.id, booking);
-  }
-  for (const booking of provider.selectedBookings ?? []) {
-    records.set(booking.id, booking);
-  }
-  for (const participant of provider.participants ?? []) {
-    if (participant.booking) records.set(participant.booking.id, participant.booking);
-  }
-  const rows = [...records.values()] as AdminBooking[];
-  providerBookingRowsCache.set(provider, rows);
-  return rows;
-}
-
-function latestPartnerBookingRecord(bookings: AdminBooking[]) {
-  return [...bookings].sort((left, right) => {
-    const rightTime = Date.parse(bookingLatestActivityAt(right) ?? '');
-    const leftTime = Date.parse(bookingLatestActivityAt(left) ?? '');
-    return (Number.isFinite(rightTime) ? rightTime : 0) - (Number.isFinite(leftTime) ? leftTime : 0);
-  })[0];
-}
-
 function partnerShortId(id: string) {
   return id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
 }
@@ -2192,109 +2168,6 @@ function providerActiveServiceCount(provider: AdminProvider) {
 
 function partnerHasAppActivity(provider: AdminProvider) {
   return Boolean((provider.sessions ?? []).length || (provider.devices ?? []).length);
-}
-
-function providerCompletedWorkCount(provider: AdminProvider) {
-  const cached = providerCompletedWorkCountCache.get(provider);
-  if (cached !== undefined) return cached;
-  const count = (provider.earnings ?? []).filter((earning) => {
-    if (earning.booking?.status === 'COMPLETED') return true;
-    return ['AVAILABLE', 'PAID'].includes(earning.status);
-  }).length;
-  providerCompletedWorkCountCache.set(provider, count);
-  return count;
-}
-
-function providerGrossRevenue(provider: AdminProvider) {
-  const cached = providerGrossRevenueCache.get(provider);
-  if (cached !== undefined) return cached;
-  const value = (provider.earnings ?? []).reduce((sum, earning) => sum + Number(earning.grossAmount ?? 0), 0);
-  providerGrossRevenueCache.set(provider, value);
-  return value;
-}
-
-function providerPendingPayout(provider: AdminProvider) {
-  const cached = providerPendingPayoutCache.get(provider);
-  if (cached !== undefined) return cached;
-  const value = (provider.earnings ?? [])
-    .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status))
-    .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
-  providerPendingPayoutCache.set(provider, value);
-  return value;
-}
-
-function providerAvailablePayout(provider: AdminProvider) {
-  const cached = providerAvailablePayoutCache.get(provider);
-  if (cached !== undefined) return cached;
-  const value = (provider.earnings ?? [])
-    .filter((earning) => earning.status === 'AVAILABLE')
-    .reduce((sum, earning) => sum + Number(earning.netAmount ?? 0), 0);
-  providerAvailablePayoutCache.set(provider, value);
-  return value;
-}
-
-function providerLastCompletedWorkAt(provider: AdminProvider) {
-  const cached = providerLastCompletedWorkAtCache.get(provider);
-  if (cached !== undefined) return cached;
-  const value = latestTimestamp(
-    (provider.earnings ?? [])
-      .filter(
-        (earning) =>
-          earning.booking?.status === 'COMPLETED' || ['AVAILABLE', 'PAID'].includes(earning.status),
-      )
-      .flatMap((earning) => [
-        earning.booking ? bookingLatestActivityAt(earning.booking) : null,
-        earning.paidAt,
-        earning.availableAt,
-        earning.createdAt,
-      ]),
-  );
-  providerLastCompletedWorkAtCache.set(provider, value);
-  return value;
-}
-
-function partnerLastActivityAt(provider: AdminProvider) {
-  const cached = partnerLastActivityAtCache.get(provider);
-  if (cached !== undefined) return cached;
-  const value = latestTimestamp([
-    provider.currentLocationUpdatedAt,
-    provider.nextAvailableAt,
-    ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
-    ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
-    ...(provider.user?.pushDevices ?? []).map((device) => device.createdAt),
-    ...(provider.earnings ?? []).flatMap((earning) => [
-      earning.booking ? bookingLatestActivityAt(earning.booking) : null,
-      earning.createdAt,
-      earning.availableAt,
-      earning.paidAt,
-    ]),
-  ]);
-  partnerLastActivityAtCache.set(provider, value);
-  return value;
-}
-
-function partnerLastSessionAt(provider: AdminProvider) {
-  const cached = partnerLastSessionAtCache.get(provider);
-  if (cached !== undefined) return cached;
-  const value = latestTimestamp([
-    ...(provider.sessions ?? []).flatMap((session) => [session.lastSeenAt, session.loggedInAt]),
-    ...(provider.devices ?? []).flatMap((device) => [device.lastSeenAt, device.updatedAt, device.createdAt]),
-  ]);
-  partnerLastSessionAtCache.set(provider, value);
-  return value;
-}
-
-function latestTimestamp(values: Array<string | null | undefined>) {
-  const latest = values
-    .map((value) => {
-      if (!value) return null;
-      const timestamp = Date.parse(value);
-      return Number.isFinite(timestamp) ? { value, timestamp } : null;
-    })
-    .filter(Boolean)
-    .sort((left, right) => (right?.timestamp ?? 0) - (left?.timestamp ?? 0))[0];
-
-  return latest?.value ?? null;
 }
 
 function ProviderIssuePills({
@@ -2895,16 +2768,6 @@ function ProviderSecurityCell({ provider }: { provider: AdminProvider }) {
   );
 }
 
-function providerUnsettledWalletBalance(provider: AdminProvider) {
-  const cached = providerWalletBalanceCache.get(provider);
-  if (cached !== undefined) return cached;
-  const value = (provider.earnings ?? [])
-    .filter((earning) => ['PENDING', 'AVAILABLE'].includes(earning.status) && !earning.payoutBatchId)
-    .reduce((sum, earning) => sum + numberValue(earning.netAmount), 0);
-  providerWalletBalanceCache.set(provider, value);
-  return value;
-}
-
 function providerHasFirstRevenueSignal(provider: AdminProvider) {
   return (provider.earnings ?? []).some((earning) =>
     ['PENDING', 'AVAILABLE', 'PAID'].includes(earning.status),
@@ -2921,12 +2784,6 @@ function providerPayoutSetupNeedsReview(provider: AdminProvider) {
     !provider.residentialAddress?.trim() ||
     (provider.agreements?.length ?? 0) < 5
   );
-}
-
-function numberValue(value: unknown) {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') return Number(value) || 0;
-  return 0;
 }
 
 function providerActionHint(provider: AdminProvider, opsPolicy = DEFAULT_PROVIDER_OPS_POLICY) {
