@@ -35,19 +35,16 @@ import { buildPolicyEnforcementTrace } from './policy-enforcement-trace';
 import { buildPolicyOutcomeEffect } from './policy-outcome-effect';
 import { policyImpactDetails } from './policy-impact-details';
 import { buildPolicySupplySensitivity, type PolicySupplySensitivity } from './policy-supply-sensitivity';
+import {
+  bookingPolicySnapshotDrift,
+  formatSnapshotPolicyValue,
+  readBookingMatchingPolicySnapshot,
+  summarizeSnapshotValues,
+} from './policy-snapshot';
 import { operationsOwnerDecisionBacklog } from './owner-decision-backlog';
 
 type OperationsPolicySearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-type BookingMatchingPolicySnapshot = {
-  providerResponseWindowMinutes: number | null;
-  backupProviderRadiusMeters: number | null;
-  backupProviderLocationMaxAgeMinutes: number | null;
-  backupProviderInvitationLimit: number | null;
-  preferredAcceptMode: string | null;
-  backupOpenMode: string | null;
-  travelBufferMinutes: number | null;
-};
 type OwnerDecisionPressure = {
   alertCount: number;
   summary: Array<{ label: string; value: string; helper: string }>;
@@ -3249,19 +3246,6 @@ function policyDisplayByKey(settings: AdminOperationalPolicySetting[], key: stri
   return setting ? policyDisplayValue(setting) : 'Not configured';
 }
 
-function formatSnapshotPolicyValue(
-  settings: AdminOperationalPolicySetting[],
-  key: string,
-  value: string | number,
-) {
-  const setting = adminOperationalPolicySettingByKey(settings, key);
-  const stringValue = String(value);
-  return displayOperationalWording(
-    setting?.options?.find((option) => option.value === stringValue)?.label ??
-      formatPolicyValue(value, setting?.unit),
-  );
-}
-
 function policyRawValue(settings: AdminOperationalPolicySetting[], key: string) {
   return adminOperationalPolicySettingByKey(settings, key)?.value;
 }
@@ -3319,106 +3303,6 @@ function policyNotice(params: Record<string, string | string[] | undefined>) {
 
 function firstParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
-}
-
-function readBookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPolicySnapshot | null {
-  const metadata = readPlainRecord(booking.metadata);
-  const policy = readPlainRecord(metadata?.matchingPolicy);
-  if (!policy) {
-    return null;
-  }
-  return {
-    providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
-    backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
-    backupProviderLocationMaxAgeMinutes: readOptionalNumber(policy.backupProviderLocationMaxAgeMinutes),
-    backupProviderInvitationLimit: readOptionalNumber(policy.backupProviderInvitationLimit),
-    preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
-    backupOpenMode: readOptionalString(policy.backupOpenMode),
-    travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
-  };
-}
-
-function summarizeSnapshotValues(
-  bookings: AdminBooking[],
-  readValue: (snapshot: BookingMatchingPolicySnapshot) => string | number | null,
-  formatValue: (value: string | number) => string,
-) {
-  const counts = new Map<string, number>();
-  for (const booking of bookings) {
-    const snapshot = readBookingMatchingPolicySnapshot(booking);
-    if (!snapshot) {
-      continue;
-    }
-    const value = readValue(snapshot);
-    if (value === null || value === undefined) {
-      continue;
-    }
-    const label = formatValue(value);
-    counts.set(label, (counts.get(label) ?? 0) + 1);
-  }
-
-  const entries = Array.from(counts.entries()).sort((left, right) => right[1] - left[1]);
-  if (!entries.length) {
-    return 'No saved value';
-  }
-  if (entries.length === 1) {
-    return `${entries[0][0]} (${entries[0][1]})`;
-  }
-  const preview = entries
-    .slice(0, 2)
-    .map(([label, count]) => `${label} (${count})`)
-    .join(', ');
-  return entries.length > 2 ? `${preview}, +${entries.length - 2} more` : preview;
-}
-
-function bookingPolicySnapshotDrift(booking: AdminBooking, settings: AdminOperationalPolicySetting[]) {
-  const snapshot = readBookingMatchingPolicySnapshot(booking);
-  if (!snapshot) {
-    return [];
-  }
-  const comparisons = [
-    {
-      label: 'response window',
-      saved: snapshot.providerResponseWindowMinutes,
-      live: policyRawValue(settings, 'matching.provider_response_window_minutes'),
-    },
-    {
-      label: 'marketplace radius',
-      saved: snapshot.backupProviderRadiusMeters,
-      live: policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceRadiusMeters),
-    },
-    {
-      label: 'marketplace location freshness',
-      saved: snapshot.backupProviderLocationMaxAgeMinutes,
-      live: policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceLocationFreshnessMinutes),
-    },
-    {
-      label: 'marketplace invitation limit',
-      saved: snapshot.backupProviderInvitationLimit,
-      live: policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceInvitationLimit),
-    },
-    {
-      label: 'accept mode',
-      saved: snapshot.preferredAcceptMode,
-      live: policyRawValue(settings, 'matching.preferred_accept_mode'),
-    },
-    {
-      label: 'marketplace open mode',
-      saved: snapshot.backupOpenMode,
-      live: policyRawValue(settings, OPERATIONAL_POLICY_KEYS.marketplaceOpenMode),
-    },
-    {
-      label: 'travel buffer',
-      saved: snapshot.travelBufferMinutes,
-      live: policyRawValue(settings, 'matching.travel_buffer_minutes'),
-    },
-  ];
-  return comparisons.filter((comparison) => {
-    if (comparison.saved === null || comparison.saved === undefined) {
-      return false;
-    }
-    return String(comparison.saved) !== String(comparison.live);
-  });
 }
 
 function bookingWalletLedgerTotal(booking: AdminBooking) {

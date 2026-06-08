@@ -2,16 +2,11 @@ import type { AdminBooking, AdminOperationalPolicySetting } from '../../lib/admi
 import { marketplaceDisplayText as displayOperationalWording } from '../../lib/admin-copy';
 import { readPlainRecord } from '../../lib/admin-format';
 import { OPERATIONAL_POLICY_KEYS, adminOperationalPolicySettingByKey } from '../../lib/operations-policy';
-
-type BookingMatchingPolicySnapshot = {
-  providerResponseWindowMinutes: number | null;
-  backupProviderRadiusMeters: number | null;
-  backupProviderLocationMaxAgeMinutes: number | null;
-  backupProviderInvitationLimit: number | null;
-  preferredAcceptMode: string | null;
-  backupOpenMode: string | null;
-  travelBufferMinutes: number | null;
-};
+import {
+  type BookingMatchingPolicySnapshot,
+  formatSnapshotPolicyValue,
+  readBookingMatchingPolicySnapshot,
+} from './policy-snapshot';
 
 type PolicyEffectStats = {
   sampleCount: number;
@@ -279,23 +274,6 @@ function policyEffectStatsForBookings(bookings: AdminBooking[]): PolicyEffectSta
   );
 }
 
-function readBookingMatchingPolicySnapshot(booking: AdminBooking): BookingMatchingPolicySnapshot | null {
-  const metadata = readPlainRecord(booking.metadata);
-  const policy = readPlainRecord(metadata?.matchingPolicy);
-  if (!policy) {
-    return null;
-  }
-  return {
-    providerResponseWindowMinutes: readOptionalNumber(policy.providerResponseWindowMinutes),
-    backupProviderRadiusMeters: readOptionalNumber(policy.backupProviderRadiusMeters),
-    backupProviderLocationMaxAgeMinutes: readOptionalNumber(policy.backupProviderLocationMaxAgeMinutes),
-    backupProviderInvitationLimit: readOptionalNumber(policy.backupProviderInvitationLimit),
-    preferredAcceptMode: readOptionalString(policy.preferredAcceptMode),
-    backupOpenMode: readOptionalString(policy.backupOpenMode),
-    travelBufferMinutes: readOptionalNumber(policy.travelBufferMinutes),
-  };
-}
-
 function bookingHasMatchedPartner(booking: AdminBooking) {
   return (
     Boolean(booking.selectedProvider || booking.selectedProviderId) ||
@@ -315,19 +293,6 @@ function bookingBackupInviteCount(booking: AdminBooking) {
 function policyDisplayByKey(settings: AdminOperationalPolicySetting[], key: string) {
   const setting = adminOperationalPolicySettingByKey(settings, key);
   return setting ? policyDisplayValue(setting) : 'Not configured';
-}
-
-function formatSnapshotPolicyValue(
-  settings: AdminOperationalPolicySetting[],
-  key: string,
-  value: string | number,
-) {
-  const setting = adminOperationalPolicySettingByKey(settings, key);
-  const stringValue = String(value);
-  return displayOperationalWording(
-    setting?.options?.find((option) => option.value === stringValue)?.label ??
-      formatPolicyValue(value, setting?.unit),
-  );
 }
 
 function policyDisplayValue(setting: AdminOperationalPolicySetting, recommended = false) {
@@ -374,8 +339,4 @@ function formatDistance(meters: number) {
 function readOptionalNumber(value: unknown) {
   const parsed = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN;
   return Number.isFinite(parsed) ? parsed : null;
-}
-
-function readOptionalString(value: unknown) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
