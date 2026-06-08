@@ -170,7 +170,7 @@ export default async function CashSettlementsPage({ searchParams }: CashSettleme
             <h2>Cash settlement execution desk</h2>
             <p className="muted">
               Operator-first view for clearing partner cash-fee debt. It does not judge partner quality; it
-              only shows what must be evidenced before marketplace alerts, participation, and payout release reopen.
+              only shows what must be evidenced before final acceptance, service start, and payout release reopen.
             </p>
           </div>
           <Link className="text-link" href="/audit-log?bucket=Finance%2FCloseout">
@@ -843,7 +843,7 @@ function cashSettlementActionExecutionMap(row: CashSettlementRow): CashSettlemen
           ? `${formatMoney(row.debtAmount, row.earning.currency)} remains as HANDS fee/tax wallet debt.`
           : 'No open wallet debt remains on this earning row.',
       operatorRule:
-        'Settle only after deposit evidence or approved offset; marketplace alerts, participation, and payout release stay gated until cleared.',
+        'Settle only after deposit evidence or approved offset; final acceptance, service start, and payout release stay gated until cleared.',
       pillClass: row.debtAmount > 0 ? 'pill-danger' : 'pill-success',
     },
     {
@@ -916,13 +916,13 @@ function buildWalletRecoverySteps(
       pillClass: hasOpenDebt ? 'pill-warn' : 'pill-success',
     },
     {
-      title: '4. Reopen marketplace and payout release',
+      title: '4. Reopen finalization and payout release',
       status: hasOpenDebt ? 'Still gated' : 'Unlocked',
       detail: hasOpenDebt
-        ? 'Marketplace alerts, participation, and payout release remain blocked until the partner wallet is no longer negative.'
-        : 'Partners with cleared wallets can participate in eligible marketplace bookings and continue payout release checks.',
+        ? 'Final acceptance, service start, and payout release remain blocked until the Partner wallet is no longer negative.'
+        : 'Partners with cleared wallets can proceed through eligible marketplace finalization and payout release checks.',
       operatorRule:
-        'Negative-wallet partners may still see marketplace requests. Only actual marketplace alerts, participation, and payout release are gated.',
+        'Negative-wallet Partners may still see marketplace requests. Only final acceptance, service start, and payout release are gated.',
       pillClass: hasOpenDebt ? 'pill-danger' : 'pill-success',
     },
   ];
@@ -981,10 +981,10 @@ function buildCashSettlementHandoffMap(
     },
     {
       title: 'Marketplace reopen rule',
-      status: hasOpenDebt ? 'Finalization gated' : 'Participation open',
+      status: hasOpenDebt ? 'Finalization gated' : 'Finalization open',
       detail: hasOpenDebt
         ? 'Partners may see and join marketplace requests, but final acceptance, service start, and payout release wait for wallet settlement.'
-        : 'Cleared partner wallets can participate in eligible marketplace bookings again.',
+        : 'Cleared Partner wallets can proceed through eligible marketplace finalization again.',
       operatorRule: 'Partner app message: Unpaid HANDS fees must be settled before final acceptance or service start.',
       href: '/bookings?view=marketplace',
       className: hasOpenDebt ? 'ops-task-blocked' : 'ops-task-done',
@@ -1023,11 +1023,11 @@ function buildCashSettlementEvidenceChecklist(
       pillClass: rows.length ? 'pill-warn' : 'pill-success',
     },
     {
-      title: 'Wallet participation gate',
+      title: 'Wallet finalization gate',
       status: `${summary.providerCount} Partner(s)`,
       detail:
-        'Negative wallet partners can see marketplace requests, but cannot receive marketplace alerts or participate in marketplace bookings until settlement is confirmed.',
-      operatorRule: 'Reopen marketplace participation only after settlement or approved offset is recorded.',
+        'Negative wallet Partners can see marketplace requests, but final acceptance, service start, and payout release wait until settlement is confirmed.',
+      operatorRule: 'Reopen marketplace finalization only after settlement or approved offset is recorded.',
       href: '/partner-controls',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
@@ -1163,9 +1163,9 @@ function buildCashSettlementExecutionDesk(
       title: 'Marketplace unlock condition',
       status: summary.providerCount ? `${summary.providerCount} blocked` : 'Open',
       detail: summary.providerCount
-        ? 'Partners with negative cash-fee wallet debt can see marketplace requests but cannot receive marketplace alerts or participate until settlement is posted.'
-        : 'No partner is blocked from marketplace alerts and participation by cash-fee debt in the visible queue.',
-      action: 'Unlock marketplace participation only when the partner wallet is no longer negative.',
+        ? 'Partners with negative cash-fee wallet debt can see marketplace requests while final acceptance, service start, and payout release wait for settlement.'
+        : 'No Partner is blocked from final acceptance, service start, or payout release by cash-fee debt in the visible queue.',
+      action: 'Unlock marketplace finalization only when the Partner wallet is no longer negative.',
       className: summary.providerCount ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: summary.providerCount ? 'pill-danger' : 'pill-success',
     },
@@ -1252,11 +1252,11 @@ function buildCashSettlementRuleCards(summary: CashSettlementSummary): CommandCa
     },
     {
       title: 'Marketplace gate',
-      status: hasDebt ? 'Participation blocked' : 'Participation open',
+      status: hasDebt ? 'Finalization blocked' : 'Finalization open',
       detail: hasDebt
-        ? 'Negative-wallet partners can see marketplace requests, but cannot receive marketplace alerts or participate in marketplace bookings.'
-        : 'No negative-wallet marketplace participation gate is active from the visible cash settlement queue.',
-      action: 'The partner app should guide the partner to settle the fee before marketplace alerts and participation.',
+        ? 'Negative-wallet Partners can see marketplace requests, but final acceptance, service start, and payout release wait for settlement.'
+        : 'No negative-wallet marketplace finalization gate is active from the visible cash settlement queue.',
+      action: 'The Partner app should guide the Partner to settle the fee before final acceptance, service start, or payout release.',
       className: hasDebt ? 'ops-task-blocked' : 'ops-task-done',
       pillClass: hasDebt ? 'pill-danger' : 'pill-success',
     },
@@ -1293,7 +1293,7 @@ function buildAppliedCashSettlementPolicyCards(
     {
       label: 'Wallet gate',
       value: humanizePolicyValue(policy.walletNegativeGate),
-      helper: 'Negative partner wallet blocks marketplace alerts and participation until settlement is posted.',
+      helper: 'Negative Partner wallet blocks final acceptance, service start, and payout release until settlement is posted.',
     },
     {
       label: 'Payout batch cycle',
