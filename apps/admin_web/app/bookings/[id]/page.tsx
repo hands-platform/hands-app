@@ -101,6 +101,7 @@ import { bookingDetailMatchingRuleSnapshot } from './booking-matching-rule-snaps
 import { bookingParticipantLedger } from './booking-participant-ledger';
 import {
   bookingCustomerSelectableParticipantsForFinalChoice,
+  bookingParticipantProviderId,
   bookingPreferredProviderId,
   isCustomerSelectableParticipantForFinalChoice,
 } from './booking-participant-rules';
@@ -239,6 +240,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
   const finalPartnerSummary = bookingFinalPartnerSummary(booking);
+  const participantCounts = bookingParticipantCounts(booking);
   const latestLocation = latestProviderLocation(booking);
   const addressLine = bookingAddressSnapshotLabel(booking);
   const addressPin = booking.addressSnapshot
@@ -401,8 +403,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: '#participants',
       label: 'Partners',
-      value: `${booking.participants?.length ?? 0}`,
-      helper: 'Preferred, final, and marketplace shortlist.',
+      value: `${participantCounts.total}`,
+      helper: `${participantCounts.marketplace} marketplace / ${participantCounts.firstPick} first-pick row(s).`,
     },
     {
       href: '#chat',
@@ -491,7 +493,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
       status: finalPartnerSummary.selected ? 'Linked' : 'Not selected',
       evidence: finalPartnerSummary.selected
         ? finalPartnerSummary.label
-        : `${booking.participants?.length ?? 0} marketplace participant(s)`,
+        : `${participantCounts.marketplace} marketplace / ${participantCounts.total} total participant row(s)`,
       href: '#handoff',
     },
     {
@@ -916,9 +918,7 @@ export default async function BookingDetailPage({ params }: PageProps) {
     noShowAvailable: canMarkNoShow(booking.status),
   });
   const actionGateByAction = new Map(actionEvidenceGate.rows.map((row) => [row.action, row]));
-  const marketplaceParticipants =
-    booking.participants?.filter((participant) => participant.providerProfile?.id !== booking.preferredProvider?.id)
-      .length ?? 0;
+  const marketplaceParticipants = participantCounts.marketplace;
   const finalGateReason = buildBookingFinalGateReasonFromFacts({
     cashDebt: bookingCashDebtNeedsSettlement(booking),
     walletLedgerLabel: financeTrace.walletLedger,
@@ -971,8 +971,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: '#participants',
       label: 'Marketplace',
-      value: `${booking.participants?.length ?? 0} participant row(s)`,
-      detail: 'Only actual participant records are retained as booking participants.',
+      value: `${participantCounts.marketplace} marketplace row(s)`,
+      detail: `${participantCounts.total} total participant row(s). First-pick and marketplace rows are separated for operator review.`,
     },
     {
       href: '#chat',
@@ -1044,8 +1044,8 @@ export default async function BookingDetailPage({ params }: PageProps) {
     {
       href: '#participants',
       label: 'Marketplace participants',
-      value: `${booking.participants?.length ?? 0} participant row(s)`,
-      detail: 'Only actual partner participation rows are retained for this booking.',
+      value: `${participantCounts.marketplace} marketplace row(s)`,
+      detail: `${participantCounts.total} total participant row(s). Only actual partner participation rows are retained for this booking.`,
     },
     {
       href: '#chat',
@@ -1348,6 +1348,21 @@ export default async function BookingDetailPage({ params }: PageProps) {
       <BookingActivityPanel records={bookingActivityRecords} summary={bookingActivitySummary} />
     </>
   );
+}
+
+function bookingParticipantCounts(booking: AdminBookingDetail) {
+  const participants = booking.participants ?? [];
+  const preferredProviderId = bookingPreferredProviderId(booking);
+  const marketplace = participants.filter((participant) => {
+    const providerId = bookingParticipantProviderId(participant);
+    return !preferredProviderId || providerId !== preferredProviderId;
+  }).length;
+
+  return {
+    total: participants.length,
+    firstPick: Math.max(participants.length - marketplace, 0),
+    marketplace,
+  };
 }
 
 function bookingOperatorCommandQueue({
@@ -2318,7 +2333,7 @@ function bookingOperatingSnapshot({
   messageCount: number;
   notificationCount: number;
 }) {
-  const participants = booking.participants ?? [];
+  const participantCounts = bookingParticipantCounts(booking);
   const customerChoiceCandidates = bookingCustomerSelectableParticipantsForFinalChoice(booking);
   const preferredState = preferredParticipantState(booking);
   const paymentLabel = booking.payment
@@ -2383,8 +2398,8 @@ function bookingOperatingSnapshot({
       },
       {
         label: 'Marketplace supply',
-        value: `${participants.length} participant record(s) / ${customerChoiceCandidates.length} selectable`,
-        helper: 'Actual participant rows stay as evidence; customer choices are deduped by partner.',
+        value: `${participantCounts.marketplace} marketplace / ${customerChoiceCandidates.length} selectable`,
+        helper: `${participantCounts.total} total participant row(s). Actual rows stay as evidence; customer choices are deduped by partner.`,
       },
       {
         label: 'Chat and alerts',
