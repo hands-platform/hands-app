@@ -31,7 +31,6 @@ import {
 } from './actions';
 import {
   ProviderFilters,
-  ProviderSecurityState,
   buildPartnerExportSlug,
   buildProviderActiveFilters,
   buildProviderFilters,
