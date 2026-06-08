@@ -182,10 +182,10 @@ export default async function OperationsPolicyPage({
           </div>
           <div className="ops-task-card ops-task-done">
             <span className="pill pill-success">No auto assignment</span>
-            <h3>Customer final choice</h3>
+            <h3>First-pick priority with fallback choice</h3>
             <p>
-              Partner acceptance does not auto-match the booking. The customer must choose the final partner
-              from eligible accepted participants.
+              The first-pick Partner can match first under API rules. If first-pick does not win, the customer
+              chooses from eligible participating Partners.
             </p>
             <small>
               Operators review evidence, but the platform does not automatically assign the partner.
@@ -202,10 +202,10 @@ export default async function OperationsPolicyPage({
           </div>
           <div className="ops-task-card ops-task-done">
             <span className="pill pill-warn">Negative wallet gate</span>
-            <h3>View demand, block participation</h3>
+            <h3>View demand, block finalization</h3>
             <p>
-              A partner with a negative wallet may see marketplace requests, but cannot receive marketplace
-              alerts or participate until the unpaid platform fee is settled or cleared by finance.
+              A Partner with a negative wallet may see marketplace requests, but final acceptance, service
+              start, and payout release wait until the unpaid platform fee is settled or cleared by finance.
             </p>
             <small>
               Direct first-pick response and already-matched service flow stay separate from this gate.
@@ -1011,8 +1011,8 @@ export default async function OperationsPolicyPage({
         <div className="booking-radar">
           <DecisionHint
             title="First-pick partner acceptance"
-            recommendation="Keep customer final confirmation as the operating rule."
-            detail="The preferred partner can accept quickly, marketplace partners can still enter the shortlist, and the customer chooses the final partner."
+            recommendation="Keep first-pick priority with customer fallback."
+            detail="The preferred Partner can match first under API rules, marketplace Partners can still enter the shortlist, and the customer chooses only when first-pick does not win."
           />
           <DecisionHint
             title="Marketplace participation"
@@ -1021,8 +1021,8 @@ export default async function OperationsPolicyPage({
           />
           <DecisionHint
             title="Negative wallet gate"
-            recommendation="Keep marketplace visibility open, but block marketplace alerts, participation, and payout release."
-            detail="Cash services create company-fee debt. Partners can still see demand, while marketplace alerts, participation, and payout release wait for settlement."
+            recommendation="Keep marketplace visibility open, but block final acceptance, service start, and payout release."
+            detail="Cash services create company-fee debt. Partners can still see demand, while final acceptance, service start, and payout release wait for settlement."
           />
           <DecisionHint
             title="Phone OTP"
@@ -1808,14 +1808,14 @@ function policyRecommendationPosture(
 
   if (setting.key === 'matching.preferred_accept_mode') {
     return {
-      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Historical value ignored' : 'Customer choice',
+      status: value === 'AUTO_MATCH_ON_ACCEPT' ? 'Historical value ignored' : 'First-pick priority',
       detail:
         value === 'AUTO_MATCH_ON_ACCEPT'
-          ? 'The API now ignores this historical value and keeps the request open until the customer chooses the final partner.'
-          : 'Customer final-choice mode is required for the HANDS MVP flow.',
-      operatorAction: 'Keep customer-confirm mode active before scaling marketplace partner shortlist UX.',
+          ? 'The API now ignores this historical value and uses first-pick priority with customer fallback instead.'
+          : 'First-pick priority is required: the first-pick Partner can match first, otherwise customer fallback choice remains available.',
+      operatorAction: 'Keep first-pick priority active before scaling marketplace partner shortlist UX.',
       alignedAction:
-        'Customer final-choice posture is aligned with the intended direct + marketplace matching model.',
+        'First-pick priority with customer fallback is aligned with the intended direct + marketplace matching model.',
       className: value === recommended ? 'ops-task-done' : 'ops-task-pending',
       pillClass: value === recommended ? 'pill-success' : 'pill-warn',
     };
@@ -1846,10 +1846,10 @@ function policyRecommendationPosture(
     return {
       status: blocksMarketplace ? 'Marketplace hold' : 'Historical setting review',
       detail: blocksMarketplace
-        ? 'Cash-debt exposure is contained at marketplace alerts, participation, and payout release gates.'
-        : 'Historical exception mode is retained for audit only. The MVP still blocks marketplace alerts, participation, and payout release until settlement.',
+        ? 'Cash-debt exposure is contained at final acceptance, service start, and payout release gates.'
+        : 'Historical exception mode is retained for audit only. The MVP still blocks final acceptance, service start, and payout release until settlement.',
       operatorAction:
-        'Keep marketplace list visibility open; use settlement evidence before marketplace alerts, participation, or payout release.',
+        'Keep marketplace list visibility open; use settlement evidence before final acceptance, service start, or payout release.',
       alignedAction: 'Marketplace settlement control matches the HANDS MVP authority rule.',
       className: blocksMarketplace ? 'ops-task-done' : 'ops-task-blocked',
       pillClass: blocksMarketplace ? 'pill-success' : 'pill-danger',
@@ -2058,8 +2058,8 @@ function buildBookingAcceptanceMatrix(settings: AdminOperationalPolicySetting[],
       title: 'Negative wallet gate',
       status: hardWalletBlock ? 'Marketplace hold' : 'Historical setting review',
       detail: hardWalletBlock
-        ? 'Partners with unpaid cash-service fee debt can stay visible, but marketplace alerts, participation, and payout release wait for settlement.'
-        : 'Historical exception mode is retained for audit only. Marketplace alerts, participation, and payout release should remain blocked until settlement.',
+        ? 'Partners with unpaid cash-service fee debt can stay visible, but final acceptance, service start, and payout release wait for settlement.'
+        : 'Historical exception mode is retained for audit only. Final acceptance, service start, and payout release should remain blocked until settlement.',
       operatorAction: hardWalletBlock
         ? 'This protects HANDS cash-fee collection without removing marketplace visibility.'
         : 'Reset to the marketplace hold policy after reviewing the saved setting.',
@@ -2147,8 +2147,8 @@ function buildPartnerAcceptancePolicyImpact(
       label: 'Cash debt gate',
       value: walletGateHeld.length.toString(),
       helper: policy.hardWalletBlock
-        ? 'Negative wallet gates marketplace alerts, participation, and payout release.'
-        : 'Negative wallet still needs settlement before marketplace alerts, participation, and payout release.',
+        ? 'Negative wallet gates final acceptance, service start, and payout release.'
+        : 'Negative wallet still needs settlement before final acceptance, service start, and payout release.',
     },
     {
       label: 'Identity block',
@@ -2398,7 +2398,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
           : 'Marketplace partners wait until the first window closes',
         detail: immediateBackup
           ? 'Eligible partners can appear while the first-pick partner is still deciding.'
-          : 'Marketplace visibility and participation checks stay delayed until the first-pick response window passes.',
+          : 'Delayed mode is a non-default operator policy; marketplace participation waits until the first-pick response window passes.',
         operatorAction: customerConfirm
           ? 'First-pick priority is active, with customer final choice as the fallback when first-pick does not win.'
           : 'Historical policy value is ignored; reset the policy to first-pick priority with customer fallback.',
@@ -2409,7 +2409,7 @@ function buildPolicyImpactDashboard(settings: AdminOperationalPolicySetting[], b
         scope: 'Partner controls',
         title: 'Negative wallet gate protects cash-fee debt',
         detail:
-          'Partners with unpaid cash-fee debt can still see marketplace requests, but marketplace alerts, participation, and payout release wait until settlement is posted.',
+          'Partners with unpaid cash-fee debt can still see marketplace requests, but final acceptance, service start, and payout release wait until settlement is posted.',
         operatorAction:
           negativeCashDebtBookings.length > 0
             ? `${negativeCashDebtBookings.length} recent booking(s) have negative wallet state to review.`
@@ -2681,8 +2681,8 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
 
   if (key === 'matching.preferred_accept_mode') {
     return policyRelatedBookingRecordSet({
-      title: 'Customer final-choice records',
-      helper: 'Partner acceptance should still return the final partner choice to the customer.',
+      title: 'Customer fallback-choice records',
+      helper: 'Use this queue when first-pick does not validly win and the customer must choose from participating Partners.',
       href: '/bookings?view=customer-choice',
       emptyText: 'No accepted partner is currently waiting for customer final choice.',
       bookings: acceptedButNotFinal,
@@ -2698,7 +2698,7 @@ function policyRelatedBookingRecords(key: string, bookings: AdminBooking[]) {
   if (key === 'wallet.negative_balance_gate') {
     return policyRelatedBookingRecordSet({
       title: 'Cash-fee debt records',
-      helper: 'Negative wallet records can hold marketplace alerts, participation, or payout release.',
+      helper: 'Negative wallet records can hold final acceptance, service start, or payout release.',
       href: '/cash-settlements',
       emptyText: 'No negative wallet booking record is currently loaded.',
       bookings: walletRows,
