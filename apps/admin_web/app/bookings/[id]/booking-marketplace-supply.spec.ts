@@ -41,7 +41,7 @@ describe('booking marketplace supply', () => {
     jest.useRealTimers();
   });
 
-  it('excludes negative-wallet partners from marketplace participation supply', () => {
+  it('keeps negative-wallet partners out of booking-level candidate evidence', () => {
     const supply = bookingMarketplacePartnerSupply(
       booking(),
       [
@@ -53,13 +53,11 @@ describe('booking marketplace supply', () => {
     );
 
     expect(supply.eligibleCount).toBe(0);
-    expect(supply.rows[0]).toMatchObject({
-      eligible: false,
-      detail: expect.stringContaining('wallet negative'),
-    });
-    expect(supply.excludedGroups.find((group) => group.label === 'Wallet settlement required')).toMatchObject({
-      count: 1,
-      href: '/partners?review=cash-debt',
+    expect(supply.rows).toHaveLength(0);
+    expect(supply.excludedGroups.find((group) => group.label === 'Wallet settlement required')).toBeUndefined();
+    expect(supply.metrics.find((metric) => metric.label === 'Wallet gate boundary')).toMatchObject({
+      value: 'Finance lane',
+      helper: expect.stringContaining('not listed as booking candidates'),
     });
   });
 });

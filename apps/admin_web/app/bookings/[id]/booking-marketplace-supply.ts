@@ -4,7 +4,7 @@ import type {
   AdminOperationalPolicySetting,
   AdminProvider,
 } from '../../../lib/admin-api';
-import { formatDistanceMeters, formatMoney } from '../../../lib/admin-format';
+import { formatDistanceMeters } from '../../../lib/admin-format';
 import {
   approximateDistanceMeters,
   coordinateLabel,
@@ -87,7 +87,7 @@ export function bookingMarketplacePartnerSupply(
             blockers.push(`status ${provider.status}`);
           }
           if (walletGateBlocksMarketplace && walletBalance < 0) {
-            blockers.push(`wallet negative ${formatMoney(Math.abs(walletBalance), 'VND')}`);
+            blockers.push('wallet settlement required');
           }
           if (distanceMeters === null) {
             blockers.push('no current coordinates');
@@ -141,22 +141,22 @@ export function bookingMarketplacePartnerSupply(
         })
     : [];
 
-  const rows = evaluatedRows.slice(0, 8);
-  const eligibleRows = evaluatedRows.filter((row) => row.eligible);
+  const candidateRows = evaluatedRows.filter(
+    (row) => !row.blockers.some((blocker) => blocker === 'wallet settlement required'),
+  );
+  const rows = candidateRows.slice(0, 8);
+  const eligibleRows = candidateRows.filter((row) => row.eligible);
   const eligibleCount = eligibleRows.length;
-  const nearbyExcluded = evaluatedRows.filter(
+  const nearbyExcluded = candidateRows.filter(
     (row) => !row.eligible && row.distanceMeters !== null && row.distanceMeters <= radiusMeters,
   ).length;
-  const outOfRadius = evaluatedRows.filter(
+  const outOfRadius = candidateRows.filter(
     (row) => (row.distanceMeters ?? Number.POSITIVE_INFINITY) > radiusMeters,
   ).length;
-  const staleOrMissing = evaluatedRows.filter((row) =>
+  const staleOrMissing = candidateRows.filter((row) =>
     row.blockers.some((blocker) => blocker.startsWith('location')),
   ).length;
-  const walletDebt = evaluatedRows.filter((row) =>
-    row.blockers.some((blocker) => blocker.startsWith('wallet negative')),
-  ).length;
-  const excludedGroups = bookingMarketplacePartnerExcludedGroups(evaluatedRows, radiusMeters);
+  const excludedGroups = bookingMarketplacePartnerExcludedGroups(candidateRows, radiusMeters);
   const candidateCommand = bookingMarketplaceCandidateCommand({
     hasCustomerPin,
     eligibleCount,
@@ -214,9 +214,10 @@ export function bookingMarketplacePartnerSupply(
         helper: `Current policy requires location within ${freshnessMinutes} minutes.`,
       },
       {
-        label: 'Wallet settlement',
-        value: walletDebt.toString(),
-        helper: 'Negative partner wallet blocks marketplace participation until HANDS fee settlement.',
+        label: 'Wallet gate boundary',
+        value: 'Finance lane',
+        helper:
+          'Wallet-debt partners are not listed as booking candidates; debt repair is handled from Partner and Finance views.',
       },
       {
         label: 'Invite cap',
@@ -286,12 +287,6 @@ function bookingMarketplacePartnerExcludedGroups(
       '/partners?readiness=approved-offline',
       'Partner must open the app or become online available before they can be relied on.',
       (blocker) => blocker.startsWith('status'),
-    ),
-    group(
-      'Wallet settlement required',
-      '/partners?review=cash-debt',
-      'Partner can view marketplace requests but cannot participate until HANDS fee settlement is confirmed.',
-      (blocker) => blocker.startsWith('wallet negative'),
     ),
     group(
       'Location stale or missing',

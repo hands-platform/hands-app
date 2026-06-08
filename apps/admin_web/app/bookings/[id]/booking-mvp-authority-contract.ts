@@ -110,7 +110,7 @@ export function bookingMvpAuthorityContract({
       scope: 'Booking-address radius',
       status: pinReady ? `${formatDistanceMeters(radiusMeters)} radius` : 'Blocked by missing pin',
       tone: pinReady ? (marketplaceSupply.eligibleCount ? 'pill-success' : 'pill-warn') : 'pill-danger',
-      evidence: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} partner row(s) sampled.`,
+      evidence: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} displayable supply row(s).`,
       operatorUse:
         'Only partners within booking-address radius and fresh-location policy should enter the customer shortlist.',
       href: '#marketplace-supply',

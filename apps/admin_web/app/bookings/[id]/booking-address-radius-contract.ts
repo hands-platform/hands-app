@@ -78,7 +78,7 @@ export function bookingAddressRadiusContract(
         detail: `Marketplace partners are evaluated from ${pin.source} and must be within ${formatDistanceMeters(
           marketplaceSupply.radiusMeters,
         )}.`,
-        action: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} displayed.`,
+        action: `${marketplaceSupply.eligibleCount} eligible / ${marketplaceSupply.rows.length} displayable supply row(s).`,
         className: pinReady ? 'ops-task-done' : 'ops-task-blocked',
         pillClass: pinReady ? 'pill-success' : 'pill-danger',
       },
