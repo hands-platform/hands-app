@@ -113,16 +113,12 @@ import {
   buildPartnerReviewQueue as buildProviderReviewQueue,
   buildPartnerSummary as buildProviderSummary,
 } from './partner-list-summary';
+import {
+  buildPartnerCommandCenter as buildProviderCommandCenter,
+  type PartnerCommandLane as ProviderCommandLane,
+} from './partner-command-center';
 
 const CLOSED_BOOKING_STATUSES = ['CANCELLED', 'EXPIRED', 'REFUNDED', 'NO_SHOW'];
-type ProviderCommandLane = {
-  title: string;
-  status: string;
-  tone: 'ok' | 'info' | 'warn' | 'danger';
-  detail: string;
-  href: string;
-  metrics: Array<{ label: string; value: string }>;
-};
 type PartnerDispatchForecast = {
   totals: Array<{
     label: string;
@@ -256,7 +252,7 @@ export default async function ProvidersPage({ searchParams }: { searchParams?: P
   const visibleProviders = providers.slice(0, PROVIDER_LIST_RENDER_LIMIT);
   const hiddenProviderCount = Math.max(providers.length - visibleProviders.length, 0);
   const summary = buildProviderSummary(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
-  const commandCenter = buildProviderCommandCenter(providers, opsPolicy);
+  const commandCenter = buildProviderCommandCenter(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
   const reviewQueue = buildProviderReviewQueue(providers, opsPolicy, PARTNER_LIST_QUERY_DEPS);
   const priorityLane = buildProviderPriorityLane(providers, opsPolicy);
   const dispatchForecast = buildPartnerDispatchForecast(providers, opsPolicy);
@@ -2540,108 +2536,6 @@ function hasApprovedRequiredKycDocuments(provider: AdminProvider) {
   return missingApprovedRequiredKycDocuments(provider).length === 0;
 }
 
-function buildProviderCommandCenter(
-  providers: AdminProvider[],
-  opsPolicy: ProviderOpsPolicy,
-): ProviderCommandLane[] {
-  const verificationReview = providers.filter(
-    (provider) => provider.verification?.status !== 'APPROVED',
-  ).length;
-  const kycReview = providers.filter((provider) =>
-    ['PENDING', 'REJECTED', 'MISSING'].includes(provider.kyc?.status ?? 'MISSING'),
-  ).length;
-  const documentsReview = providers.filter((provider) =>
-    (provider.documents ?? []).some((document) => ['PENDING_REVIEW', 'REJECTED'].includes(document.status)),
-  ).length;
-  const publicMediaReview = providers.filter(providerPublicMediaNeedsReview).length;
-  const readyNow = providers.filter((provider) => providerDispatchReady(provider, opsPolicy)).length;
-  const online = providers.filter((provider) => provider.status === 'ONLINE_AVAILABLE').length;
-  const locationFresh = providers.filter(
-    (provider) => providerLocationStatus(provider, opsPolicy) === 'recent',
-  ).length;
-  const pushReady = providers.filter((provider) => hasHealthyPush(provider)).length;
-  const bankReview = providers.filter((provider) => !hasApprovedBankAccount(provider)).length;
-  const payoutSetupReview = providers.filter(providerPayoutSetupNeedsReview).length;
-  const taxReview = providers.filter(providerTaxNeedsReview).length;
-  const walletDebt = providers.filter((provider) => providerUnsettledWalletBalance(provider) < 0).length;
-  const accountBlocks = providers.filter((provider) => Boolean(provider.blockedAt)).length;
-  const openControlItems = providers.filter((provider) => hasOpenPartnerControl(provider)).length;
-  const deviceFollowUp = providers.filter((provider) =>
-    ['account-blocked', 'blocked', 'session-check', 'shared'].includes(providerSecurityStatus(provider)),
-  ).length;
-  const supabasePending = providers.filter((provider) => !provider.user?.supabaseUserId).length;
-
-  return [
-    {
-      title: 'Onboarding pipeline',
-      status: verificationReview + kycReview + documentsReview > 0 ? 'Review needed' : 'Clean',
-      tone: verificationReview > 0 || kycReview > 0 ? 'warn' : documentsReview > 0 ? 'info' : 'ok',
-      detail:
-        verificationReview + kycReview + documentsReview > 0
-          ? 'Partners are waiting for identity, verification, or document decisions.'
-          : 'No filtered partner is blocked by onboarding review.',
-      href: verificationReview > 0 ? '/partners?review=kyc' : '/partners?review=documents',
-      metrics: [
-        providerCommandMetric('verification', verificationReview),
-        providerCommandMetric('KYC', kycReview),
-        providerCommandMetric('documents', documentsReview),
-        providerCommandMetric('media', publicMediaReview),
-      ],
-    },
-    {
-      title: 'Dispatch readiness',
-      status: `${readyNow}/${providers.length} ready`,
-      tone: readyNow === providers.length ? 'ok' : readyNow > 0 ? 'info' : 'warn',
-      detail:
-        readyNow > 0
-          ? 'Some partners can receive requests now; keep location and push freshness high.'
-          : 'No partner in this filtered list is fully ready for dispatch.',
-      href: readyNow > 0 ? '/partners?readiness=ready' : '/partners?review=location',
-      metrics: [
-        providerCommandMetric('online', online),
-        providerCommandMetric(`fresh <=${opsPolicy.staleLocationMinutes}m`, locationFresh),
-        providerCommandMetric('push ready', pushReady),
-        providerCommandMetric('Supabase pending', supabasePending),
-      ],
-    },
-    {
-      title: 'Payout and tax',
-      status: walletDebt > 0 || payoutSetupReview > 0 ? 'Finance action' : 'Stable',
-      tone: walletDebt > 0 ? 'danger' : payoutSetupReview > 0 || taxReview > 0 ? 'warn' : 'ok',
-      detail:
-        walletDebt > 0
-          ? 'Cash fee debt blocks marketplace alerts and participation until HANDS fee settlement is posted.'
-          : 'First-earning payout, bank, and freelance tax readiness are under control.',
-      href: walletDebt > 0 ? '/partners?review=cash-debt' : '/partners?review=payout-setup',
-      metrics: [
-        providerCommandMetric('bank', bankReview),
-        providerCommandMetric('tax', taxReview),
-        providerCommandMetric('first earning', payoutSetupReview),
-        providerCommandMetric('wallet debt', walletDebt),
-      ],
-    },
-    {
-      title: 'Reports and devices',
-      status: accountBlocks > 0 || openControlItems > 0 || deviceFollowUp > 0 ? 'Investigate' : 'Clear',
-      tone: accountBlocks > 0 || openControlItems > 0 ? 'danger' : deviceFollowUp > 0 ? 'warn' : 'ok',
-      detail:
-        accountBlocks > 0 || openControlItems > 0
-          ? 'Account blocks, reports, or active account controls need operator attention.'
-          : 'No filtered partner has open reports, active account controls, or device follow-up items.',
-      href: openControlItems > 0 ? '/partner-controls' : '/partners?review=security',
-      metrics: [
-        providerCommandMetric('blocked', accountBlocks),
-        providerCommandMetric('open reports', openControlItems),
-        providerCommandMetric('device checks', deviceFollowUp),
-        providerCommandMetric(
-          'shared device',
-          providers.filter((provider) => providerSecurityStatus(provider) === 'shared').length,
-        ),
-      ],
-    },
-  ];
-}
-
 function buildPartnerShiftHandoff(
   providers: AdminProvider[],
   opsPolicy: ProviderOpsPolicy,
@@ -3103,10 +2997,6 @@ function providerDispatchReady(provider: AdminProvider, opsPolicy = DEFAULT_PROV
     providerSecurityStatus(provider) === 'clear' &&
     hasHealthyPush(provider)
   );
-}
-
-function providerCommandMetric(label: string, value: number) {
-  return { label, value: value.toString() };
 }
 
 function providerCommandToneClass(tone: ProviderCommandLane['tone']) {
